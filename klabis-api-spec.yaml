@@ -1,0 +1,136 @@
+openapi: 3.1.0
+info:
+  title: Klabis - OpenAPI 3.1
+  description: |-
+
+  contact:
+    email: klabis@otakar.io
+  license:
+    name: MIT License
+  version: 0.0.3
+servers:
+  - url: https://klabis.zabiny.club
+tags:
+  - name: personal-info
+    description: 
+
+paths:
+  /members:
+    post:
+      tags: 
+        - personal-info
+      summary: Create a new club member
+      description: >
+        Creates a new club member with the provided details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClubMember'
+      responses:
+        '201':
+          description: New club member created successfully
+        '401':
+          description: Unauthorized - User does not have permission to create a new member
+        '500':
+          description: Internal Server Error
+
+components:
+  schemas:
+    Contact:
+      type: object
+      properties:
+        contactType:
+          type: string
+          enum: [direct_contact, guardian_contact]
+          description: Type of contact information
+        email:
+          type: string
+          format: email
+          description: Email address of the club member or guardian
+        phone:
+          type: string
+          description: Phone number of the club member or guardian
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+          description: Street name and number
+        city:
+          type: string
+          description: City
+        postalCode:
+          type: string
+          description: Postal or ZIP code
+        country:
+          type: string
+          description: Country name
+      required:
+        - street
+        - city
+        - postalCode
+        - country
+      examples:
+        - street: 123 Main Street
+          city: City
+          postalCode: "12345"
+          country: Country
+    CreateClubMember:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        dateOfBirth:
+          type: string
+          format: date
+          description: Date of birth of the club member
+        nationalIdNumber:
+          type: string
+          description: Personal identification number of the club member
+        nationality:
+          type: string
+          description: Nationality of the club member
+        address:
+          $ref: '#/components/schemas/Address'
+        gender:
+          type: string
+          enum: [male, female, other]
+          description: Gender of the club member
+        contact:
+          $ref: '#/components/schemas/Contact'
+        siCard:
+          type: number
+          description: Chip number assigned to the club member
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - nationalIdNumber
+        - nationality
+        - address
+        - gender
+        - contact
+      examples:
+        - firstName: John
+          lastName: Doe
+          dateOfBirth: "1990-01-01"
+          nationalIdNumber: "123456789"
+          nationality: US
+          address:
+            street: 123 Main Street
+            city: City
+            postalCode: "12345"
+            country: Country
+          gender: male
+          contact:
+            contactType: direct_contact
+            email: john@example.com
+            phone: "+1234567890"
+          siCard: 123
+
