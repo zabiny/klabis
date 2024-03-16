@@ -16,7 +16,7 @@ jobs:
       - name: redoc-cli test
         uses: seeebiii/redoc-cli-github-action@v10
         with:
-          args: 'bundle klabis-api-spec.yam -o index.html'
+          args: 'bundle klabis-api-spec.yaml -o index.html'
 
       - name: check result
         run: |
