@@ -1,0 +1,31 @@
+name: Publish OpenAPI docs
+run-name: ${{ github.actor }} changed API
+on:
+  push:
+    branches:
+      - main 
+    paths:
+      - 'klabis-api-spec.yaml'
+jobs:
+  publish-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: redoc-cli test
+        uses: seeebiii/redoc-cli-github-action@v10
+        with:
+          args: 'bundle klabis-api-spec.yam -o index.html'
+
+      - name: check result
+        run: |
+          ls -al
+          test -f index.html || (echo "Missing index.html from previous step." && exit 1)
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
