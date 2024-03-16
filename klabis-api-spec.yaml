@@ -8,7 +8,7 @@ info:
   license:
     identifier: MIT
     name: MIT License
-  version: 0.1.9
+  version: 0.1.10
 servers:
   - url: https://api.klabis.otakar.io
 tags:
