@@ -7,7 +7,7 @@ info:
     email: klabis@otakar.io
   license:
     name: MIT License
-  version: 0.0.3
+  version: 0.0.4
 servers:
   - url: https://klabis.zabiny.club
 tags:
