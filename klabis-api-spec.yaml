@@ -6,18 +6,108 @@ info:
   contact:
     email: klabis@otakar.io
   license:
+    identifier: MIT
     name: MIT License
-  version: 0.0.6
+  version: 0.1.6
 servers:
-  - url: https://klabis.zabiny.club
+  - url: https://api.klabis.otakar.io
 tags:
   - name: personal-info
-    description: 
-
+  - name: auth
 paths:
-  /members:
+  /auth/login:
     post:
-      tags: 
+      tags:
+        - auth
+      summary: Login to the application
+      description: >
+        Logs a user into the application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username for login
+                password:
+                  type: string
+                  description: The password for login
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The JWT token
+        '401':
+          description: Unauthorized - Invalid username or password
+        '500':
+          description: Internal Server Error
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Logout from the application
+      description: >
+        Logs a user out of the application
+      responses:
+        '200':
+          description: User logged out successfully
+        '401':
+          description: Unauthorized - User is not logged in
+        '500':
+          description: Internal Server Error
+  /auth/set-password:
+    post:
+      tags:
+        - auth
+      summary: Set a new password
+      description: >
+        Sets a new password for the user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: The new password
+      responses:
+        '200':
+          description: New password set successfully
+        '401':
+          description: Unauthorized - User is not logged in
+        '500':
+          description: Internal Server Error
+  /members:
+    get:
+      tags:
+        - personal-info
+      summary: List all club members
+      description: Returns a list of all club members
+      responses:
+        '200':
+          description: A list of club members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+        '500':
+          description: Internal Server Error
+
+    post:
+      tags:
         - personal-info
       summary: Create a new club member
       description: >
@@ -27,7 +117,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateClubMember'
+              $ref: '#/components/schemas/CreateMember'
       responses:
         '201':
           description: New club member created successfully
@@ -35,12 +125,136 @@ paths:
           description: Unauthorized - User does not have permission to create a new member
         '500':
           description: Internal Server Error
+  /members/{memberId}:
+    get:
+      tags:
+        - personal-info
+      summary: Get member by ID
+      description: Returns a single club member
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema:
+          description: ID of the club member to get
+          type: integer
+      responses:
+        '200':
+          description: A single club member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '404':
+          description: Club member not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - personal-info
+      summary: Update member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMember'
+    delete:
+      tags:
+        - personal-info
+      summary: Delete member
+      description: Deletes a club member with the provided ID.
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          description: ID of the club member to delete
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Club member deleted successfully
+        '401':
+          description: Unauthorized - User does not have permission to delete a member
+        '404':
+          description: Club member not found
+        '500':
+          description: Internal Server Error
+  /members/{memberId}/delete-check:
+    get:
+      tags:
+        - personal-info
+      summary: Check if member can be deleted
+      description: >
+        Checks if a club member with the provided ID can be deleted.
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          description: ID of the club member to check
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Club member can be deleted
+        '401':
+          description: Unauthorized - User does not have permission to delete a member
+        '404':
+          description: Club member not found
+        '500':
+          description: Internal Server Error
+  /members/free-registration-id:
+    get:
+      tags:
+        - personal-info
+      summary: Get a free registration ID
+      description: >
+        Returns a free registration ID that can be used to register a new club member.
+      requestBody:
+        content:
+          application/json:
+            type: object
+            properties:
+              dateOfBirth:
+                type: string
+              gender:
+                type: string
+                enum: [male, female]
 
+      responses:
+        '200':
+          description: A free registration ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registrationId:
+                    type: integer
+                    description: A free registration ID
+        '500':
+          description: Internal Server Error
+  /cus:
+    get:
+      tags:
+        - personal-info
+      summary: List diff against ČUS database
+      responses:
+        '200':
+          description: A list of differences
+    post:
+      tags:
+        - personal-info
+      summary: Update ČUS database
 components:
   schemas:
     Contact:
       type: object
       properties:
+        isPublic:
+          type: boolean
+          description: Whether the contact information is public or not
+          default: false
         contactType:
           type: string
           enum: [direct_contact, guardian_contact]
@@ -55,6 +269,10 @@ components:
     Address:
       type: object
       properties:
+        isPublic:
+          type: boolean
+          description: Whether the address is public or not
+          default: false
         street:
           type: string
           description: Street name and number
@@ -67,17 +285,57 @@ components:
         country:
           type: string
           description: Country name
-      required:
-        - street
-        - city
-        - postalCode
-        - country
-      examples:
-        - street: 123 Main Street
-          city: City
-          postalCode: "12345"
-          country: Country
-    CreateClubMember:
+    IdDocument:
+      type: object
+      properties:
+        idCardNumber:
+          type: string
+          description: Personal identification number of the club member
+        expiryDate:
+          type: string
+          format: date
+          description: Expiry date of the ID card
+    Member:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the club member
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        dateOfBirth:
+          type: string
+          format: date
+          description: Date of birth of the club member
+        nationalIdNumber:
+          type: string
+        nationality:
+          type: string
+        idDocument:
+          $ref: '#/components/schemas/IdDocument'
+        address:
+          $ref: '#/components/schemas/Address'
+        contact:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+        siCard:
+          type: array
+          items:
+            type: number
+          description: Chip number assigned to the club member
+        gender:
+          type: string
+          enum: [male, female]
+        license:
+          type: string
+          enum: [E, R, A, B, C]
+          description: License number of the club member
+    CreateMember:
       type: object
       properties:
         firstName:
@@ -100,10 +358,12 @@ components:
           $ref: '#/components/schemas/Address'
         gender:
           type: string
-          enum: [male, female, other]
+          enum: [male, female]
           description: Gender of the club member
         contact:
-          $ref: '#/components/schemas/Contact'
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
         siCard:
           type: number
           description: Chip number assigned to the club member
@@ -116,21 +376,24 @@ components:
         - address
         - gender
         - contact
-      examples:
-        - firstName: John
-          lastName: Doe
-          dateOfBirth: "1990-01-01"
-          nationalIdNumber: "123456789"
-          nationality: US
-          address:
-            street: 123 Main Street
-            city: City
-            postalCode: "12345"
-            country: Country
-          gender: male
-          contact:
-            contactType: direct_contact
-            email: john@example.com
-            phone: "+1234567890"
-          siCard: 123
+    UpdateMember:
+      type: object
+      properties:
+        siCards:
+          type: array
+          items:
+            type: number
+          description: List of chip numbers assigned to the club member
+        address:
+          required: true
+          $ref: '#/components/schemas/Address'
+        contact:
+          type: array
+          required: true
+          items:
+            $ref: '#/components/schemas/Contact'
+        idDocument:
+          $ref: '#/components/schemas/IdDocument'
+
+
 
