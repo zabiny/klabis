@@ -12,8 +12,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          path: klabis-api-spec.yaml
+
+      - name: Remove unnecessary files
+        run: rm -rf !(klabis-api-spec.yaml)
+        shell: bash
 
       - name: redoc-cli test
         uses: seeebiii/redoc-cli-github-action@v10
