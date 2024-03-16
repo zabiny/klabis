@@ -27,10 +27,12 @@ jobs:
           ls -al
           test -f index.html || (echo "Missing index.html from previous step." && exit 1)
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          publish_branch: gh-pages
-          cname: api-docs.klabis.otakar.io
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 6d3b45135e45036d3f059ce628a4e3f2
+          projectName: klabis-api-docs
+          directory: .
+          # Optional: Enable this if you want to have GitHub Deployments triggered
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
