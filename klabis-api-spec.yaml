@@ -8,11 +8,13 @@ info:
   license:
     identifier: MIT
     name: MIT License
-  version: 0.1.8
+  version: 0.1.9
 servers:
   - url: https://api.klabis.otakar.io
 tags:
-  - name: personal-info
+  - name: members info
+  - name: members administration
+  - name: cus
   - name: auth
 paths:
   /auth/login:
@@ -91,7 +93,7 @@ paths:
   /members:
     get:
       tags:
-        - personal-info
+        - members info
       summary: List all club members
       description: Returns a list of all club members
       responses:
@@ -108,7 +110,7 @@ paths:
 
     post:
       tags:
-        - personal-info
+        - members administration
       summary: Create a new club member
       description: >
         Creates a new club member with the provided details.
@@ -128,7 +130,7 @@ paths:
   /members/{memberId}:
     get:
       tags:
-        - personal-info
+        - members info
       summary: Get member by ID
       description: Returns a single club member
       parameters:
@@ -151,7 +153,7 @@ paths:
           description: Internal Server Error
     put:
       tags:
-        - personal-info
+        - members info
       summary: Update member
       requestBody:
         required: true
@@ -161,7 +163,7 @@ paths:
               $ref: '#/components/schemas/UpdateMember'
     delete:
       tags:
-        - personal-info
+        - members administration
       summary: Delete member
       description: Deletes a club member with the provided ID.
       parameters:
@@ -183,7 +185,7 @@ paths:
   /members/{memberId}/delete-check:
     get:
       tags:
-        - personal-info
+        - members administration
       summary: Check if member can be deleted
       description: >
         Checks if a club member with the provided ID can be deleted.
@@ -206,7 +208,7 @@ paths:
   /members/free-registration-id:
     get:
       tags:
-        - personal-info
+        - members administration
       summary: Get a free registration ID
       description: >
         Returns a free registration ID that can be used to register a new club member.
@@ -237,14 +239,14 @@ paths:
   /cus:
     get:
       tags:
-        - personal-info
+        - cus
       summary: List diff against ČUS database
       responses:
         '200':
           description: A list of differences
     post:
       tags:
-        - personal-info
+        - cus
       summary: Update ČUS database
 components:
   schemas:
