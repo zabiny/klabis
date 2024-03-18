@@ -13,19 +13,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Remove unnecessary files
-        run: find . -type f ! -name 'klabis-api-spec.yaml' -exec rm -f {} +
-        shell: bash
-
-      - name: redoc-cli test
-        uses: seeebiii/redoc-cli-github-action@v10
+      - name: Generate Swagger UI
+        uses: Legion2/swagger-ui-action@v1
         with:
-          args: 'bundle klabis-api-spec.yaml -o index.html'
-
-      - name: check result
-        run: |
-          ls -al
-          test -f index.html || (echo "Missing index.html from previous step." && exit 1)
+          output: swagger-ui
+          spec-file: klabis-api-spec.yaml
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -33,6 +26,6 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: 6d3b45135e45036d3f059ce628a4e3f2
           projectName: klabis-api-docs
-          directory: .
+          directory: swagger-ui
           # Optional: Enable this if you want to have GitHub Deployments triggered
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
