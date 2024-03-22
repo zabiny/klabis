@@ -1,36 +1,29 @@
 ---
+import { Image } from 'astro:assets'
 import Layout from '../layouts/Layout.astro'
+import Banticles from '../components/Banticles.svelte'
 import { LoginForm } from '../components/LoginForm'
 ---
 
 <Layout title="Login">
-  <div class="h-screen flex flex-row items-center justify-center">
-    <div class="flex-1 lg:p-8">
-      <div
-        class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
-      >
-        <div class="flex flex-col space-y-2 text-center">
-          <h1 class="text-2xl font-semibold tracking-tight">Login</h1>
-          <p class="text-sm text-muted-foreground">
-            Use your credentials to access your account.
-          </p>
-        </div>
-        <LoginForm client:load />
+  <div class="w-full flex h-full items-center justify-center bg-muted">
+    <Banticles
+      client:load
+      particleSrc="/tree.png"
+      density={0.3}
+      lineColorRgb={{ r: 0, g: 8, b: 8 }}
+    />
+    <div class="p-12 rounded-md z-0 bg-background -mt-32">
+      <div class="text-center w-[350px]">
+        <h1 class="text-5xl font-bold mb-6">Klabis</h1>
       </div>
-    </div>
-    <div
-      class="flex-1 hidden h-full flex-col bg-muted p-10 text-white lg:flex bg-zinc-900 dark:border-r"
-    >
-      <div class="relative z-20 mt-auto">
-        <blockquote class="space-y-2">
-          <p class="text-lg">
-            &ldquo;This library has saved me countless hours of work and helped
-            me deliver stunning designs to my clients faster than ever
-            before.&rdquo;
-          </p>
-          <footer class="text-sm">Sofia Davis</footer>
-        </blockquote>
-      </div>
+      <LoginForm client:load />
+      {/*<div className="mt-4 text-center text-sm">*/}
+      {/*  Don&apos;t have an account?{' '}*/}
+      {/*  <a href="#" className="underline">*/}
+      {/*    Sign up*/}
+      {/*  </a>*/}
+      {/*</div>*/}
     </div>
   </div>
 </Layout>
