@@ -6,7 +6,7 @@ import { LoginForm } from '../components/LoginForm'
 ---
 
 <Layout title="Login">
-  <div class="w-full flex h-full items-center justify-center bg-muted">
+  <div class="w-full flex h-full items-center justify-center bg-muted overflow-hidden">
     <Banticles
       client:load
       particleSrc="/tree.png"
@@ -14,7 +14,7 @@ import { LoginForm } from '../components/LoginForm'
       lineColorRgb={{ r: 0, g: 8, b: 8 }}
     />
     <div class="p-12 rounded-md z-0 bg-background -mt-32">
-      <div class="text-center w-[350px]">
+      <div class="text-center w-[250px] sm:w-[350px]">
         <h1 class="text-5xl font-bold mb-6">Klabis</h1>
       </div>
       <LoginForm client:load />
