@@ -11,18 +11,14 @@ info:
 servers:
   - url: https://api.klabis.otakar.io
 tags:
-  - name: members info
-  - name: members administration
-  - name: cus
+  - name: users
   - name: auth
 paths:
-  /auth/login:
+  /login:
     post:
       tags:
         - auth
       summary: Login to the application
-      description: >
-        Logs a user into the application
       requestBody:
         required: true
         content:
@@ -32,7 +28,7 @@ paths:
               properties:
                 username:
                   type: string
-                  description: The username for login
+                  description: Registration number or email
                 password:
                   type: string
                   description: The password for login
@@ -46,32 +42,28 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: The JWT token
+                    description: OIDC obtained token
         '401':
           description: Unauthorized - Invalid username or password
-        '500':
-          description: Internal Server Error
-  /auth/logout:
+  /logout:
     post:
       tags:
         - auth
       summary: Logout from the application
-      description: >
-        Logs a user out of the application
       responses:
         '200':
           description: User logged out successfully
         '401':
           description: Unauthorized - User is not logged in
-        '500':
-          description: Internal Server Error
-  /auth/set-password:
-    post:
+  /password:
+    put:
       tags:
         - auth
       summary: Set a new password
       description: >
         Sets a new password for the user
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -86,30 +78,30 @@ paths:
         '200':
           description: New password set successfully
         '401':
-          description: Unauthorized - User is not logged in
+          description: Unauthorized
         '500':
           description: Internal Server Error
-  /members:
+  /users:
     get:
       tags:
-        - members info
-      summary: List all club members
-      description: Returns a list of all club members
+        - users
+      summary: List all club users
+      description: Returns a list of all club users
       responses:
         '200':
-          description: A list of club members
+          description: A list of club users
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Member'
-        '500':
-          description: Internal Server Error
+                  $ref: '#/components/schemas/User'
+        '401':
+            description: Unauthorized - not logged in
 
     post:
       tags:
-        - members administration
+        - users
       summary: Create a new club member
       description: >
         Creates a new club member with the provided details.
@@ -118,22 +110,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateMember'
+              $ref: '#/components/schemas/CreateUser'
       responses:
         '201':
           description: New club member created successfully
+        '400':
+          description: Bad request - Invalid data
         '401':
-          description: Unauthorized - User does not have permission to create a new member
-        '500':
-          description: Internal Server Error
-  /members/{memberId}:
+          description: Unauthorized - not logged in
+        '409':
+          description: Conflict - User with the same registration number already exists
+        '403':
+            description: Forbidden - User does not have permission to create a member
+  /users/{userId}:
     get:
       tags:
-        - members info
-      summary: Get member by ID
-      description: Returns a single club member
+        - users
+      summary: Get user by ID
+      description: Returns a user
       parameters:
-        - name: memberId
+        - name: userId
           in: path
           required: true
           description: ID of the club member to get
@@ -141,21 +137,19 @@ paths:
             type: integer
       responses:
         '200':
-          description: A single club member
+          description: A single user
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Member'
-        '404':
-          description: Club member not found
-        '500':
-          description: Internal Server Error
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized - not logged in
     put:
       tags:
-        - members info
+        - users
       summary: Update member
       parameters:
-        - name: memberId
+        - name: userId
           in: path
           required: true
           schema:
@@ -165,37 +159,43 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateMember'
+              $ref: '#/components/schemas/UpdateUser'
+      responses:
+        '200':
+          description: Club member updated successfully
+        '401':
+          description: Unauthorized - not logged in
+        '403':
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          description: Club member not found
     delete:
       tags:
-        - members administration
-      summary: Delete member
-      description: Deletes a club member with the provided ID.
+        - users
+      summary: Archive member
       parameters:
-        - name: memberId
+        - name: userId
           in: path
           required: true
           description: ID of the club member to delete
           schema:
             type: integer
       responses:
-        '204':
-          description: Club member deleted successfully
+        '200':
+          description: Club member archived successfully
         '401':
           description: Unauthorized - User does not have permission to delete a member
         '404':
           description: Club member not found
-        '500':
-          description: Internal Server Error
-  /members/{memberId}/delete-check:
+  /users/{userId}/delete-check:
     get:
       tags:
-        - members administration
-      summary: Check if member can be deleted
+        - users
+      summary: Check if user can be deleted
       description: >
-        Checks if a club member with the provided ID can be deleted.
+            returns reason why user can't be deleted
       parameters:
-        - name: memberId
+        - name: userId
           in: path
           required: true
           description: ID of the club member to check
@@ -204,16 +204,20 @@ paths:
       responses:
         '200':
           description: Club member can be deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteCheck'
         '401':
-          description: Unauthorized - User does not have permission to delete a member
+          description: Unauthorized - not logged in
+        '403':
+            description: Forbidden - User does not have permission to delete a member
         '404':
           description: Club member not found
-        '500':
-          description: Internal Server Error
-  /members/free-registration-id:
+  /users/registration-number:
     get:
       tags:
-        - members administration
+        - users
       summary: Get a free registration ID
       description: >
         Returns a free registration ID that can be used to register a new club member.
@@ -228,45 +232,50 @@ paths:
                 gender:
                   type: string
                   enum: [male, female]
-
       responses:
         '200':
           description: A free registration ID
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  registrationId:
-                    type: integer
-                    description: A free registration ID
-        '500':
-          description: Internal Server Error
-  /cus:
+                type: string
+                description: A free registration ID
+        '401':
+          description: Unauthorized - not logged in
+  /users/exports/cus:
     get:
       tags:
-        - cus
-      summary: List diff against ČUS database
+        - users
+      summary: export users in CUS format
       responses:
         '200':
           description: A list of differences
-    post:
+        '401':
+          description: Unauthorized - not logged in
+        '403':
+          description: Forbidden - User does not have permission to delete a member
+  /users/oris:
+    get:
       tags:
-        - cus
-      summary: Update ČUS database
+        - users
+      summary: get info about existing user from oris
+      description: used when preexisting user is added to the system
+      responses:
+        '200':
+          description: user info
+          # content:
+        '401':
+          description: Unauthorized - not logged in
+        '403':
+          description: Forbidden - User does not have permission for this
 components:
   schemas:
     Contact:
       type: object
       properties:
-        isPublic:
+        isPrimary:
           type: boolean
-          description: Whether the contact information is public or not
-          default: false
-        contactType:
-          type: string
-          enum: [direct_contact, guardian_contact]
-          description: Type of contact information
+          description: Whether the contact is primary or not
         email:
           type: string
           format: email
@@ -274,14 +283,13 @@ components:
         phone:
           type: string
           description: Phone number of the club member or guardian
+        note:
+          type: string
+          description: Note about the contact
     Address:
       type: object
       properties:
-        isPublic:
-          type: boolean
-          description: Whether the address is public or not
-          default: false
-        street:
+        streetAndNumber:
           type: string
           description: Street name and number
         city:
@@ -292,23 +300,26 @@ components:
           description: Postal or ZIP code
         country:
           type: string
-          description: Country name
-    IdDocument:
+          description: two letter country code, ISO 3166-1 alpha-2
+    IdentityCard:
       type: object
       properties:
-        idCardNumber:
+        number:
           type: string
           description: Personal identification number of the club member
         expiryDate:
           type: string
           format: date
-          description: Expiry date of the ID card
-    Member:
+          description: Expiry date of the ID card, YYYY-MM-DD
+    User:
       type: object
       properties:
         id:
           type: integer
           description: Unique identifier for the club member
+        registrationNumber:
+          type: string
+          description: Registration number of the club member
         firstName:
           type: string
           description: First name of the club member
@@ -319,89 +330,237 @@ components:
           type: string
           format: date
           description: Date of birth of the club member
-        nationalIdNumber:
+        birthCertificateNumber:
           type: string
+        identityCard:
+          $ref: '#/components/schemas/IdentityCard'
         nationality:
           type: string
-        idDocument:
-          $ref: '#/components/schemas/IdDocument'
+          description: two letter country code, ISO 3166-1 alpha-2
         address:
           $ref: '#/components/schemas/Address'
         contact:
-          type: array
+          type: object
           items:
             $ref: '#/components/schemas/Contact'
-        siCard:
+        guardians:
           type: array
           items:
-            type: number
-          description: Chip number assigned to the club member
-        gender:
-          type: string
-          enum: [male, female]
-        license:
-          type: string
-          enum: [E, R, A, B, C]
-          description: License number of the club member
-    CreateMember:
-      type: object
-      properties:
-        firstName:
-          type: string
-          description: First name of the club member
-        lastName:
-          type: string
-          description: Last name of the club member
-        dateOfBirth:
-          type: string
-          format: date
-          description: Date of birth of the club member
-        nationalIdNumber:
-          type: string
-          description: Personal identification number of the club member
-        nationality:
-          type: string
-          description: Nationality of the club member
-        address:
-          $ref: '#/components/schemas/Address'
-        gender:
-          type: string
-          enum: [male, female]
-          description: Gender of the club member
-        contact:
-          type: array
-          items:
-            $ref: '#/components/schemas/Contact'
-        siCard:
-          type: number
-          description: Chip number assigned to the club member
-      required:
-        - firstName
-        - lastName
-        - dateOfBirth
-        - nationalIdNumber
-        - nationality
-        - address
-        - gender
-        - contact
-    UpdateMember:
-      type: object
-      properties:
+            $ref: '#/components/schemas/Guardian'
         siCards:
           type: array
           items:
-            type: number
-          description: List of chip numbers assigned to the club member
+            type: object
+            properties:
+              number:
+                type: number
+                description: Chip number assigned to the club member
+              isPrimary:
+                type: boolean
+                description: Whether the contact is primary or not
+        gender:
+          type: string
+          enum: [male, female]
+        licences:
+          type: object
+          items:
+            $ref: '#/components/schemas/Licences'
+        bankAccount:
+          type: string
+          description: Bank account number of the club member IBAN
+        dietaryRestrictions:
+          type: string
+          description: Dietary restrictions of the club member
+        drivingLicence:
+          type: string
+          enum: [B, BE, C, D, None]
+        medicCourse:
+          type: boolean
+          description: Whether the club member has completed the medic course
+    CreateUser:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        registrationNumber:
+          type: string
+          description: Registration number of the club member
+        gender:
+          type: string
+          enum: [ male, female ]
+        dateOfBirth:
+          type: string
+          format: date
+          description: Date of birth of the club member
+        birthCertificateNumber:
+          type: string
+        nationality:
+          type: string
+          description: two letter country code, ISO 3166-1 alpha-2
         address:
-          required: true
           $ref: '#/components/schemas/Address'
         contact:
-          type: array
-          required: true
+          type: object
           items:
             $ref: '#/components/schemas/Contact'
-        idDocument:
-          $ref: '#/components/schemas/IdDocument'
+        guardians:
+          type: array
+          items:
+            $ref: '#/components/schemas/Guardian'
+        siCard:
+          properties:
+            number:
+              type: number
+              description: Chip number assigned to the club member
+        dietaryRestrictions:
+          type: string
+          description: Dietary restrictions of the club member
+    UpdateUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the club member
+        registrationNumber:
+          type: string
+          description: Registration number of the club member
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        dateOfBirth:
+          type: string
+          format: date
+          description: Date of birth of the club member
+        birthCertificateNumber:
+          type: string
+        identityCard:
+          $ref: '#/components/schemas/IdentityCard'
+        nationality:
+          type: string
+          description: two letter country code, ISO 3166-1 alpha-2
+        address:
+          $ref: '#/components/schemas/Address'
+        contact:
+          type: object
+          items:
+            $ref: '#/components/schemas/Contact'
+        guardians:
+          type: array
+          items:
+            $ref: '#/components/schemas/Guardian'
+        siCards:
+          type: array
+          items:
+            type: object
+            properties:
+              number:
+                type: number
+                description: Chip number assigned to the club member
+              isPrimary:
+                type: boolean
+                description: Whether the contact is primary or not
+        gender:
+          type: string
+          enum: [ male, female ]
+        bankAccount:
+          type: string
+          description: Bank account number of the club member IBAN
+        dietaryRestrictions:
+          type: string
+          description: Dietary restrictions of the club member
+        drivingLicence:
+          type: string
+          enum: [B, BE, C, D, None]
+        medicCourse:
+          type: boolean
+          description: Whether the club member has completed the medic course
+    Guardian:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: First name of the guardian
+        lastName:
+          type: string
+          description: Last name of the guardian
+        contact:
+          type: object
+          items:
+            $ref: '#/components/schemas/Contact'
+        note:
+          type: string
+          description: Note about the guardian (matka, otec)
+    Licences:
+      type: object
+      properties:
+        ob:
+          type: object
+          properties:
+            licence:
+              type: string
+              enum: [ E, R, A, B, C, None ]
+              description: License number of the club member
+            history:
+              type: array
+              items:
+                type: object
+                properties:
+                  licence:
+                    type: string
+                    enum: [ E, R, A, B, C ]
+                    description: License number of the club member
+                  year:
+                    type: string
+                    format: date
+                    description: Date of the license, YYYY-MM-DD
+        referee:
+          type: object
+          properties:
+            licence:
+              type: string
+              enum: [ R1, R2, R3, None ]
+              description: referee license number of the club member
+            expiryDate:
+              type: string
+              format: date
+              description: Expiry date of the license, YYYY-MM-DD
+        trainer:
+          type: object
+          properties:
+            licence:
+              type: string
+              enum: [ T1, T2, T3, None ]
+              description: trainer license number of the club member
+            expiryDate:
+              type: string
+              format: date
+              description: Expiry date of the license, YYYY-MM-DD
+    DeleteCheck:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the club member can be deleted or not
+        errors:
+          type: array
+          items:
+            type: string
+          description: Reasons why the club member can't be deleted
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: From email magic link
+    OpenID:
+      type: openIdConnect
+      openIdConnectUrl: https://openid.example.com/.well-known/openid-configuration
 
 
 
