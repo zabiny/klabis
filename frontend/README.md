@@ -6,7 +6,16 @@
 
 deployed to cloudflare pages - [klabis.otakar.io](https://klabis.otakar.io)
 
-
+### How to start
+1. clone the repo
+2. fill in the `.env` file with the following variables:
+```
+AUTH_SECRET= // 32 characters long random string, hint: openssl rand -base64 32
+GITHUB_CLIENT_ID= // get it from github oauth
+GITHUB_CLIENT_SECRET=
+```
+3. run `npm install`
+4. run `npm run dev`
 
 ### 🚀 Astro Project Structure
 
