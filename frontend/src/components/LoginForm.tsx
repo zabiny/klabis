@@ -13,6 +13,7 @@ interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function LoginForm({ className, ...props }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
+  const [isLoadingGithub, setIsLoadingGithub] = React.useState<boolean>(false)
 
   async function onSubmit(event: React.SyntheticEvent) {
     event.preventDefault()
@@ -68,10 +69,13 @@ export function LoginForm({ className, ...props }: UserAuthFormProps) {
           type="button"
           variant="outline"
           className="w-full"
-          disabled={isLoading}
-          onClick={() => signIn('github')}
+          disabled={isLoadingGithub}
+          onClick={() => {
+            signIn('github');
+            setIsLoadingGithub(true);
+          }}
         >
-          {isLoading ? (
+          {isLoadingGithub ? (
             <CgSpinner className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <VscGithubInverted className="mr-2 h-4 w-4" />
