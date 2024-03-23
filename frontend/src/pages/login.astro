@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import Layout from '../layouts/Layout.astro'
 import Banticles from '../components/Banticles.svelte'
 import { LoginForm } from '../components/LoginForm'
@@ -13,17 +14,19 @@ import { LoginForm } from '../components/LoginForm'
       density={0.3}
       lineColorRgb={{ r: 0, g: 8, b: 8 }}
     />
-    <div class="p-12 rounded-md z-0 bg-background -mt-32">
-      <div class="text-center w-[250px] sm:w-[350px]">
-        <h1 class="text-5xl font-bold mb-6">Klabis</h1>
-      </div>
-      <LoginForm client:load />
-      {/*<div className="mt-4 text-center text-sm">*/}
-      {/*  Don&apos;t have an account?{' '}*/}
-      {/*  <a href="#" className="underline">*/}
-      {/*    Sign up*/}
-      {/*  </a>*/}
-      {/*</div>*/}
-    </div>
+    <Card className="mx-auto w-[300px] sm:w-[400px] z-0 -mt-32 p-4">
+      <CardHeader>
+        <CardTitle className="text-5xl text-center">Klabis</CardTitle>
+      </CardHeader>
+      <CardContent >
+        <LoginForm client:load />
+        {/*<div className="mt-4 text-center text-sm">*/}
+        {/*  Don&apos;t have an account?{' '}*/}
+        {/*  <a href="#" className="underline">*/}
+        {/*    Sign up*/}
+        {/*  </a>*/}
+        {/*</div>*/}
+      </CardContent>
+    </Card>
   </div>
 </Layout>
