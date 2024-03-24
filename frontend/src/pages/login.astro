@@ -1,13 +1,14 @@
 ---
-import { Image } from 'astro:assets'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import Layout from '../layouts/Layout.astro'
 import Banticles from '../components/Banticles.svelte'
-import { LoginForm } from '../components/LoginForm'
+import { LoginForm } from '../components/LoginForm.tsx'
 ---
 
 <Layout title="Login">
-  <div class="w-full flex h-full items-center justify-center bg-muted overflow-hidden">
+  <div
+    class="w-full flex h-full items-center justify-center bg-muted overflow-hidden"
+  >
     <Banticles
       client:load
       particleSrc="/tree.png"
@@ -18,7 +19,7 @@ import { LoginForm } from '../components/LoginForm'
       <CardHeader>
         <CardTitle className="text-5xl text-center">Klabis</CardTitle>
       </CardHeader>
-      <CardContent >
+      <CardContent>
         <LoginForm client:load />
         {/*<div className="mt-4 text-center text-sm">*/}
         {/*  Don&apos;t have an account?{' '}*/}

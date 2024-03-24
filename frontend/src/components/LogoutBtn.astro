@@ -1,7 +1,0 @@
-<button id="logout">Logout</button>
-
-<script>
-  const { signOut } = await import('auth-astro/client')
-  const btn = document.querySelector('#logout') as HTMLButtonElement
-  btn.onclick = () => signOut()
-</script>

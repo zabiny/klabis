@@ -1,14 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro'
-import { getSession } from 'auth-astro/server'
-import LogoutBtn from '../components/LogoutBtn.astro'
-
-let session = await getSession(Astro.request)
+import Main from '../layouts/Main.astro'
 ---
 
-<Layout title="Welcome to Astro.">
-  <main>
-    <h1 class="text-3xl font-bold underline">Hello {session?.user?.name}</h1>
-    <LogoutBtn />
-  </main>
-</Layout>
+<Layout title="Home"><Main /></Layout>

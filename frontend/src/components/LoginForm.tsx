@@ -7,11 +7,9 @@ import { Input } from '@/components/ui/input.tsx'
 import { Button } from '@/components/ui/button.tsx'
 import { CgSpinner } from 'react-icons/cg'
 import { VscGithubInverted } from 'react-icons/vsc'
-import { signIn, signOut } from 'auth-astro/client'
+import { signIn } from 'auth-astro/client'
 
-interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-export function LoginForm({ className, ...props }: UserAuthFormProps) {
+export function LoginForm() {
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const [isLoadingGithub, setIsLoadingGithub] = React.useState<boolean>(false)
 
@@ -71,8 +69,8 @@ export function LoginForm({ className, ...props }: UserAuthFormProps) {
           className="w-full"
           disabled={isLoadingGithub}
           onClick={() => {
-            signIn('github');
-            setIsLoadingGithub(true);
+            signIn('github')
+            setIsLoadingGithub(true)
           }}
         >
           {isLoadingGithub ? (
