@@ -253,7 +253,6 @@
 
 	const setParticleCount = () => {
 		(particleCount = Math.ceil((containerArea / particleArea) * density));
-		console.log(particleCount)
 	}
 
 </script>

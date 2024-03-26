@@ -9,7 +9,11 @@ import {
 import { CircleUser } from 'lucide-react'
 import { Button } from '@/components/ui/button.tsx'
 import { signOut } from 'auth-astro/client'
-export const UserMenu = () => {
+
+interface UserMenuProps {
+  name: string
+}
+export const UserMenu = ({ name }: UserMenuProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -19,12 +23,13 @@ export const UserMenu = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuLabel>{name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Settings</DropdownMenuItem>
-        <DropdownMenuItem>Support</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a href="/settings/profile">Nastavení</a>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()}>Logout</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => signOut()}>Odhlásit</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

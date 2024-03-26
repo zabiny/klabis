@@ -1,4 +1,4 @@
-import { defineConfig } from 'astro/config'
+import { defineConfig, passthroughImageService } from 'astro/config'
 import react from '@astrojs/react'
 import tailwind from '@astrojs/tailwind'
 import auth from 'auth-astro'
@@ -17,4 +17,7 @@ export default defineConfig({
     auth(),
     svelte(),
   ],
+  image: {
+    service: passthroughImageService(),
+  },
 })

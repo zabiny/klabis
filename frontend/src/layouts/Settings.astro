@@ -2,36 +2,52 @@
 import { Separator } from '@/components/ui/separator'
 import { cn } from '../lib/utils'
 import { buttonVariants } from '@/components/ui/button'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 
 const sidebarNavItems = [
   {
-    title: 'Profile',
+    title: 'Profil',
     href: '/settings/profile',
   },
   {
-    title: 'Account',
+    title: 'Adresa',
     href: '/#',
   },
   {
-    title: 'Appearance',
+    title: 'Kontakt',
     href: '/#',
   },
   {
-    title: 'Notifications',
+    title: 'Přílašení',
     href: '/#',
   },
   {
-    title: 'Display',
+    title: 'Volitelné',
     href: '/#',
   },
 ]
 
 const { pathname } = Astro.url
+const { userName } = Astro.props
 ---
 
-<div class="hidden space-y-6 p-10 pb-16 md:block">
+<div class="mx-10 hidden space-y-6 pb-16 md:block">
+  <Breadcrumb>
+    <BreadcrumbList>
+      <BreadcrumbItem> Nastavení </BreadcrumbItem>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem> {userName} </BreadcrumbItem>
+    </BreadcrumbList>
+  </Breadcrumb>
   <div class="space-y-0.5">
-    <h2 class="text-2xl font-bold tracking-tight">Settings</h2>
+    <h2 class="text-2xl font-bold tracking-tight">Nastavení</h2>
     <p class="text-muted-foreground">
       Manage your account settings and set e-mail preferences.
     </p>

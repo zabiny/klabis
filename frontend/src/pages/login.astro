@@ -7,7 +7,7 @@ import { LoginForm } from '../components/LoginForm.tsx'
 
 <Layout title="Login">
   <div
-    class="w-full flex h-full items-center justify-center bg-muted overflow-hidden"
+    class="flex h-full w-full items-center justify-center overflow-hidden bg-muted"
   >
     <Banticles
       client:load
@@ -15,9 +15,9 @@ import { LoginForm } from '../components/LoginForm.tsx'
       density={0.3}
       lineColorRgb={{ r: 0, g: 8, b: 8 }}
     />
-    <Card className="mx-auto w-[300px] sm:w-[400px] z-0 -mt-32 p-4">
+    <Card className="z-0 mx-auto -mt-32 w-[300px] p-4 sm:w-[400px]">
       <CardHeader>
-        <CardTitle className="text-5xl text-center">Klabis</CardTitle>
+        <CardTitle className="text-center text-5xl">Klabis</CardTitle>
       </CardHeader>
       <CardContent>
         <LoginForm client:load />

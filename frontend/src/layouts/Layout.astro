@@ -7,6 +7,7 @@ interface Props {
 
 const { title } = Astro.props
 import GlobalStyles from '@/components/GlobalStyles.astro'
+import { Toaster } from '@/components/ui/toaster'
 ---
 
 <!doctype html>
@@ -23,5 +24,6 @@ import GlobalStyles from '@/components/GlobalStyles.astro'
   </head>
   <body>
     <slot />
+    <Toaster />
   </body>
 </html>

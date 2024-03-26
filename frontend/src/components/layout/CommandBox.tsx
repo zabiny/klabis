@@ -26,7 +26,7 @@ export function CommandBox() {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Command className="w-auto md:w-[400px] border">
+      <Command className="w-auto border md:w-[400px]">
         <PopoverTrigger asChild>
           <CommandInput
             onBlur={() => {
@@ -41,7 +41,7 @@ export function CommandBox() {
         </PopoverTrigger>
         <PopoverContent
           forceMount={true}
-          className="md:w-[365px] p-0"
+          className="p-0 md:w-[365px]"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
           align="start"

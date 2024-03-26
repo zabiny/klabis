@@ -1,6 +1,7 @@
 ---
 import { Home, Trophy, HandCoins, Settings, Users } from 'lucide-react'
 
+import { getSession } from 'auth-astro/server'
 import { CommandBox } from '@/components/layout/CommandBox.tsx'
 import { Badge } from '@/components/ui/badge.tsx'
 import { Button } from '@/components/ui/button.tsx'
@@ -28,7 +29,7 @@ const navItems = [
   },
   {
     title: 'Členové',
-    href: '/#',
+    href: '/members',
     icon: Users,
   },
   {
@@ -38,6 +39,9 @@ const navItems = [
   },
 ]
 const { pathname } = Astro.url
+
+const session = await getSession(Astro.request)
+const userName = session?.user?.name!
 ---
 
 <div
@@ -91,7 +95,7 @@ const { pathname } = Astro.url
         <nav class="grid gap-2 text-lg font-medium">
           <a
             href="#"
-            class="flex items-center gap-2 text-lg font-semibold mb-4"
+            class="mb-4 flex items-center gap-2 text-lg font-semibold"
           >
             <SquareLibrary className="h-6 w-6" />
             <span>Klabis</span>
@@ -124,7 +128,7 @@ const { pathname } = Astro.url
       <div class="w-full flex-1">
         <CommandBox client:load />
       </div>
-      <UserMenu client:load />
+      <UserMenu name={userName} client:load />
     </header>
     <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <!--<div class="flex items-center">-->
