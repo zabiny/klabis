@@ -11,6 +11,7 @@ import isIBAN from 'validator/lib/isIBAN'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Command,
   CommandEmpty,
@@ -46,18 +47,9 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select.tsx'
-
-const languages = [
-  { label: 'English', value: 'en' },
-  { label: 'French', value: 'fr' },
-  { label: 'German', value: 'de' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'Portuguese', value: 'pt' },
-  { label: 'Russian', value: 'ru' },
-  { label: 'Japanese', value: 'ja' },
-  { label: 'Korean', value: 'ko' },
-  { label: 'Chinese', value: 'zh' },
-] as const
+import { DefaultContext } from 'react-icons'
+import { Checkbox } from '@/components/ui/checkbox.tsx'
+import { Switch } from '@/components/ui/switch.tsx'
 
 const userFormSchema = z.object({
   registrationNumber: z.string().regex(/[A-Z]{3}[0-9]{4}/, {
@@ -109,8 +101,8 @@ const userFormSchema = z.object({
     message: 'účet není ve formátu IBAN',
   }),
   dietaryRestrictions: z.string().optional(),
-  drivingLicence: z.enum(['B', 'BE', 'C', 'D']).optional(),
-  medicCourse: z.boolean(),
+  drivingLicence: z.enum(['B', 'BE', 'C', 'D', '']).optional(),
+  medicCourse: z.boolean().optional(),
 })
 
 type userFormValues = z.infer<typeof userFormSchema>
@@ -437,6 +429,91 @@ export function UserForm({ defaultValues }: userFormProps) {
             />
           </CardContent>
         </Card>
+        <FormField
+          control={form.control}
+          name="bankAccount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Bankovní účet IBAN</FormLabel>
+              <FormControl>
+                <Input placeholder="CZ1234567890" {...field} />
+              </FormControl>
+              <FormDescription>
+                např. pro problácení účtů, cesťáků od oddílu
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="dietaryRestrictions"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Diety</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Bezlepková, vegetariánská, vegan..."
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+              <FormDescription>např. pro stravování na akcích</FormDescription>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="drivingLicence"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Řidičský průkaz</FormLabel>
+              <FormControl>
+                <Select
+                  defaultValue={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Vyberte řidičský průkaz" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={null as unknown as string}>
+                      Žádný
+                    </SelectItem>
+                    <SelectItem value="B">Auto</SelectItem>
+                    <SelectItem value="BE">Auto + přívěs</SelectItem>
+                    <SelectItem value="C">Kamion</SelectItem>
+                    <SelectItem value="D">Autobus</SelectItem>
+                    <SelectItem value="T">Taktór</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="medicCourse"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Mám zravotnický kurz</FormLabel>
+                <FormDescription>
+                  Pro potřeby akcí, kde je vyžadována zdravotní příprava
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
         {/*<FormField*/}
         {/*  control={form.control}*/}
