@@ -13,57 +13,17 @@ servers:
 tags:
   - name: users
   - name: auth
+security:
+  - klabisAuth:
+      - openid
 paths:
-  /login:
-    post:
-      tags:
-        - auth
-      summary: Login to the application
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                  description: Registration number or email
-                password:
-                  type: string
-                  description: The password for login
-      responses:
-        '200':
-          description: User logged in successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    description: OIDC obtained token
-        '401':
-          description: Unauthorized - Invalid username or password
-  /logout:
-    post:
-      tags:
-        - auth
-      summary: Logout from the application
-      responses:
-        '200':
-          description: User logged out successfully
-        '401':
-          description: Unauthorized - User is not logged in
   /password:
     put:
       tags:
         - auth
-      summary: Set a new password
+      summary: "[WIP] - Set a new password"
       description: >
         Sets a new password for the user
-      security:
-        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -87,6 +47,19 @@ paths:
         - users
       summary: List all club users
       description: Returns a list of all club users
+      parameters:
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum:
+              - complete
+              - compact
+            default: compact
+            description: |-
+              Defines set of returned data
+              - complete: all user data what are displayable to authenticated user are returned
+              - compact: `firstName`, `lastName`, 'registrationNumber`
       responses:
         '200':
           description: A list of club users
@@ -110,7 +83,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUser'
+              $ref: '#/components/schemas/CreateUserForm'
       responses:
         '201':
           description: New club member created successfully
@@ -127,6 +100,7 @@ paths:
       tags:
         - users
       summary: Get user by ID
+      operationId: getUserById
       description: Returns a user
       parameters:
         - name: userId
@@ -159,7 +133,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateUser'
+              $ref: '#/components/schemas/UpdateUserForm'
       responses:
         '200':
           description: Club member updated successfully
@@ -169,7 +143,8 @@ paths:
           description: Forbidden - User does not have permission to update a member
         '404':
           description: Club member not found
-    delete:
+  /users/{userId}/archive:
+    put:
       tags:
         - users
       summary: Archive member
@@ -177,21 +152,21 @@ paths:
         - name: userId
           in: path
           required: true
-          description: ID of the club member to delete
+          description: ID of the club member to archive
           schema:
             type: integer
       responses:
         '200':
           description: Club member archived successfully
-        '401':
-          description: Unauthorized - User does not have permission to delete a member
+        '403':
+          description: Unauthorized - User does not have permission to archive a member
         '404':
           description: Club member not found
   /users/{userId}/delete-check:
     get:
       tags:
         - users
-      summary: Check if user can be deleted
+      summary: "[WIP] - Check if user can be deleted"
       description: >
             returns reason why user can't be deleted
       parameters:
@@ -218,7 +193,7 @@ paths:
     get:
       tags:
         - users
-      summary: Get a free registration ID
+      summary: "[WIP] - Get a free registration ID"
       description: >
         Returns a free registration ID that can be used to register a new club member.
       requestBody:
@@ -246,7 +221,7 @@ paths:
     get:
       tags:
         - users
-      summary: export users in CUS format
+      summary: "[WIP] - export users in CUS format"
       responses:
         '200':
           description: A list of differences
@@ -258,24 +233,29 @@ paths:
     get:
       tags:
         - users
-      summary: get info about existing user from oris
+      summary: "[WIP] - get info about existing user from oris"
       description: used when preexisting user is added to the system
       responses:
         '200':
           description: user info
-          # content:
         '401':
           description: Unauthorized - not logged in
         '403':
           description: Forbidden - User does not have permission for this
 components:
   schemas:
+    SocialSecurityNumber:
+      type: string
+      pattern: ^[0..9]{6}/[0..9]{4}$
+      description: Social security number ("birthday certificate number")
+    RegistrationNumber:
+      type: string
+      pattern: ^[A..Z]{3}[0..9]{4}$
+      description: ORIS registration number
     Contact:
       type: object
+      description: At least one of email or phone value is required
       properties:
-        isPrimary:
-          type: boolean
-          description: Whether the contact is primary or not
         email:
           type: string
           format: email
@@ -317,9 +297,15 @@ components:
         id:
           type: integer
           description: Unique identifier for the club member
+          readOnly: true
         registrationNumber:
-          type: string
-          description: Registration number of the club member
+          $ref: '#/components/schemas/RegistrationNumber'
+        socialSecurityNumber:
+          $ref: '#/components/schemas/SocialSecurityNumber'
+        identityCard:
+          $ref: '#/components/schemas/IdentityCard'
+        address:
+          $ref: '#/components/schemas/Address'
         firstName:
           type: string
           description: First name of the club member
@@ -330,35 +316,21 @@ components:
           type: string
           format: date
           description: Date of birth of the club member
-        birthCertificateNumber:
-          type: string
-        identityCard:
-          $ref: '#/components/schemas/IdentityCard'
-        nationality:
-          type: string
-          description: two letter country code, ISO 3166-1 alpha-2
-        address:
-          $ref: '#/components/schemas/Address'
         contact:
           type: object
           items:
             $ref: '#/components/schemas/Contact'
-        guardians:
+        legalGuardians:
           type: array
           items:
-            $ref: '#/components/schemas/Guardian'
-        siCards:
-          type: array
-          items:
-            type: object
-            properties:
-              number:
-                type: number
-                description: Chip number assigned to the club member
-              isPrimary:
-                type: boolean
-                description: Whether the contact is primary or not
-        gender:
+            $ref: '#/components/schemas/LegalGuardian'
+        siCard:
+          type: number
+          description: Chip number assigned to the club member
+        nationality:
+          type: string
+          description: two letter country code, ISO 3166-1 alpha-2
+        sex:
           type: string
           enum: [male, female]
         licences:
@@ -366,19 +338,36 @@ components:
           items:
             $ref: '#/components/schemas/Licences'
         bankAccount:
-          type: string
-          description: Bank account number of the club member IBAN
+          $ref: '#/components/schemas/BankAccount'
         dietaryRestrictions:
           type: string
           description: Dietary restrictions of the club member
         drivingLicence:
-          type: string
-          enum: [B, BE, C, D, None]
+          type: array
+          items:
+            $ref: '#/components/schemas/DrivingLicence'
         medicCourse:
           type: boolean
           description: Whether the club member has completed the medic course
-    CreateUser:
+    DrivingLicence:
+      type: string
+      enum: [ B, BE, C, D, None ]
+    BankAccount:
+      type: string
+      description: Bank account number of the club member IBAN
+    CreateUserForm:
       type: object
+      description: |-
+        Additional validations: 
+        - either contact or guardian needs to be set
+        - when nationality is different than `CZ`, socialSecurityNumber value will be ignored
+      required:
+        - firstName
+        - lastName
+        - gender
+        - dateOfBirth
+        - nationality
+        - address
       properties:
         firstName:
           type: string
@@ -387,8 +376,7 @@ components:
           type: string
           description: Last name of the club member
         registrationNumber:
-          type: string
-          description: Registration number of the club member
+          $ref: '#/components/schemas/RegistrationNumber'
         gender:
           type: string
           enum: [ male, female ]
@@ -396,21 +384,19 @@ components:
           type: string
           format: date
           description: Date of birth of the club member
-        birthCertificateNumber:
-          type: string
+        socialSecurityNumber:
+          $ref: '#/components/schemas/SocialSecurityNumber'
         nationality:
           type: string
           description: two letter country code, ISO 3166-1 alpha-2
         address:
           $ref: '#/components/schemas/Address'
         contact:
-          type: object
-          items:
-            $ref: '#/components/schemas/Contact'
+          $ref: '#/components/schemas/Contact'
         guardians:
           type: array
           items:
-            $ref: '#/components/schemas/Guardian'
+            $ref: '#/components/schemas/LegalGuardian'
         siCard:
           properties:
             number:
@@ -419,44 +405,56 @@ components:
         dietaryRestrictions:
           type: string
           description: Dietary restrictions of the club member
-    UpdateUser:
+    UpdateUserForm:
       type: object
       properties:
-        id:
-          type: integer
-          description: Unique identifier for the club member
-        registrationNumber:
-          type: string
-          description: Registration number of the club member
         firstName:
           type: string
-          description: First name of the club member
+          description: |-
+            [Admin] First name of the club member"
         lastName:
           type: string
-          description: Last name of the club member
+          description: |-
+            [Admin] Last name of the club member
         dateOfBirth:
           type: string
           format: date
-          description: Date of birth of the club member
-        birthCertificateNumber:
+          description: |-
+            [Admin] Date of birth of the club member
+        socialSecurityNumber:
           type: string
+          description: |-
+            [Admin]
         identityCard:
-          $ref: '#/components/schemas/IdentityCard'
+          allOf:
+            - $ref: '#/components/schemas/IdentityCard'
+            - description: |-
+                [User]
         nationality:
           type: string
-          description: two letter country code, ISO 3166-1 alpha-2
+          description: |-
+            [Admin] two letter country code, ISO 3166-1 alpha-2
         address:
-          $ref: '#/components/schemas/Address'
+          allOf:
+            - $ref: '#/components/schemas/Address'
+            - description: |-
+                [User]
         contact:
           type: object
+          description: |-
+            [User]
           items:
             $ref: '#/components/schemas/Contact'
         guardians:
           type: array
+          description: |-
+            [User]
           items:
-            $ref: '#/components/schemas/Guardian'
+            $ref: '#/components/schemas/LegalGuardian'
         siCards:
           type: array
+          description: |-
+            [User]
           items:
             type: object
             properties:
@@ -468,21 +466,32 @@ components:
                 description: Whether the contact is primary or not
         gender:
           type: string
+          description: |-
+            [Admin]
           enum: [ male, female ]
         bankAccount:
           type: string
-          description: Bank account number of the club member IBAN
+          description: |-
+            [User] Bank account number of the club member IBAN
         dietaryRestrictions:
           type: string
-          description: Dietary restrictions of the club member
+          description: |-
+            [User] Dietary restrictions of the club member
         drivingLicence:
           type: string
+          description: |-
+            [User]
           enum: [B, BE, C, D, None]
         medicCourse:
           type: boolean
-          description: Whether the club member has completed the medic course
-    Guardian:
+          description: |-
+            [User] Whether the club member has completed the medic course
+    LegalGuardian:
       type: object
+      required:
+        - firstName
+        - lastName
+        - contact
       properties:
         firstName:
           type: string
@@ -491,12 +500,22 @@ components:
           type: string
           description: Last name of the guardian
         contact:
-          type: object
-          items:
-            $ref: '#/components/schemas/Contact'
+          $ref: '#/components/schemas/Contact'
         note:
           type: string
           description: Note about the guardian (matka, otec)
+    OBLicence:
+      type: string
+      enum: [ E, R, A, B, C ]
+      description: License number of the club member
+    RefereeLicence:
+      type: string
+      enum: [ R1, R2, R3 ]
+      description: referee license number of the club member
+    TrainerLicence:
+      type: string
+      enum: [ T1, T2, T3 ]
+      description: trainer license number of the club member
     Licences:
       type: object
       properties:
@@ -504,29 +523,12 @@ components:
           type: object
           properties:
             licence:
-              type: string
-              enum: [ E, R, A, B, C, None ]
-              description: License number of the club member
-            history:
-              type: array
-              items:
-                type: object
-                properties:
-                  licence:
-                    type: string
-                    enum: [ E, R, A, B, C ]
-                    description: License number of the club member
-                  year:
-                    type: string
-                    format: date
-                    description: Date of the license, YYYY-MM-DD
+              $ref: '#/components/schemas/OBLicence'
         referee:
           type: object
           properties:
             licence:
-              type: string
-              enum: [ R1, R2, R3, None ]
-              description: referee license number of the club member
+              $ref: '#/components/schemas/OBLicence'
             expiryDate:
               type: string
               format: date
@@ -535,9 +537,7 @@ components:
           type: object
           properties:
             licence:
-              type: string
-              enum: [ T1, T2, T3, None ]
-              description: trainer license number of the club member
+              $ref: '#/components/schemas/OBLicence'
             expiryDate:
               type: string
               format: date
@@ -554,13 +554,6 @@ components:
             type: string
           description: Reasons why the club member can't be deleted
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      description: From email magic link
-    OpenID:
+    klabis:
       type: openIdConnect
-      openIdConnectUrl: https://openid.example.com/.well-known/openid-configuration
-
-
-
+      openIdConnectUrl: https://klabis-auth.polach.cloud/.well-known/openid-configuration
