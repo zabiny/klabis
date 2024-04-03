@@ -57,16 +57,28 @@ paths:
       parameters:
         - name: view
           in: query
+          required: false
+          description: |
+            Defines set of returned data
+            - full: all member data what are displayable to logged in user are returned
+            - compact: `id`, `firstName`, `lastName`, 'registrationNumber`
           schema:
             type: string
             enum:
               - full
               - compact
             default: compact
-            description: |-
-              Defines set of returned data
-              - full: all user data what are displayable to authenticated user are returned
-              - compact: `id`, `firstName`, `lastName`, 'registrationNumber`
+        - name: archived
+          in: query
+          required: false
+          description: |
+            | value | effect |
+            | --- | --- |
+            | `true` | returns both active and archived members | 
+            | `false` | return only active members |
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: A list of club users
