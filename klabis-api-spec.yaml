@@ -256,10 +256,10 @@ components:
       type: string
       pattern: ^[A-Z]{2}$
       description: two letter country code, ISO 3166-1 alpha-2
-    SocialSecurityNumber:
+    BirthCertificateNumber:
       type: string
       pattern: ^[0-9]{6}/[0-9]{3,4}$
-      description: Social security number ("birthday certificate number")
+      description: Birth certificate number for Czech citizens
     RegistrationNumber:
       type: string
       pattern: ^[A-Z]{3}[0-9]{4}$
@@ -317,8 +317,8 @@ components:
           readOnly: true
         registrationNumber:
           $ref: '#/components/schemas/RegistrationNumber'
-        socialSecurityNumber:
-          $ref: '#/components/schemas/SocialSecurityNumber'
+        birthCertificateNumber:
+          $ref: '#/components/schemas/BirthCertificateNumber'
         identityCard:
           $ref: '#/components/schemas/IdentityCard'
         address:
@@ -350,9 +350,7 @@ components:
           type: string
           enum: [male, female]
         licences:
-          type: object
-          items:
-            $ref: '#/components/schemas/Licences'
+          $ref: '#/components/schemas/Licences'
         bankAccount:
           $ref: '#/components/schemas/BankAccountNumber'
         dietaryRestrictions:
@@ -372,7 +370,7 @@ components:
         
         Additional validations: 
         - either contact or guardian needs to be set
-        - when nationality is different than `CZ`, socialSecurityNumber value will be ignored
+        - when nationality is different than `CZ`, `birthCertificateNumber` value will be ignored
       required:
         - firstName
         - lastName
@@ -396,8 +394,8 @@ components:
           type: string
           format: date
           description: Date of birth of the club member
-        socialSecurityNumber:
-          $ref: '#/components/schemas/SocialSecurityNumber'
+        birthCertificateNumber:
+          $ref: '#/components/schemas/BirthCertificateNumber'
         nationality:
           $ref: '#/components/schemas/CountryCode'
         address:
@@ -419,7 +417,7 @@ components:
         Member attributes editable by admin user = user holding grant [TBD]
         
         Additional validations: 
-        - when `CZ` is selected as nationality, then `socialSecurityNumber` is required value
+        - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value
       required:
         - firstName
         - lastName
@@ -440,8 +438,8 @@ components:
           format: date
           description: |-
             Date of birth of the club member
-        socialSecurityNumber:
-          $ref: '#/components/schemas/SocialSecurityNumber'
+        birthCertificateNumber:
+          $ref: '#/components/schemas/BirthCertificateNumber'
         nationality:
           $ref: '#/components/schemas/CountryCode'
         gender:
@@ -503,46 +501,55 @@ components:
           description: Note about the guardian (matka, otec)
     BankAccountNumber:
       type: string
+      pattern: ^[A-Z]{2}[0-9]+$
       description: |-
         Bank account number of the club member IBAN
     OBLicence:
-      type: string
-      enum: [ E, R, A, B, C ]
-      description: License number of the club member
+      type: object
+      required:
+        - licence
+      properties:
+        licence:
+          type: string
+          enum: [ E, R, A, B, C ]
+          description: License number of the club member
     RefereeLicence:
-      type: string
-      enum: [ R1, R2, R3 ]
-      description: referee license number of the club member
+      type: object
+      required:
+        - licence
+        - expiryDate
+      properties:
+        licence:
+          type: string
+          enum: [ R1, R2, R3 ]
+          description: referee license number of the club member
+        expiryDate:
+          type: string
+          format: date
+          description: Expiry date of the license
     TrainerLicence:
-      type: string
-      enum: [ T1, T2, T3 ]
-      description: trainer license number of the club member
+      type: object
+      required:
+        - licence
+        - expiryDate
+      properties:
+        licence:
+          type: string
+          enum: [ T1, T2, T3 ]
+          description: trainer license number of the club member
+        expiryDate:
+          type: string
+          format: date
+          description: Expiry date of the license
     Licences:
       type: object
       properties:
         ob:
-          type: object
-          properties:
-            licence:
-              $ref: '#/components/schemas/OBLicence'
+          $ref: '#/components/schemas/OBLicence'
         referee:
-          type: object
-          properties:
-            licence:
-              $ref: '#/components/schemas/OBLicence'
-            expiryDate:
-              type: string
-              format: date
-              description: Expiry date of the license, YYYY-MM-DD
+          $ref: '#/components/schemas/RefereeLicence'
         trainer:
-          type: object
-          properties:
-            licence:
-              $ref: '#/components/schemas/OBLicence'
-            expiryDate:
-              type: string
-              format: date
-              description: Expiry date of the license, YYYY-MM-DD
+          $ref: '#/components/schemas/TrainerLicence'
     DeleteCheck:
       type: object
       properties:
