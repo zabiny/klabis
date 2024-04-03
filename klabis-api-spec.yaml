@@ -10,9 +10,16 @@ info:
   version: 0.1.12
 servers:
   - url: https://api.klabis.otakar.io
+  - url: https://klabis-auth.polach.cloud
 tags:
   - name: users
-  - name: auth
+    description: Members list
+  - name: security
+    description: API used to control authentization and authorization
+  - name: oris
+    description: Integration endpoints with ORIS - https://oris.orientacnisporty.cz/
+  - name: cus
+    description: Integration endpoints with CUS - https://www.cuscz.cz/
 security:
   - klabisAuth:
       - openid
@@ -20,10 +27,10 @@ paths:
   /password:
     put:
       tags:
-        - auth
+        - security
       summary: "[WIP] - Set a new password"
       description: >
-        Sets a new password for the user
+        Sets a new password for currently logged in user
       requestBody:
         required: true
         content:
@@ -83,7 +90,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserForm'
+              $ref: '#/components/schemas/FormCreateUser'
       responses:
         '201':
           description: New club member created successfully
@@ -100,7 +107,6 @@ paths:
       tags:
         - users
       summary: Get user by ID
-      operationId: getUserById
       description: Returns a user
       parameters:
         - name: userId
@@ -133,7 +139,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateUserForm'
+              oneOf:
+                - $ref: '#/components/schemas/FormUpdateMyUserData'
+                - $ref: '#/components/schemas/FormUpdateUserByAdmin'
       responses:
         '200':
           description: Club member updated successfully
@@ -217,10 +225,10 @@ paths:
                 description: A free registration ID
         '401':
           description: Unauthorized - not logged in
-  /users/exports/cus:
+  /cus/exports/members:
     get:
       tags:
-        - users
+        - cus
       summary: "[WIP] - export users in CUS format"
       responses:
         '200':
@@ -229,12 +237,12 @@ paths:
           description: Unauthorized - not logged in
         '403':
           description: Forbidden - User does not have permission to delete a member
-  /users/oris:
+  /oris/users:
     get:
       tags:
-        - users
+        - oris
       summary: "[WIP] - get info about existing user from oris"
-      description: used when preexisting user is added to the system
+      description: used when looking for preexisting user is added to the system
       responses:
         '200':
           description: user info
@@ -244,14 +252,24 @@ paths:
           description: Forbidden - User does not have permission for this
 components:
   schemas:
+    CountryCode:
+      type: string
+      pattern: ^[A-Z]{2}$
+      description: two letter country code, ISO 3166-1 alpha-2
     SocialSecurityNumber:
       type: string
-      pattern: ^[0..9]{6}/[0..9]{4}$
+      pattern: ^[0-9]{6}/[0-9]{3,4}$
       description: Social security number ("birthday certificate number")
     RegistrationNumber:
       type: string
-      pattern: ^[A..Z]{3}[0..9]{4}$
+      pattern: ^[A-Z]{3}[0-9]{4}$
       description: ORIS registration number
+    DrivingLicence:
+      type: string
+      enum: [ B, BE, C, D, None ]
+    SICard:
+      type: number
+      description: SI chip used by member
     Contact:
       type: object
       description: At least one of email or phone value is required
@@ -279,8 +297,7 @@ components:
           type: string
           description: Postal or ZIP code
         country:
-          type: string
-          description: two letter country code, ISO 3166-1 alpha-2
+          $ref: '#/components/schemas/CountryCode'
     IdentityCard:
       type: object
       properties:
@@ -328,8 +345,7 @@ components:
           type: number
           description: Chip number assigned to the club member
         nationality:
-          type: string
-          description: two letter country code, ISO 3166-1 alpha-2
+          $ref: '#/components/schemas/CountryCode'
         sex:
           type: string
           enum: [male, female]
@@ -338,7 +354,7 @@ components:
           items:
             $ref: '#/components/schemas/Licences'
         bankAccount:
-          $ref: '#/components/schemas/BankAccount'
+          $ref: '#/components/schemas/BankAccountNumber'
         dietaryRestrictions:
           type: string
           description: Dietary restrictions of the club member
@@ -349,15 +365,11 @@ components:
         medicCourse:
           type: boolean
           description: Whether the club member has completed the medic course
-    DrivingLicence:
-      type: string
-      enum: [ B, BE, C, D, None ]
-    BankAccount:
-      type: string
-      description: Bank account number of the club member IBAN
-    CreateUserForm:
+    FormCreateUser:
       type: object
       description: |-
+        Data required to create new member.  
+        
         Additional validations: 
         - either contact or guardian needs to be set
         - when nationality is different than `CZ`, socialSecurityNumber value will be ignored
@@ -387,8 +399,7 @@ components:
         socialSecurityNumber:
           $ref: '#/components/schemas/SocialSecurityNumber'
         nationality:
-          type: string
-          description: two letter country code, ISO 3166-1 alpha-2
+          $ref: '#/components/schemas/CountryCode'
         address:
           $ref: '#/components/schemas/Address'
         contact:
@@ -398,94 +409,80 @@ components:
           items:
             $ref: '#/components/schemas/LegalGuardian'
         siCard:
-          properties:
-            number:
-              type: number
-              description: Chip number assigned to the club member
+          $ref: '#/components/schemas/SICard'
         dietaryRestrictions:
           type: string
           description: Dietary restrictions of the club member
-    UpdateUserForm:
+    FormUpdateUserByAdmin:
       type: object
+      description: |-
+        Member attributes editable by admin user = user holding grant [TBD]
+        
+        Additional validations: 
+        - when `CZ` is selected as nationality, then `socialSecurityNumber` is required value
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - nationality
+        - gender
       properties:
         firstName:
           type: string
           description: |-
-            [Admin] First name of the club member"
+            First name of the club member
         lastName:
           type: string
           description: |-
-            [Admin] Last name of the club member
+            Last name of the club member
         dateOfBirth:
           type: string
           format: date
           description: |-
-            [Admin] Date of birth of the club member
+            Date of birth of the club member
         socialSecurityNumber:
-          type: string
-          description: |-
-            [Admin]
-        identityCard:
-          allOf:
-            - $ref: '#/components/schemas/IdentityCard'
-            - description: |-
-                [User]
+          $ref: '#/components/schemas/SocialSecurityNumber'
         nationality:
-          type: string
-          description: |-
-            [Admin] two letter country code, ISO 3166-1 alpha-2
-        address:
-          allOf:
-            - $ref: '#/components/schemas/Address'
-            - description: |-
-                [User]
-        contact:
-          type: object
-          description: |-
-            [User]
-          items:
-            $ref: '#/components/schemas/Contact'
-        guardians:
-          type: array
-          description: |-
-            [User]
-          items:
-            $ref: '#/components/schemas/LegalGuardian'
-        siCards:
-          type: array
-          description: |-
-            [User]
-          items:
-            type: object
-            properties:
-              number:
-                type: number
-                description: Chip number assigned to the club member
-              isPrimary:
-                type: boolean
-                description: Whether the contact is primary or not
+          $ref: '#/components/schemas/CountryCode'
         gender:
           type: string
-          description: |-
-            [Admin]
           enum: [ male, female ]
+    FormUpdateMyUserData:
+      description: |-
+        Member attributes which can be updated by member himself (member can update some own attributes)  
+        
+        Additional validations:
+        - either contact or at least 1 guardian needs to be entered
+      required:
+        - identityCard
+        - address
+      properties:
+        identityCard:
+          $ref: '#/components/schemas/IdentityCard'
+        address:
+          $ref: '#/components/schemas/Address'
+        contact:
+          $ref: '#/components/schemas/Contact'
+        guardians:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegalGuardian'
+        siCard:
+          $ref: '#/components/schemas/SICard'
         bankAccount:
-          type: string
-          description: |-
-            [User] Bank account number of the club member IBAN
+          $ref: '#/components/schemas/BankAccountNumber'
         dietaryRestrictions:
           type: string
           description: |-
-            [User] Dietary restrictions of the club member
+            Dietary restrictions of the club member
         drivingLicence:
-          type: string
-          description: |-
-            [User]
-          enum: [B, BE, C, D, None]
+          type: array
+          items:
+            $ref: '#/components/schemas/DrivingLicence'
         medicCourse:
           type: boolean
           description: |-
-            [User] Whether the club member has completed the medic course
+            Whether the club member has completed the medic course
     LegalGuardian:
       type: object
       required:
@@ -504,6 +501,10 @@ components:
         note:
           type: string
           description: Note about the guardian (matka, otec)
+    BankAccountNumber:
+      type: string
+      description: |-
+        Bank account number of the club member IBAN
     OBLicence:
       type: string
       enum: [ E, R, A, B, C ]
