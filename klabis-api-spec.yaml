@@ -273,6 +273,9 @@ components:
     Contact:
       type: object
       description: At least one of email or phone value is required
+      required:
+        - email
+        - phone
       properties:
         email:
           type: string
@@ -457,6 +460,8 @@ components:
       properties:
         identityCard:
           $ref: '#/components/schemas/IdentityCard'
+        nationality:
+          $ref: '#/components/schemas/CountryCode'
         address:
           $ref: '#/components/schemas/Address'
         contact:
