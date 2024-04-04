@@ -1,7 +1,33 @@
 openapi: 3.1.0
 info:
   title: Klabis - OpenAPI 3.1
-  description: Klabis API docs
+  description: |
+    Klabis API docs
+
+    ## Glossary
+    - `member` - club member who can use the application   
+    - `user` - logged in member
+    - `grant` - configurable permission allowing user to perform selected action or view some data
+    
+    ## Authorization
+    Every operation changing data (and some view requests) require `grant` which represents permission for the user to perform such operation.   
+    
+    There are 2 types of grants: 
+    
+    ### Global grants
+    These grants are assigned to user and are valid globally in the application. They grant permission for operations like Create new member, etc. 
+    
+    ### Member specific grants
+    These grants represents permission to perform operation (or view data) on behalf of selected user. User can receive this grant in two ways:
+    - user may allow another member to perform operation on his behalf/view his data
+    - user is granted permission to perform operation on behalf of another member / view another member's data because of membership/leadership of user group
+
+    ### What authorization is required to use API endpoint?
+    If endpoint requires authorization, it is written in description text of such endpoint with label "Required authorization"
+    
+    ### What authorization is required to see value of attribute in the response?
+    Response attributes: even some attributes in the response may require specific grant - see description of the attribute in response OpenAPI/JSON schema. If user doesn't hold such grant, attribute will be returned as empty (null)  
+
   contact:
     email: klabis@otakar.io
   license:
@@ -16,9 +42,9 @@ tags:
     description: Members list
   - name: security
     description: API used to control authentication and authorization
-  - name: oris
+  - name: ORIS
     description: Integration endpoints with ORIS - https://oris.orientacnisporty.cz/
-  - name: cus
+  - name: CUS
     description: Integration endpoints with CUS - https://www.cuscz.cz/
 security:
   - klabisAuth:
@@ -29,8 +55,7 @@ paths:
       tags:
         - security
       summary: "[WIP] - Set a new password"
-      description: >
-        Sets a new password for currently logged in user
+      description: Sets a new password for currently logged in user
       requestBody:
         required: true
         content:
@@ -97,8 +122,11 @@ paths:
       tags:
         - users
       summary: Create a new club member
-      description: >
+      description: |
         Creates a new club member with the provided details.
+        
+        #### Required authorization
+        requires `members:create` grant
       requestBody:
         required: true
         content:
@@ -189,8 +217,7 @@ paths:
       tags:
         - users
       summary: "[WIP] - Check if user can be deleted"
-      description: >
-            returns reason why user can't be deleted
+      description: returns reason why user can't be deleted
       parameters:
         - name: userId
           in: path
@@ -216,8 +243,7 @@ paths:
       tags:
         - users
       summary: "[WIP] - Get a free registration ID"
-      description: >
-        Returns a free registration ID that can be used to register a new club member.
+      description: Returns a free registration ID that can be used to register a new club member.
       requestBody:
         content:
           application/json:
@@ -242,7 +268,7 @@ paths:
   /cus/exports/members:
     get:
       tags:
-        - cus
+        - CUS
       summary: "[WIP] - export users in CUS format"
       responses:
         '200':
@@ -254,8 +280,8 @@ paths:
   /oris/users:
     get:
       tags:
-        - oris
-      summary: "[WIP] - get info about existing user from oris"
+        - ORIS
+      summary: "[WIP] - get info about existing user from ORIS"
       description: used when looking for preexisting user is added to the system
       responses:
         '200':
@@ -400,6 +426,9 @@ components:
       description: |-
         Data required to create new member.  
         
+        #### Required authorization
+        - requires `members:create` grant
+        
         Additional validations: 
         - either contact or guardian needs to be set
         - when nationality is different than `CZ`, `birthCertificateNumber` value will be ignored
@@ -447,7 +476,10 @@ components:
       type: object
       description: |-
         Member attributes editable by admin user = user holding grant [TBD]
-        
+
+        #### Required authorization
+        - requires `members:edit` grant
+       
         Additional validations: 
         - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value
       required:
@@ -459,17 +491,14 @@ components:
       properties:
         firstName:
           type: string
-          description: |-
-            First name of the club member
+          description: First name of the club member
         lastName:
           type: string
-          description: |-
-            Last name of the club member
+          description: Last name of the club member
         dateOfBirth:
           type: string
           format: date
-          description: |-
-            Date of birth of the club member
+          description: Date of birth of the club member
         birthCertificateNumber:
           $ref: '#/components/schemas/BirthCertificateNumber'
         nationality:
@@ -478,9 +507,12 @@ components:
           type: string
           enum: [ male, female ]
     FormUpdateMyUserData:
-      description: |-
+      description: |
         Member attributes which can be updated by member himself (member can update some own attributes)  
         
+        #### Required authorization
+        - user can edit own member data 
+
         Additional validations:
         - either contact or at least 1 guardian needs to be entered
       required:
@@ -505,16 +537,14 @@ components:
           $ref: '#/components/schemas/BankAccountNumber'
         dietaryRestrictions:
           type: string
-          description: |-
-            Dietary restrictions of the club member
+          description: Dietary restrictions of the club member
         drivingLicence:
           type: array
           items:
             $ref: '#/components/schemas/DrivingLicence'
         medicCourse:
           type: boolean
-          description: |-
-            Whether the club member has completed the medic course
+          description: Whether the club member has completed the medic course
     LegalGuardian:
       type: object
       required:
@@ -536,8 +566,7 @@ components:
     BankAccountNumber:
       type: string
       pattern: ^[A-Z]{2}[0-9]+$
-      description: |-
-        Bank account number of the club member IBAN
+      description: Bank account number of the club member IBAN
     OBLicence:
       type: object
       required:
@@ -595,6 +624,32 @@ components:
           items:
             type: string
           description: Reasons why the club member can't be deleted
+    GlobalGrants:
+      type: string
+      description: |
+        Global grants are assigned to users and are valid globally in the application.
+        
+        | Grant name | granted permissions |
+        | --- | --- |
+        | `members:create` | can create new members |
+        | `members:edit` | can edit "admin" attributes for existing members |
+      enum:
+        - members:create
+        - members:edit
+    MemberSpecificGrants:
+      type: string
+      description: |
+        Member specific grants are defined between 2 users (user is allowed to perform specific action on behalf of another user). These define fine-grained permissions and can be granted explicitely to selected users or through permissions granted from membership between members of user groups.
+
+        | Grant name | granted permissions |
+        | --- | --- |
+        | `members#canDisplayMemberPersonalContact` | can display personal contact information of member |
+        | `members#canDisplayMemberLegalGuardianContact` | can display contact information of legal guardian of member |
+        | `members#canDisplayMemberAddress` | can display contact information of legal guardian of member |
+      enum:
+        - members#canDisplayMemberPersonalContact
+        - members#canDisplayMemberLegalGuardianContact
+        - members#canDisplayMemberAddress
   securitySchemes:
     klabis:
       type: openIdConnect
