@@ -38,14 +38,16 @@ servers:
   - url: https://klabis-auth.polach.cloud
   - url: https://api.klabis.otakar.io
 tags:
-  - name: users
-    description: Members list
+  - name: members
+    description: Club members
   - name: security
     description: API used to control authentication and authorization
   - name: ORIS
     description: Integration endpoints with ORIS - https://oris.orientacnisporty.cz/
   - name: CUS
     description: Integration endpoints with CUS - https://www.cuscz.cz/
+  - name: WIP
+    description: "[odkladiste pro 'work-in-progress' endpointy]"
 security:
   - klabisAuth:
       - openid
@@ -53,7 +55,7 @@ paths:
   /password:
     put:
       tags:
-        - security
+        - WIP
       summary: "[WIP] - Set a new password"
       description: Sets a new password for currently logged in user
       requestBody:
@@ -73,19 +75,19 @@ paths:
           description: Unauthorized
         '500':
           description: Internal Server Error
-  /users:
+  /members:
     get:
       tags:
-        - users
-      summary: List all club users
-      description: Returns a list of all club users
+        - members
+      summary: List all club members
+      description: Returns a list of all club members
       parameters:
         - name: view
           in: query
           required: false
           description: |
             Defines set of returned data
-            - full: all member data what are displayable to logged in user are returned
+            - full: all member data what are displayable to user are returned
             - compact: `id`, `firstName`, `lastName`, 'registrationNumber`
           schema:
             type: string
@@ -106,52 +108,25 @@ paths:
             default: false
       responses:
         '200':
-          description: A list of club users
+          description: A list of club members
           content:
             application/json:
               schema:
                 type: array
                 items:
                   oneOf:
-                    - $ref: '#/components/schemas/User'
-                    - $ref: '#/components/schemas/UserViewCompact'
+                    - $ref: '#/components/schemas/Member'
+                    - $ref: '#/components/schemas/MemberViewCompact'
         '401':
             description: Unauthorized - not logged in
-
-    post:
-      tags:
-        - users
-      summary: Create a new club member
-      description: |
-        Creates a new club member with the provided details.
-        
-        #### Required authorization
-        requires `members:create` grant
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FormCreateUser'
-      responses:
-        '201':
-          description: New club member created successfully
-        '400':
-          description: Bad request - Invalid data
-        '401':
-          description: Unauthorized - not logged in
-        '409':
-          description: Conflict - User with the same registration number already exists
-        '403':
-            description: Forbidden - User does not have permission to create a member
-  /users/{userId}:
+  /members/{memberId}:
     get:
       tags:
-        - users
-      summary: Get user by ID
-      description: Returns a user
+        - members
+      summary: Get member by ID
+      description: Returns a member
       parameters:
-        - name: userId
+        - name: memberId
           in: path
           required: true
           description: ID of the club member to get
@@ -159,19 +134,19 @@ paths:
             type: integer
       responses:
         '200':
-          description: A single user
+          description: A single member
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/Member'
         '401':
           description: Unauthorized - not logged in
     put:
       tags:
-        - users
-      summary: Update member
+        - members
+      summary: "Update member (TBD: move these edits away and/or split them into 2 endpoints?)"
       parameters:
-        - name: userId
+        - name: memberId
           in: path
           required: true
           schema:
@@ -182,8 +157,8 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/FormUpdateMyUserData'
-                - $ref: '#/components/schemas/FormUpdateUserByAdmin'
+                - $ref: '#/components/schemas/ChangeMyDetailsForm'
+                - $ref: '#/components/schemas/MemberInfoUpdateByAdminForm'
       responses:
         '200':
           description: Club member updated successfully
@@ -193,82 +168,119 @@ paths:
           description: Forbidden - User does not have permission to update a member
         '404':
           description: Club member not found
-  /users/{userId}/archive:
+
+  /memberRegistrations:
+    get:
+      tags:
+        - members
+      summary: Get default values for member registration form
+      description: |
+        Returns default values for member registration form.   
+        
+        - when `orisId` is provided and user with such ID exists in ORIS, then data from ORIS for such user will be returned 
+        - when both `gender` and `sex` parameters are provided, then suggested `registrationNumber` will be returned
+                
+        #### Required authorization
+        requires `members:register` grant
+      parameters:
+        - name: orisId
+          schema:
+            $ref: '#/components/schemas/OrisID'
+            required: false
+          in: query
+          description: ORIS ID of user who shall be registered. When provided, available values obtained from ORIS will be returned if such user is found in the ORIS
+        - name: dateOfBirth
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: gender
+          in: query
+          schema:
+            type: string
+            enum:
+              - male
+              - female
+      responses:
+        '201':
+          description: Registration was processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberRegistrationForm'
+        '400':
+          description: Bad request - Invalid data
+        '409':
+          description: Conflict - User with the same registration number already exists
+        '403':
+          description: Forbidden - User does not have permission to submit registration of new member
+    post:
+      tags:
+        - members
+      summary: Register a new club member
+      description: |
+        Registers a new club member with the provided details.
+        
+        #### Required authorization
+        requires `members:register` grant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberRegistrationForm'
+      responses:
+        '201':
+          description: Registration was processed successfully
+        '400':
+          description: Bad request - Invalid data
+        '403':
+          description: Forbidden - User does not have permission to submit registration of new member
+        '409':
+          description: Conflict - User already exists (usually registration was submitted with existing registration number)
+  /memberDeregistrations/{memberId}:
     put:
       tags:
-        - users
-      summary: Archive member
+        - members
+      summary: Deregister a club member
+      description: |
+        Deregisters a club member. 
+        
+        If there are some blockers (debt, etc), it responds with HTTP 409 unless `force=true` parameter was used.
+
+        #### Required authorization
+        requires `members:deregister` grant
       parameters:
-        - name: userId
+        - name: memberId
           in: path
           required: true
-          description: ID of the club member to archive
+          description: ID of the club member who will be deregistered from club
           schema:
             type: integer
+        - name: force
+          in: query
+          description: Forces user deregistration even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user deregistration
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
-          description: Club member archived successfully
+          description: Club member deregistration processed successfully
         '403':
           description: Unauthorized - User does not have permission to archive a member
         '404':
           description: Club member not found
-  /users/{userId}/delete-check:
-    get:
-      tags:
-        - users
-      summary: "[WIP] - Check if user can be deleted"
-      description: returns reason why user can't be deleted
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: ID of the club member to check
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Club member can be deleted
+        '409':
+          description: It's not possible to deregister club member. See response body for actual reason(s). You may use `force` to override these reasons.
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteCheck'
-        '401':
-          description: Unauthorized - not logged in
-        '403':
-            description: Forbidden - User does not have permission to delete a member
-        '404':
-          description: Club member not found
-  /users/registration-number:
-    get:
-      tags:
-        - users
-      summary: "[WIP] - Get a free registration ID"
-      description: Returns a free registration ID that can be used to register a new club member.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                dateOfBirth:
-                  type: string
-                gender:
-                  type: string
-                  enum: [male, female]
-      responses:
-        '200':
-          description: A free registration ID
-          content:
-            application/json:
-              schema:
-                type: string
-                description: A free registration ID
-        '401':
-          description: Unauthorized - not logged in
+              type: string
+              example: TO BE DEFINED
   /cus/exports/members:
     get:
       tags:
-        - CUS
+        - WIP
       summary: "[WIP] - export users in CUS format"
       responses:
         '200':
@@ -277,19 +289,6 @@ paths:
           description: Unauthorized - not logged in
         '403':
           description: Forbidden - User does not have permission to delete a member
-  /oris/users:
-    get:
-      tags:
-        - ORIS
-      summary: "[WIP] - get info about existing user from ORIS"
-      description: used when looking for preexisting user is added to the system
-      responses:
-        '200':
-          description: user info
-        '401':
-          description: Unauthorized - not logged in
-        '403':
-          description: Forbidden - User does not have permission for this
 components:
   schemas:
     CountryCode:
@@ -304,6 +303,9 @@ components:
       type: string
       pattern: ^[A-Z]{3}[0-9]{4}$
       description: ORIS registration number
+    OrisID:
+      type: integer
+      description: Oris ID of registered orienteering runner
     DrivingLicence:
       type: string
       enum: [ B, BE, C, D, None ]
@@ -351,7 +353,7 @@ components:
           type: string
           format: date
           description: Expiry date of the ID card, YYYY-MM-DD
-    UserViewCompact:
+    MemberViewCompact:
       type: object
       required:
         - id
@@ -371,12 +373,18 @@ components:
           description: Last name of the club member
         registrationNumber:
           $ref: '#/components/schemas/RegistrationNumber'
-    User:
+    Member:
       allOf:
-        - $ref: '#/components/schemas/UserViewCompact'
+        - $ref: '#/components/schemas/MemberViewCompact'
         - type: object
           required:
             - id
+            - firstName
+            - lastName
+            - gender
+            - dateOfBirth
+            - nationality
+            - address
           properties:
             id:
               type: integer
@@ -421,13 +429,13 @@ components:
             medicCourse:
               type: boolean
               description: Whether the club member has completed the medic course
-    FormCreateUser:
+    MemberRegistrationForm:
       type: object
       description: |-
-        Data required to create new member.  
+        Data required to register new member.  
         
         #### Required authorization
-        - requires `members:create` grant
+        - requires `members:register` grant
         
         Additional validations: 
         - either contact or guardian needs to be set
@@ -446,8 +454,6 @@ components:
         lastName:
           type: string
           description: Last name of the club member
-        registrationNumber:
-          $ref: '#/components/schemas/RegistrationNumber'
         gender:
           type: string
           enum: [ male, female ]
@@ -457,25 +463,38 @@ components:
           description: Date of birth of the club member
         birthCertificateNumber:
           $ref: '#/components/schemas/BirthCertificateNumber'
+          writeOnly: true
         nationality:
           $ref: '#/components/schemas/CountryCode'
+          writeOnly: true
         address:
           $ref: '#/components/schemas/Address'
+          writeOnly: true
         contact:
           $ref: '#/components/schemas/Contact'
+          writeOnly: true
         guardians:
           type: array
+          writeOnly: true
           items:
             $ref: '#/components/schemas/LegalGuardian'
         siCard:
           $ref: '#/components/schemas/SICard'
-        dietaryRestrictions:
-          type: string
-          description: Dietary restrictions of the club member
-    FormUpdateUserByAdmin:
+        bankAccount:
+          $ref: '#/components/schemas/BankAccountNumber'
+          writeOnly: true
+        registrationNumber:
+          $ref: '#/components/schemas/RegistrationNumber'
+        orisId:
+          $ref: '#/components/schemas/OrisID'
+          writeOnly: true
+#        trainingGroup:
+#          type: ???
+#          description: training group where newly registered member will be added
+    MemberInfoUpdateByAdminForm:
       type: object
       description: |-
-        Member attributes editable by admin user = user holding grant [TBD]
+        Member attributes editable by TBD-"vedeni".
 
         #### Required authorization
         - requires `members:edit` grant
@@ -506,7 +525,7 @@ components:
         gender:
           type: string
           enum: [ male, female ]
-    FormUpdateMyUserData:
+    ChangeMyDetailsForm:
       description: |
         Member attributes which can be updated by member himself (member can update some own attributes)  
         
@@ -631,11 +650,13 @@ components:
         
         | Grant name | granted permissions |
         | --- | --- |
-        | `members:create` | can create new members |
+        | `members:register` | can create new members |
         | `members:edit` | can edit "admin" attributes for existing members |
+        | `members:deregister` | can deregister club members |
       enum:
-        - members:create
+        - members:register
         - members:edit
+        - members:deregister
     MemberSpecificGrants:
       type: string
       description: |
