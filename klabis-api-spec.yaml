@@ -22,18 +22,23 @@ info:
     - user may allow another member to perform operation on his behalf/view his data
     - user is granted permission to perform operation on behalf of another member / view another member's data because of membership/leadership of user group
 
+    Operations / data protected by this type of grant can be automatically performed if user is same person as member who is described by protected data or if operation is changing data of such member.   
+
     ### What authorization is required to use API endpoint?
     If endpoint requires authorization, it is written in description text of such endpoint with label "Required authorization"
     
     ### What authorization is required to see value of attribute in the response?
     Response attributes: even some attributes in the response may require specific grant - see description of the attribute in response OpenAPI/JSON schema. If user doesn't hold such grant, attribute will be returned as empty (null)  
 
+    ## API versioning
+    To be added later (before first production release). At current stage it's not needed. Most likely either contentType or request header versioning strategy will be used.  
+
   contact:
     email: klabis@otakar.io
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
-  version: 0.1.12
+  version: 0.2.1
 servers:
   - url: https://klabis-auth.polach.cloud
   - url: https://api.klabis.otakar.io
@@ -158,7 +163,7 @@ paths:
             schema:
               oneOf:
                 - $ref: '#/components/schemas/ChangeMyDetailsForm'
-                - $ref: '#/components/schemas/MemberInfoUpdateByAdminForm'
+                - $ref: '#/components/schemas/MemberInfoUpdateByMembersManagerForm'
       responses:
         '200':
           description: Club member updated successfully
@@ -173,12 +178,13 @@ paths:
     get:
       tags:
         - members
-      summary: Get default values for member registration form
+      summary: Get values to be prefilled in member registration form
       description: |
-        Returns default values for member registration form.   
+        Returns values to be prefilled in member registration form.   
         
-        - when `orisId` is provided and user with such ID exists in ORIS, then data from ORIS for such user will be returned 
-        - when both `gender` and `sex` parameters are provided, then suggested `registrationNumber` will be returned
+        - when `orisId` is provided and user with such ID exists in ORIS, then data from ORIS for such user will be returned (`firstName`, `lastName`, `registrationNumber`, etc..)
+        - when both `sex` and `sex` parameters are provided, then suggested `registrationNumber` will be returned
+        - when `oris`, `sex` and `sex` are provided and registration number is available in ORIS, then registration number from ORIS will be returned
                 
         #### Required authorization
         requires `members:register` grant
@@ -194,13 +200,10 @@ paths:
           schema:
             type: string
             format: date
-        - name: gender
+        - name: sex
           in: query
           schema:
-            type: string
-            enum:
-              - male
-              - female
+            $ref: '#/components/schemas/Sex'
       responses:
         '201':
           description: Registration was processed successfully
@@ -308,10 +311,15 @@ components:
       description: Oris ID of registered orienteering runner
     DrivingLicence:
       type: string
-      enum: [ B, BE, C, D, None ]
+      enum: [ B, BE, C, D ]
     SICard:
       type: number
       description: SI chip used by member
+    Sex:
+      type: string
+      enum:
+        - male
+        - female
     Contact:
       type: object
       description: At least one of email or phone value is required
@@ -381,7 +389,7 @@ components:
             - id
             - firstName
             - lastName
-            - gender
+            - sex
             - dateOfBirth
             - nationality
             - address
@@ -413,8 +421,7 @@ components:
             nationality:
               $ref: '#/components/schemas/CountryCode'
             sex:
-              type: string
-              enum: [male, female]
+              $ref: '#/components/schemas/Sex'
             licences:
               $ref: '#/components/schemas/Licences'
             bankAccount:
@@ -443,7 +450,7 @@ components:
       required:
         - firstName
         - lastName
-        - gender
+        - sex
         - dateOfBirth
         - nationality
         - address
@@ -454,9 +461,8 @@ components:
         lastName:
           type: string
           description: Last name of the club member
-        gender:
-          type: string
-          enum: [ male, female ]
+        sex:
+          $ref: '#/components/schemas/Sex'
         dateOfBirth:
           type: string
           format: date
@@ -487,11 +493,10 @@ components:
           $ref: '#/components/schemas/RegistrationNumber'
         orisId:
           $ref: '#/components/schemas/OrisID'
-          writeOnly: true
 #        trainingGroup:
 #          type: ???
 #          description: training group where newly registered member will be added
-    MemberInfoUpdateByAdminForm:
+    MemberInfoUpdateByMembersManagerForm:
       type: object
       description: |-
         Member attributes editable by TBD-"vedeni".
@@ -506,7 +511,7 @@ components:
         - lastName
         - dateOfBirth
         - nationality
-        - gender
+        - sex
       properties:
         firstName:
           type: string
@@ -522,9 +527,8 @@ components:
           $ref: '#/components/schemas/BirthCertificateNumber'
         nationality:
           $ref: '#/components/schemas/CountryCode'
-        gender:
-          type: string
-          enum: [ male, female ]
+        sex:
+          $ref: '#/components/schemas/Sex'
     ChangeMyDetailsForm:
       description: |
         Member attributes which can be updated by member himself (member can update some own attributes)  
@@ -640,7 +644,7 @@ components:
         | Grant name | granted permissions |
         | --- | --- |
         | `members:register` | can create new members |
-        | `members:edit` | can edit "admin" attributes for existing members |
+        | `members:edit` | can edit selected attributes for all existing members |
         | `members:deregister` | can deregister club members |
       enum:
         - members:register
