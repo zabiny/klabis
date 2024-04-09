@@ -362,6 +362,8 @@ components:
           format: date
           description: Expiry date of the ID card, YYYY-MM-DD
     MemberViewCompact:
+      description: |
+        'compact' view of Member
       type: object
       required:
         - id
@@ -436,6 +438,8 @@ components:
             medicCourse:
               type: boolean
               description: Whether the club member has completed the medic course
+        - description: Member attributes
+
     MemberRegistrationForm:
       type: object
       description: |-
