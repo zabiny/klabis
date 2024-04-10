@@ -53,9 +53,6 @@ tags:
     description: Integration endpoints with CUS - https://www.cuscz.cz/
   - name: WIP
     description: "[odkladiste pro 'work-in-progress' endpointy]"
-security:
-  - klabisAuth:
-      - openid
 paths:
   /password:
     put:
@@ -672,3 +669,6 @@ components:
     klabis:
       type: openIdConnect
       openIdConnectUrl: https://klabis-auth.polach.cloud/.well-known/openid-configuration
+security:
+  - klabis:
+      - openid
