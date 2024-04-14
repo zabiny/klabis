@@ -54,7 +54,7 @@ tags:
   - name: WIP
     description: "[odkladiste pro 'work-in-progress' endpointy]"
 paths:
-  /password:
+  /me/password:
     put:
       tags:
         - WIP
@@ -122,18 +122,17 @@ paths:
         '401':
             description: Unauthorized - not logged in
   /members/{memberId}:
+    parameters:
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          type: integer
     get:
       tags:
         - members
       summary: Get member by ID
       description: Returns a member
-      parameters:
-        - name: memberId
-          in: path
-          required: true
-          description: ID of the club member to get
-          schema:
-            type: integer
       responses:
         '200':
           description: A single member
@@ -147,12 +146,6 @@ paths:
       tags:
         - members
       summary: "Update member (TBD: move these edits away and/or split them into 2 endpoints?)"
-      parameters:
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         content:
@@ -239,6 +232,46 @@ paths:
         '409':
           description: Conflict - User already exists (usually registration was submitted with existing registration number)
   /members/{memberId}/suspendMembership:
+    parameters:
+      - name: memberId
+        in: path
+        required: true
+        description: ID of the club member whom membership will be suspended
+        schema:
+          type: integer
+    get:
+      tags:
+        - members
+      summary: Retrieve information about member account status for membership suspension
+      description: |
+        Returns information about member account to be suspended. 
+        
+        #### Required authorization
+        requires `members:suspendMembership` grant
+      responses:
+        200:
+          description: details about member account important for membership suspension
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  canSuspend:
+                    type: boolean
+                    description: tells if member account can be suspended
+                  details:
+                    type: object
+                    properties:
+                      finance:
+                        type: object
+                        properties:
+                          status:
+                            type: boolean
+                            description: tells if finance account balance permits membership suspension
+        403:
+          description: Unauthorized - User does not have permission to suspend membership
+        404:
+          description: Club member not found
     post:
       tags:
         - members
@@ -251,12 +284,6 @@ paths:
         #### Required authorization
         requires `members:suspendMembership` grant
       parameters:
-        - name: memberId
-          in: path
-          required: true
-          description: ID of the club member whom membership will be suspended
-          schema:
-            type: integer
         - name: force
           in: query
           description: Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension
@@ -265,13 +292,13 @@ paths:
             type: boolean
             default: false
       responses:
-        '200':
+        200:
           description: Membership of club member was suspended successfully
-        '403':
+        403:
           description: Unauthorized - User does not have permission to suspend membership
-        '404':
+        404:
           description: Club member not found
-        '409':
+        409:
           description: It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.
           content:
             application/json:
