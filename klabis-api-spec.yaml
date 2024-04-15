@@ -142,10 +142,18 @@ paths:
                 $ref: '#/components/schemas/Member'
         '401':
           description: Unauthorized - not logged in
+
+  /members/{memberId}/changeMemberInfo:
+    parameters:
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          type: integer
     put:
       tags:
         - members
-      summary: "Update member (TBD: move these edits away and/or split them into 2 endpoints?)"
+      summary: "Update member information"
       requestBody:
         required: true
         content:
@@ -157,12 +165,88 @@ paths:
       responses:
         '200':
           description: Club member updated successfully
+        '400':
+          description: Bad request
         '401':
           description: Unauthorized - not logged in
         '403':
           description: Forbidden - User does not have permission to update a member
         '404':
           description: Club member not found
+
+  /members/{memberId}/suspendMembership:
+    parameters:
+      - name: memberId
+        in: path
+        required: true
+        description: ID of the club member whom membership will be suspended
+        schema:
+          type: integer
+    get:
+      tags:
+        - members
+      summary: Retrieve information about member account status for membership suspension
+      description: |
+        Returns information about member account to be suspended. 
+        
+        #### Required authorization
+        requires `members:suspendMembership` grant
+      responses:
+        200:
+          description: details about member account important for membership suspension
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  canSuspend:
+                    type: boolean
+                    description: tells if member account can be suspended
+                  details:
+                    type: object
+                    properties:
+                      finance:
+                        type: object
+                        properties:
+                          status:
+                            type: boolean
+                            description: tells if finance account balance permits membership suspension
+        403:
+          description: Unauthorized - User does not have permission to suspend membership
+        404:
+          description: Club member not found
+    post:
+      tags:
+        - members
+      summary: Suspend membership for a club member
+      description: |
+        Suspends membership for a club member. 
+        
+        If there are some blockers (debt, etc), it responds with HTTP 409 unless `force=true` parameter was used.
+
+        #### Required authorization
+        requires `members:suspendMembership` grant
+      parameters:
+        - name: force
+          in: query
+          description: Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: Membership of club member was suspended successfully
+        403:
+          description: Unauthorized - User does not have permission to suspend membership
+        404:
+          description: Club member not found
+        409:
+          description: It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.
+          content:
+            application/json:
+              type: string
+              example: TO BE DEFINED
 
   /registrationNumber:
     get:
@@ -249,79 +333,6 @@ paths:
           description: Forbidden - User does not have permission to submit registration of new member
         '409':
           description: Conflict - User already exists (usually registration was submitted with existing registration number)
-  /members/{memberId}/suspendMembership:
-    parameters:
-      - name: memberId
-        in: path
-        required: true
-        description: ID of the club member whom membership will be suspended
-        schema:
-          type: integer
-    get:
-      tags:
-        - members
-      summary: Retrieve information about member account status for membership suspension
-      description: |
-        Returns information about member account to be suspended. 
-        
-        #### Required authorization
-        requires `members:suspendMembership` grant
-      responses:
-        200:
-          description: details about member account important for membership suspension
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  canSuspend:
-                    type: boolean
-                    description: tells if member account can be suspended
-                  details:
-                    type: object
-                    properties:
-                      finance:
-                        type: object
-                        properties:
-                          status:
-                            type: boolean
-                            description: tells if finance account balance permits membership suspension
-        403:
-          description: Unauthorized - User does not have permission to suspend membership
-        404:
-          description: Club member not found
-    post:
-      tags:
-        - members
-      summary: Suspend membership for a club member
-      description: |
-        Suspends membership for a club member. 
-        
-        If there are some blockers (debt, etc), it responds with HTTP 409 unless `force=true` parameter was used.
-
-        #### Required authorization
-        requires `members:suspendMembership` grant
-      parameters:
-        - name: force
-          in: query
-          description: Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension
-          required: false
-          schema:
-            type: boolean
-            default: false
-      responses:
-        200:
-          description: Membership of club member was suspended successfully
-        403:
-          description: Unauthorized - User does not have permission to suspend membership
-        404:
-          description: Club member not found
-        409:
-          description: It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.
-          content:
-            application/json:
-              type: string
-              example: TO BE DEFINED
   /cus/exports/members:
     get:
       tags:
