@@ -164,27 +164,15 @@ paths:
         '404':
           description: Club member not found
 
-  /memberRegistrations:
+  /registrationNumber:
     get:
       tags:
         - members
-      summary: Get values to be prefilled in member registration form
+      summary: Get recommended registration number for sex and date of birth
       description: |
-        Returns values to be prefilled in member registration form.   
-        
-        - when `orisId` is provided and user with such ID exists in ORIS, then data from ORIS for such user will be returned (`firstName`, `lastName`, `registrationNumber`, etc..)
-        - when both `sex` and `sex` parameters are provided, then suggested `registrationNumber` will be returned
-        - when `oris`, `sex` and `sex` are provided and registration number is available in ORIS, then registration number from ORIS will be returned
-                
         #### Required authorization
         requires `members:register` grant
       parameters:
-        - name: orisId
-          schema:
-            $ref: '#/components/schemas/OrisID'
-            required: false
-          in: query
-          description: ORIS ID of user who shall be registered. When provided, available values obtained from ORIS will be returned if such user is found in the ORIS
         - name: dateOfBirth
           in: query
           schema:
@@ -195,18 +183,48 @@ paths:
           schema:
             $ref: '#/components/schemas/Sex'
       responses:
-        '201':
-          description: Registration was processed successfully
+        200:
+          description: Recommended registration number for new member registration
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MemberRegistrationForm'
-        '400':
+                type: object
+                required:
+                  - registrationNumber
+                properties:
+                  registrationNumber:
+                    $ref: '#/components/schemas/RegistrationNumber'
+        400:
           description: Bad request - Invalid data
-        '409':
-          description: Conflict - User with the same registration number already exists
-        '403':
+
+  /oris/userInfo/{orisId}:
+    get:
+      tags:
+        - ORIS
+      summary: Get information about user from ORIS
+      description: |
+        #### Required authorization
+        requires `members:register` grant
+      parameters:
+        - name: orisId
+          schema:
+            $ref: '#/components/schemas/OrisID'
+            required: false
+          in: path
+          description: ORIS ID of user to retrieve ORIS data about
+      responses:
+        200:
+          description: Available information about user read from ORIS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ORISUserInfo'
+        400:
+          description: Bad request - Invalid data
+        403:
           description: Forbidden - User does not have permission to submit registration of new member
+
+  /memberRegistrations:
     post:
       tags:
         - members
@@ -463,6 +481,29 @@ components:
               type: boolean
               description: Whether the club member has completed the medic course
         - description: Member attributes
+
+    ORISUserInfo:
+      type: object
+      description: |-
+        User data retrieved from ORIS  
+        
+        #### Required authorization
+        - requires `members:register` grant
+      required:
+        - firstName
+        - lastName
+        - registrationNumber
+      properties:
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        registrationNumber:
+          $ref: '#/components/schemas/RegistrationNumber'
+        orisId:
+          $ref: '#/components/schemas/OrisID'
 
     MemberRegistrationForm:
       type: object
