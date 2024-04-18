@@ -820,7 +820,7 @@ components:
               - $ref: '#/components/schemas/RFC7807ErrorResponse'
               - type: object
                 properties:
-                  errors:
+                  validationErrors:
                     type: array
                     items:
                       type: object
