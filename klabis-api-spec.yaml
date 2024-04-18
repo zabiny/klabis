@@ -143,14 +143,14 @@ paths:
         '401':
           description: Unauthorized - not logged in
 
-  /members/{memberId}/changeMemberInfo:
+  /members/{memberId}/editMemberInfoForm:
     parameters:
       - name: memberId
         in: path
         required: true
         schema:
           type: integer
-    put:
+    post:
       tags:
         - members
       summary: "Update member information"
@@ -159,9 +159,9 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/ChangeMyDetailsForm'
-                - $ref: '#/components/schemas/MemberInfoUpdateByMembersManagerForm'
+              anyOf:
+                - $ref: '#/components/schemas/EditMyDetailsForm'
+                - $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
       responses:
         '200':
           description: Club member updated successfully
@@ -174,7 +174,7 @@ paths:
         '404':
           description: Club member not found
 
-  /members/{memberId}/suspendMembership:
+  /members/{memberId}/suspendMembershipForm:
     parameters:
       - name: memberId
         in: path
@@ -198,19 +198,15 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - canSuspend
+                  - details
                 properties:
                   canSuspend:
                     type: boolean
                     description: tells if member account can be suspended
                   details:
-                    type: object
-                    properties:
-                      finance:
-                        type: object
-                        properties:
-                          status:
-                            type: boolean
-                            description: tells if finance account balance permits membership suspension
+                    $ref: '#/components/schemas/SuspendMembershipBlockers'
         403:
           description: Unauthorized - User does not have permission to suspend membership
         404:
@@ -245,9 +241,13 @@ paths:
           description: It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.
           content:
             application/json:
-              type: string
-              example: TO BE DEFINED
-
+              schema:
+                type: object
+                required:
+                  - blockers
+                properties:
+                  blockers:
+                    $ref: '#/components/schemas/SuspendMembershipBlockers'
   /registrationNumber:
     get:
       tags:
@@ -268,15 +268,15 @@ paths:
             $ref: '#/components/schemas/Sex'
       responses:
         200:
-          description: Recommended registration number for new member registration
+          description: Recommended (available) registration number for new member registration
           content:
             application/json:
               schema:
                 type: object
                 required:
-                  - registrationNumber
+                  - availableRegistrationNumber
                 properties:
-                  registrationNumber:
+                  availableRegistrationNumber:
                     $ref: '#/components/schemas/RegistrationNumber'
         400:
           description: Bad request - Invalid data
@@ -576,10 +576,10 @@ components:
 #        trainingGroup:
 #          type: ???
 #          description: training group where newly registered member will be added
-    MemberInfoUpdateByMembersManagerForm:
+    EditAnotherMemberDetailsForm:
       type: object
       description: |-
-        Member attributes editable by TBD-"vedeni".
+        Member attributes editable by authorized user who can change details about other members
 
         #### Required authorization
         - requires `members:edit` grant
@@ -609,7 +609,7 @@ components:
           $ref: '#/components/schemas/CountryCode'
         sex:
           $ref: '#/components/schemas/Sex'
-    ChangeMyDetailsForm:
+    EditMyDetailsForm:
       description: |
         Member attributes which can be updated by member himself (member can update some own attributes)  
         
@@ -716,6 +716,20 @@ components:
           $ref: '#/components/schemas/RefereeLicence'
         trainer:
           $ref: '#/components/schemas/TrainerLicence'
+    SuspendMembershipBlockers:
+      type: object
+      description: describes conditions which may prevent membership suspension and their actual status
+      required:
+        - finance
+      properties:
+        finance:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: boolean
+              description: tells if finance account balance permits membership suspension
     GlobalGrants:
       type: string
       description: |
