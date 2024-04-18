@@ -120,7 +120,7 @@ paths:
                     - $ref: '#/components/schemas/Member'
                     - $ref: '#/components/schemas/MemberViewCompact'
         '401':
-            description: Unauthorized - not logged in
+          $ref: '#/components/responses/401'
   /members/{memberId}:
     parameters:
       - name: memberId
@@ -141,7 +141,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Member'
         '401':
-          description: Unauthorized - not logged in
+          $ref: '#/components/responses/401'
 
   /members/{memberId}/editMemberInfoForm:
     parameters:
@@ -166,12 +166,14 @@ paths:
         '200':
           description: Club member updated successfully
         '400':
-          description: Bad request
+          $ref: '#/components/responses/400'
         '401':
-          description: Unauthorized - not logged in
+          $ref: '#/components/responses/401'
         '403':
+          $ref: '#/components/responses/403'
           description: Forbidden - User does not have permission to update a member
         '404':
+          $ref: '#/components/responses/401'
           description: Club member not found
 
   /members/{memberId}/suspendMembershipForm:
@@ -192,7 +194,7 @@ paths:
         #### Required authorization
         requires `members:suspendMembership` grant
       responses:
-        200:
+        '200':
           description: details about member account important for membership suspension
           content:
             application/json:
@@ -207,9 +209,10 @@ paths:
                     description: tells if member account can be suspended
                   details:
                     $ref: '#/components/schemas/SuspendMembershipBlockers'
-        403:
-          description: Unauthorized - User does not have permission to suspend membership
-        404:
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/401'
           description: Club member not found
     post:
       tags:
@@ -218,7 +221,7 @@ paths:
       description: |
         Suspends membership for a club member. 
         
-        If there are some blockers (debt, etc), it responds with HTTP 409 unless `force=true` parameter was used.
+        If there are some blockers (debt, etc), it responds with HTTP '409' unless `force=true` parameter was used.
 
         #### Required authorization
         requires `members:suspendMembership` grant
@@ -231,23 +234,31 @@ paths:
             type: boolean
             default: false
       responses:
-        200:
+        '200':
           description: Membership of club member was suspended successfully
-        403:
-          description: Unauthorized - User does not have permission to suspend membership
-        404:
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
           description: Club member not found
-        409:
+        '409':
           description: It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.
           content:
-            application/json:
+            application/problem+json:
               schema:
-                type: object
-                required:
-                  - blockers
-                properties:
-                  blockers:
-                    $ref: '#/components/schemas/SuspendMembershipBlockers'
+                allOf:
+                  - $ref: '#/components/schemas/RFC7807ErrorResponse'
+                  - type: object
+                    required:
+                      - blockers
+                    properties:
+                      blockers:
+                        $ref: '#/components/schemas/SuspendMembershipBlockers'
   /registrationNumber:
     get:
       tags:
@@ -267,7 +278,7 @@ paths:
           schema:
             $ref: '#/components/schemas/Sex'
       responses:
-        200:
+        '200':
           description: Recommended (available) registration number for new member registration
           content:
             application/json:
@@ -278,8 +289,10 @@ paths:
                 properties:
                   availableRegistrationNumber:
                     $ref: '#/components/schemas/RegistrationNumber'
-        400:
-          description: Bad request - Invalid data
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
 
   /oris/userInfo/{orisId}:
     get:
@@ -297,16 +310,20 @@ paths:
           in: path
           description: ORIS ID of user to retrieve ORIS data about
       responses:
-        200:
+        '200':
           description: Available information about user read from ORIS
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ORISUserInfo'
-        400:
-          description: Bad request - Invalid data
-        403:
-          description: Forbidden - User does not have permission to submit registration of new member
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/401'
 
   /memberRegistrations:
     post:
@@ -328,11 +345,24 @@ paths:
         '201':
           description: Registration was processed successfully
         '400':
-          description: Bad request - Invalid data
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
         '403':
-          description: Forbidden - User does not have permission to submit registration of new member
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission for this action
         '409':
-          description: Conflict - User already exists (usually registration was submitted with existing registration number)
+          description: Conflict - Member already exists (usually registration was submitted with existing registration number)
+          content:
+            application/problem+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RFC7807ErrorResponse'
+                  - type: object
+                    properties:
+                      existingUserId:
+                        type: uuid
+                        description: ID of conflicting member
   /cus/exports/members:
     get:
       tags:
@@ -342,9 +372,9 @@ paths:
         '200':
           description: A list of differences
         '401':
-          description: Unauthorized - not logged in
+          $ref: '#/components/responses/401'
         '403':
-          description: Forbidden - User does not have permission to delete a member
+          $ref: '#/components/responses/403'
 components:
   schemas:
     CountryCode:
@@ -758,6 +788,72 @@ components:
         - members#canDisplayMemberPersonalContact
         - members#canDisplayMemberLegalGuardianContact
         - members#canDisplayMemberAddress
+    RFC7807ErrorResponse:
+      type: object
+      required:
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        title:
+          type: string
+          description: Description of the error status
+        status:
+          type: integer
+          description: error status value
+        detail:
+          type: string
+          description: User friendly description of the error
+        instance:
+          type: string
+          description: URI of the resource which has thrown the error
+        type:
+          type: string
+  responses:
+    '400':
+      description: Invalid user input
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/RFC7807ErrorResponse'
+              - type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        fieldName:
+                          type: string
+                        errorMessage:
+                          type: string
+    '401':
+      description: Missing required user authentication or authentication failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/RFC7807ErrorResponse'
+    '403':
+      description: User is not allowed to perform requested operation
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/RFC7807ErrorResponse'
+              - type: object
+                properties:
+                  missingGrant:
+                    anyOf:
+                      - $ref: "#/components/schemas/GlobalGrants"
+                      - $ref: "#/components/schemas/MemberSpecificGrants"
+    '404':
+      description: Requested resource wasn't found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/RFC7807ErrorResponse'
   securitySchemes:
     klabis:
       type: openIdConnect
