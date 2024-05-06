@@ -1,0 +1,174 @@
+spring:
+
+  profiles:
+    active:
+      - inmemorydb
+
+  security:
+    oauth2:
+      authorizationserver:
+        endpoint:
+          oidc:
+            user-info-uri: /oidc/userinfo
+          authorization-uri: /oauth/authorize
+          token-uri: /oauth/token
+        client:
+          1000:
+            registration:
+              client-id: "klabiswiki"
+              client-secret: "{noop}secret"
+              client-authentication-methods:
+                - "client_secret_basic"
+                - "client_secret_jwt"
+                - "client_secret_post"
+              #  - none
+              authorization-grant-types:
+                - "authorization_code"
+                - "refresh_token"
+              redirect-uris:
+                - "https://wiki.zabiny.club/auth/oidc.callback"
+                - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
+              post-logout-redirect-uris:
+                - "https://wiki.zabiny.club"
+              scopes:
+                - "openid"
+                - "profile"
+                - "email"
+            #require-authorization-consent: true
+          2000:
+            registration:
+              client-id: "test"
+              client-secret: "{noop}test"
+              client-authentication-methods:
+                - "client_secret_basic"
+                - "client_secret_post"
+              authorization-grant-types:
+                - "authorization_code"
+                - "refresh_token"
+              redirect-uris:
+                - "http://localhost:8080/login/oauth2/code/klabis"
+                - "https://klabis-auth.polach.cloud/login/oauth2/code/klabis"
+                - "http://klabis-auth.polach.cloud/login/oauth2/code/klabis"
+                - "http://localhost:8080/swagger-ui/oauth2-redirect.html"
+                - "https://klabis-auth.polach.cloud/swagger-ui/oauth2-redirect.html"
+                - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
+              #              post-logout-redirect-uris:
+              #                - "https://wiki.zabiny.club"
+              scopes:
+                - "openid"
+                - "profile"
+                - "email"
+          #            require-authorization-consent: true
+          3000:
+            registration:
+              client-id: "apispec"
+              client-secret: "{noop}apispec"
+              client-authentication-methods:
+                - "client_secret_basic"
+                - "client_secret_post"
+              authorization-grant-types:
+                - "authorization_code"
+                - "refresh_token"
+              redirect-uris:
+                - "http://localhost:8080/swagger-ui/oauth2-redirect.html"
+                - "https://klabis-auth.polach.cloud/swagger-ui/oauth2-redirect.html"
+                - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
+              scopes:
+                - "openid"
+
+
+      client:
+        registration: # configuration is used by authorization server - "Resource" server has hardcoded single registration - klabis OIDC
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - profile
+              - email
+          #          facebook:
+          #            client-id:
+          #            client-secret: 6fb95f47d2e27faf28fff9ac93d28184
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+  jpa:
+    hibernate:
+      ddl-auto: validate  # pro persistentni DB pouze zvalidovat schema databaze
+
+server:
+  forward-headers-strategy: framework
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter: TRACE
+    org.springframework.security.oauth2.server: TRACE
+    org.springframework.security.oauth2.client: trace
+    org.springframework.security.jackson2.SecurityJackson2Modules: INFO
+    org.springframework.security.web.savedrequest.HttpSessionRequestCache: TRACE
+    #org.springframework.web.client.RestTemplate: DEBUG
+    #REQUESTS_LOGGER: TRACE
+    org.zalando.logbook: INFO
+  pattern:
+    console: "%clr(%d{${LOG_DATEFORMAT_PATTERN:yyyy-MM-dd'T'HH:mm:ss.SSSXXX}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%X{URL}){magenta} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+
+management:
+  endpoint:
+    loggers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
+
+klabis:
+  idp-issuer-uri: https://klabis-auth.polach.cloud
+
+---
+spring:
+  config:
+    activate:
+      on-profile: inmemorydb
+
+  datasource:
+    url: jdbc:h2:mem:klabis
+
+  h2:
+    console:
+      enabled: off
+
+  jpa:
+    hibernate:
+      ddl-auto: create  # H2 DB used in default so far has some quirks against PostgreSQL syntax (for example TINYINT vs SMALLINT for enums)
+
+---
+spring:
+  config:
+    activate:
+      on-profile: localIdp
+
+klabis:
+  idp-issuer-uri: http://localhost:8080
+
+---
+spring:
+  config:
+    activate:
+      on-profile: generatedSwaggerUI
+
+springdoc:
+  show-actuator: true
+  api-docs:
+    groups:
+      enabled: true
+  group-configs:
+    - group: poc
+      display-name: Proof of Concept
+      packages-to-scan:
+        - com.zbm.adapters.api.rest
+    - group: c-actuator
+      display-name: System monitoring endpoints
+      paths-to-match:
+        - /actuator/**
+
