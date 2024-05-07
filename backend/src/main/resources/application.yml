@@ -2,7 +2,9 @@ spring:
 
   profiles:
     active:
-      - inmemorydb
+      - generatedSwaggerUI
+    include:
+      - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
 
   security:
     oauth2:
@@ -97,7 +99,7 @@ spring:
       ddl-auto: validate  # pro persistentni DB pouze zvalidovat schema databaze
 
 server:
-  forward-headers-strategy: framework
+  forward-headers-strategy: framework # For hateoas proper URL hostname detection
 
 logging:
   level:
@@ -120,7 +122,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
+        #include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
+        include: loggers, caches, env, info, mappings
 
 klabis:
   idp-issuer-uri: https://klabis-auth.polach.cloud
@@ -146,19 +149,10 @@ spring:
 spring:
   config:
     activate:
-      on-profile: localIdp
-
-klabis:
-  idp-issuer-uri: http://localhost:8080
-
----
-spring:
-  config:
-    activate:
       on-profile: generatedSwaggerUI
 
 springdoc:
-  show-actuator: true
+  #show-actuator: true
   api-docs:
     groups:
       enabled: true

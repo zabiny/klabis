@@ -1,0 +1,23 @@
+package club.klabis.config.springdoc;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
+
+//@Configuration
+public class SpringdocSecurityConfiguration {
+
+    @Bean("swaggerDocChain")
+    public SecurityFilterChain swaggerFilterChain(HttpSecurity http) throws Exception {
+        http.securityMatcher("/swagger-ui/*", "/v3/api-docs/*", "/v3/api-docs", "/*.yaml")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(
+                        c -> c.anyRequest().permitAll()
+                );
+
+        return http.build();
+    }
+
+}
