@@ -1,0 +1,20 @@
+### OIDC metadata
+GET {{host}}/.well-known/openid-configuration
+
+### OIDC UserInfo
+GET {{host}}/oidc/userinfo
+Authorization: Bearer {{$auth.token("test")}}
+
+### OAuth2 token introspection - ID token
+POST {{host}}/oauth2/introspect
+Authorization: Basic test test
+Content-Type: application/x-www-form-urlencoded
+
+token={{$auth.idToken("test")}}
+
+### OAuth2 token introspection - access token
+POST {{host}}/oauth2/introspect
+Authorization: Basic test test
+Content-Type: application/x-www-form-urlencoded
+
+token={{$auth.token("test")}}

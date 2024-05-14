@@ -91,9 +91,12 @@ spring:
           #          facebook:
           #            client-id:
           #            client-secret: 6fb95f47d2e27faf28fff9ac93d28184
-          github:
-            client-id: ${GITHUB_CLIENT_ID}
-            client-secret: ${GITHUB_CLIENT_SECRET}
+          #github:
+          #  client-id: ${GITHUB_CLIENT_ID}
+          #  client-secret: ${GITHUB_CLIENT_SECRET}
+          #  scope:
+#              - openid
+          #    - profile
   jpa:
     hibernate:
       ddl-auto: validate  # pro persistentni DB pouze zvalidovat schema databaze
@@ -103,7 +106,7 @@ server:
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: TRACE
     org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter: TRACE
     org.springframework.security.oauth2.server: TRACE
     org.springframework.security.oauth2.client: trace
