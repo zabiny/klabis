@@ -80,7 +80,7 @@ spring:
 
 
       client:
-        registration: # configuration is used by authorization server - "Resource" server has hardcoded single registration - klabis OIDC
+        registration: # configurations are used by authorization server's login page - "Resource" server has hardcoded single registration - klabis OIDC
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
@@ -128,8 +128,12 @@ management:
         #include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
         include: loggers, caches, env, info, mappings
 
-klabis:
-  idp-issuer-uri: https://klabis-auth.polach.cloud
+springdoc:
+  swagger-ui:
+    oauth:
+      client-id: apispec
+      client-secret: apispec
+    url: /klabis-api-spec.yaml
 
 ---
 spring:
