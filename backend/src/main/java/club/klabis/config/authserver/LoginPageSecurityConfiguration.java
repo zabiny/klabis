@@ -17,17 +17,17 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @EnableWebSecurity
 @Configuration(proxyBeanMethods = false)
-public class SecurityConfiguration {
+public class LoginPageSecurityConfiguration {
 
     public static RequestMatcher UI_REQUESTS_MATCHER = new AndRequestMatcher(new MediaTypeRequestMatcher(MediaType.TEXT_HTML), new NegatedRequestMatcher(new MediaTypeRequestMatcher(MediaType.ALL)));
 
     @Bean
-    @Order(value = AuthorizationServerConfiguration.AFTER_AUTH_SERVER_SECURITY_ORDER)
+    @Order
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
                                                           AuthenticationSuccessHandler authenticationSuccessHandler
     ) throws Exception {
         return http
-                .securityMatcher(UI_REQUESTS_MATCHER)
+                //.securityMatcher(UI_REQUESTS_MATCHER)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .formLogin(withDefaults())
                 .oauth2Login(oauth -> oauth.successHandler(authenticationSuccessHandler))
