@@ -107,17 +107,13 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>springbootbuildimage</id>
                         <goals>
                             <goal>build-image</goal>
                         </goals>
                     </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <executions>
                     <execution>
+                        <id>springbootbuildinfo</id>
                         <goals>
                             <goal>build-info</goal>
                         </goals>
@@ -127,6 +123,33 @@
                                 <encoding.reporting>UTF-8</encoding.reporting>
                                 <java.version>${java.version}</java.version>
                             </additionalProperties>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version> <!-- or the latest version -->
+                <executions>
+                    <execution>
+                        <!-- IDEA doens't process and see this file -->
+                        <id>copy-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/classes/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/..</directory> <!-- your source directory -->
+                                    <includes>
+                                        <include>klabis-api-spec.yaml</include> <!-- the specific file you want to copy -->
+                                    </includes>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>
