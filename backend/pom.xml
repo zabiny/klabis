@@ -93,6 +93,12 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <!-- for openapi generator -->
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <version>0.2.6</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -133,7 +139,6 @@
                 <version>3.3.1</version> <!-- or the latest version -->
                 <executions>
                     <execution>
-                        <!-- IDEA doens't process and see this file -->
                         <id>copy-resources</id>
                         <phase>process-resources</phase>
                         <goals>
@@ -150,6 +155,43 @@
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <!-- RELEASE_VERSION -->
+                <version>7.6.0</version>
+                <!-- /RELEASE_VERSION -->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/../klabis-api-spec.yaml</inputSpec>
+                            <generatorName>spring</generatorName>
+                            <library>spring-boot</library>
+                            <modelPackage>club.klabis.api.dto</modelPackage>
+                            <modelNameSuffix>Dto</modelNameSuffix>
+                            <apiPackage>club.klabis.api</apiPackage>
+                            <configOptions>
+                                <sourceFolder>src/gen/java/main</sourceFolder>
+                                <dateLibrary>java8</dateLibrary>
+                                <!--library>spring-boot</library-->
+                                <useSpringBoot3>true</useSpringBoot3>
+                                <useOptional>true</useOptional>
+                                <openApiNullable>false</openApiNullable>
+                                <generateBuilders>true</generateBuilders>
+                                <useSpringController>true</useSpringController>
+                                <hateoas>false</hateoas>
+                                <booleanGetterPrefix>is</booleanGetterPrefix>
+                                <interfaceOnly>true</interfaceOnly>
+                                <defaultInterfaces>false</defaultInterfaces>
+                                <useBeanValidation>true</useBeanValidation>
+                            </configOptions>
                         </configuration>
                     </execution>
                 </executions>

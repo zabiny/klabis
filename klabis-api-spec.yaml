@@ -42,6 +42,7 @@ info:
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
+    identifier: MIT
   version: 0.2.1
 servers:
   - url: https://klabis-auth.polach.cloud
@@ -311,8 +312,8 @@ paths:
         - name: orisId
           schema:
             $ref: '#/components/schemas/OrisID'
-            required: false
           in: path
+          required: true
           description: ORIS ID of user to retrieve ORIS data about
       responses:
         '200':

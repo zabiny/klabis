@@ -164,10 +164,10 @@ springdoc:
     groups:
       enabled: true
   group-configs:
-    - group: poc
-      display-name: Proof of Concept
+    - group: klabis
+      display-name: Klabis API
       packages-to-scan:
-        - com.zbm.adapters.api.rest
+        - club.klabis.api
     - group: c-actuator
       display-name: System monitoring endpoints
       paths-to-match:
