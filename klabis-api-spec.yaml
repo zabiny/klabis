@@ -42,7 +42,6 @@ info:
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
-    identifier: MIT
   version: 0.2.1
 servers:
   - url: https://klabis-auth.polach.cloud
@@ -119,11 +118,6 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  oneOf:
-                    - $ref: '#/components/schemas/Member'
-                    - $ref: '#/components/schemas/MemberViewCompact'
                 $ref: '#/components/schemas/MembersList'
         '401':
           $ref: '#/components/responses/401'
@@ -340,7 +334,7 @@ paths:
         Registers a new club member with the provided details.
         
         #### Required authorization
-        requires `members:register` grant
+        requires `members:register` grant`
       requestBody:
         required: true
         content:
@@ -358,17 +352,7 @@ paths:
           $ref: '#/components/responses/403'
           description: Forbidden - User does not have permission for this action
         '409':
-          description: Conflict - Member already exists (usually registration was submitted with existing registration number)
-          content:
-            application/problem+json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/RFC7807ErrorResponse'
-                  - type: object
-                    properties:
-                      existingUserId:
-                        type: uuid
-                        description: ID of conflicting member
+          $ref: '#/components/responses/409MemberRegistration'
   /cus/exports/members:
     get:
       tags:
@@ -499,7 +483,7 @@ components:
               format: date
               description: Date of birth of the club member
             contact:
-              type: object
+              type: array
               items:
                 $ref: '#/components/schemas/Contact'
             legalGuardians:
@@ -873,6 +857,25 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/RFC7807ErrorResponse'
+    '409':
+      description: Operation can't be done because of conflicting resource
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/RFC7807ErrorResponse'
+    '409MemberRegistration':
+      description: Conflict - Member already exists (usually registration was submitted with existing registration number)
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/RFC7807ErrorResponse'
+              - type: object
+                properties:
+                  existingUserId:
+                    type: string
+                    format: uuid
+                    description: ID of conflicting member
   securitySchemes:
     klabis:
       type: openIdConnect
