@@ -5,7 +5,10 @@
 
 # jetbrains
 .idea/
+**/*.iml
 
 # vscode
 .vscode/
 
+# backend excludes
+backend/target/**
