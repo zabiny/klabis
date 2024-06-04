@@ -1,8 +1,8 @@
 package club.klabis.config.authserver.socialloginsupport;
 
 import club.klabis.config.authserver.KlabisOidcUser;
-import club.klabis.domain.users.Member;
-import club.klabis.domain.users.MemberService;
+import club.klabis.domain.members.Member;
+import club.klabis.domain.members.MemberService;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
@@ -29,7 +29,7 @@ class GoogleOidcUserToKlabisSocialLoginOidcUserMapper implements SocialLoginOidc
 
         Map<String, Object> claims = new HashMap<>();
         //claims.putAll(idToken.getClaims());
-        claims.put(StandardClaimNames.SUB, user.getUserName());
+        claims.put(StandardClaimNames.SUB, user.getRegistration().toRegistrationId());
 //        claims.put(StandardClaimNames.GIVEN_NAME, user.getFirstName());
 //        claims.put(StandardClaimNames.MIDDLE_NAME, user.getMiddleName());
 //        claims.put(StandardClaimNames.FAMILY_NAME, user.getLastName());

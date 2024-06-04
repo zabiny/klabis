@@ -1,7 +1,7 @@
 package club.klabis.config.authserver.socialloginsupport;
 
 import club.klabis.config.authserver.KlabisOidcUser;
-import club.klabis.domain.users.MemberService;
+import club.klabis.domain.members.MemberService;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;

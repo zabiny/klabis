@@ -1,7 +1,7 @@
-package club.klabis.config.security;
+package club.klabis.config.authserver;
 
-import club.klabis.domain.users.Member;
-import club.klabis.domain.users.MemberService;
+import club.klabis.domain.members.Member;
+import club.klabis.domain.members.MemberService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.userdetails.User;
@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 @Configuration
-public class UsersDetailsServiceConfiguration {
+class UsersDetailsServiceConfiguration {
 
     private final MemberService memberService;
 
@@ -29,7 +29,7 @@ public class UsersDetailsServiceConfiguration {
             }
 
             private UserDetails fromMember(Member member) {
-                return User.withUsername(member.getUserName()).password(member.getPassword()).build();
+                return User.withUsername(member.getRegistration().toRegistrationId()).password(member.getPassword()).build();
             }
         };
     }

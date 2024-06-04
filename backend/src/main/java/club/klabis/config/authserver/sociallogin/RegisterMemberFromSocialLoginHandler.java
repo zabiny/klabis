@@ -1,19 +1,20 @@
 package club.klabis.config.authserver.sociallogin;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Component;
 
 import java.util.function.Consumer;
 
 @Component
-@Slf4j
 public class RegisterMemberFromSocialLoginHandler implements Consumer<OidcUser> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RegisterMemberFromSocialLoginHandler.class);
 
     @Override
     public void accept(OidcUser oidcUser) {
-        log.info("Handling user " + oidcUser.toString());
+        LOG.info("Handling user " + oidcUser.toString());
     }
 
 

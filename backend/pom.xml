@@ -16,7 +16,10 @@
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
-        <project.docker.image.name>registry.polach.cloud/zbm/web-2.0/${project.artifactId}:${project.version}</project.docker.image.name>
+        <project.docker.image.name>registry.polach.cloud/zbm/web-2.0/${project.artifactId}:${project.version}
+        </project.docker.image.name>
+        <org.mapstruct.version>1.6.0.Beta1</org.mapstruct.version>
+        <org.mapstruct.extensions.spring.version>1.1.1</org.mapstruct.extensions.spring.version>
     </properties>
 
     <dependencies>
@@ -88,21 +91,75 @@
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.5.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>org.projectlombok</groupId>-->
+        <!--            <artifactId>lombok</artifactId>-->
+        <!--            <scope>provided</scope>-->
+        <!--        </dependency>-->
         <dependency>
             <!-- for openapi generator -->
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
             <version>0.2.6</version>
         </dependency>
+        <dependency>
+            <groupId>org.jmolecules</groupId>
+            <artifactId>jmolecules-ddd</artifactId>
+            <version>1.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${org.mapstruct.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mapstruct.extensions.spring</groupId>
+            <artifactId>mapstruct-spring-annotations</artifactId>
+            <version>${org.mapstruct.extensions.spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>8.0.1.Final</version>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>21</source> <!-- depending on your project -->
+                    <target>21</target> <!-- depending on your project -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${org.mapstruct.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct.extensions.spring</groupId>
+                            <artifactId>mapstruct-spring-extensions</artifactId>
+                            <version>${org.mapstruct.extensions.spring.version}</version>
+                        </path>
+                        <!-- other annotation processors -->
+                    </annotationProcessorPaths>
+                    <showWarnings>true</showWarnings>
+                    <compilerArgs>
+                        <arg>
+                            -Amapstruct.suppressGeneratorTimestamp=true
+                        </arg>
+                        <arg>
+                            -Amapstruct.suppressGeneratorVersionInfoComment=true
+                        </arg>
+                        <arg>
+                            -Amapstruct.verbose=true
+                        </arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -150,7 +207,8 @@
                                 <resource>
                                     <directory>${project.basedir}/..</directory> <!-- your source directory -->
                                     <includes>
-                                        <include>klabis-api-spec.yaml</include> <!-- the specific file you want to copy -->
+                                        <include>klabis-api-spec.yaml
+                                        </include> <!-- the specific file you want to copy -->
                                     </includes>
                                     <filtering>false</filtering>
                                 </resource>
@@ -175,14 +233,15 @@
                             <generatorName>spring</generatorName>
                             <library>spring-boot</library>
                             <modelPackage>club.klabis.api.dto</modelPackage>
-                            <modelNameSuffix>Dto</modelNameSuffix>
+                            <modelNameSuffix>ApiDto</modelNameSuffix>
                             <apiPackage>club.klabis.api</apiPackage>
+                            <verbose>false</verbose>
                             <configOptions>
                                 <sourceFolder>src/gen/java/main</sourceFolder>
                                 <dateLibrary>java8</dateLibrary>
                                 <!--library>spring-boot</library-->
                                 <useSpringBoot3>true</useSpringBoot3>
-                                <useOptional>true</useOptional>
+                                <useOptional>false</useOptional>
                                 <openApiNullable>false</openApiNullable>
                                 <generateBuilders>true</generateBuilders>
                                 <useSpringController>true</useSpringController>
