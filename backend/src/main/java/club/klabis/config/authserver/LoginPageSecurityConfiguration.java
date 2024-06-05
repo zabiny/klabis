@@ -19,7 +19,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration(proxyBeanMethods = false)
 public class LoginPageSecurityConfiguration {
 
-    public static RequestMatcher UI_REQUESTS_MATCHER = new OrRequestMatcher(AntPathRequestMatcher.antMatcher("/login"), AntPathRequestMatcher.antMatcher("/logout"), AntPathRequestMatcher.antMatcher("/login/**"));
+    public static RequestMatcher UI_REQUESTS_MATCHER = new OrRequestMatcher(AntPathRequestMatcher.antMatcher("/login"), AntPathRequestMatcher.antMatcher("/oauth2/**"), AntPathRequestMatcher.antMatcher("/logout"), AntPathRequestMatcher.antMatcher("/login/**"));
 
     @Bean
     @Order(AuthorizationServerConfiguration.AUTH_SERVER_LOGIN_PAGE)
