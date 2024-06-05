@@ -1,7 +1,8 @@
 package club.klabis.adapters.api.mappers;
 
-import club.klabis.api.dto.LegalGuardianApiDto;
-import club.klabis.domain.members.LegalGuardian;
+
+import club.klabis.api.dto.RefereeLicenceApiDto;
+import club.klabis.domain.members.RefereeLicence;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -9,14 +10,13 @@ import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
 
 @Mapper(config = ApiDtoMapperConfiguration.class)
-interface LegalGuardianApiDtoMapper extends Converter<LegalGuardian, LegalGuardianApiDto> {
+interface RefereeLicenceApiDtoMapper extends Converter<RefereeLicence, RefereeLicenceApiDto> {
 
     @Override
-    @Mapping(source = "contacts", target = "contact")
-    LegalGuardianApiDto convert(LegalGuardian source);
+    @Mapping(target = "licence", source = "licenceType")
+    RefereeLicenceApiDto convert(RefereeLicence source);
 
     @DelegatingConverter
     @InheritInverseConfiguration
-    LegalGuardian fromApiDto(LegalGuardianApiDto apiDto);
-
+    RefereeLicence fromApiDto(RefereeLicenceApiDto apiDto);
 }

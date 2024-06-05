@@ -1,11 +1,13 @@
 package club.klabis.domain.members.forms;
 
 import club.klabis.domain.members.*;
+import io.soabase.recordbuilder.core.RecordBuilder;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
+@RecordBuilder
 public record RegistrationForm(
         String firstName,
         String lastName,
@@ -14,9 +16,9 @@ public record RegistrationForm(
         String birthCertificateNumber,
         String nationality,
         Address address,
-        Contact contact,
+        Collection<Contact> contact,
         List<LegalGuardian> guardians,
-        BigDecimal siCard,
+        String siCard,
         String bankAccount,
         RegistrationNumber registrationNumber,
         Integer orisId

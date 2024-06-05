@@ -1,7 +1,7 @@
 package club.klabis.adapters.api.mappers;
 
-import club.klabis.api.dto.AddressApiDto;
-import club.klabis.domain.members.Address;
+import club.klabis.api.dto.IdentityCardApiDto;
+import club.klabis.domain.members.IdentityCard;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
@@ -9,9 +9,8 @@ import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
 
 @Mapper(config = ApiDtoMapperConfiguration.class, unmappedSourcePolicy = ReportingPolicy.ERROR)
-interface AddressApiDtoMapper extends Converter<Address, AddressApiDto> {
+interface IdentityCardApiDtoMapper extends Converter<IdentityCard, IdentityCardApiDto> {
     @DelegatingConverter
     @InheritInverseConfiguration
-    Address fromApiDto(AddressApiDto apiDto);
-
+    IdentityCard fromApiDto(IdentityCardApiDto apiDto);
 }

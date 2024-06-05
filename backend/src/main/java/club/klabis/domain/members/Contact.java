@@ -4,7 +4,8 @@ import org.jmolecules.ddd.annotation.ValueObject;
 
 @ValueObject
 public record Contact(
-        String email,
-        String phone,
+        ContactType type,
+        String value,
         String note) {
 }
+
