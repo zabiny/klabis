@@ -488,9 +488,7 @@ components:
               format: date
               description: Date of birth of the club member
             contact:
-              type: array
-              items:
-                $ref: '#/components/schemas/Contact'
+              $ref: '#/components/schemas/Contact'
             legalGuardians:
               type: array
               items:
