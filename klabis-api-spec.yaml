@@ -412,6 +412,11 @@ components:
           description: Note about the contact
     Address:
       type: object
+      required:
+        - streetAndNumber
+        - city
+        - postalCode
+        - country
       properties:
         streetAndNumber:
           type: string
