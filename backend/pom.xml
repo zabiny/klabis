@@ -20,6 +20,7 @@
         </project.docker.image.name>
         <org.mapstruct.version>1.6.0.Beta1</org.mapstruct.version>
         <org.mapstruct.extensions.spring.version>1.1.1</org.mapstruct.extensions.spring.version>
+        <record.builder.version>41</record.builder.version>
     </properties>
 
     <dependencies>
@@ -122,6 +123,12 @@
             <artifactId>hibernate-validator</artifactId>
             <version>8.0.1.Final</version>
         </dependency>
+        <dependency>
+            <groupId>io.soabase.record-builder</groupId>
+            <artifactId>record-builder-processor</artifactId>
+            <version>${record.builder.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -147,17 +154,6 @@
                         <!-- other annotation processors -->
                     </annotationProcessorPaths>
                     <showWarnings>true</showWarnings>
-                    <compilerArgs>
-                        <arg>
-                            -Amapstruct.suppressGeneratorTimestamp=true
-                        </arg>
-                        <arg>
-                            -Amapstruct.suppressGeneratorVersionInfoComment=true
-                        </arg>
-                        <arg>
-                            -Amapstruct.verbose=true
-                        </arg>
-                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
