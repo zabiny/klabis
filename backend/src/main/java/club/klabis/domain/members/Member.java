@@ -1,13 +1,17 @@
 package club.klabis.domain.members;
 
+import club.klabis.common.ConversionUtils;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
+
+import static club.klabis.common.ConversionUtils.list;
 
 // TODO: split into ApplicationUser (with security stuff) and Member (for club Member information)
 @AggregateRoot
@@ -15,6 +19,7 @@ public class Member extends AbstractAggregateRoot<Member> {
     private static int MAX_ID = 0;
 
     // required attributes
+    // TODO: convert to value object
     private int id;
     private String firstName;
     private String lastName;
@@ -22,9 +27,11 @@ public class Member extends AbstractAggregateRoot<Member> {
     private Address address;
     private LocalDate dateOfBirth;
     private Sex sex;
+    // TODO: convert to value object
     private String nationality;
 
     // optional attributes
+    // TODO: convert to value object
     private String birthCertificateNumber;
     private IdentityCard identityCard;
     private Collection<Contact> contact;
@@ -33,7 +40,10 @@ public class Member extends AbstractAggregateRoot<Member> {
     private OBLicence obLicence;
     private TrainerLicence trainerLicence;
     private RefereeLicence refereeLicence;
+    // TODO: maybe convert to value object
     private Integer orisId;
+    // TODO: convert to value object
+    private String bankAccount;
 
     // ApplicationUser attributes
     private String password;
@@ -50,15 +60,16 @@ public class Member extends AbstractAggregateRoot<Member> {
         result.sex = registrationForm.sex();
         result.birthCertificateNumber = registrationForm.birthCertificateNumber();
         result.dateOfBirth = registrationForm.dateOfBirth();
-        result.contact = registrationForm.contact();
-        result.legalGuardians = new LinkedList<>(registrationForm.guardians());
+        result.contact = list(registrationForm.contact());
+        result.legalGuardians = list(registrationForm.guardians());
         result.siCard = registrationForm.siCard();
         result.nationality = registrationForm.nationality();
         result.orisId = registrationForm.orisId();
+        result.bankAccount = registrationForm.bankAccount();
         return result;
     }
 
-    public static Member newMember(RegistrationNumber registrationNumber, String password) {
+    static Member newMember(RegistrationNumber registrationNumber, String password) {
         Member result = new Member();
         result.registration = registrationNumber;
         result.password = password;
@@ -130,10 +141,6 @@ public class Member extends AbstractAggregateRoot<Member> {
         return legalGuardians;
     }
 
-    public static int getMaxId() {
-        return MAX_ID;
-    }
-
     public String getNationality() {
         return nationality;
     }
@@ -168,5 +175,9 @@ public class Member extends AbstractAggregateRoot<Member> {
 
     public Optional<Integer> getOrisId() {
         return Optional.ofNullable(orisId);
+    }
+
+    public Optional<String> getBankAccount() {
+        return Optional.ofNullable(bankAccount);
     }
 }
