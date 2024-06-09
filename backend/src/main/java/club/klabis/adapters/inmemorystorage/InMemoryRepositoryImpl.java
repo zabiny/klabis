@@ -1,5 +1,6 @@
 package club.klabis.adapters.inmemorystorage;
 
+import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.repository.ListCrudRepository;
 
 import java.util.HashMap;
@@ -9,13 +10,13 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
-abstract class MapBackedRepository<E, I> implements ListCrudRepository<E, I> {
+class InMemoryRepositoryImpl<E extends AbstractAggregateRoot<E>, I> implements InMemoryRepository<E, I>, ListCrudRepository<E, I> {
 
     private Map<I, E> data = new HashMap<>();
 
     private final Function<E, I> idExtractor;
 
-    public MapBackedRepository(Function<E, I> idExtractor) {
+    InMemoryRepositoryImpl(Function<E, I> idExtractor) {
         this.idExtractor = idExtractor;
     }
 
@@ -57,17 +58,17 @@ abstract class MapBackedRepository<E, I> implements ListCrudRepository<E, I> {
 
     @Override
     public void deleteById(I i) {
-        data.remove(i);
+        throw new UnsupportedOperationException("This shouldn't be used as it wouldn't produce necessary events");
     }
 
     @Override
     public void delete(E entity) {
-        deleteById(idExtractor.apply(entity));
+        data.remove(idExtractor.apply(entity), entity);
     }
 
     @Override
     public void deleteAllById(Iterable<? extends I> is) {
-        is.forEach(this::deleteById);
+        throw new UnsupportedOperationException("This shouldn't be used as it wouldn't produce necessary events");
     }
 
     @Override
@@ -77,6 +78,7 @@ abstract class MapBackedRepository<E, I> implements ListCrudRepository<E, I> {
 
     @Override
     public void deleteAll() {
-        data.clear();
+        throw new UnsupportedOperationException("This shouldn't be used as it wouldn't produce necessary events");
     }
+
 }

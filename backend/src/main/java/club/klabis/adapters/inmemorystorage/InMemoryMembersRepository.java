@@ -5,7 +5,7 @@ import club.klabis.domain.members.MembersRepository;
 import org.springframework.stereotype.Component;
 
 @Component
-class InMemoryMembersRepository extends MapBackedRepository<Member, Integer> implements MembersRepository {
+abstract class InMemoryMembersRepository extends InMemoryRepositoryImpl<Member, Integer> implements MembersRepository {
     public InMemoryMembersRepository() {
         super(Member::getId);
     }
