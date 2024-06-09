@@ -106,10 +106,10 @@ server:
 
 logging:
   level:
-    org.springframework.security: TRACE
-    org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter: TRACE
-    org.springframework.security.oauth2.server: TRACE
-    org.springframework.security.oauth2.client: trace
+    #org.springframework.security: TRACE
+    #org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter: TRACE
+    #org.springframework.security.oauth2.server: TRACE
+    #org.springframework.security.oauth2.client: trace
     org.springframework.security.jackson2.SecurityJackson2Modules: INFO
     org.springframework.security.web.savedrequest.HttpSessionRequestCache: TRACE
     #org.springframework.web.client.RestTemplate: DEBUG
