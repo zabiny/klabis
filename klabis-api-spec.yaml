@@ -386,7 +386,7 @@ components:
       type: string
       enum: [ B, BE, C, D ]
     SICard:
-      type: number
+      type: integer
       description: SI chip used by member
     Sex:
       type: string
@@ -494,7 +494,7 @@ components:
               items:
                 $ref: '#/components/schemas/LegalGuardian'
             siCard:
-              type: number
+              type: integer
               description: Chip number assigned to the club member
             nationality:
               $ref: '#/components/schemas/CountryCode'

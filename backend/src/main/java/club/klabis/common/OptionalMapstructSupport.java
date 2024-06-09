@@ -1,5 +1,6 @@
 package club.klabis.common;
 
+import org.mapstruct.Condition;
 import org.mapstruct.Mapper;
 
 import java.util.Optional;
@@ -15,5 +16,9 @@ public interface OptionalMapstructSupport {
         return value.orElse(null);
     }
 
+    @Condition
+    default boolean hasValue(Optional<?> value) {
+        return value.isPresent();
+    }
 
 }
