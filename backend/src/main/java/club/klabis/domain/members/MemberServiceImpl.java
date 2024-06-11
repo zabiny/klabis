@@ -3,6 +3,7 @@ package club.klabis.domain.members;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,5 +51,15 @@ class MemberServiceImpl implements MemberService {
     @Override
     public Optional<Member> findById(Integer memberId) {
         return membersRepository.findById(memberId);
+    }
+
+    @Override
+    public RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex) {
+        return membersRepository.findMembersByBirthYearAndSex(dateOfBirth.getYear(), sex).stream()
+                .map(Member::getRegistration)
+                .sorted()
+                .reduce((first, second) -> second)    // find last item
+                .map(RegistrationNumber::followingRegistrationNumber)
+                .orElseGet(() -> RegistrationNumber.ofZbmClub(dateOfBirth.getYear(), 1));
     }
 }

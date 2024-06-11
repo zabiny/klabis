@@ -2,6 +2,7 @@ package club.klabis.adapters.inmemorystorage;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.repository.ListCrudRepository;
@@ -31,17 +32,19 @@ class InMemoryRepositoryWithEventsFactory {
         this.publisher = publisher;
     }
 
-    public <T extends ListCrudRepository<D, I>, D extends AbstractAggregateRoot<D>, I> T createInMemoryRepositoryWithEvents(Class<? extends T> repoInterface, Class<D> domainType, Function<D, I> idExtractor) {
-
+    public <T, X extends T, D> T decorateWithEventsPublisher(Class<T> repoInterface, Object proxyTarget, Class<D> domainType) {
         EventPublishingRepositoryProxyPostProcessor processor = new EventPublishingRepositoryProxyPostProcessor(publisher);
-
-        InMemoryRepositoryImpl<D, I> target = new InMemoryRepositoryImpl<>(idExtractor);
-
-        ProxyFactory factory = new ProxyFactory(target);
+        ProxyFactory factory = new ProxyFactory(proxyTarget);
         factory.addInterface(repoInterface);
         processor.postProcess(factory, new DomainInfoInRepositoryInformation(domainType));
-
         return (T) factory.getProxy();
+    }
+
+    // Creates repository using Proxy with default InMemoryRepositoryImpl. Usable for repositories without customized methods
+    public <T extends ListCrudRepository<D, I>, D extends AbstractAggregateRoot<D>, I> T createInMemoryRepositoryWithEvents(Class<T> repoInterface, Class<D> domainType, Function<D, I> idExtractor) {
+        InMemoryRepositoryImpl<D, I> target = new InMemoryRepositoryImpl<>(idExtractor);
+
+        return decorateWithEventsPublisher(repoInterface, target, domainType);
     }
 
     /**

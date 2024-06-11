@@ -287,9 +287,9 @@ paths:
               schema:
                 type: object
                 required:
-                  - availableRegistrationNumber
+                  - suggestedRegistrationNumber
                 properties:
-                  availableRegistrationNumber:
+                  suggestedRegistrationNumber:
                     $ref: '#/components/schemas/RegistrationNumber'
         '400':
           $ref: '#/components/responses/400'

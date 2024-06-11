@@ -3,7 +3,7 @@ package club.klabis.adapters.inmemorystorage;
 import java.util.List;
 import java.util.Optional;
 
-public interface InMemoryRepository<T, ID> {
+interface InMemoryRepository<T, ID> {
     <S extends T> S save(S entity);
 
     Optional<T> findById(ID id);

@@ -32,6 +32,10 @@ public final class RegistrationNumber implements Comparator<RegistrationNumber> 
         }
     }
 
+    public RegistrationNumber followingRegistrationNumber() {
+        return new RegistrationNumber(this.club, this.yearOfBirth, this.yearOrder + 1);
+    }
+
     public static RegistrationNumber ofZbmClub(int yearOfBirth, int orderInYear) {
         return new RegistrationNumber("ZBM", yearOfBirth % 100, orderInYear);
     }

@@ -16,7 +16,7 @@ class RepositoryFactory {
 
     @Bean
     public MembersRepository membersRepository() {
-        return repoFactory.createInMemoryRepositoryWithEvents(MembersRepository.class, Member.class, Member::getId);
+        return repoFactory.decorateWithEventsPublisher(MembersRepository.class, new MembersInMemoryRepository(), Member.class);
     }
 
 }
