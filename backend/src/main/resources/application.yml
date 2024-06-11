@@ -141,8 +141,12 @@ spring:
     activate:
       on-profile: inmemorydb
 
-  datasource:
-    url: jdbc:h2:mem:klabis
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration, org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration, org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration
+
+# at this moment using custom InMemory repositories
+#  datasource:
+#    url: jdbc:h2:mem:klabis
 
   h2:
     console:
