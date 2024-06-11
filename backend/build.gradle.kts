@@ -86,7 +86,7 @@ configurations {
 }
 
 java.sourceSets["main"].java {
-    srcDir("$buildDir/generated/klabisapi/src/main")
+    srcDir("$buildDir/generated/klabisapi/src/main/java")
 }
 
 tasks.withType<JavaCompile>() {
