@@ -291,11 +291,13 @@ paths:
       parameters:
         - name: dateOfBirth
           in: query
+          required: true
           schema:
             type: string
             format: date
         - name: sex
           in: query
+          required: true
           schema:
             $ref: '#/components/schemas/Sex'
       responses:
