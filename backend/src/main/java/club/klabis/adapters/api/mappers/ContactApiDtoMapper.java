@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-@Mapper(config = ApiDtoMapperConfiguration.class)
+@Mapper(config = DomainToApiDtoMapperConfiguration.class)
 interface ContactApiDtoMapper extends Converter<Collection<Contact>, ContactApiDto> {
 
     @Override

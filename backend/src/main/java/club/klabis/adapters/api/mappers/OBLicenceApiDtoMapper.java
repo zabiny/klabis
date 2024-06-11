@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
 
-@Mapper(config = ApiDtoMapperConfiguration.class)
+@Mapper(config = DomainToApiDtoMapperConfiguration.class)
 interface OBLicenceApiDtoMapper extends Converter<OBLicence, OBLicenceApiDto> {
     @Override
     @Mapping(target = "licence", source = ".")

@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
 
-@Mapper(config = ApiDtoMapperConfiguration.class)
+@Mapper(config = DomainToApiDtoMapperConfiguration.class)
 interface SexApiDtoMapper extends Converter<Sex, SexApiDto> {
     @DelegatingConverter
     @InheritInverseConfiguration

@@ -6,7 +6,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
 
-@Mapper(config = ApiDtoMapperConfiguration.class)
+@Mapper(config = DomainToApiDtoMapperConfiguration.class)
 public interface MemberCompactViewMapper extends Converter<Member, MemberViewCompactApiDto> {
 
     @Mapping(target = "id", ignore = true)

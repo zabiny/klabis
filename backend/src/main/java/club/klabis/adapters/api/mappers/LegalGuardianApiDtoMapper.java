@@ -8,7 +8,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
 
-@Mapper(config = ApiDtoMapperConfiguration.class)
+@Mapper(config = DomainToApiDtoMapperConfiguration.class)
 interface LegalGuardianApiDtoMapper extends Converter<LegalGuardian, LegalGuardianApiDto> {
 
     @Override
