@@ -1,6 +1,7 @@
 package club.klabis.domain.members;
 
 import club.klabis.domain.members.events.MemberCreatedEvent;
+import club.klabis.domain.members.events.MemberEditedEvent;
 import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -105,6 +106,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         this.dateOfBirth = form.dateOfBirth();
         this.birthCertificateNumber = form.birthCertificateNumber();
         this.sex = form.sex();
+        this.andEvent(new MemberEditedEvent(this));
     }
 
     public void linkWithGoogle(String googleSubject) {
