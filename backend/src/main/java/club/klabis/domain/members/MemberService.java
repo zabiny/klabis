@@ -19,4 +19,6 @@ public interface MemberService {
     Member registerMember(@Valid RegistrationForm registrationForm);
 
     List<Member> findAll(boolean includeSuspended);
+
+    Optional<Member> findById(Integer memberId);
 }

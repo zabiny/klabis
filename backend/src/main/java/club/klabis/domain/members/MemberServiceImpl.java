@@ -46,4 +46,9 @@ class MemberServiceImpl implements MemberService {
     public List<Member> findAll(boolean includeSuspended) {
         return membersRepository.findAll();
     }
+
+    @Override
+    public Optional<Member> findById(Integer memberId) {
+        return membersRepository.findById(memberId);
+    }
 }
