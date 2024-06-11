@@ -1,6 +1,6 @@
 package club.klabis.domain.members;
 
-import club.klabis.common.ConversionUtils;
+import club.klabis.domain.members.events.MemberCreatedEvent;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -34,8 +34,8 @@ public class Member extends AbstractAggregateRoot<Member> {
     // TODO: convert to value object
     private String birthCertificateNumber;
     private IdentityCard identityCard;
-    private Collection<Contact> contact;
-    private Collection<LegalGuardian> legalGuardians;
+    private Collection<Contact> contact = new ArrayList<>();
+    private Collection<LegalGuardian> legalGuardians = new ArrayList<>();
     private String siCard;
     private OBLicence obLicence;
     private TrainerLicence trainerLicence;
@@ -44,6 +44,10 @@ public class Member extends AbstractAggregateRoot<Member> {
     private Integer orisId;
     // TODO: convert to value object
     private String bankAccount;
+
+    private boolean medicCourse;
+    private String dietaryRestrictions;
+    private List<DrivingLicence> drivingLicence = new ArrayList<>();
 
     // ApplicationUser attributes
     private String password;
@@ -66,7 +70,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         result.nationality = registrationForm.nationality();
         result.orisId = registrationForm.orisId();
         result.bankAccount = registrationForm.bankAccount();
-        return result;
+        return result.andEvent(new MemberCreatedEvent(result));
     }
 
     static Member newMember(RegistrationNumber registrationNumber, String password) {
@@ -149,10 +153,6 @@ public class Member extends AbstractAggregateRoot<Member> {
         return sex;
     }
 
-    public int getId() {
-        return id;
-    }
-
     public Optional<IdentityCard> getIdentityCard() {
         return Optional.ofNullable(identityCard);
     }
@@ -179,5 +179,21 @@ public class Member extends AbstractAggregateRoot<Member> {
 
     public Optional<String> getBankAccount() {
         return Optional.ofNullable(bankAccount);
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public boolean isMedicCourse() {
+        return medicCourse;
+    }
+
+    public List<DrivingLicence> getDrivingLicence() {
+        return drivingLicence;
+    }
+
+    public Optional<String> getDietaryRestrictions() {
+        return Optional.ofNullable(dietaryRestrictions);
     }
 }
