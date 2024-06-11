@@ -26,10 +26,6 @@ public class MembersController implements MembersApi {
         this.conversionService = conversionService;
     }
 
-    private ProblemDetail memberNotFoundProblemDetail(Integer memberId) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Member id %s not found".formatted(memberId));
-    }
-
     @Override
     public ResponseEntity<MemberEditFormApiDto> membersMemberIdEditMemberInfoFormGet(Integer memberId) {
         return service.findById(memberId)
@@ -48,7 +44,7 @@ public class MembersController implements MembersApi {
     public ResponseEntity<MemberApiDto> membersMemberIdGet(Integer memberId) {
         return service.findById(memberId)
                 .map(m -> mapToResponseEntity(m, MemberApiDto.class))
-                .orElseThrow(() -> new ErrorResponseException(HttpStatus.NOT_FOUND, memberNotFoundProblemDetail(memberId), null));
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
     @Override
