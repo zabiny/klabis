@@ -1,12 +1,11 @@
 package club.klabis.adapters.api;
 
 import club.klabis.api.MembersApi;
-import club.klabis.api.dto.MemberApiDto;
-import club.klabis.api.dto.MemberViewCompactApiDto;
-import club.klabis.api.dto.MembersListApiDto;
-import club.klabis.api.dto.MembersListItemsInnerApiDto;
+import club.klabis.api.dto.*;
 import club.klabis.domain.members.Member;
+import club.klabis.domain.members.MemberNotFoundException;
 import club.klabis.domain.members.MemberService;
+import club.klabis.domain.members.forms.MemberEditForm;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -29,6 +28,20 @@ public class MembersController implements MembersApi {
 
     private ProblemDetail memberNotFoundProblemDetail(Integer memberId) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Member id %s not found".formatted(memberId));
+    }
+
+    @Override
+    public ResponseEntity<MemberEditFormApiDto> membersMemberIdEditMemberInfoFormGet(Integer memberId) {
+        return service.findById(memberId)
+                .map(m -> mapToResponseEntity(m, MemberEditFormApiDto.class))
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+    }
+
+    @Override
+    public ResponseEntity<Void> membersMemberIdEditMemberInfoFormPut(Integer memberId, MemberEditFormApiDto memberEditFormApiDto) {
+        service.editMember(memberId, conversionService.convert(memberEditFormApiDto, MemberEditForm.class));
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @Override
@@ -56,4 +69,5 @@ public class MembersController implements MembersApi {
             return conversionService.convert(item, MemberViewCompactApiDto.class);
         }
     }
+
 }

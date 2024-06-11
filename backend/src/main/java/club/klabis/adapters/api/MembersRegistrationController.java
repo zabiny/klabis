@@ -2,7 +2,7 @@ package club.klabis.adapters.api;
 
 import club.klabis.api.MemberRegistrationsApi;
 import club.klabis.api.dto.MemberRegistrationFormApiDto;
-import club.klabis.domain.members.MemberRegistrationError;
+import club.klabis.domain.members.MemberRegistrationException;
 import club.klabis.domain.members.MemberService;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.springframework.core.convert.ConversionService;
@@ -30,8 +30,4 @@ public class MembersRegistrationController implements MemberRegistrationsApi {
         return ResponseEntity.ok(null);
     }
 
-    @ExceptionHandler(MemberRegistrationError.class)
-    public ErrorResponse handleMeberRegistrationError(MemberRegistrationError error) {
-        return ErrorResponse.builder(error, ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, error.getMessage())).build();
-    }
 }

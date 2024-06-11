@@ -152,7 +152,28 @@ paths:
         required: true
         schema:
           type: integer
-    post:
+    get:
+      tags:
+        - members
+      summary: "Returns data for edit member information form"
+      responses:
+        '200':
+          description: Club member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberEditForm'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+    put:
       tags:
         - members
       summary: "Update member information"
@@ -161,9 +182,7 @@ paths:
         content:
           application/json:
             schema:
-              anyOf:
-                - $ref: '#/components/schemas/EditMyDetailsForm'
-                - $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
+              $ref: '#/components/schemas/MemberEditForm'
       responses:
         '200':
           description: Club member updated successfully
@@ -657,7 +676,7 @@ components:
         Additional validations:
         - either contact or at least 1 guardian needs to be entered
       required:
-        - identityCard
+        - nationality
         - address
       properties:
         identityCard:
@@ -754,6 +773,11 @@ components:
           $ref: '#/components/schemas/RefereeLicence'
         trainer:
           $ref: '#/components/schemas/TrainerLicence'
+    MemberEditForm:
+      description: Form to edit member information
+      anyOf:
+        - $ref: '#/components/schemas/EditMyDetailsForm'
+        - $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
     SuspendMembershipBlockers:
       type: object
       description: describes conditions which may prevent membership suspension and their actual status

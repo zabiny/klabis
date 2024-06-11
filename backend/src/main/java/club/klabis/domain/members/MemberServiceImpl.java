@@ -1,7 +1,9 @@
 package club.klabis.domain.members;
 
+import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,10 +31,11 @@ class MemberServiceImpl implements MemberService {
         return membersRepository.findAll().stream().filter(it -> googleSub.equals(it.getGoogleSubject())).findAny();
     }
 
+    @Transactional
     @Override
     public Member registerMember(RegistrationForm registrationForm) {
         if (isRegistrationNumberUsed(registrationForm.registrationNumber())) {
-            throw new MemberRegistrationError("Registration number '%s' is already used".formatted(registrationForm.registrationNumber()));
+            throw new MemberRegistrationException("Registration number '%s' is already used".formatted(registrationForm.registrationNumber()));
         }
 
         Member newMember = Member.newMember(registrationForm);
@@ -61,5 +64,15 @@ class MemberServiceImpl implements MemberService {
                 .reduce((first, second) -> second)    // find last item
                 .map(RegistrationNumber::followingRegistrationNumber)
                 .orElseGet(() -> RegistrationNumber.ofZbmClub(dateOfBirth.getYear(), 1));
+    }
+
+    @Transactional
+    @Override
+    public Member editMember(Integer memberId, MemberEditForm editForm) {
+        Member member = membersRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException("Member with id '%s' doesn't exist".formatted(memberId)));
+
+        member.editMember(editForm);
+        return membersRepository.save(member);
     }
 }

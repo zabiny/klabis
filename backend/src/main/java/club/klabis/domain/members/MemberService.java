@@ -1,6 +1,6 @@
 package club.klabis.domain.members;
 
-import club.klabis.api.dto.SexApiDto;
+import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
 import jakarta.validation.Valid;
 import org.jmolecules.ddd.annotation.Service;
@@ -25,4 +25,6 @@ public interface MemberService {
     Optional<Member> findById(Integer memberId);
 
     RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex);
+
+    Member editMember(Integer memberId, @Valid MemberEditForm editForm);
 }

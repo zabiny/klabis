@@ -1,6 +1,7 @@
 package club.klabis.domain.members;
 
 import club.klabis.domain.members.events.MemberCreatedEvent;
+import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -83,6 +84,27 @@ public class Member extends AbstractAggregateRoot<Member> {
     protected Member() {
         this.password = "{noop}secret";
         this.id = ++MAX_ID;
+    }
+
+    public void editMember(MemberEditForm form) {
+        this.firstName = form.firstName();
+        this.lastName = form.lastName();
+        this.identityCard = form.identityCard();
+        this.nationality = form.nationality();
+        this.address = form.address();
+        this.contact.clear();
+        this.contact.addAll(form.contact());
+        this.legalGuardians.clear();
+        this.legalGuardians.addAll(form.guardians());
+        this.siCard = form.siCard();
+        this.bankAccount = form.bankAccount();
+        this.dietaryRestrictions = form.dietaryRestrictions();
+        this.drivingLicence.clear();
+        this.drivingLicence.addAll(form.drivingLicence());
+        this.medicCourse = form.medicCourse();
+        this.dateOfBirth = form.dateOfBirth();
+        this.birthCertificateNumber = form.birthCertificateNumber();
+        this.sex = form.sex();
     }
 
     public void linkWithGoogle(String googleSubject) {
