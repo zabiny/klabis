@@ -15,35 +15,20 @@ class MemberServiceImpl implements MemberService {
 
     MemberServiceImpl(MembersRepository membersRepository) {
         this.membersRepository = membersRepository;
-        Member admin = Member.newMember(RegistrationNumber.ofRegistrationId("ZBM8003"), "{noop}secret");
+        Member admin = Member.fromRegistration(RegistrationNumber.ofRegistrationId("ZBM8003"), "{noop}secret");
         admin.linkWithGoogle("110875617296914468258");
         admin.setObLicence(OBLicence.C);
         membersRepository.save(admin);
     }
 
     @Override
-    public Optional<Member> findByUserName(String username) {
-        return membersRepository.findAll().stream().filter(it -> username.equals(it.getRegistration().toRegistrationId())).findAny();
-    }
-
-    @Override
     public Optional<Member> findByGoogleSubject(String googleSub) {
-        return membersRepository.findAll().stream().filter(it -> googleSub.equals(it.getGoogleSubject())).findAny();
+        return membersRepository.findByGoogleSubject(googleSub);
     }
 
-    @Transactional
     @Override
-    public Member registerMember(RegistrationForm registrationForm) {
-        if (isRegistrationNumberUsed(registrationForm.registrationNumber())) {
-            throw new MemberRegistrationException("Registration number '%s' is already used".formatted(registrationForm.registrationNumber()));
-        }
-
-        Member newMember = Member.newMember(registrationForm);
-        return membersRepository.save(newMember);
-    }
-
-    private boolean isRegistrationNumberUsed(RegistrationNumber registrationNumber) {
-        return membersRepository.findAll().stream().anyMatch(it -> it.getRegistration().equals(registrationNumber));
+    public Optional<Member> findByUserName(String username) {
+        return membersRepository.findByUserName(username);
     }
 
     @Override
@@ -54,6 +39,18 @@ class MemberServiceImpl implements MemberService {
     @Override
     public Optional<Member> findById(Integer memberId) {
         return membersRepository.findById(memberId);
+    }
+
+
+    @Transactional
+    @Override
+    public Member registerMember(RegistrationForm registrationForm) {
+        if (membersRepository.isRegistrationNumberUsed(registrationForm.registrationNumber())) {
+            throw new MemberRegistrationFailedException("Registration number '%s' is already used".formatted(registrationForm.registrationNumber()));
+        }
+
+        Member newMember = Member.fromRegistration(registrationForm);
+        return membersRepository.save(newMember);
     }
 
     @Override
@@ -72,7 +69,7 @@ class MemberServiceImpl implements MemberService {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException("Member with id '%s' doesn't exist".formatted(memberId)));
 
-        member.editMember(editForm);
+        member.edit(editForm);
         return membersRepository.save(member);
     }
 }

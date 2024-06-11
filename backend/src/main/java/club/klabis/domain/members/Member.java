@@ -57,7 +57,7 @@ public class Member extends AbstractAggregateRoot<Member> {
     private String githubSubject;
 
 
-    public static Member newMember(RegistrationForm registrationForm) {
+    public static Member fromRegistration(RegistrationForm registrationForm) {
         Member result = new Member();
         result.firstName = registrationForm.firstName();
         result.lastName = registrationForm.lastName();
@@ -75,7 +75,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         return result.andEvent(new MemberCreatedEvent(result));
     }
 
-    static Member newMember(RegistrationNumber registrationNumber, String password) {
+    static Member fromRegistration(RegistrationNumber registrationNumber, String password) {
         Member result = new Member();
         result.registration = registrationNumber;
         result.password = password;
@@ -87,7 +87,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         this.id = ++MAX_ID;
     }
 
-    public void editMember(MemberEditForm form) {
+    public void edit(MemberEditForm form) {
         this.firstName = form.firstName();
         this.lastName = form.lastName();
         this.identityCard = form.identityCard();
