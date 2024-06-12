@@ -16,4 +16,6 @@ public interface MembersRepository extends ListCrudRepository<Member, Integer> {
     Optional<Member> findByGoogleSubject(String googleSub);
 
     boolean isRegistrationNumberUsed(RegistrationNumber registrationNumber);
+
+    List<Member> findAllActive();
 }

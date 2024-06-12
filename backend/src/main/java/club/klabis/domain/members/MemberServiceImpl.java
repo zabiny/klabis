@@ -33,7 +33,11 @@ class MemberServiceImpl implements MemberService {
 
     @Override
     public List<Member> findAll(boolean includeSuspended) {
-        return membersRepository.findAll();
+        if (includeSuspended) {
+            return membersRepository.findAll();
+        } else {
+            return membersRepository.findAllActive();
+        }
     }
 
     @Override
@@ -76,6 +80,24 @@ class MemberServiceImpl implements MemberService {
     @Override
     public Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(int memberId) {
         return membersRepository.findById(memberId)
-                .map(m -> new MembershipSuspensionInfo(true,true));
+                .map(this::suspensionInfoForMember);
+    }
+
+    private MembershipSuspensionInfo suspensionInfoForMember(Member member) {
+        return new MembershipSuspensionInfo(member.isSuspended(),true);
+    }
+
+    @Override
+    @Transactional
+    public void suspendMembershipForMember(int memberId, boolean forceSuspension) {
+        Member memberForSuspension = membersRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+
+        if (forceSuspension || suspensionInfoForMember(memberForSuspension).canSuspendAccount()) {
+            memberForSuspension.suspend();
+            membersRepository.save(memberForSuspension);
+        } else {
+            throw new MembershipCannotBeSuspendedException(memberId, "member is already suspended");
+        }
     }
 }

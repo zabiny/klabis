@@ -33,5 +33,8 @@ class MembersInMemoryRepository extends InMemoryRepositoryImpl<Member, Integer> 
         return this.findAll().stream().anyMatch(it -> it.getRegistration().equals(registrationNumber));
     }
 
-
+    @Override
+    public List<Member> findAllActive() {
+        return findAll().stream().filter(m -> !m.isSuspended()).toList();
+    }
 }

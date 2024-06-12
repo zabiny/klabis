@@ -2,6 +2,7 @@ package club.klabis.domain.members;
 
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import club.klabis.domain.members.events.MemberEditedEvent;
+import club.klabis.domain.members.events.MemberWasSuspendedEvent;
 import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -56,6 +57,8 @@ public class Member extends AbstractAggregateRoot<Member> {
     private String googleSubject;
     private String githubSubject;
 
+    // other attributes
+    private boolean suspended = false;
 
     public static Member fromRegistration(RegistrationForm registrationForm) {
         Member result = new Member();
@@ -123,6 +126,13 @@ public class Member extends AbstractAggregateRoot<Member> {
 
     public void setTrainerLicence(TrainerLicenceType licenceType, LocalDate expiryDate) {
         this.trainerLicence = new TrainerLicence(licenceType, expiryDate);
+    }
+
+    public void suspend() {
+        if (!this.suspended) {
+            this.suspended = true;
+            this.andEvent(new MemberWasSuspendedEvent(this));
+        }
     }
 
     public Address getAddress() {
@@ -219,5 +229,9 @@ public class Member extends AbstractAggregateRoot<Member> {
 
     public Optional<String> getDietaryRestrictions() {
         return Optional.ofNullable(dietaryRestrictions);
+    }
+
+    public boolean isSuspended() {
+        return suspended;
     }
 }

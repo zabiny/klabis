@@ -29,4 +29,6 @@ public interface MemberService {
     Member editMember(Integer memberId, @Valid MemberEditForm editForm);
 
     Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(int memberId);
+
+    void suspendMembershipForMember(int memberId, boolean forceSuspension);
 }

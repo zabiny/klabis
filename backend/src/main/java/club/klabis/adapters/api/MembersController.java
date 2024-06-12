@@ -60,6 +60,12 @@ public class MembersController implements MembersApi {
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
+    @Override
+    public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPost(Integer memberId, Boolean force) {
+        service.suspendMembershipForMember(memberId, force);
+        return ResponseEntity.ok(null);
+    }
+
     private <T> ResponseEntity<T> mapToResponseEntity(Object data, Class<T> apiDtoType) {
         T payload = conversionService.convert(data, apiDtoType);
         return ResponseEntity.ok(payload);
