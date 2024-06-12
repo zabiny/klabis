@@ -220,16 +220,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - canSuspend
-                  - details
-                properties:
-                  canSuspend:
-                    type: boolean
-                    description: tells if member account can be suspended
-                  details:
-                    $ref: '#/components/schemas/SuspendMembershipBlockers'
+                $ref: '#/components/schemas/MembershipSuspensionInfo'
         '403':
           $ref: '#/components/responses/403'
         '404':
@@ -792,6 +783,21 @@ components:
       anyOf:
         - $ref: '#/components/schemas/EditMyDetailsForm'
         - $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
+    MembershipSuspensionInfo:
+      type: object
+      required:
+        - canSuspend
+        - isSuspended
+        - details
+      properties:
+        isSuspended:
+          type: boolean
+          description: tells if member account is currently suspended
+        canSuspend:
+          type: boolean
+          description: tells if member account can be suspended
+        details:
+          $ref: '#/components/schemas/SuspendMembershipBlockers'
     SuspendMembershipBlockers:
       type: object
       description: describes conditions which may prevent membership suspension and their actual status

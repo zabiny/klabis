@@ -67,9 +67,15 @@ class MemberServiceImpl implements MemberService {
     @Override
     public Member editMember(Integer memberId, MemberEditForm editForm) {
         Member member = membersRepository.findById(memberId)
-                .orElseThrow(() -> new MemberNotFoundException("Member with id '%s' doesn't exist".formatted(memberId)));
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
 
         member.edit(editForm);
         return membersRepository.save(member);
+    }
+
+    @Override
+    public Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(int memberId) {
+        return membersRepository.findById(memberId)
+                .map(m -> new MembershipSuspensionInfo(true,true));
     }
 }

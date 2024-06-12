@@ -53,6 +53,13 @@ public class MembersController implements MembersApi {
         return ResponseEntity.ok(MembersListApiDto.builder().items((List<MembersListItemsInnerApiDto>) result).build());
     }
 
+    @Override
+    public ResponseEntity<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(Integer memberId) {
+        return service.getSuspensionInfoForMember(memberId)
+                .map(d -> mapToResponseEntity(d, MembershipSuspensionInfoApiDto.class))
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+    }
+
     private <T> ResponseEntity<T> mapToResponseEntity(Object data, Class<T> apiDtoType) {
         T payload = conversionService.convert(data, apiDtoType);
         return ResponseEntity.ok(payload);

@@ -8,7 +8,7 @@ import org.mapstruct.ReportingPolicy;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
 
-@Mapper(config = DomainToApiDtoMapperConfiguration.class, unmappedSourcePolicy = ReportingPolicy.ERROR)
+@Mapper(config = DomainToApiDtoMapperConfiguration.class)
 interface AddressApiDtoMapper extends Converter<Address, AddressApiDto> {
     @DelegatingConverter
     @InheritInverseConfiguration

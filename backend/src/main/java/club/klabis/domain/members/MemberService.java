@@ -27,4 +27,6 @@ public interface MemberService {
     RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex);
 
     Member editMember(Integer memberId, @Valid MemberEditForm editForm);
+
+    Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(int memberId);
 }
