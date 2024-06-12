@@ -37,7 +37,7 @@ public class MembersController implements MembersApi {
     public ResponseEntity<Void> membersMemberIdEditMemberInfoFormPut(Integer memberId, MemberEditFormApiDto memberEditFormApiDto) {
         service.editMember(memberId, conversionService.convert(memberEditFormApiDto, MemberEditForm.class));
 
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @Override

@@ -8,7 +8,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Constraint(validatedBy = BirthCertificateIsDefinedForCzechiaValidator.class)
+@Constraint(validatedBy = {
+        BirthCertificateIsDefinedForCzechiaConstraint.RegistrationFormValidator.class,
+        BirthCertificateIsDefinedForCzechiaConstraint.MemberEditFormValidator.class
+})
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface BirthCertificateIsDefinedForCzechia {

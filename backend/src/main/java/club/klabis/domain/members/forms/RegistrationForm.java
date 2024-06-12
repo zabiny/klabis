@@ -24,7 +24,7 @@ public record RegistrationForm(
         @NotNull
         LocalDate dateOfBirth,
         String birthCertificateNumber,
-        @NotNull
+        @NotBlank
         String nationality,
         @NotNull
         Address address,
