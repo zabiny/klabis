@@ -367,6 +367,18 @@ paths:
       responses:
         '201':
           description: Registration was processed successfully
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                format: URI
+              description: URI to endpoint where details about created member can be retrieved
+            MemberId:
+              required: true
+              schema:
+                type: integer
+              description: ID of created member
         '400':
           $ref: '#/components/responses/400'
         '401':
