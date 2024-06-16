@@ -10,5 +10,5 @@ import org.mapstruct.ReportingPolicy;
  * These mappers shall implement `Converter<DOMAIN, APIDTO>` (APIDTO needs to be target, DOMAIN object needs to be source)
  */
 @MapperConfig(componentModel = "spring", uses = {ConversionServiceAdapter.class, OptionalMapstructSupport.class}, unmappedSourcePolicy = ReportingPolicy.IGNORE, unmappedTargetPolicy = ReportingPolicy.ERROR)
-interface DomainToApiDtoMapperConfiguration {
+public interface DomainToApiDtoMapperConfiguration {
 }

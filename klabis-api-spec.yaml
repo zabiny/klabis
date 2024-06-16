@@ -308,7 +308,7 @@ paths:
         '401':
           $ref: '#/components/responses/401'
 
-  /oris/userInfo/{orisId}:
+  /oris/userInfo/{regNum}:
     get:
       tags:
         - ORIS
@@ -317,12 +317,12 @@ paths:
         #### Required authorization
         requires `members:register` grant
       parameters:
-        - name: orisId
+        - name: regNum
           schema:
-            $ref: '#/components/schemas/OrisID'
+            $ref: '#/components/schemas/RegistrationNumber'
           in: path
           required: true
-          description: ORIS ID of user to retrieve ORIS data about
+          description: Registration number of user to retrieve ORIS data about
       responses:
         '200':
           description: Available information about user read from ORIS

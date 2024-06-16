@@ -1,6 +1,5 @@
 package club.klabis.adapters.api.mappers;
 
-import club.klabis.api.dto.MembersMemberIdSuspendMembershipFormGet200ResponseApiDto;
 import club.klabis.api.dto.MembershipSuspensionInfoApiDto;
 import club.klabis.api.dto.SuspendMembershipBlockersFinanceApiDto;
 import club.klabis.domain.members.MembershipSuspensionInfo;
