@@ -11,8 +11,8 @@ import java.util.Collection;
 @RecordBuilder
 @BirthCertificateIsDefinedForCzechia
 @AtLeastOneContactIsDefined.List({
-        @AtLeastOneContactIsDefined(contactType = ContactType.EMAIL, message = "At least one email contact must be provided"),
-        @AtLeastOneContactIsDefined(contactType = ContactType.PHONE, message = "At least one phone contact must be provided")
+        @AtLeastOneContactIsDefined(contactType = Contact.Type.EMAIL, message = "At least one email contact must be provided"),
+        @AtLeastOneContactIsDefined(contactType = Contact.Type.PHONE, message = "At least one phone contact must be provided")
 })
 public record RegistrationForm(
         @NotBlank

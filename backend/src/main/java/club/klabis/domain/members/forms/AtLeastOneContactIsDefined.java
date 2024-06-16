@@ -1,6 +1,6 @@
 package club.klabis.domain.members.forms;
 
-import club.klabis.domain.members.ContactType;
+import club.klabis.domain.members.Contact;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
@@ -22,7 +22,7 @@ public @interface AtLeastOneContactIsDefined {
 
     Class<? extends Payload>[] payload() default {};
 
-    ContactType contactType();
+    Contact.Type contactType();
 
     @Target({ ElementType.TYPE })
     @Retention(RetentionPolicy.RUNTIME)

@@ -4,8 +4,12 @@ import org.jmolecules.ddd.annotation.ValueObject;
 
 @ValueObject
 public record Contact(
-        ContactType type,
+        Type type,
         String value,
         String note) {
+
+    public enum Type {
+        EMAIL, PHONE
+    }
 }
 
