@@ -106,10 +106,10 @@ server:
 
 logging:
   level:
-    org.springframework.security: TRACE
-    org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter: TRACE
-    org.springframework.security.oauth2.server: TRACE
-    org.springframework.security.oauth2.client: trace
+    #org.springframework.security: TRACE
+    #org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter: TRACE
+    #org.springframework.security.oauth2.server: TRACE
+    #org.springframework.security.oauth2.client: trace
     org.springframework.security.jackson2.SecurityJackson2Modules: INFO
     org.springframework.security.web.savedrequest.HttpSessionRequestCache: TRACE
     #org.springframework.web.client.RestTemplate: DEBUG
@@ -141,8 +141,12 @@ spring:
     activate:
       on-profile: inmemorydb
 
-  datasource:
-    url: jdbc:h2:mem:klabis
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration, org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration, org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration
+
+# at this moment using custom InMemory repositories
+#  datasource:
+#    url: jdbc:h2:mem:klabis
 
   h2:
     console:

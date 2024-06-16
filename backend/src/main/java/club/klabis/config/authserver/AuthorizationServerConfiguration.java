@@ -21,7 +21,9 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 public class AuthorizationServerConfiguration {
 
     public static final int AUTH_SERVER_SECURITY_ORDER = Ordered.HIGHEST_PRECEDENCE + 5;
-    public static final int apAUTH_SERVER_LOGIN_PAGE = Ordered.LOWEST_PRECEDENCE - 5;
+    public static final int AUTH_SERVER_LOGIN_PAGE = AUTH_SERVER_SECURITY_ORDER + 10;
+    public static final int BEFORE_LOGIN_PAGE = AUTH_SERVER_LOGIN_PAGE - 2;
+    public static final int AFTER_LOGIN_PAGE = AUTH_SERVER_LOGIN_PAGE + 2;
     public static final int BEFORE_AUTH_SERVER_SECURITY_ORDER = AUTH_SERVER_SECURITY_ORDER - 2;
     public static final int AFTER_AUTH_SERVER_SECURITY_ORDER = AUTH_SERVER_SECURITY_ORDER + 2;
 

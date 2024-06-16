@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
-import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @EnableWebSecurity
@@ -20,7 +19,7 @@ public class ApiSecurityConfiguration {
     public static RequestMatcher API_ENDPOINTS_MATCHER = new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON);
 
     @Bean
-    @Order(AuthorizationServerConfiguration.AFTER_AUTH_SERVER_SECURITY_ORDER)
+    @Order(AuthorizationServerConfiguration.AFTER_LOGIN_PAGE)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(API_ENDPOINTS_MATCHER)
