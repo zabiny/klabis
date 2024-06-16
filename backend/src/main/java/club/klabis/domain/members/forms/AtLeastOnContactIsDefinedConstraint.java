@@ -1,7 +1,6 @@
 package club.klabis.domain.members.forms;
 
 import club.klabis.domain.members.Contact;
-import club.klabis.domain.members.ContactType;
 import club.klabis.domain.members.LegalGuardian;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -10,7 +9,7 @@ import java.util.Collection;
 
 class AtLeastOnContactIsDefinedConstraint {
 
-    protected static boolean isValid(Collection<Contact> contacts, Collection<LegalGuardian> guardians, ContactType requiredContactType) {
+    protected static boolean isValid(Collection<Contact> contacts, Collection<LegalGuardian> guardians, Contact.Type requiredContactType) {
         if (hasContactOfType(contacts, requiredContactType)) {
             return true;
         }
@@ -25,7 +24,7 @@ class AtLeastOnContactIsDefinedConstraint {
         return false;
     }
 
-    private static boolean hasContactOfType(Collection<Contact> contacts, ContactType contactType) {
+    private static boolean hasContactOfType(Collection<Contact> contacts, Contact.Type contactType) {
         return contacts != null && contacts.stream().anyMatch(c -> contactType.equals(c.type()));
     }
 

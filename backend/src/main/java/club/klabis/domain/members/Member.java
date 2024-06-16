@@ -124,7 +124,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         this.obLicence = obLicence;
     }
 
-    public void setTrainerLicence(TrainerLicenceType licenceType, LocalDate expiryDate) {
+    public void setTrainerLicence(TrainerLicence.Type licenceType, LocalDate expiryDate) {
         this.trainerLicence = new TrainerLicence(licenceType, expiryDate);
     }
 
