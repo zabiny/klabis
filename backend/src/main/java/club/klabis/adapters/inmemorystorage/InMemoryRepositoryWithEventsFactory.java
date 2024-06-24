@@ -33,10 +33,12 @@ class InMemoryRepositoryWithEventsFactory {
     }
 
     public <T, X extends T, D> T decorateWithEventsPublisher(Class<T> repoInterface, Object proxyTarget, Class<D> domainType) {
-        EventPublishingRepositoryProxyPostProcessor processor = new EventPublishingRepositoryProxyPostProcessor(publisher);
         ProxyFactory factory = new ProxyFactory(proxyTarget);
         factory.addInterface(repoInterface);
+
+        EventPublishingRepositoryProxyPostProcessor processor = new EventPublishingRepositoryProxyPostProcessor(publisher);
         processor.postProcess(factory, new DomainInfoInRepositoryInformation(domainType));
+
         return (T) factory.getProxy();
     }
 

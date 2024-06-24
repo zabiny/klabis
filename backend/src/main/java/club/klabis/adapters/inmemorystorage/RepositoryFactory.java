@@ -1,5 +1,7 @@
 package club.klabis.adapters.inmemorystorage;
 
+import club.klabis.domain.appusers.ApplicationUser;
+import club.klabis.domain.appusers.ApplicationUsersRepository;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.MembersRepository;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +19,11 @@ class RepositoryFactory {
     @Bean
     public MembersRepository membersRepository() {
         return repoFactory.decorateWithEventsPublisher(MembersRepository.class, new MembersInMemoryRepository(), Member.class);
+    }
+
+    @Bean
+    public ApplicationUsersRepository applicationUsersRepository() {
+        return repoFactory.decorateWithEventsPublisher(ApplicationUsersRepository.class, new ApplicationUsersInMemoryRepository(), ApplicationUser.class);
     }
 
 }
