@@ -391,6 +391,56 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+
+  /grants:
+    get:
+      tags:
+        #- security
+        - WIP
+      summary: returns details about available security grants what can be assigned to users
+      operationId: getAllGrants
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GlobalGrantDetail'
+  /members/{memberId}/editGrantsForm:
+    get:
+      tags:
+        #- security
+        - WIP
+      summary: returns grants assigned to member
+      description: |-
+        Requires `members:permissions` grant
+      operationId: getMemberGrants
+      x-requires-grant: members:permissions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberGrantsForm'
+    put:
+      tags:
+        #- security
+        - WIP
+      summary: updates grants assigned to member
+      description: |-
+        Requires `members:permissions` grant
+      operationId: updateMemberGrants
+      x-requires-grant: members:permissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberGrantsForm'
+
 components:
   schemas:
     CountryCode:
@@ -826,6 +876,7 @@ components:
         - members:register
         - members:edit
         - members:suspendMembership
+        - members:permissions
     MemberSpecificGrants:
       type: string
       description: |
@@ -840,6 +891,22 @@ components:
         - members#canDisplayMemberPersonalContact
         - members#canDisplayMemberLegalGuardianContact
         - members#canDisplayMemberAddress
+    GlobalGrantDetail:
+      type: object
+      properties:
+        grant:
+          $ref: '#/components/schemas/GlobalGrants'
+        description:
+          type: string
+          description: User friendly description of the grant
+    MemberGrantsForm:
+      description: Data for form setting member grants
+      type: object
+      properties:
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalGrants'
     RFC7807ErrorResponse:
       type: object
       required:
