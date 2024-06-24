@@ -1,6 +1,7 @@
 package club.klabis.adapters.api.mappers;
 
 import club.klabis.api.dto.ContactApiDto;
+import club.klabis.common.DomainToDtoMapperConfiguration;
 import club.klabis.domain.members.Contact;
 import org.mapstruct.Mapper;
 import org.mapstruct.extensions.spring.DelegatingConverter;
@@ -12,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-@Mapper(config = DomainToApiDtoMapperConfiguration.class)
+@Mapper(config = DomainToDtoMapperConfiguration.class)
 interface ContactApiDtoMapper extends Converter<Collection<Contact>, ContactApiDto> {
 
     @Override
