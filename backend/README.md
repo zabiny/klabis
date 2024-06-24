@@ -15,4 +15,15 @@ Alternativne lze aplikaci spolecne s TestContainers spustit pomoci java main tri
 ## Autorizacni server
 
 ### Vygenerovani noveho klice pro JWT tokeny
-`club.klabis.config.authserver.generatejwtkeys.JKWKeyGenerator` 
+`club.klabis.config.authserver.generatejwtkeys.JKWKeyGenerator`
+
+### Import certifikatu pro HTTPS
+Certifikat v repozitari je self-signed. 
+
+Pro import jineho certifikatu ze souboru (napr. `myCertificate.crt`) je mozne pouzit tento prikaz : 
+```shell
+keytool -import -alias klabisSSL -file myCertificate.crt -keystore backend/src/main/resources/https/keystore.p12 -storepass secret
+```
+
+
+Additional info for example [here](https://www.thomasvitale.com/https-spring-boot-ssl-certificate/)

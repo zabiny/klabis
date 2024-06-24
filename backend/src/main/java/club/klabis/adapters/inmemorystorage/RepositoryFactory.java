@@ -6,8 +6,10 @@ import club.klabis.domain.members.Member;
 import club.klabis.domain.members.MembersRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
+@Profile("inmemorydb")
 class RepositoryFactory {
 
     private final InMemoryRepositoryWithEventsFactory repoFactory;
