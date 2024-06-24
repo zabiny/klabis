@@ -19,16 +19,6 @@ class MembersInMemoryRepository extends InMemoryRepositoryImpl<Member, Integer> 
     }
 
     @Override
-    public Optional<Member> findByUserName(String username) {
-        return this.findAll().stream().filter(it -> username.equals(it.getRegistration().toRegistrationId())).findAny();
-    }
-
-    @Override
-    public Optional<Member> findByGoogleSubject(String googleSub) {
-        return this.findAll().stream().filter(it -> googleSub.equals(it.getGoogleSubject())).findAny();
-    }
-
-    @Override
     public boolean isRegistrationNumberUsed(RegistrationNumber registrationNumber) {
         return this.findAll().stream().anyMatch(it -> it.getRegistration().equals(registrationNumber));
     }

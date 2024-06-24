@@ -11,10 +11,6 @@ public interface MembersRepository extends ListCrudRepository<Member, Integer> {
 
     List<Member> findMembersByBirthYearAndSex(int birthYear, Sex sex);
 
-    Optional<Member> findByUserName(String username);
-
-    Optional<Member> findByGoogleSubject(String googleSub);
-
     boolean isRegistrationNumberUsed(RegistrationNumber registrationNumber);
 
     List<Member> findAllActive();

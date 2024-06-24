@@ -1,8 +1,9 @@
 package club.klabis.config.authserver.socialloginsupport;
 
 import club.klabis.config.authserver.KlabisOidcUser;
+import club.klabis.domain.appusers.ApplicationUser;
+import club.klabis.domain.appusers.ApplicationUsersRepository;
 import club.klabis.domain.members.Member;
-import club.klabis.domain.members.MemberService;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 
@@ -15,6 +16,6 @@ public interface SocialLoginOidcUserToKlabisOidcUserMapper {
      * Returns registration ID for which is mapper supposed to be used
      */
     String getRegistration();
-    KlabisOidcUser map(OidcIdToken idToken, OidcUserInfo userInfo, Member user, List<String> roles);
-    Function<String, Optional<Member>> findMemberFunction(MemberService memberService);
+    KlabisOidcUser map(OidcIdToken idToken, OidcUserInfo userInfo, ApplicationUser user, List<String> roles);
+    Function<String, Optional<ApplicationUser>> findMemberFunction(ApplicationUsersRepository memberService);
 }

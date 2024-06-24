@@ -15,20 +15,6 @@ class MemberServiceImpl implements MemberService {
 
     MemberServiceImpl(MembersRepository membersRepository) {
         this.membersRepository = membersRepository;
-        Member admin = Member.fromRegistration(RegistrationNumber.ofRegistrationId("ZBM8003"), "{noop}secret");
-        admin.linkWithGoogle("110875617296914468258");
-        admin.setObLicence(OBLicence.C);
-        membersRepository.save(admin);
-    }
-
-    @Override
-    public Optional<Member> findByGoogleSubject(String googleSub) {
-        return membersRepository.findByGoogleSubject(googleSub);
-    }
-
-    @Override
-    public Optional<Member> findByUserName(String username) {
-        return membersRepository.findByUserName(username);
     }
 
     @Override

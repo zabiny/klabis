@@ -1,7 +1,7 @@
 package club.klabis.config.authserver.socialloginsupport;
 
 import club.klabis.config.authserver.KlabisOidcUser;
-import club.klabis.domain.members.MemberService;
+import club.klabis.domain.appusers.ApplicationUsersRepository;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -17,10 +17,10 @@ import java.util.stream.Collectors;
 
 @Service
 class CustomOidcUserService extends OidcUserService {
-    private final MemberService userService;
+    private final ApplicationUsersRepository userService;
     private final Map<String, SocialLoginOidcUserToKlabisOidcUserMapper> mappers;
 
-    public CustomOidcUserService(List<SocialLoginOidcUserToKlabisOidcUserMapper> mappers, MemberService userService) {
+    public CustomOidcUserService(List<SocialLoginOidcUserToKlabisOidcUserMapper> mappers, ApplicationUsersRepository userService) {
         this.mappers = mappers.stream().collect(Collectors.toMap(SocialLoginOidcUserToKlabisOidcUserMapper::getRegistration, Function.identity()));
         this.userService = userService;
     }
@@ -39,7 +39,7 @@ class CustomOidcUserService extends OidcUserService {
         String tokenSubject = userRequest.getIdToken().getSubject();
         return mapper.findMemberFunction(userService)
                 .apply(tokenSubject)
-                .map(member -> mapper.map(oidcUser.getIdToken(), oidcUser.getUserInfo(), member, List.of()))
+                .map(applicationUser -> mapper.map(oidcUser.getIdToken(), oidcUser.getUserInfo(), applicationUser, List.of()))
                 .orElseThrow(() -> new OAuth2AuthenticationException("User with google subject %s not found!".formatted(tokenSubject)));
     }
 }

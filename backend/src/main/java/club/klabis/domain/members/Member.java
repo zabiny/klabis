@@ -52,11 +52,6 @@ public class Member extends AbstractAggregateRoot<Member> {
     private String dietaryRestrictions;
     private List<DrivingLicence> drivingLicence = new ArrayList<>();
 
-    // ApplicationUser attributes
-    private String password;
-    private String googleSubject;
-    private String githubSubject;
-
     // other attributes
     private boolean suspended = false;
 
@@ -81,12 +76,10 @@ public class Member extends AbstractAggregateRoot<Member> {
     static Member fromRegistration(RegistrationNumber registrationNumber, String password) {
         Member result = new Member();
         result.registration = registrationNumber;
-        result.password = password;
         return result;
     }
 
     protected Member() {
-        this.password = "{noop}secret";
         this.id = ++MAX_ID;
     }
 
@@ -112,14 +105,6 @@ public class Member extends AbstractAggregateRoot<Member> {
         this.andEvent(new MemberEditedEvent(this));
     }
 
-    public void linkWithGoogle(String googleSubject) {
-        this.googleSubject = googleSubject;
-    }
-
-    public void linkWithGithub(String githubSubject) {
-        this.githubSubject = githubSubject;
-    }
-
     public void setObLicence(OBLicence obLicence) {
         this.obLicence = obLicence;
     }
@@ -143,20 +128,8 @@ public class Member extends AbstractAggregateRoot<Member> {
         return firstName;
     }
 
-    public String getGithubSubject() {
-        return githubSubject;
-    }
-
-    public String getGoogleSubject() {
-        return googleSubject;
-    }
-
     public String getLastName() {
         return lastName;
-    }
-
-    public String getPassword() {
-        return password;
     }
 
     public RegistrationNumber getRegistration() {
