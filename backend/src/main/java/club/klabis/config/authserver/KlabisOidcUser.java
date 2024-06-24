@@ -7,13 +7,17 @@ import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
 
-public class KlabisOidcUser extends DefaultOidcUser implements UserDetails {
+/**
+ * Object holding information published in OIDC token for Klabis app users
+ */
+public class KlabisOidcUser extends DefaultOidcUser implements OidcUser, UserDetails {
     private UUID id;
     private String username;
     private boolean active;
