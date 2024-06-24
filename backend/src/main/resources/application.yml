@@ -5,6 +5,7 @@ spring:
 #      - generatedSwaggerUI
     include:
       - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
+      - http2
 
   security:
     oauth2:
@@ -177,3 +178,20 @@ springdoc:
       paths-to-match:
         - /actuator/**
 
+---
+
+spring:
+  config:
+    activate:
+      on-profile: http2
+
+server:
+  http2:
+    enabled: true
+  ssl:
+    key-store: classpath:https/keystore.p12
+    key-store-password: secret
+    #key-password: another-secret
+    key-store-type: PKCS12
+    key-alias: klabisSSL
+  port: 8443
