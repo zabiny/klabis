@@ -2,15 +2,15 @@ package club.klabis.adapters.api;
 
 import club.klabis.api.MembersApi;
 import club.klabis.api.dto.*;
+import club.klabis.domain.appusers.ApplicationUser;
+import club.klabis.domain.appusers.ApplicationUserService;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.MemberNotFoundException;
 import club.klabis.domain.members.MemberService;
 import club.klabis.domain.members.forms.MemberEditForm;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -19,10 +19,12 @@ import java.util.List;
 public class MembersController implements MembersApi {
 
     private final MemberService service;
+    private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
 
-    public MembersController(MemberService service, ConversionService conversionService) {
+    public MembersController(MemberService service, ApplicationUserService applicationUserService, ConversionService conversionService) {
         this.service = service;
+        this.applicationUserService = applicationUserService;
         this.conversionService = conversionService;
     }
 
@@ -79,4 +81,10 @@ public class MembersController implements MembersApi {
         }
     }
 
+    @Override
+    public ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(Integer memberId) {
+        ApplicationUser appUser = applicationUserService.getApplicationUserForMemberId(memberId);
+
+        return ResponseEntity.ok(conversionService.convert(appUser, MemberGrantsFormApiDto.class));
+    }
 }

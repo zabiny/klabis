@@ -2,8 +2,8 @@ package club.klabis.adapters.inmemorystorage;
 
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUsersRepository;
-import org.springframework.stereotype.Repository;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 class ApplicationUsersInMemoryRepository extends InMemoryRepositoryImpl<ApplicationUser, Integer> implements ApplicationUsersRepository {
@@ -22,7 +22,7 @@ class ApplicationUsersInMemoryRepository extends InMemoryRepositoryImpl<Applicat
     }
 
     @Override
-    public Optional<ApplicationUser> getUserForMemberId(int memberId) {
-        return findAll().stream().filter(it -> it.getMemberId().filter(id -> id == memberId).isPresent()).findFirst();
+    public ApplicationUser findByMemberId(int memberId) {
+        return findAll().stream().filter(it -> it.getMemberId().filter(id -> id == memberId).isPresent()).findAny().orElseThrow(() -> new NoSuchElementException("Application user for member ID %s was not found".formatted(memberId)));
     }
 }

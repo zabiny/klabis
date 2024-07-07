@@ -1,12 +1,14 @@
 package club.klabis.domain.appusers;
 
+import club.klabis.domain.members.events.MemberCreatedEvent;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.event.EventListener;
 
 @Service
 @org.springframework.stereotype.Service
-class ApplicationUserServiceImpl {
+class ApplicationUserServiceImpl implements ApplicationUserService {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationUserServiceImpl.class);
 
     private final ApplicationUsersRepository repository;
@@ -23,5 +25,17 @@ class ApplicationUserServiceImpl {
         admin = ApplicationUser.newAppUser("admin", "{noop}secret");
         repository.save(admin);
 
+    }
+
+    @Override
+    public ApplicationUser getApplicationUserForMemberId(Integer memberId) {
+        return repository.findByMemberId(memberId);
+    }
+
+    @EventListener(MemberCreatedEvent.class)
+    public void onMemberCreated(MemberCreatedEvent event) {
+        LOG.info("Creating Application user for new member %s (id=%s)".formatted(event.getAggregate().getRegistration(), event.getAggregate().getId()));
+        ApplicationUser userForCreatedMember = ApplicationUser.newAppUser(event.getAggregate(), "{nop}password");
+        repository.save(userForCreatedMember);
     }
 }

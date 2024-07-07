@@ -102,3 +102,7 @@ Authorization: Bearer {{$auth.token("test")}}
 ### Get List of available grants
 GET {{host}}/grants
 Authorization: Bearer {{$auth.token("test")}}
+
+### Get Application user grants Form data
+GET {{host}}/members/1/editGrantsForm
+Authorization: Bearer {{$auth.token("test")}}
