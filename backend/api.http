@@ -1,7 +1,7 @@
 ### API OAuth2 test endpoint
 GET {{host}}/oidc/userinfo
 Accept: application/json
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("zbm8003")}}
 
 ### Register member
 POST {{host}}/memberRegistrations
@@ -97,4 +97,8 @@ Authorization: Bearer {{$auth.token("test")}}
 
 ### GET ORIS user info data - unknown reg num
 GET {{host}}/oris/userInfo/ZBM8002
+Authorization: Bearer {{$auth.token("test")}}
+
+### Get List of available grants
+GET {{host}}/grants
 Authorization: Bearer {{$auth.token("test")}}

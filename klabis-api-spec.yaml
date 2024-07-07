@@ -57,6 +57,8 @@ tags:
     description: Integration endpoints with CUS - https://www.cuscz.cz/
   - name: WIP
     description: "[odkladiste pro 'work-in-progress' endpointy]"
+  - name: BFF
+    description: Backend for frontend endpoints
 paths:
   /me/password:
     put:
@@ -127,7 +129,7 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
+          $ref: '#/components/schemas/MemberId'
     get:
       tags:
         - members
@@ -151,10 +153,11 @@ paths:
         in: path
         required: true
         schema:
-          type: integer
+          $ref: '#/components/schemas/MemberId'
     get:
       tags:
         - members
+        - BFF
       summary: "Returns data for edit member information form"
       responses:
         '200':
@@ -204,10 +207,11 @@ paths:
         required: true
         description: ID of the club member whom membership will be suspended
         schema:
-          type: integer
+          $ref: '#/components/schemas/MemberId'
     get:
       tags:
         - members
+        - BFF
       summary: Retrieve information about member account status for membership suspension
       description: |
         Returns information about member account to be suspended. 
@@ -395,12 +399,13 @@ paths:
   /grants:
     get:
       tags:
-        #- security
+        - security
         - WIP
       summary: returns details about available security grants what can be assigned to users
       operationId: getAllGrants
       responses:
-        200:
+        '200':
+          description: List of grants which can be assigned to members
           content:
             application/json:
               schema:
@@ -411,10 +416,17 @@ paths:
                     items:
                       $ref: '#/components/schemas/GlobalGrantDetail'
   /members/{memberId}/editGrantsForm:
+    parameters:
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/MemberId'
     get:
       tags:
-        #- security
+        - security
         - WIP
+        - BFF
       summary: returns grants assigned to member
       description: |-
         Requires `members:permissions` grant
@@ -422,13 +434,14 @@ paths:
       x-requires-grant: members:permissions
       responses:
         '200':
+          description: Edit member grants form content
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemberGrantsForm'
     put:
       tags:
-        #- security
+        - security
         - WIP
       summary: updates grants assigned to member
       description: |-
@@ -440,6 +453,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MemberGrantsForm'
+      responses:
+        '200':
+          description: Member grants were successfully updated
 
 components:
   schemas:
@@ -537,6 +553,9 @@ components:
           description: Last name of the club member
         registrationNumber:
           $ref: '#/components/schemas/RegistrationNumber'
+    MemberId:
+      type: integer
+      description: Unique identifier for the club member
     Member:
       allOf:
         - $ref: '#/components/schemas/MemberViewCompact'
@@ -551,8 +570,7 @@ components:
             - address
           properties:
             id:
-              type: integer
-              description: Unique identifier for the club member
+              $ref: '#/components/schemas/MemberId'
             birthCertificateNumber:
               $ref: '#/components/schemas/BirthCertificateNumber'
             identityCard:
