@@ -9,6 +9,7 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collection;
 import java.util.List;
 
 @RestController
@@ -22,8 +23,8 @@ public class GrantsApiController implements GrantsApi {
 
     @Override
     public ResponseEntity<GetAllGrants200ResponseApiDto> getAllGrants() {
-        List<ApplicationGrant> globalGrants = List.of(ApplicationGrant.values());
-        List<GlobalGrantDetailApiDto> convertedGrants = (List<GlobalGrantDetailApiDto>) conversionService.convert(globalGrants, TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(GlobalGrantDetailApiDto.class)));
+        Collection<ApplicationGrant> globalGrants = ApplicationGrant.globalGrants();
+        List<GlobalGrantDetailApiDto> convertedGrants = (List<GlobalGrantDetailApiDto>)  conversionService.convert(globalGrants, TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(GlobalGrantDetailApiDto.class)));
         return ResponseEntity.ok(GetAllGrants200ResponseApiDto.builder().grants(convertedGrants).build());
     }
 }
