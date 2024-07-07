@@ -5,6 +5,10 @@ import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collection;
+import java.util.NoSuchElementException;
 
 @Service
 @org.springframework.stereotype.Service
@@ -35,7 +39,16 @@ class ApplicationUserServiceImpl implements ApplicationUserService {
     @EventListener(MemberCreatedEvent.class)
     public void onMemberCreated(MemberCreatedEvent event) {
         LOG.info("Creating Application user for new member %s (id=%s)".formatted(event.getAggregate().getRegistration(), event.getAggregate().getId()));
-        ApplicationUser userForCreatedMember = ApplicationUser.newAppUser(event.getAggregate(), "{nop}password");
+        ApplicationUser userForCreatedMember = ApplicationUser.newAppUser(event.getAggregate(), "{noop}password");
         repository.save(userForCreatedMember);
     }
+
+    @Transactional
+    @Override
+    public void setGlobalGrants(Integer memberId, Collection<ApplicationGrant> globalGrants) {
+        ApplicationUser memberAppUser = getApplicationUserForMemberId(memberId);
+        memberAppUser.setGlobalGrants(globalGrants);
+        repository.save(memberAppUser);
+    }
+
 }

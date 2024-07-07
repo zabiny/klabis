@@ -4,9 +4,7 @@ import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
-import java.util.EnumSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @AggregateRoot
 public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
@@ -19,7 +17,8 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
     private boolean enabled;
     private String googleSubject;
     private String githubSubject;
-    private Set<ApplicationGrant> applicationGrants = EnumSet.noneOf(ApplicationGrant.class);
+    private Set<ApplicationGrant> globalGrants = EnumSet.noneOf(ApplicationGrant.class);
+    private List<MemberScopedGrant> memberScopedGrants = List.of();
 
     public static ApplicationUser newAppUser(String username, String password) {
         ApplicationUser result = new ApplicationUser();
@@ -75,7 +74,16 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
         return enabled;
     }
 
-    public Set<ApplicationGrant> getApplicationGrants() {
-        return applicationGrants;
+    public Set<ApplicationGrant> getGlobalGrants() {
+        return globalGrants;
     }
+
+    public void setGlobalGrants(Collection<ApplicationGrant> globalGrants) {
+        this.globalGrants.clear();
+        this.globalGrants.addAll(globalGrants);
+    }
+}
+
+record MemberScopedGrant(ApplicationGrant grant, Integer scopedMemberId) {
+
 }
