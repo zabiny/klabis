@@ -103,6 +103,15 @@ Authorization: Bearer {{$auth.token("test")}}
 GET {{host}}/grants
 Authorization: Bearer {{$auth.token("test")}}
 
-### Get Application user grants Form data
-GET {{host}}/members/1/editGrantsForm
+### Get Member grants Form data
+GET {{host}}/members/1/changeGrantsForm
 Authorization: Bearer {{$auth.token("test")}}
+
+### Update member grants
+PUT {{host}}/members/1/changeGrantsForm
+Authorization: Bearer {{$auth.token("test")}}
+Content-Type: application/json
+
+{
+  "grants": ["members:register"]
+}

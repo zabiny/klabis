@@ -10,6 +10,6 @@ public interface ApplicationUsersRepository extends ListCrudRepository<Applicati
 
     Optional<ApplicationUser> findByGoogleSubject(String googleSub);
 
-    public ApplicationUser findByMemberId(int memberId);
+    ApplicationUser findByMemberId(int memberId) throws ApplicationUserNotFound;
 
 }

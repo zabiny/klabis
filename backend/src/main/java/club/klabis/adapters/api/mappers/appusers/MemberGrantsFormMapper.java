@@ -10,7 +10,7 @@ import org.springframework.core.convert.converter.Converter;
 @Mapper(config = DomainToDtoMapperConfiguration.class)
 interface MemberGrantsFormMapper extends Converter<ApplicationUser, MemberGrantsFormApiDto> {
 
-    @Mapping(target = "grants", source = "applicationGrants")
+    @Mapping(target = "grants", source = "globalGrants")
     @Override
     MemberGrantsFormApiDto convert(ApplicationUser source);
 }

@@ -1,5 +1,6 @@
 package club.klabis.adapters.api;
 
+import club.klabis.domain.appusers.ApplicationUserNotFound;
 import club.klabis.domain.members.MemberNotFoundException;
 import club.klabis.domain.members.MemberRegistrationFailedException;
 import club.klabis.domain.members.MembershipCannotBeSuspendedException;
@@ -26,4 +27,10 @@ public class ApiExceptionHandlers {
     public ErrorResponse handleMembershipSuspensionFailed(MembershipCannotBeSuspendedException error) {
         return ErrorResponse.builder(error, ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, error.getMessage())).build();
     }
+
+    @ExceptionHandler(ApplicationUserNotFound.class)
+    public ErrorResponse handleMembershipSuspensionFailed(ApplicationUserNotFound error) {
+        return ErrorResponse.builder(error, ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, error.getMessage())).build();
+    }
+
 }

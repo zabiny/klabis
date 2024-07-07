@@ -415,7 +415,7 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/GlobalGrantDetail'
-  /members/{memberId}/editGrantsForm:
+  /members/{memberId}/changeGrantsForm:
     parameters:
       - name: memberId
         in: path
