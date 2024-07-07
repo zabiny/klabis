@@ -1,4 +1,4 @@
-package club.klabis.adapters.api.mappers;
+package club.klabis.adapters.api.mappers.members;
 
 import club.klabis.api.dto.ContactApiDto;
 import club.klabis.common.DomainToDtoMapperConfiguration;
