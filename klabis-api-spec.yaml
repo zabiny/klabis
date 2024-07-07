@@ -125,11 +125,7 @@ paths:
           $ref: '#/components/responses/401'
   /members/{memberId}:
     parameters:
-      - name: memberId
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/MemberId'
+      - $ref: '#/components/parameters/MemberIdPath'
     get:
       tags:
         - members
@@ -149,11 +145,7 @@ paths:
 
   /members/{memberId}/editMemberInfoForm:
     parameters:
-      - name: memberId
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/MemberId'
+      - $ref: '#/components/parameters/MemberIdPath'
     get:
       tags:
         - members
@@ -202,12 +194,7 @@ paths:
 
   /members/{memberId}/suspendMembershipForm:
     parameters:
-      - name: memberId
-        in: path
-        required: true
-        description: ID of the club member whom membership will be suspended
-        schema:
-          $ref: '#/components/schemas/MemberId'
+      - $ref: '#/components/parameters/MemberIdPath'
     get:
       tags:
         - members
@@ -372,7 +359,7 @@ paths:
             MemberId:
               required: true
               schema:
-                type: integer
+                $ref: '#/components/schemas/MemberId'
               description: ID of created member
         '400':
           $ref: '#/components/responses/400'
@@ -417,11 +404,7 @@ paths:
                       $ref: '#/components/schemas/GlobalGrantDetail'
   /members/{memberId}/changeGrantsForm:
     parameters:
-      - name: memberId
-        in: path
-        required: true
-        schema:
-          $ref: '#/components/schemas/MemberId'
+      - $ref: '#/components/parameters/MemberIdPath'
     get:
       tags:
         - security
@@ -542,8 +525,7 @@ components:
         - registrationNumber
       properties:
         id:
-          type: integer
-          description: Unique identifier for the club member
+          $ref: '#/components/schemas/MemberId'
           readOnly: true
         firstName:
           type: string
@@ -947,6 +929,15 @@ components:
           description: URI of the resource which has thrown the error
         type:
           type: string
+  parameters:
+    MemberIdPath:
+      in: path
+      name: memberId
+      required: true
+      description: ID of member
+      schema:
+        #type: integer
+        $ref: '#/components/schemas/MemberId'
   responses:
     '400':
       description: Invalid user input
