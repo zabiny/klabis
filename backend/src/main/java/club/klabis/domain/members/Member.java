@@ -16,7 +16,6 @@ import java.util.Optional;
 
 import static club.klabis.common.ConversionUtils.list;
 
-// TODO: split into ApplicationUser (with security stuff) and Member (for club Member information)
 @AggregateRoot
 public class Member extends AbstractAggregateRoot<Member> {
     private static int MAX_ID = 0;
@@ -103,14 +102,6 @@ public class Member extends AbstractAggregateRoot<Member> {
         this.birthCertificateNumber = form.birthCertificateNumber();
         this.sex = form.sex();
         this.andEvent(new MemberEditedEvent(this));
-    }
-
-    public void setObLicence(OBLicence obLicence) {
-        this.obLicence = obLicence;
-    }
-
-    public void setTrainerLicence(TrainerLicence.Type licenceType, LocalDate expiryDate) {
-        this.trainerLicence = new TrainerLicence(licenceType, expiryDate);
     }
 
     public void suspend() {
