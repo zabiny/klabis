@@ -2,6 +2,7 @@ package club.klabis.domain.appusers;
 
 import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.util.*;
@@ -10,6 +11,7 @@ import java.util.*;
 public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
     private static int MAX_ID = 0;
 
+    @Identity
     private int id;
     private Integer memberId;
     private String username;
