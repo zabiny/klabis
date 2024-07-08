@@ -6,6 +6,7 @@ import club.klabis.domain.members.events.MemberWasSuspendedEvent;
 import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ public class Member extends AbstractAggregateRoot<Member> {
 
     // required attributes
     // TODO: convert to value object
+    @Identity
     private int id;
     private String firstName;
     private String lastName;

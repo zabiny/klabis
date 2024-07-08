@@ -1,6 +1,5 @@
-package club.klabis.domain.members.events;
+package club.klabis.domain;
 
-import org.jmolecules.ddd.types.AggregateRoot;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.ZonedDateTime;
