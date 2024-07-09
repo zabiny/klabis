@@ -2,7 +2,6 @@ package club.klabis.adapters.inmemorystorage;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.repository.ListCrudRepository;
@@ -32,7 +31,7 @@ class InMemoryRepositoryWithEventsFactory {
         this.publisher = publisher;
     }
 
-    public <T, X extends T, D> T decorateWithEventsPublisher(Class<T> repoInterface, Object proxyTarget, Class<D> domainType) {
+    public <T, X extends T, D> T initializeRepositoryWithEventPublishingPostprocessing(Class<T> repoInterface, Object proxyTarget, Class<D> domainType) {
         ProxyFactory factory = new ProxyFactory(proxyTarget);
         factory.addInterface(repoInterface);
 
@@ -46,7 +45,7 @@ class InMemoryRepositoryWithEventsFactory {
     public <T extends ListCrudRepository<D, I>, D extends AbstractAggregateRoot<D>, I> T createInMemoryRepositoryWithEvents(Class<T> repoInterface, Class<D> domainType, Function<D, I> idExtractor) {
         InMemoryRepositoryImpl<D, I> target = new InMemoryRepositoryImpl<>(idExtractor);
 
-        return decorateWithEventsPublisher(repoInterface, target, domainType);
+        return initializeRepositoryWithEventPublishingPostprocessing(repoInterface, target, domainType);
     }
 
     /**
