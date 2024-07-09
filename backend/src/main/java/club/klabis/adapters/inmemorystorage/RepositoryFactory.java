@@ -4,6 +4,7 @@ import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUsersRepository;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.MembersRepository;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -20,12 +21,12 @@ class RepositoryFactory {
 
     @Bean
     public MembersRepository membersRepository() {
-        return repoFactory.decorateWithEventsPublisher(MembersRepository.class, new MembersInMemoryRepository(), Member.class);
+        return repoFactory.initializeRepositoryWithEventPublishingPostprocessing(MembersRepository.class, new MembersInMemoryRepository(), Member.class);
     }
 
     @Bean
     public ApplicationUsersRepository applicationUsersRepository() {
-        return repoFactory.decorateWithEventsPublisher(ApplicationUsersRepository.class, new ApplicationUsersInMemoryRepository(), ApplicationUser.class);
+        return repoFactory.initializeRepositoryWithEventPublishingPostprocessing(ApplicationUsersRepository.class, new ApplicationUsersInMemoryRepository(), ApplicationUser.class);
     }
 
 }
