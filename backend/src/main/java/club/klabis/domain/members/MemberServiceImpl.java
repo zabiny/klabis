@@ -45,12 +45,13 @@ class MemberServiceImpl implements MemberService {
 
     @Override
     public RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex) {
-        return membersRepository.findMembersByBirthYearAndSex(dateOfBirth.getYear(), sex).stream()
+        // TODO: pripomenout si co tady dela pohlavi... proc je dulezite? (a pokud je to spatne, tak opravit)
+        return membersRepository.findMembersWithSameBirthyearAndSex(dateOfBirth, sex).stream()
                 .map(Member::getRegistration)
                 .sorted()
-                .reduce((first, second) -> second)    // find last item
+                .reduce((first, second) -> second)    // find last (highest) item
                 .map(RegistrationNumber::followingRegistrationNumber)
-                .orElseGet(() -> RegistrationNumber.ofZbmClub(dateOfBirth.getYear(), 1));
+                .orElseGet(() -> RegistrationNumber.ofZbmClub(dateOfBirth, 1));
     }
 
     @Transactional
