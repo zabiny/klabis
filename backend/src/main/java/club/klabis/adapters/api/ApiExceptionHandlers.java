@@ -2,6 +2,7 @@ package club.klabis.adapters.api;
 
 import club.klabis.domain.appusers.ApplicationUserNotFound;
 import club.klabis.domain.members.MemberNotFoundException;
+import club.klabis.domain.members.IncorrectRegistrationDataException;
 import club.klabis.domain.members.MemberRegistrationFailedException;
 import club.klabis.domain.members.MembershipCannotBeSuspendedException;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,11 @@ public class ApiExceptionHandlers {
     @ExceptionHandler(MemberRegistrationFailedException.class)
     public ErrorResponse handleMeberRegistrationError(MemberRegistrationFailedException error) {
         return ErrorResponse.builder(error, ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, error.getMessage())).build();
+    }
+
+    @ExceptionHandler(IncorrectRegistrationDataException.class)
+    public ErrorResponse handleMeberRegistrationError(IncorrectRegistrationDataException error) {
+        return ErrorResponse.builder(error, ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, error.getMessage())).build();
     }
 
     @ExceptionHandler(MemberNotFoundException.class)

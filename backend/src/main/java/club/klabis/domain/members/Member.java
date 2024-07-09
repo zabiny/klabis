@@ -57,6 +57,11 @@ public class Member extends AbstractAggregateRoot<Member> {
     private boolean suspended = false;
 
     public static Member fromRegistration(RegistrationForm registrationForm) {
+
+        if (!registrationForm.registrationNumber().isValidForBirthdate(registrationForm.dateOfBirth())) {
+            throw new IncorrectRegistrationDataException("Registration number '%s' is not correct for birth date '%s'".formatted(registrationForm.registrationNumber(), registrationForm.dateOfBirth()));
+        }
+
         Member result = new Member();
         result.firstName = registrationForm.firstName();
         result.lastName = registrationForm.lastName();

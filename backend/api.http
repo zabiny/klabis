@@ -9,7 +9,7 @@ Authorization: Bearer {{$auth.token("test")}}
 Content-Type: application/json
 
 {
-  "registrationNumber": "ZBM8001",
+  "registrationNumber": "ZBM2001",
   "firstName": "John",
   "lastName": "Dow",
   "dateOfBirth": "2020-02-10",
