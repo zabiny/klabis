@@ -2,7 +2,7 @@ package club.klabis.adapters.api.mappers.members;
 
 
 import club.klabis.api.dto.TrainerLicenceApiDto;
-import club.klabis.common.DomainToDtoMapperConfiguration;
+import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.domain.members.TrainerLicence;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;

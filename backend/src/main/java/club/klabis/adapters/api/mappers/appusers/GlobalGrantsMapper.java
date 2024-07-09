@@ -1,7 +1,7 @@
 package club.klabis.adapters.api.mappers.appusers;
 
 import club.klabis.api.dto.GlobalGrantsApiDto;
-import club.klabis.common.DomainToDtoMapperConfiguration;
+import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.domain.appusers.ApplicationGrant;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
