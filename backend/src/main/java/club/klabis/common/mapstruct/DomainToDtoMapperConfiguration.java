@@ -1,5 +1,6 @@
-package club.klabis.common;
+package club.klabis.common.mapstruct;
 
+import club.klabis.common.ConversionServiceAdapter;
 import org.mapstruct.MapperConfig;
 import org.mapstruct.ReportingPolicy;
 

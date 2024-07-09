@@ -1,6 +1,6 @@
 package club.klabis.adapters.api.mappers.members;
 
-import club.klabis.common.MapperSpringConfig;
+import club.klabis.common.mapstruct.MapperSpringConfig;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.forms.RegistrationFormBuilder;
 import org.junit.jupiter.api.Assertions;

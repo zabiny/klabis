@@ -1,12 +1,10 @@
 package club.klabis.adapters.api.mappers.appusers;
 
 import club.klabis.api.dto.GlobalGrantDetailApiDto;
-import club.klabis.api.dto.GlobalGrantsApiDto;
-import club.klabis.common.DomainToDtoMapperConfiguration;
+import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.domain.appusers.ApplicationGrant;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.ValueMapping;
 import org.springframework.core.convert.converter.Converter;
 
 @Mapper(config = DomainToDtoMapperConfiguration.class)
