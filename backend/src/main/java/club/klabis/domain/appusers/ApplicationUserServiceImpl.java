@@ -8,7 +8,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
-import java.util.NoSuchElementException;
 
 @Service
 @org.springframework.stereotype.Service
@@ -19,16 +18,6 @@ class ApplicationUserServiceImpl implements ApplicationUserService {
 
     public ApplicationUserServiceImpl(ApplicationUsersRepository repository) {
         this.repository = repository;
-
-        LOG.info("Adding user dpolach");
-        ApplicationUser admin = ApplicationUser.newAppUser("dpolach", "{noop}secret");
-        admin.linkWithGoogle("110875617296914468258");
-        repository.save(admin);
-
-        LOG.info("Adding user admin");
-        admin = ApplicationUser.newAppUser("admin", "{noop}secret");
-        repository.save(admin);
-
     }
 
     @Override
