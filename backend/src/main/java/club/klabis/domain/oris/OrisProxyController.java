@@ -35,9 +35,9 @@ class OrisProxyController implements OrisApi {
     @ExceptionHandler(MismatchedInputException.class)
     public ErrorResponse handleMismatchInputException(MismatchedInputException e) throws MismatchedInputException {
         // TODO: ORIS returns HTTP 200 with Data containing empty array instead of object when member is not found... :( Any better way how to detect that?
-        if ("Cannot deserialize value of type `club.klabis.adapters.oris.OrisService$OrisUserInfo` from Array value (token `JsonToken.START_ARRAY`)".equals(e.getOriginalMessage())) {
+        if ("Cannot deserialize value of type `club.klabis.adapters.oris.OrisApiClient$OrisUserInfo` from Array value (token `JsonToken.START_ARRAY`)".equals(e.getOriginalMessage())) {
             ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
-            detail.setDetail("Member not found on ORIS (probably)");
+            detail.setDetail("TO REMOVE Member not found on ORIS (probably)");
             return new ErrorResponseException(HttpStatus.NOT_FOUND, detail, null);
         } else {
             throw e;
