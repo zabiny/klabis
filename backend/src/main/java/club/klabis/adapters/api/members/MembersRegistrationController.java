@@ -1,4 +1,4 @@
-package club.klabis.adapters.api;
+package club.klabis.adapters.api.members;
 
 import club.klabis.api.MemberRegistrationsApi;
 import club.klabis.api.dto.MemberRegistrationFormApiDto;

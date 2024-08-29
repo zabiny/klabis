@@ -1,4 +1,4 @@
-package club.klabis.adapters.api;
+package club.klabis.adapters.api.members;
 
 import club.klabis.api.RegistrationNumberApi;
 import club.klabis.api.dto.RegistrationNumberGet200ResponseApiDto;

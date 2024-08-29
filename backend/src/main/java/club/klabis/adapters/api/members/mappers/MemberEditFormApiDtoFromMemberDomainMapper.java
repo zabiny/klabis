@@ -1,4 +1,4 @@
-package club.klabis.adapters.api.mappers.members;
+package club.klabis.adapters.api.members.mappers;
 
 import club.klabis.api.dto.MemberEditFormApiDto;
 import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;

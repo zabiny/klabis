@@ -1,4 +1,4 @@
-package club.klabis.adapters.api;
+package club.klabis.adapters.api.appusers;
 
 import club.klabis.api.GrantsApi;
 import club.klabis.api.dto.GetAllGrants200ResponseApiDto;
