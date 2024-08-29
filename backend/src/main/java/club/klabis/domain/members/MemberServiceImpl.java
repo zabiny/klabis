@@ -71,7 +71,8 @@ class MemberServiceImpl implements MemberService {
     }
 
     private MembershipSuspensionInfo suspensionInfoForMember(Member member) {
-        return new MembershipSuspensionInfo(member.isSuspended(),true);
+        // TODO: suspension status for finance account...
+        return new MembershipSuspensionInfo(member.isSuspended(), MembershipSuspensionInfo.DetailStatus.OK);
     }
 
     @Override

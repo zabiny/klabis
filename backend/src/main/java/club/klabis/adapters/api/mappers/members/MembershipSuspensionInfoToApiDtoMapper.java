@@ -17,10 +17,13 @@ interface MembershipSuspensionInfoToApiDtoMapper extends Converter<MembershipSus
     @Override
     MembershipSuspensionInfoApiDto convert(MembershipSuspensionInfo source);
 
-    @Mapping(target = "status", source = "financeAccountCleared")
+    @Mapping(target = "status", source = "financeAccount")
     SuspendMembershipBlockersFinanceApiDto convertFinanceStatus(MembershipSuspensionInfo source);
 
-    default boolean mapOverlaStatus(MembershipSuspensionInfo source) {
+    default boolean mapOveralStatus(MembershipSuspensionInfo source) {
         return source.canSuspendAccount();
+    }
+    default boolean mapFinanceStatus(MembershipSuspensionInfo.DetailStatus source) {
+        return source.canSuspend();
     }
 }
