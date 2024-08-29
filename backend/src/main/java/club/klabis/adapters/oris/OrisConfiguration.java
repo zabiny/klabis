@@ -25,7 +25,7 @@ class OrisConfiguration implements ClientHttpRequestInterceptor {
 
 
     @Bean
-    OrisService orisServiceClient(RestClient.Builder restClientBuilder) {
+    OrisApiClient orisApiClient(RestClient.Builder restClientBuilder) {
 
         MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter();
         messageConverter.setSupportedMediaTypes(List.of(MediaType.valueOf("application/javascript")));
@@ -37,7 +37,7 @@ class OrisConfiguration implements ClientHttpRequestInterceptor {
         RestClientAdapter adapter = RestClientAdapter.create(restClient);
         HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(adapter).build();
 
-        return factory.createClient(OrisService.class);
+        return factory.createClient(OrisApiClient.class);
     }
 
     @Override

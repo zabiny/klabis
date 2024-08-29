@@ -1,5 +1,6 @@
-package club.klabis.adapters.oris;
+package club.klabis.domain.oris;
 
+import club.klabis.adapters.oris.OrisApiClient;
 import club.klabis.api.OrisApi;
 import club.klabis.api.dto.ORISUserInfoApiDto;
 import club.klabis.domain.members.RegistrationNumber;
@@ -16,17 +17,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 class OrisProxyController implements OrisApi {
 
-    private final OrisService orisService;
+    private final OrisApiClient orisApiClient;
     private final ConversionService conversionService;
 
-    public OrisProxyController(OrisService orisService, ConversionService conversionService) {
-        this.orisService = orisService;
+    public OrisProxyController(OrisApiClient orisApiClient, ConversionService conversionService) {
+        this.orisApiClient = orisApiClient;
         this.conversionService = conversionService;
     }
 
     @Override
     public ResponseEntity<ORISUserInfoApiDto> orisUserInfoRegNumGet(String regNum) {
-        ORISUserInfoApiDto userInfoApiDto = conversionService.convert(orisService.getUserInfo(regNum).data(), ORISUserInfoApiDto.class);
+        ORISUserInfoApiDto userInfoApiDto = conversionService.convert(orisApiClient.getUserInfo(regNum).data(), ORISUserInfoApiDto.class);
         userInfoApiDto.setRegistrationNumber(RegistrationNumber.ofRegistrationId(regNum).toRegistrationId());
         return ResponseEntity.ok(userInfoApiDto);
     }
