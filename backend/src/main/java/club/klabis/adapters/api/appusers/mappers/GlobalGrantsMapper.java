@@ -1,4 +1,4 @@
-package club.klabis.adapters.api.mappers.appusers;
+package club.klabis.adapters.api.appusers.mappers;
 
 import club.klabis.api.dto.GlobalGrantsApiDto;
 import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;

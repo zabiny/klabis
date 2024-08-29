@@ -1,4 +1,4 @@
-package club.klabis.adapters.api.mappers.members;
+package club.klabis.adapters.api.members.mappers;
 
 import club.klabis.common.ConversionServiceAdapter;
 import club.klabis.common.mapstruct.MapperSpringConfig;
@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
