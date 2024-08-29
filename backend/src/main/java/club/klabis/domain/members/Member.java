@@ -59,7 +59,7 @@ public class Member extends AbstractAggregateRoot<Member> {
     public static Member fromRegistration(RegistrationForm registrationForm) {
 
         if (!registrationForm.registrationNumber().isValidForBirthdate(registrationForm.dateOfBirth())) {
-            throw new IncorrectRegistrationDataException("Registration number '%s' is not correct for birth date '%s'".formatted(registrationForm.registrationNumber(), registrationForm.dateOfBirth()));
+            throw new IncorrectFormDataException("Registration number '%s' is not correct for birth date '%s'".formatted(registrationForm.registrationNumber(), registrationForm.dateOfBirth()));
         }
 
         Member result = new Member();
@@ -190,7 +190,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         return id;
     }
 
-    public boolean isMedicCourse() {
+    public boolean hasMedicCourse() {
         return medicCourse;
     }
 

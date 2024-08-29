@@ -8,7 +8,7 @@ import org.springframework.web.service.annotation.GetExchange;
 
 import java.time.LocalDateTime;
 
-public interface OrisService {
+public interface OrisApiClient {
 
     @GetExchange("/API/?format=json&method=getUser")
     OrisResponse<OrisUserInfo> getUserInfo(@RequestParam("rgnum") String registrationNumber);

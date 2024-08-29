@@ -7,7 +7,7 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import java.util.Collection;
 
-class AtLeastOnContactIsDefinedConstraint {
+class AtLeastOneContactIsDefinedConstraint {
 
     protected static boolean isValid(Collection<Contact> contacts, Collection<LegalGuardian> guardians, Contact.Type requiredContactType) {
         if (hasContactOfType(contacts, requiredContactType)) {
@@ -38,7 +38,7 @@ class AtLeastOnContactIsDefinedConstraint {
 
         @Override
         public boolean isValid(RegistrationForm registrationForm, ConstraintValidatorContext constraintValidatorContext) {
-            return AtLeastOnContactIsDefinedConstraint.isValid(registrationForm.contact(), registrationForm.guardians(), annotation.contactType());
+            return AtLeastOneContactIsDefinedConstraint.isValid(registrationForm.contact(), registrationForm.guardians(), annotation.contactType());
         }
 
     }
@@ -53,7 +53,7 @@ class AtLeastOnContactIsDefinedConstraint {
 
         @Override
         public boolean isValid(MemberEditForm editForm, ConstraintValidatorContext constraintValidatorContext) {
-            return AtLeastOnContactIsDefinedConstraint.isValid(editForm.contact(), editForm.guardians(), annotation.contactType());
+            return AtLeastOneContactIsDefinedConstraint.isValid(editForm.contact(), editForm.guardians(), annotation.contactType());
         }
 
     }
