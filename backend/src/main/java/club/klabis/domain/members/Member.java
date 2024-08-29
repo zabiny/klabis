@@ -58,10 +58,6 @@ public class Member extends AbstractAggregateRoot<Member> {
 
     public static Member fromRegistration(RegistrationForm registrationForm) {
 
-        if (!registrationForm.registrationNumber().isValidForBirthdate(registrationForm.dateOfBirth())) {
-            throw new IncorrectFormDataException("Registration number '%s' is not correct for birth date '%s'".formatted(registrationForm.registrationNumber(), registrationForm.dateOfBirth()));
-        }
-
         Member result = new Member();
         result.firstName = registrationForm.firstName();
         result.lastName = registrationForm.lastName();
@@ -76,17 +72,27 @@ public class Member extends AbstractAggregateRoot<Member> {
         result.nationality = registrationForm.nationality();
         result.orisId = registrationForm.orisId();
         result.bankAccount = registrationForm.bankAccount();
+
+        result.checkInvariants();
+
         return result.andEvent(new MemberCreatedEvent(result));
     }
 
     static Member fromRegistration(RegistrationNumber registrationNumber, String password) {
         Member result = new Member();
         result.registration = registrationNumber;
+        result.checkInvariants();
         return result;
     }
 
     protected Member() {
         this.id = ++MAX_ID;
+    }
+
+    private void checkInvariants() {
+        if (dateOfBirth != null && !registration.isValidForBirthdate(dateOfBirth)) {
+            throw new IncorrectFormDataException("Registration number '%s' is not correct for birth date '%s'".formatted(registration, dateOfBirth));
+        }
     }
 
     public void edit(MemberEditForm form) {

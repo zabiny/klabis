@@ -11,6 +11,7 @@ import org.springframework.core.convert.converter.Converter;
 interface MemberEditFormApiDtoFromMemberDomainMapper extends Converter<Member, MemberEditFormApiDto> {
 
     @Mapping(target = "guardians", source = "legalGuardians")
+    @Mapping(target = "medicCourse", ignore = true)
     @Override
     MemberEditFormApiDto convert(Member source);
 }
