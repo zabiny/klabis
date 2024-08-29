@@ -1,9 +1,11 @@
 package club.klabis.adapters.api.mappers.members;
 
+import club.klabis.common.ConversionServiceAdapter;
 import club.klabis.common.mapstruct.MapperSpringConfig;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.forms.RegistrationFormBuilder;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.extensions.spring.test.ConverterScan;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,26 +15,31 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 @ExtendWith(SpringExtension.class)
 class MemberFullViewMapperTest {
 
     @Configuration
-    @ConverterScan(basePackageClasses = {MapperSpringConfig.class, MemberFullViewMapperImpl.class})
+    @ConverterScan(basePackageClasses = {MapperSpringConfig.class, MemberFullViewMapper.class, ConversionServiceAdapter.class})
     static class ScanConfiguration {}
 
     @Autowired
     ConversionService conversionService;
 
-//    @Test
+    @Test
     void convert() {
-        var form = RegistrationFormBuilder.builder().firstName("Test").lastName("Something").contact(List.of())
-                .guardians(List.of()).build();
+        var form = RegistrationFormBuilder.builder().firstName("Test").lastName("Something").build();
         Member m = Member.fromRegistration(form);
+
         club.klabis.api.dto.MemberApiDto item = conversionService.convert(m, club.klabis.api.dto.MemberApiDto.class);
 
         Assertions.assertAll("Unexpected values",
-                () -> Assertions.assertEquals("Test", item.getFirstName(), "firstName"),
-                () -> Assertions.assertEquals("Test", item.getFirstName(), "lastName")
+                () -> assertEquals("Test", item.getFirstName(), "firstName"),
+                () -> assertEquals("Something", item.getLastName(), "lastName"),
+                () -> assertNull(item.getRegistrationNumber(), "registrationNumber")
+                // TODO: rest of attributes
                 );
 
 
