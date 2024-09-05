@@ -7,8 +7,9 @@ Aplikace ma nakonfigurovane prostredi pomoci [TestContainers](https://docs.sprin
 gradlew bootTestRun
 ```
 
-
 Alternativne lze aplikaci spolecne s TestContainers spustit pomoci java main tridy `club.klabis.KlabisAppWithTestContainers` 
+
+Aplikace je po spusteni dostupna na URL: https://localhost:8443 (URL pro Swagger API dokumentaci je https://localhost:8443/swagger-ui/index.html)
 
 # DevOps
 
