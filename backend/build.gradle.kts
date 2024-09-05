@@ -95,6 +95,15 @@ java.sourceSets["main"].java {
     srcDir("$buildDir/generated/klabisapi/src/main/java")
 }
 
+val copyApiSpecs = tasks.register<Copy>("copyApiSpecs") {
+    from(layout.projectDirectory.file("../klabis-api-spec.yaml"))
+    into(layout.buildDirectory.dir("resources/main/static"))
+}
+
+java.sourceSets["main"].resources {
+    srcDir(copyApiSpecs.map { it.temporaryDir })
+}
+
 tasks.withType<JavaCompile>() {
     options.encoding = "UTF-8"
 }
@@ -141,3 +150,4 @@ tasks.getByName<BootBuildImage>("bootBuildImage") {
 //        }
 //    }
 }
+
