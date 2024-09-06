@@ -40,7 +40,7 @@ export function getAuth(context: AppLoadContext) {
 
         authorizationEndpoint: "https://discord.com/oauth2/authorize",
         tokenEndpoint: "https://discord.com/api/oauth2/token",
-        redirectURI: "http://localhost:5173/auth/callback",
+        redirectURI: context.cloudflare.env.BASE_URL! + "/auth/callback",
 
         // codeChallengeMethod: "S256", // optional
         scopes: ["openid", "email", "identify"], // optional

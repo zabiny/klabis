@@ -7,6 +7,7 @@ import { type PlatformProxy } from "wrangler";
 // even if no `wrangler.toml` exists.
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Env {
+    BASE_URL: any;
     COOKIE_SECRET: string;
     AUTH_CLIENT_SECRET: string;
     AUTH_CLIENT_ID: string;
