@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.text.Collator;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -18,11 +19,15 @@ public final class RegistrationNumber implements Comparator<RegistrationNumber> 
     private final int yearOfBirth;
     private final int yearOrder;
 
-    public RegistrationNumber(String club, int yearOfBirth, int yearOrder) {
-        checkYear(yearOfBirth);
+    public RegistrationNumber(String club, LocalDate birthDate, int yearOrder) {
+        this(club, birthDate.getYear() % 100, yearOrder);
+    }
+
+    private RegistrationNumber(String club, int birthYear, int yearOrder) {
+        checkYear(birthYear);
 
         this.club = club;
-        this.yearOfBirth = yearOfBirth;
+        this.yearOfBirth = birthYear;
         this.yearOrder = yearOrder;
     }
 
@@ -36,8 +41,8 @@ public final class RegistrationNumber implements Comparator<RegistrationNumber> 
         return new RegistrationNumber(this.club, this.yearOfBirth, this.yearOrder + 1);
     }
 
-    public static RegistrationNumber ofZbmClub(int yearOfBirth, int orderInYear) {
-        return new RegistrationNumber("ZBM", yearOfBirth % 100, orderInYear);
+    public static RegistrationNumber ofZbmClub(LocalDate birthDate, int orderInYear) {
+        return new RegistrationNumber("ZBM", birthDate, orderInYear);
     }
 
     @JsonCreator
@@ -57,6 +62,10 @@ public final class RegistrationNumber implements Comparator<RegistrationNumber> 
 
     public String toString() {
         return toRegistrationId();
+    }
+
+    public boolean isValidForBirthdate(LocalDate birthdate) {
+        return birthdate.getYear() % 100 == this.yearOfBirth;
     }
 
     @Override

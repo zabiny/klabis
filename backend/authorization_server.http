@@ -3,7 +3,7 @@ GET {{host}}/.well-known/openid-configuration
 
 ### OIDC UserInfo
 GET {{host}}/oidc/userinfo
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.idToken("test")}}
 
 ### OAuth2 token introspection - ID token
 POST {{host}}/oauth2/introspect

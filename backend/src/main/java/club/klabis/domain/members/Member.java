@@ -6,6 +6,7 @@ import club.klabis.domain.members.events.MemberWasSuspendedEvent;
 import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.LocalDate;
@@ -16,13 +17,13 @@ import java.util.Optional;
 
 import static club.klabis.common.ConversionUtils.list;
 
-// TODO: split into ApplicationUser (with security stuff) and Member (for club Member information)
 @AggregateRoot
 public class Member extends AbstractAggregateRoot<Member> {
     private static int MAX_ID = 0;
 
     // required attributes
     // TODO: convert to value object
+    @Identity
     private int id;
     private String firstName;
     private String lastName;
@@ -52,15 +53,11 @@ public class Member extends AbstractAggregateRoot<Member> {
     private String dietaryRestrictions;
     private List<DrivingLicence> drivingLicence = new ArrayList<>();
 
-    // ApplicationUser attributes
-    private String password;
-    private String googleSubject;
-    private String githubSubject;
-
     // other attributes
     private boolean suspended = false;
 
     public static Member fromRegistration(RegistrationForm registrationForm) {
+
         Member result = new Member();
         result.firstName = registrationForm.firstName();
         result.lastName = registrationForm.lastName();
@@ -75,19 +72,27 @@ public class Member extends AbstractAggregateRoot<Member> {
         result.nationality = registrationForm.nationality();
         result.orisId = registrationForm.orisId();
         result.bankAccount = registrationForm.bankAccount();
+
+        result.checkInvariants();
+
         return result.andEvent(new MemberCreatedEvent(result));
     }
 
     static Member fromRegistration(RegistrationNumber registrationNumber, String password) {
         Member result = new Member();
         result.registration = registrationNumber;
-        result.password = password;
+        result.checkInvariants();
         return result;
     }
 
     protected Member() {
-        this.password = "{noop}secret";
         this.id = ++MAX_ID;
+    }
+
+    private void checkInvariants() {
+        if (dateOfBirth != null && !registration.isValidForBirthdate(dateOfBirth)) {
+            throw new IncorrectFormDataException("Registration number '%s' is not correct for birth date '%s'".formatted(registration, dateOfBirth));
+        }
     }
 
     public void edit(MemberEditForm form) {
@@ -112,22 +117,6 @@ public class Member extends AbstractAggregateRoot<Member> {
         this.andEvent(new MemberEditedEvent(this));
     }
 
-    public void linkWithGoogle(String googleSubject) {
-        this.googleSubject = googleSubject;
-    }
-
-    public void linkWithGithub(String githubSubject) {
-        this.githubSubject = githubSubject;
-    }
-
-    public void setObLicence(OBLicence obLicence) {
-        this.obLicence = obLicence;
-    }
-
-    public void setTrainerLicence(TrainerLicenceType licenceType, LocalDate expiryDate) {
-        this.trainerLicence = new TrainerLicence(licenceType, expiryDate);
-    }
-
     public void suspend() {
         if (!this.suspended) {
             this.suspended = true;
@@ -143,20 +132,8 @@ public class Member extends AbstractAggregateRoot<Member> {
         return firstName;
     }
 
-    public String getGithubSubject() {
-        return githubSubject;
-    }
-
-    public String getGoogleSubject() {
-        return googleSubject;
-    }
-
     public String getLastName() {
         return lastName;
-    }
-
-    public String getPassword() {
-        return password;
     }
 
     public RegistrationNumber getRegistration() {
@@ -219,7 +196,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         return id;
     }
 
-    public boolean isMedicCourse() {
+    public boolean hasMedicCourse() {
         return medicCourse;
     }
 

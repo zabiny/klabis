@@ -15,20 +15,6 @@ class MemberServiceImpl implements MemberService {
 
     MemberServiceImpl(MembersRepository membersRepository) {
         this.membersRepository = membersRepository;
-        Member admin = Member.fromRegistration(RegistrationNumber.ofRegistrationId("ZBM8003"), "{noop}secret");
-        admin.linkWithGoogle("110875617296914468258");
-        admin.setObLicence(OBLicence.C);
-        membersRepository.save(admin);
-    }
-
-    @Override
-    public Optional<Member> findByGoogleSubject(String googleSub) {
-        return membersRepository.findByGoogleSubject(googleSub);
-    }
-
-    @Override
-    public Optional<Member> findByUserName(String username) {
-        return membersRepository.findByUserName(username);
     }
 
     @Override
@@ -59,12 +45,13 @@ class MemberServiceImpl implements MemberService {
 
     @Override
     public RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex) {
-        return membersRepository.findMembersByBirthYearAndSex(dateOfBirth.getYear(), sex).stream()
+        // TODO: pripomenout si co tady dela pohlavi... proc je dulezite? (a pokud je to spatne, tak opravit)
+        return membersRepository.findMembersWithSameBirthyearAndSex(dateOfBirth, sex).stream()
                 .map(Member::getRegistration)
                 .sorted()
-                .reduce((first, second) -> second)    // find last item
+                .reduce((first, second) -> second)    // find last (highest) item
                 .map(RegistrationNumber::followingRegistrationNumber)
-                .orElseGet(() -> RegistrationNumber.ofZbmClub(dateOfBirth.getYear(), 1));
+                .orElseGet(() -> RegistrationNumber.ofZbmClub(dateOfBirth, 1));
     }
 
     @Transactional
@@ -84,7 +71,8 @@ class MemberServiceImpl implements MemberService {
     }
 
     private MembershipSuspensionInfo suspensionInfoForMember(Member member) {
-        return new MembershipSuspensionInfo(member.isSuspended(),true);
+        // TODO: suspension status for finance account...
+        return new MembershipSuspensionInfo(member.isSuspended(), MembershipSuspensionInfo.DetailStatus.OK);
     }
 
     @Override

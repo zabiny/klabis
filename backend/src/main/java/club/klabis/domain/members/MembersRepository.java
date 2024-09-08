@@ -3,17 +3,13 @@ package club.klabis.domain.members;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.repository.ListCrudRepository;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface MembersRepository extends ListCrudRepository<Member, Integer> {
 
-    List<Member> findMembersByBirthYearAndSex(int birthYear, Sex sex);
-
-    Optional<Member> findByUserName(String username);
-
-    Optional<Member> findByGoogleSubject(String googleSub);
+    List<Member> findMembersWithSameBirthyearAndSex(LocalDate birthDate, Sex sex);
 
     boolean isRegistrationNumberUsed(RegistrationNumber registrationNumber);
 

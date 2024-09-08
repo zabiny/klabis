@@ -74,6 +74,11 @@ dependencies {
 
     // Various
     implementation("org.jmolecules:jmolecules-ddd:1.9.0")
+    //implementation("org.jmolecules:jmolecules-hexagonal-architecture:1.9.0")
+    implementation("org.jmolecules:jmolecules-onion-architecture:1.9.0")
+    implementation("org.jmolecules:jmolecules-events:1.9.0")
+    testImplementation("org.jmolecules.integrations:jmolecules-archunit:0.20.0")
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
 }
 
 tasks.withType<Test> {
@@ -88,6 +93,15 @@ configurations {
 
 java.sourceSets["main"].java {
     srcDir("$buildDir/generated/klabisapi/src/main/java")
+}
+
+val copyApiSpecs = tasks.register<Copy>("copyApiSpecs") {
+    from(layout.projectDirectory.file("../klabis-api-spec.yaml"))
+    into(layout.buildDirectory.dir("resources/main/static"))
+}
+
+java.sourceSets["main"].resources {
+    srcDir(copyApiSpecs.map { it.temporaryDir })
 }
 
 tasks.withType<JavaCompile>() {
@@ -136,3 +150,4 @@ tasks.getByName<BootBuildImage>("bootBuildImage") {
 //        }
 //    }
 }
+

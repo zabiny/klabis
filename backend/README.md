@@ -7,12 +7,24 @@ Aplikace ma nakonfigurovane prostredi pomoci [TestContainers](https://docs.sprin
 gradlew bootTestRun
 ```
 
-
 Alternativne lze aplikaci spolecne s TestContainers spustit pomoci java main tridy `club.klabis.KlabisAppWithTestContainers` 
+
+Aplikace je po spusteni dostupna na URL: https://localhost:8443 (URL pro Swagger API dokumentaci je https://localhost:8443/swagger-ui/index.html)
 
 # DevOps
 
 ## Autorizacni server
 
 ### Vygenerovani noveho klice pro JWT tokeny
-`club.klabis.config.authserver.generatejwtkeys.JKWKeyGenerator` 
+`club.klabis.config.authserver.generatejwtkeys.JKWKeyGenerator`
+
+### Import certifikatu pro HTTPS
+Certifikat v repozitari je self-signed. 
+
+Pro import jineho certifikatu ze souboru (napr. `myCertificate.crt`) je mozne pouzit tento prikaz : 
+```shell
+keytool -import -alias klabisSSL -file myCertificate.crt -keystore backend/src/main/resources/https/keystore.p12 -storepass secret
+```
+
+
+Additional info for example [here](https://www.thomasvitale.com/https-spring-boot-ssl-certificate/)

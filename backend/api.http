@@ -1,0 +1,117 @@
+### API OAuth2 test endpoint
+GET {{host}}/oidc/userinfo
+Accept: application/json
+Authorization: Bearer {{$auth.token("zbm8003")}}
+
+### Register member
+POST {{host}}/memberRegistrations
+Authorization: Bearer {{$auth.token("test")}}
+Content-Type: application/json
+
+{
+  "registrationNumber": "ZBM2001",
+  "firstName": "John",
+  "lastName": "Dow",
+  "dateOfBirth": "2020-02-10",
+  "nationality": "SK",
+  "sex": "male",
+  "address": {
+    "streetAndNumber": "Tesinska 12",
+    "city": "Ostrava",
+    "country": "CZ",
+    "postalCode": "14245"
+  },
+  "contact": {
+    "email": "test@test.cz",
+    "phone": "1234567789",
+    "note": "Muj email"
+  }
+}
+
+### Get all members (compact details)
+GET {{host}}/members?view=compact
+Authorization: Bearer {{$auth.token("test")}}
+Accept: application/json
+
+### Get all members (full details)
+GET {{host}}/members?view=full
+Authorization: Bearer {{$auth.token("test")}}
+Accept: application/json
+
+### GET single member
+GET {{host}}/members/1
+Authorization: Bearer {{$auth.token("test")}}
+
+### Suggest registration number
+GET {{host}}/registrationNumber?sex=MALE&dateOfBirth=2020-10-11
+Authorization: Bearer {{$auth.token("test")}}
+
+### GET Edit member form data
+GET {{host}}/members/1/editMemberInfoForm
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("test")}}
+
+### PUT Edit member form data
+PUT {{host}}/members/1/editMemberInfoForm
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("test")}}
+
+{
+  "identityCard": null,
+  "nationality": "SK",
+  "address": {
+    "streetAndNumber": "Tesinska 12",
+    "city": "Brno",
+    "postalCode": "14245",
+    "country": "CZ"
+  },
+  "contact": {
+    "email": "test@test.cz",
+    "phone": "9871234567789",
+    "note": "Muj druhy email"
+  },
+  "guardians": [],
+  "siCard": null,
+  "bankAccount": null,
+  "dietaryRestrictions": null,
+  "drivingLicence": [],
+  "medicCourse": false,
+  "firstName": "John",
+  "lastName": "Dow",
+  "dateOfBirth": "2020-02-10",
+  "birthCertificateNumber": null,
+  "sex": "male"
+}
+
+### Membership suspension info
+GET {{host}}/members/1/suspendMembershipForm
+Authorization: Bearer {{$auth.token("test")}}
+
+### Suspend membership
+POST {{host}}/members/1/suspendMembershipForm
+Authorization: Bearer {{$auth.token("test")}}
+
+### Get ORIS user info data
+GET {{host}}/oris/userInfo/ZBM8003
+Authorization: Bearer {{$auth.token("test")}}
+
+### GET ORIS user info data - unknown reg num
+GET {{host}}/oris/userInfo/ZBM8002
+Authorization: Bearer {{$auth.token("test")}}
+
+### Get List of available grants
+GET {{host}}/grants
+Authorization: Bearer {{$auth.token("test")}}
+
+### Get Member grants Form data
+GET {{host}}/members/1/changeGrantsForm
+Authorization: Bearer {{$auth.token("test")}}
+
+### Update member grants
+PUT {{host}}/members/1/changeGrantsForm
+Authorization: Bearer {{$auth.token("test")}}
+Content-Type: application/json
+
+{
+  "grants": ["members:register"]
+}

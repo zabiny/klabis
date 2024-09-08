@@ -1,9 +1,16 @@
 package club.klabis.domain.members;
 
-public record MembershipSuspensionInfo(boolean isMemberSuspended, boolean financeAccountCleared) {
+public record MembershipSuspensionInfo(boolean isMemberSuspended, DetailStatus financeAccount) {
 
     public boolean canSuspendAccount() {
-        return !isMemberSuspended() && financeAccountCleared();  // if additional conditions apply, add them here
+        return !isMemberSuspended() && financeAccount().canSuspend();  // if additional conditions apply, add them here
     }
 
+    public static enum DetailStatus {
+        OK, PREVENTING_SUSPENSION;
+
+        public boolean canSuspend() {
+            return OK.equals(this);
+        }
+    }
 }
