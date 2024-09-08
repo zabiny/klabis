@@ -339,7 +339,7 @@ paths:
         Registers a new club member with the provided details.
         
         #### Required authorization
-        requires `members:register` grant`
+        requires `members:register` grant
       requestBody:
         required: true
         content:
