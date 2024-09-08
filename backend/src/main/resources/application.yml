@@ -38,6 +38,29 @@ spring:
                 - "profile"
                 - "email"
             #require-authorization-consent: true
+          1100:
+            registration:
+              client-id: "frontend"
+              client-secret: "{noop}secret"
+              client-authentication-methods:
+                - "client_secret_basic"
+                - "client_secret_jwt"
+                - "client_secret_post"
+              authorization-grant-types:
+                - "authorization_code"
+                - "refresh_token"
+              redirect-uris:
+                - "https://klabis.otakar.io/auth/callback"
+                - "http://localhost:8788/auth/callback"
+                - "http://localhost:5173/auth/callback"
+              post-logout-redirect-uris:
+                - "https://klabis.otakar.io"
+                - "http://localhost:8788"
+                - "http://localhost:5173"
+              scopes:
+                - "openid"
+                - "profile"
+                - "email"
           2000:
             registration:
               client-id: "test"
