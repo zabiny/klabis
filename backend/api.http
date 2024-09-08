@@ -1,7 +1,7 @@
 ### API OAuth2 test endpoint
 GET {{host}}/oidc/userinfo
 Accept: application/json
-Authorization: Bearer {{$auth.token("zbm8003")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Register member
 POST {{host}}/memberRegistrations

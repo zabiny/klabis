@@ -25,7 +25,8 @@ java.sourceCompatibility = JavaVersion.VERSION_21
 
 
 
-val dockerImageName = "registry.polach.cloud/zbm/web-2.0/${group}.${description}:${project.version}"
+//val dockerImageName = "registry.polach.cloud/zbm/web-2.0/${group}.${description}:${project.version}"
+val dockerImageName = "registry.polach.cloud/zbm/web-2.0/${description}:${project.version}"
 println(dockerImageName)
 
 val recordbuilderVersion = "41"

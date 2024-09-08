@@ -41,7 +41,7 @@ spring:
           1100:
             registration:
               client-id: "frontend"
-              client-secret: "{noop}secret"
+              client-secret: "{noop}fesecret"
               client-authentication-methods:
                 - "client_secret_basic"
                 - "client_secret_jwt"
@@ -53,6 +53,7 @@ spring:
                 - "https://klabis.otakar.io/auth/callback"
                 - "http://localhost:8788/auth/callback"
                 - "http://localhost:5173/auth/callback"
+                - "https://localhost:8443/login/oauth2/code/klabis"
               post-logout-redirect-uris:
                 - "https://klabis.otakar.io"
                 - "http://localhost:8788"
