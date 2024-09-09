@@ -1,13 +1,6 @@
 
 import { Separator } from '@/components/ui/separator'
 import { UserForm } from '@/components/settings/UserForm'
-import type {LoaderFunctionArgs} from "@remix-run/server-runtime";
-import {getUser} from "@/services/auth.server";
-import {useLoaderData} from "@remix-run/react";
-
-export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-  return getUser({request, context});
-};
 
 export default function Profile() {
   return <div className="space-y-6">

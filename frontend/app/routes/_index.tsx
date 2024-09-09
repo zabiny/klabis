@@ -1,6 +1,6 @@
 import type { MetaFunction } from "@remix-run/react";
 import type {LoaderFunctionArgs} from "@remix-run/server-runtime";
-import {getAuth} from "@/services/auth.server";
+import {authenticate} from "@/services/auth.server";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -11,7 +11,7 @@ export const meta: MetaFunction = () => {
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
 	// If the user is already authenticated redirect to /dashboard directly
-	const auth = getAuth(context);
+	const { auth } = authenticate(context);
 	return await auth.isAuthenticated(request, {
 		failureRedirect: "/login"
 	});

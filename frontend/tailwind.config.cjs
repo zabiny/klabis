@@ -3,6 +3,7 @@ function lightDarkVar(baseName) {
 }
 
 /** @type {import('tailwindcss').Config} */
+
 module.exports = {
 	darkMode: ["class"],
 	content: [

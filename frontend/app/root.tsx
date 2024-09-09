@@ -18,7 +18,7 @@ import {
 import "./globals.css";
 import Main from "@/components/layout/Main";
 import type {LoaderFunctionArgs} from "@remix-run/server-runtime";
-import {getUser} from "@/services/auth.server";
+import {getAuth} from "@/services/auth.server";
 
 function App({ children }: { children: React.ReactNode }) {
 	return (
@@ -41,7 +41,8 @@ function App({ children }: { children: React.ReactNode }) {
 }
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-	return getUser({request, context});
+	const user = await getAuth({request, context});
+	return user?.username ?? "NO_USER";
 };
 
 export default function Root() {

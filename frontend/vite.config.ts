@@ -10,6 +10,13 @@ export default defineConfig({
 		tsconfigPaths(),
 		cloudflareDevProxyVitePlugin(),
 		remix({
+			routes(defineRoutes) {
+				return defineRoutes((route) => {
+					route("/auth/callback", "routes/auth/auth.callback.ts");
+					route("/login", "routes/auth/login.ts");
+					route("/logout", "routes/auth/logout.ts");
+				});
+			},
 			future: {
 				v3_fetcherPersist: true,
 				v3_relativeSplatPath: true,
