@@ -1,5 +1,6 @@
 package club.klabis.adapters.oris;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ import org.springframework.http.converter.GenericHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
@@ -31,15 +33,18 @@ class OrisConfiguration implements ClientHttpRequestInterceptor {
 
 
     @Bean
-    OrisApiClient orisApiClient(RestClient.Builder restClientBuilder) {
+    OrisApiClient orisApiClient(RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
 
-        MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter();
+        MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter(objectMapper);
         messageConverter.setSupportedMediaTypes(List.of(MediaType.valueOf("application/javascript")));
 
         GenericHttpMessageConverter<Object> orisApiQuirksMessageConverter = new OrisApiQuirksHandlingMessageConverter(messageConverter);
 
         RestClient restClient = restClientBuilder.baseUrl("https://oris.orientacnisporty.cz")
-                .messageConverters(c -> c.add(orisApiQuirksMessageConverter))
+                .messageConverters(c -> {
+                    c.add(orisApiQuirksMessageConverter);
+                    c.add(new MappingJackson2XmlHttpMessageConverter());
+                })
                 .requestInterceptor(this)
                 .build();
         RestClientAdapter adapter = RestClientAdapter.create(restClient);

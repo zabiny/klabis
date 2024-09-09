@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 public interface OrisApiClient {
 
-    @GetExchange("/API/?format=json&method=getUser")
+    @GetExchange("/API/?format=xml&method=getUser")
     OrisResponse<OrisUserInfo> getUserInfo(@RequestParam("rgnum") String registrationNumber);
 
     record OrisResponse<T> (
@@ -20,10 +20,6 @@ public interface OrisApiClient {
             @JsonProperty("ExportCreated") @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime exportCreated,
             @JsonProperty("Method") String method
     ) {
-
-        OrisResponse<T> asNotFoundResponse() {
-            return new OrisApiClient.OrisResponse<>(null, this.format(), "NOT_FOUND", this.exportCreated(), this.method());
-        }
 
     }
 
