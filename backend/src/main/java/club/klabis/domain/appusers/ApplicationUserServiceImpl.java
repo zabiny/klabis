@@ -1,5 +1,6 @@
 package club.klabis.domain.appusers;
 
+import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
@@ -37,6 +38,13 @@ class ApplicationUserServiceImpl implements ApplicationUserService {
     public void setGlobalGrants(Integer memberId, Collection<ApplicationGrant> globalGrants) {
         ApplicationUser memberAppUser = getApplicationUserForMemberId(memberId);
         memberAppUser.setGlobalGrants(globalGrants);
+        repository.save(memberAppUser);
+    }
+
+    @Override
+    public void linkWithGoogleId(RegistrationNumber registrationNumber, String googleId) {
+        ApplicationUser memberAppUser = repository.findByUserName(registrationNumber.toRegistrationId()).orElseThrow();
+        memberAppUser.linkWithGoogle(googleId);
         repository.save(memberAppUser);
     }
 

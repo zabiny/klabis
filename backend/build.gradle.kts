@@ -47,8 +47,9 @@ dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // XML Mapping
+    // Jackson mappings
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")
 
     // Test containers
     testImplementation("org.springframework.boot:spring-boot-testcontainers")

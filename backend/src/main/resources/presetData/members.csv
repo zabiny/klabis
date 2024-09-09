@@ -1,0 +1,6 @@
+firstName,lastName,registrationNumber,sex,dateOfBirth,birthCertificateNumber,nationality,street,city,postalCode,country,email,phone,siCard,bankAccount,orisId,googleId
+David,Polách,ZBM8003,male,1980-04-26,1234567890,CZ,Nekde 12,Brno,63000,CZ,test@test.com,999999999,,,,110875617296914468258
+Otakar,Hirš,ZBM9801,male,1998-01-01,1234567890,CZ,Jinde 1,Brno,63600,CZ,ota@ota.cz,999999999,,,,103575135673576139314
+Luděk,Finstrle,ZBM7902,male,1979-01-01,1234567890,CZ,,,,,luf@email.cz,999999999,,,,
+Aleš,Finstrle,ZBM7603,male,1976-01-01,1234567890,CZ,,,,,alf@email.cz,999999999,,,,
+Pavel,Rotek,ZBM7704,male,1977-01-01,1234567890,CZ,,,,,pavel@gmail.com,999999999,,,,
