@@ -9,7 +9,7 @@
     "fix": "biome check . --apply",
     "lint": "biome check .",
     "preview": "npm run build && wrangler pages dev ./build/client",
-    "deploy": "pm run build && wrangler pages deploy ./build/client",
+    "deploy": "npm run build && wrangler pages deploy ./build/client",
     "typecheck": "tsc",
     "generate-api": "openapi-generator-cli generate -i ../klabis-api-spec.yaml -g typescript-fetch -o ./app/api/ --skip-validate-spec --additional-properties=useSingleRequestParameter=true,withoutPrefixEnums=true,enumNameSuffix=,withSeparateModelsAndApi=true,apiPackage=server,modelPackage=model --openapi-normalizer REFACTOR_ALLOF_WITH_PROPERTIES_ONLY=true"
   },
