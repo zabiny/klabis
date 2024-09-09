@@ -1,5 +1,9 @@
 import {MembersTable} from "@/components/members/MembersTable";
-import { MetaFunction } from "@remix-run/react";
+import {json, MetaFunction, useLoaderData} from "@remix-run/react";
+import {membersApi, MembersGetView, type MemberViewCompact} from "@/api";
+import {AppLoadContext} from "@remix-run/cloudflare";
+import {getAuth, getAuthHeaders} from "@/services/auth.server";
+import type {LoaderFunctionArgs} from "@remix-run/server-runtime";
 
 const _mainMembers = [
   {
@@ -161,7 +165,14 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+export async function loader(context: LoaderFunctionArgs) {
+  const members = await membersApi.membersGet({view: MembersGetView.Compact}, { headers: await getAuthHeaders(context) })
+  .then((memberList) => memberList.items as MemberViewCompact[]);
+  return json({ members });
+}
+
 export default function Members() {
+  const memberList = useLoaderData<typeof loader>();
   return <div className="h-full flex-1 flex-col space-y-8 p-8 md:flex">
         <div className="flex items-center justify-between space-y-2">
           <div>
@@ -172,6 +183,6 @@ export default function Members() {
             {/*<UserNav />*/}
           </div>
         </div>
-        <MembersTable data={_mainMembers} />
+        <MembersTable data={memberList.members} />
       </div>;
 }

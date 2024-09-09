@@ -5,8 +5,8 @@ import { type Table } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-import { trainingGroups } from '@/components/members/members-data.ts'
-import { MembersTableFacetedFilter } from './members-table-faceted-filter.tsx'
+// import { trainingGroups } from '@/components/members/members-data'
+import { MembersTableFacetedFilter } from './members-table-faceted-filter'
 
 interface MembersTableToolbarProps<TData> {
   table: Table<TData>
@@ -26,13 +26,13 @@ export function MembersTableToolbar<TData>({
           onChange={(event) => table.setGlobalFilter(event.target.value)}
           className="h-8 w-[150px] lg:w-[250px]"
         />
-        {table.getColumn('trainingGroup') && (
-          <MembersTableFacetedFilter
-            column={table.getColumn('trainingGroup')}
-            title="Tréninková skupina"
-            options={trainingGroups}
-          />
-        )}
+        {/*{table.getColumn('trainingGroup') && (*/}
+        {/*  <MembersTableFacetedFilter*/}
+        {/*    column={table.getColumn('trainingGroup')}*/}
+        {/*    title="Tréninková skupina"*/}
+        {/*    options={trainingGroups}*/}
+        {/*  />*/}
+        {/*)}*/}
         {isFiltered && (
           <Button
             variant="ghost"
