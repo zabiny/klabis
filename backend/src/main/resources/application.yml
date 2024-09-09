@@ -73,10 +73,10 @@ spring:
                 - "authorization_code"
                 - "refresh_token"
               redirect-uris:
-                - "http://localhost:8080/login/oauth2/code/klabis"
+                - "https://localhost:8443/login/oauth2/code/klabis"
                 - "https://klabis-auth.polach.cloud/login/oauth2/code/klabis"
                 - "http://klabis-auth.polach.cloud/login/oauth2/code/klabis"
-                - "http://localhost:8080/swagger-ui/oauth2-redirect.html"
+                - "https://localhost:8443/swagger-ui/oauth2-redirect.html"
                 - "https://klabis-auth.polach.cloud/swagger-ui/oauth2-redirect.html"
                 - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
               #              post-logout-redirect-uris:
@@ -97,7 +97,7 @@ spring:
                 - "authorization_code"
                 - "refresh_token"
               redirect-uris:
-                - "http://localhost:8080/swagger-ui/oauth2-redirect.html"
+                - "https://localhost:8443/swagger-ui/oauth2-redirect.html"
                 - "https://klabis-auth.polach.cloud/swagger-ui/oauth2-redirect.html"
                 - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
               scopes:
