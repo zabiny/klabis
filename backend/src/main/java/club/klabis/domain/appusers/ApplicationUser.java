@@ -16,7 +16,7 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
     private Integer memberId;
     private String username;
     private String password = "{noop}secret";
-    private boolean enabled;
+    private boolean enabled = true;
     private String googleSubject;
     private String githubSubject;
     private Set<ApplicationGrant> globalGrants = EnumSet.noneOf(ApplicationGrant.class);
@@ -72,8 +72,8 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
         return password;
     }
 
-    public boolean isEnabled() {
-        return enabled;
+    public boolean isDisabled() {
+        return !enabled;
     }
 
     public Set<ApplicationGrant> getGlobalGrants() {

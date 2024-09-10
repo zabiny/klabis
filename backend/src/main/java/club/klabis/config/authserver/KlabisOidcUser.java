@@ -14,10 +14,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
 
-/**
- * Object holding information published in OIDC token for Klabis app users
- */
-public class KlabisOidcUser extends DefaultOidcUser implements OidcUser, UserDetails {
+// Object holding data what we would like to publish into Klabis JWT tokens
+// TODO: find way how to use it
+class KlabisOidcUser extends DefaultOidcUser implements OidcUser, UserDetails {
     private UUID id;
     private String username;
     private boolean active;

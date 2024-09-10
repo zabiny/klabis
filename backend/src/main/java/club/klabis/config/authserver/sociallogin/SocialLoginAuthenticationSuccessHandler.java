@@ -3,6 +3,7 @@ package club.klabis.config.authserver.sociallogin;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -34,6 +35,8 @@ public class SocialLoginAuthenticationSuccessHandler implements AuthenticationSu
             } else if (authentication.getPrincipal() instanceof OAuth2User) {
                 this.oauth2UserHandler.accept((OAuth2User) authentication.getPrincipal());
             }
+        } else if (authentication instanceof UsernamePasswordAuthenticationToken userpasstoken) {
+            System.out.println("Handling %s user (username+pass)".formatted(userpasstoken.getPrincipal()));
         }
 
         this.delegate.onAuthenticationSuccess(request, response, authentication);

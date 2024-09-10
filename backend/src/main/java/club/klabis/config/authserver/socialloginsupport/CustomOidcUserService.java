@@ -1,6 +1,5 @@
 package club.klabis.config.authserver.socialloginsupport;
 
-import club.klabis.config.authserver.KlabisOidcUser;
 import club.klabis.domain.appusers.ApplicationUser;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,6 +10,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +31,7 @@ class CustomOidcUserService extends OidcUserService {
     }
 
     @Override
-    public KlabisOidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+    public DefaultOidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         OidcUser oidcUser = super.loadUser(userRequest);
 
         SocialLoginOidcUserToKlabisOidcUserMapper mapper = getMapperForRegistrationId(userRequest.getClientRegistration())
@@ -42,7 +42,7 @@ class CustomOidcUserService extends OidcUserService {
                 .orElseThrow(() -> new OAuth2AuthenticationException("User with subject %s (%s) not found!".formatted(oidcUser.getSubject(), mapper.getOAuthClientId())));
     }
 
-    KlabisOidcUser createAuthentication(OidcIdToken idToken, OidcUserInfo userInfo, ApplicationUser user, List<String> roles) {
+    DefaultOidcUser createAuthentication(OidcIdToken idToken, OidcUserInfo userInfo, ApplicationUser user, List<String> roles) {
         Set<GrantedAuthority> authorities = roles.stream()
                 .map(roleName -> new SimpleGrantedAuthority(roleName))
                 .collect(Collectors.toSet());
@@ -61,12 +61,14 @@ class CustomOidcUserService extends OidcUserService {
                 idToken.getTokenValue(), idToken.getIssuedAt(), idToken.getExpiresAt(), klabisClaims
         );
 
-        KlabisOidcUser oidcUser = new KlabisOidcUser(authorities, customIdToken, userInfo);
+        DefaultOidcUser oidcUser = new DefaultOidcUser(authorities, customIdToken, userInfo);
 //        oidcUser.setId(user.getId());
 //        oidcUser.setUsername(user.getUsername());
 //        oidcUser.setCreatedAt(user.getCreatedAt());
 //        oidcUser.setActive(user.isActive());
         return oidcUser;
-    };
+    }
+
+    ;
 
 }
