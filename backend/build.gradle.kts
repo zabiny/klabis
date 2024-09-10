@@ -1,3 +1,4 @@
+import org.apache.commons.lang3.StringUtils
 import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
 /*
@@ -22,7 +23,6 @@ group = "club.zabiny"
 version = "0.1-SNAPSHOT"
 description = "klabis"
 java.sourceCompatibility = JavaVersion.VERSION_21
-
 
 
 //val dockerImageName = "registry.polach.cloud/zbm/web-2.0/${group}.${description}:${project.version}"
@@ -128,31 +128,33 @@ openApiGenerate {
     modelPackage.set("club.klabis.api.dto")
     modelNameSuffix.set("ApiDto")
     library.set("spring-boot")
-    configOptions.putAll(mapOf(
-        "dateLibrary" to "java8",
-        "useSpringBoot3" to "true",
-        "generateBuilders" to "true",
-        "useSpringController" to "false",
-        //"hateoas" to "false",
-        "booleanGetterPrefix" to "is",
-        "interfaceOnly" to "true",
-        "defaultInterfaces" to "false",
-        "useBeanValidation" to "true"
-    ))
+    configOptions.putAll(
+        mapOf(
+            "dateLibrary" to "java8",
+            "useSpringBoot3" to "true",
+            "generateBuilders" to "true",
+            "useSpringController" to "false",
+            //"hateoas" to "false",
+            "booleanGetterPrefix" to "is",
+            "interfaceOnly" to "true",
+            "defaultInterfaces" to "false",
+            "useBeanValidation" to "true"
+        )
+    )
 }
 
 tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {
     imageName = dockerImageName
-//  publish = true
-//    docker {
-//        publishRegistry {
-//            username = "user"
-//            password = "secret"
-//            url = "https://docker.example.com/v1/"
-//            email = "user@example.com"
-//        }
-//    }
+    publish = StringUtils.isNotBlank(System.getenv("DOCKER_USERNAME")) && StringUtils.isNotBlank(System.getenv("DOCKER_PASSWORD"))
+    docker {
+        publishRegistry {
+            username = StringUtils.defaultIfBlank(System.getenv("DOCKER_USERNAME"), "dummy")
+            password = StringUtils.defaultIfBlank(System.getenv("DOCKER_PASSWORD"), "dummy")
+            url = "https://registry.polach.cloud"
+            email = "gradle@noreply.com"
+        }
+    }
 }
 
