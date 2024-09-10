@@ -41,7 +41,7 @@ function App({ children }: { children: React.ReactNode }) {
 }
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
-	const user = await getAuth({request, context});
+	const user = await getAuth({ request, context });
 	return user?.username ?? "NO_USER";
 };
 

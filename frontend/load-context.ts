@@ -7,17 +7,17 @@ import { type PlatformProxy } from "wrangler";
 // even if no `wrangler.toml` exists.
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Env {
-    BASE_URL: any;
-    COOKIE_SECRET: string;
-    AUTH_CLIENT_SECRET: string;
-    AUTH_CLIENT_ID: string;
+	BASE_URL: string;
+	COOKIE_SECRET: string;
+	AUTH_CLIENT_SECRET: string;
+	AUTH_CLIENT_ID: string;
 }
 
 type Cloudflare = Omit<PlatformProxy<Env>, "dispose">;
 
 // @ts-ignore
 declare module "@remix-run/cloudflare" {
-  interface AppLoadContext {
-    cloudflare: Cloudflare
-  }
+	interface AppLoadContext {
+		cloudflare: Cloudflare;
+	}
 }
