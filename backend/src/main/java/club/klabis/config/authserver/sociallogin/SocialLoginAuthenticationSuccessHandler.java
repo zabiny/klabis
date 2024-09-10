@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 /**
  * <a href="https://docs.spring.io/spring-authorization-server/reference/guides/how-to-social-login.html#advanced-use-cases-capture-users">Social login in authorization server</a>
  */
+// TODO: complete link of social login to Klabis App user (currently it's not used)
 public class SocialLoginAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
     private final AuthenticationSuccessHandler delegate = new SavedRequestAwareAuthenticationSuccessHandler();
 

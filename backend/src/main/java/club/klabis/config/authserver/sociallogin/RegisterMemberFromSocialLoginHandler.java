@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.function.Consumer;
 
 @Component
+// TODO: complete link of social login to Klabis App user (currently it's not used)
 public class RegisterMemberFromSocialLoginHandler implements Consumer<OidcUser> {
 
     private static final Logger LOG = LoggerFactory.getLogger(RegisterMemberFromSocialLoginHandler.class);

@@ -19,7 +19,7 @@ class ApplicationUsersInMemoryRepository extends InMemoryRepositoryImpl<Applicat
 
     @Override
     public Optional<ApplicationUser> findByGoogleSubject(String googleSub) {
-        return this.findAll().stream().filter(it -> googleSub.equals(it.getGoogleSubject())).findAny();
+        return this.findAll().stream().filter(it -> it.getGoogleSubject().filter(googleSub::equals).isPresent()).findAny();
     }
 
     @Override

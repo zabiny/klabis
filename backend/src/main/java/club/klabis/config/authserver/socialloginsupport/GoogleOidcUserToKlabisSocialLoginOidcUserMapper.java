@@ -2,20 +2,28 @@ package club.klabis.config.authserver.socialloginsupport;
 
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUsersRepository;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 @Component
 class GoogleOidcUserToKlabisSocialLoginOidcUserMapper implements SocialLoginOidcUserToKlabisOidcUserMapper {
+
+    private final ApplicationUsersRepository userService;
+
+    GoogleOidcUserToKlabisSocialLoginOidcUserMapper(ApplicationUsersRepository userService) {
+        this.userService = userService;
+    }
+
     @Override
-    public String getRegistration() {
+    public String getOAuthClientId() {
         return "google";
     }
 
     @Override
-    public Function<String, Optional<ApplicationUser>> findMemberFunction(ApplicationUsersRepository memberService) {
-        return memberService::findByGoogleSubject;
+    public Optional<ApplicationUser> findApplicationUserForToken(OidcIdToken token) {
+        return userService.findByGoogleSubject(token.getSubject());
     }
+
 }
