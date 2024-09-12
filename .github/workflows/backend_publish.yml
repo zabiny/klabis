@@ -39,9 +39,12 @@ jobs:
         echo "::set-output name=image_tag::$TAG"
     
     - name: Build and Publish Docker Image
+      working-directory: backend
       run: |
-        ./backend/gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:${{ steps.tag.outputs.image_tag }}
-        ./backend/gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:latest
-
+        # Build the Docker image and tag it with both the dynamic tag and 'latest'
+        ./gradlew bootBuildImage \
+          --imageName=ghcr.io/${{ github.repository }}:${{ steps.tag.outputs.tag }} \
+          --imageName=ghcr.io/${{ github.repository }}:latest
+          
     - name: Verify image
       run: docker images
