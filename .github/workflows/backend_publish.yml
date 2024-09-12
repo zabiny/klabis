@@ -41,7 +41,8 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build and Publish Docker Image
-      run: ./backend/gradlew bootBuildImage
+      working-directory: backend 
+      run: ./gradlew bootBuildImage
       env:
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_ACTOR: ${{ github.actor }}
