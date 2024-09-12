@@ -30,26 +30,17 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Determine Docker Image Tag
-      id: tag
-      run: |
-        # Check if the current commit has a tag
-        TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
-        if [ -z "$TAG" ]; then
-          # No tag found, use the short commit hash as the tag
-          TAG=$(git rev-parse --short HEAD)
-        fi
-        echo "TAG=$TAG" >> $GITHUB_ENV
-
     - name: Build and Publish Docker Image
       working-directory: backend
       env:
         GITHUB_ACTOR: ${{ github.actor }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Build the Docker image and tag it with both the dynamic tag and 'latest'
-        ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:${{ env.TAG }}
+        # Build the Docker image and tag it with both the 'latest', commit hash, and tag if exist
         ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:latest
-          
+        ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:$(git rev-parse --short HEAD)
+        TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
+        test $TAG && ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:$TAG
+        
     - name: Verify image
       run: docker images
