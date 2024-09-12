@@ -3,7 +3,9 @@ name: Publish klabis/backend Docker Image
 on:
   push:
     branches:
-      - main  
+      - main
+    paths:
+      - 'backend/**'
   workflow_dispatch:  # Manual trigger
 
 jobs:
@@ -39,10 +41,6 @@ jobs:
         # Build the Docker image and tag it with both the 'latest', commit hash, and tag if exist
         ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:latest
         ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:$(git rev-parse --short HEAD)
-        TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
-        if [ -n "$TAG" ]; then
-          ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:$TAG
-        fi
-        
+
     - name: Verify image
       run: docker images
