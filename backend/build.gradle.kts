@@ -146,13 +146,22 @@ openApiGenerate {
 tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {
-    imageName = dockerImageName
-    publish = StringUtils.isNotBlank(System.getenv("DOCKER_USERNAME")) && StringUtils.isNotBlank(System.getenv("DOCKER_PASSWORD"))
+    // Get the tag from the environment or use the commit hash if tag is empty
+    val gitTag = System.getenv("GIT_TAG")
+    val commitHash = System.getenv("GIT_COMMIT_HASH")
+    
+    // Set the image name based on tag or commit hash
+    imageName = if (StringUtils.isNotBlank(gitTag)) {
+        "ghcr.io/${System.getenv("GITHUB_REPOSITORY")}:$gitTag"
+    } else {
+        "ghcr.io/${System.getenv("GITHUB_REPOSITORY")}:$commitHash"
+    }
+    publish = StringUtils.isNotBlank(System.getenv("GITHUB_TOKEN"))
     docker {
         publishRegistry {
-            username = StringUtils.defaultIfBlank(System.getenv("DOCKER_USERNAME"), "dummy")
-            password = StringUtils.defaultIfBlank(System.getenv("DOCKER_PASSWORD"), "dummy")
-            url = "https://registry.polach.cloud"
+            username = StringUtils.defaultIfBlank(System.getenv("GITHUB_ACTOR"), "dummy")
+            password = StringUtils.defaultIfBlank(System.getenv("GITHUB_TOKEN"), "dummy")
+            url = "https://ghcr.io"
             email = "gradle@noreply.com"
         }
     }
