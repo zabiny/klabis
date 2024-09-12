@@ -1,4 +1,4 @@
-name: Publish Docker Image
+name: Publish klabis/backend Docker Image
 
 on:
   push:
@@ -40,7 +40,9 @@ jobs:
         ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:latest
         ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:$(git rev-parse --short HEAD)
         TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
-        test $TAG && ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:$TAG
+        if [ -n "$TAG" ]; then
+          ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:$TAG
+        fi
         
     - name: Verify image
       run: docker images
