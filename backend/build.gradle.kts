@@ -146,16 +146,7 @@ openApiGenerate {
 tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {
-    // Get the tag from the environment or use the commit hash if tag is empty
-    val gitTag = System.getenv("GIT_TAG")
-    val commitHash = System.getenv("GIT_COMMIT_HASH")
-    
-    // Set the image name based on tag or commit hash
-    imageName = if (StringUtils.isNotBlank(gitTag)) {
-        "ghcr.io/${System.getenv("GITHUB_REPOSITORY")}:$gitTag"
-    } else {
-        "ghcr.io/${System.getenv("GITHUB_REPOSITORY")}:$commitHash"
-    }
+    imageName = "ghcr.io/${System.getenv("GITHUB_REPOSITORY")}:" + version
     publish = StringUtils.isNotBlank(System.getenv("GITHUB_TOKEN"))
     docker {
         publishRegistry {
@@ -166,4 +157,5 @@ tasks.getByName<BootBuildImage>("bootBuildImage") {
         }
     }
 }
+
 
