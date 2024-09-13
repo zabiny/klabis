@@ -39,8 +39,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # Build the Docker image and tag it with both the 'latest', commit hash, and tag if exist
-        ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:latest
-        ./gradlew bootBuildImage --imageName=ghcr.io/${{ github.repository }}:$(git rev-parse --short HEAD)
+        ./gradlew bootBuildImage --imageName=ghcr.io/klabis-be:latest
+        ./gradlew bootBuildImage --imageName=ghcr.io/klabis-be:$(git rev-parse --short HEAD)
 
     - name: Verify image
       run: docker images
