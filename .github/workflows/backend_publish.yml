@@ -41,8 +41,9 @@ jobs:
         DOCKER_REGISTRY_URL: "https://ghcr.io"
       run: |
         # Build the Docker image and tag it with both the 'latest', commit hash, and tag if exist
-        ./gradlew bootBuildImage --imageName=ghcr.io/zabiny/klabis-be:latest --publishImage
-        ./gradlew bootBuildImage --imageName=ghcr.io/zabiny/klabis-be:$(git rev-parse --short HEAD) --publishImage
+        ./gradlew bootBuildImage --imageName=ghcr.io/zabiny/klabis-be:latest
+        docker tag ghcr.io/zabiny/klabis-be:latest ghcr.io/zabiny/klabis-be:$(git rev-parse --short HEAD) 
+        docker push -a
 
     - name: Verify image
       run: docker images
