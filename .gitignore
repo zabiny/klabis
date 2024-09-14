@@ -13,4 +13,5 @@
 # backend excludes
 backend/target/**
 backend/build/**
+backend/local.env
 **/.gradle/**
