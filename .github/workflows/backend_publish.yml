@@ -36,7 +36,6 @@ jobs:
     - name: Build and Publish Docker Image
       working-directory: backend
       env:
-        GITHUB_ACTOR: ${{ github.actor }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # Build the Docker image and tag it with both the 'latest', commit hash, and tag if exist
