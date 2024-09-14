@@ -43,7 +43,7 @@ jobs:
         # Build the Docker image and tag it with both the 'latest', commit hash, and tag if exist
         ./gradlew bootBuildImage --imageName=ghcr.io/zabiny/klabis-be:latest
         docker tag ghcr.io/zabiny/klabis-be:latest ghcr.io/zabiny/klabis-be:$(git rev-parse --short HEAD) 
-        docker push -a
+        docker push -a ghcr.io/zabiny/klabis-be:latest 
 
     - name: Verify image
       run: docker images
