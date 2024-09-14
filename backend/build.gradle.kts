@@ -147,7 +147,7 @@ tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {
     imageName = "ghcr.io/${System.getenv("GITHUB_REPOSITORY")}:" + version
-    publish = StringUtils.isNotBlank(System.getenv("GITHUB_TOKEN"))
+    publish = false
     docker {
         publishRegistry {
             username = StringUtils.defaultIfBlank(System.getenv("GITHUB_ACTOR"), "dummy")
