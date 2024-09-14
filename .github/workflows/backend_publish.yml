@@ -36,10 +36,6 @@ jobs:
 
     - name: Build and Publish Docker Image
       working-directory: backend
-      env:
-        DOCKER_REGISTRY_USERNAME: ${{github.actor}}
-        DOCKER_REGISTRY_PASSWORD: ${{secrets.GITHUB_TOKEN}}
-        DOCKER_REGISTRY_URL: "https://ghcr.io"
       run: |
         # Build the Docker image and tag it with both the 'latest', commit hash, and tag if exist
         ./gradlew bootBuildImage --imageName=ghcr.io/zabiny/klabis-be:latest
