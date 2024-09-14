@@ -7,6 +7,7 @@ on:
       - backendCI
     paths:
       - 'backend/**'
+      - '.github/workflows/backend_publish.yml'
   workflow_dispatch:  # Manual trigger
 
 jobs:
