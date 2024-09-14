@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - backendCI
     paths:
       - 'backend/**'
       - '.github/workflows/backend_publish.yml'
