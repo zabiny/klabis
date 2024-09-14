@@ -24,11 +24,6 @@ version = "0.1-SNAPSHOT"
 description = "klabis"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
-
-//val dockerImageName = "registry.polach.cloud/zbm/web-2.0/${group}.${description}:${project.version}"
-val dockerImageName = "registry.polach.cloud/zbm/web-2.0/${description}:${project.version}"
-println(dockerImageName)
-
 val recordbuilderVersion = "41"
 val mapstructVersion = "1.6.0.Beta1"
 val mapstructSpringExtensionsVersion = "1.1.1"
@@ -146,13 +141,13 @@ openApiGenerate {
 tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {
-    imageName = "ghcr.io/${System.getenv("GITHUB_REPOSITORY")}:" + version
+    imageName = "${project.name}:${project.version}"
     publish = false
     docker {
         publishRegistry {
-            username = StringUtils.defaultIfBlank(System.getenv("GITHUB_ACTOR"), "dummy")
-            password = StringUtils.defaultIfBlank(System.getenv("GITHUB_TOKEN"), "dummy")
-            url = "https://ghcr.io"
+            username = StringUtils.defaultIfBlank(System.getenv("DOCKER_REGISTRY_USERNAME"), "dummy")
+            password = StringUtils.defaultIfBlank(System.getenv("DOCKER_REGISTRY_PASSWORD"), "dummy")
+            url = System.getenv("DOCKER_REGISTRY_URL")
             email = "gradle@noreply.com"
         }
     }
