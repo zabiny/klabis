@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'backend/**'
+      - '.github/workflows/backend_publish.yml'
   workflow_dispatch:  # Manual trigger
 
 jobs:
@@ -34,13 +35,11 @@ jobs:
 
     - name: Build and Publish Docker Image
       working-directory: backend
-      env:
-        GITHUB_ACTOR: ${{ github.actor }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # Build the Docker image and tag it with both the 'latest', commit hash, and tag if exist
         ./gradlew bootBuildImage --imageName=ghcr.io/zabiny/klabis-be:latest
-        ./gradlew bootBuildImage --imageName=ghcr.io/zabiny/klabis-be:$(git rev-parse --short HEAD)
+        docker tag ghcr.io/zabiny/klabis-be:latest ghcr.io/zabiny/klabis-be:$(git rev-parse --short HEAD) 
+        docker push -a ghcr.io/zabiny/klabis-be 
 
     - name: Verify image
       run: docker images
