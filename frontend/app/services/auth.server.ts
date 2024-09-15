@@ -89,10 +89,10 @@ export function authenticate(context: AppLoadContext) {
       clientId: context.cloudflare.env.AUTH_CLIENT_ID,
       clientSecret: context.cloudflare.env.AUTH_CLIENT_SECRET,
 
-      authorizationEndpoint: "https://klabis-auth.polach.cloud/oauth/authorize",
-      tokenEndpoint: "https://klabis-auth.polach.cloud/oauth/token",
+      authorizationEndpoint: "https://api.klabis.otakar.io/oauth/authorize",
+      tokenEndpoint: "https://api.klabis.otakar.io/oauth/token",
       redirectURI: `${context.cloudflare.env.BASE_URL}/auth/callback`,
-      tokenRevocationEndpoint: "https://klabis-auth.polach.cloud/oauth2/revoke",
+      tokenRevocationEndpoint: "https://api.klabis.otakar.io/oauth2/revoke",
 
       // codeChallengeMethod: "S256", // optional
       scopes: ["openid", "profile", "email"], // optional
@@ -100,7 +100,7 @@ export function authenticate(context: AppLoadContext) {
       // authenticateWith: "request_body", // optional
     },
     async ({tokens, profile, context, request}) => {
-      // const res = await fetch("https://klabis-auth.polach.cloud/oidc/userinfo", {
+      // const res = await fetch("https://api.klabis.otakar.io/oidc/userinfo", {
       //   headers: {
       //     authorization: `Bearer ${tokens.access_token}`
       //   }
@@ -129,7 +129,7 @@ export async function getClient({
                                 }: { request: Request; context: AppLoadContext }) {
   const user = await getAuth({context, request});
   const client = createClient<paths>({
-    baseUrl: "https://klabis-auth.polach.cloud",
+    baseUrl: "https://api.klabis.otakar.io",
     headers: {
       Authorization: `Bearer ${user.accessToken}`,
     },
