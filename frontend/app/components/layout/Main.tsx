@@ -6,10 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SideMenu } from '@/components/layout/SideMenu'
 import { UserMenu } from '@/components/layout/UserMenu'
-import {Outlet, useLoaderData, useLocation } from "@remix-run/react";
+import {useLocation } from "@remix-run/react";
 import {cn} from "@/lib/utils";
-import type {LoaderFunctionArgs} from "@remix-run/server-runtime";
-import {getUser} from "@/services/auth.server";
 
 const navItems = [
   {
@@ -35,7 +33,7 @@ const navItems = [
   },
   {
     title: 'Nastavení',
-    href: '/settings/profile',
+    href: '/settings',
     icon: Settings,
   },
 ]

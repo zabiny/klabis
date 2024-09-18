@@ -19,6 +19,7 @@ import "./globals.css";
 import Main from "@/components/layout/Main";
 import type {LoaderFunctionArgs} from "@remix-run/server-runtime";
 import {getAuth} from "@/services/auth.server";
+import {Toaster} from "@/components/ui/sonner";
 
 function App({ children }: { children: React.ReactNode }) {
 	return (
@@ -35,6 +36,7 @@ function App({ children }: { children: React.ReactNode }) {
 				{children}
 				<ScrollRestoration />
 				<Scripts />
+				<Toaster richColors/>
 			</body>
 		</ThemeSwitcherSafeHTML>
 	);
@@ -42,7 +44,7 @@ function App({ children }: { children: React.ReactNode }) {
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
 	const user = await getAuth({ request, context });
-	return user?.username ?? "NO_USER";
+	return user?.preferredUsername ?? "NO_USER";
 };
 
 export default function Root() {

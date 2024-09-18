@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { memberSchema } from './member-schema.ts'
+import {Link} from "@remix-run/react";
 
 interface MembersTableRowActionsProps<TData> {
   row: Row<TData>
@@ -37,14 +38,16 @@ export function MembersTableRowActions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuItem>Edit</DropdownMenuItem>
-        <DropdownMenuItem>Make a copy</DropdownMenuItem>
-        <DropdownMenuItem>Favorite</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          Delete
-          <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
+        <DropdownMenuItem asChild>
+          <Link to={`/settings/${row.original.id}`}>Upravit</Link>
         </DropdownMenuItem>
+        {/*<DropdownMenuItem>Make a copy</DropdownMenuItem>*/}
+        {/*<DropdownMenuItem>Favorite</DropdownMenuItem>*/}
+        {/*<DropdownMenuSeparator />*/}
+        {/*<DropdownMenuItem>*/}
+        {/*  Delete*/}
+        {/*  <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>*/}
+        {/*</DropdownMenuItem>*/}
       </DropdownMenuContent>
     </DropdownMenu>
   )

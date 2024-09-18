@@ -1,5 +1,7 @@
-import { vitePlugin as remix,
-	cloudflareDevProxyVitePlugin} from "@remix-run/dev";
+import {
+	vitePlugin as remix,
+	cloudflareDevProxyVitePlugin,
+} from "@remix-run/dev";
 import { defineConfig } from "vite";
 import envOnly from "vite-env-only";
 import tsconfigPaths from "vite-tsconfig-paths";

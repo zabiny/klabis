@@ -13,7 +13,12 @@ export const meta: MetaFunction = () => {
 
 export async function loader({context, request}: LoaderFunctionArgs) {
   const client = await getClient({context, request});
-  const { data: memberList, error } = await client.GET("/members", {query: {view: 'compact'}});
+  const { data: memberList, error } = await client.GET("/members", {
+    params: {
+      query: { view: 'compact' }
+    }
+  });
+  console.log(memberList?.items, error);
   return json({ members: memberList?.items ?? [] as MemberViewCompact[] });
 }
 
