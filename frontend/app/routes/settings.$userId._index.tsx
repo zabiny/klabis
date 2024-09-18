@@ -4,7 +4,16 @@ import * as z from "zod";
 import {ActionFunctionArgs, redirect} from "@remix-run/server-runtime";
 import {Input} from "@/components/ui/input";
 import {json, useActionData, useLoaderData, useNavigation,} from "@remix-run/react";
-import {Form, FormControl, FormDatePicker, FormDescription, FormField, FormLabel, FormMessage} from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDatePicker,
+  FormDescription,
+  FormField,
+  FormInput,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {Button} from "@/components/ui/button";
 import {format} from "date-fns";
@@ -14,7 +23,7 @@ import {getInputProps, getTextareaProps, useForm} from "@conform-to/react";
 import {getClient} from "@/services/auth.server";
 import {CountrySelect} from "@/components/ui/country-select";
 import type {Country} from "react-phone-number-input/min";
-import {Card, CardContent, CardHeader} from "@/components/ui/card";
+import {Card, CardContent, CardFooter, CardHeader} from "@/components/ui/card";
 import {PhoneInput} from "@/components/ui/phone-input";
 import {toast} from "sonner";
 import {useEffect} from "react";
@@ -143,36 +152,28 @@ export default function Profile() {
 
   // @ts-ignore
   return <div className="space-y-6">
+
       <div>
-        <h3 className="text-lg font-medium">Profil</h3>
+        <h3 className="text-lg font-medium">Osobní údaje</h3>
         <p className="text-sm text-muted-foreground">
           Update your account settings. Set your preferred language and
           timezone.
         </p>
       </div>
-      <Separator />
 
     <Form className="space-y-6" form={form}>
       <input type="hidden" name={"id"} value={user.id}/>
       <FormField field={fields.firstName}>
         <FormLabel>Jméno</FormLabel>
         <FormControl>
-          <Input
-            className={!fields.firstName.valid ? 'error' : ''}
-            {...getInputProps(fields.firstName, {type: 'email'})}
-            placeholder="Pepa"
-          />
+          <FormInput placeholder="Pepa"/>
         </FormControl>
         <FormMessage/>
       </FormField>
       <FormField field={fields.lastName}>
         <FormLabel>Příjmení</FormLabel>
         <FormControl>
-          <Input
-            className={!fields.lastName.valid ? 'error' : ''}
-            {...getInputProps(fields.lastName, {type: 'email'})}
-            placeholder="Racek"
-          />
+          <FormInput placeholder="Racek"/>
         </FormControl>
         <FormMessage/>
       </FormField>
@@ -199,7 +200,7 @@ export default function Profile() {
       <FormField field={fields.birthCertificateNumber}>
         <FormLabel>Rodné číslo</FormLabel>
         <FormControl>
-          <Input placeholder="YYMMDDD/CCCC" {...getInputProps(fields.birthCertificateNumber, {type: "text"})} />
+          <FormInput placeholder="YYMMDDD/CCCC"/>
         </FormControl>
         <FormDescription>Pouze pro občany ČR.</FormDescription>
         <FormMessage/>
@@ -228,12 +229,11 @@ export default function Profile() {
         </>
         }
       />
+
       <FormField field={fields.identityCard.getFieldset().number}>
         <FormLabel>Číslo OP</FormLabel>
         <FormControl>
-          <Input placeholder="1234567890"
-                 {...getInputProps(fields.identityCard.getFieldset().number, {type: 'text'})}
-          />
+          <FormInput placeholder="1234567890"/>
         </FormControl>
         <FormMessage/>
       </FormField>
@@ -242,161 +242,173 @@ export default function Profile() {
         <FormDatePicker/>
         <FormMessage/>
       </FormField>
-      <Card>
-        <CardHeader>Adresa</CardHeader>
-        <CardContent className='space-y-6'>
-          <FormField field={fields.address.getFieldset().streetAndNumber}>
-            <FormLabel>Ulice a číslo</FormLabel>
+      <Separator/>
+      <div>
+        <h3 className="text-lg font-medium">Adresa</h3>
+        <p className="text-sm text-muted-foreground">
+          Update your account settings. Set your preferred language and
+          timezone.
+        </p>
+      </div>
+      <FormField field={fields.address.getFieldset().streetAndNumber}>
+        <FormLabel>Ulice a číslo</FormLabel>
+        <FormControl>
+          <FormInput placeholder="Ulice 123"/>
+        </FormControl>
+        <FormMessage/>
+      </FormField>
+      <FormField field={fields.address.getFieldset().city}>
+        <FormLabel>Město</FormLabel>
+        <FormControl>
+          <FormInput placeholder="Praha"/>
+        </FormControl>
+        <FormMessage/>
+      </FormField>
+      <FormField field={fields.address.getFieldset().postalCode}>
+        <FormLabel>PSČ</FormLabel>
+        <FormControl>
+          <FormInput placeholder="12345"/>
+        </FormControl>
+        <FormMessage/>
+      </FormField>
+      <FormField
+        field={fields.address.getFieldset().country}
+        render={(control) => (
+          <>
+            <FormLabel>Země</FormLabel>
             <FormControl>
-              <Input
-                placeholder="Ulice 123" {...getInputProps(fields.address.getFieldset().streetAndNumber, {type: "text"})} />
+              <CountrySelect
+                value={control.value as Country}
+                onChange={control.change}
+              />
             </FormControl>
             <FormMessage/>
-          </FormField>
-          <FormField field={fields.address.getFieldset().city}>
-            <FormLabel>Město</FormLabel>
-            <FormControl>
-              <Input placeholder="Praha" {...getInputProps(fields.address.getFieldset().city, {type: "text"})} />
-            </FormControl>
-            <FormMessage/>
-          </FormField>
-          <FormField field={fields.address.getFieldset().postalCode}>
-            <FormLabel>PSČ</FormLabel>
-            <FormControl>
-              <Input placeholder="12345" {...getInputProps(fields.address.getFieldset().postalCode, {type: "text"})} />
-            </FormControl>
-            <FormMessage/>
-          </FormField>
-          <FormField
-            field={fields.address.getFieldset().country}
-            render={(control) => (
-              <>
-                <FormLabel>Země</FormLabel>
-                <FormControl>
-                  <CountrySelect
-                    value={control.value as Country}
-                    onChange={control.change}
-                  />
-                </FormControl>
-                <FormMessage/>
-              </>
-            )}
-          />
-        </CardContent>
-      </Card>
+          </>
+        )}
+      />
+      <Separator/>
+      <div>
+        <h3 className="text-lg font-medium">ORIS</h3>
+        <p className="text-sm text-muted-foreground">
+          Update your account settings. Set your preferred language and
+          timezone.
+        </p>
+      </div>
+      <FormField field={fields.siCard}>
+        <FormLabel>SI Čip</FormLabel>
+        <FormControl>
+          <FormInput placeholder="7200352"/>
+        </FormControl>
+        <FormMessage/>
+      </FormField>
 
-      <Card>
-        <CardHeader>Kontakt</CardHeader>
-        <CardContent className='space-y-6'>
-          <FormField field={fields.contact.getFieldset().email}>
-            <FormLabel>Email</FormLabel>
+      <Separator/>
+      <div>
+        <h3 className="text-lg font-medium">Kontakt</h3>
+        <p className="text-sm text-muted-foreground">
+          Update your account settings. Set your preferred language and
+          timezone.
+        </p>
+      </div>
+      <FormField field={fields.contact.getFieldset().email}>
+        <FormLabel>Email</FormLabel>
+        <FormControl>
+          <FormInput placeholder="pepe.zdepa@email.cz"/>
+        </FormControl>
+        <FormMessage/>
+      </FormField>
+      <FormField
+        field={fields.contact.getFieldset().phone}
+        render={(control) => (
+          <>
+            <FormLabel>Telefon</FormLabel>
             <FormControl>
-              <Input
-                placeholder="pepe.zdepa@email.cz" {...getInputProps(fields.contact.getFieldset().email, {type: "email"})} />
+              <PhoneInput
+                value={(control.value as string).startsWith("+") ? control.value as string : `+420${control.value}`}
+                onChange={control.change}/>
             </FormControl>
             <FormMessage/>
-          </FormField>
-          <FormField
-            field={fields.contact.getFieldset().phone}
-            render={(control) => (
-              <>
-                <FormLabel>Telefon</FormLabel>
-                <FormControl>
-                  <PhoneInput
-                    value={(control.value as string).startsWith("+") ? control.value as string : `+420${control.value}`}
-                    onChange={control.change}/>
-                </FormControl>
-                <FormMessage/>
-              </>
-            )}
-          />
-          <FormField field={fields.contact.getFieldset().note}>
-            <FormLabel>Poznámka</FormLabel>
-            <FormControl>
-              <Input placeholder="Poznámka..." {...getInputProps(fields.contact.getFieldset().note, {type: "text"})} />
-            </FormControl>
-            <FormMessage/>
-          </FormField>
-        </CardContent>
-      </Card>
+          </>
+        )}
+      />
+      <FormField field={fields.contact.getFieldset().note}>
+        <FormLabel>Poznámka</FormLabel>
+        <FormControl>
+          <FormInput placeholder="Poznámka..."/>
+        </FormControl>
+        <FormMessage/>
+      </FormField>
+      <div>
+        <h3 className="text-lg font-medium">Kontakt na zákonné zástupce</h3>
+        <p className="text-sm text-muted-foreground">
+          Update your account settings. Set your preferred language and
+          timezone.
+        </p>
+      </div>
+
+
       <ul>
         {fields.guardians.getFieldList().map((guardian, index) => {
           const guardianFields = guardian.getFieldset();
           return <li key={guardian.key}>
             <Card>
-              <CardHeader>Kontakt</CardHeader>
-              <CardContent className='space-y-6'>
-            <FormField field={guardianFields.firstName}>
-              <FormLabel>Jméno</FormLabel>
-              <FormControl>
-                <Input
-                  className={!guardianFields.firstName.valid ? 'error' : ''}
-                  {...getInputProps(guardianFields.firstName, {type: 'email'})}
-                  placeholder="Pepa"
-                />
-              </FormControl>
-              <FormMessage/>
-            </FormField>
-            <FormField field={guardianFields.lastName}>
-              <FormLabel>Příjmení</FormLabel>
-              <FormControl>
-                <Input
-                  className={!guardianFields.lastName.valid ? 'error' : ''}
-                  {...getInputProps(guardianFields.lastName, {type: 'email'})}
-                  placeholder="Racek"
-                />
-              </FormControl>
-              <FormMessage/>
-            </FormField>
-                <FormField field={guardianFields.contact.getFieldset().email}>
-                  <FormLabel>Email</FormLabel>
+              <CardContent className='space-y-6 my-6'>
+                <FormField field={guardianFields.firstName}>
+                  <FormLabel>Jméno</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="pepe.zdepa@email.cz" {...getInputProps(guardianFields.contact.getFieldset().email, {type: "email"})} />
+                    <FormInput placeholder="Pepa"/>
                   </FormControl>
                   <FormMessage/>
                 </FormField>
-                {/*<FormField*/}
-                {/*  field={guardianFields.contact.getFieldset().phone}*/}
-                {/*  render={(control) => (*/}
-                {/*    <>*/}
-                {/*      <FormLabel>Telefon</FormLabel>*/}
-                {/*      <FormControl>*/}
-                {/*        <PhoneInput*/}
-                {/*          value={(control.value as string).startsWith("+") ? control.value as string : `+420${control.value}`}*/}
-                {/*          onChange={control.change}/>*/}
-                {/*      </FormControl>*/}
-                {/*      <FormMessage/>*/}
-                {/*    </>*/}
-                {/*  )}*/}
-                {/*/>*/}
+                <FormField field={guardianFields.lastName}>
+                  <FormLabel>Příjmení</FormLabel>
+                  <FormControl>
+                    <FormInput placeholder="Racek"/>
+                  </FormControl>
+                  <FormMessage/>
+                </FormField>
+                <FormField field={guardianFields.contact.getFieldset().email}>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <FormInput placeholder="pepe.zdepa@email.cz" type={'email'}/>
+                  </FormControl>
+                  <FormMessage/>
+                </FormField>
+                <FormField
+                  field={guardianFields.contact.getFieldset().phone}
+                  render={(control) => (
+                    <>
+                      <FormLabel>Telefon</FormLabel>
+                      <FormControl>
+                        <PhoneInput
+                          value={(control.value as string)?.startsWith("+") ? control.value as string : `+420${control.value || ""}`}
+                          onChange={control.change}/>
+                      </FormControl>
+                      <FormMessage/>
+                    </>
+                  )}
+                />
                 <FormField field={guardianFields.contact.getFieldset().note}>
                   <FormLabel>Poznámka</FormLabel>
                   <FormControl>
-                    <Input placeholder="Poznámka..." {...getInputProps(guardianFields.contact.getFieldset().note, {type: "text"})} />
+                    <FormInput placeholder="Poznámka..."/>
                   </FormControl>
                   <FormMessage/>
                 </FormField>
               </CardContent>
+              <CardFooter className='justify-end'>
+                <Button
+                  {...form.remove.getButtonProps({
+                    name: fields.guardians.name,
+                    index,
+                  })}
+                >
+                  Odstranit
+                </Button>
+              </CardFooter>
             </Card>
-            <input name={guardian.name}/>
-            <Button
-                    {...form.reorder.getButtonProps({
-                      name: fields.guardians.name,
-                      from: index,
-                      to: 0,
-                    })}
-            >
-              Move to top
-            </Button>
-            <Button
-                    {...form.remove.getButtonProps({
-                      name: fields.guardians.name,
-                      index,
-                    })}
-            >
-              Delete
-            </Button>
+
+
           </li>
         })}
       </ul>
@@ -405,20 +417,22 @@ export default function Profile() {
           name: fields.guardians.name,
         })}
       >
-        Add task
+        Přidat zástupce
       </Button>
-      <FormField field={fields.siCard}>
-        <FormLabel>SI Čip</FormLabel>
-        <FormControl>
-          <Input placeholder="7200352" {...getInputProps(fields.siCard, {type: 'text'})} />
-        </FormControl>
-        <FormMessage/>
-      </FormField>
+      <Separator/>
+      <div>
+        <h3 className="text-lg font-medium">Volitelné</h3>
+        <p className="text-sm text-muted-foreground">
+          Update your account settings. Set your preferred language and
+          timezone.
+        </p>
+      </div>
+
       <FormField
         field={fields.bankAccount}>
         <FormLabel>Bankovní účet IBAN</FormLabel>
         <FormControl>
-          <Input placeholder="CZ1234567890" {...getInputProps(fields.bankAccount, {type: 'text'})} />
+          <FormInput placeholder="CZ1234567890"/>
         </FormControl>
         <FormDescription>
           např. pro problácení účtů, cesťáků od oddílu

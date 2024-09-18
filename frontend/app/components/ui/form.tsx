@@ -8,7 +8,7 @@ import {
   FieldMetadata,
   FormMetadata,
   FormProvider,
-  getFormProps,
+  getFormProps, getInputProps,
   useField,
   useInputControl
 } from "@conform-to/react";
@@ -19,6 +19,8 @@ import {Button} from "@/components/ui/button";
 import {format, formatISO, parseISO} from "date-fns";
 import {CalendarIcon} from "lucide-react";
 import {Calendar} from "@/components/ui/calendar";
+import {Input, InputProps} from "@/components/ui/input";
+import {HTMLInputTypeAttribute} from "react";
 
 
 const Form = <T extends Record<string, unknown>,>({ form, children, ...props }: RemixFormProps & { form: FormMetadata<T> }) => {
@@ -197,5 +199,22 @@ const FormDatePicker = () => {
 FormDatePicker.displayName = "FormDatePicker";
 
 
+const FormInput = React.forwardRef<HTMLInputElement, InputProps & React.RefAttributes<HTMLInputElement>>(
+  ({ className, children, type, ...props }, ref) => {
+    const field = useFormField();
 
-export { Form, FormControl, FormDescription, FormField, FormDatePicker, FormLabel, FormMessage, useFormField };
+    return (
+      <Input
+        className={!field.valid ? 'error' : ''}
+        // @ts-ignore
+        {...getInputProps(field.meta, {type: type ?? "text"})}
+        {...props}
+        key={field.name}
+      />
+    );
+  }
+);
+FormInput.displayName = "FormInput";
+
+
+export { Form, FormControl, FormDescription, FormField, FormDatePicker, FormLabel, FormInput, FormMessage, useFormField };
