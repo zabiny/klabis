@@ -5,7 +5,7 @@ Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Register member
 POST {{host}}/memberRegistrations
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 Content-Type: application/json
 
 {
@@ -30,31 +30,31 @@ Content-Type: application/json
 
 ### Get all members (compact details)
 GET {{host}}/members?view=compact
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 Accept: application/json
 
 ### Get all members (full details)
 GET {{host}}/members?view=full
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 Accept: application/json
 
 ### GET single member
 GET {{host}}/members/1
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Suggest registration number
 GET {{host}}/registrationNumber?sex=MALE&dateOfBirth=2020-10-11
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### GET Edit member form data
 GET {{host}}/members/1/editMemberInfoForm
 Content-Type: application/json
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### PUT Edit member form data
 PUT {{host}}/members/1/editMemberInfoForm
 Content-Type: application/json
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 {
   "identityCard": null,
@@ -75,7 +75,7 @@ Authorization: Bearer {{$auth.token("test")}}
   "bankAccount": null,
   "dietaryRestrictions": null,
   "drivingLicence": [],
-  "medicCourse": false,
+  "medicCourse": true,
   "firstName": "John",
   "lastName": "Dow",
   "dateOfBirth": "2020-02-10",
@@ -85,33 +85,35 @@ Authorization: Bearer {{$auth.token("test")}}
 
 ### Membership suspension info
 GET {{host}}/members/1/suspendMembershipForm
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Suspend membership
 POST {{host}}/members/1/suspendMembershipForm
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Get ORIS user info data
 GET {{host}}/oris/userInfo/ZBM8003
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### GET ORIS user info data - unknown reg num
 GET {{host}}/oris/userInfo/ZBM8002
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Get List of available grants
 GET {{host}}/grants
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Get Member grants Form data
 GET {{host}}/members/1/changeGrantsForm
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Update member grants
 PUT {{host}}/members/1/changeGrantsForm
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 Content-Type: application/json
 
 {
   "grants": ["members:register"]
 }
+
+###

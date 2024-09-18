@@ -1,31 +1,41 @@
 ### OIDC metadata
 GET {{host}}/.well-known/openid-configuration
 
-
-
 ### OIDC UserInfo
 GET {{host}}/oidc/userinfo
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("frontend")}}
 
 ### OAuth2 token introspection - ID token
 POST {{host}}/oauth2/introspect
 Authorization: Basic test test
 Content-Type: application/x-www-form-urlencoded
 
-token={{$auth.idToken("test")}}
+token={{$auth.idToken("frontend")}}
 
 ### OAuth2 token introspection - access token
 POST {{host}}/oauth2/introspect
 Authorization: Basic test test
 Content-Type: application/x-www-form-urlencoded
 
-token={{$auth.token("test")}}
+token={{$auth.token("frontend")}}
 
-### OAuth2 refresh token use
+### OAuth2 refresh token use (implicit)
 POST {{host}}/oauth/token
 Content-Type: application/x-www-form-urlencoded
 Authorization: Basic {{clientId}} {{clientSecret}}
 
 grant_type=refresh_token&client_id= {{clientId}}&refresh_token={{refresh_token}}
 
-###
+### OAuth2 refresh token use (PKCE)
+POST {{host}}/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&
+client_id=frontend&
+client_secret=...&
+code_verifier=...&
+refresh_token=...
+
+
+
+
