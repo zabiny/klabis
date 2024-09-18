@@ -196,7 +196,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         return id;
     }
 
-    public boolean hasMedicCourse() {
+    public boolean getMedicCourse() {
         return medicCourse;
     }
 
