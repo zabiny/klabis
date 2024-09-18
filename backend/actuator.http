@@ -1,0 +1,14 @@
+### List of available actuator endpoints
+GET {{host}}/actuator
+Accept: application/json
+Authorization: Bearer {{$auth.token("frontend")}}
+
+### Healthcheck endpoint (public)
+GET {{host}}/actuator/health
+Accept: application/json
+
+### List of loggers and their settings
+GET {{host}}/actuator/loggers
+Accept: application/json
+Authorization: Bearer {{$auth.token("frontend")}}
+

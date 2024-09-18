@@ -157,11 +157,14 @@ management:
   endpoint:
     loggers:
       enabled: true
+    health:
+      probes:
+        enabled: true
   endpoints:
     web:
       exposure:
         #include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
-        include: loggers, caches, env, info, mappings
+        include: loggers, caches, env, info, mappings, health
 
 springdoc:
   swagger-ui:
