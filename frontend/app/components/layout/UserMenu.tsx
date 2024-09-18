@@ -26,7 +26,7 @@ export const UserMenu = ({ name }: UserMenuProps) => {
         <DropdownMenuLabel>{name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <a href="/settings/profile">Nastavení</a>
+          <a href="/settings">Nastavení</a>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <Link to="/logout">
