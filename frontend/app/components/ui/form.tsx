@@ -16,11 +16,10 @@ import {Form as RemixForm } from "@remix-run/react";
 import {RemixFormProps} from "@remix-run/react/dist/components";
 import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {Button} from "@/components/ui/button";
-import {format, formatISO, parseISO} from "date-fns";
+import {format} from "date-fns";
 import {CalendarIcon} from "lucide-react";
-import {Calendar} from "@/components/ui/calendar";
+import {Calendar, CalendarProps} from "@/components/ui/calendar";
 import {Input, InputProps} from "@/components/ui/input";
-import {HTMLInputTypeAttribute} from "react";
 
 
 const Form = <T extends Record<string, unknown>,>({ form, children, ...props }: RemixFormProps & { form: FormMetadata<T> }) => {
@@ -142,7 +141,7 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
 );
 FormMessage.displayName = "FormMessage";
 
-const FormDatePicker = () => {
+const FormDatePicker = (props: CalendarProps) => {
   const field = useFormField();
   const control = useInputControl(field.meta as FieldMetadata<Date>);
 
@@ -178,17 +177,13 @@ const FormDatePicker = () => {
           mode="single"
           weekStartsOn={1}
           captionLayout="dropdown-buttons"
-          fromYear={1900}
-          toYear={new Date().getFullYear()}
+          {...props}
           selected={
             control.value ? new Date(control.value as string) : undefined
           }
-          onSelect={(value) => {
+          onSelect={(value: Date | undefined) => {
             return value ? control.change(dateToLocalTime(value as Date)) : undefined
           }
-          }
-          disabled={(date) =>
-            date > new Date() || date < new Date('1900-01-01')
           }
           initialFocus
         />

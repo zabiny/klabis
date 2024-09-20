@@ -5,5 +5,5 @@ import {json} from "@remix-run/react";
 export async function loader({ request, context, params }: ActionFunctionArgs) {
   const user = await getAuth({request, context});
   console.log(user);
-  return redirect(`/settings/${user.userId}`);
+  return redirect(`/settings/${user.userId}/personal`);
 }
