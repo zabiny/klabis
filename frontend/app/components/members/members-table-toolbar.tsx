@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 
 // import { trainingGroups } from '@/components/members/members-data'
 import { MembersTableFacetedFilter } from './members-table-faceted-filter'
+import {UserPlus} from "lucide-react";
+import {Link} from "@remix-run/react";
 
 interface MembersTableToolbarProps<TData> {
   table: Table<TData>
@@ -46,6 +48,17 @@ export function MembersTableToolbar<TData>({
             <Cross2Icon className="ml-2 h-4 w-4" />
           </Button>
         )}
+      </div>
+      <div>
+        <Button
+          variant="secondary"
+          className="h-8 px-2 lg:px-3"
+          asChild
+        >
+          <Link to={'/members/new'}>
+            <UserPlus className="mr-2 h-4 w-4" /> Registrovat člena
+          </Link>
+        </Button>
       </div>
     </div>
   )

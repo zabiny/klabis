@@ -6,18 +6,11 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { memberSchema } from './member-schema.ts'
 import {Link} from "@remix-run/react";
+import {HandCoins, Settings} from "lucide-react";
 
 interface MembersTableRowActionsProps<TData> {
   row: Row<TData>
@@ -38,9 +31,21 @@ export function MembersTableRowActions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
+        <DropdownMenuLabel>
+          {row.original.firstName} {row.original.lastName}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to={`/settings/${row.original.id}`}>Upravit</Link>
+          <Link to={`/settings/${row.original.id}/personal`}><Settings className="mr-2 h-4 w-4"/> Nastavení</Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to={`/members/${row.original.id}/suspend`}><HandCoins className="mr-2 h-4 w-4"/> Finance</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to={`/members/${row.original.id}/suspend`}>Pozastavit členství</Link>
+        </DropdownMenuItem>
+
         {/*<DropdownMenuItem>Make a copy</DropdownMenuItem>*/}
         {/*<DropdownMenuItem>Favorite</DropdownMenuItem>*/}
         {/*<DropdownMenuSeparator />*/}
