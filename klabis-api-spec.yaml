@@ -802,6 +802,7 @@ components:
         
         Additional validations: 
         - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value
+      x-class-extra-annotation: "@club.klabis.domain.members.forms.BirthCertificateIsDefinedForCzechia"
       required:
         - firstName
         - lastName
@@ -834,6 +835,11 @@ components:
 
         Additional validations:
         - either contact or at least 1 guardian needs to be entered
+      x-class-extra-annotation: |-
+        @club.klabis.domain.members.forms.AtLeastOneContactIsDefined.List({
+          @club.klabis.domain.members.forms.AtLeastOneContactIsDefined(contactType = club.klabis.domain.members.Contact.Type.EMAIL, message = "At least one email contact must be provided"),
+          @club.klabis.domain.members.forms.AtLeastOneContactIsDefined(contactType = club.klabis.domain.members.Contact.Type.PHONE, message = "At least one phone contact must be provided")
+        })
       required:
         - nationality
         - address
