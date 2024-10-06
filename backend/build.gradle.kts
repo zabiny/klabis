@@ -77,7 +77,7 @@ dependencies {
     //implementation("org.jmolecules:jmolecules-hexagonal-architecture:1.9.0")
     implementation("org.jmolecules:jmolecules-onion-architecture:1.9.0")
     implementation("org.jmolecules:jmolecules-events:1.9.0")
-    testImplementation("org.jmolecules.integrations:jmolecules-archunit:1.6.0")
+    testImplementation("org.jmolecules.integrations:jmolecules-archunit:0.20.0")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
 }
 
