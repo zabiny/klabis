@@ -1,7 +1,10 @@
 package club.klabis.domain.members;
 
+import club.klabis.domain.members.forms.EditAnotherMemberInfoByAdminForm;
+import club.klabis.domain.members.forms.EditOwnMemberInfoForm;
 import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,9 +15,11 @@ import java.util.Optional;
 @Service
 class MemberServiceImpl implements MemberService {
     private final MembersRepository membersRepository;
+    private final ConversionService conversionService;
 
-    MemberServiceImpl(MembersRepository membersRepository) {
+    MemberServiceImpl(MembersRepository membersRepository, ConversionService conversionService) {
         this.membersRepository = membersRepository;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -88,4 +93,39 @@ class MemberServiceImpl implements MemberService {
             throw new MembershipCannotBeSuspendedException(memberId, "member is already suspended");
         }
     }
+
+    @Transactional
+    @Override
+    public Member editMember(Integer memberId, EditOwnMemberInfoForm form) {
+        Member member = membersRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+
+        member.edit(form);
+        return membersRepository.save(member);
+    }
+
+    @Override
+    public EditAnotherMemberInfoByAdminForm getEditAnotherMemberForm(Integer memberId) {
+        return findById(memberId)
+                .map(m -> conversionService.convert(m, EditAnotherMemberInfoByAdminForm.class))
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+    }
+
+    @Override
+    public Member editMember(Integer memberId, EditAnotherMemberInfoByAdminForm form) {
+        Member member = membersRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+
+        member.edit(form);
+        return membersRepository.save(member);
+    }
+
+    @Override
+    public EditOwnMemberInfoForm getEditOwnMemberInfoForm(Integer memberId) {
+        return findById(memberId)
+                .map(m -> conversionService.convert(m, EditOwnMemberInfoForm.class))
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+    }
+
+
 }

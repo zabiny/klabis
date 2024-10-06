@@ -43,6 +43,21 @@ class AtLeastOneContactIsDefinedConstraint {
 
     }
 
+    static class EditOwnMemberInfoFormValidator implements ConstraintValidator<AtLeastOneContactIsDefined, EditOwnMemberInfoForm> {
+        private AtLeastOneContactIsDefined annotation;
+
+        @Override
+        public void initialize(AtLeastOneContactIsDefined constraintAnnotation) {
+            this.annotation = constraintAnnotation;
+        }
+
+        @Override
+        public boolean isValid(EditOwnMemberInfoForm registrationForm, ConstraintValidatorContext constraintValidatorContext) {
+            return AtLeastOneContactIsDefinedConstraint.isValid(registrationForm.contact(), registrationForm.guardians(), annotation.contactType());
+        }
+
+    }
+
     static class MemberEditFormValidator implements ConstraintValidator<AtLeastOneContactIsDefined, MemberEditForm> {
         private AtLeastOneContactIsDefined annotation;
 
