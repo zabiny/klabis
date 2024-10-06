@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 public interface OrisApiClient {
 
-    @GetExchange("/API/?format=xml&method=getUser")
+    @GetExchange("/API/?format=json&method=getUser")
     OrisResponse<OrisUserInfo> getUserInfo(@RequestParam("rgnum") String registrationNumber);
 
     record OrisResponse<T> (
