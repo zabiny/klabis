@@ -232,3 +232,4 @@ server:
     key-store-type: PKCS12
     key-alias: klabisSSL
   port: 8443
+

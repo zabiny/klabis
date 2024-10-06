@@ -66,7 +66,7 @@ public class MembersController implements MembersApi {
     }
 
     @Override
-    public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPost(Integer memberId, Boolean force) {
+    public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(Integer memberId, Boolean force) {
         service.suspendMembershipForMember(memberId, force);
         return ResponseEntity.ok(null);
     }

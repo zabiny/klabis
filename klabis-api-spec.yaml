@@ -150,6 +150,7 @@ paths:
       tags:
         - members
         - BFF
+      deprecated: true
       summary: "Returns data for edit member information form"
       responses:
         '200':
@@ -172,12 +173,118 @@ paths:
       tags:
         - members
       summary: "Update member information"
+      deprecated: true
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/MemberEditForm'
+      responses:
+        '200':
+          description: Club member updated successfully
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+
+  /members/{memberId}/editByAdminForm:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdPath'
+    get:
+      tags:
+        - members
+        - BFF
+      operationId: getMemberEditByAdminForm
+      summary: "Returns data for edit member information form"
+      description: |-
+        Returns data for edit member information form
+        
+        #### Required authorization
+        requires `members:suspendMembership` grant
+      responses:
+        '200':
+          description: Club member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+    put:
+      tags:
+        - members
+      summary: "Update member information"
+      operationId: putMemberEditByAdminForm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
+      responses:
+        '200':
+          description: Club member updated successfully
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+
+  /members/{memberId}/editOwnMemberInfoForm:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdPath'
+    get:
+      tags:
+        - members
+        - BFF
+      summary: "Returns data for edit member information form"
+      responses:
+        '200':
+          description: Club member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditMyDetailsForm'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+    put:
+      tags:
+        - members
+      summary: "Update member information"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditMyDetailsForm'
       responses:
         '200':
           description: Club member updated successfully
@@ -217,7 +324,7 @@ paths:
         '404':
           $ref: '#/components/responses/401'
           description: Club member not found
-    post:
+    put:
       tags:
         - members
       summary: Suspend membership for a club member
@@ -331,7 +438,7 @@ paths:
           $ref: '#/components/responses/401'
 
   /memberRegistrations:
-    post:
+    put:
       tags:
         - members
       summary: Register a new club member
@@ -682,9 +789,9 @@ components:
           $ref: '#/components/schemas/RegistrationNumber'
         orisId:
           $ref: '#/components/schemas/OrisID'
-#        trainingGroup:
-#          type: ???
-#          description: training group where newly registered member will be added
+    #        trainingGroup:
+    #          type: ???
+    #          description: training group where newly registered member will be added
     EditAnotherMemberDetailsForm:
       type: object
       description: |-
@@ -692,7 +799,7 @@ components:
 
         #### Required authorization
         - requires `members:edit` grant
-       
+        
         Additional validations: 
         - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value
       required:
@@ -869,6 +976,7 @@ components:
         | `members:register` | can create new members |
         | `members:edit` | can edit selected attributes for all existing members |
         | `members:suspendMembership` | can suspend membership for club members |
+        | `members:permissions` | can change global grants for any member |
       enum:
         - members:register
         - members:edit
