@@ -1,8 +1,12 @@
 package club.klabis.domain.members;
 
+import club.klabis.api.dto.EditAnotherMemberDetailsFormApiDto;
+import club.klabis.api.dto.EditMyDetailsFormApiDto;
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import club.klabis.domain.members.events.MemberEditedEvent;
 import club.klabis.domain.members.events.MemberWasSuspendedEvent;
+import club.klabis.domain.members.forms.EditAnotherMemberInfoByAdminForm;
+import club.klabis.domain.members.forms.EditOwnMemberInfoForm;
 import club.klabis.domain.members.forms.MemberEditForm;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -117,6 +121,34 @@ public class Member extends AbstractAggregateRoot<Member> {
         this.andEvent(new MemberEditedEvent(this));
     }
 
+    public void edit(EditOwnMemberInfoForm form) {
+        this.identityCard = form.identityCard();
+        this.nationality = form.nationality();
+        this.address = form.address();
+        this.contact.clear();
+        this.contact.addAll(form.contact());
+        this.legalGuardians.clear();
+        this.legalGuardians.addAll(form.guardians());
+        this.siCard = form.siCard();
+        this.bankAccount = form.bankAccount();
+        this.dietaryRestrictions = form.dietaryRestrictions();
+        this.drivingLicence.clear();
+        this.drivingLicence.addAll(form.drivingLicence());
+        this.medicCourse = form.medicCourse();
+        this.andEvent(new MemberEditedEvent(this));
+    }
+
+    public void edit(EditAnotherMemberInfoByAdminForm form) {
+        this.firstName = form.firstName();
+        this.lastName = form.lastName();
+        this.nationality = form.nationality();
+        this.dateOfBirth = form.dateOfBirth();
+        this.birthCertificateNumber = form.birthCertificateNumber();
+        this.sex = form.sex();
+        this.andEvent(new MemberEditedEvent(this));
+
+    }
+
     public void suspend() {
         if (!this.suspended) {
             this.suspended = true;
@@ -211,4 +243,5 @@ public class Member extends AbstractAggregateRoot<Member> {
     public boolean isSuspended() {
         return suspended;
     }
+
 }

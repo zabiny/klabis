@@ -4,27 +4,28 @@ import club.klabis.domain.members.Contact;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 @Constraint(validatedBy = {
         AtLeastOneContactIsDefinedConstraint.MemberEditFormValidator.class,
-        AtLeastOneContactIsDefinedConstraint.RegistrationFormValidator.class
+        AtLeastOneContactIsDefinedConstraint.RegistrationFormValidator.class,
+        AtLeastOneContactIsDefinedConstraint.EditOwnMemberInfoFormValidator.class,
+        AtLeastOneContactIsDefinedConstraint.EditMyDetailsFormApiDtoFormValidator.class
 })
-@Target({ ElementType.TYPE })
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(AtLeastOneContactIsDefined.List.class)
 public @interface AtLeastOneContactIsDefined {
 
     String message() default "At least one contact or guardian with contact must be provided";
+
     Class<?>[] groups() default {};
 
     Class<? extends Payload>[] payload() default {};
 
     Contact.Type contactType();
 
-    @Target({ ElementType.TYPE })
+    @Target({ElementType.TYPE})
     @Retention(RetentionPolicy.RUNTIME)
     @interface List {
         AtLeastOneContactIsDefined[] value();

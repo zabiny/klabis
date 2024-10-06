@@ -1,5 +1,6 @@
 package club.klabis.domain.members.forms;
 
+import club.klabis.api.dto.EditAnotherMemberDetailsFormApiDto;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.springframework.util.StringUtils;
@@ -27,6 +28,21 @@ class BirthCertificateIsDefinedForCzechiaConstraint {
         @Override
         public boolean isValid(MemberEditForm memberEditForm, ConstraintValidatorContext constraintValidatorContext) {
             return BirthCertificateIsDefinedForCzechiaConstraint.isValid(memberEditForm.nationality(), memberEditForm.birthCertificateNumber());
+        }
+    }
+
+    static class EditAnotherMemberInfoByAdminFormValidator implements ConstraintValidator<BirthCertificateIsDefinedForCzechia, EditAnotherMemberInfoByAdminForm> {
+        @Override
+        public boolean isValid(EditAnotherMemberInfoByAdminForm memberEditForm, ConstraintValidatorContext constraintValidatorContext) {
+            return BirthCertificateIsDefinedForCzechiaConstraint.isValid(memberEditForm.nationality(), memberEditForm.birthCertificateNumber());
+        }
+    }
+
+    static class EditAnotherMemberDetailsFormApiDtoValidator implements ConstraintValidator<BirthCertificateIsDefinedForCzechia, EditAnotherMemberDetailsFormApiDto> {
+
+        @Override
+        public boolean isValid(EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto, ConstraintValidatorContext constraintValidatorContext) {
+            return BirthCertificateIsDefinedForCzechiaConstraint.isValid(editAnotherMemberDetailsFormApiDto.getNationality(), editAnotherMemberDetailsFormApiDto.getBirthCertificateNumber());
         }
     }
 }

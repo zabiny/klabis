@@ -83,6 +83,56 @@ Authorization: Bearer {{$auth.token("frontend")}}
   "sex": "male"
 }
 
+### Get form data for Member Edit by Admin
+GET {{host}}/members/1/editByAdminForm
+Authorization: Bearer {{$auth.token("frontend")}}
+
+### Update member info by ADMIN
+PUT {{host}}/members/1/editByAdminForm
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("frontend")}}
+
+{
+  "firstName": "Dave",
+  "lastName": "Pol",
+  "dateOfBirth": "1982-04-26",
+  "birthCertificateNumber": "123456/780",
+  "nationality": "CZ",
+  "sex": "male"
+}
+
+###
+GET {{host}}/members/1/editOwnMemberInfoForm
+Authorization: Bearer {{$auth.token("frontend")}}
+
+###
+PUT {{host}}/members/1/editOwnMemberInfoForm
+Authorization: Bearer {{$auth.token("frontend")}}
+Content-Type: application/json
+
+{
+  "identityCard": null,
+  "nationality": "CZ",
+  "address": {
+    "streetAndNumber": "Nekde jinde 12",
+    "city": "Brno",
+    "postalCode": "63212",
+    "country": "CZ"
+  },
+  "contact": {
+    "email": "test@testx.com",
+    "phone": "888888888",
+    "note": null
+  },
+  "guardians": [],
+  "siCard": 12345678,
+  "bankAccount": "CZ1234567891000",
+  "dietaryRestrictions": null,
+  "drivingLicence": [],
+  "medicCourse": false
+}
+
+
 ### Membership suspension info
 GET {{host}}/members/1/suspendMembershipForm
 Authorization: Bearer {{$auth.token("frontend")}}

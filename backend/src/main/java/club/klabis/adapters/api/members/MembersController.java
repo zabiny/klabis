@@ -8,11 +8,14 @@ import club.klabis.domain.appusers.ApplicationUserService;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.MemberNotFoundException;
 import club.klabis.domain.members.MemberService;
+import club.klabis.domain.members.forms.EditAnotherMemberInfoByAdminForm;
+import club.klabis.domain.members.forms.EditOwnMemberInfoForm;
 import club.klabis.domain.members.forms.MemberEditForm;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
@@ -66,7 +69,7 @@ public class MembersController implements MembersApi {
     }
 
     @Override
-    public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPost(Integer memberId, Boolean force) {
+    public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(Integer memberId, Boolean force) {
         service.suspendMembershipForMember(memberId, force);
         return ResponseEntity.ok(null);
     }
@@ -98,4 +101,25 @@ public class MembersController implements MembersApi {
         return ResponseEntity.ok(null);
     }
 
+    @Override
+    public ResponseEntity<EditAnotherMemberDetailsFormApiDto> getMemberEditByAdminForm(Integer memberId) {
+        return ResponseEntity.ok(conversionService.convert(service.getEditAnotherMemberForm(memberId), EditAnotherMemberDetailsFormApiDto.class));
+    }
+
+    @Override
+    public ResponseEntity<Void> putMemberEditByAdminForm(Integer memberId, EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto) {
+        service.editMember(memberId, conversionService.convert(editAnotherMemberDetailsFormApiDto, EditAnotherMemberInfoByAdminForm.class));
+        return ResponseEntity.ok(null);
+    }
+
+    @Override
+    public ResponseEntity<EditMyDetailsFormApiDto> membersMemberIdEditOwnMemberInfoFormGet(Integer memberId) {
+        return ResponseEntity.ok(conversionService.convert(service.getEditOwnMemberInfoForm(memberId), EditMyDetailsFormApiDto.class));
+    }
+
+    @Override
+    public ResponseEntity<Void> membersMemberIdEditOwnMemberInfoFormPut(Integer memberId, EditMyDetailsFormApiDto editMyDetailsFormApiDto) {
+        service.editMember(memberId, conversionService.convert(editMyDetailsFormApiDto, EditOwnMemberInfoForm.class));
+        return ResponseEntity.ok(null);
+    }
 }

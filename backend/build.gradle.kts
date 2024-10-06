@@ -25,8 +25,8 @@ description = "klabis"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
 val recordbuilderVersion = "41"
-val mapstructVersion = "1.6.0.Beta1"
-val mapstructSpringExtensionsVersion = "1.1.1"
+val mapstructVersion = "1.6.2"
+val mapstructSpringExtensionsVersion = "1.1.2"
 
 dependencies {
 
@@ -132,8 +132,10 @@ openApiGenerate {
             //"hateoas" to "false",
             "booleanGetterPrefix" to "is",
             "interfaceOnly" to "true",
-            "defaultInterfaces" to "false",
-            "useBeanValidation" to "true"
+            "skipDefaultInterface" to "true",
+            "useBeanValidation" to "true",
+            "apiFirst" to "false"
+            //"useOptional" to "false"
         )
     )
 }

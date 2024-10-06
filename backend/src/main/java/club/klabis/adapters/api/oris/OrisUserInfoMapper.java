@@ -1,4 +1,4 @@
-package club.klabis.domain.oris;
+package club.klabis.adapters.api.oris;
 
 import club.klabis.adapters.oris.OrisApiClient;
 import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;
