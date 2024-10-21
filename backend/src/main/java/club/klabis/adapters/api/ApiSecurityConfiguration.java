@@ -1,14 +1,19 @@
 package club.klabis.adapters.api;
 
 import club.klabis.config.authserver.AuthorizationServerConfiguration;
-import club.klabis.domain.appusers.ApplicationUser;
+import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyUtils;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,8 +22,10 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.List;
+import java.util.Map;
 
 @EnableWebSecurity
+@EnableMethodSecurity
 @Configuration(proxyBeanMethods = false)
 public class ApiSecurityConfiguration {
 
@@ -43,41 +50,26 @@ public class ApiSecurityConfiguration {
 
     private final ApplicationUserService applicationUserService;
 
-    private Converter<Jwt, KlabisAuthenticatedUser> klabisMemberEnhanceAuthentication() {
+    private Converter<Jwt, KlabisUserAuthentication> klabisMemberEnhanceAuthentication() {
         return source -> applicationUserService.getApplicationUserForUsername(source.getSubject())
-                .map(user -> KlabisAuthenticatedUser.authenticated(user, source))
-                .orElseGet(() -> KlabisAuthenticatedUser.noUser(source));
+                .map(user -> KlabisUserAuthentication.authenticated(user, source))
+                .orElseGet(() -> KlabisUserAuthentication.noUser(source));
     }
 
-    static class KlabisAuthenticatedUser extends AbstractAuthenticationToken {
-
-        private final ApplicationUser applicationUser;
-        private final Jwt authentication;
-
-        static KlabisAuthenticatedUser authenticated(ApplicationUser user, Jwt credentials) {
-            return new KlabisAuthenticatedUser(user, credentials);
-        }
-
-        static KlabisAuthenticatedUser noUser(Jwt credentials) {
-            return new KlabisAuthenticatedUser(null, credentials);
-        }
-
-        private KlabisAuthenticatedUser(ApplicationUser applicationUser, Jwt authentication) {
-            super(List.of());   // TODO: authorities..
-            setAuthenticated(applicationUser != null);
-            this.applicationUser = applicationUser;
-            this.authentication = authentication;
-        }
-
-        @Override
-        public Jwt getCredentials() {
-            return authentication;
-        }
-
-        @Override
-        public ApplicationUser getPrincipal() {
-            return applicationUser;
-        }
+    @Bean
+    static RoleHierarchy customizedRoleHierarchy() {
+        RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
+        String hierarchyDef = RoleHierarchyUtils.roleHierarchyFromMap(
+                Map.of("ROLE_ADMIN", List.of(ApplicationGrant.MEMBERS_EDIT.name(), ApplicationGrant.MEMBERS_REGISTER.name()))
+        );
+        hierarchy.setHierarchy(hierarchyDef);
+        return hierarchy;
     }
 
+    @Bean
+    static MethodSecurityExpressionHandler methodSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setRoleHierarchy(roleHierarchy);
+        return handler;
+    }
 }

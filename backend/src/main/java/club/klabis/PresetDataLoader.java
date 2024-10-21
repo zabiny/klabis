@@ -1,6 +1,7 @@
 package club.klabis;
 
 import club.klabis.api.dto.SexApiDto;
+import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;
 import club.klabis.domain.appusers.ApplicationUsersRepository;
@@ -47,6 +48,7 @@ public class PresetDataLoader implements ApplicationRunner {
         appUsersRepository.findByUserName("admin").orElseGet(() -> {
             LOG.info("Adding user admin");
             ApplicationUser admin = ApplicationUser.newAppUser("admin", "{noop}secret");
+            admin.setGlobalGrants(List.of(ApplicationGrant.values()));
             return appUsersRepository.save(admin);
         });
 
