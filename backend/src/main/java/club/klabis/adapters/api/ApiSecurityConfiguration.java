@@ -13,6 +13,7 @@ import org.springframework.security.access.expression.method.MethodSecurityExpre
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyUtils;
+import org.springframework.security.authorization.method.PrePostTemplateDefaults;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -45,6 +46,11 @@ public class ApiSecurityConfiguration {
                 .build();
     }
 
+    // to enable spring security annotation templating like in @HasGrant
+    @Bean
+    static PrePostTemplateDefaults prePostTemplateDefaults() {
+        return new PrePostTemplateDefaults();
+    }
 
     // https://stackoverflow.com/questions/69100420/spring-oauth2-resource-server-load-synchronized-user-from-database
 
