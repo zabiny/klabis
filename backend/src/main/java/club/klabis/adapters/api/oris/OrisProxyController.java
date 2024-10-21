@@ -1,8 +1,10 @@
 package club.klabis.adapters.api.oris;
 
+import club.klabis.adapters.api.HasGrant;
 import club.klabis.adapters.oris.OrisApiClient;
 import club.klabis.api.OrisApi;
 import club.klabis.api.dto.ORISUserInfoApiDto;
+import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.members.RegistrationNumber;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,7 @@ class OrisProxyController implements OrisApi {
         this.conversionService = conversionService;
     }
 
+    @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<ORISUserInfoApiDto> orisUserInfoRegNumGet(String regNum) {
         ORISUserInfoApiDto userInfoApiDto = conversionService.convert(orisApiClient.getUserInfo(regNum).data(), ORISUserInfoApiDto.class);

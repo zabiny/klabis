@@ -1,5 +1,6 @@
 package club.klabis.adapters.api.members;
 
+import club.klabis.adapters.api.HasGrant;
 import club.klabis.api.MembersApi;
 import club.klabis.api.dto.*;
 import club.klabis.domain.appusers.ApplicationGrant;
@@ -87,6 +88,7 @@ public class MembersController implements MembersApi {
         }
     }
 
+    @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
     public ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(Integer memberId) {
         ApplicationUser appUser = applicationUserService.getApplicationUserForMemberId(memberId);
@@ -94,6 +96,7 @@ public class MembersController implements MembersApi {
         return ResponseEntity.ok(conversionService.convert(appUser, MemberGrantsFormApiDto.class));
     }
 
+    @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
     public ResponseEntity<Void> updateMemberGrants(Integer memberId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
         Collection<ApplicationGrant> globalGrants = (Collection<ApplicationGrant>) conversionService.convert(memberGrantsFormApiDto.getGrants(), TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
@@ -101,11 +104,13 @@ public class MembersController implements MembersApi {
         return ResponseEntity.ok(null);
     }
 
+    @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<EditAnotherMemberDetailsFormApiDto> getMemberEditByAdminForm(Integer memberId) {
         return ResponseEntity.ok(conversionService.convert(service.getEditAnotherMemberForm(memberId), EditAnotherMemberDetailsFormApiDto.class));
     }
 
+    @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<Void> putMemberEditByAdminForm(Integer memberId, EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto) {
         service.editMember(memberId, conversionService.convert(editAnotherMemberDetailsFormApiDto, EditAnotherMemberInfoByAdminForm.class));
