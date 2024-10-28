@@ -16,7 +16,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
@@ -35,6 +35,7 @@ public class MembersController implements MembersApi {
         this.conversionService = conversionService;
     }
 
+    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId, authentication)")
     @Override
     public ResponseEntity<MemberEditFormApiDto> membersMemberIdEditMemberInfoFormGet(Integer memberId) {
         return service.findById(memberId)
@@ -42,6 +43,7 @@ public class MembersController implements MembersApi {
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
+    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId, authentication)")
     @Override
     public ResponseEntity<Void> membersMemberIdEditMemberInfoFormPut(Integer memberId, MemberEditFormApiDto memberEditFormApiDto) {
         service.editMember(memberId, conversionService.convert(memberEditFormApiDto, MemberEditForm.class));
