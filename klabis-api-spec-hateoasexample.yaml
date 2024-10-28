@@ -1,0 +1,1106 @@
+openapi: 3.1.0
+info:
+  title: Klabis API
+  description: |
+    ---
+    # Work In progress
+    Application is currently under development:
+    - changes may be done to any part of API
+    - saved data may be reset at any moment (currently at any API server restart)
+    ---
+    # Glossary
+    - `member` - club member who can use the application   
+    - `user` - logged in member
+    - `grant` - configurable permission allowing user to perform selected action or view some data
+    
+    # Authorization
+    Every operation changing data (and some view requests) require `grant` which represents permission for the user to perform such operation.   
+    
+    There are 2 types of grants: 
+    
+    ## Global grants
+    These grants are assigned to user and are valid globally in the application. They grant permission for operations like Create new member, etc. 
+    
+    ## Member specific grants
+    These grants represents permission to perform operation (or view data) on behalf of selected user. User can receive this grant in two ways:
+    - user may allow another member to perform operation on his behalf/view his data
+    - user is granted permission to perform operation on behalf of another member / view another member's data because of membership/leadership of user group
+
+    Operations / data protected by this type of grant can be automatically performed if user is same person as member who is described by protected data or if operation is changing data of such member.   
+
+    ## What authorization is required to use API endpoint?
+    If endpoint requires authorization, it is written in description text of such endpoint with label "Required authorization"
+    
+    ## What authorization is required to see value of attribute in the response?
+    Response attributes: even some attributes in the response may require specific grant - see description of the attribute in response OpenAPI/JSON schema. If user doesn't hold such grant, attribute will be returned as empty (null)  
+
+    # API versioning
+    To be added later (before first production release). At current stage it's not needed. Most likely either contentType or request header versioning strategy will be used.  
+
+    ---
+    # Diskuze HATEOAS/HAL/... 
+    
+    Doporuceni pro UI:
+    1. podle akci zobrazit transition akce (prechody na ostatni stranky), a to vcetne hlavniho menu (ktere samo o sobe dost mozna bude zaviset na tom co aktualni uzivatel muze udelat). 
+        - bez tohoto se bude blbe delat napr. customizace pro pripadne dalsi kluby (napr. klub Y chce mit zcela jiny prehled clenu klubu => nova akce - napr. `members|list|TBM` pro klub s danou customizaci ktera se pouzije namisto `members|list' pokud bude prihlasen TBM member)
+        - pokud na UI nechteji sledovat HREF z akce, tak musi mit dobre napsaneho klienta pro Klabis API aby pripadne zmeny cest v API zvladali bez zbytecnych bugu. 
+    ---
+
+  contact:
+    email: klabis@otakar.io
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 0.2.1
+servers:
+  - url: https://klabis-auth.polach.cloud
+  - url: https://api.klabis.otakar.io
+tags:
+  - name: members
+    description: Club members
+  - name: security
+    description: API used to control authentication and authorization
+  - name: ORIS
+    description: Integration endpoints with ORIS - https://oris.orientacnisporty.cz/
+  - name: CUS
+    description: Integration endpoints with CUS - https://www.cuscz.cz/
+  - name: WIP
+    description: "[odkladiste pro 'work-in-progress' endpointy]"
+  - name: BFF
+    description: Backend for frontend endpoints
+paths:
+  /:
+    get:
+      tags:
+        - KLABIS
+      summary: Starting point for Klabis application
+      responses:
+        '200':
+          content:
+            application/klabis+json:
+              schema:
+                $ref: '#/components/schemas/KlabisApplicationLayerEntity'
+              examples:
+                anonymous:
+                  summary: Anonymous user
+                  value:
+                    _actions:
+                      - 'app|login'
+                logged:
+                  summary: Logged member
+                  value:
+                    _actions:
+                      - 'members|list'
+                      - 'events|list'
+                      - 'events|administration'
+                      - 'app|logout'
+  /me/password:
+    put:
+      tags:
+        - WIP
+      summary: "[WIP] - Set a new password"
+      description: Sets a new password for currently logged in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: The new password
+      responses:
+        '200':
+          description: New password set successfully
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+  /members:
+    get:
+      tags:
+        - members
+      summary: List all club members
+      description: Returns a list of all club members
+      parameters:
+        - name: view
+          in: query
+          required: false
+          description: |
+            Defines set of returned data
+            - full: all member data what are displayable to user are returned
+            - compact: `id`, `firstName`, `lastName`, 'registrationNumber`
+          schema:
+            type: string
+            enum:
+              - full
+              - compact
+            default: compact
+        - name: suspended
+          in: query
+          required: false
+          description: |
+            | value | effect |
+            | --- | --- |
+            | `true` | returns both active and suspended members | 
+            | `false` | return only active members |
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: A list of club members
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembersList'
+            application/klabis+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/KlabisApplicationLayerCollection'
+                  - $ref: '#/components/schemas/MembersList'
+        '401':
+          $ref: '#/components/responses/401'
+  /members/{memberId}:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdPath'
+    get:
+      tags:
+        - members
+      summary: Get member by ID
+      description: Returns a member
+      responses:
+        '200':
+          description: A single member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+            application/klabis+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Member'
+                  - $ref: '#/components/schemas/KlabisApplicationLayerEntity'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+
+  /members/{memberId}/editMemberInfoForm:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdPath'
+    get:
+      tags:
+        - members
+        - BFF
+      summary: "Returns data for edit member information form"
+      responses:
+        '200':
+          description: Club member updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberEditForm'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+    put:
+      tags:
+        - members
+      summary: "Update member information"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberEditForm'
+      responses:
+        '200':
+          description: Club member updated successfully
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+
+  /members/{memberId}/suspendMembershipForm:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdPath'
+    get:
+      tags:
+        - members
+        - BFF
+      summary: Retrieve information about member account status for membership suspension
+      description: |
+        Returns information about member account to be suspended. 
+        
+        #### Required authorization
+        requires `members:suspendMembership` grant
+      responses:
+        '200':
+          description: details about member account important for membership suspension
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipSuspensionInfo'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+    post:
+      tags:
+        - members
+      summary: Suspend membership for a club member
+      description: |
+        Suspends membership for a club member. 
+        
+        If there are some blockers (debt, etc), it responds with HTTP '409' unless `force=true` parameter was used.
+
+        #### Required authorization
+        requires `members:suspendMembership` grant
+      parameters:
+        - name: force
+          in: query
+          description: Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Membership of club member was suspended successfully
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission to update a member
+        '404':
+          $ref: '#/components/responses/401'
+          description: Club member not found
+        '409':
+          description: It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.
+          content:
+            application/problem+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/RFC7807ErrorResponse'
+                  - type: object
+                    required:
+                      - blockers
+                    properties:
+                      blockers:
+                        $ref: '#/components/schemas/SuspendMembershipBlockers'
+  /registrationNumber:
+    get:
+      tags:
+        - members
+      summary: Get recommended registration number for sex and date of birth
+      description: |
+        #### Required authorization
+        requires `members:register` grant
+      parameters:
+        - name: dateOfBirth
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: sex
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Sex'
+      responses:
+        '200':
+          description: Recommended (available) registration number for new member registration
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - suggestedRegistrationNumber
+                properties:
+                  suggestedRegistrationNumber:
+                    $ref: '#/components/schemas/RegistrationNumber'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /oris/userInfo/{regNum}:
+    get:
+      tags:
+        - ORIS
+      summary: Get information about user from ORIS
+      description: |
+        #### Required authorization
+        requires `members:register` grant
+      parameters:
+        - name: regNum
+          schema:
+            $ref: '#/components/schemas/RegistrationNumber'
+          in: path
+          required: true
+          description: Registration number of user to retrieve ORIS data about
+      responses:
+        '200':
+          description: Available information about user read from ORIS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ORISUserInfo'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/401'
+
+  /memberRegistrations:
+    post:
+      tags:
+        - members
+      summary: Register a new club member
+      description: |
+        Registers a new club member with the provided details.
+        
+        #### Required authorization
+        requires `members:register` grant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberRegistrationForm'
+      responses:
+        '201':
+          description: Registration was processed successfully
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                format: URI
+              description: URI to endpoint where details about created member can be retrieved
+            MemberId:
+              required: true
+              schema:
+                $ref: '#/components/schemas/MemberId'
+              description: ID of created member
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+          description: Forbidden - User does not have permission for this action
+        '409':
+          $ref: '#/components/responses/409MemberRegistration'
+  /cus/exports/members:
+    get:
+      tags:
+        - WIP
+      summary: "[WIP] - export users in CUS format"
+      responses:
+        '200':
+          description: A list of differences
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+
+  /grants:
+    get:
+      tags:
+        - security
+        - WIP
+      summary: returns details about available security grants what can be assigned to users
+      operationId: getAllGrants
+      responses:
+        '200':
+          description: List of grants which can be assigned to members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GlobalGrantDetail'
+  /members/{memberId}/changeGrantsForm:
+    parameters:
+      - $ref: '#/components/parameters/MemberIdPath'
+    get:
+      tags:
+        - security
+        - WIP
+        - BFF
+      summary: returns grants assigned to member
+      description: |-
+        Requires `members:permissions` grant
+      operationId: getMemberGrants
+      x-requires-grant: members:permissions
+      responses:
+        '200':
+          description: Edit member grants form content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberGrantsForm'
+    put:
+      tags:
+        - security
+        - WIP
+      summary: updates grants assigned to member
+      description: |-
+        Requires `members:permissions` grant
+      operationId: updateMemberGrants
+      x-requires-grant: members:permissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberGrantsForm'
+      responses:
+        '200':
+          description: Member grants were successfully updated
+
+components:
+  schemas:
+    CountryCode:
+      type: string
+      pattern: ^[A-Z]{2}$
+      description: two letter country code, ISO 3166-1 alpha-2
+    BirthCertificateNumber:
+      type: string
+      pattern: ^[0-9]{6}/[0-9]{3,4}$
+      description: Birth certificate number for Czech citizens
+    RegistrationNumber:
+      type: string
+      pattern: ^[A-Z]{3}[0-9]{4}$
+      description: ORIS registration number
+    OrisID:
+      type: integer
+      description: Oris ID of registered orienteering runner
+    DrivingLicence:
+      type: string
+      enum: [ B, BE, C, D ]
+    SICard:
+      type: integer
+      description: SI chip used by member
+    Sex:
+      type: string
+      enum:
+        - male
+        - female
+    Contact:
+      type: object
+      description: At least one of email or phone value is required
+      required:
+        - email
+        - phone
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the club member or guardian
+        phone:
+          type: string
+          description: Phone number of the club member or guardian
+        note:
+          type: string
+          description: Note about the contact
+    Address:
+      type: object
+      required:
+        - streetAndNumber
+        - city
+        - postalCode
+        - country
+      properties:
+        streetAndNumber:
+          type: string
+          description: Street name and number
+        city:
+          type: string
+          description: City
+        postalCode:
+          type: string
+          description: Postal or ZIP code
+        country:
+          $ref: '#/components/schemas/CountryCode'
+    IdentityCard:
+      type: object
+      properties:
+        number:
+          type: string
+          description: Personal identification number of the club member
+        expiryDate:
+          type: string
+          format: date
+          description: Expiry date of the ID card, YYYY-MM-DD
+    MemberViewCompact:
+      description: |
+        'compact' view of Member
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+        - registrationNumber
+      properties:
+        id:
+          $ref: '#/components/schemas/MemberId'
+          readOnly: true
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        registrationNumber:
+          $ref: '#/components/schemas/RegistrationNumber'
+    MemberId:
+      type: integer
+      description: Unique identifier for the club member
+    Member:
+      allOf:
+        - $ref: '#/components/schemas/MemberViewCompact'
+        - type: object
+          required:
+            - id
+            - firstName
+            - lastName
+            - sex
+            - dateOfBirth
+            - nationality
+            - address
+          properties:
+            id:
+              $ref: '#/components/schemas/MemberId'
+            birthCertificateNumber:
+              $ref: '#/components/schemas/BirthCertificateNumber'
+            identityCard:
+              $ref: '#/components/schemas/IdentityCard'
+            address:
+              $ref: '#/components/schemas/Address'
+            dateOfBirth:
+              type: string
+              format: date
+              description: Date of birth of the club member
+            contact:
+              $ref: '#/components/schemas/Contact'
+            legalGuardians:
+              type: array
+              items:
+                $ref: '#/components/schemas/LegalGuardian'
+            siCard:
+              type: integer
+              description: Chip number assigned to the club member
+            nationality:
+              $ref: '#/components/schemas/CountryCode'
+            sex:
+              $ref: '#/components/schemas/Sex'
+            licences:
+              $ref: '#/components/schemas/Licences'
+            bankAccount:
+              $ref: '#/components/schemas/BankAccountNumber'
+            dietaryRestrictions:
+              type: string
+              description: Dietary restrictions of the club member
+            drivingLicence:
+              type: array
+              items:
+                $ref: '#/components/schemas/DrivingLicence'
+            medicCourse:
+              type: boolean
+              description: Whether the club member has completed the medic course
+        - description: Member attributes
+
+    MembersList:
+      description: List of members.
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/Member'
+              - $ref: '#/components/schemas/MemberViewCompact'
+
+    ORISUserInfo:
+      type: object
+      description: |-
+        User data retrieved from ORIS  
+        
+        #### Required authorization
+        - requires `members:register` grant
+      required:
+        - firstName
+        - lastName
+        - registrationNumber
+      properties:
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        registrationNumber:
+          $ref: '#/components/schemas/RegistrationNumber'
+        orisId:
+          $ref: '#/components/schemas/OrisID'
+
+    MemberRegistrationForm:
+      type: object
+      description: |-
+        Data required to register new member.  
+        
+        #### Required authorization
+        - requires `members:register` grant
+        
+        Additional validations: 
+        - either contact or guardian needs to be set
+        - when nationality is different than `CZ`, `birthCertificateNumber` value will be ignored
+      required:
+        - firstName
+        - lastName
+        - sex
+        - dateOfBirth
+        - nationality
+        - address
+      properties:
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        sex:
+          $ref: '#/components/schemas/Sex'
+        dateOfBirth:
+          type: string
+          format: date
+          description: Date of birth of the club member
+        birthCertificateNumber:
+          $ref: '#/components/schemas/BirthCertificateNumber'
+          writeOnly: true
+        nationality:
+          $ref: '#/components/schemas/CountryCode'
+          writeOnly: true
+        address:
+          $ref: '#/components/schemas/Address'
+          writeOnly: true
+        contact:
+          $ref: '#/components/schemas/Contact'
+          writeOnly: true
+        guardians:
+          type: array
+          writeOnly: true
+          items:
+            $ref: '#/components/schemas/LegalGuardian'
+        siCard:
+          $ref: '#/components/schemas/SICard'
+        bankAccount:
+          $ref: '#/components/schemas/BankAccountNumber'
+          writeOnly: true
+        registrationNumber:
+          $ref: '#/components/schemas/RegistrationNumber'
+        orisId:
+          $ref: '#/components/schemas/OrisID'
+#        trainingGroup:
+#          type: ???
+#          description: training group where newly registered member will be added
+    EditAnotherMemberDetailsForm:
+      type: object
+      description: |-
+        Member attributes editable by authorized user who can change details about other members
+
+        #### Required authorization
+        - requires `members:edit` grant
+       
+        Additional validations: 
+        - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - nationality
+        - sex
+      properties:
+        firstName:
+          type: string
+          description: First name of the club member
+        lastName:
+          type: string
+          description: Last name of the club member
+        dateOfBirth:
+          type: string
+          format: date
+          description: Date of birth of the club member
+        birthCertificateNumber:
+          $ref: '#/components/schemas/BirthCertificateNumber'
+        nationality:
+          $ref: '#/components/schemas/CountryCode'
+        sex:
+          $ref: '#/components/schemas/Sex'
+    EditMyDetailsForm:
+      description: |
+        Member attributes which can be updated by member himself (member can update some own attributes)  
+        
+        #### Required authorization
+        - user can edit own member data 
+
+        Additional validations:
+        - either contact or at least 1 guardian needs to be entered
+      required:
+        - nationality
+        - address
+      properties:
+        identityCard:
+          $ref: '#/components/schemas/IdentityCard'
+        nationality:
+          $ref: '#/components/schemas/CountryCode'
+        address:
+          $ref: '#/components/schemas/Address'
+        contact:
+          $ref: '#/components/schemas/Contact'
+        guardians:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegalGuardian'
+        siCard:
+          $ref: '#/components/schemas/SICard'
+        bankAccount:
+          $ref: '#/components/schemas/BankAccountNumber'
+        dietaryRestrictions:
+          type: string
+          description: Dietary restrictions of the club member
+        drivingLicence:
+          type: array
+          items:
+            $ref: '#/components/schemas/DrivingLicence'
+        medicCourse:
+          type: boolean
+          description: Whether the club member has completed the medic course
+    LegalGuardian:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - contact
+      properties:
+        firstName:
+          type: string
+          description: First name of the guardian
+        lastName:
+          type: string
+          description: Last name of the guardian
+        contact:
+          $ref: '#/components/schemas/Contact'
+        note:
+          type: string
+          description: Note about the guardian (matka, otec)
+    BankAccountNumber:
+      type: string
+      pattern: ^[A-Z]{2}[0-9]+$
+      description: Bank account number of the club member IBAN
+    OBLicence:
+      type: object
+      required:
+        - licence
+      properties:
+        licence:
+          type: string
+          enum: [ E, R, A, B, C ]
+          description: License number of the club member
+    RefereeLicence:
+      type: object
+      required:
+        - licence
+        - expiryDate
+      properties:
+        licence:
+          type: string
+          enum: [ R1, R2, R3 ]
+          description: referee license number of the club member
+        expiryDate:
+          type: string
+          format: date
+          description: Expiry date of the license
+    TrainerLicence:
+      type: object
+      required:
+        - licence
+        - expiryDate
+      properties:
+        licence:
+          type: string
+          enum: [ T1, T2, T3 ]
+          description: trainer license number of the club member
+        expiryDate:
+          type: string
+          format: date
+          description: Expiry date of the license
+    Licences:
+      type: object
+      properties:
+        ob:
+          $ref: '#/components/schemas/OBLicence'
+        referee:
+          $ref: '#/components/schemas/RefereeLicence'
+        trainer:
+          $ref: '#/components/schemas/TrainerLicence'
+    MemberEditForm:
+      description: Form to edit member information
+      anyOf:
+        - $ref: '#/components/schemas/EditMyDetailsForm'
+        - $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
+    MembershipSuspensionInfo:
+      type: object
+      required:
+        - canSuspend
+        - isSuspended
+        - details
+      properties:
+        isSuspended:
+          type: boolean
+          description: tells if member account is currently suspended
+        canSuspend:
+          type: boolean
+          description: tells if member account can be suspended
+        details:
+          $ref: '#/components/schemas/SuspendMembershipBlockers'
+    SuspendMembershipBlockers:
+      type: object
+      description: describes conditions which may prevent membership suspension and their actual status
+      required:
+        - finance
+      properties:
+        finance:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: boolean
+              description: tells if finance account balance permits membership suspension
+    GlobalGrants:
+      type: string
+      description: |
+        Global grants are assigned to users and are valid globally in the application.
+        
+        | Grant name | granted permissions |
+        | --- | --- |
+        | `members:register` | can create new members |
+        | `members:edit` | can edit selected attributes for all existing members |
+        | `members:suspendMembership` | can suspend membership for club members |
+      enum:
+        - members:register
+        - members:edit
+        - members:suspendMembership
+        - members:permissions
+    MemberSpecificGrants:
+      type: string
+      description: |
+        Member specific grants are defined between 2 users (user is allowed to perform specific action on behalf of another user). These define fine-grained permissions and can be granted explicitely to selected users or through permissions granted from membership between members of user groups.
+
+        | Grant name | granted permissions |
+        | --- | --- |
+        | `members#canDisplayMemberPersonalContact` | can display personal contact information of member |
+        | `members#canDisplayMemberLegalGuardianContact` | can display contact information of legal guardian of member |
+        | `members#canDisplayMemberAddress` | can display contact information of legal guardian of member |
+      enum:
+        - members#canDisplayMemberPersonalContact
+        - members#canDisplayMemberLegalGuardianContact
+        - members#canDisplayMemberAddress
+    GlobalGrantDetail:
+      type: object
+      properties:
+        grant:
+          $ref: '#/components/schemas/GlobalGrants'
+        description:
+          type: string
+          description: User friendly description of the grant
+    MemberGrantsForm:
+      description: Data for form setting member grants
+      type: object
+      properties:
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalGrants'
+    KlabisApplicationLayerCollection:
+      allOf:
+        - $ref: '#/components/schemas/KlabisApplicationLayerEntity'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/KlabisApplicationLayerEntity'
+    KlabisApplicationLayerEntity:
+      type: object
+      properties:
+        _actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/KALLink'
+        _attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/KALModelAttribute'
+    KALLink:
+      description: action (operation) which user may perform on model
+      type: string
+#      type: object
+#      properties:
+#        rel:
+#          type: string
+#          enum:
+#            - members:registerMember
+#            - members:suspendMembership
+#        href:
+#          type: string
+#          format: uri
+#        label:
+#          type: string
+    KALModelAttribute:
+      description: |-
+        describes model attribute. 
+        It may describe available attributes for model 
+        Or if chattiness is a issue, it may describe attribute what is NOT available for user with expectation any other attribute IS available
+        Or it may have multiple attributes ...
+      type: string
+#      type: object
+#      properties:
+#        name:
+#          type: string
+#          description: name of described attribute
+#        isRequired:
+#          type: boolean
+#        type:
+#          type: string
+#          description: describes type of value for the attribute
+    RFC7807ErrorResponse:
+      type: object
+      required:
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        title:
+          type: string
+          description: Description of the error status
+        status:
+          type: integer
+          description: error status value
+        detail:
+          type: string
+          description: User friendly description of the error
+        instance:
+          type: string
+          description: URI of the resource which has thrown the error
+        type:
+          type: string
+  parameters:
+    MemberIdPath:
+      in: path
+      name: memberId
+      required: true
+      description: ID of member
+      schema:
+        #type: integer
+        $ref: '#/components/schemas/MemberId'
+  responses:
+    '400':
+      description: Invalid user input
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/RFC7807ErrorResponse'
+              - type: object
+                properties:
+                  validationErrors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        fieldName:
+                          type: string
+                        errorMessage:
+                          type: string
+    '401':
+      description: Missing required user authentication or authentication failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/RFC7807ErrorResponse'
+    '403':
+      description: User is not allowed to perform requested operation
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/RFC7807ErrorResponse'
+              - type: object
+                properties:
+                  missingGrant:
+                    anyOf:
+                      - $ref: "#/components/schemas/GlobalGrants"
+                      - $ref: "#/components/schemas/MemberSpecificGrants"
+    '404':
+      description: Requested resource wasn't found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/RFC7807ErrorResponse'
+    '409':
+      description: Operation can't be done because of conflicting resource
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/RFC7807ErrorResponse'
+    '409MemberRegistration':
+      description: Conflict - Member already exists (usually registration was submitted with existing registration number)
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/RFC7807ErrorResponse'
+              - type: object
+                properties:
+                  existingUserId:
+                    type: string
+                    format: uuid
+                    description: ID of conflicting member
+  securitySchemes:
+    klabis:
+      type: openIdConnect
+      openIdConnectUrl: https://klabis-auth.polach.cloud/.well-known/openid-configuration
+security:
+  - klabis:
+      - openid
