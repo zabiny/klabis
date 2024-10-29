@@ -37,6 +37,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-hateoas")
     testImplementation("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -129,7 +130,7 @@ openApiGenerate {
             "useSpringBoot3" to "true",
             "generateBuilders" to "true",
             "useSpringController" to "false",
-            //"hateoas" to "false",
+            "hateoas" to "true",
             "booleanGetterPrefix" to "is",
             "interfaceOnly" to "true",
             "skipDefaultInterface" to "true",

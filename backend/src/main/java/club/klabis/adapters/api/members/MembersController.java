@@ -35,7 +35,7 @@ public class MembersController implements MembersApi {
         this.conversionService = conversionService;
     }
 
-    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId, authentication)")
+    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     @Override
     public ResponseEntity<MemberEditFormApiDto> membersMemberIdEditMemberInfoFormGet(Integer memberId) {
         return service.findById(memberId)
@@ -43,7 +43,7 @@ public class MembersController implements MembersApi {
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
-    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId, authentication)")
+    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     @Override
     public ResponseEntity<Void> membersMemberIdEditMemberInfoFormPut(Integer memberId, MemberEditFormApiDto memberEditFormApiDto) {
         service.editMember(memberId, conversionService.convert(memberEditFormApiDto, MemberEditForm.class));
