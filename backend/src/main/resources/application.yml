@@ -6,6 +6,7 @@ spring:
     include:
       - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
       - http2
+      - hateoas
 
   security:
     oauth2:
@@ -135,9 +136,6 @@ spring:
     hibernate:
       ddl-auto: validate  # pro persistentni DB pouze zvalidovat schema databaze
 
-server:
-  forward-headers-strategy: framework # For hateoas proper URL hostname detection
-
 logging:
   level:
     #org.springframework.security: TRACE
@@ -231,4 +229,17 @@ server:
     key-store-type: PKCS12
     key-alias: klabisSSL
   port: 8443
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: hateoas
+
+  hateoas:
+    use-hal-as-default-json-media-type: false
+
+server:
+  forward-headers-strategy: framework # For hateoas proper URL hostname detection
 
