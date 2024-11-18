@@ -121,6 +121,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MembersList'
+            application/klabis+json:
+              schema:
+                $ref: '#/components/schemas/MembersList'
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/MembersList'
         '401':
           $ref: '#/components/responses/401'
   /members/{memberId}:

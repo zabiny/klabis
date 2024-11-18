@@ -30,7 +30,7 @@ import java.util.Map;
 @Configuration(proxyBeanMethods = false)
 public class ApiSecurityConfiguration {
 
-    public static RequestMatcher API_ENDPOINTS_MATCHER = new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON);
+    public static RequestMatcher API_ENDPOINTS_MATCHER = new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON, MediaType.valueOf("application/hal+json"), MediaType.valueOf("application/klabis+json"));
 
     public ApiSecurityConfiguration(ApplicationUserService applicationUserService) {
         this.applicationUserService = applicationUserService;
