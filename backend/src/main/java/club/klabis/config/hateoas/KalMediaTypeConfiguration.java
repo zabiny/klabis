@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.springframework.boot.jackson.JsonMixin;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -15,7 +16,6 @@ import org.springframework.hateoas.LinkRelation;
 import org.springframework.hateoas.Links;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.config.HypermediaMappingInformation;
-import org.springframework.hateoas.mediatype.hal.Jackson2HalModule;
 import org.springframework.http.MediaType;
 
 import java.io.IOException;
@@ -32,9 +32,9 @@ public class KalMediaTypeConfiguration implements HypermediaMappingInformation {
 
     @Override
     public Module getJacksonModule() {
-        Jackson2HalModule halJacksonModule = new Jackson2HalModule();
-        halJacksonModule.setMixInAnnotation(RepresentationModel.class, KalRepresentationModelMixin.class);
-        return halJacksonModule;
+        SimpleModule klabisMediaTypeJacksonModule = new SimpleModule();
+        klabisMediaTypeJacksonModule.setMixInAnnotation(RepresentationModel.class, KalRepresentationModelMixin.class);
+        return klabisMediaTypeJacksonModule;
     }
 }
 
