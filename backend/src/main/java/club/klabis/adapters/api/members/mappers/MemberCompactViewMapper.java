@@ -35,11 +35,11 @@ public abstract class MemberCompactViewMapper extends RepresentationModelAssembl
         target.add(linkTo(methodOn(MembersController.class).membersMemberIdGet(entity.getId())).withSelfRel());
 
         if (securityService.canEditMemberData(entity.getId())) {
-            target.add(linkTo(methodOn(MembersController.class).membersMemberIdEditOwnMemberInfoFormGet(entity.getId())).withRel("editOwnMemberData"));
+            target.add(linkTo(methodOn(MembersController.class).membersMemberIdEditOwnMemberInfoFormGet(entity.getId())).withRel("members:editOwnInfo"));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
-            target.add(linkTo(methodOn(MembersController.class).getMemberEditByAdminForm(entity.getId())).withRel("editAdminMemberData"));
+            target.add(linkTo(methodOn(MembersController.class).getMemberEditByAdminForm(entity.getId())).withRel("members:editAnotherMember"));
         }
     }
 
