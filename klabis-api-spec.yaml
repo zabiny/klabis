@@ -1032,6 +1032,55 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GlobalGrants'
+    GroupId:
+      type: number
+    MembersGroupList:
+      type: object
+      properties:
+        items:
+          $ref: '#/components/schemas/MembersGroup'
+    MembersGroup:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/GroupId'
+        name:
+          description: unique name of the group
+          type: string
+        description:
+          description: description of the group allowing to let members know what is this group about, etc..
+          type: string
+        address:
+          type: string
+          format: email
+          description: Email address of the group
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MembersGroupPermission'
+    MembersGroupPermission:
+      type: object
+      description: Single group permission
+      properties:
+        permission:
+          $ref: '#/components/schemas/MembersGroupGrant'
+        grantedToOwner:
+          type: boolean
+          description: tells if permission is granted to group owner
+        grantedToMember:
+          type: boolean
+          description: tells if permission is granted to group members
+    MembersGroupGrant:
+      type: string
+      enum:
+        - finance#displayFinance
+        - finance#manageFinance
+        - eventApplications#showEventApplications
+        - eventApplications#manageEventApplications
+        - memberInfo#displayMemberInfo
+        - memberInfo#manageMemberInfo
+        - groups#inviteIntoGroup
+        - news#publishNewsForGroup
     RFC7807ErrorResponse:
       type: object
       required:
