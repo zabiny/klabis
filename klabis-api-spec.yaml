@@ -452,7 +452,7 @@ paths:
           $ref: '#/components/responses/401'
 
   /memberRegistrations:
-    put:
+    post:
       tags:
         - members
       summary: Register a new club member
@@ -557,6 +557,100 @@ paths:
       responses:
         '200':
           description: Member grants were successfully updated
+
+  /memberGroups:
+    get:
+      tags:
+        - groups
+        - WIP
+      summary: Returns all member groups
+      operationId: getMemberGroups
+      responses:
+        '200':
+          description: Member groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembersGroupList'
+    post:
+      tags:
+        - groups
+        - WIP
+      summary: Create new group
+      operationId: postMemberGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembersGroup'
+      responses:
+        '201':
+          description: Member group created
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+  /memberGroups/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: ID of the group
+        schema:
+          $ref: '#/components/schemas/GroupId'
+    get:
+      tags:
+        - groups
+        - WIP
+      summary: Returns member group details
+      operationId: getMemberGroupById
+      responses:
+        '200':
+          description: Member groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembersGroup'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+    put:
+      tags:
+        - groups
+        - WIP
+      summary: Update existing member group
+      operationId: putMemberGroupById
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembersGroup'
+      responses:
+        '200':
+          description: Member group updated
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+    delete:
+      tags:
+        - groups
+        - WIP
+      summary: Delete member group
+      operationId: deleteMemberGroupById
+      responses:
+        '204':
+          description: Member group deleted
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
 
 components:
   schemas:
@@ -1034,26 +1128,54 @@ components:
             $ref: '#/components/schemas/GlobalGrants'
     GroupId:
       type: number
+      readOnly: true
     MembersGroupList:
       type: object
       properties:
         items:
-          $ref: '#/components/schemas/MembersGroup'
-    MembersGroup:
+          $ref: '#/components/schemas/MembersGroupListItem'
+    MembersGroupListItem:
       type: object
+      required:
+        - id
+        - name
       properties:
         id:
           $ref: '#/components/schemas/GroupId'
         name:
           description: unique name of the group
           type: string
+          example: Trenink - dorost
         description:
           description: description of the group allowing to let members know what is this group about, etc..
           type: string
+          example: Treninkova skupina Dorost
         address:
           type: string
           format: email
           description: Email address of the group
+          example: dorost@zabiny.club
+    MembersGroup:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/GroupId'
+        name:
+          description: unique name of the group
+          type: string
+          example: Trenink - dorost
+        description:
+          description: description of the group allowing to let members know what is this group about, etc..
+          type: string
+          example: Treninkova skupina Dorost
+        address:
+          type: string
+          format: email
+          description: Email address of the group
+          example: dorost@zabiny.club
         permissions:
           type: array
           items:
@@ -1061,6 +1183,8 @@ components:
     MembersGroupPermission:
       type: object
       description: Single group permission
+      required:
+        - permission
       properties:
         permission:
           $ref: '#/components/schemas/MembersGroupGrant'
