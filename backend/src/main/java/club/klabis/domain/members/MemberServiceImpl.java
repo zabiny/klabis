@@ -32,7 +32,7 @@ class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public Optional<Member> findById(Integer memberId) {
+    public Optional<Member> findById(Member.Id memberId) {
         return membersRepository.findById(memberId);
     }
 
@@ -61,7 +61,7 @@ class MemberServiceImpl implements MemberService {
 
     @Transactional
     @Override
-    public Member editMember(Integer memberId, MemberEditForm editForm) {
+    public Member editMember(Member.Id memberId, MemberEditForm editForm) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -70,7 +70,7 @@ class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(int memberId) {
+    public Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(Member.Id memberId) {
         return membersRepository.findById(memberId)
                 .map(this::suspensionInfoForMember);
     }
@@ -82,7 +82,7 @@ class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public void suspendMembershipForMember(int memberId, boolean forceSuspension) {
+    public void suspendMembershipForMember(Member.Id memberId, boolean forceSuspension) {
         Member memberForSuspension = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -96,7 +96,7 @@ class MemberServiceImpl implements MemberService {
 
     @Transactional
     @Override
-    public Member editMember(Integer memberId, EditOwnMemberInfoForm form) {
+    public Member editMember(Member.Id memberId, EditOwnMemberInfoForm form) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -105,14 +105,14 @@ class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public EditAnotherMemberInfoByAdminForm getEditAnotherMemberForm(Integer memberId) {
+    public EditAnotherMemberInfoByAdminForm getEditAnotherMemberForm(Member.Id memberId) {
         return findById(memberId)
                 .map(m -> conversionService.convert(m, EditAnotherMemberInfoByAdminForm.class))
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
     @Override
-    public Member editMember(Integer memberId, EditAnotherMemberInfoByAdminForm form) {
+    public Member editMember(Member.Id memberId, EditAnotherMemberInfoByAdminForm form) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -121,7 +121,7 @@ class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    public EditOwnMemberInfoForm getEditOwnMemberInfoForm(Integer memberId) {
+    public EditOwnMemberInfoForm getEditOwnMemberInfoForm(Member.Id memberId) {
         return findById(memberId)
                 .map(m -> conversionService.convert(m, EditOwnMemberInfoForm.class))
                 .orElseThrow(() -> new MemberNotFoundException(memberId));

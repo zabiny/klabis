@@ -3,11 +3,12 @@ package club.klabis.adapters.inmemorystorage;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserNotFound;
 import club.klabis.domain.appusers.ApplicationUsersRepository;
+import club.klabis.domain.members.Member;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-class ApplicationUsersInMemoryRepository extends InMemoryRepositoryImpl<ApplicationUser, Integer> implements ApplicationUsersRepository {
+class ApplicationUsersInMemoryRepository extends InMemoryRepositoryImpl<ApplicationUser, ApplicationUser.Id> implements ApplicationUsersRepository {
     ApplicationUsersInMemoryRepository() {
         super(ApplicationUser::getId);
     }
@@ -23,7 +24,9 @@ class ApplicationUsersInMemoryRepository extends InMemoryRepositoryImpl<Applicat
     }
 
     @Override
-    public ApplicationUser findByMemberId(int memberId) {
-        return findAll().stream().filter(it -> it.getMemberId().filter(id -> id == memberId).isPresent()).findAny().orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
+    public ApplicationUser findByMemberId(Member.Id memberId) {
+        return findAll().stream()
+                .filter(it -> it.getMemberId().filter(id -> id.equals(memberId)).isPresent())
+                .findAny().orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
     }
 }

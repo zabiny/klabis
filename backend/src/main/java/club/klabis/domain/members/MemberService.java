@@ -20,21 +20,21 @@ public interface MemberService {
 
     List<Member> findAll(boolean includeSuspended);
 
-    Optional<Member> findById(Integer memberId);
+    Optional<Member> findById(Member.Id memberId);
 
     RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex);
 
-    Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(int memberId);
+    Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(Member.Id memberId);
 
-    void suspendMembershipForMember(int memberId, boolean forceSuspension);
+    void suspendMembershipForMember(Member.Id memberId, boolean forceSuspension);
 
-    Member editMember(Integer memberId, @Valid MemberEditForm editForm);
+    Member editMember(Member.Id memberId, @Valid MemberEditForm editForm);
 
-    EditAnotherMemberInfoByAdminForm getEditAnotherMemberForm(Integer memberId);
+    EditAnotherMemberInfoByAdminForm getEditAnotherMemberForm(Member.Id memberId);
 
-    Member editMember(Integer memberId, @Valid EditAnotherMemberInfoByAdminForm form);
+    Member editMember(Member.Id memberId, @Valid EditAnotherMemberInfoByAdminForm form);
 
-    EditOwnMemberInfoForm getEditOwnMemberInfoForm(Integer memberId);
+    EditOwnMemberInfoForm getEditOwnMemberInfoForm(Member.Id memberId);
 
-    Member editMember(Integer memberId, @Valid EditOwnMemberInfoForm form);
+    Member editMember(Member.Id memberId, @Valid EditOwnMemberInfoForm form);
 }

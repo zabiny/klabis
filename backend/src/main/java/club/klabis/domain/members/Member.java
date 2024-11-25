@@ -1,7 +1,5 @@
 package club.klabis.domain.members;
 
-import club.klabis.api.dto.EditAnotherMemberDetailsFormApiDto;
-import club.klabis.api.dto.EditMyDetailsFormApiDto;
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import club.klabis.domain.members.events.MemberEditedEvent;
 import club.klabis.domain.members.events.MemberWasSuspendedEvent;
@@ -23,12 +21,21 @@ import static club.klabis.common.ConversionUtils.list;
 
 @AggregateRoot
 public class Member extends AbstractAggregateRoot<Member> {
-    private static int MAX_ID = 0;
+
+    public record Id(int value) {
+
+        private static Id LAST_ID = new Id(0);
+
+        private static Id newId() {
+            LAST_ID = new Id(LAST_ID.value() + 1);
+            return LAST_ID;
+        }
+    }
 
     // required attributes
     // TODO: convert to value object
     @Identity
-    private int id;
+    private final Id id;
     private String firstName;
     private String lastName;
     private RegistrationNumber registration;
@@ -90,7 +97,7 @@ public class Member extends AbstractAggregateRoot<Member> {
     }
 
     protected Member() {
-        this.id = ++MAX_ID;
+        this.id = Id.newId();
     }
 
     private void checkInvariants() {
@@ -224,7 +231,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         return Optional.ofNullable(bankAccount);
     }
 
-    public int getId() {
+    public Id getId() {
         return id;
     }
 

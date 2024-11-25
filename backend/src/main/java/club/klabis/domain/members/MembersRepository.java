@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface MembersRepository extends ListCrudRepository<Member, Integer> {
+public interface MembersRepository extends ListCrudRepository<Member, Member.Id> {
 
     List<Member> findMembersWithSameBirthyearAndSex(LocalDate birthDate, Sex sex);
 

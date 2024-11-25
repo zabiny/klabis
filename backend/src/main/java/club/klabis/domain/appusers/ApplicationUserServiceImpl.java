@@ -1,5 +1,6 @@
 package club.klabis.domain.appusers;
 
+import club.klabis.domain.members.Member;
 import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import org.jmolecules.ddd.annotation.Service;
@@ -23,7 +24,7 @@ class ApplicationUserServiceImpl implements ApplicationUserService {
     }
 
     @Override
-    public ApplicationUser getApplicationUserForMemberId(Integer memberId) {
+    public ApplicationUser getApplicationUserForMemberId(Member.Id memberId) {
         return repository.findByMemberId(memberId);
     }
 
@@ -41,7 +42,7 @@ class ApplicationUserServiceImpl implements ApplicationUserService {
 
     @Transactional
     @Override
-    public void setGlobalGrants(Integer memberId, Collection<ApplicationGrant> globalGrants) {
+    public void setGlobalGrants(Member.Id memberId, Collection<ApplicationGrant> globalGrants) {
         ApplicationUser memberAppUser = getApplicationUserForMemberId(memberId);
         memberAppUser.setGlobalGrants(globalGrants);
         repository.save(memberAppUser);
