@@ -24,6 +24,7 @@ public abstract class MemberFullViewMapper extends BaseMemberMapper<MemberApiDto
     @Override
     @Mapping(source = "registration", target = "registrationNumber")
     @Mapping(target = "licences", source = ".")
+    @Mapping(target = "id", source = "id.value")
     public abstract MemberApiDto toModel(Member source);
 
     @Mapping(source = "trainerLicence", target = "trainer")

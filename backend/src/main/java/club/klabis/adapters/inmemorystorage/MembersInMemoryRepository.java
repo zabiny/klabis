@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-class MembersInMemoryRepository extends InMemoryRepositoryImpl<Member, Integer> implements MembersRepository {
+class MembersInMemoryRepository extends InMemoryRepositoryImpl<Member, Member.Id> implements MembersRepository {
     MembersInMemoryRepository() {
         super(Member::getId);
     }

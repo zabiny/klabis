@@ -16,6 +16,7 @@ public abstract class MemberCompactViewMapper extends BaseMemberMapper<MemberVie
     }
 
     @Mapping(source = "registration", target = "registrationNumber")
+    @Mapping(source = "id.value", target = "id")
     @Override
     abstract public MemberViewCompactApiDto toModel(Member entity);
     
