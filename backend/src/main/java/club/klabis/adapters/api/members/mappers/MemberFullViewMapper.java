@@ -15,6 +15,7 @@ interface MemberFullViewMapper extends Converter<Member, MemberApiDto> {
     @Override
     @Mapping(source = "registration", target = "registrationNumber")
     @Mapping(target = "licences", source = ".")
+    @Mapping(target = "id", source = "id.value")
     MemberApiDto convert(Member source);
 
     @Mapping(source = "trainerLicence", target = "trainer")

@@ -9,12 +9,20 @@ import java.util.*;
 
 @AggregateRoot
 public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
-    private static int MAX_ID = 0;
+    public record Id(int value) {
+
+        private static Id LAST_ID = new Id(0);
+
+        private static Id newId() {
+            LAST_ID = new Id(LAST_ID.value() + 1);
+            return LAST_ID;
+        }
+    }
 
     @Identity
-    private int id;
-    private Integer memberId;
-    private String username;
+    private final Id id;
+    private Member.Id memberId;
+    private String userName;
     private String password = "{noop}secret";
     private boolean enabled = true;
     private String googleSubject;
@@ -24,19 +32,21 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
 
     public static ApplicationUser newAppUser(String username, String password) {
         ApplicationUser result = new ApplicationUser();
-        result.id = ++MAX_ID;
-        result.username = username;
+        result.userName = username;
         result.password = password;
         return result;
     }
 
     public static ApplicationUser newAppUser(Member member, String password) {
         ApplicationUser result = new ApplicationUser();
-        result.id = ++MAX_ID;
-        result.username = member.getRegistration().toRegistrationId();
+        result.userName = member.getRegistration().toRegistrationId();
         result.password = password;
         result.memberId = member.getId();
         return result;
+    }
+
+    public ApplicationUser() {
+        this.id = Id.newId();
     }
 
     public void linkWithGoogle(String googleSubject) {
@@ -56,16 +66,16 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
         return Optional.ofNullable(googleSubject);
     }
 
-    public int getId() {
+    public Id getId() {
         return id;
     }
 
-    public Optional<Integer> getMemberId() {
+    public Optional<Member.Id> getMemberId() {
         return Optional.ofNullable(memberId);
     }
 
     public String getUsername() {
-        return username;
+        return userName;
     }
 
     public String getPassword() {

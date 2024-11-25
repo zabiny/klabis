@@ -25,7 +25,7 @@ public class MembersRegistrationController implements MemberRegistrationsApi {
     @Override
     public ResponseEntity<Void> memberRegistrationsPost(MemberRegistrationFormApiDto memberRegistrationFormApiDto) {
         Member createdMember = service.registerMember(conversionService.convert(memberRegistrationFormApiDto, RegistrationForm.class));
-        return ResponseEntity.created(URI.create("/members/%s".formatted(createdMember.getId()))).header("MemberId", "%d".formatted(createdMember.getId())).build();
+        return ResponseEntity.created(URI.create("/members/%s".formatted(createdMember.getId().value()))).header("MemberId", "%d".formatted(createdMember.getId().value())).build();
     }
 
 }

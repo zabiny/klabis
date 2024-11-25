@@ -5,7 +5,7 @@ public class MemberNotFoundException extends RuntimeException {
         super(message);
     }
 
-    public MemberNotFoundException(Integer memberId) {
-        this("Member with ID '%s' doesnt exist".formatted(memberId));
+    public MemberNotFoundException(Member.Id memberId) {
+        this("Member with ID '%s' doesnt exist".formatted(memberId.value()));
     }
 }

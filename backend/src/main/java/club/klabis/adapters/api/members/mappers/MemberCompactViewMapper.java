@@ -11,6 +11,7 @@ import org.springframework.core.convert.converter.Converter;
 public interface MemberCompactViewMapper extends Converter<Member, MemberViewCompactApiDto> {
 
     @Mapping(source = "registration", target = "registrationNumber")
+    @Mapping(source = "id.value", target = "id")
     @Override
     MemberViewCompactApiDto convert(Member source);
 }
