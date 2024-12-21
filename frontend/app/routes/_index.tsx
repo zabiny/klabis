@@ -1,20 +1,9 @@
-import type { MetaFunction } from "@remix-run/react";
-import type {LoaderFunctionArgs} from "@remix-run/server-runtime";
-import {authenticate} from "@/services/auth.server";
-
+import type { MetaFunction } from "react-router";
 export const meta: MetaFunction = () => {
 	return [
-		{ title: 'TODO' },
+		{ title: "TODO" },
 		{ name: "description", content: "Welcome to Remix!" },
 	];
-};
-
-export async function loader({ request, context }: LoaderFunctionArgs) {
-	// If the user is already authenticated redirect to /dashboard directly
-	const { auth } = authenticate(context);
-	return await auth.isAuthenticated(request, {
-		failureRedirect: "/login"
-	});
 };
 
 export default function Index() {

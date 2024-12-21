@@ -1,6 +1,6 @@
 import { LaptopIcon, MoonIcon, SunIcon } from "@radix-ui/react-icons";
-import { Link } from "@remix-run/react";
 import * as React from "react";
+import { Link } from "react-router";
 import { useHydrated } from "remix-utils/use-hydrated";
 
 import {

@@ -4,14 +4,15 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "build": "remix vite:build",
-    "dev": "remix vite:dev",
+    "build": "react-router build",
+    "dev": "react-router dev",
     "fix": "biome check . --apply",
     "lint": "biome check .",
     "preview": "npm run build && wrangler pages dev ./build/client",
     "deploy": "npm run build && wrangler pages deploy ./build/client",
-    "typecheck": "tsc",
-    "openapi": "npx openapi-typescript ../klabis-api-spec.yaml -o ./app/api/schema.d.ts"
+    "typecheck": "react-router typegen && tsc",
+    "openapi": "npx openapi-typescript ../klabis-api-spec.yaml -o ./app/api/schema.d.ts",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@conform-to/react": "^1.1.5",
@@ -29,10 +30,8 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-switch": "^1.0.3",
     "@radix-ui/react-toast": "^1.1.5",
-    "@remix-run/cloudflare": "^2.11.2",
-    "@remix-run/cloudflare-pages": "^2.11.2",
-    "@remix-run/react": "^2.11.2",
-    "@remix-run/serve": "^2.11.2",
+    "@react-router/cloudflare": "^7.1.0",
+    "@react-router/serve": "^7.1.0",
     "@tanstack/react-table": "^8.20.5",
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.0",
@@ -47,8 +46,8 @@
     "react-day-picker": "^8.10.0",
     "react-dom": "^18.2.0",
     "react-phone-number-input": "^3.4.5",
-    "remix-auth": "^3.7.0",
-    "remix-auth-oauth2": "^2.3.0",
+    "remix-auth": "^4.1.0",
+    "remix-auth-oauth2": "^3.2.0",
     "remix-utils": "7.5.0",
     "sonner": "^1.5.0",
     "tailwind-merge": "2.2.1",
@@ -58,21 +57,21 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
-    "@remix-run/dev": "^2.12.0",
+    "@react-router/dev": "^7.1.0",
     "@tailwindcss/typography": "0.5.10",
-    "@types/react": "18.2.56",
-    "@types/react-dom": "18.2.19",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
     "@types/validator": "^13.12.1",
     "autoprefixer": "10.4.17",
     "openapi-typescript": "^7.4.0",
     "tailwindcss": "3.4.1",
     "typescript": "^5.6.2",
-    "vite": "^5.4.3",
+    "vite": "^6.0.5",
     "vite-env-only": "2.2.0",
     "vite-tsconfig-paths": "4.3.1",
     "wrangler": "^3.76.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

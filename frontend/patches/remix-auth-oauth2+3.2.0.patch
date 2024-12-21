@@ -1,0 +1,31 @@
+diff --git a/node_modules/remix-auth-oauth2/build/index.js b/node_modules/remix-auth-oauth2/build/index.js
+index 4a3ee82..7fca029 100644
+--- a/node_modules/remix-auth-oauth2/build/index.js
++++ b/node_modules/remix-auth-oauth2/build/index.js
+@@ -58,7 +58,7 @@ export class OAuth2Strategy extends Strategy {
+         let code = url.searchParams.get("code");
+         if (!code)
+             throw new ReferenceError("Missing code in the URL");
+-        let store = StateStore.fromRequest(request);
++        let store = StateStore.fromRequest(request, this.cookieName);
+         if (!store.has()) {
+             throw new ReferenceError("Missing state on cookie.");
+         }
+diff --git a/node_modules/remix-auth-oauth2/build/lib/store.js b/node_modules/remix-auth-oauth2/build/lib/store.js
+index d18d7e9..3ff0b73 100644
+--- a/node_modules/remix-auth-oauth2/build/lib/store.js
++++ b/node_modules/remix-auth-oauth2/build/lib/store.js
+@@ -90,10 +90,9 @@ export class StateStore {
+         let params = new URLSearchParams();
+         for (let name of cookie.names()) {
+             if (name.startsWith(cookieName)) {
+-                // biome-ignore lint/complexity/noForEach: This is ok
+-                new URLSearchParams(cookie.get(name))
+-                    .entries()
+-                    .forEach(([key, value]) => params.append(key, value));
++                for (const [key, value] of new URLSearchParams(cookie.get(name)).entries()) {
++                    params.append(key, value)
++                }
+             }
+         }
+         return new StateStore(params);

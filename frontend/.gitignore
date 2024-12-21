@@ -1,8 +1,9 @@
 .cache
 .database
 .DS_Store
-.dev.vars
+.env
 .wrangler
+.react-router
 *.log
 build
 node_modules
