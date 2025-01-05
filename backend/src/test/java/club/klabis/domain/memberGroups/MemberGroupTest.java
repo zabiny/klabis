@@ -16,7 +16,6 @@ import static club.klabis.domain.memberGroups.MemberGroupConditions.*;
 import static org.assertj.core.api.Assertions.allOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.data.domain.AggregatedRootTestUtils.assertThatDomainEventsOf;
-import static org.springframework.data.domain.AggregatedRootTestUtils.clearDomainEvents;
 
 class MemberGroupTest {
 
@@ -221,36 +220,25 @@ class MemberGroupTest {
     @DisplayName("transferOwnership tests")
     @Nested
     class TransferOwnershipTests {
-        @DisplayName("it should publish events for both old and new owner")
+        @DisplayName("it should change group administrator and prepare correct events")
         @Test
         void itShouldPublishEventsForNewOwner() {
-            EditGroup request = createEditGroupRequest().withPermissions(MemberGroup.GroupPermission.forOwnerOnly(
-                    ApplicationGrant.APPUSERS_PERMISSIONS));
-            MemberGroup group = MemberGroup.createGroup(request, new Member.Id(1));
-            clearDomainEvents(group);
+            MemberGroup group = createMemberGroup();
 
-            group.transferOwnership(new Member.Id(5));
+            final var newAdministratorId = new Member.Id(2);
 
+            group.transferOwnership(newAdministratorId);
+
+            assertThat(group.getAdministrator()).isEqualTo(newAdministratorId);
             assertThatDomainEventsOf(group, GroupMembershipUpdated.class)
                     // new owner message with list of grants from group (= all grants were added for member)
                     .haveExactly(1,
                             groupMembershipUpdateEvent(group.getId(),
-                                    new Member.Id(5),
-                                    ApplicationGrant.APPUSERS_PERMISSIONS))
+                                    newAdministratorId,
+                                    ApplicationGrant.MEMBERS_REGISTER))
                     // old owner message with empty list of grants (= all grants were removed)
-                    .haveExactly(1, groupMembershipUpdateEvent(group.getId(), new Member.Id(1)))
+                    .haveExactly(1, groupMembershipUpdateEvent(group.getId(), GROUP_ADMIN))
                     .hasSize(2);
-        }
-
-        @DisplayName("it should update expected group data")
-        @Test
-        void itShouldPublishEventsForAddedMembers() {
-            EditGroup request = createEditGroupRequest();
-            MemberGroup group = MemberGroup.createGroup(request, new Member.Id(1));
-
-            group.transferOwnership(new Member.Id(2));
-
-            assertThat(group.getAdministrator()).isEqualTo(new Member.Id(2));
         }
     }
 }
