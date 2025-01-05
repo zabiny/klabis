@@ -1,11 +1,11 @@
 ### API OAuth2 test endpoint
 GET {{host}}/oidc/userinfo
 Accept: application/json
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("frontend@Local")}}
 
 ### Register member
 POST {{host}}/memberRegistrations
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("frontend@Local")}}
 Content-Type: application/json
 
 {
@@ -143,7 +143,7 @@ GET {{host}}/members/1/suspendMembershipForm
 Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Suspend membership
-POST {{host}}/members/1/suspendMembershipForm
+PUT {{host}}/members/1/suspendMembershipForm
 Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Get ORIS user info data
@@ -156,19 +156,19 @@ Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Get List of available grants
 GET {{host}}/grants
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("frontend@Local")}}
 
 ### Get Member grants Form data
 GET {{host}}/members/1/changeGrantsForm
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("test")}}
 
 ### Update member grants
 PUT {{host}}/members/1/changeGrantsForm
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("test")}}
 Content-Type: application/json
 
 {
-  "grants": ["members:register"]
+  "grants": ["members:edit", "members:register"]
 }
 
 ###

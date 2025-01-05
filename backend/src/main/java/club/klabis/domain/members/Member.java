@@ -2,7 +2,7 @@ package club.klabis.domain.members;
 
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import club.klabis.domain.members.events.MemberEditedEvent;
-import club.klabis.domain.members.events.MemberWasSuspendedEvent;
+import club.klabis.domain.members.events.MembershipSuspendedEvent;
 import club.klabis.domain.members.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.domain.members.forms.EditOwnMemberInfoForm;
 import club.klabis.domain.members.forms.MemberEditForm;
@@ -159,7 +159,7 @@ public class Member extends AbstractAggregateRoot<Member> {
     public void suspend() {
         if (!this.suspended) {
             this.suspended = true;
-            this.andEvent(new MemberWasSuspendedEvent(this));
+            this.andEvent(new MembershipSuspendedEvent(this));
         }
     }
 
