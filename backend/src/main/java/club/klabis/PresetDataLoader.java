@@ -65,7 +65,7 @@ public class PresetDataLoader implements ApplicationRunner {
     public <T> List<T> loadObjectList(Class<T> type, InputStream inputData) throws IOException {
         CsvSchema bootstrapSchema = CsvSchema.emptySchema().withHeader();
         CsvMapper mapper = CsvMapper.builder().enable(CsvParser.Feature.EMPTY_STRING_AS_NULL).build();
-        MappingIterator<T> readValues = mapper.reader(type).with(bootstrapSchema).readValues(inputData);
+        MappingIterator<T> readValues = mapper.readerFor(type).with(bootstrapSchema).readValues(inputData);
         return readValues.readAll();
     }
 
