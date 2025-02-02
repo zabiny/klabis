@@ -22,8 +22,10 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class PresetDataLoader implements ApplicationRunner {
@@ -48,14 +50,15 @@ public class PresetDataLoader implements ApplicationRunner {
         appUsersRepository.findByUserName("admin").orElseGet(() -> {
             LOG.info("Adding user admin");
             ApplicationUser admin = ApplicationUser.newAppUser("admin", "{noop}secret");
-            admin.setGlobalGrants(List.of(ApplicationGrant.values()));
+            admin.setGlobalGrants(EnumSet.allOf(ApplicationGrant.class));
             return appUsersRepository.save(admin);
         });
 
 
         ClassPathResource membersFile = new ClassPathResource("presetData/members.csv");
         loadObjectList(MembersCsvLine.class, membersFile.getInputStream()).forEach(csvLine -> {
-            memberService.registerMember(csvLine.getRegistration(conversionService));
+            Member registeredMember = memberService.registerMember(csvLine.getRegistration(conversionService));
+            applicationUserService.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
             csvLine.getGoogleId().ifPresent(googleId -> applicationUserService.linkWithGoogleId(csvLine.registrationNumber(), googleId));
         });
 
