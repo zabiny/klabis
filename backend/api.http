@@ -41,7 +41,7 @@ Accept: application/klabis+json
 ### Get all members (full details)
 GET {{host}}/members?view=full
 Authorization: Bearer {{$auth.token("frontend")}}
-Accept: application/json
+Accept: application/klabis+json
 
 ### GET single member
 GET {{host}}/members/1
