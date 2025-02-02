@@ -7,16 +7,16 @@ import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
 plugins {
     java
-    id("org.springframework.boot") version "3.2.0"
+    id("org.springframework.boot") version "3.3.4"
     id("io.spring.dependency-management") version "1.1.5"
     id("org.openapi.generator") version "7.6.0"
 }
 
 repositories {
-    mavenLocal()
     maven {
         url = uri("https://repo.maven.apache.org/maven2/")
     }
+    mavenLocal()
 }
 
 group = "club.zabiny"
@@ -37,6 +37,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-hateoas")
     testImplementation("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -129,7 +130,7 @@ openApiGenerate {
             "useSpringBoot3" to "true",
             "generateBuilders" to "true",
             "useSpringController" to "false",
-            //"hateoas" to "false",
+            "hateoas" to "true",
             "booleanGetterPrefix" to "is",
             "interfaceOnly" to "true",
             "skipDefaultInterface" to "true",

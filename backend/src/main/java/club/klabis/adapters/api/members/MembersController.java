@@ -1,5 +1,6 @@
 package club.klabis.adapters.api.members;
 
+import club.klabis.adapters.api.HasGrant;
 import club.klabis.api.MembersApi;
 import club.klabis.api.dto.*;
 import club.klabis.domain.appusers.ApplicationGrant;
@@ -15,7 +16,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
@@ -34,6 +35,7 @@ public class MembersController implements MembersApi {
         this.conversionService = conversionService;
     }
 
+    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     @Override
     public ResponseEntity<MemberEditFormApiDto> membersMemberIdEditMemberInfoFormGet(Integer memberId) {
         return service.findById(memberId)
@@ -41,6 +43,7 @@ public class MembersController implements MembersApi {
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
+    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     @Override
     public ResponseEntity<Void> membersMemberIdEditMemberInfoFormPut(Integer memberId, MemberEditFormApiDto memberEditFormApiDto) {
         service.editMember(memberId, conversionService.convert(memberEditFormApiDto, MemberEditForm.class));
@@ -87,6 +90,7 @@ public class MembersController implements MembersApi {
         }
     }
 
+    @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
     public ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(Integer memberId) {
         ApplicationUser appUser = applicationUserService.getApplicationUserForMemberId(memberId);
@@ -94,6 +98,7 @@ public class MembersController implements MembersApi {
         return ResponseEntity.ok(conversionService.convert(appUser, MemberGrantsFormApiDto.class));
     }
 
+    @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
     public ResponseEntity<Void> updateMemberGrants(Integer memberId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
         Collection<ApplicationGrant> globalGrants = (Collection<ApplicationGrant>) conversionService.convert(memberGrantsFormApiDto.getGrants(), TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
@@ -101,11 +106,13 @@ public class MembersController implements MembersApi {
         return ResponseEntity.ok(null);
     }
 
+    @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<EditAnotherMemberDetailsFormApiDto> getMemberEditByAdminForm(Integer memberId) {
         return ResponseEntity.ok(conversionService.convert(service.getEditAnotherMemberForm(memberId), EditAnotherMemberDetailsFormApiDto.class));
     }
 
+    @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<Void> putMemberEditByAdminForm(Integer memberId, EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto) {
         service.editMember(memberId, conversionService.convert(editAnotherMemberDetailsFormApiDto, EditAnotherMemberInfoByAdminForm.class));

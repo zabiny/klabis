@@ -1,4 +1,4 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
   title: Klabis API
   description: |
@@ -37,14 +37,15 @@ info:
     # API versioning
     To be added later (before first production release). At current stage it's not needed. Most likely either contentType or request header versioning strategy will be used.  
 
-    # Supported content types
-    API supports 3 content types: `application/json`, `application/hal+json` and `application/klabis+json`. Default format is `application/json`. 
+    ---
+    # Diskuze HATEOAS/HAL/... 
     
-    ## Content type application/hal+json
-    Simplified version of standardized HAL format adding relations to resources. Every resource (item and/or collection) can define attribute `_links` where are listed possible relations to other resources. As "Forms" are just another resource in Klabis API, it allows to declare what operations can be done on given resource by authenticated used. 
-    
-    ## Content type application/klabis+json
-    Further simplified version of hal+json format. It adds `_actions` attribute to resource item and/or collection. This array contains list of operation names what can be done on given item/collection by authenticated user.
+    Doporuceni pro UI:
+    1. podle akci zobrazit transition akce (prechody na ostatni stranky), a to vcetne hlavniho menu (ktere samo o sobe dost mozna bude zaviset na tom co aktualni uzivatel muze udelat). 
+        - bez tohoto se bude blbe delat napr. customizace pro pripadne dalsi kluby (napr. klub Y chce mit zcela jiny prehled clenu klubu => nova akce - napr. `members|list|TBM` pro klub s danou customizaci ktera se pouzije namisto `members|list' pokud bude prihlasen TBM member)
+        - pokud na UI nechteji sledovat HREF z akce, tak musi mit dobre napsaneho klienta pro Klabis API aby pripadne zmeny cest v API zvladali bez zbytecnych bugu. 
+    ---
+
   contact:
     email: klabis@otakar.io
   license:
@@ -68,6 +69,31 @@ tags:
   - name: BFF
     description: Backend for frontend endpoints
 paths:
+  /:
+    get:
+      tags:
+        - KLABIS
+      summary: Starting point for Klabis application
+      responses:
+        '200':
+          content:
+            application/klabis+json:
+              schema:
+                $ref: '#/components/schemas/KlabisApplicationLayerEntity'
+              examples:
+                anonymous:
+                  summary: Anonymous user
+                  value:
+                    _actions:
+                      - 'app|login'
+                logged:
+                  summary: Logged member
+                  value:
+                    _actions:
+                      - 'members|list'
+                      - 'events|list'
+                      - 'events|administration'
+                      - 'app|logout'
   /me/password:
     put:
       tags:
@@ -131,10 +157,9 @@ paths:
                 $ref: '#/components/schemas/MembersList'
             application/klabis+json:
               schema:
-                $ref: '#/components/schemas/MembersList'
-            application/hal+json:
-              schema:
-                $ref: '#/components/schemas/MembersList'
+                allOf:
+                  - $ref: '#/components/schemas/KlabisApplicationLayerCollection'
+                  - $ref: '#/components/schemas/MembersList'
         '401':
           $ref: '#/components/responses/401'
   /members/{memberId}:
@@ -152,6 +177,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Member'
+            application/klabis+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Member'
+                  - $ref: '#/components/schemas/KlabisApplicationLayerEntity'
         '401':
           $ref: '#/components/responses/401'
         '404':
@@ -164,7 +194,6 @@ paths:
       tags:
         - members
         - BFF
-      deprecated: true
       summary: "Returns data for edit member information form"
       responses:
         '200':
@@ -187,118 +216,12 @@ paths:
       tags:
         - members
       summary: "Update member information"
-      deprecated: true
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/MemberEditForm'
-      responses:
-        '200':
-          description: Club member updated successfully
-        '400':
-          $ref: '#/components/responses/400'
-        '401':
-          $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
-          description: Forbidden - User does not have permission to update a member
-        '404':
-          $ref: '#/components/responses/401'
-          description: Club member not found
-
-  /members/{memberId}/editByAdminForm:
-    parameters:
-      - $ref: '#/components/parameters/MemberIdPath'
-    get:
-      tags:
-        - members
-        - BFF
-      operationId: getMemberEditByAdminForm
-      summary: "Returns data for edit member information form"
-      description: |-
-        Returns data for edit member information form
-        
-        #### Required authorization
-        requires `members:suspendMembership` grant
-      responses:
-        '200':
-          description: Club member updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
-        '400':
-          $ref: '#/components/responses/400'
-        '401':
-          $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
-          description: Forbidden - User does not have permission to update a member
-        '404':
-          $ref: '#/components/responses/401'
-          description: Club member not found
-    put:
-      tags:
-        - members
-      summary: "Update member information"
-      operationId: putMemberEditByAdminForm
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EditAnotherMemberDetailsForm'
-      responses:
-        '200':
-          description: Club member updated successfully
-        '400':
-          $ref: '#/components/responses/400'
-        '401':
-          $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
-          description: Forbidden - User does not have permission to update a member
-        '404':
-          $ref: '#/components/responses/401'
-          description: Club member not found
-
-  /members/{memberId}/editOwnMemberInfoForm:
-    parameters:
-      - $ref: '#/components/parameters/MemberIdPath'
-    get:
-      tags:
-        - members
-        - BFF
-      summary: "Returns data for edit member information form"
-      responses:
-        '200':
-          description: Club member updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EditMyDetailsForm'
-        '400':
-          $ref: '#/components/responses/400'
-        '401':
-          $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
-          description: Forbidden - User does not have permission to update a member
-        '404':
-          $ref: '#/components/responses/401'
-          description: Club member not found
-    put:
-      tags:
-        - members
-      summary: "Update member information"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EditMyDetailsForm'
       responses:
         '200':
           description: Club member updated successfully
@@ -338,7 +261,7 @@ paths:
         '404':
           $ref: '#/components/responses/401'
           description: Club member not found
-    put:
+    post:
       tags:
         - members
       summary: Suspend membership for a club member
@@ -452,7 +375,7 @@ paths:
           $ref: '#/components/responses/401'
 
   /memberRegistrations:
-    put:
+    post:
       tags:
         - members
       summary: Register a new club member
@@ -508,6 +431,7 @@ paths:
     get:
       tags:
         - security
+        - WIP
       summary: returns details about available security grants what can be assigned to users
       operationId: getAllGrants
       responses:
@@ -528,6 +452,7 @@ paths:
     get:
       tags:
         - security
+        - WIP
         - BFF
       summary: returns grants assigned to member
       description: |-
@@ -544,6 +469,7 @@ paths:
     put:
       tags:
         - security
+        - WIP
       summary: updates grants assigned to member
       description: |-
         Requires `members:permissions` grant
@@ -803,9 +729,9 @@ components:
           $ref: '#/components/schemas/RegistrationNumber'
         orisId:
           $ref: '#/components/schemas/OrisID'
-    #        trainingGroup:
-    #          type: ???
-    #          description: training group where newly registered member will be added
+#        trainingGroup:
+#          type: ???
+#          description: training group where newly registered member will be added
     EditAnotherMemberDetailsForm:
       type: object
       description: |-
@@ -813,10 +739,9 @@ components:
 
         #### Required authorization
         - requires `members:edit` grant
-        
+       
         Additional validations: 
         - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value
-      x-class-extra-annotation: "@club.klabis.domain.members.forms.BirthCertificateIsDefinedForCzechia"
       required:
         - firstName
         - lastName
@@ -849,11 +774,6 @@ components:
 
         Additional validations:
         - either contact or at least 1 guardian needs to be entered
-      x-class-extra-annotation: |-
-        @club.klabis.domain.members.forms.AtLeastOneContactIsDefined.List({
-          @club.klabis.domain.members.forms.AtLeastOneContactIsDefined(contactType = club.klabis.domain.members.Contact.Type.EMAIL, message = "At least one email contact must be provided"),
-          @club.klabis.domain.members.forms.AtLeastOneContactIsDefined(contactType = club.klabis.domain.members.Contact.Type.PHONE, message = "At least one phone contact must be provided")
-        })
       required:
         - nationality
         - address
@@ -996,7 +916,6 @@ components:
         | `members:register` | can create new members |
         | `members:edit` | can edit selected attributes for all existing members |
         | `members:suspendMembership` | can suspend membership for club members |
-        | `members:permissions` | can change global grants for any member |
       enum:
         - members:register
         - members:edit
@@ -1032,6 +951,58 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GlobalGrants'
+    KlabisApplicationLayerCollection:
+      allOf:
+        - $ref: '#/components/schemas/KlabisApplicationLayerEntity'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/KlabisApplicationLayerEntity'
+    KlabisApplicationLayerEntity:
+      type: object
+      properties:
+        _actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/KALLink'
+        _attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/KALModelAttribute'
+    KALLink:
+      description: action (operation) which user may perform on model
+      type: string
+#      type: object
+#      properties:
+#        rel:
+#          type: string
+#          enum:
+#            - members:registerMember
+#            - members:suspendMembership
+#        href:
+#          type: string
+#          format: uri
+#        label:
+#          type: string
+    KALModelAttribute:
+      description: |-
+        describes model attribute. 
+        It may describe available attributes for model 
+        Or if chattiness is a issue, it may describe attribute what is NOT available for user with expectation any other attribute IS available
+        Or it may have multiple attributes ...
+      type: string
+#      type: object
+#      properties:
+#        name:
+#          type: string
+#          description: name of described attribute
+#        isRequired:
+#          type: boolean
+#        type:
+#          type: string
+#          description: describes type of value for the attribute
     RFC7807ErrorResponse:
       type: object
       required:

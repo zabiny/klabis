@@ -28,15 +28,20 @@ Content-Type: application/json
   }
 }
 
-### Get all members (compact details)
+### Get all members compact (hal format)
 GET {{host}}/members?view=compact
 Authorization: Bearer {{$auth.token("frontend")}}
-Accept: application/json
+Accept: application/hal+json
+
+### Get all members compact (klabis format)
+GET {{host}}/members?view=compact
+Authorization: Bearer {{$auth.token("frontend")}}
+Accept: application/klabis+json
 
 ### Get all members (full details)
 GET {{host}}/members?view=full
 Authorization: Bearer {{$auth.token("frontend")}}
-Accept: application/json
+Accept: application/klabis+json
 
 ### GET single member
 GET {{host}}/members/1

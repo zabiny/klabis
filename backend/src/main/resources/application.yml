@@ -6,6 +6,7 @@ spring:
     include:
       - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
       - http2
+      - hateoas
 
   security:
     oauth2:
@@ -112,7 +113,6 @@ spring:
               scopes:
                 - "openid"
 
-
       client:
         registration: # configurations are used by authorization server's login page - "Resource" server has hardcoded single registration - klabis OIDC
           google:
@@ -123,9 +123,9 @@ spring:
           #              - profile
           #              - email
 
-          #          facebook:
-          #            client-id:
-          #            client-secret: 6fb95f47d2e27faf28fff9ac93d28184
+          #facebook:
+          #  client-id: ${FACEBOOK_CLIENT_ID}
+          #  client-secret: ${FACEBOOK_CLIENT_SECRET}
           #github:
           #  client-id: ${GITHUB_CLIENT_ID}
           #  client-secret: ${GITHUB_CLIENT_SECRET}
@@ -135,9 +135,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate  # pro persistentni DB pouze zvalidovat schema databaze
-
-server:
-  forward-headers-strategy: framework # For hateoas proper URL hostname detection
 
 logging:
   level:
@@ -232,4 +229,17 @@ server:
     key-store-type: PKCS12
     key-alias: klabisSSL
   port: 8443
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: hateoas
+
+  hateoas:
+    use-hal-as-default-json-media-type: false
+
+server:
+  forward-headers-strategy: framework # For hateoas proper URL hostname detection
 
