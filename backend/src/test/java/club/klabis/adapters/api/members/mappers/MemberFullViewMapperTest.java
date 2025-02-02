@@ -1,5 +1,6 @@
 package club.klabis.adapters.api.members.mappers;
 
+import club.klabis.adapters.api.KlabisSecurityService;
 import club.klabis.common.ConversionServiceAdapter;
 import club.klabis.common.mapstruct.MapperSpringConfig;
 import club.klabis.domain.members.Member;
@@ -9,17 +10,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.extensions.spring.test.ConverterScan;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-@ExtendWith(SpringExtension.class)
+@SpringJUnitConfig
+@Import(KlabisSecurityService.class)
 class MemberFullViewMapperTest {
 
-    @Configuration
+    @TestConfiguration
     @ConverterScan(basePackageClasses = {MapperSpringConfig.class, MemberFullViewMapper.class, ConversionServiceAdapter.class})
     static class ScanConfiguration {}
 

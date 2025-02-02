@@ -24,10 +24,18 @@ public class KlabisSecurityService {
     }
 
     public boolean canEditMemberData(int dataMemberId) {
-        int authenticatedMemberId = getPrincipal().flatMap(ApplicationUser::getMemberId).orElse(-1);
-        boolean canEditMemberData = dataMemberId == authenticatedMemberId;
+        boolean canEditMemberData = getPrincipal().flatMap(ApplicationUser::getMemberId)
+                .map(authMemberId -> authMemberId.value() == dataMemberId)
+                .orElse(false);
 
-        LOG.trace("Member {} attempt to edit data of member {} - {}", authenticatedMemberId, dataMemberId, canEditMemberData);
+        LOG.trace("Application user with ID {} attempt to edit data of member {} - {}",
+                getPrincipal()
+                        .map(ApplicationUser::getId)
+                        .map(ApplicationUser.Id::value)
+                        .map(String::valueOf)
+                        .orElse("no-user-logged-in"),
+                dataMemberId,
+                canEditMemberData);
 
         return canEditMemberData;
     }

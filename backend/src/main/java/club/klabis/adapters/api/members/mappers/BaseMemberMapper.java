@@ -24,15 +24,15 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
 
     @AfterMapping
     void assembleLinks(Member entity, @MappingTarget T target) {
-        target.add(linkTo(methodOn(MembersController.class).membersMemberIdGet(entity.getId())).withSelfRel());
+        target.add(linkTo(methodOn(MembersController.class).membersMemberIdGet(entity.getId().value())).withSelfRel());
 
-        if (securityService.canEditMemberData(entity.getId())) {
-            target.add(linkTo(methodOn(MembersController.class).membersMemberIdEditOwnMemberInfoFormGet(entity.getId())).withRel(
+        if (securityService.canEditMemberData(entity.getId().value())) {
+            target.add(linkTo(methodOn(MembersController.class).membersMemberIdEditOwnMemberInfoFormGet(entity.getId().value())).withRel(
                     "members:editOwnInfo"));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
-            target.add(linkTo(methodOn(MembersController.class).getMemberEditByAdminForm(entity.getId())).withRel(
+            target.add(linkTo(methodOn(MembersController.class).getMemberEditByAdminForm(entity.getId().value())).withRel(
                     "members:editAnotherMember"));
         }
     }
