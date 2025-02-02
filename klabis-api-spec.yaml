@@ -37,6 +37,14 @@ info:
     # API versioning
     To be added later (before first production release). At current stage it's not needed. Most likely either contentType or request header versioning strategy will be used.  
 
+    # Supported content types
+    API supports 3 content types: `application/json`, `application/hal+json` and `application/klabis+json`. Default format is `application/json`. 
+    
+    ## Content type application/hal+json
+    Simplified version of standardized HAL format adding relations to resources. Every resource (item and/or collection) can define attribute `_links` where are listed possible relations to other resources. As "Forms" are just another resource in Klabis API, it allows to declare what operations can be done on given resource by authenticated used. 
+    
+    ## Content type application/klabis+json
+    Further simplified version of hal+json format. It adds `_actions` attribute to resource item and/or collection. This array contains list of operation names what can be done on given item/collection by authenticated user.
   contact:
     email: klabis@otakar.io
   license:
