@@ -19,7 +19,7 @@ class AuthServerLoginController {
 
     @GetMapping(value = {LoginPageSecurityConfiguration.CUSTOM_LOGIN_PAGE})
     public ModelAndView login() {
-        ModelAndView view = new ModelAndView("ui/klabisOAuth");
+        ModelAndView view = new ModelAndView("auth/klabisOAuth");
         view.addObject("oauthProviders", providers);
         view.addObject("submitUrl", LoginPageSecurityConfiguration.CUSTOM_LOGIN_PAGE);
         return view;
