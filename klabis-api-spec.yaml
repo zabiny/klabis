@@ -103,8 +103,11 @@ paths:
           required: false
           description: |
             Defines set of returned data
-            - full: all member data what are displayable to user are returned
-            - compact: `id`, `firstName`, `lastName`, 'registrationNumber`
+            
+            | view option | description                                                                                   |
+            |-------------|-----------------------------------------------------------------------------------------------|
+            | `full`        | all member data that are displayable to the user are returned                                 |
+            | `compact`     | `id`, `firstName`, `lastName`, `registrationNumber` are returned                             |
           schema:
             type: string
             enum:
@@ -116,7 +119,7 @@ paths:
           required: false
           description: |
             | value | effect |
-            | --- | --- |
+            |---|---|
             | `true` | returns both active and suspended members | 
             | `false` | return only active members |
           schema:
