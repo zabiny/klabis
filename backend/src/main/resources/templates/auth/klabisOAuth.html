@@ -31,15 +31,16 @@
         <div class="text-center"><h2 class="mt-6 text-3xl font-bold text-gray-900">KlabIS - členská sekce</h2>
             <p class="mt-2 text-sm text-gray-600">Přihlaste se k Vašemu účtu</p></div>
 
-        <div th:if="${param.logout}" class="px-3 py-2 text-center text-sm text-gray-600 rounded bg-gray-100">
-            Byli jste odhlášeni.
-        </div>
+        <form class="rounded px-8 pt-4 pb-8 space-y-6" th:action="@{}" method="post">
 
-        <div th:if="${param.error}" class="px-3 py-2 text-center text-sm text-red-600 rounded bg-red-100">
-            Neplatné přihlašovací jméno nebo heslo.
-        </div>
+            <div th:if="${param.logout}" class="px-3 py-2 text-center text-sm text-gray-600 rounded bg-gray-100">
+                Byli jste odhlášeni.
+            </div>
 
-        <form class="rounded px-8 pt-4 pb-8 space-y-4 mt-8 space-y-6" th:action="@{${submitUrl}}" method="post">
+            <div th:if="${param.error}" class="px-3 py-2 text-center text-sm text-red-600 rounded bg-red-100">
+                Neplatné přihlašovací jméno nebo heslo.
+            </div>
+
             <div class="grid grid-cols-3"><label class="label">Registrační číslo: </label>
                 <div class="col-span-2"><input
                         class="shadow appearance-none border rounded w-full py-2 px-3 bg-sky-200 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
@@ -50,15 +51,19 @@
                         class="shadow appearance-none border rounded w-full py-2 px-3 bg-sky-200 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                         type="password" name="password" value="password"></div>
             </div>
-<!--            <div class="grid grid-cols-3">-->
-<!--                <label class="label">Zapamatovat přihlášení:</label>-->
-<!--                <div class="col-span-2"><input type="checkbox" name="remember-me"/></div>-->
-<!--            </div>-->
-            <div>
-                <button type="submit" class="btn btn-primary w-full flex justify-center">Přihlásit se</button>
+            <!--            <div class="grid grid-cols-3">-->
+            <!--                <label class="label">Zapamatovat přihlášení:</label>-->
+            <!--                <div class="col-span-2"><input type="checkbox" name="remember-me"/></div>-->
+            <!--            </div>-->
+
+            <div class="flex justify-center">
+                <button type="submit"
+                        class="flex items-center justify-center px-4 py-2 w-64 border border-gray-300 rounded-md bg-sky-600 hover:bg-sky-700 transition-colors">
+                    <span class="text-sm font-medium text-white">Přihlásit se</span>
+                </button>
             </div>
 
-            <div th:if="${oauthProviders.isSocialLoginEnabled()}" class="mt-6 space-y-4">
+            <div th:if="${oauthProviders.isSocialLoginEnabled()}" class="space-y-4">
                 <div class="flex items-center justify-center space-x-2">
                     <span class="h-px w-16 bg-gray-300"></span>
                     <span class="text-gray-500 font-normal">NEBO</span>
@@ -83,8 +88,11 @@
                         <span class="text-sm font-medium text-gray-700">Přihlásit se přes Google</span>
                     </a>
 
-                    <a th:if="${oauthProviders.isGithub()}" href="/oauth2/authorization/github" class="btn btn-primary w-40 flex justify-center">Přihlásit
-                        se přes Github</a>
+                    <a th:if="${oauthProviders.isGithub()}"
+                       href="/oauth2/authorization/github"
+                       class="flex items-center justify-center px-4 py-2 w-64 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors">
+                        <span class="text-sm font-medium text-gray-700">Přihlásit se přes Github</span>
+                    </a>
                 </div>
             </div>
         </form>
