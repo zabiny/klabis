@@ -48,7 +48,7 @@ public class AuthorizationServerConfiguration {
         http.exceptionHandling(
                 exceptions ->
                         exceptions.authenticationEntryPoint(
-                                new LoginUrlAuthenticationEntryPoint("/login")
+                                new LoginUrlAuthenticationEntryPoint(LoginPageSecurityConfiguration.CUSTOM_LOGIN_PAGE)
                         )
         );
 

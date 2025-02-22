@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--/*@thymesVar id="oauthProviders" type="com.zbm.adapters.security.oidcprovider.RegisteredOAuthProviders"*/-->
+
+<head>
+    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/htmx.org@1.9.8"
+            integrity="sha384-rgjA7mptc2ETQqXoYC3/zJvkU7K/aP44Y+z7xQuJiVnB/422P/Ak+F/AqFR7E4Wr"
+            crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css" rel="stylesheet" type="text/css"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    <style type="text/tailwindcss">
+        @tailwind base;
+
+        @tailwind components;
+
+        @tailwind utilities;
+    </style>
+    <style>
+
+    </style>
+</head>
+<body>
+
+<div class="relative min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 bg-no-repeat bg-cover"
+     style="background-image: url(&quot;https://zabiny.b-cdn.net/user/themes/editorial/images/ZBM_logo.svg&quot;);">
+    <div class="absolute bg-black opacity-60 inset-0 z-0"></div>
+    <div class="max-w-md w-full space-y-8 p-10 bg-white rounded-xl z-10">
+        <div class="text-center"><h2 class="mt-6 text-3xl font-bold text-gray-900">ŽabIS přihláškový systém</h2>
+            <p class="mt-2 text-sm text-gray-600">Přihlaste se k Vašemu účtu</p></div>
+        <div th:if="${param.logout}">
+            You have been logged out.
+        </div>
+        <form class="rounded px-8 pt-4 pb-8 space-y-4 mt-8 space-y-6" th:action="@{${submitUrl}}" method="post">
+            <div class="grid grid-cols-3"><label class="label">Registrační číslo: </label>
+                <div class="col-span-2"><input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 bg-sky-200 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        type="text" name="username"></div>
+            </div>
+            <div class="grid grid-cols-3"><label class="label">Heslo: </label>
+                <div class="col-span-2"><input
+                        class="shadow appearance-none border rounded w-full py-2 px-3 bg-sky-200 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        type="password" name="password" value="test"></div>
+            </div>
+<!--            <div class="grid grid-cols-3">-->
+<!--                <label class="label">Zapamatovat přihlášení:</label>-->
+<!--                <div class="col-span-2"><input type="checkbox" name="remember-me"/></div>-->
+<!--            </div>-->
+            <div th:if="${param.error}">
+                Invalid username and/or password.
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary w-full flex justify-center">Přihlásit se</button>
+            </div>
+
+            <div th:if="${oauthProviders.isSocialLoginEnabled()}">
+                <div class="flex items-center justify-center space-x-2"><span class="h-px w-16 bg-gray-300"></span><span
+                        class="text-gray-500 font-normal">OR</span><span class="h-px w-16 bg-gray-300"></span></div>
+
+                <div class="flex flex-row justify-center items-center space-x-3">
+                    <a th:if="${oauthProviders.isGoogle()}" href="/oauth2/authorization/google" class="btn btn-primary w-40 flex justify-center">Přihlásit
+                        se přes Google</a>
+                    <a th:if="${oauthProviders.isGithub()}" href="/oauth2/authorization/github" class="btn btn-primary w-40 flex justify-center">Přihlásit
+                        se přes Github</a>
+                </div>
+            </div>
+        </form>
+        <!--    <div class="flex items-center justify-center space-x-2"><span class="h-px w-16 bg-gray-300"></span><span-->
+        <!--            class="text-gray-500 font-normal">OR</span><span class="h-px w-16 bg-gray-300"></span></div>-->
+        <!--    <div class="flex flex-row justify-center items-center space-x-3">-->
+        <!--        <button type="button" class="btn btn-primary ">Test user log in</button>-->
+        <!--    </div>-->
+    </div>
+
+</div>
+
+
+</body>
+</html>

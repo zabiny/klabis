@@ -17,7 +17,13 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @Configuration(proxyBeanMethods = false)
 public class LoginPageSecurityConfiguration {
 
-    public static RequestMatcher LOGIN_REQUESTS_MATCHER = new OrRequestMatcher(AntPathRequestMatcher.antMatcher("/login"), AntPathRequestMatcher.antMatcher("/oauth2/**"), AntPathRequestMatcher.antMatcher("/logout"), AntPathRequestMatcher.antMatcher("/login/**"));
+    public static final String CUSTOM_LOGIN_PAGE = "/ui/klabisOAuth";
+
+    public static RequestMatcher LOGIN_REQUESTS_MATCHER = new OrRequestMatcher(
+            AntPathRequestMatcher.antMatcher(CUSTOM_LOGIN_PAGE),
+            AntPathRequestMatcher.antMatcher("/oauth2/**"),
+            AntPathRequestMatcher.antMatcher("/logout"),
+            AntPathRequestMatcher.antMatcher("/login/**"));
 
     @Bean
     @Order(AuthorizationServerConfiguration.AUTH_SERVER_LOGIN_PAGE)
@@ -26,7 +32,12 @@ public class LoginPageSecurityConfiguration {
     ) throws Exception {
         return http
                 .securityMatcher(LOGIN_REQUESTS_MATCHER)
-                .formLogin(form -> form.successHandler(authenticationSuccessHandler))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(CUSTOM_LOGIN_PAGE)
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+                .formLogin(form -> form.loginPage(CUSTOM_LOGIN_PAGE).successHandler(authenticationSuccessHandler))
                 .oauth2Login(oauth -> oauth.successHandler(authenticationSuccessHandler))
                 .build();
     }

@@ -38,6 +38,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-hateoas")
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     testImplementation("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -55,6 +56,7 @@ dependencies {
     // DB
     runtimeOnly("org.postgresql:postgresql")
     //runtimeOnly(libs.com.h2database.h2)
+    //implementation("org.flywaydb:flyway-core")
 
     // OPENAPI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
