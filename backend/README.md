@@ -1,9 +1,5 @@
 # Klabis backend
 
-## Konfigurace - promenne prostredi (environment variables)
-- `GOOGLE_CLIENT_ID`: OAuth2 google client ID pro prihlaseni pres Google
-- `GOOGLE_CLIENT_SECRET`: OAuth2 google client secret pro prihlaseni pres Google
-
 ## Spusteni na localhost
 
 Aplikace ma nakonfigurovane prostredi pomoci [TestContainers](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.testcontainers.at-development-time). Pro spusteni je potreba mit nainstalovany docker. Spusteni je pak mozne pomoci prikazu 
@@ -13,7 +9,7 @@ gradlew bootTestRun
 
 Alternativne lze aplikaci spolecne s TestContainers spustit pomoci java main tridy `club.klabis.KlabisAppWithTestContainers` 
 
-Aplikace je po spusteni dostupna na URL: https://localhost:8443 (URL pro Swagger API dokumentaci je https://localhost:8443/swagger-ui/index.html)
+Aplikace je po spusteni dostupna na URL: https://localhost:8443 (URL pro Swagger API dokumentaci je https://localhost:8443/swagger-ui/index.html, po prihlaseni pomoci "Autorize" tlacitka je mozne testovat API pod danym uzivatelem - ponechejte predvyplnene ClientID a ClientSecret)
 
 ### IntelliJ IDEA
 
@@ -25,6 +21,10 @@ Po importu repozitare to IntelliJ IDEA budou pridany i Run configurations:
 Pro spusteni aplikace pomoci techto predpripravenych konfiguraci je potreba pripravit soubor `local.env`. Zkopirujte `local.env.example` a upravte pokud je potreba provest nejake zmeny
 
 ## DevOps
+
+### Konfigurace - promenne prostredi (environment variables)
+- `GOOGLE_CLIENT_ID`: OAuth2 google client ID pro prihlaseni pres Google
+- `GOOGLE_CLIENT_SECRET`: OAuth2 google client secret pro prihlaseni pres Google
 
 ### Autorizacni server
 
