@@ -17,7 +17,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @Configuration(proxyBeanMethods = false)
 public class LoginPageSecurityConfiguration {
 
-    public static final String CUSTOM_LOGIN_PAGE = "/ui/klabisOAuth";
+    public static final String CUSTOM_LOGIN_PAGE = "/auth/login";
 
     public static RequestMatcher LOGIN_REQUESTS_MATCHER = new OrRequestMatcher(
             AntPathRequestMatcher.antMatcher(CUSTOM_LOGIN_PAGE),
