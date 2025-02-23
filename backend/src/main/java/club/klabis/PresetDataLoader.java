@@ -25,7 +25,6 @@ import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Component
 public class PresetDataLoader implements ApplicationRunner {
@@ -58,6 +57,9 @@ public class PresetDataLoader implements ApplicationRunner {
         ClassPathResource membersFile = new ClassPathResource("presetData/members.csv");
         loadObjectList(MembersCsvLine.class, membersFile.getInputStream()).forEach(csvLine -> {
             Member registeredMember = memberService.registerMember(csvLine.getRegistration(conversionService));
+            if (csvLine.disabled()) {
+                memberService.suspendMembershipForMember(registeredMember.getId(), true);
+            }
             applicationUserService.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
             csvLine.getGoogleId().ifPresent(googleId -> applicationUserService.linkWithGoogleId(csvLine.registrationNumber(), googleId));
         });
@@ -89,7 +91,8 @@ public class PresetDataLoader implements ApplicationRunner {
             String siCard,
             String bankAccount,
             Integer orisId,
-            String googleId
+            String googleId,
+            boolean disabled
     ) {
 
         public RegistrationForm getRegistration(ConversionService conversionService) {
