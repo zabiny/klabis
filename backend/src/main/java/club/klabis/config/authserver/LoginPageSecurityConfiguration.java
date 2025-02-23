@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
@@ -21,6 +22,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 public class LoginPageSecurityConfiguration {
 
     public static final String CUSTOM_LOGIN_PAGE = "/auth/login";
+    public static final String LOGIN_PAGE_ERROR_MESSAGE_SESSION_ATTRIBUTE = "klabis_login_page_error_message";
 
     public static RequestMatcher LOGIN_REQUESTS_MATCHER = new OrRequestMatcher(
             AntPathRequestMatcher.antMatcher(CUSTOM_LOGIN_PAGE),
@@ -31,8 +33,8 @@ public class LoginPageSecurityConfiguration {
     @Bean
     @Order(AuthorizationServerConfiguration.AUTH_SERVER_LOGIN_PAGE)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
-                                                          AuthenticationSuccessHandler authenticationSuccessHandler
-    ) throws Exception {
+                                                          AuthenticationSuccessHandler socialLoginAuthenticationSuccessHandler,
+                                                          AuthenticationFailureHandler socialLoginOAuth2FailureHandler) throws Exception {
         return http
                 .securityMatcher(LOGIN_REQUESTS_MATCHER)
                 .authorizeHttpRequests(auth -> auth
@@ -43,8 +45,8 @@ public class LoginPageSecurityConfiguration {
 
                 //request cache for requests between Login Page and Authorization server (it's needed if there would be some application UI with own spring security chain to login user)
                 .requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache)
-                .formLogin(form -> form.loginPage(CUSTOM_LOGIN_PAGE).successHandler(authenticationSuccessHandler))
-                .oauth2Login(oauth -> oauth.successHandler(authenticationSuccessHandler))
+                .formLogin(form -> form.loginPage(CUSTOM_LOGIN_PAGE).successHandler(socialLoginAuthenticationSuccessHandler))
+                .oauth2Login(oauth -> oauth.successHandler(socialLoginAuthenticationSuccessHandler).failureHandler(socialLoginOAuth2FailureHandler))
                 .build();
     }
 
