@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
@@ -21,7 +22,11 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -41,8 +46,11 @@ public class ApiSecurityConfiguration {
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(API_ENDPOINTS_MATCHER)
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.OPTIONS).permitAll()    // for CORS preflight requests - OPTIONS must not be authorized
+                        .anyRequest().authenticated())
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(klabisMemberEnhanceAuthentication())))
+                .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .build();
     }
 
@@ -78,4 +86,39 @@ public class ApiSecurityConfiguration {
         handler.setRoleHierarchy(roleHierarchy);
         return handler;
     }
+
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        // Povolené origin adresy
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:8080",
+                "https://preview--orienter-club-hub.lovable.app"
+//                "https://klabis.otakar.io",
+//                "https://wiki.zabiny.club",
+//                "https://klabis-api-docs.otakar.io"
+        ));
+
+        //config.setAllowedMethods(Arrays.asList("GET", "POST", "OPTIONS"));
+
+        // Povolené hlavičky
+        config.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With"
+        ));
+
+        // Povolení credentials (důležité pro OAuth2/OIDC flows)
+        config.setAllowCredentials(true);
+
+        // Jak dlouho může prohlížeč cachovat CORS response
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Aplikovat CORS config na všechny endpointy resene touto security configuraci (= API endpointy)
+        source.registerCorsConfiguration("/**", config);
+
+        return source;
+    }
+
 }

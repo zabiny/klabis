@@ -164,15 +164,27 @@ spring:
 
 logging:
   level:
-    #org.springframework.security: TRACE
-    #org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter: TRACE
-    #org.springframework.security.oauth2.server: TRACE
-    #org.springframework.security.oauth2.client: trace
     org.springframework.security.jackson2.SecurityJackson2Modules: INFO
     org.springframework.security.web.savedrequest.HttpSessionRequestCache: TRACE
     #org.springframework.web.client.RestTemplate: DEBUG
     #REQUESTS_LOGGER: TRACE
     org.zalando.logbook: INFO
+
+    # Základní debug logování pro security + oauth2
+    org.springframework.security: TRACE
+    org.springframework.security.oauth2: TRACE
+    #org.springframework.web: TRACE
+
+    # OAuth2 detailní logování
+    #org.springframework.security.oauth2.client: TRACE
+    org.springframework.security.oauth2.core: TRACE
+    org.springframework.security.oauth2.server: TRACE
+
+    # Specifické logování pro CORS
+    org.springframework.web.cors: TRACE
+  
+    # Web security logování
+    #org.springframework.security.web: TRACE
   pattern:
     console: "%clr(%d{${LOG_DATEFORMAT_PATTERN:yyyy-MM-dd'T'HH:mm:ss.SSSXXX}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%X{URL}){magenta} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
 
