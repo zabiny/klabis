@@ -7,8 +7,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +16,11 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 public class AuthorizationServerConfiguration {
@@ -47,6 +50,10 @@ public class AuthorizationServerConfiguration {
 
         //request cache for requests between Login Page and Authorization server (it's needed if there would be some application UI with own spring security chain to login user)
 //        http.requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache);
+
+        http.cors(cors -> cors
+                .configurationSource(corsConfigurationSource()));
+
 
         // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
         http.oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
@@ -81,4 +88,45 @@ public class AuthorizationServerConfiguration {
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
         return daoAuthenticationProvider;
     }
+
+    //@Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        // Povolené origin adresy
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:8080",
+                "http://localhost:3000",
+                "https://preview--orienter-club-hub.lovable.app",
+                "https://klabis.otakar.io",
+                "https://wiki.zabiny.club",
+                "https://klabis-api-docs.otakar.io"
+        ));
+
+        // Povolené OIDC/OAuth2 endpointy
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "OPTIONS"));
+
+        // Povolené hlavičky
+        config.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With"
+        ));
+
+        // Povolení credentials (důležité pro OAuth2/OIDC flows)
+        config.setAllowCredentials(true);
+
+        // Jak dlouho může prohlížeč cachovat CORS response
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Aplikovat CORS config na všechny OIDC/OAuth2 endpointy
+        source.registerCorsConfiguration("/.well-known/openid-configuration", config);
+        source.registerCorsConfiguration("/oauth2/**", config);
+        source.registerCorsConfiguration("/oauth/**", config);
+        source.registerCorsConfiguration("/oidc/**", config);
+
+        return source;
+    }
+
 }
