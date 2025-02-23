@@ -1,5 +1,7 @@
 package club.klabis.config.authserver;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -21,6 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class AuthorizationServerConfiguration {
@@ -32,6 +35,8 @@ public class AuthorizationServerConfiguration {
     public static final int BEFORE_AUTH_SERVER_SECURITY_ORDER = AUTH_SERVER_SECURITY_ORDER - 2;
     public static final int AFTER_AUTH_SERVER_SECURITY_ORDER = AUTH_SERVER_SECURITY_ORDER + 2;
 
+    private static final String LOVABLE_APP_CLIENT_ID = "1200";
+
     @Bean
     @Order(AUTH_SERVER_SECURITY_ORDER)
     public SecurityFilterChain authorizationSecurityFilterChain(
@@ -41,6 +46,8 @@ public class AuthorizationServerConfiguration {
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
 
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
+                // Lovable for sandbox environment uses random URL prefixes -> allowing redirect_uri definition for Lovable web with pattern matching to allow all sandboxes to authenticated against Klabis OAuth2
+                .authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(LOVABLE_APP_CLIENT_ID)))
                 // Is this actually used?? It doesn't seem it is...
                 .tokenEndpoint(tokenEndpoint ->
                         tokenEndpoint
