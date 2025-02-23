@@ -46,7 +46,7 @@ public class AuthorizationServerConfiguration {
                 .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
 
         //request cache for requests between Login Page and Authorization server (it's needed if there would be some application UI with own spring security chain to login user)
-        http.requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache);
+//        http.requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache);
 
         // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
         http.oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));

@@ -44,7 +44,7 @@ public class LoginPageSecurityConfiguration {
                         .authenticated())
 
                 //request cache for requests between Login Page and Authorization server (it's needed if there would be some application UI with own spring security chain to login user)
-                .requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache)
+                //.requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache)
                 .formLogin(form -> form.loginPage(CUSTOM_LOGIN_PAGE).successHandler(socialLoginAuthenticationSuccessHandler))
                 .oauth2Login(oauth -> oauth.successHandler(socialLoginAuthenticationSuccessHandler).failureHandler(socialLoginOAuth2FailureHandler))
                 .build();
