@@ -91,7 +91,7 @@ public class ApiSecurityConfiguration {
         CorsConfiguration config = new CorsConfiguration();
 
         // Povolené origin adresy
-        config.setAllowedOrigins(Arrays.asList(
+        config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:8080",
                 "https://preview--orienter-club-hub.lovable.app",
                 "https://*.lovableproject.com"
