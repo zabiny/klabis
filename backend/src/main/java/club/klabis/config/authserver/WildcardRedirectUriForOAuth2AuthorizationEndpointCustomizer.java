@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.server.authorization.authentication.O
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationValidator;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationEndpointConfigurer;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -20,7 +21,7 @@ import java.util.function.Consumer;
  * This class allows support for wildcard patterns in redirect URIs for a specific set of client IDs.
  * It extends the default redirect URI validator by adding functionality to match wildcard redirect URIs
  * against a list of allowed patterns for registered clients.
- *
+ * <p>
  * The primary use case for this customizer is to enable specific OAuth2 clients to use wildcard redirect URIs,
  * while maintaining security through pattern matching. The customizer decorates the default redirect URI validator
  * by applying additional rules for clients that are explicitly allowed to use wildcard patterns.
@@ -75,8 +76,13 @@ class WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer implements Cus
         private boolean matchesAnyRegisteredRedirectUriPattern(RegisteredClient registeredClient, String requestedRedirectUri) {
             return registeredClient.getRedirectUris().stream()
                     .anyMatch(redirectUri -> {
-                        boolean result = requestedRedirectUri.matches(redirectUri.replaceAll("\\.", "\\\\.").replaceAll("\\*", ".*"));
-                        LOG.trace("OAuth2 client {} requested redirect URI '{}': does it match redirect URI '{}'? {}", registeredClient.getClientId(), requestedRedirectUri, redirectUri, result);
+                        boolean result = requestedRedirectUri.matches(redirectUri.replaceAll("\\.", "\\\\.")
+                                .replaceAll("\\*", ".*"));
+                        LOG.trace("OAuth2 client {} requested redirect URI '{}': does it match redirect URI '{}'? {}",
+                                registeredClient.getClientId(),
+                                requestedRedirectUri,
+                                redirectUri,
+                                result);
                         return result;
                     });
         }
@@ -88,18 +94,22 @@ class WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer implements Cus
             RegisteredClient registeredClient = authenticationContext.getRegisteredClient();
             String requestedRedirectUri = authorizationCodeRequestAuthentication.getRedirectUri();
 
-            // if registeredClient id is in allowed clientIds and requestedRedirectUri matches any pattern from client redirectUris, then add requestedRedirectUri into registered client's redirect uris
-            if (canUseWildcardRedirectUrisForClient(registeredClient) && matchesAnyRegisteredRedirectUriPattern(
-                    registeredClient,
-                    requestedRedirectUri)) {
-                LOG.debug(
-                        "Redirect URI '{}' is not allowed for client '{}' but client has allowed patterns for redirect_uris and this uri matches one of them - adding this uri to client's allowed uris",
-                        requestedRedirectUri,
-                        registeredClient.getClientId());
-                registeredClient.getRedirectUris().add(requestedRedirectUri);
-            } else if (!registeredClient.getRedirectUris().contains(requestedRedirectUri)) {
-                LOG.warn("Redirect URI '{}' is not allowed for client '{}' - allowed URIs ({})", requestedRedirectUri, registeredClient.getClientId(),
-                        String.join(", ", registeredClient.getRedirectUris()));
+            if (StringUtils.hasText(requestedRedirectUri)) {
+                if (canUseWildcardRedirectUrisForClient(registeredClient) && matchesAnyRegisteredRedirectUriPattern(
+                        registeredClient,
+                        requestedRedirectUri)) {
+                    LOG.debug(
+                            "Redirect URI '{}' allowed for client '{}' through pattern matching - allowed URIs ({})",
+                            requestedRedirectUri,
+                            registeredClient.getClientId(),
+                            registeredClient.getRedirectUris());
+                    return;
+                } else if (!registeredClient.getRedirectUris().contains(requestedRedirectUri)) {
+                    LOG.warn("Redirect URI '{}' is not allowed for client '{}' - allowed URIs ({})",
+                            requestedRedirectUri,
+                            registeredClient.getClientId(),
+                            String.join(", ", registeredClient.getRedirectUris()));
+                }
             }
 
             // delegate to default redirect URI validator
