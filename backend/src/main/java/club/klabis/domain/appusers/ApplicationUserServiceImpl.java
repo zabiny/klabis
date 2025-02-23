@@ -3,6 +3,7 @@ package club.klabis.domain.appusers;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.events.MemberCreatedEvent;
+import club.klabis.domain.members.events.MembershipSuspendedEvent;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,14 @@ class ApplicationUserServiceImpl implements ApplicationUserService {
     public void onMemberCreated(MemberCreatedEvent event) {
         LOG.info("Creating Application user for new member %s (id=%s)".formatted(event.getAggregate().getRegistration(), event.getAggregate().getId()));
         ApplicationUser userForCreatedMember = ApplicationUser.newAppUser(event.getAggregate(), "{noop}password");
+        repository.save(userForCreatedMember);
+    }
+
+    @EventListener(MembershipSuspendedEvent.class)
+    public void onMembershipSuspended(MembershipSuspendedEvent event) {
+        LOG.info("Disabling Application user for suspended member %s (id=%s)".formatted(event.getAggregate().getRegistration(), event.getAggregate().getId()));
+        ApplicationUser userForCreatedMember = repository.findByMemberId(event.getAggregate().getId());
+        userForCreatedMember.disable();
         repository.save(userForCreatedMember);
     }
 

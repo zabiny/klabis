@@ -1,5 +1,6 @@
 package club.klabis.domain.appusers;
 
+import club.klabis.domain.appusers.events.ApplicationUserEnableStatusChanged;
 import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -93,6 +94,20 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
     public void setGlobalGrants(Collection<ApplicationGrant> globalGrants) {
         this.globalGrants.clear();
         this.globalGrants.addAll(globalGrants);
+    }
+
+    public void disable() {
+        if (this.enabled) {
+            this.enabled = false;
+            this.andEvent(new ApplicationUserEnableStatusChanged(this));
+        }
+    }
+
+    public void enable() {
+        if (!this.enabled) {
+            this.enabled = true;
+            this.andEvent(new ApplicationUserEnableStatusChanged(this));
+        }
     }
 }
 
