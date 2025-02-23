@@ -81,7 +81,8 @@ spring:
                 - "refresh_token"
               redirect-uris:
                 - "http://localhost:8080/callback"
-                - "https://preview--orienter-club-hub.lovable.app/callback"
+                - "https://preview--orienter-club-hub.lovable.app/callback" # preview URL
+                - "https://*.lovableproject.com"  # Sandboxes are dynamic :(
               post-logout-redirect-uris:
                 - "http://localhost:8080"
                 - "https://preview--orienter-club-hub.lovable.app"
