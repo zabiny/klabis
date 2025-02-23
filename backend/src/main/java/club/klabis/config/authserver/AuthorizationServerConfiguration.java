@@ -98,6 +98,7 @@ public class AuthorizationServerConfiguration {
                 "http://localhost:8080",
                 "http://localhost:3000",
                 "https://preview--orienter-club-hub.lovable.app",
+                "https://*.lovableproject.com",
                 "https://klabis.otakar.io",
                 "https://wiki.zabiny.club",
                 "https://klabis-api-docs.otakar.io"

@@ -93,7 +93,8 @@ public class ApiSecurityConfiguration {
         // Povolené origin adresy
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:8080",
-                "https://preview--orienter-club-hub.lovable.app"
+                "https://preview--orienter-club-hub.lovable.app",
+                "https://*.lovableproject.com"
 //                "https://klabis.otakar.io",
 //                "https://wiki.zabiny.club",
 //                "https://klabis-api-docs.otakar.io"
