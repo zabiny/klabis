@@ -8,7 +8,15 @@ GET {{host}}/actuator/health
 Accept: application/json
 
 ### List of loggers and their settings
-GET {{host}}/actuator/loggers
+GET {{host}}/actuator/loggers/oauthserver
 Accept: application/json
 Authorization: Bearer {{$auth.token("frontend")}}
 
+### Update loggers - Authorization server + OAuth2 debug
+POST {{host}}/actuator/loggers/oauthserver
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("frontend")}}
+
+{
+  "configuredLevel": "trace"
+}

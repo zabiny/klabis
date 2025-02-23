@@ -97,6 +97,9 @@ class WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer implements Cus
                         requestedRedirectUri,
                         registeredClient.getClientId());
                 registeredClient.getRedirectUris().add(requestedRedirectUri);
+            } else if (!registeredClient.getRedirectUris().contains(requestedRedirectUri)) {
+                LOG.warn("Redirect URI '{}' is not allowed for client '{}' - allowed URIs ({})", requestedRedirectUri, registeredClient.getClientId(),
+                        String.join(", ", registeredClient.getRedirectUris()));
             }
 
             // delegate to default redirect URI validator

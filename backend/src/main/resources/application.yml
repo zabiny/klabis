@@ -171,24 +171,18 @@ logging:
     #REQUESTS_LOGGER: TRACE
     org.zalando.logbook: info
 
-    # Základní debug logování pro security + oauth2
-    org.springframework.security: trace
-    org.springframework.security.oauth2: trace
-    #org.springframework.web: TRACE
-
-    # OAuth2 detailní logování
-    #org.springframework.security.oauth2.client: TRACE
-    org.springframework.security.oauth2.core: trace
-    org.springframework.security.oauth2.server: trace
-    club.klabis.config.authserver: trace
-
     # Specifické logování pro CORS
     #org.springframework.web.cors: trace
   
     # Web security logování
     #org.springframework.security.web: TRACE
+    oauthserver: info
+    oauthclient: info
   pattern:
     console: "%clr(%d{${LOG_DATEFORMAT_PATTERN:yyyy-MM-dd'T'HH:mm:ss.SSSXXX}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%X{URL}){magenta} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+  group:
+    oauthserver: club.klabis.config.authserver,org.springframework.security,org.springframework.security.oauth2,org.springframework.security.oauth2.core,org.springframework.security.oauth2.server
+    oauthclient: org.springframework.security.oauth2.client,org.springframework.security.oauth2.core
 
 management:
   endpoint:
