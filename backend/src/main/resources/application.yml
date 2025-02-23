@@ -165,24 +165,25 @@ spring:
 
 logging:
   level:
-    org.springframework.security.jackson2.SecurityJackson2Modules: INFO
-    org.springframework.security.web.savedrequest.HttpSessionRequestCache: TRACE
+    org.springframework.security.jackson2.SecurityJackson2Modules: info
+    org.springframework.security.web.savedrequest.HttpSessionRequestCache: trace
     #org.springframework.web.client.RestTemplate: DEBUG
     #REQUESTS_LOGGER: TRACE
-    org.zalando.logbook: INFO
+    org.zalando.logbook: info
 
     # Základní debug logování pro security + oauth2
-    org.springframework.security: TRACE
-    org.springframework.security.oauth2: TRACE
+    org.springframework.security: trace
+    org.springframework.security.oauth2: trace
     #org.springframework.web: TRACE
 
     # OAuth2 detailní logování
     #org.springframework.security.oauth2.client: TRACE
-    org.springframework.security.oauth2.core: TRACE
-    org.springframework.security.oauth2.server: TRACE
+    org.springframework.security.oauth2.core: trace
+    org.springframework.security.oauth2.server: trace
+    club.klabis.config.authserver: trace
 
     # Specifické logování pro CORS
-    org.springframework.web.cors: TRACE
+    #org.springframework.web.cors: trace
   
     # Web security logování
     #org.springframework.security.web: TRACE

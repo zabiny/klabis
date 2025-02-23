@@ -38,6 +38,7 @@ class WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer implements Cus
     // decorates default redirect_uri validator with extension allowing to use wildcard redirect_uri for selected client ids
     @Override
     public void customize(OAuth2AuthorizationEndpointConfigurer oAuth2AuthorizationEndpointConfigurer) {
+        LOG.debug("Allowing wildcard redirect_uri for client ids: {}", allowPatternsForRedirectUrisForClientIds);
         oAuth2AuthorizationEndpointConfigurer.authenticationProviders(useWildcardRedirectUrisForGivenRegisteredClients(
                 allowPatternsForRedirectUrisForClientIds));
     }
@@ -73,7 +74,11 @@ class WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer implements Cus
 
         private boolean matchesAnyRegisteredRedirectUriPattern(RegisteredClient registeredClient, String requestedRedirectUri) {
             return registeredClient.getRedirectUris().stream()
-                    .anyMatch(redirectUri -> requestedRedirectUri.matches(redirectUri.replace("*", ".*")));
+                    .anyMatch(redirectUri -> {
+                        boolean result = requestedRedirectUri.matches(redirectUri.replace("*", ".*"));
+                        LOG.trace("OAuth2 client {} requested redirect URI '{}': does it match redirect URI '{}'? {}", registeredClient.getClientId(), requestedRedirectUri, redirectUri, result);
+                        return result;
+                    });
         }
 
         @Override
@@ -87,7 +92,7 @@ class WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer implements Cus
             if (canUseWildcardRedirectUrisForClient(registeredClient) && matchesAnyRegisteredRedirectUriPattern(
                     registeredClient,
                     requestedRedirectUri)) {
-                LOG.trace(
+                LOG.debug(
                         "Redirect URI '{}' is not allowed for client '{}' but client has allowed patterns for redirect_uris and this uri matches one of them - adding this uri to client's allowed uris",
                         requestedRedirectUri,
                         registeredClient.getClientId());
