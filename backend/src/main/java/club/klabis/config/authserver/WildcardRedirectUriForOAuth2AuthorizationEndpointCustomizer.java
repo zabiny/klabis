@@ -75,7 +75,7 @@ class WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer implements Cus
         private boolean matchesAnyRegisteredRedirectUriPattern(RegisteredClient registeredClient, String requestedRedirectUri) {
             return registeredClient.getRedirectUris().stream()
                     .anyMatch(redirectUri -> {
-                        boolean result = requestedRedirectUri.matches(redirectUri.replace("*", ".*"));
+                        boolean result = requestedRedirectUri.matches(redirectUri.replaceAll("\\.", "\\\\.").replaceAll("\\*", ".*"));
                         LOG.trace("OAuth2 client {} requested redirect URI '{}': does it match redirect URI '{}'? {}", registeredClient.getClientId(), requestedRedirectUri, redirectUri, result);
                         return result;
                     });

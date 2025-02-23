@@ -35,7 +35,7 @@ public class AuthorizationServerConfiguration {
     public static final int BEFORE_AUTH_SERVER_SECURITY_ORDER = AUTH_SERVER_SECURITY_ORDER - 2;
     public static final int AFTER_AUTH_SERVER_SECURITY_ORDER = AUTH_SERVER_SECURITY_ORDER + 2;
 
-    private static final String LOVABLE_APP_CLIENT_ID = "1200";
+    private static final String LOVABLE_APP_CLIENT_ID = "aife";
 
     @Bean
     @Order(AUTH_SERVER_SECURITY_ORDER)
