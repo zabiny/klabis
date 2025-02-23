@@ -1,11 +1,13 @@
 package club.klabis.config.authserver.ui;
 
 import club.klabis.config.authserver.LoginPageSecurityConfiguration;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.SessionAttribute;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -18,10 +20,14 @@ class AuthServerLoginController {
     }
 
     @GetMapping(value = {LoginPageSecurityConfiguration.CUSTOM_LOGIN_PAGE})
-    public ModelAndView login() {
+    public ModelAndView login(HttpSession httpSession, @SessionAttribute(name = LoginPageSecurityConfiguration.LOGIN_PAGE_ERROR_MESSAGE_SESSION_ATTRIBUTE, required = false) String errorMessage) {
         ModelAndView view = new ModelAndView("auth/klabisOAuth");
         view.addObject("oauthProviders", providers);
         view.addObject("submitUrl", LoginPageSecurityConfiguration.CUSTOM_LOGIN_PAGE);
+        if (errorMessage != null) {
+            view.addObject("error", errorMessage);
+            httpSession.removeAttribute(LoginPageSecurityConfiguration.LOGIN_PAGE_ERROR_MESSAGE_SESSION_ATTRIBUTE);
+        }
         return view;
     }
 

@@ -7,6 +7,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
@@ -23,11 +24,16 @@ class CustomOidcUserService extends OidcUserService {
     private final Map<String, SocialLoginOidcUserToKlabisOidcUserMapper> mappers;
 
     public CustomOidcUserService(List<SocialLoginOidcUserToKlabisOidcUserMapper> mappers) {
-        this.mappers = mappers.stream().collect(Collectors.toMap(SocialLoginOidcUserToKlabisOidcUserMapper::getOAuthClientId, Function.identity()));
+        this.mappers = mappers.stream()
+                .collect(Collectors.toMap(SocialLoginOidcUserToKlabisOidcUserMapper::getOAuthClientId,
+                        Function.identity()));
     }
 
     private Optional<SocialLoginOidcUserToKlabisOidcUserMapper> getMapperForRegistrationId(ClientRegistration registration) {
-        return mappers.values().stream().filter(it -> registration.getRegistrationId().equals(it.getOAuthClientId())).findAny();
+        return mappers.values()
+                .stream()
+                .filter(it -> registration.getRegistrationId().equals(it.getOAuthClientId()))
+                .findAny();
     }
 
     @Override
@@ -35,11 +41,22 @@ class CustomOidcUserService extends OidcUserService {
         OidcUser oidcUser = super.loadUser(userRequest);
 
         SocialLoginOidcUserToKlabisOidcUserMapper mapper = getMapperForRegistrationId(userRequest.getClientRegistration())
-                .orElseThrow(() -> new RuntimeException("No OIDC mapper defined for registrationId %s".formatted(userRequest.getClientRegistration().getRegistrationId())));
+                .orElseThrow(() -> new IllegalStateException("No OIDC mapper defined for registrationId %s".formatted(
+                        userRequest.getClientRegistration().getRegistrationId())));
 
-        return mapper.findApplicationUserForToken(userRequest.getIdToken())
-                .map(applicationUser -> createAuthentication(oidcUser.getIdToken(), oidcUser.getUserInfo(), applicationUser, List.of()))
-                .orElseThrow(() -> new OAuth2AuthenticationException("User with subject %s (%s) not found!".formatted(oidcUser.getSubject(), mapper.getOAuthClientId())));
+        ApplicationUser appUser = mapper.findApplicationUserForToken(userRequest.getIdToken())
+                .orElseThrow(() -> SocialUserNotFoundException.fromOidcRequest(userRequest));
+
+        if (appUser.isDisabled()) {
+            throw new OAuth2AuthenticationException(new OAuth2Error("user_disabled",
+                    "User %s is disabled".formatted(appUser.getUsername()),
+                    "auth/userIsDisabled"));
+        }
+
+        return createAuthentication(oidcUser.getIdToken(),
+                oidcUser.getUserInfo(),
+                appUser,
+                List.of());
     }
 
     DefaultOidcUser createAuthentication(OidcIdToken idToken, OidcUserInfo userInfo, ApplicationUser user, List<String> roles) {

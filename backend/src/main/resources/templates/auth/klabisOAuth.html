@@ -88,6 +88,12 @@
                 You have been logged out.
             </div>
 
+            <div th:if="${error}"
+                 class="px-3 py-2 text-center text-sm text-red-200 rounded bg-red-900/50
+                        border border-red-700 shadow-md">
+                <span th:text="${error}"/>
+            </div>
+
             <!-- Přihlašovací tlačítko -->
             <div class="flex justify-center">
                 <button type="submit"
