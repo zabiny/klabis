@@ -1,7 +1,5 @@
 package club.klabis.config.authserver;
 
-import club.klabis.config.authserver.sociallogin.RegisterMemberFromSocialLoginHandler;
-import club.klabis.config.authserver.sociallogin.SocialLoginAuthenticationSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -10,7 +8,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -33,7 +30,6 @@ public class LoginPageSecurityConfiguration {
     @Bean
     @Order(AuthorizationServerConfiguration.AUTH_SERVER_LOGIN_PAGE)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http,
-                                                          AuthenticationSuccessHandler socialLoginAuthenticationSuccessHandler,
                                                           AuthenticationFailureHandler socialLoginOAuth2FailureHandler) throws Exception {
         return http
                 .securityMatcher(LOGIN_REQUESTS_MATCHER)
@@ -45,17 +41,9 @@ public class LoginPageSecurityConfiguration {
 
                 //request cache for requests between Login Page and Authorization server (it's needed if there would be some application UI with own spring security chain to login user)
                 //.requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache)
-                .formLogin(form -> form.loginPage(CUSTOM_LOGIN_PAGE).successHandler(socialLoginAuthenticationSuccessHandler))
-                .oauth2Login(oauth -> oauth.successHandler(socialLoginAuthenticationSuccessHandler).failureHandler(socialLoginOAuth2FailureHandler))
+                .formLogin(form -> form.loginPage(CUSTOM_LOGIN_PAGE))
+                .oauth2Login(oauth -> oauth.failureHandler(socialLoginOAuth2FailureHandler))
                 .build();
-    }
-
-    @Bean
-    public AuthenticationSuccessHandler authenticationSuccessHandler(RegisterMemberFromSocialLoginHandler handler) {
-        SocialLoginAuthenticationSuccessHandler authenticationSuccessHandler =
-                new SocialLoginAuthenticationSuccessHandler();
-        authenticationSuccessHandler.setOidcUserHandler(handler);
-        return authenticationSuccessHandler;
     }
 
     public static void applyAuthServerRequestCache(RequestCacheConfigurer<HttpSecurity> httpSecurityRequestCacheConfigurer) {

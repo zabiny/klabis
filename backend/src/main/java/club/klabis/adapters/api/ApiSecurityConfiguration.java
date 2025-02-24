@@ -94,8 +94,8 @@ public class ApiSecurityConfiguration {
         config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:8080",
                 "https://preview--orienter-club-hub.lovable.app",
-                "https://*.lovableproject.com"
-//                "https://klabis.otakar.io",
+                "https://*.lovableproject.com",
+                "https://klabis.otakar.io"
 //                "https://wiki.zabiny.club",
 //                "https://klabis-api-docs.otakar.io"
         ));
