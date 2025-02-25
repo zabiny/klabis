@@ -37,5 +37,8 @@ code_verifier=...&
 refresh_token=...
 
 
-
+### OIDC logout
+# (id_token_hint is full id_token)
+GET {{host}}/connect/logout?id_token_hint={{$auth.idToken("test")}}
+Authorization: Bearer {{$auth.token("test")}}
 

@@ -1,5 +1,8 @@
 package club.klabis.config.authserver;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -7,12 +10,16 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+
+import java.io.IOException;
 
 @EnableWebSecurity
 @Configuration(proxyBeanMethods = false)
@@ -40,7 +47,9 @@ public class LoginPageSecurityConfiguration {
                         .authenticated())
 
                 .requestCache(AuthorizationServerConfiguration.applyAuthorizationServerRequestCache())
-                .logout(logout -> logout.logoutSuccessHandler(new SimpleUrlLogoutSuccessHandler()))
+                // todo some better way how to determine post-logout URL (as we want to redirect back to Frontend/WIKI/.. various places in depends where the user logged from)
+                // todo: alternatively complete OIDC logout (it seems to be working, just it goes into default logout handler .. we would like there do logout without confirmation as it's kind of secured using idToken)
+                .logout(logout -> logout.logoutSuccessUrl("https://klabis.otakar.io"))
                 .formLogin(form -> form.loginPage(CUSTOM_LOGIN_PAGE))
                 .oauth2Login(oauth -> oauth.failureHandler(socialLoginOAuth2FailureHandler))
                 .build();
