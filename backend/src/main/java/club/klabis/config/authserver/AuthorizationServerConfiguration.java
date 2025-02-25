@@ -1,7 +1,5 @@
 package club.klabis.config.authserver;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -9,6 +7,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +17,7 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -47,7 +47,8 @@ public class AuthorizationServerConfiguration {
 
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
                 // Lovable for sandbox environment uses random URL prefixes -> allowing redirect_uri definition for Lovable web with pattern matching to allow all sandboxes to authenticated against Klabis OAuth2
-                .authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(LOVABLE_APP_CLIENT_ID)))
+                .authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(
+                        LOVABLE_APP_CLIENT_ID)))
                 // Is this actually used?? It doesn't seem it is...
                 .tokenEndpoint(tokenEndpoint ->
                         tokenEndpoint
@@ -56,7 +57,7 @@ public class AuthorizationServerConfiguration {
                 .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
 
         //request cache for requests between Login Page and Authorization server (it's needed if there would be some application UI with own spring security chain to login user)
-//        http.requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache);
+        http.requestCache(applyAuthorizationServerRequestCache());
 
         http.cors(cors -> cors
                 .configurationSource(corsConfigurationSource()));
@@ -135,6 +136,15 @@ public class AuthorizationServerConfiguration {
         source.registerCorsConfiguration("/oidc/**", config);
 
         return source;
+    }
+
+    // if authorization server is running on same instance as UI with own SpringSecurity login mechanism, then it is good to separate authorization server requests flow using own requests cache with own session attribute name
+    protected static Customizer<RequestCacheConfigurer<HttpSecurity>> applyAuthorizationServerRequestCache() {
+        HttpSessionRequestCache sessionRequestCache = new HttpSessionRequestCache();
+        sessionRequestCache.setSessionAttrName("klabis-auth-server-cached-request");
+
+        return httpSecurityRequestCacheConfigurer -> httpSecurityRequestCacheConfigurer.requestCache(
+                sessionRequestCache);
     }
 
 }

@@ -3,13 +3,13 @@ package club.klabis.config.authserver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
-import org.springframework.security.web.savedrequest.RequestCache;
+import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -39,24 +39,11 @@ public class LoginPageSecurityConfiguration {
                         .anyRequest()
                         .authenticated())
 
-                //request cache for requests between Login Page and Authorization server (it's needed if there would be some application UI with own spring security chain to login user)
-                //.requestCache(LoginPageSecurityConfiguration::applyAuthServerRequestCache)
+                .requestCache(AuthorizationServerConfiguration.applyAuthorizationServerRequestCache())
+                .logout(logout -> logout.logoutSuccessHandler(new SimpleUrlLogoutSuccessHandler()))
                 .formLogin(form -> form.loginPage(CUSTOM_LOGIN_PAGE))
                 .oauth2Login(oauth -> oauth.failureHandler(socialLoginOAuth2FailureHandler))
                 .build();
     }
 
-    public static void applyAuthServerRequestCache(RequestCacheConfigurer<HttpSecurity> httpSecurityRequestCacheConfigurer) {
-        httpSecurityRequestCacheConfigurer.requestCache(authServerRequestCache("AUTH_SERVER_SPRING_SECURITY_SAVED_REQUEST"));
-    }
-
-
-
-    private static RequestCache authServerRequestCache(String sessionAttributeName) {
-        // As we have Auth server and App server on same instance, we must distinguish request cache for them otherwise App Server will show failed login (even when it passes and works) because App server's "success" redirect target gets overriden by "success" target redirect URI from Authorization server
-        HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
-        requestCache.setSessionAttrName(sessionAttributeName);
-        requestCache.setMatchingRequestParameterName("_spring_security_authorization_server_redirect_uri");
-        return requestCache;
-    }
 }
