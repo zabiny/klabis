@@ -46,7 +46,7 @@ public class LoginPageSecurityConfiguration {
                         .anyRequest()
                         .authenticated())
 
-                .requestCache(AuthorizationServerConfiguration.applyAuthorizationServerRequestCache())
+                //.requestCache(AuthorizationServerConfiguration.applyAuthorizationServerRequestCache())
                 // todo some better way how to determine post-logout URL (as we want to redirect back to Frontend/WIKI/.. various places in depends where the user logged from)
                 // todo: alternatively complete OIDC logout (it seems to be working, just it goes into default logout handler .. we would like there do logout without confirmation as it's kind of secured using idToken)
                 .logout(logout -> logout.logoutSuccessUrl("https://klabis.otakar.io"))
