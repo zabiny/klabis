@@ -11,6 +11,11 @@ spring:
   security:
     oauth2:
       authorizationserver:
+        endpoint:
+          oidc:
+            user-info-uri: /oidc/userinfo
+          authorization-uri: /oauth/authorize
+          token-uri: /oauth/token
         client:
           1000:
             registration:
