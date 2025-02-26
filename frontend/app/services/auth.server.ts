@@ -68,8 +68,8 @@ export const strategy = new OAuth2Strategy<User>(
 
 		authorizationEndpoint: `${
 			import.meta.env.VITE_AUTH_SERVER
-		}/oauth/authorize`,
-		tokenEndpoint: `${import.meta.env.VITE_AUTH_SERVER}/oauth/token`,
+		}/oauth2/authorize`,
+		tokenEndpoint: `${import.meta.env.VITE_AUTH_SERVER}/oauth2/token`,
 		redirectURI: `${import.meta.env.VITE_BASE_URL}/auth/callback`,
 		tokenRevocationEndpoint: `${
 			import.meta.env.VITE_AUTH_SERVER
