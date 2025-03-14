@@ -561,6 +561,26 @@ paths:
         '200':
           description: Member grants were successfully updated
 
+  /events:
+    get:
+      tags:
+        - events
+        - WIP
+      summary: Returns events
+      operationId: getEvents
+      responses:
+        200:
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventListItem'
+
   /memberGroups:
     get:
       tags:
@@ -1132,6 +1152,9 @@ components:
     GroupId:
       type: number
       readOnly: true
+    EventId:
+      type: integer
+      readOnly: true
     MembersGroupList:
       type: object
       properties:
@@ -1208,6 +1231,40 @@ components:
         - memberInfo#manageMemberInfo
         - groups#inviteIntoGroup
         - news#publishNewsForGroup
+    EventListItem:
+      type: object
+      required:
+        - id
+        - type
+        - date
+        - name
+        - organizer
+      properties:
+        id:
+          $ref: '#/components/schemas/EventId'
+        date:
+          type: string
+          format: date
+        name:
+          type: string
+          example: Krátký den
+        organizer:
+          type: string
+          example: ZBM
+        type:
+          type: string
+          enum:
+            - T
+            - S
+        web:
+          type: string
+          format: url
+        registrationDeadline:
+          type: string
+          format: date
+        coordinator:
+          type: string
+          example: Josef Pařízek
     RFC7807ErrorResponse:
       type: object
       required:
