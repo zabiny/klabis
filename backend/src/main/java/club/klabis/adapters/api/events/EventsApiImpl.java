@@ -24,7 +24,8 @@ class EventsApiImpl implements EventsApi {
     @Override
     public ResponseEntity<GetEvents200ResponseApiDto> getEvents() {
         // docasne vracime ciste eventy z ORIS
-        List<EventListItemApiDto> items = orisApiClient.getEventList(OrisApiClient.OrisEventListFilter.createDefault()).data().values().stream().map(this::fromOrisEvent).toList();
+        List<EventListItemApiDto> items = orisApiClient.getEventList(OrisApiClient.OrisEventListFilter.createDefault().withDateFrom(LocalDate.now().minusMonths(3)).withDateTo(LocalDate.now().plusMonths(3)))
+                .data().values().stream().map(this::fromOrisEvent).toList();
 
         return ResponseEntity.ok(new GetEvents200ResponseApiDto().items(items));
     }
