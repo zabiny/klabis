@@ -139,6 +139,7 @@ spring:
                 - "https://klabis-auth.polach.cloud/swagger-ui/oauth2-redirect.html"
                 - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
                 - "https://api.klabis.otakar.io/oauth2-redirect.html"
+                - "https://api.klabis.otakar.io/swagger-ui/oauth2-redirect.html"
               scopes:
                 - "openid"
 
