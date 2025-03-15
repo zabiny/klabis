@@ -124,19 +124,33 @@ class OrisApiClientTest {
                     "getEventList"
             );
 
-            var result = testedClient.getEventList();
+            var result = testedClient.getEventList(null);
 
             assertThat(result).usingRecursiveComparison().isEqualTo(expectedData);
         }
 
         @Test
-        @DisplayName("it should call expected API with parameters")
-        void itShouldCallExpectedApi() throws IOException {
+        @DisplayName("it should call expected API without defined parameters")
+        void itShouldCallExpectedApiNoParams() throws IOException {
             restServiceServer.expect(MockRestRequestMatchers.requestTo(
-                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList"))
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205"))
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
 
-            testedClient.getEventList();
+            testedClient.getEventList(null);
+
+            restServiceServer.verify();
+        }
+
+        @Test
+        @DisplayName("it should call expected API with defined parameters")
+        void itShouldCallExpectedApiWithParams() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.requestTo(
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205&datefrom=2020-10-01&dateto=2023-04-10&rg=JM"))
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
+
+            testedClient.getEventList(OrisApiClient.OrisEventListFilter.EMPTY.withRegion(OrisApiClient.REGION_JIHOMORAVSKA)
+                    .withDateFrom(LocalDate.of(2020, 10, 1))
+                    .withDateTo(LocalDate.of(2023, 4, 10)));
 
             restServiceServer.verify();
         }

@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.ResolvableType;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -18,11 +18,15 @@ import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConve
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpRequestValues;
+import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Configuration
@@ -31,14 +35,14 @@ class OrisConfiguration implements ClientHttpRequestInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(OrisConfiguration.class);
 
 
-
     @Bean
     OrisApiClient orisApiClient(RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
 
         MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter(objectMapper);
         messageConverter.setSupportedMediaTypes(List.of(MediaType.valueOf("application/javascript")));
 
-        GenericHttpMessageConverter<Object> orisApiQuirksMessageConverter = new OrisApiQuirksHandlingMessageConverter(messageConverter);
+        GenericHttpMessageConverter<Object> orisApiQuirksMessageConverter = new OrisApiQuirksHandlingMessageConverter(
+                messageConverter);
 
         RestClient restClient = restClientBuilder.baseUrl("https://oris.orientacnisporty.cz")
                 .messageConverters(c -> {
@@ -48,7 +52,9 @@ class OrisConfiguration implements ClientHttpRequestInterceptor {
                 .requestInterceptor(this)
                 .build();
         RestClientAdapter adapter = RestClientAdapter.create(restClient);
-        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(adapter).build();
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(adapter)
+                .customArgumentResolver(new OrisEventListArgumentResolver())
+                .build();
 
         return factory.createClient(OrisApiClient.class);
     }
@@ -75,7 +81,8 @@ class OrisApiQuirksHandlingMessageConverter implements GenericHttpMessageConvert
 
     private boolean isQuirkParsingErrorForSingleItemNotFoundResponseWithWrongDataPayloadAsArray(HttpMessageNotReadableException ex) {
         // for ex "JSON parse error: Cannot deserialize value of type `club.klabis.adapters.oris.OrisApiClient$OrisUserInfo` from Array value (token `JsonToken.START_ARRAY`)".equals(ex.getMessage());
-        return ex.getMessage().startsWith("JSON parse error: Cannot deserialize value of type `") && ex.getMessage().endsWith("` from Array value (token `JsonToken.START_ARRAY`)");
+        return ex.getMessage().startsWith("JSON parse error: Cannot deserialize value of type `") && ex.getMessage()
+                .endsWith("` from Array value (token `JsonToken.START_ARRAY`)");
     }
 
     @Override
@@ -86,7 +93,11 @@ class OrisApiQuirksHandlingMessageConverter implements GenericHttpMessageConvert
         } catch (HttpMessageNotReadableException ex) {
             // any better way how to detect that ORIS returns "item not found" response (HTTP 200 + data with array) instead of expected object?
             if (isQuirkParsingErrorForSingleItemNotFoundResponseWithWrongDataPayloadAsArray(ex)) {
-                throw HttpClientErrorException.create(HttpStatusCode.valueOf(404), "NOT_FOUND", new HttpHeaders(), inputMessage.getBody().readAllBytes(), StandardCharsets.UTF_8);
+                throw HttpClientErrorException.create(HttpStatusCode.valueOf(404),
+                        "NOT_FOUND",
+                        new HttpHeaders(),
+                        inputMessage.getBody().readAllBytes(),
+                        StandardCharsets.UTF_8);
             } else {
                 throw ex;
             }
@@ -136,5 +147,38 @@ class OrisApiQuirksHandlingMessageConverter implements GenericHttpMessageConvert
     @Override
     public List<MediaType> getSupportedMediaTypes(Class<?> clazz) {
         return delegate.getSupportedMediaTypes(clazz);
+    }
+}
+
+class OrisEventListArgumentResolver implements HttpServiceArgumentResolver {
+    private String formatLocalDateForOrisRequestParameter(Object value) {
+        if (value instanceof LocalDate typedValue) {
+            return typedValue.format(DateTimeFormatter.ISO_DATE);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
+        if (parameter.getParameterType().equals(OrisApiClient.OrisEventListFilter.class)) {
+            if (argument != null) {
+                OrisApiClient.OrisEventListFilter typedArgument = (OrisApiClient.OrisEventListFilter) argument;
+
+                if (typedArgument.dateFrom() != null) {
+                    requestValues.addRequestParameter("datefrom", formatLocalDateForOrisRequestParameter(typedArgument.dateFrom()));
+                }
+
+                if (typedArgument.dateTo() != null) {
+                    requestValues.addRequestParameter("dateto", formatLocalDateForOrisRequestParameter(typedArgument.dateTo()));
+                }
+
+                if (typedArgument.region() != null) {
+                    requestValues.addRequestParameter("rg", typedArgument.region().toString());
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }
