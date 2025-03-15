@@ -243,11 +243,15 @@ springdoc:
       display-name: Members API
       packages-to-scan:
         - club.klabis.adapters.api.members
-    - group: 02_appusers
+    - group: 02_events
+      display-name: Events API
+      packages-to-scan:
+        - club.klabis.adapters.api.events
+    - group: 03_appusers
       display-name: Application users API
       packages-to-scan:
         - club.klabis.adapters.api.appusers
-    - group: 03_oris
+    - group: 04_oris
       display-name: ORIS proxy API
       packages-to-scan:
         - club.klabis.adapters.api.oris

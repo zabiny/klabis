@@ -15,6 +15,9 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,7 +33,8 @@ class OrisApiClientTest {
     MockRestServiceServer restServiceServer;
 
     private DefaultResponseCreator withJsonResponse(int status, String body) {
-        return withStatus(HttpStatusCode.valueOf(status)).body(body).contentType(MediaType.parseMediaType("application/javascript"));
+        return withStatus(HttpStatusCode.valueOf(status)).body(body)
+                .contentType(MediaType.parseMediaType("application/javascript"));
     }
 
     private DefaultResponseCreator withJsonResponseHavingBodyFromResourceFile(int status, String resourceFilePath) throws IOException {
@@ -63,7 +67,8 @@ class OrisApiClientTest {
 
             OrisApiClient.OrisResponse<OrisApiClient.OrisUserInfo> actualResponse = testedClient.getUserInfo("32323");
 
-            assertThat(actualResponse.data()).extracting("orisId", "firstName", "lastName").containsExactly(452, "John", "Doe");
+            assertThat(actualResponse.data()).extracting("orisId", "firstName", "lastName")
+                    .containsExactly(452, "John", "Doe");
             assertThat(actualResponse.status()).isEqualTo("OK");
             assertThat(actualResponse.format()).isEqualTo("json");
             assertThat(actualResponse.method()).isEqualTo("getUser");
@@ -72,12 +77,83 @@ class OrisApiClientTest {
         @Test
         @DisplayName("it should call expected API with parameters")
         void itShouldCallExpectedApi() throws IOException {
-            restServiceServer.expect(MockRestRequestMatchers.requestTo("https://oris.orientacnisporty.cz/API/?format=json&method=getUser&rgnum=32323"))
+            restServiceServer.expect(MockRestRequestMatchers.requestTo(
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getUser&rgnum=32323"))
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getUserExampleResponse.json"));
 
             testedClient.getUserInfo("32323");
 
             restServiceServer.verify();
         }
+    }
+
+    @Nested
+    @DisplayName("getEventList API tests")
+    class GetEventListApiTests {
+        @Test
+        @DisplayName("it should return parsed data from response")
+        void itShouldReturnExpectedData() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.anything())
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
+
+            OrisApiClient.OrisResponse<Map<String, OrisApiClient.OrisEvent>> expectedData = new OrisApiClient.OrisResponse<>(
+                    Map.of("Event_9160", new OrisApiClient.OrisEvent(
+                            9160,
+                            "Západočeský žebříček - jaro 2025",
+                            LocalDate.of(2025, 1, 1),
+                            "",
+                            new OrisApiClient.OrisEventOrg(
+                                    646, "ZCO", "Západočeská oblast"
+                            ),
+                            new OrisApiClient.OrisEventLevel(
+                                    4, "OŽ", "Oblastní žebříček", "Local event"
+                            ),
+                            new OrisApiClient.OrisEventSport(
+                                    1, "OB", "Foot O"
+                            ),
+                            new OrisApiClient.OrisEventDiscipline(
+                                    10, "Z", "Dlouhodobé žebříčky", "Cups and ranking"
+                            ),
+                            LocalDateTime.parse("2025-01-05T23:59:59"),
+                            LocalDateTime.parse("2025-01-07T23:59:59"),
+                            null)
+                    ),
+                    "json",
+                    "OK",
+                    LocalDateTime.of(2025, 03, 15, 1, 28, 59),
+                    "getEventList"
+            );
+
+            var result = testedClient.getEventList(null);
+
+            assertThat(result).usingRecursiveComparison().isEqualTo(expectedData);
+        }
+
+        @Test
+        @DisplayName("it should call expected API without defined parameters")
+        void itShouldCallExpectedApiNoParams() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.requestTo(
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205"))
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
+
+            testedClient.getEventList(null);
+
+            restServiceServer.verify();
+        }
+
+        @Test
+        @DisplayName("it should call expected API with defined parameters")
+        void itShouldCallExpectedApiWithParams() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.requestTo(
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205&datefrom=2020-10-01&dateto=2023-04-10&rg=JM"))
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
+
+            testedClient.getEventList(OrisApiClient.OrisEventListFilter.EMPTY.withRegion(OrisApiClient.REGION_JIHOMORAVSKA)
+                    .withDateFrom(LocalDate.of(2020, 10, 1))
+                    .withDateTo(LocalDate.of(2023, 4, 10)));
+
+            restServiceServer.verify();
+        }
+
     }
 }
