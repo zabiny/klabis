@@ -2,7 +2,6 @@ package club.klabis.adapters.api;
 
 import club.klabis.config.authserver.AuthorizationServerConfiguration;
 import club.klabis.domain.appusers.ApplicationGrant;
-import club.klabis.domain.appusers.ApplicationUserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -35,9 +34,11 @@ import java.util.Map;
 @Configuration(proxyBeanMethods = false)
 public class ApiSecurityConfiguration {
 
-    public static RequestMatcher API_ENDPOINTS_MATCHER = new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON, MediaType.valueOf("application/hal+json"), MediaType.valueOf("application/klabis+json"));
+    public static RequestMatcher API_ENDPOINTS_MATCHER = new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON,
+            MediaType.valueOf("application/hal+json"),
+            MediaType.valueOf("application/klabis+json"));
 
-    public ApiSecurityConfiguration(ApplicationUserService applicationUserService) {
+    public ApiSecurityConfiguration(KlabisApplicationUserDetailsService applicationUserService) {
         this.applicationUserService = applicationUserService;
     }
 
@@ -47,9 +48,12 @@ public class ApiSecurityConfiguration {
         return http
                 .securityMatcher(API_ENDPOINTS_MATCHER)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.OPTIONS).permitAll()    // for CORS preflight requests - OPTIONS must not be authorized
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer((oauth2) -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(klabisMemberEnhanceAuthentication())))
+                        .requestMatchers(HttpMethod.OPTIONS)
+                        .permitAll()    // for CORS preflight requests - OPTIONS must not be authorized
+                        .anyRequest()
+                        .authenticated())
+                .oauth2ResourceServer((oauth2) -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(klabisMemberEnhanceAuthentication())))
                 .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .build();
     }
@@ -62,7 +66,7 @@ public class ApiSecurityConfiguration {
 
     // https://stackoverflow.com/questions/69100420/spring-oauth2-resource-server-load-synchronized-user-from-database
 
-    private final ApplicationUserService applicationUserService;
+    private final KlabisApplicationUserDetailsService applicationUserService;
 
     private Converter<Jwt, KlabisUserAuthentication> klabisMemberEnhanceAuthentication() {
         return source -> applicationUserService.getApplicationUserForUsername(source.getSubject())
@@ -74,7 +78,8 @@ public class ApiSecurityConfiguration {
     static RoleHierarchy customizedRoleHierarchy() {
         RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
         String hierarchyDef = RoleHierarchyUtils.roleHierarchyFromMap(
-                Map.of("ROLE_ADMIN", List.of(ApplicationGrant.MEMBERS_EDIT.name(), ApplicationGrant.MEMBERS_REGISTER.name()))
+                Map.of("ROLE_ADMIN",
+                        List.of(ApplicationGrant.MEMBERS_EDIT.name(), ApplicationGrant.MEMBERS_REGISTER.name()))
         );
         hierarchy.setHierarchy(hierarchyDef);
         return hierarchy;

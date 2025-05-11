@@ -1,5 +1,6 @@
 package club.klabis.domain.appusers;
 
+import club.klabis.adapters.api.KlabisApplicationUserDetailsService;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.events.MemberCreatedEvent;
@@ -15,7 +16,7 @@ import java.util.Optional;
 
 @Service
 @org.springframework.stereotype.Service
-class ApplicationUserServiceImpl implements ApplicationUserService {
+class ApplicationUserServiceImpl implements ApplicationUserService, KlabisApplicationUserDetailsService {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationUserServiceImpl.class);
 
     private final ApplicationUsersRepository repository;
