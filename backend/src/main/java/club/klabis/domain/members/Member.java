@@ -33,7 +33,6 @@ public class Member extends AbstractAggregateRoot<Member> {
     }
 
     // required attributes
-    // TODO: convert to value object
     @Identity
     private final Id id;
     private String firstName;

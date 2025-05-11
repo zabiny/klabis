@@ -2,6 +2,8 @@ package club.klabis.adapters.inmemorystorage;
 
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUsersRepository;
+import club.klabis.domain.events.Event;
+import club.klabis.domain.events.EventsRepository;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.MembersRepository;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -27,6 +29,12 @@ class RepositoryFactory {
     @Bean
     public ApplicationUsersRepository applicationUsersRepository() {
         return repoFactory.initializeRepositoryWithEventPublishingPostprocessing(ApplicationUsersRepository.class, new ApplicationUsersInMemoryRepository(), ApplicationUser.class);
+    }
+
+    @Bean
+    public EventsRepository eventsRepository() {
+        return repoFactory.initializeRepositoryWithEventPublishingPostprocessing(EventsRepository.class,
+                new EventsInMemoryRepository(), Event.class);
     }
 
 }
