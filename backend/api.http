@@ -171,4 +171,8 @@ Content-Type: application/json
   "grants": ["members:edit", "members:register"]
 }
 
-###
+### Get events list
+GET {{host}}/events
+Authorization: Bearer {{$auth.token("frontend")}}
+
+

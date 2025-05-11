@@ -3,7 +3,7 @@ GET {{host}}/.well-known/openid-configuration
 
 ### OIDC UserInfo
 GET {{host}}/oidc/userinfo
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("frontend@Local")}}
 
 ### OAuth2 token introspection - ID token
 POST {{host}}/oauth2/introspect
@@ -20,7 +20,7 @@ Content-Type: application/x-www-form-urlencoded
 token={{$auth.token("frontend")}}
 
 ### OAuth2 refresh token use (implicit)
-POST {{host}}/oauth/token
+POST {{host}}/oauth2/token
 Content-Type: application/x-www-form-urlencoded
 Authorization: Basic {{clientId}} {{clientSecret}}
 
@@ -39,6 +39,6 @@ refresh_token=...
 
 ### OIDC logout
 # (id_token_hint is full id_token)
-GET {{host}}/connect/logout?id_token_hint={{$auth.idToken("test")}}
-Authorization: Bearer {{$auth.token("test")}}
+GET {{host}}/connect/logout?id_token_hint={{$auth.idToken("frontend@Local")}}
+Authorization: Bearer {{$auth.token("frontend@Local")}}
 
