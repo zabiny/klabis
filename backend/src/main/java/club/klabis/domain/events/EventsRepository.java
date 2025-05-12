@@ -1,7 +1,7 @@
 package club.klabis.domain.events;
 
 import org.springframework.data.repository.ListCrudRepository;
-import org.springframework.stereotype.Repository;
+import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Optional;
 
