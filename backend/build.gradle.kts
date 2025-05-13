@@ -9,6 +9,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.4.5"
     id("io.spring.dependency-management") version "1.1.5"
+    id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
     id("org.openapi.generator") version "7.6.0"
 }
 
@@ -61,7 +62,7 @@ dependencies {
     //implementation("org.flywaydb:flyway-core")
 
     // OPENAPI
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
     implementation("org.hibernate:hibernate-validator:8.0.1.Final")
 
@@ -144,8 +145,16 @@ openApiGenerate {
         )
     )
 }
-
 tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
+
+// SpringDoc - generate OpenAPI during build from Controllers defined in Java
+//openApi {
+//    apiDocsUrl.set("https://localhost:8443/v3/api-docs")
+//    outputDir.set(file("${layout.buildDirectory}/docs"))
+//    trustStore.set("src/main/resources/https/keystore.p12")
+//    trustStorePassword.set("secret".toCharArray())
+//}
+//tasks.jar.get().dependsOn(tasks.generateOpenApiDocs)
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {
     imageName = "${project.name}:${project.version}"

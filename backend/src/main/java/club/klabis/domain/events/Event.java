@@ -2,11 +2,14 @@ package club.klabis.domain.events;
 
 import club.klabis.domain.events.events.EventEditedEvent;
 import club.klabis.domain.events.forms.EventEditationForm;
+import club.klabis.domain.events.forms.EventRegistrationForm;
 import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Optional;
 
 @AggregateRoot
@@ -14,6 +17,10 @@ public class Event extends AbstractAggregateRoot<Event> {
 
     protected Event() {
         id = Id.newId();
+    }
+
+    public Collection<Member.Id> getParticipants() {
+        return participants;
     }
 
     public record Id(int value) {
@@ -34,6 +41,8 @@ public class Event extends AbstractAggregateRoot<Event> {
     private LocalDate registrationDeadline;
     private Member.Id coordinator;
     private Integer orisId;
+
+    private Collection<Member.Id> participants = new HashSet<>();
 
     public Optional<Member.Id> getCoordinator() {
         return Optional.ofNullable(coordinator);
@@ -86,5 +95,21 @@ public class Event extends AbstractAggregateRoot<Event> {
 
     public void linkWithOris(int orisId) {
         this.orisId = orisId;
+    }
+
+    public void addEventRegistration(EventRegistrationForm form) {
+        if (this.participants.contains(form.memberId())) {
+            throw EventException.createAlreadySignedUpException(this.id, form.memberId());
+        }
+
+        this.participants.add(form.memberId());
+    }
+
+    public void removeEventRegistration(Member.Id memberId) {
+        if (!this.participants.contains(memberId)) {
+            throw EventException.createMemberNotRegisteredForEventException(this.id, memberId);
+        }
+
+        this.participants.remove(memberId);
     }
 }

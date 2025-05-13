@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 @TestConfiguration
-@Import({ApiSecurityConfiguration.class, MapperTestConfiguration.class})
+@Import({ApisConfiguration.class, MapperTestConfiguration.class})
 public class ApiTestConfiguration {
     @MockBean
     JwtDecoder jwtDecoderMock;

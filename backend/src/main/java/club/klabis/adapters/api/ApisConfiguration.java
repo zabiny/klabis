@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
@@ -31,14 +32,15 @@ import java.util.Map;
 
 @EnableWebSecurity
 @EnableMethodSecurity
+@EnableSpringDataWebSupport  // konverze ID -> domain (napr. integer -> Event). melo by snad fungovat az se dodela inMemory repository jako plny SpringRest repository
 @Configuration(proxyBeanMethods = false)
-public class ApiSecurityConfiguration {
+public class ApisConfiguration {
 
     public static RequestMatcher API_ENDPOINTS_MATCHER = new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON,
             MediaType.valueOf("application/hal+json"),
             MediaType.valueOf("application/klabis+json"));
 
-    public ApiSecurityConfiguration(KlabisApplicationUserDetailsService applicationUserService) {
+    public ApisConfiguration(KlabisApplicationUserDetailsService applicationUserService) {
         this.applicationUserService = applicationUserService;
     }
 

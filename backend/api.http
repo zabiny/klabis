@@ -173,6 +173,15 @@ Content-Type: application/json
 
 ### Get events list
 GET {{host}}/events
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("frontend@Local")}}
 
+### Register member for event
+POST {{host}}/events/2/registrations
+Authorization: Bearer {{$auth.token("frontend@Local")}}
+Content-Type: application/json
 
+{
+  "memberId": {
+    "value": 2
+  }
+}
