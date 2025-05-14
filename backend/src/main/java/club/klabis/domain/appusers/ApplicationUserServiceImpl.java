@@ -27,7 +27,7 @@ class ApplicationUserServiceImpl implements ApplicationUserService, KlabisApplic
 
     @Override
     public ApplicationUser getApplicationUserForMemberId(Member.Id memberId) {
-        return repository.findByMemberId(memberId);
+        return repository.findByMemberId(memberId).orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
     }
 
     @Override
@@ -37,15 +37,19 @@ class ApplicationUserServiceImpl implements ApplicationUserService, KlabisApplic
 
     @EventListener(MemberCreatedEvent.class)
     public void onMemberCreated(MemberCreatedEvent event) {
-        LOG.info("Creating Application user for new member %s (id=%s)".formatted(event.getAggregate().getRegistration(), event.getAggregate().getId()));
+        LOG.info("Creating Application user for new member %s (id=%s)".formatted(event.getAggregate().getRegistration(),
+                event.getAggregate().getId()));
         ApplicationUser userForCreatedMember = ApplicationUser.newAppUser(event.getAggregate(), "{noop}password");
         repository.save(userForCreatedMember);
     }
 
     @EventListener(MembershipSuspendedEvent.class)
     public void onMembershipSuspended(MembershipSuspendedEvent event) {
-        LOG.info("Disabling Application user for suspended member %s (id=%s)".formatted(event.getAggregate().getRegistration(), event.getAggregate().getId()));
-        ApplicationUser userForCreatedMember = repository.findByMemberId(event.getAggregate().getId());
+        Member.Id memberId = event.getAggregate().getId();
+        LOG.info("Disabling Application user for suspended member %s (id=%s)".formatted(event.getAggregate()
+                .getRegistration(), memberId));
+        ApplicationUser userForCreatedMember = repository.findByMemberId(memberId)
+                .orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
         userForCreatedMember.disable();
         repository.save(userForCreatedMember);
     }

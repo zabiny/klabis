@@ -1,14 +1,14 @@
 package club.klabis.adapters.api.events;
 
 import club.klabis.api.EventsApi;
-import club.klabis.api.dto.*;
+import club.klabis.api.dto.EventListItemApiDto;
+import club.klabis.api.dto.GetEvents200ResponseApiDto;
 import club.klabis.domain.events.Event;
 import club.klabis.domain.events.EventsRepository;
 import club.klabis.domain.events.forms.EventRegistrationForm;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

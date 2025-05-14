@@ -1,17 +1,21 @@
 package club.klabis.domain.members;
 
+import com.dpolach.inmemoryrepository.InMemoryRepository;
 import org.jmolecules.ddd.annotation.Repository;
-import org.springframework.data.repository.ListCrudRepository;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface MembersRepository extends ListCrudRepository<Member, Member.Id> {
+public interface MembersRepository extends InMemoryRepository<Member, Member.Id> {
 
-    List<Member> findMembersWithSameBirthyearAndSex(LocalDate birthDate, Sex sex);
+    default List<Member> findMembersWithSameBirthyearAndSex(LocalDate birthDate, Sex sex) {
+        return findAll().stream()
+                .filter(m -> sex.equals(m.getSex()) && m.getDateOfBirth().getYear() == birthDate.getYear())
+                .toList();
+    }
 
-    boolean isRegistrationNumberUsed(RegistrationNumber registrationNumber);
+    boolean existsByRegistration(RegistrationNumber registrationNumber);
 
-    List<Member> findAllActive();
+    List<Member> findMembersBySuspendedIsFalse();
 }

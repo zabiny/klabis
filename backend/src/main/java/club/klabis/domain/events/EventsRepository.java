@@ -1,12 +1,12 @@
 package club.klabis.domain.events;
 
-import org.springframework.data.repository.ListCrudRepository;
+import com.dpolach.inmemoryrepository.InMemoryRepository;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface EventsRepository extends ListCrudRepository<Event, Event.Id> {
+public interface EventsRepository extends InMemoryRepository<Event, Event.Id> {
 
     Optional<Event> findByOrisId(int orisId);
 

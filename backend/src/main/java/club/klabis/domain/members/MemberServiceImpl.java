@@ -27,7 +27,7 @@ class MemberServiceImpl implements MemberService {
         if (includeSuspended) {
             return membersRepository.findAll();
         } else {
-            return membersRepository.findAllActive();
+            return membersRepository.findMembersBySuspendedIsFalse();
         }
     }
 
@@ -40,7 +40,7 @@ class MemberServiceImpl implements MemberService {
     @Transactional
     @Override
     public Member registerMember(RegistrationForm registrationForm) {
-        if (membersRepository.isRegistrationNumberUsed(registrationForm.registrationNumber())) {
+        if (membersRepository.existsByRegistration(registrationForm.registrationNumber())) {
             throw new MemberRegistrationFailedException("Registration number '%s' is already used".formatted(registrationForm.registrationNumber()));
         }
 
