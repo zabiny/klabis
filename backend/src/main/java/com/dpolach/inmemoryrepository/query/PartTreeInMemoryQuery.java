@@ -1,5 +1,6 @@
-package com.dpolach.inmemoryrepository;
+package com.dpolach.inmemoryrepository.query;
 
+import com.dpolach.inmemoryrepository.InMemoryEntityStore;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.ParametersParameterAccessor;

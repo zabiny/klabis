@@ -1,13 +1,13 @@
 package com.dpolach.inmemoryrepository;
 
+import org.apache.commons.lang3.stream.Streams;
 import org.springframework.data.repository.core.EntityInformation;
 
-import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 
-public class SimpleInMemoryRepository<T, ID extends Serializable> implements InMemoryRepository<T, ID> {
+class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
 
     private final Class<T> domainClass;
     private final EntityInformation<T, ID> entityInformation;
@@ -21,13 +21,36 @@ public class SimpleInMemoryRepository<T, ID extends Serializable> implements InM
     }
 
     @Override
+    public <S extends T> List<S> saveAll(Iterable<S> entities) {
+        return Streams.of(entities).map(this::save).toList();
+    }
+
+    @Override
     public List<T> findAll() {
         return entityStore.findAll(domainClass);
     }
 
     @Override
+    public List<T> findAllById(Iterable<ID> ids) {
+        return Streams.of(ids).map(this::findById).flatMap(Optional::stream).toList();
+    }
+
+    @Override
+    public long count() {
+        return entityStore.findAll(domainClass).size();
+    }
+
+    @Override
     public Optional<T> findById(ID id) {
-        return entityStore.findById(domainClass, id);
+        return entityStore.findAll(domainClass)
+                .stream()
+                .filter(entity -> Objects.equals(entityInformation.getId(entity), id))
+                .findFirst();
+    }
+
+    @Override
+    public boolean existsById(ID id) {
+        return findById(id).isPresent();
     }
 
     @Override
@@ -41,17 +64,23 @@ public class SimpleInMemoryRepository<T, ID extends Serializable> implements InM
     }
 
     @Override
+    public void deleteAllById(Iterable<? extends ID> ids) {
+        Streams.of(ids).forEach(this::deleteById);
+    }
+
+    @Override
+    public void deleteAll(Iterable<? extends T> entities) {
+        Streams.of(entities).forEach(this::delete);
+    }
+
+    @Override
+    public void deleteAll() {
+        entityStore.findAll(entityInformation.getJavaType()).forEach(this::delete);
+    }
+
+    @Override
     public void deleteById(ID id) {
         entityStore.deleteById(domainClass, id);
     }
 
-    @Override
-    public List<T> findAll(Predicate<T> predicate) {
-        return entityStore.findAll(domainClass, predicate);
-    }
-
-    @Override
-    public Optional<T> findOne(Predicate<T> predicate) {
-        return entityStore.findOne(domainClass, predicate);
-    }
 }

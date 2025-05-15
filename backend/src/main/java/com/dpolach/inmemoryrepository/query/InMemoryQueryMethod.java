@@ -1,4 +1,4 @@
-package com.dpolach.inmemoryrepository;
+package com.dpolach.inmemoryrepository.query;
 
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.RepositoryMetadata;

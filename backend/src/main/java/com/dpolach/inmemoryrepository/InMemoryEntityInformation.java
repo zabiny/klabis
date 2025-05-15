@@ -9,7 +9,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InMemoryEntityInformation<T, ID> implements EntityInformation<T, ID> {
+class InMemoryEntityInformation<T, ID> implements EntityInformation<T, ID> {
 
     private final Class<T> domainClass;
     private final Field idField;

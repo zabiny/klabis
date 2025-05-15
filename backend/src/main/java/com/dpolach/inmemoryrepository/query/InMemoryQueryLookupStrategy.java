@@ -1,5 +1,6 @@
-package com.dpolach.inmemoryrepository;
+package com.dpolach.inmemoryrepository.query;
 
+import com.dpolach.inmemoryrepository.InMemoryEntityStore;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryMetadata;

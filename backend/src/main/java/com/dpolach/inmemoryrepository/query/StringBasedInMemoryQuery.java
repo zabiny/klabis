@@ -1,5 +1,6 @@
-package com.dpolach.inmemoryrepository;
+package com.dpolach.inmemoryrepository.query;
 
+import com.dpolach.inmemoryrepository.InMemoryEntityStore;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.expression.Expression;

@@ -10,6 +10,12 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 import java.lang.annotation.*;
 
+/**
+ * Enables InMemory repositories created for {@link org.springframework.data.repository.ListCrudRepository} components within defined package.
+ *
+ * <h2>Transactions</h2>
+ * InMemory repositories support only simple transactional scenarios (= single transaction at every moment). Attempts to use multiple transactions at the same moment may (and most likely will) behave unexpectedly.
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

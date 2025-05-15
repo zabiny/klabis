@@ -6,7 +6,7 @@ import org.springframework.data.repository.config.RepositoryConfigurationExtensi
 
 import java.lang.annotation.Annotation;
 
-public class InMemoryRepositoriesRegistrar extends RepositoryBeanDefinitionRegistrarSupport {
+class InMemoryRepositoriesRegistrar extends RepositoryBeanDefinitionRegistrarSupport {
 
     @Override
     protected Class<? extends Annotation> getAnnotation() {
