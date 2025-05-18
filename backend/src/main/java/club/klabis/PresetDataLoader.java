@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 
+@ConditionalOnProperty(name = "klabis.preset-data", havingValue = "true", matchIfMissing = true)
 @Component
 public class PresetDataLoader implements ApplicationRunner {
 
