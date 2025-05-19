@@ -1,13 +1,13 @@
 package club.klabis.domain.members;
 
-import com.dpolach.inmemoryrepository.InMemoryRepository;
 import org.jmolecules.ddd.annotation.Repository;
+import org.springframework.data.repository.ListCrudRepository;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface MembersRepository extends InMemoryRepository<Member, Member.Id> {
+public interface MembersRepository extends ListCrudRepository<Member, Member.Id> {
 
     default List<Member> findMembersWithSameBirthyearAndSex(LocalDate birthDate, Sex sex) {
         return findAll().stream()
