@@ -4,6 +4,7 @@ import club.klabis.api.EventsApi;
 import club.klabis.api.dto.EventListItemApiDto;
 import club.klabis.api.dto.GetEvents200ResponseApiDto;
 import club.klabis.domain.events.Event;
+import club.klabis.domain.events.EventException;
 import club.klabis.domain.events.EventsRepository;
 import club.klabis.domain.events.forms.EventRegistrationForm;
 import club.klabis.domain.members.Member;
@@ -87,13 +88,30 @@ class EventsApiImpl implements EventsApi {
     }
 
     @RequestMapping(
-            method = RequestMethod.POST,
-            value = "/member/{memberId}/registeredEvents",
+            method = RequestMethod.DELETE,
+            value = "/events/{eventId}/registrations/{memberId}",
             produces = {"application/json"}
     )
     @Transactional
-    Collection<EventListItemApiDto> getRegisteredEventsForMember(@PathVariable(name = "memberId") int memberId) {
-        return eventsRepository.findEventsByParticipantsIsContaining(new Member.Id(memberId)).stream().map(this::toDetailDto).toList();
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void removeMemberRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
+        Event event = eventsRepository.findById(new Event.Id(eventId))
+                .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
+
+        event.removeEventRegistration(new Member.Id(memberId));
+        eventsRepository.save(event);
+    }
+
+    @RequestMapping(
+            method = RequestMethod.GET,
+            value = "/member/{memberId}/registeredEvents",
+            produces = {"application/json"}
+    )
+    Collection<EventListItemApiDto> getMemberRegistrations(@PathVariable(name = "memberId") int memberId) {
+        return eventsRepository.findEventsByParticipantsIsContaining(new Member.Id(memberId))
+                .stream()
+                .map(this::toDetailDto)
+                .toList();
     }
 
 }

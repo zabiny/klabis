@@ -176,7 +176,7 @@ GET {{host}}/events
 Authorization: Bearer {{$auth.token("frontend@Local")}}
 
 ### Register member for event
-POST {{host}}/events/1/registrations
+POST {{host}}/events/91/registrations
 Authorization: Bearer {{$auth.token("frontend@Local")}}
 Content-Type: application/json
 
@@ -187,5 +187,9 @@ Content-Type: application/json
 }
 
 ### Events where member is registered
-POST {{host}}/member/2/registeredEvents
+GET {{host}}/member/2/registeredEvents
+Authorization: Bearer {{$auth.token("frontend@Local")}}
+
+###
+DELETE {{host}}/events/91/registrations/2
 Authorization: Bearer {{$auth.token("frontend@Local")}}
