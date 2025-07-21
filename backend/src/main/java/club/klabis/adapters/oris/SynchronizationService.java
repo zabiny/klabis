@@ -45,6 +45,6 @@ class SynchronizationService {
         EventEditationForm form = new EventEditationForm(orisEvent.name(), orisEvent.location(), orisEvent.date(), orisEvent.organizer1().abbreviation(), getEntryDate(orisEvent).toLocalDate(), null);
 
         eventsService.findByOrisId(orisEvent.id())
-                .ifPresentOrElse(event -> event.edit(form), () -> eventsService.createNewEvent(form));
+                .ifPresentOrElse(event -> event.edit(form), () -> eventsService.createNewEvent(form).linkWithOris(orisEvent.id()));
     }
 }

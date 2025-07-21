@@ -6,6 +6,7 @@ import club.klabis.api.dto.GetEvents200ResponseApiDto;
 import club.klabis.domain.events.Event;
 import club.klabis.domain.events.EventsRepository;
 import club.klabis.domain.events.forms.EventRegistrationForm;
+import club.klabis.domain.members.Member;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
 
 @RestController
@@ -31,20 +33,24 @@ class EventsApiImpl implements EventsApi {
     @Override
     public ResponseEntity<GetEvents200ResponseApiDto> getEvents() {
         List<EventListItemApiDto> items = eventsRepository.findAll()
-                .stream().map(this::fromOrisEvent).toList();
+                .stream().map(this::toListDto).toList();
 
         return ResponseEntity.ok(new GetEvents200ResponseApiDto().items(items));
     }
 
-    private EventListItemApiDto fromOrisEvent(Event oriEvent) {
+    private EventListItemApiDto toListDto(Event oriEvent) {
         return new EventListItemApiDto()
                 .id(oriEvent.getId().value())
                 .date(oriEvent.getDate())
                 .name(oriEvent.getName())
-                .type(EventListItemApiDto.TypeEnum.S)
+                //.type(EventListItemApiDto.TypeEnum.S)
                 .organizer(oriEvent.getOrganizer())
-                .coordinator("")
+                //.coordinator("")
                 .registrationDeadline(oriEvent.getRegistrationDeadline());
+    }
+
+    private EventListItemApiDto toDetailDto(Event event) {
+        return toListDto(event);
     }
 
     @Operation(
@@ -77,6 +83,17 @@ class EventsApiImpl implements EventsApi {
                 .orElseThrow();
 
         e.addEventRegistration(form);
+        eventsRepository.save(e);
+    }
+
+    @RequestMapping(
+            method = RequestMethod.POST,
+            value = "/member/{memberId}/registeredEvents",
+            produces = {"application/json"}
+    )
+    @Transactional
+    Collection<EventListItemApiDto> getRegisteredEventsForMember(@PathVariable(name = "memberId") int memberId) {
+        return eventsRepository.findEventsByParticipantsIsContaining(new Member.Id(memberId)).stream().map(this::toDetailDto).toList();
     }
 
 }

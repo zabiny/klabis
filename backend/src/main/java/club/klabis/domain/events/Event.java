@@ -93,11 +93,16 @@ public class Event extends AbstractAggregateRoot<Event> {
         this.andEvent(new EventEditedEvent(this));
     }
 
-    public void linkWithOris(int orisId) {
+    public Event linkWithOris(int orisId) {
         this.orisId = orisId;
+        return this;
     }
 
     public void addEventRegistration(EventRegistrationForm form) {
+        if (this.registrationDeadline.isBefore(LocalDate.now())) {
+            throw new EventException(this.id, "Cannot add new registration to event, registrations are already closed", EventException.Type.REGISTRATION_DEADLINE_PASSED);
+        }
+
         if (this.participants.contains(form.memberId())) {
             throw EventException.createAlreadySignedUpException(this.id, form.memberId());
         }
@@ -106,6 +111,10 @@ public class Event extends AbstractAggregateRoot<Event> {
     }
 
     public void removeEventRegistration(Member.Id memberId) {
+        if (this.registrationDeadline.isBefore(LocalDate.now())) {
+            throw new EventException(this.id, "Cannot remove registration from event, registrations are already closed", EventException.Type.REGISTRATION_DEADLINE_PASSED);
+        }
+
         if (!this.participants.contains(memberId)) {
             throw EventException.createMemberNotRegisteredForEventException(this.id, memberId);
         }

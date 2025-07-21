@@ -1,4 +1,4 @@
-package club.klabis.domain.oris;
+package club.klabis.adapters.oris;
 
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import club.klabis.domain.members.events.MemberEditedEvent;
