@@ -1,0 +1,7 @@
+# Tento soubor definuje vlastníky jednotlivých částí kódu
+# Více informací: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Výchozí vlastníci pro vše v repozitáři
+
+# Vlastník adresáře backend
+/backend/    @dapolach
