@@ -33,7 +33,7 @@ import java.util.Map;
 
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableSpringDataWebSupport  // konverze ID -> domain (napr. integer -> Event). melo by snad fungovat az se dodela inMemory repository jako plny SpringRest repository
+@EnableSpringDataWebSupport  // conversion of ID -> domain (e.g., integer -> Event). It should work once the in-memory repository is completed as a full SpringRest repository
 @Configuration(proxyBeanMethods = false)
 public class ApisConfiguration {
 
