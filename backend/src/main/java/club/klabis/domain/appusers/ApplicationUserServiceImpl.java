@@ -1,6 +1,5 @@
 package club.klabis.domain.appusers;
 
-import club.klabis.adapters.api.KlabisApplicationUserDetailsService;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.events.MemberCreatedEvent;

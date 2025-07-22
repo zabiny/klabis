@@ -5,6 +5,7 @@ import club.klabis.domain.events.forms.EventEditationForm;
 import club.klabis.domain.events.forms.EventRegistrationForm;
 import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.LocalDate;
@@ -19,8 +20,8 @@ public class Event extends AbstractAggregateRoot<Event> {
         id = Id.newId();
     }
 
-    public Collection<Member.Id> getParticipants() {
-        return participants;
+    public Collection<Member.Id> getEventRegistrations() {
+        return registrations;
     }
 
     public record Id(int value) {
@@ -33,6 +34,7 @@ public class Event extends AbstractAggregateRoot<Event> {
         }
     }
 
+    @Identity
     private final Id id;
     private LocalDate date;
     private String name;
@@ -42,7 +44,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     private Member.Id coordinator;
     private Integer orisId;
 
-    private Collection<Member.Id> participants = new HashSet<>();
+    private Collection<Member.Id> registrations = new HashSet<>();
 
     public Optional<Member.Id> getCoordinator() {
         return Optional.ofNullable(coordinator);
@@ -103,11 +105,11 @@ public class Event extends AbstractAggregateRoot<Event> {
             throw new EventException(this.id, "Cannot add new registration to event, registrations are already closed", EventException.Type.REGISTRATION_DEADLINE_PASSED);
         }
 
-        if (this.participants.contains(form.memberId())) {
+        if (this.registrations.contains(form.memberId())) {
             throw EventException.createAlreadySignedUpException(this.id, form.memberId());
         }
 
-        this.participants.add(form.memberId());
+        this.registrations.add(form.memberId());
     }
 
     public void removeEventRegistration(Member.Id memberId) {
@@ -115,10 +117,10 @@ public class Event extends AbstractAggregateRoot<Event> {
             throw new EventException(this.id, "Cannot remove registration from event, registrations are already closed", EventException.Type.REGISTRATION_DEADLINE_PASSED);
         }
 
-        if (!this.participants.contains(memberId)) {
+        if (!this.registrations.contains(memberId)) {
             throw EventException.createMemberNotRegisteredForEventException(this.id, memberId);
         }
 
-        this.participants.remove(memberId);
+        this.registrations.remove(memberId);
     }
 }

@@ -12,6 +12,6 @@ public interface EventsRepository extends ListCrudRepository<Event, Event.Id> {
 
     Optional<Event> findByOrisId(int orisId);
 
-    Collection<Event> findEventsByParticipantsIsContaining(Member.Id participantId);
+    Collection<Event> findEventsByRegistrationsContaining(Member.Id participantId);
 
 }
