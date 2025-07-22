@@ -108,7 +108,7 @@ class EventsApiImpl implements EventsApi {
             produces = {"application/json"}
     )
     Collection<EventListItemApiDto> getMemberRegistrations(@PathVariable(name = "memberId") int memberId) {
-        return eventsRepository.findEventsByParticipantsIsContaining(new Member.Id(memberId))
+        return eventsRepository.findEventsByRegistrationsContaining(new Member.Id(memberId))
                 .stream()
                 .map(this::toDetailDto)
                 .toList();
