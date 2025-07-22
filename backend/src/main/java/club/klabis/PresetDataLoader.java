@@ -5,6 +5,10 @@ import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;
 import club.klabis.domain.appusers.ApplicationUsersRepository;
+import club.klabis.domain.events.Event;
+import club.klabis.domain.events.EventsService;
+import club.klabis.domain.events.forms.EventEditationForm;
+import club.klabis.domain.events.forms.EventRegistrationForm;
 import club.klabis.domain.members.*;
 import club.klabis.domain.members.forms.RegistrationForm;
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -15,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -26,6 +31,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 
+@ConditionalOnProperty(name = "klabis.preset-data", havingValue = "true", matchIfMissing = true)
 @Component
 public class PresetDataLoader implements ApplicationRunner {
 
@@ -35,12 +41,14 @@ public class PresetDataLoader implements ApplicationRunner {
     private final MemberService memberService;
     private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
+    private final EventsService eventsService;
 
-    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MemberService memberService, ApplicationUserService applicationUserService, ConversionService conversionService) {
+    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MemberService memberService, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
         this.appUsersRepository = appUsersRepository;
         this.memberService = memberService;
         this.applicationUserService = applicationUserService;
         this.conversionService = conversionService;
+        this.eventsService = eventsService;
     }
 
     @Override
@@ -65,6 +73,12 @@ public class PresetDataLoader implements ApplicationRunner {
         });
 
         // ... some additional data?
+        Event createdEvent = eventsService.createNewEvent(new EventEditationForm("Example opened event", "Brno", LocalDate.now(), "ZBM", LocalDate.now()
+                .plusDays(3), null));
+        System.out.printf("Created event with ID %s%n", createdEvent.getId());
+        createdEvent = eventsService.createNewEvent(new EventEditationForm("Example passed event", "Jilemnice", LocalDate.now().minusDays(12), "ZBM", LocalDate.now()
+                .minusDays(20), null));
+        System.out.printf("Created event with ID %s%n", createdEvent.getId());
     }
 
     public <T> List<T> loadObjectList(Class<T> type, InputStream inputData) throws IOException {

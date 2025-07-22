@@ -144,7 +144,7 @@ Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Suspend membership
 PUT {{host}}/members/1/suspendMembershipForm
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("frontend@Local")}}
 
 ### Get ORIS user info data
 GET {{host}}/oris/userInfo/ZBM8003
@@ -173,6 +173,23 @@ Content-Type: application/json
 
 ### Get events list
 GET {{host}}/events
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("frontend@Local")}}
 
+### Register member for event
+POST {{host}}/events/1/registrations
+Authorization: Bearer {{$auth.token("frontend@Local")}}
+Content-Type: application/json
 
+{
+  "memberId": {
+    "value": 2
+  }
+}
+
+### Events where member is registered
+GET {{host}}/member/2/registeredEvents
+Authorization: Bearer {{$auth.token("frontend@Local")}}
+
+###
+DELETE {{host}}/events/1/registrations/2
+Authorization: Bearer {{$auth.token("frontend@Local")}}

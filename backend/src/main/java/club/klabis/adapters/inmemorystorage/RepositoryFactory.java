@@ -1,40 +1,36 @@
 package club.klabis.adapters.inmemorystorage;
 
-import club.klabis.domain.appusers.ApplicationUser;
-import club.klabis.domain.appusers.ApplicationUsersRepository;
-import club.klabis.domain.events.Event;
-import club.klabis.domain.events.EventsRepository;
-import club.klabis.domain.members.Member;
-import club.klabis.domain.members.MembersRepository;
-import org.springframework.beans.factory.config.BeanPostProcessor;
+import club.klabis.domain.DomainEventBase;
+import com.dpolach.inmemoryrepository.EnableInMemoryRepositories;
+import com.dpolach.inmemoryrepository.InMemoryEntityStore;
+import com.dpolach.inmemoryrepository.InMemoryTransactionManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Scope;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Configuration
 @Profile("inmemorydb")
+@EnableInMemoryRepositories(basePackageClasses = DomainEventBase.class)
+@EnableTransactionManagement
 class RepositoryFactory {
 
-    private final InMemoryRepositoryWithEventsFactory repoFactory;
-
-    RepositoryFactory(InMemoryRepositoryWithEventsFactory repoFactory) {
-        this.repoFactory = repoFactory;
+    @Bean
+    public InMemoryEntityStore entityStore() {
+        return new InMemoryEntityStore();
     }
 
     @Bean
-    public MembersRepository membersRepository() {
-        return repoFactory.initializeRepositoryWithEventPublishingPostprocessing(MembersRepository.class, new MembersInMemoryRepository(), Member.class);
+    public PlatformTransactionManager transactionManager() {
+        return new InMemoryTransactionManager(entityStore());
     }
 
     @Bean
-    public ApplicationUsersRepository applicationUsersRepository() {
-        return repoFactory.initializeRepositoryWithEventPublishingPostprocessing(ApplicationUsersRepository.class, new ApplicationUsersInMemoryRepository(), ApplicationUser.class);
+    @Scope("prototype")
+    public TransactionTemplate transactionTemplate() {
+        return new TransactionTemplate(transactionManager());
     }
-
-    @Bean
-    public EventsRepository eventsRepository() {
-        return repoFactory.initializeRepositoryWithEventPublishingPostprocessing(EventsRepository.class,
-                new EventsInMemoryRepository(), Event.class);
-    }
-
 }

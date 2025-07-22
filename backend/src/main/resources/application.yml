@@ -170,6 +170,8 @@ logging:
   level:
     org.springframework.security.jackson2.SecurityJackson2Modules: info
     org.springframework.security.web.savedrequest.HttpSessionRequestCache: trace
+    #org.springframework.data.repository.config.RepositoryConfigurationDelegate: trace
+    #org.springframework.data.repository.core.support.RepositoryFactorySupport: trace
     #org.springframework.web.client.RestTemplate: DEBUG
     #REQUESTS_LOGGER: TRACE
     org.zalando.logbook: info

@@ -1,6 +1,4 @@
-package club.klabis.adapters.api;
-
-import club.klabis.domain.appusers.ApplicationUser;
+package club.klabis.domain.appusers;
 
 import java.util.Optional;
 
