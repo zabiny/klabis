@@ -27,7 +27,7 @@ public class StringBasedInMemoryQuery implements RepositoryQuery {
     @Override
     public Object execute(Object[] parameters) {
         StandardEvaluationContext context = new StandardEvaluationContext();
-        // Nastavení parametrů pro vyhodnocení výrazu
+        // Setting parameters for expression evaluation
         for (int i = 0; i < parameters.length; i++) {
             context.setVariable("p" + i, parameters[i]);
         }
