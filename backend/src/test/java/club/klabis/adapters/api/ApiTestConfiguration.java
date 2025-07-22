@@ -3,19 +3,19 @@ package club.klabis.adapters.api;
 import club.klabis.domain.appusers.KlabisApplicationUserDetailsService;
 import club.klabis.tests.common.MapperTestConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @TestConfiguration
 @Import({ApisConfiguration.class, MapperTestConfiguration.class})
 public class ApiTestConfiguration {
-    @MockitoBean
+    @MockBean
     JwtDecoder jwtDecoderMock;
 
-    @MockitoBean
+    @MockBean
     KlabisSecurityService klabisSecurityServiceMock;
 
-    @MockitoBean
+    @MockBean
     KlabisApplicationUserDetailsService klabisApplicationUserDetailsServiceMock;
 }
