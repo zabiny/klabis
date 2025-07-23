@@ -1,6 +1,6 @@
 package club.klabis.application.users;
 
-import club.klabis.domain.appusers.ApplicationUser;
+import club.klabis.domain.users.ApplicationUser;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import org.slf4j.Logger;

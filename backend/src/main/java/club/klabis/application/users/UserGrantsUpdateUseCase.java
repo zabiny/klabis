@@ -1,8 +1,8 @@
 package club.klabis.application.users;
 
-import club.klabis.domain.appusers.ApplicationGrant;
-import club.klabis.domain.appusers.ApplicationUser;
-import club.klabis.domain.appusers.ApplicationUserNotFound;
+import club.klabis.domain.users.ApplicationGrant;
+import club.klabis.domain.users.ApplicationUser;
+import club.klabis.domain.users.ApplicationUserNotFound;
 import club.klabis.domain.members.Member;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

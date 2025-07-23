@@ -1,7 +1,6 @@
 package club.klabis.adapters.api;
 
-import club.klabis.domain.appusers.ApplicationGrant;
-import org.springframework.core.annotation.AliasFor;
+import club.klabis.domain.users.ApplicationGrant;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.lang.annotation.ElementType;

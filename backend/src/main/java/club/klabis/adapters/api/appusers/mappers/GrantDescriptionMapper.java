@@ -2,7 +2,7 @@ package club.klabis.adapters.api.appusers.mappers;
 
 import club.klabis.api.dto.GlobalGrantDetailApiDto;
 import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;
-import club.klabis.domain.appusers.ApplicationGrant;
+import club.klabis.domain.users.ApplicationGrant;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;

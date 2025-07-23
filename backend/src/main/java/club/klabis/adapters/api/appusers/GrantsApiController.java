@@ -3,7 +3,7 @@ package club.klabis.adapters.api.appusers;
 import club.klabis.api.GrantsApi;
 import club.klabis.api.dto.GetAllGrants200ResponseApiDto;
 import club.klabis.api.dto.GlobalGrantDetailApiDto;
-import club.klabis.domain.appusers.ApplicationGrant;
+import club.klabis.domain.users.ApplicationGrant;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.ResponseEntity;

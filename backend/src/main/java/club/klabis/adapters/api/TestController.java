@@ -1,7 +1,6 @@
 package club.klabis.adapters.api;
 
-import club.klabis.domain.appusers.ApplicationGrant;
-import club.klabis.domain.appusers.ApplicationUser;
+import club.klabis.domain.users.ApplicationUser;
 import net.minidev.json.JSONObject;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

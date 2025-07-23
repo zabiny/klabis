@@ -1,7 +1,7 @@
-package club.klabis.domain.appusers.events;
+package club.klabis.domain.users.events;
 
 import club.klabis.domain.AggregateDomainEvent;
-import club.klabis.domain.appusers.ApplicationUser;
+import club.klabis.domain.users.ApplicationUser;
 
 @org.jmolecules.event.annotation.DomainEvent
 public class ApplicationUserEnableStatusChanged extends AggregateDomainEvent<ApplicationUser> {

@@ -1,8 +1,7 @@
-package club.klabis.domain.appusers;
+package club.klabis.domain.users;
 
 import club.klabis.application.users.ApplicationUsersRepository;
 import club.klabis.domain.members.Member;
-import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.events.MembershipSuspendedEvent;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
