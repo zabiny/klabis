@@ -1,5 +1,8 @@
-package club.klabis.domain.members;
+package club.klabis.application;
 
+import club.klabis.domain.members.Member;
+import club.klabis.domain.members.RegistrationNumber;
+import club.klabis.domain.members.Sex;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.repository.ListCrudRepository;
 
@@ -18,4 +21,13 @@ public interface MembersRepository extends ListCrudRepository<Member, Member.Id>
     boolean existsByRegistration(RegistrationNumber registrationNumber);
 
     List<Member> findMembersBySuspendedIsFalse();
+
+    default List<Member> findAll(boolean includeSuspended) {
+        if (includeSuspended) {
+            return this.findAll();
+        } else {
+            return findMembersBySuspendedIsFalse();
+        }
+    }
+
 }

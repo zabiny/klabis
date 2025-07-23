@@ -4,7 +4,6 @@ import club.klabis.api.RegistrationNumberApi;
 import club.klabis.api.dto.RegistrationNumberGet200ResponseApiDto;
 import club.klabis.api.dto.SexApiDto;
 import club.klabis.application.MemberRegistrationUseCase;
-import club.klabis.domain.members.MemberService;
 import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.Sex;
 import org.springframework.core.convert.ConversionService;

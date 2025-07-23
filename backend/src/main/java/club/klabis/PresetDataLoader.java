@@ -39,16 +39,14 @@ public class PresetDataLoader implements ApplicationRunner {
     private static final Logger LOG = LoggerFactory.getLogger(PresetDataLoader.class);
 
     private final ApplicationUsersRepository appUsersRepository;
-    private final MemberService memberService;
     private final MembershipSuspendUseCase membershipSuspendUseCase;
     private final MemberRegistrationUseCase memberRegistrationUseCase;
     private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
     private final EventsService eventsService;
 
-    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MemberService memberService, MembershipSuspendUseCase membershipSuspendUseCase, MemberRegistrationUseCase memberRegistrationUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
+    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MembershipSuspendUseCase membershipSuspendUseCase, MemberRegistrationUseCase memberRegistrationUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
         this.appUsersRepository = appUsersRepository;
-        this.memberService = memberService;
         this.membershipSuspendUseCase = membershipSuspendUseCase;
         this.memberRegistrationUseCase = memberRegistrationUseCase;
         this.applicationUserService = applicationUserService;
