@@ -1,8 +1,8 @@
 package club.klabis.adapters.api;
 
+import club.klabis.application.users.ApplicationUsersRepository;
 import club.klabis.config.authserver.AuthorizationServerConfiguration;
 import club.klabis.domain.users.ApplicationGrant;
-import club.klabis.domain.users.KlabisApplicationUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -41,8 +41,8 @@ public class ApisConfiguration {
             MediaType.valueOf("application/hal+json"),
             MediaType.valueOf("application/klabis+json"));
 
-    public ApisConfiguration(KlabisApplicationUserDetailsService applicationUserService) {
-        this.applicationUserService = applicationUserService;
+    public ApisConfiguration(ApplicationUsersRepository applicationUserRepository) {
+        this.applicationUserRepository = applicationUserRepository;
     }
 
     @Bean
@@ -69,10 +69,10 @@ public class ApisConfiguration {
 
     // https://stackoverflow.com/questions/69100420/spring-oauth2-resource-server-load-synchronized-user-from-database
 
-    private final KlabisApplicationUserDetailsService applicationUserService;
+    private final ApplicationUsersRepository applicationUserRepository;
 
     private Converter<Jwt, KlabisUserAuthentication> klabisMemberEnhanceAuthentication() {
-        return source -> applicationUserService.getApplicationUserForUsername(source.getSubject())
+        return source -> applicationUserRepository.findByUserName(source.getSubject())
                 .map(user -> KlabisUserAuthentication.authenticated(user, source))
                 .orElseGet(() -> KlabisUserAuthentication.noUser(source));
     }
