@@ -1,8 +1,8 @@
 package club.klabis.adapters.api;
 
-import club.klabis.application.users.ApplicationUsersRepository;
+import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.config.authserver.AuthorizationServerConfiguration;
-import club.klabis.domain.users.ApplicationGrant;
+import club.klabis.users.domain.ApplicationGrant;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;

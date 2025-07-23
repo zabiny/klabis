@@ -1,7 +1,7 @@
 package club.klabis.adapters.api;
 
-import club.klabis.domain.users.ApplicationGrant;
-import club.klabis.domain.users.ApplicationUser;
+import club.klabis.users.domain.ApplicationGrant;
+import club.klabis.users.domain.ApplicationUser;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

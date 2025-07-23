@@ -1,8 +1,8 @@
 package club.klabis.config.authserver;
 
-import club.klabis.application.users.ApplicationUsersRepository;
+import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.config.authserver.generatejwtkeys.JKWKeyGenerator;
-import club.klabis.domain.users.ApplicationUser;
+import club.klabis.users.domain.ApplicationUser;
 import club.klabis.application.members.MembersRepository;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;

@@ -1,9 +1,9 @@
-package club.klabis.adapters.api.appusers;
+package club.klabis.users.adapters.restapi;
 
 import club.klabis.api.GrantsApi;
 import club.klabis.api.dto.GetAllGrants200ResponseApiDto;
 import club.klabis.api.dto.GlobalGrantDetailApiDto;
-import club.klabis.domain.users.ApplicationGrant;
+import club.klabis.users.domain.ApplicationGrant;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.ResponseEntity;

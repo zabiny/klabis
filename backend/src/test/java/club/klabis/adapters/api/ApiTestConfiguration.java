@@ -1,6 +1,6 @@
 package club.klabis.adapters.api;
 
-import club.klabis.application.users.ApplicationUsersRepository;
+import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.tests.common.MapperTestConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;

@@ -2,7 +2,7 @@ package club.klabis.adapters.api.members.mappers;
 
 import club.klabis.adapters.api.KlabisSecurityService;
 import club.klabis.adapters.api.members.MembersController;
-import club.klabis.domain.users.ApplicationGrant;
+import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.domain.members.Member;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.MappingTarget;

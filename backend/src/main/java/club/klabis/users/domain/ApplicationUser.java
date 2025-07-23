@@ -1,6 +1,6 @@
-package club.klabis.domain.users;
+package club.klabis.users.domain;
 
-import club.klabis.domain.users.events.ApplicationUserEnableStatusChanged;
+import club.klabis.users.domain.events.ApplicationUserEnableStatusChanged;
 import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
