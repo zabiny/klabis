@@ -1,7 +1,7 @@
 
 package org.springframework.data.domain;
 
-import club.klabis.domain.DomainEvent;
+import club.klabis.common.domain.DomainEvent;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 
