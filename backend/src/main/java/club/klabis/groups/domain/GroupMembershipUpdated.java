@@ -2,7 +2,7 @@ package club.klabis.groups.domain;
 
 import club.klabis.domain.DomainEventBase;
 import club.klabis.users.domain.ApplicationGrant;
-import club.klabis.domain.members.Member;
+import club.klabis.members.domain.Member;
 
 import java.util.Collection;
 

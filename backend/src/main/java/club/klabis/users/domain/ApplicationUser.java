@@ -1,7 +1,7 @@
 package club.klabis.users.domain;
 
 import club.klabis.users.domain.events.ApplicationUserEnableStatusChanged;
-import club.klabis.domain.members.Member;
+import club.klabis.members.domain.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;

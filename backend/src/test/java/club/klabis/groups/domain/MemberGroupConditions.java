@@ -1,6 +1,6 @@
 package club.klabis.groups.domain;
 
-import club.klabis.domain.members.Member;
+import club.klabis.members.domain.Member;
 import org.assertj.core.api.Condition;
 
 import java.util.Arrays;

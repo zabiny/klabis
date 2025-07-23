@@ -1,7 +1,7 @@
 package club.klabis.users.application;
 
-import club.klabis.domain.members.Member;
-import club.klabis.domain.members.RegistrationNumber;
+import club.klabis.members.domain.Member;
+import club.klabis.members.domain.RegistrationNumber;
 
 public class ApplicationUserNotFound extends RuntimeException {
     public static ApplicationUserNotFound forMemberId(Member.Id memberId) {

@@ -2,7 +2,7 @@ package club.klabis.groups.domain;
 
 import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.groups.domain.forms.EditGroup;
-import club.klabis.domain.members.Member;
+import club.klabis.members.domain.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;

@@ -1,7 +1,7 @@
 package club.klabis.groups.domain.forms;
 
 import club.klabis.groups.domain.MemberGroup;
-import club.klabis.domain.members.Member;
+import club.klabis.members.domain.Member;
 
 import java.util.Collection;
 import java.util.HashSet;

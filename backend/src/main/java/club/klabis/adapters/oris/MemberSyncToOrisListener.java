@@ -1,7 +1,7 @@
 package club.klabis.adapters.oris;
 
-import club.klabis.domain.members.events.MemberCreatedEvent;
-import club.klabis.domain.members.events.MemberEditedEvent;
+import club.klabis.members.domain.events.MemberCreatedEvent;
+import club.klabis.members.domain.events.MemberEditedEvent;
 import org.jmolecules.event.annotation.DomainEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

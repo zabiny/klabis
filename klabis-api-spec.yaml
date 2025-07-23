@@ -933,7 +933,7 @@ components:
         
         Additional validations: 
         - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value
-      x-class-extra-annotation: "@club.klabis.domain.members.forms.BirthCertificateIsDefinedForCzechia"
+      x-class-extra-annotation: "@club.klabis.members.domain.forms.BirthCertificateIsDefinedForCzechia"
       required:
         - firstName
         - lastName

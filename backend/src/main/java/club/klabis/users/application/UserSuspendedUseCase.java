@@ -1,7 +1,7 @@
 package club.klabis.users.application;
 
-import club.klabis.domain.members.Member;
-import club.klabis.domain.members.events.MembershipSuspendedEvent;
+import club.klabis.members.domain.Member;
+import club.klabis.members.domain.events.MembershipSuspendedEvent;
 import club.klabis.users.domain.ApplicationUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

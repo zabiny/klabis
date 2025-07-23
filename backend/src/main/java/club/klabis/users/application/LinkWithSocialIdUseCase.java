@@ -1,7 +1,7 @@
 package club.klabis.users.application;
 
 import club.klabis.users.domain.ApplicationUser;
-import club.klabis.domain.members.RegistrationNumber;
+import club.klabis.members.domain.RegistrationNumber;
 import org.springframework.stereotype.Service;
 
 @Service

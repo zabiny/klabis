@@ -7,7 +7,7 @@ import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.forms.EventRegistrationForm;
-import club.klabis.domain.members.Member;
+import club.klabis.members.domain.Member;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

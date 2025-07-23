@@ -1,8 +1,8 @@
 package club.klabis.users.application;
 
 import club.klabis.users.domain.ApplicationUser;
-import club.klabis.domain.members.Member;
-import club.klabis.domain.members.events.MemberCreatedEvent;
+import club.klabis.members.domain.Member;
+import club.klabis.members.domain.events.MemberCreatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;

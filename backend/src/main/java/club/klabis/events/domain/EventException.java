@@ -1,6 +1,6 @@
 package club.klabis.events.domain;
 
-import club.klabis.domain.members.Member;
+import club.klabis.members.domain.Member;
 
 public class EventException extends RuntimeException {
     private final Event.Id eventId;

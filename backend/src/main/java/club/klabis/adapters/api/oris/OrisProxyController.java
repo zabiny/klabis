@@ -5,7 +5,7 @@ import club.klabis.adapters.oris.OrisApiClient;
 import club.klabis.api.OrisApi;
 import club.klabis.api.dto.ORISUserInfoApiDto;
 import club.klabis.users.domain.ApplicationGrant;
-import club.klabis.domain.members.RegistrationNumber;
+import club.klabis.members.domain.RegistrationNumber;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
