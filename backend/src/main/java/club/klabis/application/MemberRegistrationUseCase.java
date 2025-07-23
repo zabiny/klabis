@@ -1,11 +1,11 @@
 package club.klabis.application;
 
-import club.klabis.domain.members.Member;
-import club.klabis.domain.members.MemberRegistrationFailedException;
-import club.klabis.domain.members.MembersRepository;
+import club.klabis.domain.members.*;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 @Service
 public class MemberRegistrationUseCase {
@@ -27,5 +27,14 @@ public class MemberRegistrationUseCase {
         return membersRepository.save(newMember);
     }
 
+    public RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex) {
+        // TODO: pripomenout si co tady dela pohlavi... proc je dulezite? (a pokud je to spatne, tak opravit)
+        return membersRepository.findMembersWithSameBirthyearAndSex(dateOfBirth, sex).stream()
+                .map(Member::getRegistration)
+                .sorted()
+                .reduce((first, second) -> second)    // find last (highest) item
+                .map(RegistrationNumber::followingRegistrationNumber)
+                .orElseGet(() -> RegistrationNumber.ofZbmClub(dateOfBirth, 1));
+    }
 
 }

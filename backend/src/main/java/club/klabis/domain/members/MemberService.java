@@ -18,8 +18,6 @@ public interface MemberService {
 
     Optional<Member> findById(Member.Id memberId);
 
-    RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex);
-
     Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(Member.Id memberId);
 
     void suspendMembershipForMember(Member.Id memberId, boolean forceSuspension);

@@ -3,6 +3,7 @@ package club.klabis.adapters.api.members;
 import club.klabis.api.RegistrationNumberApi;
 import club.klabis.api.dto.RegistrationNumberGet200ResponseApiDto;
 import club.klabis.api.dto.SexApiDto;
+import club.klabis.application.MemberRegistrationUseCase;
 import club.klabis.domain.members.MemberService;
 import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.Sex;
@@ -15,10 +16,10 @@ import java.time.LocalDate;
 @RestController
 public class RegistrationNumbersController implements RegistrationNumberApi {
 
-    private final MemberService service;
+    private final MemberRegistrationUseCase service;
     private final ConversionService conversionService;
 
-    public RegistrationNumbersController(MemberService service, ConversionService conversionService) {
+    public RegistrationNumbersController(MemberRegistrationUseCase service, ConversionService conversionService) {
         this.service = service;
         this.conversionService = conversionService;
     }
