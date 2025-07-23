@@ -1,5 +1,6 @@
 package club.klabis.domain.members;
 
+import club.klabis.domain.IncorrectFormDataException;
 import club.klabis.domain.members.events.MemberCreatedEvent;
 import club.klabis.domain.members.events.MemberEditedEvent;
 import club.klabis.domain.members.events.MembershipSuspendedEvent;
