@@ -1,7 +1,7 @@
-package club.klabis.application.events;
+package club.klabis.events.application;
 
-import club.klabis.domain.events.Event;
-import club.klabis.domain.events.forms.EventEditationForm;
+import club.klabis.events.domain.Event;
+import club.klabis.events.domain.forms.EventEditationForm;
 import org.springframework.stereotype.Service;
 
 @Service

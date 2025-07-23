@@ -1,8 +1,8 @@
 package club.klabis.adapters.oris;
 
-import club.klabis.application.events.EventsRepository;
-import club.klabis.domain.events.Event;
-import club.klabis.domain.events.forms.EventEditationForm;
+import club.klabis.events.application.EventsRepository;
+import club.klabis.events.domain.Event;
+import club.klabis.events.domain.forms.EventEditationForm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;

@@ -1,4 +1,4 @@
-package club.klabis.domain.events;
+package club.klabis.events.domain;
 
 import club.klabis.domain.members.Member;
 

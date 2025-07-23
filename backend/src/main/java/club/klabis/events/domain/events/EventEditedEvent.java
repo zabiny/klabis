@@ -1,7 +1,7 @@
-package club.klabis.domain.events.events;
+package club.klabis.events.domain.events;
 
 import club.klabis.domain.AggregateDomainEvent;
-import club.klabis.domain.events.Event;
+import club.klabis.events.domain.Event;
 
 @org.jmolecules.event.annotation.DomainEvent
 public class EventEditedEvent extends AggregateDomainEvent<Event> {

@@ -1,8 +1,8 @@
-package club.klabis.domain.events;
+package club.klabis.events.domain;
 
-import club.klabis.domain.events.events.EventEditedEvent;
-import club.klabis.domain.events.forms.EventEditationForm;
-import club.klabis.domain.events.forms.EventRegistrationForm;
+import club.klabis.events.domain.events.EventEditedEvent;
+import club.klabis.events.domain.forms.EventEditationForm;
+import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;

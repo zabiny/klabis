@@ -1,6 +1,6 @@
-package club.klabis.adapters.api.events;
+package club.klabis.events.adapters.restapi;
 
-import club.klabis.domain.events.EventException;
+import club.klabis.events.domain.EventException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;

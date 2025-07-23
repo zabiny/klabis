@@ -1,4 +1,4 @@
-package club.klabis.domain.events.forms;
+package club.klabis.events.domain.forms;
 
 import club.klabis.domain.members.Member;
 import io.soabase.recordbuilder.core.RecordBuilder;
