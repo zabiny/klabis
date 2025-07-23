@@ -1,5 +1,6 @@
 package club.klabis.domain.appusers;
 
+import club.klabis.application.users.ApplicationUsersRepository;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.RegistrationNumber;
 import club.klabis.domain.members.events.MemberCreatedEvent;
@@ -32,14 +33,6 @@ class ApplicationUserServiceImpl implements ApplicationUserService, KlabisApplic
     @Override
     public Optional<ApplicationUser> getApplicationUserForUsername(String username) {
         return repository.findByUserName(username);
-    }
-
-    @EventListener(MemberCreatedEvent.class)
-    public void onMemberCreated(MemberCreatedEvent event) {
-        LOG.info("Creating Application user for new member %s (id=%s)".formatted(event.getAggregate().getRegistration(),
-                event.getAggregate().getId()));
-        ApplicationUser userForCreatedMember = ApplicationUser.newAppUser(event.getAggregate(), "{noop}password");
-        repository.save(userForCreatedMember);
     }
 
     @EventListener(MembershipSuspendedEvent.class)

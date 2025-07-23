@@ -1,6 +1,5 @@
 package club.klabis.adapters.inmemorystorage;
 
-import club.klabis.application.events.EventsRepository;
 import com.dpolach.inmemoryrepository.EnableInMemoryRepositories;
 import com.dpolach.inmemoryrepository.InMemoryEntityStore;
 import com.dpolach.inmemoryrepository.InMemoryTransactionManager;
@@ -14,7 +13,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @Configuration
 @Profile("inmemorydb")
-@EnableInMemoryRepositories(basePackageClasses = EventsRepository.class)
+@EnableInMemoryRepositories(basePackages = "club.klabis.application")
 @EnableTransactionManagement
 class RepositoryFactory {
 

@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(properties = "klabis.preset-data=false")
 @ContextConfiguration(classes = KlabisApplication.class)
-@EnableInMemoryRepositories(basePackageClasses = InMemoryTransactionsTests.class)
+@EnableInMemoryRepositories(basePackageClasses = TestRepository.class)
 class InMemoryTransactionsTests {
 
     @Autowired
