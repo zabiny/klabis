@@ -3,8 +3,9 @@ package club.klabis.oris.application;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventEditationForm;
-import club.klabis.oris.adapters.apiclient.OrisApiClient;
-import club.klabis.oris.domain.OrisEvent;
+import club.klabis.oris.application.apiclient.OrisApiClient;
+import club.klabis.oris.application.apiclient.dto.OrisEvent;
+import club.klabis.oris.application.apiclient.dto.OrisEventListFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,7 +30,7 @@ class OrisEventsImporter {
 
     @Scheduled(initialDelayString = "PT1M", fixedDelayString = "PT1H")
     void synchronizeEvents() {
-        orisApiClient.getEventList(OrisApiClient.OrisEventListFilter.createDefault()
+        orisApiClient.getEventList(OrisEventListFilter.createDefault()
                         .withDateFrom(LocalDate.now().minusMonths(3))
                         .withDateTo(LocalDate.now().plusMonths(3)))
                 .data().forEach(this::synchronizeEvent);
@@ -45,7 +46,7 @@ class OrisEventsImporter {
     }
 
     private void synchronizeEvent(String id, OrisEvent orisEvent) {
-        logger.info("Synchronizing event {}: {}", id, orisEvent);
+        logger.info("Synchronizing event {}: {}", orisEvent, orisEvent);
 
         eventsRepository.findByOrisId(orisEvent.id())
                 .ifPresentOrElse(event -> updateEventFromOris(event, orisEvent), () -> importOrisEvent(orisEvent));

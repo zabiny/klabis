@@ -1,4 +1,4 @@
-package club.klabis.oris.domain;
+package club.klabis.oris.application.apiclient.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

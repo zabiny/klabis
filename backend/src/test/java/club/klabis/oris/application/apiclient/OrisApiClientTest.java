@@ -1,6 +1,6 @@
-package club.klabis.oris.adapters.apiclient;
+package club.klabis.oris.application.apiclient;
 
-import club.klabis.oris.domain.*;
+import club.klabis.oris.application.apiclient.dto.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -66,7 +66,7 @@ class OrisApiClientTest {
             restServiceServer.expect(MockRestRequestMatchers.anything())
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getUserExampleResponse.json"));
 
-            OrisApiClient.OrisResponse<OrisApiClient.OrisUserInfo> actualResponse = testedClient.getUserInfo("32323");
+            OrisApiClient.OrisResponse<OrisUserInfo> actualResponse = testedClient.getUserInfo("32323");
 
             assertThat(actualResponse.data()).extracting("orisId", "firstName", "lastName")
                     .containsExactly(452, "John", "Doe");
@@ -149,7 +149,7 @@ class OrisApiClientTest {
                             "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205&datefrom=2020-10-01&dateto=2023-04-10&rg=JM"))
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
 
-            testedClient.getEventList(OrisApiClient.OrisEventListFilter.EMPTY.withRegion(OrisApiClient.REGION_JIHOMORAVSKA)
+            testedClient.getEventList(OrisEventListFilter.EMPTY.withRegion(OrisApiClient.REGION_JIHOMORAVSKA)
                     .withDateFrom(LocalDate.of(2020, 10, 1))
                     .withDateTo(LocalDate.of(2023, 4, 10)));
 

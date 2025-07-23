@@ -1,5 +1,6 @@
-package club.klabis.oris.adapters.apiclient;
+package club.klabis.oris.application.apiclient;
 
+import club.klabis.oris.application.apiclient.dto.OrisEventListFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,9 +162,9 @@ class OrisEventListArgumentResolver implements HttpServiceArgumentResolver {
 
     @Override
     public boolean resolve(Object argument, MethodParameter parameter, HttpRequestValues.Builder requestValues) {
-        if (parameter.getParameterType().equals(OrisApiClient.OrisEventListFilter.class)) {
+        if (parameter.getParameterType().equals(OrisEventListFilter.class)) {
             if (argument != null) {
-                OrisApiClient.OrisEventListFilter typedArgument = (OrisApiClient.OrisEventListFilter) argument;
+                OrisEventListFilter typedArgument = (OrisEventListFilter) argument;
 
                 if (typedArgument.dateFrom() != null) {
                     requestValues.addRequestParameter("datefrom", formatLocalDateForOrisRequestParameter(typedArgument.dateFrom()));

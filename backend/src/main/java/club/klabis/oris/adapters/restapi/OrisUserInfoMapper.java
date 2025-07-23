@@ -1,16 +1,16 @@
 package club.klabis.oris.adapters.restapi;
 
-import club.klabis.oris.adapters.apiclient.OrisApiClient;
 import club.klabis.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.api.dto.ORISUserInfoApiDto;
+import club.klabis.oris.application.apiclient.dto.OrisUserInfo;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
 
 @Mapper(config = DomainToDtoMapperConfiguration.class)
-public interface OrisUserInfoMapper extends Converter<OrisApiClient.OrisUserInfo, ORISUserInfoApiDto> {
+public interface OrisUserInfoMapper extends Converter<OrisUserInfo, ORISUserInfoApiDto> {
 
     @Mapping(target = "registrationNumber", ignore = true)
     @Override
-    ORISUserInfoApiDto convert(OrisApiClient.OrisUserInfo source);
+    ORISUserInfoApiDto convert(OrisUserInfo source);
 }
