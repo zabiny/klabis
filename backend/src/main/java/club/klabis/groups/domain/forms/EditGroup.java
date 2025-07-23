@@ -1,6 +1,6 @@
-package club.klabis.domain.memberGroups.forms;
+package club.klabis.groups.domain.forms;
 
-import club.klabis.domain.memberGroups.MemberGroup;
+import club.klabis.groups.domain.MemberGroup;
 import club.klabis.domain.members.Member;
 
 import java.util.Collection;

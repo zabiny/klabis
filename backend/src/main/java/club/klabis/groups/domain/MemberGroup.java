@@ -1,7 +1,7 @@
-package club.klabis.domain.memberGroups;
+package club.klabis.groups.domain;
 
 import club.klabis.domain.users.ApplicationGrant;
-import club.klabis.domain.memberGroups.forms.EditGroup;
+import club.klabis.groups.domain.forms.EditGroup;
 import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;

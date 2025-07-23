@@ -1,4 +1,4 @@
-package club.klabis.domain.memberGroups;
+package club.klabis.groups.domain;
 
 import club.klabis.domain.DomainEventBase;
 import club.klabis.domain.users.ApplicationGrant;

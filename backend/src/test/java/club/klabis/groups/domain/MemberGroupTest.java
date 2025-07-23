@@ -1,8 +1,8 @@
-package club.klabis.domain.memberGroups;
+package club.klabis.groups.domain;
 
-import club.klabis.domain.users.ApplicationGrant;
-import club.klabis.domain.memberGroups.forms.EditGroup;
 import club.klabis.domain.members.Member;
+import club.klabis.domain.users.ApplicationGrant;
+import club.klabis.groups.domain.forms.EditGroup;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,8 +11,8 @@ import org.springframework.data.domain.AggregatedRootTestUtils;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static club.klabis.domain.memberGroups.GroupMembershipUpdateEventConditions.groupMembershipUpdateEvent;
-import static club.klabis.domain.memberGroups.MemberGroupConditions.*;
+import static club.klabis.groups.domain.GroupMembershipUpdateEventConditions.groupMembershipUpdateEvent;
+import static club.klabis.groups.domain.MemberGroupConditions.*;
 import static org.assertj.core.api.Assertions.allOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.data.domain.AggregatedRootTestUtils.assertThatDomainEventsOf;
