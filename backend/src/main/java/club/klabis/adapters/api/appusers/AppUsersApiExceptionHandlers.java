@@ -1,6 +1,6 @@
 package club.klabis.adapters.api.appusers;
 
-import club.klabis.domain.users.ApplicationUserNotFound;
+import club.klabis.application.users.ApplicationUserNotFound;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.ErrorResponse;

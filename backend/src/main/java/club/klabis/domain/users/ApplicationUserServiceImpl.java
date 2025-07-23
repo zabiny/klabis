@@ -1,12 +1,11 @@
 package club.klabis.domain.users;
 
+import club.klabis.application.users.ApplicationUserNotFound;
 import club.klabis.application.users.ApplicationUsersRepository;
 import club.klabis.domain.members.Member;
-import club.klabis.domain.members.events.MembershipSuspendedEvent;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.event.EventListener;
 
 import java.util.Optional;
 

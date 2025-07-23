@@ -4,17 +4,18 @@ import club.klabis.adapters.api.HasGrant;
 import club.klabis.api.MembersApi;
 import club.klabis.api.dto.*;
 import club.klabis.application.members.EditMemberInfoUseCase;
+import club.klabis.application.members.MembersRepository;
 import club.klabis.application.members.MembershipSuspendUseCase;
+import club.klabis.application.users.ApplicationUserNotFound;
+import club.klabis.application.users.ApplicationUsersRepository;
 import club.klabis.application.users.UserGrantsUpdateUseCase;
-import club.klabis.domain.users.ApplicationGrant;
-import club.klabis.domain.users.ApplicationUser;
-import club.klabis.domain.users.ApplicationUserService;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.MemberNotFoundException;
-import club.klabis.application.members.MembersRepository;
 import club.klabis.domain.members.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.domain.members.forms.EditOwnMemberInfoForm;
 import club.klabis.domain.members.forms.MemberEditForm;
+import club.klabis.domain.users.ApplicationGrant;
+import club.klabis.domain.users.ApplicationUser;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.HttpStatus;
@@ -31,17 +32,17 @@ public class MembersController implements MembersApi {
     private final MembersRepository membersRepository;
     private final MembershipSuspendUseCase membershipSuspendUseCase;
     private final EditMemberInfoUseCase editMemberUseCase;
-    private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
     private final UserGrantsUpdateUseCase userGrantsUpdateUseCase;
+    private final ApplicationUsersRepository applicationUsersRepository;
 
-    public MembersController(MembersRepository membersRepository, MembershipSuspendUseCase membershipSuspendUseCase, EditMemberInfoUseCase editMemberUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, UserGrantsUpdateUseCase userGrantsUpdateUseCase) {
+    public MembersController(MembersRepository membersRepository, MembershipSuspendUseCase membershipSuspendUseCase, EditMemberInfoUseCase editMemberUseCase, ConversionService conversionService, UserGrantsUpdateUseCase userGrantsUpdateUseCase, ApplicationUsersRepository applicationUsersRepository) {
         this.membersRepository = membersRepository;
         this.membershipSuspendUseCase = membershipSuspendUseCase;
         this.editMemberUseCase = editMemberUseCase;
-        this.applicationUserService = applicationUserService;
         this.conversionService = conversionService;
         this.userGrantsUpdateUseCase = userGrantsUpdateUseCase;
+        this.applicationUsersRepository = applicationUsersRepository;
     }
 
     @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
@@ -55,7 +56,8 @@ public class MembersController implements MembersApi {
     @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     @Override
     public ResponseEntity<Void> membersMemberIdEditMemberInfoFormPut(Integer memberId, MemberEditFormApiDto memberEditFormApiDto) {
-        editMemberUseCase.editMember(new Member.Id(memberId), conversionService.convert(memberEditFormApiDto, MemberEditForm.class));
+        editMemberUseCase.editMember(new Member.Id(memberId),
+                conversionService.convert(memberEditFormApiDto, MemberEditForm.class));
 
         return ResponseEntity.status(HttpStatus.OK).build();
     }
@@ -69,7 +71,10 @@ public class MembersController implements MembersApi {
 
     @Override
     public ResponseEntity<MembersListApiDto> membersGet(String view, Boolean suspended) {
-        List<? extends MembersListItemsInnerApiDto> result = membersRepository.findAll(suspended).stream().map(t -> convertToApiDto(t, view)).toList();
+        List<? extends MembersListItemsInnerApiDto> result = membersRepository.findAll(suspended)
+                .stream()
+                .map(t -> convertToApiDto(t, view))
+                .toList();
         return ResponseEntity.ok(MembersListApiDto.builder().items((List<MembersListItemsInnerApiDto>) result).build());
     }
 
@@ -101,8 +106,9 @@ public class MembersController implements MembersApi {
 
     @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
-    public ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(Integer memberId) {
-        ApplicationUser appUser = applicationUserService.getApplicationUserForMemberId(new Member.Id(memberId));
+    public ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(Integer memberIdValue) {
+        Member.Id memberId = new Member.Id(memberIdValue);
+        ApplicationUser appUser = applicationUsersRepository.findByMemberId(memberId).orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
 
         return ResponseEntity.ok(conversionService.convert(appUser, MemberGrantsFormApiDto.class));
     }
@@ -110,7 +116,9 @@ public class MembersController implements MembersApi {
     @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
     public ResponseEntity<Void> updateMemberGrants(Integer memberId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
-        Collection<ApplicationGrant> globalGrants = (Collection<ApplicationGrant>) conversionService.convert(memberGrantsFormApiDto.getGrants(), TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
+        Collection<ApplicationGrant> globalGrants = (Collection<ApplicationGrant>) conversionService.convert(
+                memberGrantsFormApiDto.getGrants(),
+                TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
         userGrantsUpdateUseCase.setGlobalGrants(new Member.Id(memberId), globalGrants);
         return ResponseEntity.ok(null);
     }
@@ -118,24 +126,28 @@ public class MembersController implements MembersApi {
     @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<EditAnotherMemberDetailsFormApiDto> getMemberEditByAdminForm(Integer memberId) {
-        return ResponseEntity.ok(conversionService.convert(editMemberUseCase.getEditAnotherMemberForm(new Member.Id(memberId)), EditAnotherMemberDetailsFormApiDto.class));
+        return ResponseEntity.ok(conversionService.convert(editMemberUseCase.getEditAnotherMemberForm(new Member.Id(
+                memberId)), EditAnotherMemberDetailsFormApiDto.class));
     }
 
     @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<Void> putMemberEditByAdminForm(Integer memberId, EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto) {
-        editMemberUseCase.editMember(new Member.Id(memberId), conversionService.convert(editAnotherMemberDetailsFormApiDto, EditAnotherMemberInfoByAdminForm.class));
+        editMemberUseCase.editMember(new Member.Id(memberId),
+                conversionService.convert(editAnotherMemberDetailsFormApiDto, EditAnotherMemberInfoByAdminForm.class));
         return ResponseEntity.ok(null);
     }
 
     @Override
     public ResponseEntity<EditMyDetailsFormApiDto> membersMemberIdEditOwnMemberInfoFormGet(Integer memberId) {
-        return ResponseEntity.ok(conversionService.convert(editMemberUseCase.getEditOwnMemberInfoForm(new Member.Id(memberId)), EditMyDetailsFormApiDto.class));
+        return ResponseEntity.ok(conversionService.convert(editMemberUseCase.getEditOwnMemberInfoForm(new Member.Id(
+                memberId)), EditMyDetailsFormApiDto.class));
     }
 
     @Override
     public ResponseEntity<Void> membersMemberIdEditOwnMemberInfoFormPut(Integer memberId, EditMyDetailsFormApiDto editMyDetailsFormApiDto) {
-        editMemberUseCase.editMember(new Member.Id(memberId), conversionService.convert(editMyDetailsFormApiDto, EditOwnMemberInfoForm.class));
+        editMemberUseCase.editMember(new Member.Id(memberId),
+                conversionService.convert(editMyDetailsFormApiDto, EditOwnMemberInfoForm.class));
         return ResponseEntity.ok(null);
     }
 }

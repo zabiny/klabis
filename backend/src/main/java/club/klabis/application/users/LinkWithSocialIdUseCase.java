@@ -1,7 +1,6 @@
 package club.klabis.application.users;
 
 import club.klabis.domain.users.ApplicationUser;
-import club.klabis.domain.users.ApplicationUserNotFound;
 import club.klabis.domain.members.RegistrationNumber;
 import org.springframework.stereotype.Service;
 
