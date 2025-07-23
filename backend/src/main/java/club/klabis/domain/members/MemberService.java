@@ -18,10 +18,6 @@ public interface MemberService {
 
     Optional<Member> findById(Member.Id memberId);
 
-    Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(Member.Id memberId);
-
-    void suspendMembershipForMember(Member.Id memberId, boolean forceSuspension);
-
     Member editMember(Member.Id memberId, @Valid MemberEditForm editForm);
 
     EditAnotherMemberInfoByAdminForm getEditAnotherMemberForm(Member.Id memberId);

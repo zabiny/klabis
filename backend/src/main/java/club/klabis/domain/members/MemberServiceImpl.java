@@ -46,31 +46,6 @@ class MemberServiceImpl implements MemberService {
         return membersRepository.save(member);
     }
 
-    @Override
-    public Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(Member.Id memberId) {
-        return membersRepository.findById(memberId)
-                .map(this::suspensionInfoForMember);
-    }
-
-    private MembershipSuspensionInfo suspensionInfoForMember(Member member) {
-        // TODO: suspension status for finance account...
-        return new MembershipSuspensionInfo(member.isSuspended(), MembershipSuspensionInfo.DetailStatus.OK);
-    }
-
-    @Override
-    @Transactional
-    public void suspendMembershipForMember(Member.Id memberId, boolean forceSuspension) {
-        Member memberForSuspension = membersRepository.findById(memberId)
-                .orElseThrow(() -> new MemberNotFoundException(memberId));
-
-        if (forceSuspension || suspensionInfoForMember(memberForSuspension).canSuspendAccount()) {
-            memberForSuspension.suspend();
-            membersRepository.save(memberForSuspension);
-        } else {
-            throw new MembershipCannotBeSuspendedException(memberId, "member is already suspended");
-        }
-    }
-
     @Transactional
     @Override
     public Member editMember(Member.Id memberId, EditOwnMemberInfoForm form) {

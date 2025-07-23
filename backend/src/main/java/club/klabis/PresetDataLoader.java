@@ -2,6 +2,7 @@ package club.klabis;
 
 import club.klabis.api.dto.SexApiDto;
 import club.klabis.application.MemberRegistrationUseCase;
+import club.klabis.application.MembershipSuspendUseCase;
 import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;
@@ -39,14 +40,16 @@ public class PresetDataLoader implements ApplicationRunner {
 
     private final ApplicationUsersRepository appUsersRepository;
     private final MemberService memberService;
+    private final MembershipSuspendUseCase membershipSuspendUseCase;
     private final MemberRegistrationUseCase memberRegistrationUseCase;
     private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
     private final EventsService eventsService;
 
-    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MemberService memberService, MemberRegistrationUseCase memberRegistrationUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
+    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MemberService memberService, MembershipSuspendUseCase membershipSuspendUseCase, MemberRegistrationUseCase memberRegistrationUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
         this.appUsersRepository = appUsersRepository;
         this.memberService = memberService;
+        this.membershipSuspendUseCase = membershipSuspendUseCase;
         this.memberRegistrationUseCase = memberRegistrationUseCase;
         this.applicationUserService = applicationUserService;
         this.conversionService = conversionService;
@@ -68,7 +71,7 @@ public class PresetDataLoader implements ApplicationRunner {
         loadObjectList(MembersCsvLine.class, membersFile.getInputStream()).forEach(csvLine -> {
             Member registeredMember = memberRegistrationUseCase.registerMember(csvLine.getRegistration(conversionService));
             if (csvLine.disabled()) {
-                memberService.suspendMembershipForMember(registeredMember.getId(), true);
+                membershipSuspendUseCase.suspendMembershipForMember(registeredMember.getId(), true);
             }
             applicationUserService.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
             csvLine.getGoogleId().ifPresent(googleId -> applicationUserService.linkWithGoogleId(csvLine.registrationNumber(), googleId));

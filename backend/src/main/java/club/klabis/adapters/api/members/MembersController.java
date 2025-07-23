@@ -3,6 +3,7 @@ package club.klabis.adapters.api.members;
 import club.klabis.adapters.api.HasGrant;
 import club.klabis.api.MembersApi;
 import club.klabis.api.dto.*;
+import club.klabis.application.MembershipSuspendUseCase;
 import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;
@@ -25,11 +26,13 @@ import java.util.List;
 @RestController
 public class MembersController implements MembersApi {
 
+    private final MembershipSuspendUseCase membershipSuspendUseCase;
     private final MemberService service;
     private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
 
-    public MembersController(MemberService service, ApplicationUserService applicationUserService, ConversionService conversionService) {
+    public MembersController(MembershipSuspendUseCase membershipSuspendUseCase, MemberService service, ApplicationUserService applicationUserService, ConversionService conversionService) {
+        this.membershipSuspendUseCase = membershipSuspendUseCase;
         this.service = service;
         this.applicationUserService = applicationUserService;
         this.conversionService = conversionService;
@@ -66,14 +69,14 @@ public class MembersController implements MembersApi {
 
     @Override
     public ResponseEntity<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(Integer memberId) {
-        return service.getSuspensionInfoForMember(new Member.Id(memberId))
+        return membershipSuspendUseCase.getSuspensionInfoForMember(new Member.Id(memberId))
                 .map(d -> mapToResponseEntity(d, MembershipSuspensionInfoApiDto.class))
                 .orElseThrow(() -> new MemberNotFoundException(new Member.Id(memberId)));
     }
 
     @Override
     public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(Integer memberId, Boolean force) {
-        service.suspendMembershipForMember(new Member.Id(memberId), force);
+        membershipSuspendUseCase.suspendMembershipForMember(new Member.Id(memberId), force);
         return ResponseEntity.ok(null);
     }
 
