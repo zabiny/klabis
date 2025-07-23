@@ -1,6 +1,6 @@
-package club.klabis.application.events;
+package club.klabis.adapters.oris;
 
-import club.klabis.adapters.oris.OrisApiClient;
+import club.klabis.application.events.EventsRepository;
 import club.klabis.domain.events.Event;
 import club.klabis.domain.events.forms.EventEditationForm;
 import org.slf4j.Logger;
@@ -14,13 +14,13 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 @Service
-class EventImportFromOrisUseCase {
+class OrisEventsImporter {
 
-    private static final Logger logger = LoggerFactory.getLogger(EventImportFromOrisUseCase.class);
+    private static final Logger logger = LoggerFactory.getLogger(OrisEventsImporter.class);
     private final OrisApiClient orisApiClient;
     private final EventsRepository eventsRepository;
 
-    EventImportFromOrisUseCase(OrisApiClient orisApiClient, EventsRepository eventsRepository) {
+    OrisEventsImporter(OrisApiClient orisApiClient, EventsRepository eventsRepository) {
         this.orisApiClient = orisApiClient;
         this.eventsRepository = eventsRepository;
     }
