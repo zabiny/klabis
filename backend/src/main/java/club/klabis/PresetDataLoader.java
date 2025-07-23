@@ -1,16 +1,18 @@
 package club.klabis;
 
 import club.klabis.api.dto.SexApiDto;
-import club.klabis.domain.appusers.ApplicationGrant;
-import club.klabis.domain.appusers.ApplicationUser;
-import club.klabis.domain.appusers.ApplicationUserService;
-import club.klabis.domain.appusers.ApplicationUsersRepository;
-import club.klabis.domain.events.Event;
-import club.klabis.domain.events.EventsService;
-import club.klabis.domain.events.forms.EventEditationForm;
-import club.klabis.domain.events.forms.EventRegistrationForm;
-import club.klabis.domain.members.*;
-import club.klabis.domain.members.forms.RegistrationForm;
+import club.klabis.events.application.EventCreationUseCase;
+import club.klabis.members.application.MemberRegistrationUseCase;
+import club.klabis.members.application.MembershipSuspendUseCase;
+import club.klabis.members.domain.*;
+import club.klabis.users.application.ApplicationUsersRepository;
+import club.klabis.users.application.LinkWithSocialIdUseCase;
+import club.klabis.users.application.UserGrantsUpdateUseCase;
+import club.klabis.users.domain.ApplicationGrant;
+import club.klabis.users.domain.ApplicationUser;
+import club.klabis.events.domain.Event;
+import club.klabis.events.domain.forms.EventEditationForm;
+import club.klabis.members.domain.forms.RegistrationForm;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvParser;
@@ -38,15 +40,19 @@ public class PresetDataLoader implements ApplicationRunner {
     private static final Logger LOG = LoggerFactory.getLogger(PresetDataLoader.class);
 
     private final ApplicationUsersRepository appUsersRepository;
-    private final MemberService memberService;
-    private final ApplicationUserService applicationUserService;
+    private final UserGrantsUpdateUseCase userGrantsUpdateUseCase;
+    private final MembershipSuspendUseCase membershipSuspendUseCase;
+    private final MemberRegistrationUseCase memberRegistrationUseCase;
+    private final LinkWithSocialIdUseCase linkWithSocialIdUseCase;
     private final ConversionService conversionService;
-    private final EventsService eventsService;
+    private final EventCreationUseCase eventsService;
 
-    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MemberService memberService, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
+    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, UserGrantsUpdateUseCase userGrantsUpdateUseCase, MembershipSuspendUseCase membershipSuspendUseCase, MemberRegistrationUseCase memberRegistrationUseCase, LinkWithSocialIdUseCase linkWithSocialIdUseCase, ConversionService conversionService, EventCreationUseCase eventsService) {
         this.appUsersRepository = appUsersRepository;
-        this.memberService = memberService;
-        this.applicationUserService = applicationUserService;
+        this.userGrantsUpdateUseCase = userGrantsUpdateUseCase;
+        this.membershipSuspendUseCase = membershipSuspendUseCase;
+        this.memberRegistrationUseCase = memberRegistrationUseCase;
+        this.linkWithSocialIdUseCase = linkWithSocialIdUseCase;
         this.conversionService = conversionService;
         this.eventsService = eventsService;
     }
@@ -64,12 +70,12 @@ public class PresetDataLoader implements ApplicationRunner {
 
         ClassPathResource membersFile = new ClassPathResource("presetData/members.csv");
         loadObjectList(MembersCsvLine.class, membersFile.getInputStream()).forEach(csvLine -> {
-            Member registeredMember = memberService.registerMember(csvLine.getRegistration(conversionService));
+            Member registeredMember = memberRegistrationUseCase.registerMember(csvLine.getRegistration(conversionService));
             if (csvLine.disabled()) {
-                memberService.suspendMembershipForMember(registeredMember.getId(), true);
+                membershipSuspendUseCase.suspendMembershipForMember(registeredMember.getId(), true);
             }
-            applicationUserService.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
-            csvLine.getGoogleId().ifPresent(googleId -> applicationUserService.linkWithGoogleId(csvLine.registrationNumber(), googleId));
+            userGrantsUpdateUseCase.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
+            csvLine.getGoogleId().ifPresent(googleId -> linkWithSocialIdUseCase.linkWithGoogleId(csvLine.registrationNumber(), googleId));
         });
 
         // ... some additional data?
