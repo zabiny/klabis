@@ -31,15 +31,5 @@ class ApplicationUserServiceImpl implements ApplicationUserService, KlabisApplic
         return repository.findByUserName(username);
     }
 
-    @EventListener(MembershipSuspendedEvent.class)
-    public void onMembershipSuspended(MembershipSuspendedEvent event) {
-        Member.Id memberId = event.getAggregate().getId();
-        LOG.info("Disabling Application user for suspended member %s (id=%s)".formatted(event.getAggregate()
-                .getRegistration(), memberId));
-        ApplicationUser userForCreatedMember = repository.findByMemberId(memberId)
-                .orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
-        userForCreatedMember.disable();
-        repository.save(userForCreatedMember);
-    }
 
 }

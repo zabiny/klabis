@@ -26,6 +26,7 @@ public class UserCreateUseCase {
         applicationUsersRepository.save(userForCreatedMember);
     }
 
+    // TODO: move into primary adapters
     @EventListener(MemberCreatedEvent.class)
     public void onMemberCreated(MemberCreatedEvent event) {
         createForMember(event.getAggregate());
