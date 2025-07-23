@@ -5,6 +5,7 @@ import club.klabis.api.MembersApi;
 import club.klabis.api.dto.*;
 import club.klabis.application.members.EditMemberInfoUseCase;
 import club.klabis.application.members.MembershipSuspendUseCase;
+import club.klabis.application.users.UserGrantsUpdateUseCase;
 import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;
@@ -32,13 +33,15 @@ public class MembersController implements MembersApi {
     private final EditMemberInfoUseCase editMemberUseCase;
     private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
+    private final UserGrantsUpdateUseCase userGrantsUpdateUseCase;
 
-    public MembersController(MembersRepository membersRepository, MembershipSuspendUseCase membershipSuspendUseCase, EditMemberInfoUseCase editMemberUseCase, ApplicationUserService applicationUserService, ConversionService conversionService) {
+    public MembersController(MembersRepository membersRepository, MembershipSuspendUseCase membershipSuspendUseCase, EditMemberInfoUseCase editMemberUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, UserGrantsUpdateUseCase userGrantsUpdateUseCase) {
         this.membersRepository = membersRepository;
         this.membershipSuspendUseCase = membershipSuspendUseCase;
         this.editMemberUseCase = editMemberUseCase;
         this.applicationUserService = applicationUserService;
         this.conversionService = conversionService;
+        this.userGrantsUpdateUseCase = userGrantsUpdateUseCase;
     }
 
     @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
@@ -108,7 +111,7 @@ public class MembersController implements MembersApi {
     @Override
     public ResponseEntity<Void> updateMemberGrants(Integer memberId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
         Collection<ApplicationGrant> globalGrants = (Collection<ApplicationGrant>) conversionService.convert(memberGrantsFormApiDto.getGrants(), TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
-        applicationUserService.setGlobalGrants(new Member.Id(memberId), globalGrants);
+        userGrantsUpdateUseCase.setGlobalGrants(new Member.Id(memberId), globalGrants);
         return ResponseEntity.ok(null);
     }
 

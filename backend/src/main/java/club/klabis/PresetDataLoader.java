@@ -5,6 +5,8 @@ import club.klabis.application.events.EventCreationUseCase;
 import club.klabis.application.members.MemberRegistrationUseCase;
 import club.klabis.application.members.MembershipSuspendUseCase;
 import club.klabis.application.users.ApplicationUsersRepository;
+import club.klabis.application.users.LinkWithSocialIdUseCase;
+import club.klabis.application.users.UserGrantsUpdateUseCase;
 import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;
@@ -39,17 +41,19 @@ public class PresetDataLoader implements ApplicationRunner {
     private static final Logger LOG = LoggerFactory.getLogger(PresetDataLoader.class);
 
     private final ApplicationUsersRepository appUsersRepository;
+    private final UserGrantsUpdateUseCase userGrantsUpdateUseCase;
     private final MembershipSuspendUseCase membershipSuspendUseCase;
     private final MemberRegistrationUseCase memberRegistrationUseCase;
-    private final ApplicationUserService applicationUserService;
+    private final LinkWithSocialIdUseCase linkWithSocialIdUseCase;
     private final ConversionService conversionService;
     private final EventCreationUseCase eventsService;
 
-    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MembershipSuspendUseCase membershipSuspendUseCase, MemberRegistrationUseCase memberRegistrationUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, EventCreationUseCase eventsService) {
+    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, UserGrantsUpdateUseCase userGrantsUpdateUseCase, MembershipSuspendUseCase membershipSuspendUseCase, MemberRegistrationUseCase memberRegistrationUseCase, LinkWithSocialIdUseCase linkWithSocialIdUseCase, ConversionService conversionService, EventCreationUseCase eventsService) {
         this.appUsersRepository = appUsersRepository;
+        this.userGrantsUpdateUseCase = userGrantsUpdateUseCase;
         this.membershipSuspendUseCase = membershipSuspendUseCase;
         this.memberRegistrationUseCase = memberRegistrationUseCase;
-        this.applicationUserService = applicationUserService;
+        this.linkWithSocialIdUseCase = linkWithSocialIdUseCase;
         this.conversionService = conversionService;
         this.eventsService = eventsService;
     }
@@ -71,8 +75,8 @@ public class PresetDataLoader implements ApplicationRunner {
             if (csvLine.disabled()) {
                 membershipSuspendUseCase.suspendMembershipForMember(registeredMember.getId(), true);
             }
-            applicationUserService.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
-            csvLine.getGoogleId().ifPresent(googleId -> applicationUserService.linkWithGoogleId(csvLine.registrationNumber(), googleId));
+            userGrantsUpdateUseCase.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
+            csvLine.getGoogleId().ifPresent(googleId -> linkWithSocialIdUseCase.linkWithGoogleId(csvLine.registrationNumber(), googleId));
         });
 
         // ... some additional data?

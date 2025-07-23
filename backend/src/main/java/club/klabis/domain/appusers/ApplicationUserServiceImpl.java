@@ -3,15 +3,12 @@ package club.klabis.domain.appusers;
 import club.klabis.application.users.ApplicationUsersRepository;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.RegistrationNumber;
-import club.klabis.domain.members.events.MemberCreatedEvent;
 import club.klabis.domain.members.events.MembershipSuspendedEvent;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
 import java.util.Optional;
 
 @Service
@@ -44,26 +41,6 @@ class ApplicationUserServiceImpl implements ApplicationUserService, KlabisApplic
                 .orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
         userForCreatedMember.disable();
         repository.save(userForCreatedMember);
-    }
-
-    @Transactional
-    @Override
-    public void setGlobalGrants(Member.Id memberId, Collection<ApplicationGrant> globalGrants) {
-        ApplicationUser memberAppUser = getApplicationUserForMemberId(memberId);
-        memberAppUser.setGlobalGrants(globalGrants);
-        repository.save(memberAppUser);
-    }
-
-    @Override
-    public void linkWithGoogleId(RegistrationNumber registrationNumber, String googleId) {
-        ApplicationUser memberAppUser = repository.findByUserName(registrationNumber.toRegistrationId()).orElseThrow();
-        memberAppUser.linkWithGoogle(googleId);
-        repository.save(memberAppUser);
-    }
-
-    @Override
-    public Optional<ApplicationUser> findByGoogleId(String googleIdSubject) {
-        return repository.findByGoogleSubject(googleIdSubject);
     }
 
 }
