@@ -1,5 +1,7 @@
 package club.klabis.adapters.api;
 
+import club.klabis.config.restapi.ApisConfiguration;
+import club.klabis.config.security.KlabisSecurityService;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.tests.common.MapperTestConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;

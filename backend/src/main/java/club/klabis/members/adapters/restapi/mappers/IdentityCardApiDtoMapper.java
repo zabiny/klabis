@@ -1,7 +1,7 @@
 package club.klabis.members.adapters.restapi.mappers;
 
 import club.klabis.api.dto.IdentityCardApiDto;
-import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.members.domain.IdentityCard;
 import org.mapstruct.*;
 import org.mapstruct.extensions.spring.DelegatingConverter;

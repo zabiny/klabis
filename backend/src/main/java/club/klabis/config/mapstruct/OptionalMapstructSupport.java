@@ -1,4 +1,4 @@
-package club.klabis.common.mapstruct;
+package club.klabis.config.mapstruct;
 
 import org.mapstruct.Condition;
 import org.mapstruct.Mapper;

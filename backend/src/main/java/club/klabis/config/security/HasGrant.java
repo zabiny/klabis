@@ -1,4 +1,4 @@
-package club.klabis.adapters.api;
+package club.klabis.config.security;
 
 import club.klabis.users.domain.ApplicationGrant;
 import org.springframework.security.access.prepost.PreAuthorize;

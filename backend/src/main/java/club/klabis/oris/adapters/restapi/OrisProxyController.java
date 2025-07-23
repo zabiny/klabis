@@ -1,6 +1,6 @@
 package club.klabis.oris.adapters.restapi;
 
-import club.klabis.adapters.api.HasGrant;
+import club.klabis.config.security.HasGrant;
 import club.klabis.oris.adapters.apiclient.OrisApiClient;
 import club.klabis.api.OrisApi;
 import club.klabis.api.dto.ORISUserInfoApiDto;

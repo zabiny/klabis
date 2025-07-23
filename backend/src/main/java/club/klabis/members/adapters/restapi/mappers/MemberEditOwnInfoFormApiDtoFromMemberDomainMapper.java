@@ -1,7 +1,7 @@
 package club.klabis.members.adapters.restapi.mappers;
 
 import club.klabis.api.dto.EditMyDetailsFormApiDto;
-import club.klabis.common.mapstruct.DomainFormMapperConfiguration;
+import club.klabis.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
 import org.mapstruct.InheritInverseConfiguration;
@@ -10,7 +10,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
 
-@Mapper(config = DomainFormMapperConfiguration.class)
+@Mapper(config = DomainToDtoMapperConfiguration.class)
 interface MemberEditOwnInfoFormApiDtoFromMemberDomainMapper extends Converter<EditOwnMemberInfoForm, EditMyDetailsFormApiDto> {
     @Override
     EditMyDetailsFormApiDto convert(EditOwnMemberInfoForm source);

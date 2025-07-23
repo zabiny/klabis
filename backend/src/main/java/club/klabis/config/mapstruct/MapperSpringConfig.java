@@ -1,4 +1,4 @@
-package club.klabis.common.mapstruct;
+package club.klabis.config.mapstruct;
 
 import org.mapstruct.extensions.spring.SpringMapperConfig;
 

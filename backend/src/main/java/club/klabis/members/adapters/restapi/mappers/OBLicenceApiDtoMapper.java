@@ -2,7 +2,7 @@ package club.klabis.members.adapters.restapi.mappers;
 
 
 import club.klabis.api.dto.OBLicenceApiDto;
-import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.members.domain.OBLicence;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

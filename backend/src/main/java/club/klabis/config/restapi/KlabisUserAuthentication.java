@@ -1,4 +1,4 @@
-package club.klabis.adapters.api;
+package club.klabis.config.restapi;
 
 import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.users.domain.ApplicationUser;
