@@ -1,4 +1,4 @@
-package club.klabis.application;
+package club.klabis.application.members;
 
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.RegistrationNumber;

@@ -1,6 +1,6 @@
 package club.klabis.adapters.inmemorystorage;
 
-import club.klabis.application.EventsRepository;
+import club.klabis.application.events.EventsRepository;
 import com.dpolach.inmemoryrepository.EnableInMemoryRepositories;
 import com.dpolach.inmemoryrepository.InMemoryEntityStore;
 import com.dpolach.inmemoryrepository.InMemoryTransactionManager;

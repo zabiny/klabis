@@ -1,4 +1,4 @@
-package club.klabis.application;
+package club.klabis.application.events;
 
 import club.klabis.domain.events.Event;
 import club.klabis.domain.events.forms.EventEditationForm;

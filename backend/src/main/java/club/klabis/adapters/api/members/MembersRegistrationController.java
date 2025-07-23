@@ -2,7 +2,7 @@ package club.klabis.adapters.api.members;
 
 import club.klabis.api.MemberRegistrationsApi;
 import club.klabis.api.dto.MemberRegistrationFormApiDto;
-import club.klabis.application.MemberRegistrationUseCase;
+import club.klabis.application.members.MemberRegistrationUseCase;
 import club.klabis.domain.members.Member;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.springframework.core.convert.ConversionService;

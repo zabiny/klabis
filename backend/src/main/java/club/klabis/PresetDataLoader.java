@@ -1,9 +1,9 @@
 package club.klabis;
 
 import club.klabis.api.dto.SexApiDto;
-import club.klabis.application.EventCreationUseCase;
-import club.klabis.application.MemberRegistrationUseCase;
-import club.klabis.application.MembershipSuspendUseCase;
+import club.klabis.application.events.EventCreationUseCase;
+import club.klabis.application.members.MemberRegistrationUseCase;
+import club.klabis.application.members.MembershipSuspendUseCase;
 import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;

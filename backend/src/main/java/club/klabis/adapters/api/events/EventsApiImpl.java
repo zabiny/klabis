@@ -5,7 +5,7 @@ import club.klabis.api.dto.EventListItemApiDto;
 import club.klabis.api.dto.GetEvents200ResponseApiDto;
 import club.klabis.domain.events.Event;
 import club.klabis.domain.events.EventException;
-import club.klabis.application.EventsRepository;
+import club.klabis.application.events.EventsRepository;
 import club.klabis.domain.events.forms.EventRegistrationForm;
 import club.klabis.domain.members.Member;
 import io.swagger.v3.oas.annotations.Operation;
