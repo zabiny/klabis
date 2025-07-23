@@ -1,6 +1,7 @@
 package club.klabis;
 
 import club.klabis.api.dto.SexApiDto;
+import club.klabis.application.MemberRegistrationUseCase;
 import club.klabis.domain.appusers.ApplicationGrant;
 import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;
@@ -8,7 +9,6 @@ import club.klabis.domain.appusers.ApplicationUsersRepository;
 import club.klabis.domain.events.Event;
 import club.klabis.domain.events.EventsService;
 import club.klabis.domain.events.forms.EventEditationForm;
-import club.klabis.domain.events.forms.EventRegistrationForm;
 import club.klabis.domain.members.*;
 import club.klabis.domain.members.forms.RegistrationForm;
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -39,13 +39,15 @@ public class PresetDataLoader implements ApplicationRunner {
 
     private final ApplicationUsersRepository appUsersRepository;
     private final MemberService memberService;
+    private final MemberRegistrationUseCase memberRegistrationUseCase;
     private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
     private final EventsService eventsService;
 
-    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MemberService memberService, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
+    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MemberService memberService, MemberRegistrationUseCase memberRegistrationUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
         this.appUsersRepository = appUsersRepository;
         this.memberService = memberService;
+        this.memberRegistrationUseCase = memberRegistrationUseCase;
         this.applicationUserService = applicationUserService;
         this.conversionService = conversionService;
         this.eventsService = eventsService;
@@ -64,7 +66,7 @@ public class PresetDataLoader implements ApplicationRunner {
 
         ClassPathResource membersFile = new ClassPathResource("presetData/members.csv");
         loadObjectList(MembersCsvLine.class, membersFile.getInputStream()).forEach(csvLine -> {
-            Member registeredMember = memberService.registerMember(csvLine.getRegistration(conversionService));
+            Member registeredMember = memberRegistrationUseCase.registerMember(csvLine.getRegistration(conversionService));
             if (csvLine.disabled()) {
                 memberService.suspendMembershipForMember(registeredMember.getId(), true);
             }

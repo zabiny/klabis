@@ -36,18 +36,6 @@ class MemberServiceImpl implements MemberService {
         return membersRepository.findById(memberId);
     }
 
-
-    @Transactional
-    @Override
-    public Member registerMember(RegistrationForm registrationForm) {
-        if (membersRepository.existsByRegistration(registrationForm.registrationNumber())) {
-            throw new MemberRegistrationFailedException("Registration number '%s' is already used".formatted(registrationForm.registrationNumber()));
-        }
-
-        Member newMember = Member.fromRegistration(registrationForm);
-        return membersRepository.save(newMember);
-    }
-
     @Override
     public RegistrationNumber suggestRegistrationNumber(LocalDate dateOfBirth, Sex sex) {
         // TODO: pripomenout si co tady dela pohlavi... proc je dulezite? (a pokud je to spatne, tak opravit)

@@ -2,8 +2,8 @@ package club.klabis.adapters.api.members;
 
 import club.klabis.api.MemberRegistrationsApi;
 import club.klabis.api.dto.MemberRegistrationFormApiDto;
+import club.klabis.application.MemberRegistrationUseCase;
 import club.klabis.domain.members.Member;
-import club.klabis.domain.members.MemberService;
 import club.klabis.domain.members.forms.RegistrationForm;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +14,10 @@ import java.net.URI;
 @RestController
 public class MembersRegistrationController implements MemberRegistrationsApi {
 
-    private final MemberService service;
+    private final MemberRegistrationUseCase service;
     private final ConversionService conversionService;
 
-    public MembersRegistrationController(MemberService service, ConversionService conversionService) {
+    public MembersRegistrationController(MemberRegistrationUseCase service, ConversionService conversionService) {
         this.service = service;
         this.conversionService = conversionService;
     }

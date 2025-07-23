@@ -1,10 +1,8 @@
 package club.klabis.domain.members;
 
-import club.klabis.api.dto.EditMyDetailsFormApiDto;
 import club.klabis.domain.members.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.domain.members.forms.EditOwnMemberInfoForm;
 import club.klabis.domain.members.forms.MemberEditForm;
-import club.klabis.domain.members.forms.RegistrationForm;
 import jakarta.validation.Valid;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.validation.annotation.Validated;
@@ -16,8 +14,6 @@ import java.util.Optional;
 @Validated
 @Service
 public interface MemberService {
-    Member registerMember(@Valid RegistrationForm registrationForm);
-
     List<Member> findAll(boolean includeSuspended);
 
     Optional<Member> findById(Member.Id memberId);
