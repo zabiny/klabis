@@ -1,5 +1,6 @@
-package club.klabis.adapters.oris;
+package club.klabis.oris.adapters.apiclient;
 
+import club.klabis.oris.domain.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -96,22 +97,22 @@ class OrisApiClientTest {
             restServiceServer.expect(MockRestRequestMatchers.anything())
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
 
-            OrisApiClient.OrisResponse<Map<String, OrisApiClient.OrisEvent>> expectedData = new OrisApiClient.OrisResponse<>(
-                    Map.of("Event_9160", new OrisApiClient.OrisEvent(
+            OrisApiClient.OrisResponse<Map<String, OrisEvent>> expectedData = new OrisApiClient.OrisResponse<>(
+                    Map.of("Event_9160", new OrisEvent(
                             9160,
                             "Západočeský žebříček - jaro 2025",
                             LocalDate.of(2025, 1, 1),
                             "",
-                            new OrisApiClient.OrisEventOrg(
+                            new OrisEventOrg(
                                     646, "ZCO", "Západočeská oblast"
                             ),
-                            new OrisApiClient.OrisEventLevel(
+                            new OrisEventLevel(
                                     4, "OŽ", "Oblastní žebříček", "Local event"
                             ),
-                            new OrisApiClient.OrisEventSport(
+                            new OrisEventSport(
                                     1, "OB", "Foot O"
                             ),
-                            new OrisApiClient.OrisEventDiscipline(
+                            new OrisEventDiscipline(
                                     10, "Z", "Dlouhodobé žebříčky", "Cups and ranking"
                             ),
                             LocalDateTime.parse("2025-01-05T23:59:59"),

@@ -1,4 +1,4 @@
-package club.klabis.adapters.oris;
+package club.klabis.oris.adapters.apiclient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ class OrisApiQuirksHandlingMessageConverter implements GenericHttpMessageConvert
     }
 
     private boolean isQuirkParsingErrorForSingleItemNotFoundResponseWithWrongDataPayloadAsArray(HttpMessageNotReadableException ex) {
-        // for ex "JSON parse error: Cannot deserialize value of type `club.klabis.adapters.oris.OrisApiClient$OrisUserInfo` from Array value (token `JsonToken.START_ARRAY`)".equals(ex.getMessage());
+        // for ex "JSON parse error: Cannot deserialize value of type `club.klabis.oris.adapters.apiclient.OrisApiClient$OrisUserInfo` from Array value (token `JsonToken.START_ARRAY`)".equals(ex.getMessage());
         return ex.getMessage().startsWith("JSON parse error: Cannot deserialize value of type `") && ex.getMessage()
                 .endsWith("` from Array value (token `JsonToken.START_ARRAY`)");
     }

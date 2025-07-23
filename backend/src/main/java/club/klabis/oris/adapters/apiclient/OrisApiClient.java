@@ -1,9 +1,9 @@
-package club.klabis.adapters.oris;
+package club.klabis.oris.adapters.apiclient;
 
 
+import club.klabis.oris.domain.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.soabase.recordbuilder.core.RecordBuilder;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
@@ -70,81 +70,4 @@ public interface OrisApiClient {
         }
     }
 
-    record OrisEvent(
-            @JsonProperty("ID")
-            int id,
-            @JsonProperty("Name")
-            String name,
-            @JsonProperty("Date")
-            LocalDate date,
-            @JsonProperty("Place")
-            String location,
-            @JsonProperty("Org1")
-            OrisEventOrg organizer1,
-            @JsonProperty("Level")
-            OrisEventLevel level,
-            @JsonProperty("Sport")
-            OrisEventSport sport,
-            @JsonProperty("Discipline")
-            OrisEventDiscipline discipline,
-            @JsonProperty("EntryDate1")
-            @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-            LocalDateTime entryDate1,
-            @JsonProperty("EntryDate2")
-            @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-            LocalDateTime entryDate2,
-            @JsonProperty("EntryDate3")
-            @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-            LocalDateTime entryDate3
-    ) {
-    }
-
-    record OrisEventOrg(
-            @JsonProperty("ID")
-            int id,
-            @JsonProperty("Abbr")
-            String abbreviation,
-            @JsonProperty("Name")
-            String name
-    ) {
-    }
-
-    record OrisEventLevel(
-            @JsonProperty("ID")
-            int id,
-            @JsonProperty("ShortName")
-            String shortName,
-            @JsonProperty("NameCZ")
-            String nameCZ,
-            @JsonProperty("NameEN")
-            String nameEN
-    ) {
-
-    }
-
-    record OrisEventSport(
-            @JsonProperty("ID")
-            int id,
-            @JsonProperty("NameCZ")
-            String nameCZ,
-            @JsonProperty("NameEN")
-            String nameEN
-    ) {
-        public static int ID_OB = 1;
-        public static int ID_LOB = 2;
-        public static int ID_MTBO = 3;
-        public static int ID_TRAIL = 4;
-    }
-
-    record OrisEventDiscipline(
-            @JsonProperty("ID")
-            int id,
-            @JsonProperty("ShortName")
-            String shortName,
-            @JsonProperty("NameCZ")
-            String nameCZ,
-            @JsonProperty("NameEN")
-            String nameEN
-    ) {
-    }
 }

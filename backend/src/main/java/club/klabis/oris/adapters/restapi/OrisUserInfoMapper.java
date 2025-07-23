@@ -1,6 +1,6 @@
-package club.klabis.adapters.api.oris;
+package club.klabis.oris.adapters.restapi;
 
-import club.klabis.adapters.oris.OrisApiClient;
+import club.klabis.oris.adapters.apiclient.OrisApiClient;
 import club.klabis.common.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.api.dto.ORISUserInfoApiDto;
 import org.mapstruct.Mapper;

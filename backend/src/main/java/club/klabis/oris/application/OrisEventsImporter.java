@@ -1,8 +1,10 @@
-package club.klabis.adapters.oris;
+package club.klabis.oris.application;
 
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventEditationForm;
+import club.klabis.oris.adapters.apiclient.OrisApiClient;
+import club.klabis.oris.domain.OrisEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,7 +35,7 @@ class OrisEventsImporter {
                 .data().forEach(this::synchronizeEvent);
     }
 
-    private LocalDateTime getEntryDate(OrisApiClient.OrisEvent orisEvent) {
+    private LocalDateTime getEntryDate(OrisEvent orisEvent) {
         return Stream.of(orisEvent.entryDate1(), orisEvent.entryDate2(), orisEvent.entryDate3())
                 .filter(Objects::nonNull)
                 .sorted()
@@ -42,26 +44,26 @@ class OrisEventsImporter {
                 .orElse(orisEvent.date().minusDays(3).atStartOfDay());
     }
 
-    private void synchronizeEvent(String id, OrisApiClient.OrisEvent orisEvent) {
+    private void synchronizeEvent(String id, OrisEvent orisEvent) {
         logger.info("Synchronizing event {}: {}", id, orisEvent);
 
         eventsRepository.findByOrisId(orisEvent.id())
                 .ifPresentOrElse(event -> updateEventFromOris(event, orisEvent), () -> importOrisEvent(orisEvent));
     }
 
-    private void updateEventFromOris(Event event, OrisApiClient.OrisEvent orisEvent) {
+    private void updateEventFromOris(Event event, OrisEvent orisEvent) {
         EventEditationForm form = createEventEditationForm(orisEvent);
         event.edit(form);
         eventsRepository.save(event);
     }
 
-    private void importOrisEvent(OrisApiClient.OrisEvent orisEvent) {
+    private void importOrisEvent(OrisEvent orisEvent) {
         EventEditationForm form = createEventEditationForm(orisEvent);
         Event event = Event.newEvent(form).linkWithOris(orisEvent.id());
         eventsRepository.save(event);
     }
 
-    private EventEditationForm createEventEditationForm(OrisApiClient.OrisEvent orisEvent) {
+    private EventEditationForm createEventEditationForm(OrisEvent orisEvent) {
         EventEditationForm form = new EventEditationForm(orisEvent.name(),
                 orisEvent.location(),
                 orisEvent.date(),
