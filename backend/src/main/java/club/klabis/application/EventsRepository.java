@@ -1,5 +1,6 @@
-package club.klabis.domain.events;
+package club.klabis.application;
 
+import club.klabis.domain.events.Event;
 import club.klabis.domain.members.Member;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.repository.ListCrudRepository;

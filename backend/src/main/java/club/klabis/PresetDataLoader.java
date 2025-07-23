@@ -1,6 +1,7 @@
 package club.klabis;
 
 import club.klabis.api.dto.SexApiDto;
+import club.klabis.application.EventCreationUseCase;
 import club.klabis.application.MemberRegistrationUseCase;
 import club.klabis.application.MembershipSuspendUseCase;
 import club.klabis.domain.appusers.ApplicationGrant;
@@ -8,7 +9,6 @@ import club.klabis.domain.appusers.ApplicationUser;
 import club.klabis.domain.appusers.ApplicationUserService;
 import club.klabis.domain.appusers.ApplicationUsersRepository;
 import club.klabis.domain.events.Event;
-import club.klabis.domain.events.EventsService;
 import club.klabis.domain.events.forms.EventEditationForm;
 import club.klabis.domain.members.*;
 import club.klabis.domain.members.forms.RegistrationForm;
@@ -43,9 +43,9 @@ public class PresetDataLoader implements ApplicationRunner {
     private final MemberRegistrationUseCase memberRegistrationUseCase;
     private final ApplicationUserService applicationUserService;
     private final ConversionService conversionService;
-    private final EventsService eventsService;
+    private final EventCreationUseCase eventsService;
 
-    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MembershipSuspendUseCase membershipSuspendUseCase, MemberRegistrationUseCase memberRegistrationUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, EventsService eventsService) {
+    public PresetDataLoader(ApplicationUsersRepository appUsersRepository, MembershipSuspendUseCase membershipSuspendUseCase, MemberRegistrationUseCase memberRegistrationUseCase, ApplicationUserService applicationUserService, ConversionService conversionService, EventCreationUseCase eventsService) {
         this.appUsersRepository = appUsersRepository;
         this.membershipSuspendUseCase = membershipSuspendUseCase;
         this.memberRegistrationUseCase = memberRegistrationUseCase;
