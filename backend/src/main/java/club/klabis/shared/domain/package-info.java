@@ -1,4 +1,4 @@
 @DomainRing
-package club.klabis.common.domain;
+package club.klabis.shared.domain;
 
 import org.jmolecules.architecture.onion.simplified.DomainRing;

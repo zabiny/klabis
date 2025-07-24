@@ -1,7 +1,7 @@
 package club.klabis.members.adapters.restapi.mappers;
 
 import club.klabis.config.security.KlabisSecurityService;
-import club.klabis.common.ConversionServiceAdapter;
+import club.klabis.shared.ConversionServiceAdapter;
 import club.klabis.config.mapstruct.MapperSpringConfig;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.forms.RegistrationFormBuilder;

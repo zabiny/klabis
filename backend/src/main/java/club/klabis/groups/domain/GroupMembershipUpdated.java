@@ -1,6 +1,6 @@
 package club.klabis.groups.domain;
 
-import club.klabis.common.domain.DomainEventBase;
+import club.klabis.shared.domain.DomainEventBase;
 import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.members.domain.Member;
 

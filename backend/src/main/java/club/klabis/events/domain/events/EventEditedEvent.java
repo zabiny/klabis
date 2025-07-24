@@ -1,6 +1,6 @@
 package club.klabis.events.domain.events;
 
-import club.klabis.common.domain.AggregateDomainEvent;
+import club.klabis.shared.domain.AggregateDomainEvent;
 import club.klabis.events.domain.Event;
 
 @org.jmolecules.event.annotation.DomainEvent

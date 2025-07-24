@@ -1,6 +1,6 @@
 package club.klabis.config.restapi;
 
-import club.klabis.common.domain.IncorrectFormDataException;
+import club.klabis.shared.domain.IncorrectFormDataException;
 import org.springframework.http.*;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;

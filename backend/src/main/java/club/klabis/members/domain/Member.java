@@ -1,6 +1,6 @@
 package club.klabis.members.domain;
 
-import club.klabis.common.domain.IncorrectFormDataException;
+import club.klabis.shared.domain.IncorrectFormDataException;
 import club.klabis.members.domain.events.MemberCreatedEvent;
 import club.klabis.members.domain.events.MemberEditedEvent;
 import club.klabis.members.domain.events.MembershipSuspendedEvent;
@@ -18,7 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import static club.klabis.common.ConversionUtils.list;
+import static club.klabis.shared.ConversionUtils.list;
 
 @AggregateRoot
 public class Member extends AbstractAggregateRoot<Member> {

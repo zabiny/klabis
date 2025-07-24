@@ -1,4 +1,4 @@
-package club.klabis.common;
+package club.klabis.shared;
 
 import java.util.ArrayList;
 import java.util.Collection;

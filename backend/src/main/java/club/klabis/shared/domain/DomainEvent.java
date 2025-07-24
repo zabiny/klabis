@@ -1,4 +1,4 @@
-package club.klabis.common.domain;
+package club.klabis.shared.domain;
 
 import java.time.ZonedDateTime;
 
