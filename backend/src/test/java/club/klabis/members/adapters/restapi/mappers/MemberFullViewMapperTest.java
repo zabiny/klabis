@@ -1,32 +1,28 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.config.security.KlabisSecurityService;
-import club.klabis.shared.ConversionServiceAdapter;
-import club.klabis.config.mapstruct.MapperSpringConfig;
+import club.klabis.api.dto.LicencesApiDto;
+import club.klabis.api.dto.MemberApiDto;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.forms.RegistrationFormBuilder;
-import org.junit.jupiter.api.Assertions;
+import club.klabis.shared.config.security.KlabisSecurityService;
+import club.klabis.tests.common.MapperTest;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.extensions.spring.test.ConverterScan;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringJUnitConfig
-@Import(KlabisSecurityService.class)
+@MapperTest
+@ConverterScan(basePackageClasses = MemberFullViewMapper.class)
 class MemberFullViewMapperTest {
-
-    @TestConfiguration
-    @ConverterScan(basePackageClasses = {MapperSpringConfig.class, MemberFullViewMapper.class, ConversionServiceAdapter.class})
-    static class ScanConfiguration {}
 
     @Autowired
     ConversionService conversionService;
+
+    @MockBean
+    KlabisSecurityService securityServiceMock;
 
     @Test
     void convert() {
@@ -35,13 +31,17 @@ class MemberFullViewMapperTest {
 
         club.klabis.api.dto.MemberApiDto item = conversionService.convert(m, club.klabis.api.dto.MemberApiDto.class);
 
-        Assertions.assertAll("Unexpected values",
-                () -> assertEquals("Test", item.getFirstName(), "firstName"),
-                () -> assertEquals("Something", item.getLastName(), "lastName"),
-                () -> assertNull(item.getRegistrationNumber(), "registrationNumber")
-                // TODO: rest of attributes
-                );
+        MemberApiDto expected = new MemberApiDto();
+        expected.setFirstName("Test");
+        expected.setLastName("Something");
+        expected.setLicences(new LicencesApiDto());
+        expected.setMedicCourse(false);
 
+        assertThat(item)
+                .as("Unexpected values")
+                .usingRecursiveComparison()
+                .ignoringFields("links", "id")
+                .isEqualTo(expected);
 
     }
 }

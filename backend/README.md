@@ -29,7 +29,7 @@ Pro spusteni aplikace pomoci techto predpripravenych konfiguraci je potreba prip
 ### Autorizacni server
 
 #### Vygenerovani noveho klice pro JWT tokeny
-`club.klabis.config.authserver.generatejwtkeys.JKWKeyGenerator`
+`club.klabis.shared.config.generatejwtkeys.authserver.config.JKWKeyGenerator`
 
 #### Import certifikatu pro HTTPS
 Certifikat v repozitari je self-signed. 

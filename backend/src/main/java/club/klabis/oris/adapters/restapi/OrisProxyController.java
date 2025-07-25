@@ -2,7 +2,7 @@ package club.klabis.oris.adapters.restapi;
 
 import club.klabis.api.OrisApi;
 import club.klabis.api.dto.ORISUserInfoApiDto;
-import club.klabis.config.security.HasGrant;
+import club.klabis.shared.config.security.HasGrant;
 import club.klabis.members.domain.RegistrationNumber;
 import club.klabis.oris.application.apiclient.OrisApiClient;
 import club.klabis.users.domain.ApplicationGrant;

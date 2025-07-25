@@ -1,7 +1,7 @@
 package club.klabis.members.adapters.restapi.mappers;
 
 import club.klabis.api.dto.MemberRegistrationFormApiDto;
-import club.klabis.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.members.domain.forms.RegistrationForm;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;

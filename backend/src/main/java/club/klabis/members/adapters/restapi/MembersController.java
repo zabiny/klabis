@@ -1,6 +1,6 @@
 package club.klabis.members.adapters.restapi;
 
-import club.klabis.config.security.HasGrant;
+import club.klabis.shared.config.security.HasGrant;
 import club.klabis.api.MembersApi;
 import club.klabis.api.dto.*;
 import club.klabis.members.application.EditMemberInfoUseCase;

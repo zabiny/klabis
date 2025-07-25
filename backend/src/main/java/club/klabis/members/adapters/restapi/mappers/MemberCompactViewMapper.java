@@ -2,7 +2,7 @@ package club.klabis.members.adapters.restapi.mappers;
 
 import club.klabis.members.adapters.restapi.MembersController;
 import club.klabis.api.dto.MemberViewCompactApiDto;
-import club.klabis.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.members.domain.Member;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

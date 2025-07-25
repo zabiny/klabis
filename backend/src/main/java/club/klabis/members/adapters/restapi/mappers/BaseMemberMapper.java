@@ -1,6 +1,6 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.config.security.KlabisSecurityService;
+import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.members.adapters.restapi.MembersController;
 import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.members.domain.Member;
