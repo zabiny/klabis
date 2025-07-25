@@ -20,3 +20,7 @@ Authorization: Bearer {{$auth.token("frontend")}}
 {
   "configuredLevel": "trace"
 }
+
+### Modulith
+GET {{host}}/actuator/modulith
+Authorization: Bearer {{$auth.token("frontend@Local")}}

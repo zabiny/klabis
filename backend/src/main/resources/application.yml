@@ -200,7 +200,7 @@ management:
     web:
       exposure:
         #include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
-        include: loggers, caches, env, info, mappings, health
+        include: loggers, caches, env, info, mappings, health, modulith
 
 springdoc:
   swagger-ui:

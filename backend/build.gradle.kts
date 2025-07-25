@@ -12,6 +12,7 @@ plugins {
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
     id("org.openapi.generator") version "7.6.0"
 }
+val springModulithVersion by extra("1.3.7")
 
 repositories {
     maven {
@@ -40,11 +41,15 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-hateoas")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    implementation("org.springframework.modulith:spring-modulith-starter-core")
+    //implementation("org.springframework.modulith:spring-modulith-starter-jdbc")
     testImplementation("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.springframework.modulith:spring-modulith-starter-test")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
+    runtimeOnly("org.springframework.modulith:spring-modulith-starter-insight")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // Jackson mappings
@@ -166,6 +171,11 @@ tasks.getByName<BootBuildImage>("bootBuildImage") {
             url = System.getenv("DOCKER_REGISTRY_URL")
             email = "gradle@noreply.com"
         }
+    }
+}
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.modulith:spring-modulith-bom:$springModulithVersion")
     }
 }
 
