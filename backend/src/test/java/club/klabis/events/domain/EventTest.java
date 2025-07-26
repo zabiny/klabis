@@ -98,7 +98,7 @@ class EventTest {
             event.addEventRegistration(form);
 
             // Assert
-            assertThat(event.getEventRegistrations()).contains(memberId);
+            assertThat(event.getEventRegistrations()).contains(new Registration(memberId, "SI12345"));
         }
 
         @Test
@@ -171,7 +171,7 @@ class EventTest {
             event.removeEventRegistration(memberId);
 
             // Assert
-            assertThat(event.getEventRegistrations()).doesNotContain(memberId);
+            assertThat(event.getEventRegistrations()).doesNotContain(new Registration(memberId, "SI12345"));
         }
 
         @Test

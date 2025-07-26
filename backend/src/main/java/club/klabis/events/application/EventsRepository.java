@@ -7,12 +7,18 @@ import org.springframework.data.repository.ListCrudRepository;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 public interface EventsRepository extends ListCrudRepository<Event, Event.Id> {
 
     Optional<Event> findByOrisId(int orisId);
 
-    Collection<Event> findEventsByRegistrationsContaining(Member.Id participantId);
+    default Collection<Event> findEventsByRegistrationsContaining(Member.Id participantId) {
+        return findAll().stream()
+                .filter(it -> it.getEventRegistrations().stream().anyMatch(r -> r.memberId().equals(participantId)))
+                .collect(
+                        Collectors.toList());
+    }
 
 }

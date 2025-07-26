@@ -9,9 +9,7 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Optional;
+import java.util.*;
 
 @AggregateRoot
 public class Event extends AbstractAggregateRoot<Event> {
@@ -20,8 +18,8 @@ public class Event extends AbstractAggregateRoot<Event> {
         id = Id.newId();
     }
 
-    public Collection<Member.Id> getEventRegistrations() {
-        return registrations;
+    public Collection<Registration> getEventRegistrations() {
+        return new HashSet<>(registrations);
     }
 
     public record Id(int value) {
@@ -44,7 +42,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     private Member.Id coordinator;
     private Integer orisId;
 
-    private Collection<Member.Id> registrations = new HashSet<>();
+    private Set<Registration> registrations = new HashSet<>();
 
     public Optional<Member.Id> getCoordinator() {
         return Optional.ofNullable(coordinator);
@@ -104,6 +102,10 @@ public class Event extends AbstractAggregateRoot<Event> {
         return this;
     }
 
+    private Optional<Registration> getRegistrationForMember(Member.Id memberId) {
+        return registrations.stream().filter(it -> Objects.equals(it.memberId(), memberId)).findFirst();
+    }
+
     public void addEventRegistration(EventRegistrationForm form) {
         if (this.registrationDeadline.isBefore(LocalDate.now())) {
             throw new EventException(this.id,
@@ -111,11 +113,11 @@ public class Event extends AbstractAggregateRoot<Event> {
                     EventException.Type.REGISTRATION_DEADLINE_PASSED);
         }
 
-        if (this.registrations.contains(form.memberId())) {
+        if (this.getRegistrationForMember(form.memberId()).isPresent()) {
             throw EventException.createAlreadySignedUpException(this.id, form.memberId());
         }
 
-        this.registrations.add(form.memberId());
+        this.registrations.add(new Registration(form.memberId(), form.siNumber()));
     }
 
     public void removeEventRegistration(Member.Id memberId) {
@@ -125,10 +127,10 @@ public class Event extends AbstractAggregateRoot<Event> {
                     EventException.Type.REGISTRATION_DEADLINE_PASSED);
         }
 
-        if (!this.registrations.contains(memberId)) {
-            throw EventException.createMemberNotRegisteredForEventException(this.id, memberId);
-        }
-
-        this.registrations.remove(memberId);
+        getRegistrationForMember(memberId).ifPresentOrElse(registration -> this.registrations.remove(registration),
+                () -> {
+                    throw EventException.createMemberNotRegisteredForEventException(this.id, memberId);
+                });
     }
 }
+

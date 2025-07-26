@@ -3,9 +3,9 @@ package club.klabis.events.adapters.restapi;
 import club.klabis.api.EventsApi;
 import club.klabis.api.dto.EventListItemApiDto;
 import club.klabis.api.dto.GetEvents200ResponseApiDto;
-import club.klabis.events.domain.Event;
-import club.klabis.events.domain.EventException;
+import club.klabis.events.application.EventRegistrationUseCase;
 import club.klabis.events.application.EventsRepository;
+import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.domain.Member;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,9 +25,11 @@ import java.util.List;
 @RestController
 class EventsApiImpl implements EventsApi {
     private final EventsRepository eventsRepository;
+    private final EventRegistrationUseCase eventRegistrationUseCase;
 
-    EventsApiImpl(EventsRepository eventsRepository) {
+    EventsApiImpl(EventsRepository eventsRepository, EventRegistrationUseCase eventRegistrationUseCase) {
         this.eventsRepository = eventsRepository;
+        this.eventRegistrationUseCase = eventRegistrationUseCase;
     }
 
 
@@ -80,11 +82,7 @@ class EventsApiImpl implements EventsApi {
     @Transactional
     @ResponseStatus(HttpStatus.CREATED)
     void registerMemberToEvent(@PathVariable(name = "eventId") int event, @RequestBody EventRegistrationForm form) {
-        Event e = eventsRepository.findById(new Event.Id(event))
-                .orElseThrow();
-
-        e.addEventRegistration(form);
-        eventsRepository.save(e);
+        eventRegistrationUseCase.registerForEvent(new Event.Id(event), form);
     }
 
     @RequestMapping(
@@ -95,11 +93,7 @@ class EventsApiImpl implements EventsApi {
     @Transactional
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void removeMemberRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
-        Event event = eventsRepository.findById(new Event.Id(eventId))
-                .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
-
-        event.removeEventRegistration(new Member.Id(memberId));
-        eventsRepository.save(event);
+        eventRegistrationUseCase.deregisterFromEvent(new Event.Id(eventId), new Member.Id(memberId));
     }
 
     @RequestMapping(

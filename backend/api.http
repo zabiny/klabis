@@ -190,6 +190,10 @@ Content-Type: application/json
 GET {{host}}/member/2/registeredEvents
 Authorization: Bearer {{$auth.token("frontend@Local")}}
 
+### Get event registrations
+GET {{host}}/events/1/registrations
+Authorization: Bearer {{$auth.token("frontend@Local")}}
+
 ###
 DELETE {{host}}/events/1/registrations/2
 Authorization: Bearer {{$auth.token("frontend@Local")}}
