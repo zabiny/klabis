@@ -15,3 +15,15 @@ backend/target/**
 backend/build/**
 backend/local.env
 **/.gradle/**
+
+# frontend excludes
+# frontend2 folder excludes
+frontend2/node_modules/
+frontend2/dist/
+frontend2/build/
+frontend2/.env*
+frontend2/coverage/
+frontend2/npm-debug.log*
+frontend2/yarn-debug.log*
+frontend2/yarn-error.log*
+frontend2/.DS_Store
