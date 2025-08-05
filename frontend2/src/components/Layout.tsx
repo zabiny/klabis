@@ -1,9 +1,11 @@
 import {useState} from 'react';
-import {Outlet} from 'react-router-dom';
+import {Outlet, useNavigate} from 'react-router-dom';
 import {styled} from '@mui/material/styles';
 import {
     AppBar,
     Box,
+    Button,
+    Divider,
     Drawer,
     IconButton,
     List,
@@ -13,19 +15,16 @@ import {
     ListItemText,
     Toolbar,
     Typography,
-    Divider,
-    Button,
 } from '@mui/material';
 import {
-    Menu as MenuIcon,
-    Home as HomeIcon,
-    People as PeopleIcon,
     Event as EventIcon,
     Group as GroupIcon,
+    Home as HomeIcon,
     Logout as LogoutIcon,
+    Menu as MenuIcon,
+    People as PeopleIcon,
 } from '@mui/icons-material';
-import {useNavigate} from 'react-router-dom';
-import {useAuth} from '../contexts/AuthContext';
+import {useAuth} from '../contexts/AuthContext2';
 
 const drawerWidth = 240;
 
