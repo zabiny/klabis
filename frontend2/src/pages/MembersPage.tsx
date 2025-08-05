@@ -1,21 +1,21 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {
+    Alert,
     Box,
-    Typography,
+    Button,
+    CircularProgress,
+    FormControlLabel,
     Paper,
+    Switch,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
-    TableRow,
     TablePagination,
-    FormControlLabel,
-    Switch,
-    CircularProgress,
-    Alert,
-    Button,
+    TableRow,
+    Typography,
 } from '@mui/material';
 import {useGetMembers} from '../api/membersApi';
 
@@ -27,7 +27,7 @@ const MembersPage = () => {
     const [view, setView] = useState<'compact' | 'full'>('compact');
 
     // Fetch members data
-    const {data, isLoading, error} = useGetMembers(view, showSuspended);
+    const {data: membersResponse, isLoading, error} = useGetMembers(view, showSuspended);
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -104,7 +104,7 @@ const MembersPage = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {data?.items
+                                {membersResponse?.data.items
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map((member) => (
                                         <TableRow
@@ -132,7 +132,7 @@ const MembersPage = () => {
                     <TablePagination
                         rowsPerPageOptions={[5, 10, 25]}
                         component="div"
-                        count={data?.items.length || 0}
+                        count={membersResponse?.data.items.length || 0}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onPageChange={handleChangePage}

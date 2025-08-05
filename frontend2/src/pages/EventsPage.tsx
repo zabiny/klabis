@@ -1,20 +1,19 @@
 import {useState} from 'react';
 import {
+    Alert,
     Box,
-    Typography,
+    Button,
+    Chip,
+    CircularProgress,
     Paper,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
-    TableRow,
     TablePagination,
-    CircularProgress,
-    Alert,
-    Chip,
-    Link,
-    Button,
+    TableRow,
+    Typography,
 } from '@mui/material';
 import {Event as EventIcon, Link as LinkIcon} from '@mui/icons-material';
 import {useGetEvents} from '../api/eventsApi';
@@ -24,7 +23,7 @@ const EventsPage = () => {
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
     // Fetch events data
-    const {data, isLoading, error} = useGetEvents();
+    const {data: response, isLoading, error} = useGetEvents();
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -93,7 +92,7 @@ const EventsPage = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {data?.items
+                                {response?.data.items
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map((event) => (
                                         <TableRow key={event.id} hover>
@@ -137,7 +136,7 @@ const EventsPage = () => {
                     <TablePagination
                         rowsPerPageOptions={[5, 10, 25]}
                         component="div"
-                        count={data?.items.length || 0}
+                        count={response?.data.items.length || 0}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onPageChange={handleChangePage}
