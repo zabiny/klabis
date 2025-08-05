@@ -1,22 +1,22 @@
 import {useState} from 'react';
-import {useParams, useNavigate} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import {
+    Alert,
     Box,
-    Typography,
-    Paper,
-    Grid,
     Button,
     CircularProgress,
-    Alert,
-    Tabs,
-    Tab,
     Divider,
+    Grid,
     List,
     ListItem,
     ListItemText,
+    Paper,
+    Tab,
+    Tabs,
+    Typography,
 } from '@mui/material';
 import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material';
-import {useGetMember, useGetEditMyDetailsForm} from '../api/membersApi';
+import {useGetMember} from '../api/membersApi';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -46,7 +46,7 @@ const MemberDetailPage = () => {
     const [tabValue, setTabValue] = useState(0);
 
     // Fetch member data
-    const {data: member, isLoading, error} = useGetMember(Number(memberId));
+    const {data: memberResponse, isLoading, error} = useGetMember(Number(memberId));
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
@@ -69,7 +69,7 @@ const MemberDetailPage = () => {
         );
     }
 
-    if (error || !member) {
+    if (error || !memberResponse) {
         return (
             <Box>
                 <Button startIcon={<ArrowBackIcon/>} onClick={handleBack} sx={{mb: 2}}>
@@ -79,6 +79,8 @@ const MemberDetailPage = () => {
             </Box>
         );
     }
+
+    const member = memberResponse.data;
 
     return (
         <Box>
