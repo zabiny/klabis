@@ -1,8 +1,7 @@
-import {useState, useEffect} from 'react';
-import {Routes, Route, Navigate} from 'react-router-dom';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {Navigate, Route, Routes} from 'react-router-dom';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import {AuthProvider, useAuth} from './contexts/AuthContext';
+import {AuthProvider, useAuth} from './contexts/AuthContext2';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MembersPage from './pages/MembersPage';
@@ -43,7 +42,13 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline/>
-            <AuthProvider>
+            <AuthProvider config={{
+                authority: 'http://localhost:8080',
+                client_id: 'frontend',
+                client_secret: 'fesecret',
+                redirect_uri: 'http://localhost:3000/auth/callback', // must match OIDC config
+                post_logout_redirect_uri: 'http://localhost:8080/oauth/logout',
+            }}>
                 <Routes>
                     <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/" element={

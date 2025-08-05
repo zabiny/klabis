@@ -1,5 +1,4 @@
 import axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from 'axios';
-import {useAuth} from '../contexts/AuthContext';
 
 // We'll create a function to get the auth token that can be used outside of React components
 let getTokenCallback: () => string | null = () => null;
@@ -24,8 +23,9 @@ const apiClient: AxiosInstance = axios.create({
 
 // Add request interceptor to add auth token to requests
 apiClient.interceptors.request.use(
-    (config: AxiosRequestConfig): AxiosRequestConfig => {
-        const token = getAuthToken();
+    async (config: AxiosRequestConfig): AxiosRequestConfig => {
+        const token = await getAuthToken();
+        console.log('axios interceptor auth token: ', token);
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
         }

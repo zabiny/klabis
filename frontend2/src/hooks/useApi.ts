@@ -1,8 +1,8 @@
-import {useQuery, useMutation, UseQueryOptions, UseMutationOptions} from '@tanstack/react-query';
-import {AxiosError, AxiosResponse} from 'axios';
+import {useMutation, UseMutationOptions, useQuery, UseQueryOptions} from '@tanstack/react-query';
+import {AxiosError} from 'axios';
 import {useEffect} from 'react';
 import apiClient, {setAuthTokenGetter} from '../api/apiClient';
-import {useAuth} from '../contexts/AuthContext';
+import {useAuth} from '../contexts/AuthContext2';
 
 // Hook to set up the auth token getter
 export const useApiSetup = () => {
