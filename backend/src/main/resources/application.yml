@@ -5,7 +5,7 @@ spring:
       - generatedSwaggerUI
     include:
       - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
-      - http2
+      #- http2
       - hateoas
 
   security:

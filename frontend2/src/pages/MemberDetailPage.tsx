@@ -5,6 +5,10 @@ import {
     Box,
     Button,
     CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Divider,
     Grid,
     List,
@@ -17,6 +21,7 @@ import {
 } from '@mui/material';
 import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material';
 import {useGetMember} from '../api/membersApi';
+import EditOwnMemberInfoForm from './EditOwnMemberInfoForm';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -44,6 +49,7 @@ const MemberDetailPage = () => {
     const {memberId} = useParams<{ memberId: string }>();
     const navigate = useNavigate();
     const [tabValue, setTabValue] = useState(0);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     // Fetch member data
     const {data: memberResponse, isLoading, error} = useGetMember(Number(memberId));
@@ -57,8 +63,11 @@ const MemberDetailPage = () => {
     };
 
     const handleEdit = () => {
-        // Navigate to edit page or open edit dialog
-        console.log('Edit member', memberId);
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsEditModalOpen(false);
     };
 
     if (isLoading) {
@@ -92,6 +101,18 @@ const MemberDetailPage = () => {
                     Upravit
                 </Button>
             </Box>
+
+            <Dialog open={isEditModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
+                <DialogTitle>Úprava osobních údajů</DialogTitle>
+                <DialogContent>
+                    <EditOwnMemberInfoForm memberId={Number(memberId)}/>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseModal} color="primary">
+                        Zavřít
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <Paper sx={{mb: 3}}>
                 <Box sx={{p: 3}}>
