@@ -1,5 +1,12 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Klabis Backend" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+      <additionalParameters>
+          <param>
+              <option name="enabled" value="true"/>
+              <option name="name" value="management.endpoint.env.show-values"/>
+              <option name="value" value="when_authorized"/>
+          </param>
+      </additionalParameters>
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/backend/local.env" />
     </option>
