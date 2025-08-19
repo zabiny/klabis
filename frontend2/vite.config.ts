@@ -15,7 +15,8 @@ export default defineConfig({
         open: true,
         proxy: {
             '/api': {
-                target: 'https://api.klabis.otakar.io',
+                //target: 'https://api.klabis.otakar.io',
+                target: 'http://localhost:8080',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, ''),
             },

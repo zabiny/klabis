@@ -5,7 +5,7 @@ spring:
       - generatedSwaggerUI
     include:
       - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
-      - http2
+      #- http2
       - hateoas
 
   security:
@@ -54,6 +54,7 @@ spring:
                 - "https://klabis.otakar.io/auth/callback"
                 - "http://localhost:8788/auth/callback"
                 - "http://localhost:5173/auth/callback"
+                - "http://localhost:3000/auth/callback"
                 - "https://localhost:8443/login/oauth2/code/klabis"
               post-logout-redirect-uris:
                 - "https://klabis.otakar.io"
