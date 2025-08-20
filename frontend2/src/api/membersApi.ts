@@ -1,4 +1,4 @@
-import {useApiQuery, useApiMutation, useApiPutMutation} from '../hooks/useApi';
+import {useApiPutMutation, useApiQuery} from '../hooks/useApi';
 
 // Types based on the API specification
 export interface Member {
@@ -110,5 +110,28 @@ export const useGetEditMyDetailsForm = (memberId: number) => {
 export const useUpdateMyDetails = (memberId: number) => {
     return useApiPutMutation<EditMyDetailsForm, void>(
         `/members/${memberId}/editOwnMemberInfoForm`
+    );
+};
+
+export interface MembershipSuspensionInfo {
+    isSuspended: boolean;
+    canSuspend: boolean;
+    details: {
+        finance: {
+            status: boolean;
+        };
+    };
+}
+
+export const useGetSuspendMembershipForm = (memberId: number) => {
+    return useApiQuery<MembershipSuspensionInfo>(
+        ['suspendMembershipForm', memberId.toString()],
+        `/members/${memberId}/suspendMembershipForm`
+    );
+};
+
+export const useSuspendMembership = (memberId: number, force: boolean = false) => {
+    return useApiPutMutation<void, void>(
+        `/members/${memberId}/suspendMembershipForm?force=${force}`
     );
 };
