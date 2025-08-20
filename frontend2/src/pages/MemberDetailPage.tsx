@@ -20,8 +20,8 @@ import {
     Typography,
 } from '@mui/material';
 import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material';
-import {useGetMember} from '../api/membersApi';
-import EditOwnMemberInfoForm from './EditOwnMemberInfoForm';
+import {useGetMember, useGetSuspendMembershipForm, useSuspendMembership} from '../api/membersApi';
+import EditOwnMemberInfoForm from '../components/EditOwnMemberInfoForm.tsx';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -50,9 +50,16 @@ const MemberDetailPage = () => {
     const navigate = useNavigate();
     const [tabValue, setTabValue] = useState(0);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
     // Fetch member data
     const {data: memberResponse, isLoading, error} = useGetMember(Number(memberId));
+
+    // Suspend membership hook
+    const suspendMembership = useSuspendMembership(Number(memberId));
+
+    // Get suspension info
+    const {data: suspendInfo, isLoading: isSuspendInfoLoading} = useGetSuspendMembershipForm(Number(memberId));
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
@@ -68,6 +75,25 @@ const MemberDetailPage = () => {
 
     const handleCloseModal = () => {
         setIsEditModalOpen(false);
+    };
+
+    const handleOpenConfirmDialog = () => {
+        setIsConfirmDialogOpen(true);
+    };
+
+    const handleCloseConfirmDialog = () => {
+        setIsConfirmDialogOpen(false);
+    };
+
+    const handleSuspendMembership = async () => {
+        try {
+            await suspendMembership.mutateAsync();
+            alert('Membership suspended successfully');
+            handleCloseConfirmDialog();
+        } catch (error) {
+            alert('Failed to suspend membership');
+            handleCloseConfirmDialog();
+        }
     };
 
     if (isLoading) {
@@ -100,16 +126,56 @@ const MemberDetailPage = () => {
                 <Button startIcon={<EditIcon/>} variant="contained" color="primary" onClick={handleEdit}>
                     Upravit
                 </Button>
+                <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
+                    Zrušit členství
+                </Button>
             </Box>
 
             <Dialog open={isEditModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
-                <DialogTitle>Úprava osobních údajů</DialogTitle>
                 <DialogContent>
                     <EditOwnMemberInfoForm memberId={Number(memberId)}/>
                 </DialogContent>
+                {/*<DialogActions>*/}
+                {/*    <Button onClick={handleCloseModal} color="primary">*/}
+                {/*        Zavřít*/}
+                {/*    </Button>*/}
+                {/*</DialogActions>*/}
+            </Dialog>
+
+            <Dialog open={isConfirmDialogOpen} onClose={handleCloseConfirmDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>Zrušení členství</DialogTitle>
+                <DialogContent>
+                    {isSuspendInfoLoading ? (
+                        <CircularProgress/>
+                    ) : suspendInfo ? (
+                        <Box>
+                            <Typography variant="body1" gutterBottom>
+                                Jste si jisti, že chcete zrušit členství uživatele {member.firstName} {member.lastName}?
+                            </Typography>
+                            <Typography variant="body1" gutterBottom>
+                                Stav členství: {suspendInfo.data.isSuspended ? 'Zrušeno' : 'Aktivní'}
+                            </Typography>
+                            <Typography variant="body1" gutterBottom>
+                                Možnost zrušení: {suspendInfo.data.canSuspend ? 'Ano' : 'Ne'}
+                            </Typography>
+                            {suspendInfo.data.details?.finance && (
+                                <Typography variant="body1" gutterBottom>
+                                    Finanční stav: {suspendInfo.data.details.finance.status ? 'V pořádku' : 'Nevhodný'}
+                                </Typography>
+                            )}
+                        </Box>
+                    ) : (
+                        <Typography variant="body1">
+                            Nastala chyba při načítání informací o zrušení členství.
+                        </Typography>
+                    )}
+                </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseModal} color="primary">
-                        Zavřít
+                    <Button onClick={handleCloseConfirmDialog} color="primary">
+                        Zrušit
+                    </Button>
+                    <Button onClick={handleSuspendMembership} variant="contained" color="secondary">
+                        Potvrdit
                     </Button>
                 </DialogActions>
             </Dialog>

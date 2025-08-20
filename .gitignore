@@ -18,7 +18,7 @@ backend/local.env
 
 # frontend excludes
 # frontend2 folder excludes
-frontend2/node_modules/*
+frontend2/node_modules/**
 frontend2/dist/
 frontend2/build/
 frontend2/.env*

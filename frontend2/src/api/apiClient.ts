@@ -25,6 +25,7 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
     async (config: AxiosRequestConfig): AxiosRequestConfig => {
         const token = await getAuthToken();
+        //console.log(`OAuth2 token: ${token}`);
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
         }

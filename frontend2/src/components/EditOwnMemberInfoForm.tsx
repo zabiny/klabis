@@ -1,49 +1,43 @@
 import {useState} from 'react';
 import {Alert, Button, Checkbox, FormControlLabel, Grid, Paper, Stack, TextField, Typography,} from '@mui/material';
-import type {EditMyDetailsForm} from '../api/membersApi';
-import {useGetEditMyDetailsForm, useUpdateMyDetails} from '../api/membersApi';
+import {EditMyDetailsForm, useGetEditMyDetailsForm, useUpdateMyDetails} from '../api/membersApi.ts';
 
-interface EditMemberFormProps {
-    memberId: number;
+interface EditMemberFormUIProps {
+    formData: EditMyDetailsForm;
+    onSubmit: (formData: EditMyDetailsForm) => void;
+    successMessage: string | null
+    failureMessage: string | null
+    disabled?: boolean;
 }
 
-const EditMemberForm = ({memberId}: EditMemberFormProps) => {
-    const {data: formData, isLoading} = useGetEditMyDetailsForm(memberId);
+const FormLoadingUI = () => <Typography>Načítání...</Typography>;
 
-    const mutation = useUpdateMyDetails(memberId);
-
+const EditMemberFormUI = ({
+                              formData, onSubmit, successMessage, failureMessage, disabled = false,
+                          }: EditMemberFormUIProps) => {
     const [formState, setFormState] = useState<EditMyDetailsForm>({
-        nationality: formData?.data.nationality ?? '',
+        nationality: formData.nationality ?? '',
         address: {
-            streetAndNumber: formData?.data.address.streetAndNumber ?? '',
-            city: formData?.data.address.city ?? '',
-            postalCode: formData?.data.address.postalCode ?? '',
-            country: formData?.data.address.country ?? '',
+            streetAndNumber: formData.address?.streetAndNumber ?? '',
+            city: formData.address?.city ?? '',
+            postalCode: formData.address?.postalCode ?? '',
+            country: formData.address?.country ?? '',
         },
         contact: {
-            email: formData?.data.contact?.email ?? '',
-            phone: formData?.data.contact?.phone ?? '',
-            note: formData?.data.contact?.note ?? '',
+            email: formData.contact?.email ?? '',
+            phone: formData.contact?.phone ?? '',
+            note: formData.contact?.note ?? '',
         },
         identityCard: {
-            number: formData?.data.identityCard?.number ?? '',
-            expiryDate: formData?.data.identityCard?.expiryDate ?? '',
+            number: formData.identityCard?.number ?? '',
+            expiryDate: formData.identityCard?.expiryDate ?? '',
         },
-        bankAccount: formData?.data.bankAccount ?? '',
-        dietaryRestrictions: formData?.data.dietaryRestrictions ?? '',
-        medicCourse: formData?.data.medicCourse ?? false,
-        siCard: formData?.data.siCard,
-        drivingLicence: formData?.data.drivingLicence ?? [],
+        bankAccount: formData.bankAccount ?? '',
+        dietaryRestrictions: formData.dietaryRestrictions ?? '',
+        medicCourse: formData.medicCourse ?? false,
+        siCard: formData.siCard ?? undefined,
+        drivingLicence: formData.drivingLicence ?? [],
     });
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            await mutation.mutateAsync(formState);
-        } catch (error) {
-            console.error('Chyba při ukládání:', error);
-        }
-    };
 
     const handleInputChange = (path: string, value: any) => {
         setFormState((prev) => {
@@ -59,9 +53,14 @@ const EditMemberForm = ({memberId}: EditMemberFormProps) => {
         });
     };
 
-    if (isLoading) {
-        return <Typography>Načítání...</Typography>;
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        onSubmit(formState);
     }
+
+    const handleReset = () => {
+        setFormState(formData);
+    };
 
     return (
         <Paper sx={{p: 3}}>
@@ -69,16 +68,12 @@ const EditMemberForm = ({memberId}: EditMemberFormProps) => {
                 Úprava osobních údajů
             </Typography>
 
-            {mutation.isSuccess && (
-                <Alert severity="success" sx={{mb: 2}}>
-                    Změny byly úspěšně uloženy
-                </Alert>
+            {successMessage && (
+                <Alert severity="success" sx={{mb: 2}}>{successMessage}</Alert>
             )}
 
-            {mutation.isError && (
-                <Alert severity="error" sx={{mb: 2}}>
-                    Při ukládání došlo k chybě
-                </Alert>
+            {failureMessage && (
+                <Alert severity="error" sx={{mb: 2}}>{failureMessage}</Alert>
             )}
 
             <form onSubmit={handleSubmit}>
@@ -201,14 +196,15 @@ const EditMemberForm = ({memberId}: EditMemberFormProps) => {
                                 type="submit"
                                 variant="contained"
                                 color="primary"
-                                disabled={mutation.isLoading}
+                                disabled={disabled}
                             >
                                 Uložit změny
                             </Button>
                             <Button
                                 variant="outlined"
                                 color="secondary"
-                                onClick={() => setFormState(formData?.data ?? {} as EditMyDetailsForm)}
+                                onClick={handleReset}
+                                disabled={disabled}
                             >
                                 Obnovit
                             </Button>
@@ -217,6 +213,38 @@ const EditMemberForm = ({memberId}: EditMemberFormProps) => {
                 </Grid>
             </form>
         </Paper>
+    );
+};
+
+interface EditMemberFormProps {
+    memberId: number;
+}
+
+const EditMemberForm = ({memberId}: EditMemberFormProps) => {
+    const {data: formData, isLoading} = useGetEditMyDetailsForm(memberId);
+
+    const mutation = useUpdateMyDetails(memberId);
+
+    const handleSubmit = async (e: EditMyDetailsForm) => {
+        try {
+            await mutation.mutateAsync(e);
+        } catch (error) {
+            console.error('Chyba při ukládání:', error);
+        }
+    };
+
+    if (isLoading) {
+        return <FormLoadingUI/>;
+    }
+
+    return (
+        <EditMemberFormUI
+            formData={formData?.data ?? {} as EditMyDetailsForm}
+            onSubmit={handleSubmit}
+            successMessage={mutation.isSuccess ? 'Změny byly úspěšně uloženy' : null}
+            failureMessage={mutation.isError ? 'Při ukládání došlo k chybě' : null}
+            disabled={mutation.isLoading}
+        />
     );
 };
 
