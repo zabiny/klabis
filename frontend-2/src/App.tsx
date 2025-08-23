@@ -1,5 +1,5 @@
 import {Navigate, Route, Routes} from 'react-router-dom';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import {AuthProvider, useAuth} from './contexts/AuthContext2';
 import Layout from './components/Layout';
@@ -11,17 +11,7 @@ import GroupsPage from './pages/GroupsPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 
-// Create a theme instance
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: '#1976d2',
-        },
-        secondary: {
-            main: '#dc004e',
-        },
-    },
-});
+import theme from './theme';
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
