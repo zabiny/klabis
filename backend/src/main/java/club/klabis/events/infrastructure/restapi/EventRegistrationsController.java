@@ -40,7 +40,7 @@ public class EventRegistrationsController {
                     @Parameter(name = "memberId", description = "ID clena", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer"))
             },
             responses = {
-                    @ApiResponse(responseCode = "201", description = "Member was registered to event successfully"),
+                    @ApiResponse(responseCode = "200", description = "Prepared event registration form for member and event"),
                     @ApiResponse(responseCode = "400", description = "Invalid request"),
                     @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed"),
                     @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation"),
@@ -52,7 +52,7 @@ public class EventRegistrationsController {
             value = "/events/{eventId}/registrationForm/{memberId}",
             produces = {"application/json"}
     )
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.OK)
     EventRegistrationForm getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
         return useCase.createEventRegistrationForm(new Event.Id(event), new MemberId(memberId));
     }
