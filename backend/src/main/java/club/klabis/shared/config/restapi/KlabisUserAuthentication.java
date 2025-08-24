@@ -1,6 +1,6 @@
 package club.klabis.shared.config.restapi;
 
-import club.klabis.users.domain.ApplicationGrant;
+import club.klabis.shared.ApplicationGrant;
 import club.klabis.users.domain.ApplicationUser;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;

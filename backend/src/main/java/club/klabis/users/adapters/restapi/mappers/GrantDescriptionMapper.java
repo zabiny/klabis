@@ -1,8 +1,8 @@
 package club.klabis.users.adapters.restapi.mappers;
 
+import club.klabis.shared.ApplicationGrant;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.users.adapters.restapi.dto.GlobalGrantDetailApiDto;
-import club.klabis.users.domain.ApplicationGrant;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;

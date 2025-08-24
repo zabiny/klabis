@@ -1,9 +1,9 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.members.adapters.restapi.MembersController;
-import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.members.domain.Member;
+import club.klabis.shared.ApplicationGrant;
+import club.klabis.shared.config.security.KlabisSecurityService;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;

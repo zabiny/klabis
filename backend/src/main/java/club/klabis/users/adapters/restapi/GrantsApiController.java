@@ -1,8 +1,8 @@
 package club.klabis.users.adapters.restapi;
 
+import club.klabis.shared.ApplicationGrant;
 import club.klabis.users.adapters.restapi.dto.GetAllGrants200ResponseApiDto;
 import club.klabis.users.adapters.restapi.dto.GlobalGrantDetailApiDto;
-import club.klabis.users.domain.ApplicationGrant;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.ResponseEntity;

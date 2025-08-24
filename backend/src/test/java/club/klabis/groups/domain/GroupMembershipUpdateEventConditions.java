@@ -1,7 +1,7 @@
 package club.klabis.groups.domain;
 
 import club.klabis.members.MemberId;
-import club.klabis.users.domain.ApplicationGrant;
+import club.klabis.shared.ApplicationGrant;
 import org.assertj.core.api.Condition;
 
 import java.util.ArrayList;

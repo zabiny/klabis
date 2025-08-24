@@ -1,4 +1,4 @@
-package club.klabis.users.domain;
+package club.klabis.shared;
 
 import java.util.Arrays;
 import java.util.EnumSet;
