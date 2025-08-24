@@ -29,6 +29,7 @@ import java.util.List;
 
 @Validated
 @Tag(name = "Events")
+@SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
 public class EventsController {
     private final EventsRepository eventsRepository;
@@ -49,9 +50,6 @@ public class EventsController {
                     @ApiResponse(responseCode = "200", description = "Events", content = {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = GetEvents200ResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
@@ -76,9 +74,6 @@ public class EventsController {
             },
             parameters = {
                     @Parameter(name = "eventId", description = "ID eventu", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer"))
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(

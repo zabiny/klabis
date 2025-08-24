@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -24,10 +23,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
 @Validated
-@Tag(name = "security", description = "API used to control authentication and authorization")
-public interface GrantsApi {
+@Tag(name = "User permissions")
+@SecurityRequirement(name = "klabis", scopes = {"openapi"})
+public interface UserPermissionsApi {
 
     /**
      * GET /grants : returns details about available security grants what can be assigned to users
@@ -37,14 +36,10 @@ public interface GrantsApi {
     @Operation(
             operationId = "getAllGrants",
             summary = "returns details about available security grants what can be assigned to users",
-            tags = {"security"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "List of grants which can be assigned to members", content = {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = GetAllGrants200ResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
@@ -67,7 +62,6 @@ public interface GrantsApi {
             operationId = "getMemberGrants",
             summary = "returns grants assigned to member",
             description = "Requires `members:permissions` grant",
-            tags = {"security", "BFF"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Edit member grants form content", content = {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = MemberGrantsFormApiDto.class))
@@ -98,7 +92,6 @@ public interface GrantsApi {
             operationId = "updateMemberGrants",
             summary = "updates grants assigned to member",
             description = "Requires `members:permissions` grant",
-            tags = {"security"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Member grants were successfully updated")
             },

@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -29,9 +28,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
 @Validated
 @Tag(name = "members", description = "Club members")
+@SecurityRequirement(name = "klabis", scopes = {"openapi"})
 public interface RegistrationNumberApi {
 
     /**
@@ -62,9 +61,6 @@ public interface RegistrationNumberApi {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(

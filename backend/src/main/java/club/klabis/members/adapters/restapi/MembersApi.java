@@ -28,6 +28,7 @@ import java.util.List;
 
 @Validated
 @Tag(name = "Members")
+@SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
 public class MembersApi {
 
@@ -65,9 +66,6 @@ public class MembersApi {
                             @Content(mediaType = "application/hal+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
@@ -117,9 +115,6 @@ public class MembersApi {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(

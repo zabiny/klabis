@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Validated
 @Tag(name = "Suspend member")
+@SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
 public class SuspendMemberUseCaseControllers {
 
@@ -63,9 +64,6 @@ public class SuspendMemberUseCaseControllers {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
@@ -123,9 +121,6 @@ public class SuspendMemberUseCaseControllers {
                     @ApiResponse(responseCode = "409", description = "It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.", content = {
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdSuspendMembershipFormPut409ResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(

@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 @Validated
 @Tag(name = "Edit members")
+@SecurityRequirement(name = "klabis", scopes = {"openapi"})
 public interface EditMemberUseCaseControllers {
 
     /**
@@ -62,9 +63,6 @@ public interface EditMemberUseCaseControllers {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
@@ -110,9 +108,6 @@ public interface EditMemberUseCaseControllers {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
@@ -153,9 +148,6 @@ public interface EditMemberUseCaseControllers {
                     @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
@@ -197,9 +189,6 @@ public interface EditMemberUseCaseControllers {
                     @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(

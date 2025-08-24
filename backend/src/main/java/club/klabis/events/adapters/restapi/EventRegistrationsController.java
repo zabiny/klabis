@@ -21,6 +21,7 @@ import java.util.Collection;
 
 @Validated
 @Tag(name = "Event registrations")
+@SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
 public class EventRegistrationsController {
     private final EventsRepository eventsRepository;
@@ -44,9 +45,6 @@ public class EventRegistrationsController {
                     @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed"),
                     @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation"),
                     @ApiResponse(responseCode = "404", description = "Event with given doesn't exist")
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
@@ -72,9 +70,6 @@ public class EventRegistrationsController {
                     @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed"),
                     @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation"),
                     @ApiResponse(responseCode = "404", description = "Event with given doesn't exist")
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(

@@ -19,13 +19,13 @@ import java.util.Collection;
 import java.util.List;
 
 @RestController
-public class GrantsApiController implements GrantsApi {
+public class UserPermissionsApiController implements UserPermissionsApi {
 
     private final ConversionService conversionService;
     private final UserGrantsUpdateUseCase userGrantsUpdateUseCase;
     private final ApplicationUsersRepository applicationUsersRepository;
 
-    public GrantsApiController(ConversionService conversionService, UserGrantsUpdateUseCase userGrantsUpdateUseCase, ApplicationUsersRepository applicationUsersRepository) {
+    public UserPermissionsApiController(ConversionService conversionService, UserGrantsUpdateUseCase userGrantsUpdateUseCase, ApplicationUsersRepository applicationUsersRepository) {
         this.conversionService = conversionService;
         this.userGrantsUpdateUseCase = userGrantsUpdateUseCase;
         this.applicationUsersRepository = applicationUsersRepository;

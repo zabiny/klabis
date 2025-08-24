@@ -30,6 +30,7 @@ import java.net.URI;
 
 @Validated
 @Tag(name = "Register members")
+@SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
 public class RegisterNewMemberController {
     private final MemberRegistrationUseCase service;
@@ -71,9 +72,6 @@ public class RegisterNewMemberController {
                     @ApiResponse(responseCode = "409", description = "Conflict - Member already exists (usually registration was submitted with existing registration number)", content = {
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MemberRegistrationsPost409ResponseApiDto.class))
                     })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
     @RequestMapping(
