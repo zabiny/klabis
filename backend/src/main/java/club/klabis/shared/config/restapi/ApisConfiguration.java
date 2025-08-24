@@ -1,7 +1,7 @@
 package club.klabis.shared.config.restapi;
 
-import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.shared.config.authserver.AuthorizationServerConfiguration;
+import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.domain.ApplicationGrant;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -101,6 +101,7 @@ public class ApisConfiguration {
         // Povolené origin adresy
         config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:8080",
+                "http://localhost:3000",
                 "https://preview--orienter-club-hub.lovable.app",
                 "https://*.lovableproject.com",
                 "https://klabis.otakar.io"
