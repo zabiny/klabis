@@ -16,16 +16,16 @@ public class EventRegistrationUseCase {
         this.eventsRepository = eventsRepository;
     }
 
-    public EventRegistrationForm newRegistrationForMember(Event.Id eventId, MemberId memberId) {
+    public EventRegistrationForm createEventRegistrationForm(Event.Id eventId, MemberId memberId) {
         // read event and prepare registration form (categories, services, ... )
-        return new EventRegistrationForm(memberId, null);
+        return new EventRegistrationForm("predefinedSiForMember");
     }
 
     @Transactional
-    public void registerForEvent(Event.Id eventId, EventRegistrationForm eventRegistrationForm) {
+    public void registerForEvent(Event.Id eventId, MemberId memberId, EventRegistrationForm eventRegistrationForm) {
         Event event = eventsRepository.findById(eventId)
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
-        event.registerMember(eventRegistrationForm);
+        event.registerMember(memberId, eventRegistrationForm);
         eventsRepository.save(event);
     }
 

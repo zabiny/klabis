@@ -106,18 +106,18 @@ public class Event extends AbstractAggregateRoot<Event> {
         return registrations.stream().filter(it -> Objects.equals(it.memberId(), memberId)).findFirst();
     }
 
-    public void registerMember(EventRegistrationForm form) {
+    public void registerMember(MemberId memberId, EventRegistrationForm form) {
         if (this.registrationDeadline.isBefore(LocalDate.now())) {
             throw new EventException(this.id,
                     "Cannot add new registration to event, registrations are already closed",
                     EventException.Type.REGISTRATION_DEADLINE_PASSED);
         }
 
-        if (this.getRegistrationForMember(form.memberId()).isPresent()) {
-            throw EventException.createAlreadySignedUpException(this.id, form.memberId());
+        if (this.getRegistrationForMember(memberId).isPresent()) {
+            throw EventException.createAlreadySignedUpException(this.id, memberId);
         }
 
-        this.registrations.add(new Registration(form.memberId(), form.siNumber()));
+        this.registrations.add(new Registration(memberId, form.siNumber()));
     }
 
     public void cancelMemberRegistration(MemberId memberId) {

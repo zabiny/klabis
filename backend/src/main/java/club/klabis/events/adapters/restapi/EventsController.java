@@ -9,7 +9,10 @@ import club.klabis.events.adapters.restapi.dto.EventListItemApiDto;
 import club.klabis.events.adapters.restapi.dto.GetEvents200ResponseApiDto;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
+import club.klabis.events.domain.EventException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +20,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,6 +64,33 @@ public class EventsController {
                 .stream().map(EventsController::toListDto).toList();
 
         return ResponseEntity.ok(new GetEvents200ResponseApiDto().items(items));
+    }
+
+    @Operation(
+            operationId = "getEventById",
+            summary = "Returns event details",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Event details", content = {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = EventListItemApiDto.class))
+                    })
+            },
+            parameters = {
+                    @Parameter(name = "eventId", description = "ID eventu", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer"))
+            },
+            security = {
+                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
+            }
+    )
+    @RequestMapping(
+            method = RequestMethod.GET,
+            value = "/event/{eventId}",
+            produces = {"application/json"}
+    )
+    ResponseEntity<EventListItemApiDto> getEventById(@PathVariable("eventId") int eventId) {
+        Event event = eventsRepository.findById(new Event.Id(eventId))
+                .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
+
+        return ResponseEntity.ok(toDetailDto(event));
     }
 
     private static EventListItemApiDto toListDto(Event oriEvent) {

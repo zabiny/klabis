@@ -92,10 +92,10 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345");
 
             // Act
-            event.registerMember(form);
+            event.registerMember(memberId, form);
 
             // Assert
             assertThat(event.getEventRegistrations()).contains(new Registration(memberId, "SI12345"));
@@ -114,10 +114,10 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345");
 
             // Act / Assert
-            assertThatThrownBy(() -> event.registerMember(form))
+            assertThatThrownBy(() -> event.registerMember(memberId, form))
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining("Cannot add new registration to event, registrations are already closed");
         }
@@ -135,13 +135,13 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345");
 
             // Act
-            event.registerMember(form);
+            event.registerMember(memberId, form);
 
             // Assert
-            assertThatThrownBy(() -> event.registerMember(form))
+            assertThatThrownBy(() -> event.registerMember(memberId, form))
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining("already signed up");
         }
@@ -164,8 +164,8 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
-            event.registerMember(form);
+            EventRegistrationForm form = new EventRegistrationForm("SI12345");
+            event.registerMember(memberId, form);
 
             // Act
             event.cancelMemberRegistration(memberId);
@@ -187,8 +187,8 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
-            event.registerMember(form);
+            EventRegistrationForm form = new EventRegistrationForm("SI12345");
+            event.registerMember(memberId, form);
             event.closeRegistrations(LocalDate.now().minusDays(1));
 
             // Act / Assert
