@@ -1,7 +1,6 @@
 package club.klabis.events.adapters.restapi;
 
 import club.klabis.events.adapters.restapi.dto.EventListItemApiDto;
-import club.klabis.events.adapters.restapi.dto.GetEvents200ResponseApiDto;
 import club.klabis.events.application.EventRegistrationUseCase;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
@@ -13,52 +12,29 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
-import java.util.List;
 
+@Validated
+@Tag(name = "Event registrations")
 @RestController
-class EventsApiImpl implements EventsApi {
+public class EventRegistrationsController {
     private final EventsRepository eventsRepository;
-    private final EventRegistrationUseCase eventRegistrationUseCase;
+    private final EventRegistrationUseCase useCase;
 
-    EventsApiImpl(EventsRepository eventsRepository, EventRegistrationUseCase eventRegistrationUseCase) {
+    public EventRegistrationsController(EventsRepository eventsRepository, EventRegistrationUseCase useCase) {
         this.eventsRepository = eventsRepository;
-        this.eventRegistrationUseCase = eventRegistrationUseCase;
-    }
-
-
-    @Override
-    public ResponseEntity<GetEvents200ResponseApiDto> getEvents() {
-        List<EventListItemApiDto> items = eventsRepository.findAll()
-                .stream().map(this::toListDto).toList();
-
-        return ResponseEntity.ok(new GetEvents200ResponseApiDto().items(items));
-    }
-
-    private EventListItemApiDto toListDto(Event oriEvent) {
-        return new EventListItemApiDto()
-                .id(oriEvent.getId().value())
-                .date(oriEvent.getDate())
-                .name(oriEvent.getName())
-                //.type(EventListItemApiDto.TypeEnum.S)
-                .organizer(oriEvent.getOrganizer())
-                //.coordinator("")
-                .registrationDeadline(oriEvent.getRegistrationDeadline());
-    }
-
-    private EventListItemApiDto toDetailDto(Event event) {
-        return toListDto(event);
+        this.useCase = useCase;
     }
 
     @Operation(
             operationId = "registerMemberForEvent",
             summary = "Registers member to event",
-            tags = {"events", "WIP"},
             parameters = {
                     @Parameter(name = "eventId", description = "ID události", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer"))
             },
@@ -81,7 +57,7 @@ class EventsApiImpl implements EventsApi {
     @Transactional
     @ResponseStatus(HttpStatus.CREATED)
     void registerMemberToEvent(@PathVariable(name = "eventId") int event, @RequestBody EventRegistrationForm form) {
-        eventRegistrationUseCase.registerForEvent(new Event.Id(event), form);
+        useCase.registerForEvent(new Event.Id(event), form);
     }
 
     @RequestMapping(
@@ -92,7 +68,7 @@ class EventsApiImpl implements EventsApi {
     @Transactional
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void removeMemberRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
-        eventRegistrationUseCase.cancelMemberRegistration(new Event.Id(eventId), new MemberId(memberId));
+        useCase.cancelMemberRegistration(new Event.Id(eventId), new MemberId(memberId));
     }
 
     @RequestMapping(
@@ -103,7 +79,7 @@ class EventsApiImpl implements EventsApi {
     Collection<EventListItemApiDto> getMemberRegistrations(@PathVariable(name = "memberId") int memberId) {
         return eventsRepository.findEventsByRegistrationsContaining(new MemberId(memberId))
                 .stream()
-                .map(this::toDetailDto)
+                .map(EventsController::toDetailDto)
                 .toList();
     }
 

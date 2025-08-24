@@ -5,23 +5,33 @@
  */
 package club.klabis.events.adapters.restapi;
 
+import club.klabis.events.adapters.restapi.dto.EventListItemApiDto;
 import club.klabis.events.adapters.restapi.dto.GetEvents200ResponseApiDto;
+import club.klabis.events.application.EventsRepository;
+import club.klabis.events.domain.Event;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Generated;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
+import java.util.List;
+
 @Validated
-@Tag(name = "events", description = "the events API")
-public interface EventsApi {
+@Tag(name = "Events")
+@RestController
+public class EventsController {
+    private final EventsRepository eventsRepository;
+
+    EventsController(EventsRepository eventsRepository) {
+        this.eventsRepository = eventsRepository;
+    }
 
     /**
      * GET /events : Returns events
@@ -31,7 +41,6 @@ public interface EventsApi {
     @Operation(
             operationId = "getEvents",
             summary = "Returns events",
-            tags = {"events", "WIP"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Events", content = {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = GetEvents200ResponseApiDto.class))
@@ -46,8 +55,27 @@ public interface EventsApi {
             value = "/events",
             produces = {"application/json"}
     )
-    ResponseEntity<GetEvents200ResponseApiDto> getEvents(
+    ResponseEntity<GetEvents200ResponseApiDto> getEvents() {
+        List<EventListItemApiDto> items = eventsRepository.findAll()
+                .stream().map(EventsController::toListDto).toList();
 
-    );
+        return ResponseEntity.ok(new GetEvents200ResponseApiDto().items(items));
+    }
+
+    private static EventListItemApiDto toListDto(Event oriEvent) {
+        return new EventListItemApiDto()
+                .id(oriEvent.getId().value())
+                .date(oriEvent.getDate())
+                .name(oriEvent.getName())
+                //.type(EventListItemApiDto.TypeEnum.S)
+                .organizer(oriEvent.getOrganizer())
+                //.coordinator("")
+                .registrationDeadline(oriEvent.getRegistrationDeadline());
+    }
+
+    static EventListItemApiDto toDetailDto(Event event) {
+        return toListDto(event);
+    }
+
 
 }
