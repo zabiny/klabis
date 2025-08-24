@@ -1,5 +1,6 @@
 package club.klabis.members.application;
 
+import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
@@ -20,7 +21,7 @@ public class EditMemberInfoUseCase {
     }
 
     @Transactional
-    public Member editMember(Member.Id memberId, MemberEditForm editForm) {
+    public Member editMember(MemberId memberId, MemberEditForm editForm) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -29,7 +30,7 @@ public class EditMemberInfoUseCase {
     }
 
     @Transactional
-    public Member editMember(Member.Id memberId, EditOwnMemberInfoForm form) {
+    public Member editMember(MemberId memberId, EditOwnMemberInfoForm form) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -37,13 +38,13 @@ public class EditMemberInfoUseCase {
         return membersRepository.save(member);
     }
 
-    public EditAnotherMemberInfoByAdminForm getEditAnotherMemberForm(Member.Id memberId) {
+    public EditAnotherMemberInfoByAdminForm getEditAnotherMemberForm(MemberId memberId) {
         return membersRepository.findById(memberId)
                 .map(m -> conversionService.convert(m, EditAnotherMemberInfoByAdminForm.class))
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
-    public Member editMember(Member.Id memberId, EditAnotherMemberInfoByAdminForm form) {
+    public Member editMember(MemberId memberId, EditAnotherMemberInfoByAdminForm form) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -51,7 +52,7 @@ public class EditMemberInfoUseCase {
         return membersRepository.save(member);
     }
 
-    public EditOwnMemberInfoForm getEditOwnMemberInfoForm(Member.Id memberId) {
+    public EditOwnMemberInfoForm getEditOwnMemberInfoForm(MemberId memberId) {
         return membersRepository.findById(memberId)
                 .map(m -> conversionService.convert(m, EditOwnMemberInfoForm.class))
                 .orElseThrow(() -> new MemberNotFoundException(memberId));

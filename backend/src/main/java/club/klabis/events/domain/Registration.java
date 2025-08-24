@@ -1,9 +1,9 @@
 package club.klabis.events.domain;
 
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
 
 public record Registration(
-        Member.Id memberId,
+        MemberId memberId,
         String siNumber
 ) {
 }

@@ -1,8 +1,8 @@
 package club.klabis.groups.domain;
 
-import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.groups.domain.forms.EditGroup;
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
+import club.klabis.users.domain.ApplicationGrant;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -28,8 +28,8 @@ public class MemberGroup extends AbstractAggregateRoot<MemberGroup> {
     private String description;
     private String email;
     // todo: should be list
-    private Member.Id administrator;
-    private Set<Member.Id> members = new HashSet<>();
+    private MemberId administrator;
+    private Set<MemberId> members = new HashSet<>();
     private Set<GroupPermission> permissions = new HashSet<>();
 
     public record GroupPermission(ApplicationGrant grant, boolean grantedToOwner, boolean grantedToMembers) {
@@ -48,11 +48,11 @@ public class MemberGroup extends AbstractAggregateRoot<MemberGroup> {
 
     }
 
-    public static MemberGroup createGroup(EditGroup createRequest, Member.Id creator) {
+    public static MemberGroup createGroup(EditGroup createRequest, MemberId creator) {
         return new MemberGroup(createRequest, creator);
     }
 
-    protected MemberGroup(EditGroup createRequest, Member.Id creator) {
+    protected MemberGroup(EditGroup createRequest, MemberId creator) {
         this.id = Id.newId();
         this.administrator = creator;
         this.name = createRequest.name();
@@ -69,11 +69,11 @@ public class MemberGroup extends AbstractAggregateRoot<MemberGroup> {
         return id;
     }
 
-    public Set<Member.Id> getMembers() {
+    public Set<MemberId> getMembers() {
         return new HashSet<>(members);
     }
 
-    public Member.Id getAdministrator() {
+    public MemberId getAdministrator() {
         return administrator;
     }
 
@@ -97,16 +97,16 @@ public class MemberGroup extends AbstractAggregateRoot<MemberGroup> {
         final boolean permissionsChanged = !permissions.containsAll(request.permissions()) || !request.permissions().containsAll(
                 permissions);
 
-        final Collection<Member.Id> updatedMembers = new HashSet<>();
+        final Collection<MemberId> updatedMembers = new HashSet<>();
         if (permissionsChanged) {
             updatedMembers.add(administrator);
             updatedMembers.addAll(members);
             updatedMembers.addAll(request.members());
         } else if (!permissions.isEmpty() || !request.permissions().isEmpty()) {
-            Collection<Member.Id> deletedMembers = new HashSet<>(members);
+            Collection<MemberId> deletedMembers = new HashSet<>(members);
             deletedMembers.removeAll(request.members());
 
-            Collection<Member.Id> addedMembers = new HashSet<>(request.members());
+            Collection<MemberId> addedMembers = new HashSet<>(request.members());
             addedMembers.removeAll(members);
 
             updatedMembers.addAll(deletedMembers);
@@ -122,20 +122,20 @@ public class MemberGroup extends AbstractAggregateRoot<MemberGroup> {
         andGroupPermissionsChangedForMembersEvents(updatedMembers);
     }
 
-    public void transferOwnership(Member.Id newOwner) {
-        Member.Id oldOwner = this.administrator;
+    public void transferOwnership(MemberId newOwner) {
+        MemberId oldOwner = this.administrator;
         this.administrator = newOwner;
 
         andGroupPermissionsChangedForMembersEvents(List.of(oldOwner, administrator));
     }
 
     private void andGroupPermissionsChangedForAll() {
-        Collection<Member.Id> allGroupMembers = new ArrayList<>(members);
+        Collection<MemberId> allGroupMembers = new ArrayList<>(members);
         allGroupMembers.add(administrator);
         andGroupPermissionsChangedForMembersEvents(allGroupMembers);
     }
 
-    private Collection<ApplicationGrant> getGrantsForMember(Member.Id member) {
+    private Collection<ApplicationGrant> getGrantsForMember(MemberId member) {
         Collection<ApplicationGrant> grantsForMember = new HashSet<>();
 
         if (member.equals(administrator)) {
@@ -155,7 +155,7 @@ public class MemberGroup extends AbstractAggregateRoot<MemberGroup> {
         return grantsForMember;
     }
 
-    private void andGroupPermissionsChangedForMembersEvents(Collection<Member.Id> changedMembers) {
+    private void andGroupPermissionsChangedForMembersEvents(Collection<MemberId> changedMembers) {
         changedMembers.stream().map(m -> new GroupMembershipUpdated(m,
                 getId(),
                 getGrantsForMember(m))).forEach(this::andEvent);

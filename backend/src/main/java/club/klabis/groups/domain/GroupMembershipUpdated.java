@@ -1,8 +1,8 @@
 package club.klabis.groups.domain;
 
+import club.klabis.members.MemberId;
 import club.klabis.shared.domain.DomainEventBase;
 import club.klabis.users.domain.ApplicationGrant;
-import club.klabis.members.domain.Member;
 
 import java.util.Collection;
 
@@ -11,11 +11,11 @@ import java.util.Collection;
  */
 public class GroupMembershipUpdated extends DomainEventBase {
 
-    private Member.Id member;
+    private MemberId member;
     private MemberGroup.Id groupId;
     private Collection<ApplicationGrant> grants;
 
-    protected GroupMembershipUpdated(Member.Id member, MemberGroup.Id groupId, Collection<ApplicationGrant> grants) {
+    protected GroupMembershipUpdated(MemberId member, MemberGroup.Id groupId, Collection<ApplicationGrant> grants) {
         super();
         this.member = member;
         this.groupId = groupId;
@@ -30,7 +30,7 @@ public class GroupMembershipUpdated extends DomainEventBase {
         return groupId;
     }
 
-    public Member.Id getMemberId() {
+    public MemberId getMemberId() {
         return member;
     }
 

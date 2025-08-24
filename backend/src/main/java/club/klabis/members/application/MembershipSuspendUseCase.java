@@ -1,5 +1,6 @@
 package club.klabis.members.application;
 
+import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.domain.MembershipCannotBeSuspendedException;
@@ -18,7 +19,7 @@ public class MembershipSuspendUseCase {
         this.membersRepository = membersRepository;
     }
 
-    public Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(Member.Id memberId) {
+    public Optional<MembershipSuspensionInfo> getSuspensionInfoForMember(MemberId memberId) {
         return membersRepository.findById(memberId)
                 .map(this::suspensionInfoForMember);
     }
@@ -29,7 +30,7 @@ public class MembershipSuspendUseCase {
     }
 
     @Transactional
-    public void suspendMembershipForMember(Member.Id memberId, boolean forceSuspension) {
+    public void suspendMembershipForMember(MemberId memberId, boolean forceSuspension) {
         Member memberForSuspension = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 

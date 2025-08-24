@@ -3,7 +3,7 @@ package club.klabis.events.domain;
 import club.klabis.events.domain.events.EventEditedEvent;
 import club.klabis.events.domain.forms.EventEditationForm;
 import club.klabis.events.domain.forms.EventRegistrationForm;
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class EventTest {
             Event event = new Event();
             LocalDate testDate = LocalDate.of(2025, 7, 22);
             LocalDate registrationDeadline = LocalDate.of(2025, 7, 25);
-            Member.Id coordinator = new Member.Id(1);
+            MemberId coordinator = new MemberId(1);
             EventEditationForm form = new EventEditationForm(
                     "Updated Event Name",
                     "Updated Location",
@@ -91,7 +91,7 @@ class EventTest {
                     LocalDate.now().plusDays(1),
                     null
             ));
-            Member.Id memberId = new Member.Id(1);
+            MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
 
             // Act
@@ -113,7 +113,7 @@ class EventTest {
                     LocalDate.now().minusDays(1),
                     null
             ));
-            Member.Id memberId = new Member.Id(1);
+            MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
 
             // Act / Assert
@@ -134,7 +134,7 @@ class EventTest {
                     LocalDate.now().plusDays(1),
                     null
             ));
-            Member.Id memberId = new Member.Id(1);
+            MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
 
             // Act
@@ -163,7 +163,7 @@ class EventTest {
                     LocalDate.now().plusDays(1),
                     null
             ));
-            Member.Id memberId = new Member.Id(1);
+            MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
             event.registerMember(form);
 
@@ -186,7 +186,7 @@ class EventTest {
                     LocalDate.now().plusDays(4),
                     null
             ));
-            Member.Id memberId = new Member.Id(1);
+            MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
             event.registerMember(form);
             event.closeRegistrations(LocalDate.now().minusDays(1));
@@ -209,7 +209,7 @@ class EventTest {
                     LocalDate.now().plusDays(1),
                     null
             ));
-            Member.Id memberId = new Member.Id(1);
+            MemberId memberId = new MemberId(1);
 
             // Act / Assert
             assertThatThrownBy(() -> event.cancelMemberRegistration(memberId))

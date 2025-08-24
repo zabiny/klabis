@@ -1,6 +1,6 @@
 package club.klabis.users.application;
 
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
 import club.klabis.members.domain.events.MembershipSuspendedEvent;
 import club.klabis.users.domain.ApplicationUser;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ public class UserSuspendedUseCase {
     }
 
     @Transactional
-    public void suspendUserForMember(Member.Id memberId) {
+    public void suspendUserForMember(MemberId memberId) {
         ApplicationUser userForCreatedMember = applicationUsersRepository.findByMemberId(memberId)
                 .orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
 
@@ -34,7 +34,7 @@ public class UserSuspendedUseCase {
     // TODO: move into primary adapters
     @EventListener(MembershipSuspendedEvent.class)
     public void onMembershipSuspended(MembershipSuspendedEvent event) {
-        Member.Id memberId = event.getAggregate().getId();
+        MemberId memberId = event.getAggregate().getId();
         suspendUserForMember(memberId);
     }
 

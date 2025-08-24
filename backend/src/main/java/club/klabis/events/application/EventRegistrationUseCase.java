@@ -3,7 +3,7 @@ package club.klabis.events.application;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
 import club.klabis.events.domain.forms.EventRegistrationForm;
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +16,7 @@ public class EventRegistrationUseCase {
         this.eventsRepository = eventsRepository;
     }
 
-    public EventRegistrationForm newRegistrationForMember(Event.Id eventId, Member.Id memberId) {
+    public EventRegistrationForm newRegistrationForMember(Event.Id eventId, MemberId memberId) {
         // read event and prepare registration form (categories, services, ... )
         return new EventRegistrationForm(memberId, null);
     }
@@ -30,7 +30,7 @@ public class EventRegistrationUseCase {
     }
 
     @Transactional
-    public void cancelMemberRegistration(Event.Id eventId, Member.Id memberId) {
+    public void cancelMemberRegistration(Event.Id eventId, MemberId memberId) {
         Event event = eventsRepository.findById(eventId)
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
         event.cancelMemberRegistration(memberId);

@@ -1,7 +1,7 @@
 package club.klabis.groups.domain;
 
+import club.klabis.members.MemberId;
 import club.klabis.users.domain.ApplicationGrant;
-import club.klabis.members.domain.Member;
 import org.assertj.core.api.Condition;
 
 import java.util.ArrayList;
@@ -22,11 +22,11 @@ class GroupMembershipUpdateEventConditions {
     }
 
     static Condition<GroupMembershipUpdated> memberId(int expectedMemberIdValue) {
-        return memberId(new Member.Id(expectedMemberIdValue));
+        return memberId(new MemberId(expectedMemberIdValue));
     }
 
 
-    static Condition<GroupMembershipUpdated> memberId(Member.Id expectedMemberId) {
+    static Condition<GroupMembershipUpdated> memberId(MemberId expectedMemberId) {
         return new Condition<>((GroupMembershipUpdated item) -> expectedMemberId.equals(item.getMemberId()),
                 "has memberId=%s", expectedMemberId.value());
     }
@@ -36,7 +36,7 @@ class GroupMembershipUpdateEventConditions {
                 "has grant %s", expectedGrant.name());
     }
 
-    static Condition<GroupMembershipUpdated> groupMembershipUpdateEvent(MemberGroup.Id expectedGroupId, Member.Id expectedMemberId, ApplicationGrant... expectedGrants) {
+    static Condition<GroupMembershipUpdated> groupMembershipUpdateEvent(MemberGroup.Id expectedGroupId, MemberId expectedMemberId, ApplicationGrant... expectedGrants) {
         Collection<Condition<GroupMembershipUpdated>> conditions = new ArrayList<>();
         conditions.add(groupId(expectedGroupId));
         conditions.add(memberId(expectedMemberId));

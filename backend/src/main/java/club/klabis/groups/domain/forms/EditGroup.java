@@ -1,7 +1,7 @@
 package club.klabis.groups.domain.forms;
 
 import club.klabis.groups.domain.MemberGroup;
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -9,7 +9,7 @@ import java.util.List;
 
 public record EditGroup(String name, String description, String email,
                         Collection<MemberGroup.GroupPermission> permissions,
-                        Collection<Member.Id> members) {
+                        Collection<MemberId> members) {
 
     public EditGroup(String name, String description, String email) {
         this(name, description, email, List.of(), List.of());
@@ -33,21 +33,21 @@ public record EditGroup(String name, String description, String email,
         return new EditGroup(name(), description(), email(), permissions, members());
     }
 
-    public EditGroup withAddedMember(Member.Id member) {
+    public EditGroup withAddedMember(MemberId member) {
         return withAddedMembers(List.of(member));
     }
 
-    public EditGroup withAddedMembers(Collection<Member.Id> addMembers) {
+    public EditGroup withAddedMembers(Collection<MemberId> addMembers) {
         if (members.containsAll(addMembers)) {
             return this;
         }
 
-        Collection<Member.Id> updatedMembers = new HashSet<>(members());
+        Collection<MemberId> updatedMembers = new HashSet<>(members());
         updatedMembers.addAll(addMembers);
         return withMembers(updatedMembers);
     }
 
-    public EditGroup withMembers(Collection<Member.Id> members) {
+    public EditGroup withMembers(Collection<MemberId> members) {
         return new EditGroup(name(), description(), email(), permissions(), members);
     }
 

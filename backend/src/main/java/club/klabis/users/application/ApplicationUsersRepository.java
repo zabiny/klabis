@@ -1,7 +1,7 @@
 package club.klabis.users.application;
 
+import club.klabis.members.MemberId;
 import club.klabis.users.domain.ApplicationUser;
-import club.klabis.members.domain.Member;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.repository.ListCrudRepository;
 
@@ -14,5 +14,5 @@ public interface ApplicationUsersRepository extends ListCrudRepository<Applicati
 
     Optional<ApplicationUser> findByGoogleSubject(String googleSubject);
 
-    Optional<ApplicationUser> findByMemberId(Member.Id memberId);
+    Optional<ApplicationUser> findByMemberId(MemberId memberId);
 }

@@ -1,8 +1,8 @@
 package club.klabis.users.application;
 
+import club.klabis.members.MemberId;
 import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.users.domain.ApplicationUser;
-import club.klabis.members.domain.Member;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +18,7 @@ public class UserGrantsUpdateUseCase {
     }
 
     @Transactional
-    public void setGlobalGrants(Member.Id memberId, Collection<ApplicationGrant> globalGrants) {
+    public void setGlobalGrants(MemberId memberId, Collection<ApplicationGrant> globalGrants) {
         ApplicationUser memberAppUser = applicationUsersRepository.findByMemberId(memberId)
                 .orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
         memberAppUser.setGlobalGrants(globalGrants);

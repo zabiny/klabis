@@ -1,6 +1,6 @@
 package club.klabis.members.domain;
 
-import club.klabis.shared.domain.IncorrectFormDataException;
+import club.klabis.members.MemberId;
 import club.klabis.members.domain.events.MemberCreatedEvent;
 import club.klabis.members.domain.events.MemberEditedEvent;
 import club.klabis.members.domain.events.MembershipSuspendedEvent;
@@ -8,6 +8,7 @@ import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
 import club.klabis.members.domain.forms.MemberEditForm;
 import club.klabis.members.domain.forms.RegistrationForm;
+import club.klabis.shared.domain.IncorrectFormDataException;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -23,19 +24,17 @@ import static club.klabis.shared.ConversionUtils.list;
 @AggregateRoot
 public class Member extends AbstractAggregateRoot<Member> {
 
-    public record Id(int value) {
+    private static MemberId LAST_ID = new MemberId(0);
 
-        private static Id LAST_ID = new Id(0);
-
-        private static Id newId() {
-            LAST_ID = new Id(LAST_ID.value() + 1);
-            return LAST_ID;
-        }
+    private static MemberId newId() {
+        LAST_ID = new MemberId(LAST_ID.value() + 1);
+        return LAST_ID;
     }
+
 
     // required attributes
     @Identity
-    private final Id id;
+    private final MemberId id;
     private String firstName;
     private String lastName;
     private RegistrationNumber registration;
@@ -97,7 +96,7 @@ public class Member extends AbstractAggregateRoot<Member> {
     }
 
     protected Member() {
-        this.id = Id.newId();
+        this.id = newId();
     }
 
     private void checkInvariants() {
@@ -231,7 +230,7 @@ public class Member extends AbstractAggregateRoot<Member> {
         return Optional.ofNullable(bankAccount);
     }
 
-    public Id getId() {
+    public MemberId getId() {
         return id;
     }
 

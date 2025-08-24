@@ -1,19 +1,20 @@
 package club.klabis.members.adapters.restapi;
 
-import club.klabis.shared.config.security.HasGrant;
 import club.klabis.api.MembersApi;
 import club.klabis.api.dto.*;
+import club.klabis.members.MemberId;
 import club.klabis.members.application.EditMemberInfoUseCase;
 import club.klabis.members.application.MembersRepository;
 import club.klabis.members.application.MembershipSuspendUseCase;
-import club.klabis.users.application.ApplicationUserNotFound;
-import club.klabis.users.application.ApplicationUsersRepository;
-import club.klabis.users.application.UserGrantsUpdateUseCase;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
 import club.klabis.members.domain.forms.MemberEditForm;
+import club.klabis.shared.config.security.HasGrant;
+import club.klabis.users.application.ApplicationUserNotFound;
+import club.klabis.users.application.ApplicationUsersRepository;
+import club.klabis.users.application.UserGrantsUpdateUseCase;
 import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.users.domain.ApplicationUser;
 import org.springframework.core.convert.ConversionService;
@@ -48,15 +49,15 @@ public class MembersController implements MembersApi {
     @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     @Override
     public ResponseEntity<MemberEditFormApiDto> membersMemberIdEditMemberInfoFormGet(Integer memberId) {
-        return membersRepository.findById(new Member.Id(memberId))
+        return membersRepository.findById(new MemberId(memberId))
                 .map(m -> mapToResponseEntity(m, MemberEditFormApiDto.class))
-                .orElseThrow(() -> new MemberNotFoundException(new Member.Id(memberId)));
+                .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
     }
 
     @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     @Override
     public ResponseEntity<Void> membersMemberIdEditMemberInfoFormPut(Integer memberId, MemberEditFormApiDto memberEditFormApiDto) {
-        editMemberUseCase.editMember(new Member.Id(memberId),
+        editMemberUseCase.editMember(new MemberId(memberId),
                 conversionService.convert(memberEditFormApiDto, MemberEditForm.class));
 
         return ResponseEntity.status(HttpStatus.OK).build();
@@ -64,9 +65,9 @@ public class MembersController implements MembersApi {
 
     @Override
     public ResponseEntity<MemberApiDto> membersMemberIdGet(Integer memberId) {
-        return membersRepository.findById(new Member.Id(memberId))
+        return membersRepository.findById(new MemberId(memberId))
                 .map(m -> mapToResponseEntity(m, MemberApiDto.class))
-                .orElseThrow(() -> new MemberNotFoundException(new Member.Id(memberId)));
+                .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
     }
 
     @Override
@@ -80,14 +81,14 @@ public class MembersController implements MembersApi {
 
     @Override
     public ResponseEntity<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(Integer memberId) {
-        return membershipSuspendUseCase.getSuspensionInfoForMember(new Member.Id(memberId))
+        return membershipSuspendUseCase.getSuspensionInfoForMember(new MemberId(memberId))
                 .map(d -> mapToResponseEntity(d, MembershipSuspensionInfoApiDto.class))
-                .orElseThrow(() -> new MemberNotFoundException(new Member.Id(memberId)));
+                .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
     }
 
     @Override
     public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(Integer memberId, Boolean force) {
-        membershipSuspendUseCase.suspendMembershipForMember(new Member.Id(memberId), force);
+        membershipSuspendUseCase.suspendMembershipForMember(new MemberId(memberId), force);
         return ResponseEntity.ok(null);
     }
 
@@ -107,7 +108,7 @@ public class MembersController implements MembersApi {
     @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
     public ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(Integer memberIdValue) {
-        Member.Id memberId = new Member.Id(memberIdValue);
+        MemberId memberId = new MemberId(memberIdValue);
         ApplicationUser appUser = applicationUsersRepository.findByMemberId(memberId).orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
 
         return ResponseEntity.ok(conversionService.convert(appUser, MemberGrantsFormApiDto.class));
@@ -119,34 +120,34 @@ public class MembersController implements MembersApi {
         Collection<ApplicationGrant> globalGrants = (Collection<ApplicationGrant>) conversionService.convert(
                 memberGrantsFormApiDto.getGrants(),
                 TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
-        userGrantsUpdateUseCase.setGlobalGrants(new Member.Id(memberId), globalGrants);
+        userGrantsUpdateUseCase.setGlobalGrants(new MemberId(memberId), globalGrants);
         return ResponseEntity.ok(null);
     }
 
     @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<EditAnotherMemberDetailsFormApiDto> getMemberEditByAdminForm(Integer memberId) {
-        return ResponseEntity.ok(conversionService.convert(editMemberUseCase.getEditAnotherMemberForm(new Member.Id(
+        return ResponseEntity.ok(conversionService.convert(editMemberUseCase.getEditAnotherMemberForm(new MemberId(
                 memberId)), EditAnotherMemberDetailsFormApiDto.class));
     }
 
     @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     @Override
     public ResponseEntity<Void> putMemberEditByAdminForm(Integer memberId, EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto) {
-        editMemberUseCase.editMember(new Member.Id(memberId),
+        editMemberUseCase.editMember(new MemberId(memberId),
                 conversionService.convert(editAnotherMemberDetailsFormApiDto, EditAnotherMemberInfoByAdminForm.class));
         return ResponseEntity.ok(null);
     }
 
     @Override
     public ResponseEntity<EditMyDetailsFormApiDto> membersMemberIdEditOwnMemberInfoFormGet(Integer memberId) {
-        return ResponseEntity.ok(conversionService.convert(editMemberUseCase.getEditOwnMemberInfoForm(new Member.Id(
+        return ResponseEntity.ok(conversionService.convert(editMemberUseCase.getEditOwnMemberInfoForm(new MemberId(
                 memberId)), EditMyDetailsFormApiDto.class));
     }
 
     @Override
     public ResponseEntity<Void> membersMemberIdEditOwnMemberInfoFormPut(Integer memberId, EditMyDetailsFormApiDto editMyDetailsFormApiDto) {
-        editMemberUseCase.editMember(new Member.Id(memberId),
+        editMemberUseCase.editMember(new MemberId(memberId),
                 conversionService.convert(editMyDetailsFormApiDto, EditOwnMemberInfoForm.class));
         return ResponseEntity.ok(null);
     }

@@ -3,7 +3,7 @@ package club.klabis.events.domain;
 import club.klabis.events.domain.events.EventEditedEvent;
 import club.klabis.events.domain.forms.EventEditationForm;
 import club.klabis.events.domain.forms.EventRegistrationForm;
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -39,12 +39,12 @@ public class Event extends AbstractAggregateRoot<Event> {
     private String location;
     private String organizer;
     private LocalDate registrationDeadline;
-    private Member.Id coordinator;
+    private MemberId coordinator;
     private Integer orisId;
 
     private Set<Registration> registrations = new HashSet<>();
 
-    public Optional<Member.Id> getCoordinator() {
+    public Optional<MemberId> getCoordinator() {
         return Optional.ofNullable(coordinator);
     }
 
@@ -102,7 +102,7 @@ public class Event extends AbstractAggregateRoot<Event> {
         return this;
     }
 
-    private Optional<Registration> getRegistrationForMember(Member.Id memberId) {
+    private Optional<Registration> getRegistrationForMember(MemberId memberId) {
         return registrations.stream().filter(it -> Objects.equals(it.memberId(), memberId)).findFirst();
     }
 
@@ -120,7 +120,7 @@ public class Event extends AbstractAggregateRoot<Event> {
         this.registrations.add(new Registration(form.memberId(), form.siNumber()));
     }
 
-    public void cancelMemberRegistration(Member.Id memberId) {
+    public void cancelMemberRegistration(MemberId memberId) {
         if (this.registrationDeadline.isBefore(LocalDate.now())) {
             throw new EventException(this.id,
                     "Cannot remove registration from event, registrations are already closed",

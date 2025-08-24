@@ -1,8 +1,8 @@
 package club.klabis.groups.domain;
 
-import club.klabis.members.domain.Member;
-import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.groups.domain.forms.EditGroup;
+import club.klabis.members.MemberId;
+import club.klabis.users.domain.ApplicationGrant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,9 +19,9 @@ import static org.springframework.data.domain.AggregatedRootTestUtils.assertThat
 
 class MemberGroupTest {
 
-    private static final Member.Id GROUP_ADMIN = new Member.Id(1);
+    private static final MemberId GROUP_ADMIN = new MemberId(1);
 
-    private static final Member.Id GROUP_MEMBER = new Member.Id(5);
+    private static final MemberId GROUP_MEMBER = new MemberId(5);
 
     private static EditGroup createEditGroupRequest() {
         return new EditGroup("Example",
@@ -61,17 +61,17 @@ class MemberGroupTest {
         void itShouldCreateGroupWithCorrectData() {
             EditGroup request = new EditGroup("Example", "Description of the group", "group@zabiny.club", List.of(
                     MemberGroup.GroupPermission.forAll(ApplicationGrant.MEMBERS_EDIT)
-            ), Stream.of(3, 4, 5).map(Member.Id::new).toList());
+            ), Stream.of(3, 4, 5).map(MemberId::new).toList());
 
-            MemberGroup createdGroup = MemberGroup.createGroup(request, new Member.Id(1));
+            MemberGroup createdGroup = MemberGroup.createGroup(request, new MemberId(1));
 
             assertThat(createdGroup)
                     .has(allOf(
                             owner(GROUP_ADMIN),
                             hasMembersCount(3),
-                            containsMember(new Member.Id(3)),
-                            containsMember(new Member.Id(4)),
-                            containsMember(new Member.Id(5)),
+                            containsMember(new MemberId(3)),
+                            containsMember(new MemberId(4)),
+                            containsMember(new MemberId(5)),
                             hasName("Example"),
                             hasDescription("Description of the group"),
                             hasGroupEmail("group@zabiny.club")
@@ -82,14 +82,14 @@ class MemberGroupTest {
         @Test
         void itShouldPrepareExpectedEvents() {
             EditGroup request = new EditGroup("Test", "something", "email@zabiny.club")
-                    .withMembers(Stream.of(4, 5).map(Member.Id::new).toList())
+                    .withMembers(Stream.of(4, 5).map(MemberId::new).toList())
                     .withPermissions(
                             MemberGroup.GroupPermission.forAll(ApplicationGrant.MEMBERS_EDIT),
                             MemberGroup.GroupPermission.forOwnerOnly(ApplicationGrant.MEMBERS_REGISTER),
                             MemberGroup.GroupPermission.forMembersOnly(ApplicationGrant.APPUSERS_PERMISSIONS)
                     );
 
-            MemberGroup createdGroup = MemberGroup.createGroup(request, new Member.Id(1));
+            MemberGroup createdGroup = MemberGroup.createGroup(request, new MemberId(1));
 
             assertThatDomainEventsOf(createdGroup, GroupMembershipUpdated.class)
                     .haveExactly(1,
@@ -101,12 +101,12 @@ class MemberGroupTest {
                                     ApplicationGrant.APPUSERS_PERMISSIONS))
                     .haveExactly(1,
                             groupMembershipUpdateEvent(createdGroup.getId(),
-                                    new Member.Id(4),
+                                    new MemberId(4),
                                     ApplicationGrant.MEMBERS_EDIT,
                                     ApplicationGrant.APPUSERS_PERMISSIONS))
                     .haveExactly(1,
                             groupMembershipUpdateEvent(createdGroup.getId(),
-                                    new Member.Id(5),
+                                    new MemberId(5),
                                     ApplicationGrant.MEMBERS_EDIT,
                                     ApplicationGrant.APPUSERS_PERMISSIONS))
                     .hasSize(3);
@@ -116,10 +116,10 @@ class MemberGroupTest {
         @Test
         void itShouldNotPrepareExpectedEventsForGroupWithoutPermissions() {
             EditGroup request = new EditGroup("name", "description", "email")
-                    .withMembers(Stream.of(4, 5).map(Member.Id::new).toList())
+                    .withMembers(Stream.of(4, 5).map(MemberId::new).toList())
                     .withPermissions();
 
-            MemberGroup createdGroup = MemberGroup.createGroup(request, new Member.Id(1));
+            MemberGroup createdGroup = MemberGroup.createGroup(request, new MemberId(1));
 
             assertThatDomainEventsOf(createdGroup)
                     .isEmpty();
@@ -179,7 +179,7 @@ class MemberGroupTest {
         void itShouldChangeGroupMembers() {
             MemberGroup group = createMemberGroup();
 
-            final Member.Id addedMember = new Member.Id(7);
+            final MemberId addedMember = new MemberId(7);
             EditGroup editRequest = createEditGroupRequestFor(group)
                     .withMembers(List.of(addedMember));
 
@@ -225,7 +225,7 @@ class MemberGroupTest {
         void itShouldPublishEventsForNewOwner() {
             MemberGroup group = createMemberGroup();
 
-            final var newAdministratorId = new Member.Id(2);
+            final var newAdministratorId = new MemberId(2);
 
             group.transferOwnership(newAdministratorId);
 

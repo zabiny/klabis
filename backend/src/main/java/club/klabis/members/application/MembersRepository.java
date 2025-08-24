@@ -1,5 +1,6 @@
 package club.klabis.members.application;
 
+import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.RegistrationNumber;
 import club.klabis.members.domain.Sex;
@@ -10,7 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface MembersRepository extends ListCrudRepository<Member, Member.Id> {
+public interface MembersRepository extends ListCrudRepository<Member, MemberId> {
 
     default List<Member> findMembersWithSameBirthyearAndSex(LocalDate birthDate, Sex sex) {
         return findAll().stream()

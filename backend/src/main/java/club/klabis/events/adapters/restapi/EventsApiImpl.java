@@ -7,7 +7,7 @@ import club.klabis.events.application.EventRegistrationUseCase;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventRegistrationForm;
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -93,7 +93,7 @@ class EventsApiImpl implements EventsApi {
     @Transactional
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void removeMemberRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
-        eventRegistrationUseCase.cancelMemberRegistration(new Event.Id(eventId), new Member.Id(memberId));
+        eventRegistrationUseCase.cancelMemberRegistration(new Event.Id(eventId), new MemberId(memberId));
     }
 
     @RequestMapping(
@@ -102,7 +102,7 @@ class EventsApiImpl implements EventsApi {
             produces = {"application/json"}
     )
     Collection<EventListItemApiDto> getMemberRegistrations(@PathVariable(name = "memberId") int memberId) {
-        return eventsRepository.findEventsByRegistrationsContaining(new Member.Id(memberId))
+        return eventsRepository.findEventsByRegistrationsContaining(new MemberId(memberId))
                 .stream()
                 .map(this::toDetailDto)
                 .toList();

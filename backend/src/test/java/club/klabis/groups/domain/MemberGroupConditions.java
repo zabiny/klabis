@@ -1,6 +1,6 @@
 package club.klabis.groups.domain;
 
-import club.klabis.members.domain.Member;
+import club.klabis.members.MemberId;
 import org.assertj.core.api.Condition;
 
 import java.util.Arrays;
@@ -44,16 +44,16 @@ class MemberGroupConditions {
     }
 
     static Condition<MemberGroup> owner(int expectedOwnerIdValue) {
-        return owner(new Member.Id(expectedOwnerIdValue));
+        return owner(new MemberId(expectedOwnerIdValue));
     }
 
-    static Condition<MemberGroup> owner(Member.Id expectedOwnerId) {
+    static Condition<MemberGroup> owner(MemberId expectedOwnerId) {
         return new Condition<>((MemberGroup item) -> item.getAdministrator().equals(expectedOwnerId),
                 "has owner %s",
                 expectedOwnerId.value());
     }
 
-    static Condition<MemberGroup> containsMember(Member.Id expectedMemberId) {
+    static Condition<MemberGroup> containsMember(MemberId expectedMemberId) {
         return new Condition<>((MemberGroup item) -> item.getMembers().stream().anyMatch(expectedMemberId::equals),
                 "contains member with ID %s",
                 expectedMemberId.value());

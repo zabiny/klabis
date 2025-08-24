@@ -1,7 +1,8 @@
 package club.klabis.users.domain;
 
-import club.klabis.users.domain.events.ApplicationUserEnableStatusChanged;
+import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
+import club.klabis.users.domain.events.ApplicationUserEnableStatusChanged;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -22,7 +23,7 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
 
     @Identity
     private final Id id;
-    private Member.Id memberId;
+    private MemberId memberId;
     private String userName;
     private String password = "{noop}secret";
     private boolean enabled = true;
@@ -71,7 +72,7 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
         return id;
     }
 
-    public Optional<Member.Id> getMemberId() {
+    public Optional<MemberId> getMemberId() {
         return Optional.ofNullable(memberId);
     }
 
