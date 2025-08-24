@@ -6,15 +6,21 @@
 package club.klabis.users.adapters.restapi;
 
 import club.klabis.users.adapters.restapi.dto.GetAllGrants200ResponseApiDto;
+import club.klabis.users.adapters.restapi.dto.MemberGrantsFormApiDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Generated;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -48,6 +54,66 @@ public interface GrantsApi {
     )
     ResponseEntity<GetAllGrants200ResponseApiDto> getAllGrants(
 
+    );
+
+    /**
+     * GET /members/{memberId}/changeGrantsForm : returns grants assigned to member
+     * Requires &#x60;members:permissions&#x60; grant
+     *
+     * @param memberId ID of member (required)
+     * @return Edit member grants form content (status code 200)
+     */
+    @Operation(
+            operationId = "getMemberGrants",
+            summary = "returns grants assigned to member",
+            description = "Requires `members:permissions` grant",
+            tags = {"security", "BFF"},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Edit member grants form content", content = {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = MemberGrantsFormApiDto.class))
+                    })
+            },
+            security = {
+                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
+            }
+    )
+    @RequestMapping(
+            method = RequestMethod.GET,
+            value = "/members/{memberId}/changeGrantsForm",
+            produces = {"application/json"}
+    )
+    ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
+    );
+
+    /**
+     * PUT /members/{memberId}/changeGrantsForm : updates grants assigned to member
+     * Requires &#x60;members:permissions&#x60; grant
+     *
+     * @param memberId               ID of member (required)
+     * @param memberGrantsFormApiDto (optional)
+     * @return Member grants were successfully updated (status code 200)
+     */
+    @Operation(
+            operationId = "updateMemberGrants",
+            summary = "updates grants assigned to member",
+            description = "Requires `members:permissions` grant",
+            tags = {"security"},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Member grants were successfully updated")
+            },
+            security = {
+                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
+            }
+    )
+    @RequestMapping(
+            method = RequestMethod.PUT,
+            value = "/members/{memberId}/changeGrantsForm",
+            consumes = {"application/json"}
+    )
+    ResponseEntity<Void> updateMemberGrants(
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
+            @Parameter(name = "MemberGrantsFormApiDto", description = "") @Valid @RequestBody(required = false) MemberGrantsFormApiDto memberGrantsFormApiDto
     );
 
 }

@@ -237,7 +237,7 @@ spring:
       on-profile: generatedSwaggerUI
 
 springdoc:
-  #show-actuator: true
+  show-actuator: true
   api-docs:
     groups:
       enabled: true
@@ -253,7 +253,7 @@ springdoc:
     - group: 03_appusers
       display-name: Application users API
       packages-to-scan:
-        - club.klabis.appusers
+        - club.klabis.users
     - group: 04_oris
       display-name: ORIS proxy API
       packages-to-scan:

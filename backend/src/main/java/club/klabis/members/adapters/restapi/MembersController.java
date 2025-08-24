@@ -2,48 +2,31 @@ package club.klabis.members.adapters.restapi;
 
 import club.klabis.members.MemberId;
 import club.klabis.members.adapters.restapi.dto.EditMyDetailsFormApiDto;
-import club.klabis.members.adapters.restapi.dto.MemberGrantsFormApiDto;
 import club.klabis.members.application.EditMemberInfoUseCase;
 import club.klabis.members.application.MembersRepository;
-import club.klabis.members.application.MembershipSuspendUseCase;
-import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
 import club.klabis.members.domain.forms.MemberEditForm;
 import club.klabis.shared.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
-import club.klabis.users.application.ApplicationUserNotFound;
-import club.klabis.users.application.ApplicationUsersRepository;
-import club.klabis.users.application.UserGrantsUpdateUseCase;
-import club.klabis.users.domain.ApplicationUser;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collection;
-import java.util.List;
-
 @RestController
-public class MembersController implements MembersApi {
+public class MembersController implements EditMemberUseCaseControllers {
 
     private final MembersRepository membersRepository;
-    private final MembershipSuspendUseCase membershipSuspendUseCase;
     private final EditMemberInfoUseCase editMemberUseCase;
     private final ConversionService conversionService;
-    private final UserGrantsUpdateUseCase userGrantsUpdateUseCase;
-    private final ApplicationUsersRepository applicationUsersRepository;
 
-    public MembersController(MembersRepository membersRepository, MembershipSuspendUseCase membershipSuspendUseCase, EditMemberInfoUseCase editMemberUseCase, ConversionService conversionService, UserGrantsUpdateUseCase userGrantsUpdateUseCase, ApplicationUsersRepository applicationUsersRepository) {
+    public MembersController(MembersRepository membersRepository, EditMemberInfoUseCase editMemberUseCase, ConversionService conversionService) {
         this.membersRepository = membersRepository;
-        this.membershipSuspendUseCase = membershipSuspendUseCase;
         this.editMemberUseCase = editMemberUseCase;
         this.conversionService = conversionService;
-        this.userGrantsUpdateUseCase = userGrantsUpdateUseCase;
-        this.applicationUsersRepository = applicationUsersRepository;
     }
 
     @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
@@ -63,71 +46,9 @@ public class MembersController implements MembersApi {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-    @Override
-    public ResponseEntity<club.klabis.members.adapters.restapi.dto.MemberApiDto> membersMemberIdGet(Integer memberId) {
-        return membersRepository.findById(new MemberId(memberId))
-                .map(m -> mapToResponseEntity(m, club.klabis.members.adapters.restapi.dto.MemberApiDto.class))
-                .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
-    }
-
-    @Override
-    public ResponseEntity<club.klabis.members.adapters.restapi.dto.MembersListApiDto> membersGet(String view, Boolean suspended) {
-        List<? extends club.klabis.members.adapters.restapi.dto.MembersListItemsInnerApiDto> result = membersRepository.findAll(
-                        suspended)
-                .stream()
-                .map(t -> convertToApiDto(t, view))
-                .toList();
-        return ResponseEntity.ok(club.klabis.members.adapters.restapi.dto.MembersListApiDto.builder()
-                .items((List<club.klabis.members.adapters.restapi.dto.MembersListItemsInnerApiDto>) result)
-                .build());
-    }
-
-    @Override
-    public ResponseEntity<club.klabis.members.adapters.restapi.dto.MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(Integer memberId) {
-        return membershipSuspendUseCase.getSuspensionInfoForMember(new MemberId(memberId))
-                .map(d -> mapToResponseEntity(d,
-                        club.klabis.members.adapters.restapi.dto.MembershipSuspensionInfoApiDto.class))
-                .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
-    }
-
-    @Override
-    public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(Integer memberId, Boolean force) {
-        membershipSuspendUseCase.suspendMembershipForMember(new MemberId(memberId), force);
-        return ResponseEntity.ok(null);
-    }
-
     private <T> ResponseEntity<T> mapToResponseEntity(Object data, Class<T> apiDtoType) {
         T payload = conversionService.convert(data, apiDtoType);
         return ResponseEntity.ok(payload);
-    }
-
-    private club.klabis.members.adapters.restapi.dto.MembersListItemsInnerApiDto convertToApiDto(Member item, String view) {
-        if ("full".equalsIgnoreCase(view)) {
-            return conversionService.convert(item, club.klabis.members.adapters.restapi.dto.MemberApiDto.class);
-        } else {
-            return conversionService.convert(item,
-                    club.klabis.members.adapters.restapi.dto.MemberViewCompactApiDto.class);
-        }
-    }
-
-    @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
-    @Override
-    public ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(Integer memberIdValue) {
-        MemberId memberId = new MemberId(memberIdValue);
-        ApplicationUser appUser = applicationUsersRepository.findByMemberId(memberId).orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
-
-        return ResponseEntity.ok(conversionService.convert(appUser,
-                club.klabis.members.adapters.restapi.dto.MemberGrantsFormApiDto.class));
-    }
-
-    @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
-    @Override
-    public ResponseEntity<Void> updateMemberGrants(Integer memberId, club.klabis.members.adapters.restapi.dto.MemberGrantsFormApiDto memberGrantsFormApiDto) {
-        Collection<ApplicationGrant> globalGrants = (Collection<ApplicationGrant>) conversionService.convert(
-                memberGrantsFormApiDto.getGrants(),
-                TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
-        userGrantsUpdateUseCase.setGlobalGrants(new MemberId(memberId), globalGrants);
-        return ResponseEntity.ok(null);
     }
 
     @HasGrant(ApplicationGrant.MEMBERS_EDIT)

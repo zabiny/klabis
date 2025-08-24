@@ -6,6 +6,9 @@
 package club.klabis.members.adapters.restapi;
 
 import club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto;
+import club.klabis.members.application.MemberRegistrationUseCase;
+import club.klabis.members.domain.Member;
+import club.klabis.members.domain.forms.RegistrationForm;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,18 +17,29 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
+import java.net.URI;
+
 @Validated
-@Tag(name = "members", description = "Club members")
-public interface MemberRegistrationsApi {
+@Tag(name = "Register members")
+@RestController
+public class RegisterNewMemberController {
+    private final MemberRegistrationUseCase service;
+    private final ConversionService conversionService;
+
+    public RegisterNewMemberController(MemberRegistrationUseCase service, ConversionService conversionService) {
+        this.service = service;
+        this.conversionService = conversionService;
+    }
+
 
     /**
      * POST /memberRegistrations : Register a new club member
@@ -42,7 +56,7 @@ public interface MemberRegistrationsApi {
             operationId = "memberRegistrationsPost",
             summary = "Register a new club member",
             description = "Registers a new club member with the provided details.  #### Required authorization requires `members:register` grant ",
-            tags = {"members"},
+            tags = {"Register members"},
             responses = {
                     @ApiResponse(responseCode = "201", description = "Registration was processed successfully"),
                     @ApiResponse(responseCode = "400", description = "Invalid user input", content = {
@@ -70,6 +84,12 @@ public interface MemberRegistrationsApi {
     )
     ResponseEntity<Void> memberRegistrationsPost(
             @Parameter(name = "MemberRegistrationFormApiDto", description = "", required = true) @Valid @RequestBody club.klabis.members.adapters.restapi.dto.MemberRegistrationFormApiDto memberRegistrationFormApiDto
-    );
+    ) {
+        Member createdMember = service.registerMember(conversionService.convert(memberRegistrationFormApiDto,
+                RegistrationForm.class));
+        return ResponseEntity.created(URI.create("/members/%s".formatted(createdMember.getId().value())))
+                .header("MemberId", "%d".formatted(createdMember.getId().value()))
+                .build();
+    }
 
 }

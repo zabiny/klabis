@@ -10,14 +10,13 @@ import org.slf4j.MDC;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 @Configuration
 public class RequestsLoggingConfiguration {
 
-    @Component
+    //@Component
     public static class LogVariablesFilter extends HttpFilter {
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
@@ -28,8 +27,8 @@ public class RequestsLoggingConfiguration {
     }
 
     @Bean
-    public FilterRegistrationBean<LogVariablesFilter> logVarsFilterReg(LogVariablesFilter filter) {
-        FilterRegistrationBean<LogVariablesFilter> registrationBean = new FilterRegistrationBean<>(filter);
+    public FilterRegistrationBean<LogVariablesFilter> logVarsFilterReg() {
+        FilterRegistrationBean<LogVariablesFilter> registrationBean = new FilterRegistrationBean<>(new LogVariablesFilter());
         //Assign a high priority so that this filter loads before other registered filters such as those loaded via Spring Security.
         registrationBean.setOrder(Integer.MIN_VALUE);
         return registrationBean;

@@ -5,9 +5,11 @@
  */
 package club.klabis.members.adapters.restapi;
 
-import club.klabis.members.adapters.restapi.dto.MemberGrantsFormApiDto;
-import club.klabis.members.adapters.restapi.dto.MembershipSuspensionInfoApiDto;
-import club.klabis.shared.RFC7807ErrorResponseApiDto;
+import club.klabis.members.MemberId;
+import club.klabis.members.adapters.restapi.dto.MembersListItemsInnerApiDto;
+import club.klabis.members.application.MembersRepository;
+import club.klabis.members.domain.Member;
+import club.klabis.members.domain.MemberNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -16,99 +18,26 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
+import java.util.List;
+
 @Validated
-@Tag(name = "members", description = "Club members")
-public interface MembersApi {
+@Tag(name = "Members")
+@RestController
+public class MembersApi {
 
-    /**
-     * GET /members/{memberId}/editByAdminForm : Returns data for edit member information form
-     * Returns data for edit member information form  #### Required authorization requires &#x60;members:suspendMembership&#x60; grant
-     *
-     * @param memberId ID of member (required)
-     * @return Club member updated successfully (status code 200)
-     * or Invalid user input (status code 400)
-     * or Missing required user authentication or authentication failed (status code 401)
-     * or User is not allowed to perform requested operation (status code 403)
-     * or Missing required user authentication or authentication failed (status code 404)
-     */
-    @Operation(
-            operationId = "getMemberEditByAdminForm",
-            summary = "Returns data for edit member information form",
-            description = "Returns data for edit member information form  #### Required authorization requires `members:suspendMembership` grant",
-            tags = {"members", "BFF"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Club member updated successfully", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.EditAnotherMemberDetailsFormApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.EditAnotherMemberDetailsFormApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "400", description = "Invalid user input", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/members/{memberId}/editByAdminForm",
-            produces = {"application/json", "application/problem+json"}
-    )
-    ResponseEntity<club.klabis.members.adapters.restapi.dto.EditAnotherMemberDetailsFormApiDto> getMemberEditByAdminForm(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
-    );
+    private final MembersRepository membersRepository;
+    private final ConversionService conversionService;
 
-
-    /**
-     * GET /members/{memberId}/changeGrantsForm : returns grants assigned to member
-     * Requires &#x60;members:permissions&#x60; grant
-     *
-     * @param memberId ID of member (required)
-     * @return Edit member grants form content (status code 200)
-     */
-    @Operation(
-            operationId = "getMemberGrants",
-            summary = "returns grants assigned to member",
-            description = "Requires `members:permissions` grant",
-            tags = {"security", "BFF"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Edit member grants form content", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MemberGrantsFormApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/members/{memberId}/changeGrantsForm",
-            produces = {"application/json"}
-    )
-    ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
-    );
-
+    public MembersApi(MembersRepository membersRepository, ConversionService conversionService) {
+        this.membersRepository = membersRepository;
+        this.conversionService = conversionService;
+    }
 
     /**
      * GET /members : List all club members
@@ -123,7 +52,6 @@ public interface MembersApi {
             operationId = "membersGet",
             summary = "List all club members",
             description = "Returns a list of all club members",
-            tags = {"members"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of club members", content = {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersListApiDto.class)),
@@ -150,206 +78,18 @@ public interface MembersApi {
     ResponseEntity<club.klabis.members.adapters.restapi.dto.MembersListApiDto> membersGet(
             @Parameter(name = "view", description = "Defines set of returned data  | view option | description                                                                                   | |-------------|-----------------------------------------------------------------------------------------------| | `full`        | all member data that are displayable to the user are returned                                 | | `compact`     | `id`, `firstName`, `lastName`, `registrationNumber` are returned                             | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "view", required = false, defaultValue = "compact") String view,
             @Parameter(name = "suspended", description = "| value | effect | |---|---| | `true` | returns both active and suspended members |  | `false` | return only active members | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended
-    );
+    ) {
+        List<? extends MembersListItemsInnerApiDto> result = membersRepository.findAll(
+                        suspended)
+                .stream()
+                .map(t -> convertToApiDto(t, view))
+                .toList();
+        return ResponseEntity.ok(club.klabis.members.adapters.restapi.dto.MembersListApiDto.builder()
+                .items((List<club.klabis.members.adapters.restapi.dto.MembersListItemsInnerApiDto>) result)
+                .build());
+    }
 
-
-    /**
-     * GET /members/{memberId}/editMemberInfoForm : Returns data for edit member information form
-     *
-     * @param memberId ID of member (required)
-     * @return Club member updated successfully (status code 200)
-     * or Invalid user input (status code 400)
-     * or Missing required user authentication or authentication failed (status code 401)
-     * or User is not allowed to perform requested operation (status code 403)
-     * or Missing required user authentication or authentication failed (status code 404)
-     * @deprecated
-     */
-    @Deprecated
-    @Operation(
-            operationId = "membersMemberIdEditMemberInfoFormGet",
-            summary = "Returns data for edit member information form",
-            deprecated = true,
-            tags = {"members", "BFF"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Club member updated successfully", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MemberEditFormApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MemberEditFormApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "400", description = "Invalid user input", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/members/{memberId}/editMemberInfoForm",
-            produces = {"application/json", "application/problem+json"}
-    )
-    ResponseEntity<club.klabis.members.adapters.restapi.dto.MemberEditFormApiDto> membersMemberIdEditMemberInfoFormGet(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
-    );
-
-
-    /**
-     * PUT /members/{memberId}/editMemberInfoForm : Update member information
-     *
-     * @param memberId             ID of member (required)
-     * @param memberEditFormApiDto (required)
-     * @return Club member updated successfully (status code 200)
-     * or Invalid user input (status code 400)
-     * or Missing required user authentication or authentication failed (status code 401)
-     * or User is not allowed to perform requested operation (status code 403)
-     * or Missing required user authentication or authentication failed (status code 404)
-     * @deprecated
-     */
-    @Deprecated
-    @Operation(
-            operationId = "membersMemberIdEditMemberInfoFormPut",
-            summary = "Update member information",
-            deprecated = true,
-            tags = {"members"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Club member updated successfully"),
-                    @ApiResponse(responseCode = "400", description = "Invalid user input", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.PUT,
-            value = "/members/{memberId}/editMemberInfoForm",
-            produces = {"application/problem+json"},
-            consumes = {"application/json"}
-    )
-    ResponseEntity<Void> membersMemberIdEditMemberInfoFormPut(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
-            @Parameter(name = "MemberEditFormApiDto", description = "", required = true) @Valid @RequestBody club.klabis.members.adapters.restapi.dto.MemberEditFormApiDto memberEditFormApiDto
-    );
-
-
-    /**
-     * GET /members/{memberId}/editOwnMemberInfoForm : Returns data for edit member information form
-     *
-     * @param memberId ID of member (required)
-     * @return Club member updated successfully (status code 200)
-     * or Invalid user input (status code 400)
-     * or Missing required user authentication or authentication failed (status code 401)
-     * or User is not allowed to perform requested operation (status code 403)
-     * or Missing required user authentication or authentication failed (status code 404)
-     */
-    @Operation(
-            operationId = "membersMemberIdEditOwnMemberInfoFormGet",
-            summary = "Returns data for edit member information form",
-            tags = {"members", "BFF"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Club member updated successfully", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.EditMyDetailsFormApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.EditMyDetailsFormApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "400", description = "Invalid user input", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/members/{memberId}/editOwnMemberInfoForm",
-            produces = {"application/json", "application/problem+json"}
-    )
-    ResponseEntity<club.klabis.members.adapters.restapi.dto.EditMyDetailsFormApiDto> membersMemberIdEditOwnMemberInfoFormGet(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
-    );
-
-
-    /**
-     * PUT /members/{memberId}/editOwnMemberInfoForm : Update member information
-     *
-     * @param memberId                ID of member (required)
-     * @param editMyDetailsFormApiDto (required)
-     * @return Club member updated successfully (status code 200)
-     * or Invalid user input (status code 400)
-     * or Missing required user authentication or authentication failed (status code 401)
-     * or User is not allowed to perform requested operation (status code 403)
-     * or Missing required user authentication or authentication failed (status code 404)
-     */
-    @Operation(
-            operationId = "membersMemberIdEditOwnMemberInfoFormPut",
-            summary = "Update member information",
-            tags = {"members"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Club member updated successfully"),
-                    @ApiResponse(responseCode = "400", description = "Invalid user input", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.PUT,
-            value = "/members/{memberId}/editOwnMemberInfoForm",
-            produces = {"application/problem+json"},
-            consumes = {"application/json"}
-    )
-    ResponseEntity<Void> membersMemberIdEditOwnMemberInfoFormPut(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
-            @Parameter(name = "EditMyDetailsFormApiDto", description = "", required = true) @Valid @RequestBody club.klabis.members.adapters.restapi.dto.EditMyDetailsFormApiDto editMyDetailsFormApiDto
-    );
-
+    ;
 
     /**
      * GET /members/{memberId} : Get member by ID
@@ -364,7 +104,6 @@ public interface MembersApi {
             operationId = "membersMemberIdGet",
             summary = "Get member by ID",
             description = "Returns a member",
-            tags = {"members"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "A single member", content = {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MemberApiDto.class)),
@@ -388,178 +127,28 @@ public interface MembersApi {
             value = "/members/{memberId}",
             produces = {"application/json", "application/problem+json"}
     )
-    ResponseEntity<club.klabis.members.adapters.restapi.dto.MemberApiDto> membersMemberIdGet(
+    public ResponseEntity<club.klabis.members.adapters.restapi.dto.MemberApiDto> membersMemberIdGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
-    );
+    ) {
+        return membersRepository.findById(new MemberId(memberId))
+                .map(m -> mapToResponseEntity(m, club.klabis.members.adapters.restapi.dto.MemberApiDto.class))
+                .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
+    }
 
+    ;
 
-    /**
-     * GET /members/{memberId}/suspendMembershipForm : Retrieve information about member account status for membership suspension
-     * Returns information about member account to be suspended.   #### Required authorization requires &#x60;members:suspendMembership&#x60; grant
-     *
-     * @param memberId ID of member (required)
-     * @return details about member account important for membership suspension (status code 200)
-     * or User is not allowed to perform requested operation (status code 403)
-     * or Missing required user authentication or authentication failed (status code 404)
-     */
-    @Operation(
-            operationId = "membersMemberIdSuspendMembershipFormGet",
-            summary = "Retrieve information about member account status for membership suspension",
-            description = "Returns information about member account to be suspended.   #### Required authorization requires `members:suspendMembership` grant ",
-            tags = {"members", "BFF"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "details about member account important for membership suspension", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembershipSuspensionInfoApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = MembershipSuspensionInfoApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/members/{memberId}/suspendMembershipForm",
-            produces = {"application/json", "application/problem+json"}
-    )
-    ResponseEntity<club.klabis.members.adapters.restapi.dto.MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
-    );
+    private club.klabis.members.adapters.restapi.dto.MembersListItemsInnerApiDto convertToApiDto(Member item, String view) {
+        if ("full".equalsIgnoreCase(view)) {
+            return conversionService.convert(item, club.klabis.members.adapters.restapi.dto.MemberApiDto.class);
+        } else {
+            return conversionService.convert(item,
+                    club.klabis.members.adapters.restapi.dto.MemberViewCompactApiDto.class);
+        }
+    }
 
-
-    /**
-     * PUT /members/{memberId}/suspendMembershipForm : Suspend membership for a club member
-     * Suspends membership for a club member.   If there are some blockers (debt, etc), it responds with HTTP &#39;409&#39; unless &#x60;force&#x3D;true&#x60; parameter was used.  #### Required authorization requires &#x60;members:suspendMembership&#x60; grant
-     *
-     * @param memberId ID of member (required)
-     * @param force    Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension (optional, default to false)
-     * @return Membership of club member was suspended successfully (status code 200)
-     * or Invalid user input (status code 400)
-     * or Missing required user authentication or authentication failed (status code 401)
-     * or User is not allowed to perform requested operation (status code 403)
-     * or Missing required user authentication or authentication failed (status code 404)
-     * or It&#39;s not possible to suspend membership for club member. See response body for actual reason(s). You may use &#x60;force&#x60; to override these reasons. (status code 409)
-     */
-    @Operation(
-            operationId = "membersMemberIdSuspendMembershipFormPut",
-            summary = "Suspend membership for a club member",
-            description = "Suspends membership for a club member.   If there are some blockers (debt, etc), it responds with HTTP '409' unless `force=true` parameter was used.  #### Required authorization requires `members:suspendMembership` grant ",
-            tags = {"members"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Membership of club member was suspended successfully"),
-                    @ApiResponse(responseCode = "400", description = "Invalid user input", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "409", description = "It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdSuspendMembershipFormPut409ResponseApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.PUT,
-            value = "/members/{memberId}/suspendMembershipForm",
-            produces = {"application/problem+json"}
-    )
-    ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
-            @Parameter(name = "force", description = "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension", in = ParameterIn.QUERY) @Valid @RequestParam(value = "force", required = false, defaultValue = "false") Boolean force
-    );
-
-
-    /**
-     * PUT /members/{memberId}/editByAdminForm : Update member information
-     *
-     * @param memberId                           ID of member (required)
-     * @param editAnotherMemberDetailsFormApiDto (required)
-     * @return Club member updated successfully (status code 200)
-     * or Invalid user input (status code 400)
-     * or Missing required user authentication or authentication failed (status code 401)
-     * or User is not allowed to perform requested operation (status code 403)
-     * or Missing required user authentication or authentication failed (status code 404)
-     */
-    @Operation(
-            operationId = "putMemberEditByAdminForm",
-            summary = "Update member information",
-            tags = {"members"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Club member updated successfully"),
-                    @ApiResponse(responseCode = "400", description = "Invalid user input", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.adapters.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
-                    }),
-                    @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
-                    })
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.PUT,
-            value = "/members/{memberId}/editByAdminForm",
-            produces = {"application/problem+json"},
-            consumes = {"application/json"}
-    )
-    ResponseEntity<Void> putMemberEditByAdminForm(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
-            @Parameter(name = "EditAnotherMemberDetailsFormApiDto", description = "", required = true) @Valid @RequestBody club.klabis.members.adapters.restapi.dto.EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto
-    );
-
-
-    /**
-     * PUT /members/{memberId}/changeGrantsForm : updates grants assigned to member
-     * Requires &#x60;members:permissions&#x60; grant
-     *
-     * @param memberId               ID of member (required)
-     * @param memberGrantsFormApiDto (optional)
-     * @return Member grants were successfully updated (status code 200)
-     */
-    @Operation(
-            operationId = "updateMemberGrants",
-            summary = "updates grants assigned to member",
-            description = "Requires `members:permissions` grant",
-            tags = {"security"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Member grants were successfully updated")
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
-            }
-    )
-    @RequestMapping(
-            method = RequestMethod.PUT,
-            value = "/members/{memberId}/changeGrantsForm",
-            consumes = {"application/json"}
-    )
-    ResponseEntity<Void> updateMemberGrants(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
-            @Parameter(name = "MemberGrantsFormApiDto", description = "") @Valid @RequestBody(required = false) club.klabis.members.adapters.restapi.dto.MemberGrantsFormApiDto memberGrantsFormApiDto
-    );
+    private <T> ResponseEntity<T> mapToResponseEntity(Object data, Class<T> apiDtoType) {
+        T payload = conversionService.convert(data, apiDtoType);
+        return ResponseEntity.ok(payload);
+    }
 
 }

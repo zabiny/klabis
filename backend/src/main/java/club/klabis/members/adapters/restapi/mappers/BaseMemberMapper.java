@@ -1,5 +1,6 @@
 package club.klabis.members.adapters.restapi.mappers;
 
+import club.klabis.members.adapters.restapi.MembersApi;
 import club.klabis.members.adapters.restapi.MembersController;
 import club.klabis.members.domain.Member;
 import club.klabis.shared.ApplicationGrant;
@@ -23,7 +24,7 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
 
     @AfterMapping
     void assembleLinks(Member entity, @MappingTarget T target) {
-        target.add(linkTo(methodOn(MembersController.class).membersMemberIdGet(entity.getId().value())).withSelfRel());
+        target.add(linkTo(methodOn(MembersApi.class).membersMemberIdGet(entity.getId().value())).withSelfRel());
 
         if (securityService.canEditMemberData(entity.getId().value())) {
             target.add(linkTo(methodOn(MembersController.class).membersMemberIdEditOwnMemberInfoFormGet(entity.getId().value())).withRel(

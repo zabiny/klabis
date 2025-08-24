@@ -1,6 +1,5 @@
-package club.klabis.members.adapters.restapi.dto;
+package club.klabis.users.adapters.restapi.dto;
 
-import club.klabis.users.adapters.restapi.dto.GlobalGrantsApiDto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.v3.oas.annotations.media.Schema;
