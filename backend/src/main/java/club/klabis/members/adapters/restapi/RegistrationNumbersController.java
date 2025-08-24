@@ -1,8 +1,7 @@
 package club.klabis.members.adapters.restapi;
 
-import club.klabis.api.RegistrationNumberApi;
-import club.klabis.api.dto.RegistrationNumberGet200ResponseApiDto;
-import club.klabis.api.dto.SexApiDto;
+import club.klabis.members.adapters.restapi.dto.RegistrationNumberGet200ResponseApiDto;
+import club.klabis.members.adapters.restapi.dto.SexApiDto;
 import club.klabis.members.application.MemberRegistrationUseCase;
 import club.klabis.members.domain.RegistrationNumber;
 import club.klabis.members.domain.Sex;

@@ -1,9 +1,9 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.api.dto.EditAnotherMemberDetailsFormApiDto;
-import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.members.adapters.restapi.dto.EditAnotherMemberDetailsFormApiDto;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

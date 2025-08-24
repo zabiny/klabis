@@ -1,8 +1,8 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.api.dto.ContactApiDto;
-import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.members.adapters.restapi.dto.ContactApiDto;
 import club.klabis.members.domain.Contact;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;

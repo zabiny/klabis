@@ -1,18 +1,18 @@
 package club.klabis;
 
-import club.klabis.api.dto.SexApiDto;
 import club.klabis.events.application.EventCreationUseCase;
+import club.klabis.events.domain.Event;
+import club.klabis.events.domain.forms.EventEditationForm;
+import club.klabis.members.adapters.restapi.dto.SexApiDto;
 import club.klabis.members.application.MemberRegistrationUseCase;
 import club.klabis.members.application.MembershipSuspendUseCase;
 import club.klabis.members.domain.*;
+import club.klabis.members.domain.forms.RegistrationForm;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.application.LinkWithSocialIdUseCase;
 import club.klabis.users.application.UserGrantsUpdateUseCase;
 import club.klabis.users.domain.ApplicationGrant;
 import club.klabis.users.domain.ApplicationUser;
-import club.klabis.events.domain.Event;
-import club.klabis.events.domain.forms.EventEditationForm;
-import club.klabis.members.domain.forms.RegistrationForm;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvParser;

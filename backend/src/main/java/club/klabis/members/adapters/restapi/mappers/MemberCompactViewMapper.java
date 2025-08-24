@@ -1,9 +1,9 @@
 package club.klabis.members.adapters.restapi.mappers;
 
 import club.klabis.members.adapters.restapi.MembersController;
-import club.klabis.api.dto.MemberViewCompactApiDto;
-import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.members.adapters.restapi.dto.MemberViewCompactApiDto;
 import club.klabis.members.domain.Member;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;

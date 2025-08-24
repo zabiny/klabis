@@ -1,8 +1,7 @@
 package club.klabis.events.adapters.restapi;
 
-import club.klabis.api.EventsApi;
-import club.klabis.api.dto.EventListItemApiDto;
-import club.klabis.api.dto.GetEvents200ResponseApiDto;
+import club.klabis.events.adapters.restapi.dto.EventListItemApiDto;
+import club.klabis.events.adapters.restapi.dto.GetEvents200ResponseApiDto;
 import club.klabis.events.application.EventRegistrationUseCase;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;

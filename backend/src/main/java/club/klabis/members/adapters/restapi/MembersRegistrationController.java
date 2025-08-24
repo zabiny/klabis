@@ -1,7 +1,6 @@
 package club.klabis.members.adapters.restapi;
 
-import club.klabis.api.MemberRegistrationsApi;
-import club.klabis.api.dto.MemberRegistrationFormApiDto;
+import club.klabis.members.adapters.restapi.dto.MemberRegistrationFormApiDto;
 import club.klabis.members.application.MemberRegistrationUseCase;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.forms.RegistrationForm;

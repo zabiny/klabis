@@ -1,8 +1,8 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.api.dto.LegalGuardianApiDto;
-import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.members.adapters.restapi.dto.LegalGuardianApiDto;
 import club.klabis.members.domain.LegalGuardian;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

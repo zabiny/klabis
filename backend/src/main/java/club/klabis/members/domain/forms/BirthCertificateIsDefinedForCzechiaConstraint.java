@@ -1,6 +1,6 @@
 package club.klabis.members.domain.forms;
 
-import club.klabis.api.dto.EditAnotherMemberDetailsFormApiDto;
+import club.klabis.members.adapters.restapi.dto.EditAnotherMemberDetailsFormApiDto;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.springframework.util.StringUtils;

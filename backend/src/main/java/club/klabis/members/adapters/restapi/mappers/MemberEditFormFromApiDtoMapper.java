@@ -1,8 +1,8 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.api.dto.MemberEditFormApiDto;
-import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.members.adapters.restapi.dto.MemberEditFormApiDto;
 import club.klabis.members.domain.forms.MemberEditForm;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import org.mapstruct.InheritInverseConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.extensions.spring.DelegatingConverter;

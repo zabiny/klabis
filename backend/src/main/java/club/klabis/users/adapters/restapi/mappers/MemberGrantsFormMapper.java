@@ -1,6 +1,6 @@
 package club.klabis.users.adapters.restapi.mappers;
 
-import club.klabis.api.dto.MemberGrantsFormApiDto;
+import club.klabis.members.adapters.restapi.dto.MemberGrantsFormApiDto;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.users.domain.ApplicationUser;
 import org.mapstruct.Mapper;

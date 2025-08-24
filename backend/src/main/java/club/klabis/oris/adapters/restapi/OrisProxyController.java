@@ -1,10 +1,9 @@
 package club.klabis.oris.adapters.restapi;
 
-import club.klabis.api.OrisApi;
-import club.klabis.api.dto.ORISUserInfoApiDto;
-import club.klabis.shared.config.security.HasGrant;
 import club.klabis.members.domain.RegistrationNumber;
+import club.klabis.oris.adapters.restapi.dto.ORISUserInfoApiDto;
 import club.klabis.oris.application.apiclient.OrisApiClient;
+import club.klabis.shared.config.security.HasGrant;
 import club.klabis.users.domain.ApplicationGrant;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpStatus;

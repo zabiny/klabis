@@ -1,8 +1,8 @@
 package club.klabis.members.domain.forms;
 
-import club.klabis.api.dto.ContactApiDto;
-import club.klabis.api.dto.EditMyDetailsFormApiDto;
-import club.klabis.api.dto.LegalGuardianApiDto;
+import club.klabis.members.adapters.restapi.dto.ContactApiDto;
+import club.klabis.members.adapters.restapi.dto.EditMyDetailsFormApiDto;
+import club.klabis.members.adapters.restapi.dto.LegalGuardianApiDto;
 import club.klabis.members.domain.Contact;
 import club.klabis.members.domain.LegalGuardian;
 import jakarta.validation.ConstraintValidator;

@@ -1,7 +1,7 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.api.dto.LicencesApiDto;
-import club.klabis.api.dto.MemberApiDto;
+import club.klabis.members.adapters.restapi.dto.LicencesApiDto;
+import club.klabis.members.adapters.restapi.dto.MemberApiDto;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.forms.RegistrationFormBuilder;
 import club.klabis.shared.config.security.KlabisSecurityService;
@@ -29,7 +29,7 @@ class MemberFullViewMapperTest {
         var form = RegistrationFormBuilder.builder().firstName("Test").lastName("Something").build();
         Member m = Member.fromRegistration(form);
 
-        club.klabis.api.dto.MemberApiDto item = conversionService.convert(m, club.klabis.api.dto.MemberApiDto.class);
+        MemberApiDto item = conversionService.convert(m, club.klabis.members.adapters.restapi.dto.MemberApiDto.class);
 
         MemberApiDto expected = new MemberApiDto();
         expected.setFirstName("Test");

@@ -1,9 +1,9 @@
 package club.klabis.members.adapters.restapi.mappers;
 
-import club.klabis.api.dto.MembershipSuspensionInfoApiDto;
-import club.klabis.api.dto.SuspendMembershipBlockersFinanceApiDto;
-import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.members.adapters.restapi.dto.MembershipSuspensionInfoApiDto;
+import club.klabis.members.adapters.restapi.dto.SuspendMembershipBlockersFinanceApiDto;
 import club.klabis.members.domain.MembershipSuspensionInfo;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;

@@ -1,8 +1,8 @@
 package club.klabis.oris.adapters.restapi;
 
-import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
-import club.klabis.api.dto.ORISUserInfoApiDto;
+import club.klabis.oris.adapters.restapi.dto.ORISUserInfoApiDto;
 import club.klabis.oris.application.apiclient.dto.OrisUserInfo;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
