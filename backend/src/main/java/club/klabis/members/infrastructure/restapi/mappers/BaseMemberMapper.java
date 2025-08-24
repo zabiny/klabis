@@ -1,8 +1,8 @@
 package club.klabis.members.infrastructure.restapi.mappers;
 
 import club.klabis.members.domain.Member;
+import club.klabis.members.infrastructure.restapi.EditMemberUseCaseControllers;
 import club.klabis.members.infrastructure.restapi.MembersApi;
-import club.klabis.members.infrastructure.restapi.MembersController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.mapstruct.AfterMapping;
@@ -27,12 +27,14 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
         target.add(linkTo(methodOn(MembersApi.class).membersMemberIdGet(entity.getId().value())).withSelfRel());
 
         if (securityService.canEditMemberData(entity.getId().value())) {
-            target.add(linkTo(methodOn(MembersController.class).membersMemberIdEditOwnMemberInfoFormGet(entity.getId().value())).withRel(
+            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
+                    entity.getId().value())).withRel(
                     "members:editOwnInfo"));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
-            target.add(linkTo(methodOn(MembersController.class).getMemberEditByAdminForm(entity.getId().value())).withRel(
+            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                    .value())).withRel(
                     "members:editAnotherMember"));
         }
     }

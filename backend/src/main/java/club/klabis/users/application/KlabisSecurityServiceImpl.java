@@ -20,6 +20,7 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
     private Optional<ApplicationUser> getPrincipal() {
         if (SecurityContextHolder.getContext().getAuthentication() instanceof KlabisUserAuthentication typedAuth) {
             return Optional.of(typedAuth).map(KlabisUserAuthentication::getPrincipal);
+            // TODO: doesn't work when logged in "locally" - it gets Google's OAuth2 authentication instead of klabis user...
         } else {
             return Optional.empty();
         }

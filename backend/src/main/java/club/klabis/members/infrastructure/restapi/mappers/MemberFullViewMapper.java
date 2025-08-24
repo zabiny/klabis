@@ -1,7 +1,7 @@
 package club.klabis.members.infrastructure.restapi.mappers;
 
 import club.klabis.members.domain.Member;
-import club.klabis.members.infrastructure.restapi.MembersController;
+import club.klabis.members.infrastructure.restapi.EditMemberUseCaseControllers;
 import club.klabis.members.infrastructure.restapi.dto.LicencesApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MemberApiDto;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
@@ -14,7 +14,7 @@ public abstract class MemberFullViewMapper extends BaseMemberMapper<MemberApiDto
 
 
     public MemberFullViewMapper() {
-        super(MembersController.class, MemberApiDto.class);
+        super(EditMemberUseCaseControllers.class, MemberApiDto.class);
     }
 
     @Override
