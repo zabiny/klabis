@@ -1,7 +1,7 @@
 package club.klabis.groups.domain;
 
 import club.klabis.members.MemberId;
-import club.klabis.shared.ApplicationGrant;
+import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.domain.DomainEventBase;
 
 import java.util.Collection;

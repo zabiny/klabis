@@ -1,7 +1,7 @@
 package club.klabis.users.application;
 
 import club.klabis.members.MemberId;
-import club.klabis.shared.ApplicationGrant;
+import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.domain.ApplicationUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

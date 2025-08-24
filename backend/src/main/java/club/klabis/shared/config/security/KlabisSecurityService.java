@@ -1,6 +1,5 @@
 package club.klabis.shared.config.security;
 
-import club.klabis.shared.ApplicationGrant;
 import club.klabis.shared.config.restapi.KlabisUserAuthentication;
 import club.klabis.users.domain.ApplicationUser;
 import org.slf4j.Logger;

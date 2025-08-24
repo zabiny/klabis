@@ -1,6 +1,5 @@
 package club.klabis.shared.config.security;
 
-import club.klabis.shared.ApplicationGrant;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.lang.annotation.ElementType;

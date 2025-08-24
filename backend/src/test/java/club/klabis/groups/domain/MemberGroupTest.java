@@ -2,7 +2,7 @@ package club.klabis.groups.domain;
 
 import club.klabis.groups.domain.forms.EditGroup;
 import club.klabis.members.MemberId;
-import club.klabis.shared.ApplicationGrant;
+import club.klabis.shared.config.security.ApplicationGrant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,7 +1,7 @@
 package club.klabis.shared.config.restapi;
 
-import club.klabis.shared.ApplicationGrant;
 import club.klabis.shared.config.authserver.AuthorizationServerConfiguration;
+import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.application.ApplicationUsersRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

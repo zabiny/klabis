@@ -2,7 +2,7 @@ package club.klabis.users.domain;
 
 import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
-import club.klabis.shared.ApplicationGrant;
+import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.domain.events.ApplicationUserEnableStatusChanged;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;

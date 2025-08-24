@@ -1,0 +1,20 @@
+package club.klabis.members.infrastructure.restapi.mappers;
+
+
+import club.klabis.members.domain.OBLicence;
+import club.klabis.members.infrastructure.restapi.dto.OBLicenceApiDto;
+import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.springframework.core.convert.converter.Converter;
+
+@Mapper(config = DomainToDtoMapperConfiguration.class)
+interface OBLicenceApiDtoMapper extends Converter<OBLicence, OBLicenceApiDto> {
+    @Override
+    @Mapping(target = "licence", source = ".")
+    OBLicenceApiDto convert(OBLicence source);
+
+//    @DelegatingConverter
+//    @InheritInverseConfiguration
+//    OBLicence fromApiDto(OBLicenceApiDto apiDto);
+}
