@@ -19,8 +19,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import static club.klabis.shared.ConversionUtils.list;
-
 @AggregateRoot
 public class Member extends AbstractAggregateRoot<Member> {
 
@@ -76,8 +74,8 @@ public class Member extends AbstractAggregateRoot<Member> {
         result.sex = registrationForm.sex();
         result.birthCertificateNumber = registrationForm.birthCertificateNumber();
         result.dateOfBirth = registrationForm.dateOfBirth();
-        result.contact = list(registrationForm.contact());
-        result.legalGuardians = list(registrationForm.guardians());
+        result.contact = registrationForm.contact().stream().toList();
+        result.legalGuardians = registrationForm.guardians().stream().toList();
         result.siCard = registrationForm.siCard();
         result.nationality = registrationForm.nationality();
         result.orisId = registrationForm.orisId();
