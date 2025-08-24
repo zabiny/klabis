@@ -6,11 +6,14 @@ import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
 import club.klabis.members.domain.forms.MemberEditForm;
+import jakarta.validation.Valid;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 public class EditMemberInfoUseCase {
     private final MembersRepository membersRepository;
     private final ConversionService conversionService;
@@ -21,7 +24,7 @@ public class EditMemberInfoUseCase {
     }
 
     @Transactional
-    public Member editMember(MemberId memberId, MemberEditForm editForm) {
+    public Member editMember(MemberId memberId, @Valid MemberEditForm editForm) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -30,7 +33,7 @@ public class EditMemberInfoUseCase {
     }
 
     @Transactional
-    public Member editMember(MemberId memberId, EditOwnMemberInfoForm form) {
+    public Member editMember(MemberId memberId, @Valid EditOwnMemberInfoForm form) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
@@ -44,7 +47,7 @@ public class EditMemberInfoUseCase {
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
-    public Member editMember(MemberId memberId, EditAnotherMemberInfoByAdminForm form) {
+    public Member editMember(MemberId memberId, @Valid EditAnotherMemberInfoByAdminForm form) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
