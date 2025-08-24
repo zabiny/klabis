@@ -25,15 +25,15 @@ public class EventRegistrationUseCase {
     public void registerForEvent(Event.Id eventId, EventRegistrationForm eventRegistrationForm) {
         Event event = eventsRepository.findById(eventId)
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
-        event.addEventRegistration(eventRegistrationForm);
+        event.registerMember(eventRegistrationForm);
         eventsRepository.save(event);
     }
 
     @Transactional
-    public void deregisterFromEvent(Event.Id eventId, Member.Id memberId) {
+    public void cancelMemberRegistration(Event.Id eventId, Member.Id memberId) {
         Event event = eventsRepository.findById(eventId)
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
-        event.removeEventRegistration(memberId);
+        event.cancelMemberRegistration(memberId);
         eventsRepository.save(event);
     }
 

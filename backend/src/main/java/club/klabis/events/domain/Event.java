@@ -106,7 +106,7 @@ public class Event extends AbstractAggregateRoot<Event> {
         return registrations.stream().filter(it -> Objects.equals(it.memberId(), memberId)).findFirst();
     }
 
-    public void addEventRegistration(EventRegistrationForm form) {
+    public void registerMember(EventRegistrationForm form) {
         if (this.registrationDeadline.isBefore(LocalDate.now())) {
             throw new EventException(this.id,
                     "Cannot add new registration to event, registrations are already closed",
@@ -120,7 +120,7 @@ public class Event extends AbstractAggregateRoot<Event> {
         this.registrations.add(new Registration(form.memberId(), form.siNumber()));
     }
 
-    public void removeEventRegistration(Member.Id memberId) {
+    public void cancelMemberRegistration(Member.Id memberId) {
         if (this.registrationDeadline.isBefore(LocalDate.now())) {
             throw new EventException(this.id,
                     "Cannot remove registration from event, registrations are already closed",

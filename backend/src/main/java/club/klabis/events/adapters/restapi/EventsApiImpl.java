@@ -93,7 +93,7 @@ class EventsApiImpl implements EventsApi {
     @Transactional
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void removeMemberRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
-        eventRegistrationUseCase.deregisterFromEvent(new Event.Id(eventId), new Member.Id(memberId));
+        eventRegistrationUseCase.cancelMemberRegistration(new Event.Id(eventId), new Member.Id(memberId));
     }
 
     @RequestMapping(

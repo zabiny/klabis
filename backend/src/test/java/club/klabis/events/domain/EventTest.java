@@ -81,7 +81,7 @@ class EventTest {
 
         @Test
         @DisplayName("Should successfully add a registration when all conditions are met")
-        void shouldAddEventRegistrationSuccessfully() {
+        void shouldRegisterMemberSuccessfully() {
             // Arrange
             Event event = Event.newEvent(new EventEditationForm(
                     "Event Name",
@@ -95,7 +95,7 @@ class EventTest {
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
 
             // Act
-            event.addEventRegistration(form);
+            event.registerMember(form);
 
             // Assert
             assertThat(event.getEventRegistrations()).contains(new Registration(memberId, "SI12345"));
@@ -117,7 +117,7 @@ class EventTest {
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
 
             // Act / Assert
-            assertThatThrownBy(() -> event.addEventRegistration(form))
+            assertThatThrownBy(() -> event.registerMember(form))
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining("Cannot add new registration to event, registrations are already closed");
         }
@@ -138,10 +138,10 @@ class EventTest {
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
 
             // Act
-            event.addEventRegistration(form);
+            event.registerMember(form);
 
             // Assert
-            assertThatThrownBy(() -> event.addEventRegistration(form))
+            assertThatThrownBy(() -> event.registerMember(form))
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining("already signed up");
         }
@@ -165,10 +165,10 @@ class EventTest {
             ));
             Member.Id memberId = new Member.Id(1);
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
-            event.addEventRegistration(form);
+            event.registerMember(form);
 
             // Act
-            event.removeEventRegistration(memberId);
+            event.cancelMemberRegistration(memberId);
 
             // Assert
             assertThat(event.getEventRegistrations()).doesNotContain(new Registration(memberId, "SI12345"));
@@ -188,11 +188,11 @@ class EventTest {
             ));
             Member.Id memberId = new Member.Id(1);
             EventRegistrationForm form = new EventRegistrationForm(memberId, "SI12345");
-            event.addEventRegistration(form);
+            event.registerMember(form);
             event.closeRegistrations(LocalDate.now().minusDays(1));
 
             // Act / Assert
-            assertThatThrownBy(() -> event.removeEventRegistration(memberId))
+            assertThatThrownBy(() -> event.cancelMemberRegistration(memberId))
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining("Cannot remove registration from event, registrations are already closed");
         }
@@ -212,7 +212,7 @@ class EventTest {
             Member.Id memberId = new Member.Id(1);
 
             // Act / Assert
-            assertThatThrownBy(() -> event.removeEventRegistration(memberId))
+            assertThatThrownBy(() -> event.cancelMemberRegistration(memberId))
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining("NOT registered");
         }
