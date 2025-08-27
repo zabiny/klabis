@@ -1,4 +1,4 @@
-package club.klabis.shared.config.ddd;
+package club.klabis.shared.config.ddd.forms;
 
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;

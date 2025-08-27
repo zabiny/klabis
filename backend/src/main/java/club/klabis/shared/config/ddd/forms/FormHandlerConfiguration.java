@@ -1,4 +1,4 @@
-package club.klabis.shared.config.ddd;
+package club.klabis.shared.config.ddd.forms;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,15 +9,16 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-import java.util.Map;
+import java.util.Collection;
 
 @Configuration
-public class FormHandlerConfiguration implements SmartInitializingSingleton {
+class FormHandlerConfiguration implements SmartInitializingSingleton {
 
     private static final Logger LOG = LoggerFactory.getLogger(FormHandlerConfiguration.class);
 
     private final RequestMappingHandlerMapping handlerMapping;
     private final ApplicationContext context;
+
 
     public FormHandlerConfiguration(RequestMappingHandlerMapping requestMappingHandlerMapping, ApplicationContext context) {
         this.handlerMapping = requestMappingHandlerMapping;
@@ -30,48 +31,48 @@ public class FormHandlerConfiguration implements SmartInitializingSingleton {
     }
 
     private void registerFormHandlerEndpoints() {
-        Map<String, FormHandler> formHandlerMap = context.getBeansOfType(FormHandler.class);
-        LOG.info("Found {} form handlers", formHandlerMap.size());
+        FormHandlersRegistry formHandlersRegistry = context.getBean(FormHandlersRegistry.class);
+        Collection<FormApiDescriptor<?>> formApiDescriptors = formHandlersRegistry.getFormApis();
 
-        for (FormHandler formHandler : formHandlerMap.values()) {
-            final String formName = formHandler.getClass().getSimpleName();
-            LOG.info("Registering FormHandler controller for form %s of type %s".formatted(formName,
-                    formHandler.getClass()));
+        LOG.info("Found {} form handlers", formApiDescriptors.size());
+
+        for (FormApiDescriptor<?> formApiDescriptor : formApiDescriptors) {
+            LOG.info("Registering controllers for form %s with handler %s".formatted(formApiDescriptor.formType(),
+                    formApiDescriptor.formHandler()));
 
             // Register GET endpoint
-            final String endpointPath = "/form/%s".formatted(formName);
-
             try {
-                RequestMappingInfo info = RequestMappingInfo.paths(endpointPath)
+                RequestMappingInfo info = RequestMappingInfo.paths(formApiDescriptor.apiPath())
                         .methods(RequestMethod.GET)
                         .build();
                 handlerMapping.registerMapping(
                         info,
-                        new FormHandlerController<>(formHandler),
+                        new FormHandlerController<>(formApiDescriptor.formHandler()),
                         FormHandlerController.class.getMethod("getFormData")
                 );
+
                 LOG.info("- GET %s endpoint registered".formatted(info.getDirectPaths()));
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException("Failed to register GET endpoint for form handler of type %s".formatted(
-                        formHandler.getClass()));
+                        formApiDescriptor.getClass()));
             }
 
             // Register PUT endpoint
             try {
-                RequestMappingInfo info = RequestMappingInfo.paths(endpointPath)
+                RequestMappingInfo info = RequestMappingInfo.paths(formApiDescriptor.apiPath())
                         .methods(RequestMethod.PUT)
                         .build();
                 handlerMapping.registerMapping(
                         info,
-                        new FormHandlerController<>(formHandler),
+                        new FormHandlerController<>(formApiDescriptor.formHandler()),
                         FormHandlerController.class.getMethod("submitFormData", Object.class)
                 );
+
                 LOG.info("- PUT %s endpoint registered".formatted(info.getDirectPaths()));
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException("Failed to register PUT endpoint for form handler of type %s".formatted(
-                        formHandler.getClass()), e);
+                        formApiDescriptor.getClass()), e);
             }
         }
     }
-
 }

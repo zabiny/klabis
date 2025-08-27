@@ -1,4 +1,4 @@
-package club.klabis.shared.config.ddd;
+package club.klabis.shared.config.ddd.forms;
 
 public class InvalidFormDataException extends Exception {
     public InvalidFormDataException(String message) {

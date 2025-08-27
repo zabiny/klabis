@@ -1,4 +1,6 @@
-package club.klabis.shared.config.ddd;
+package club.klabis.shared.config.ddd.forms;
+
+import club.klabis.shared.config.ddd.UseCase;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
