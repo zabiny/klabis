@@ -8,6 +8,7 @@ Created form will get 3 API endpoints:
 
 - `GET /forms/{handlerBeanName}` with `application/json` media type - returns data to be displayed in UI form (= returns
   data returned from `FormHandler.getFormData`)
-- `GET /forms/{handlerBeanName}` with `application/yup+json` media type - returns YUP json schema to validate form in
+- `GET /forms/{handlerBeanName}` with `application/schema+json` media type - returns JSON schema of form data. Usable
+  for YUP validation in
   UI. Schema is generated from Form DTO and it's JSR-303 annotations
 - `PUT /forms/{handlerBeanName}` - processes submitted form data (= calls `FormHandler.submitData` method)

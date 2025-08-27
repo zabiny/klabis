@@ -40,15 +40,26 @@ class FormHandlerConfiguration implements SmartInitializingSingleton {
             LOG.info("Registering controllers for form %s with handler %s".formatted(formApiDescriptor.formType(),
                     formApiDescriptor.formHandler()));
 
-            // Register GET endpoint
+            // Register GET endpoints - return form data and return form schema
             try {
                 RequestMappingInfo info = RequestMappingInfo.paths(formApiDescriptor.apiPath())
                         .methods(RequestMethod.GET)
+                        .produces("application/json")
                         .build();
                 handlerMapping.registerMapping(
                         info,
                         new FormHandlerController<>(formApiDescriptor.formHandler()),
                         FormHandlerController.class.getMethod("getFormData")
+                );
+
+                info = RequestMappingInfo.paths(formApiDescriptor.apiPath())
+                        .methods(RequestMethod.GET)
+                        .produces("application/schema+json")
+                        .build();
+                handlerMapping.registerMapping(
+                        info,
+                        new FormHandlerController<>(formApiDescriptor.formHandler()),
+                        FormHandlerController.class.getMethod("getFormDataSchema")
                 );
 
                 LOG.info("- GET %s endpoint registered".formatted(info.getDirectPaths()));

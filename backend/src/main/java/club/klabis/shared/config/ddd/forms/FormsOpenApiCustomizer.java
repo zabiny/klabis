@@ -62,7 +62,7 @@ class FormsOpenApiCustomizer implements GlobalOpenApiCustomizer {
                 .getResponses()
                 .get("200")
                 .getContent()
-                .get("*/*").schema(apiDescriptor.createOpenApiSchemaReference());
+                .get("application/json").schema(apiDescriptor.createOpenApiSchemaReference());
 
         pathItem.getPut()
                 .description("Processes submitted data from form %s".formatted(apiDescriptor.descriptor()
