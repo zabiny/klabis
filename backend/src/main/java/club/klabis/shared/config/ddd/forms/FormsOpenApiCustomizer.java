@@ -1,8 +1,9 @@
 package club.klabis.shared.config.ddd.forms;
 
+import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.core.converter.ResolvedSchema;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.media.JsonSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import org.slf4j.Logger;
@@ -31,16 +32,17 @@ class FormsOpenApiCustomizer implements GlobalOpenApiCustomizer {
     @Override
     public void customise(OpenAPI openApi) {
         // add form schemas
-        getFormSchemas().entrySet().forEach(e -> openApi.getComponents().addSchemas(e.getKey(), e.getValue()));
+        getFormSchemas(openApi).entrySet().forEach(e -> openApi.getComponents().addSchemas(e.getKey(), e.getValue()));
 
         // add response body type to GET and request body type to PUT endpoints
         openApi.getPaths().forEach(this::customizePathItem);
     }
 
-    private Map<String, Schema<?>> getFormSchemas() {
+    private Map<String, Schema<?>> getFormSchemas(OpenAPI openAPI) {
         Map<String, Schema<?>> result = new HashMap<>();
         getFormOpenApiDescriptors().stream().forEach(descriptor -> {
-            result.put(descriptor.getSchemaName(), descriptor.createOpenApiSchema());
+
+            result.put(descriptor.getSchemaName(), descriptor.createOpenApiSchema(openAPI));
         });
         return result;
     }
@@ -60,8 +62,7 @@ class FormsOpenApiCustomizer implements GlobalOpenApiCustomizer {
                 .getResponses()
                 .get("200")
                 .getContent()
-                .addMediaType("application/json",
-                        new MediaType().schema(apiDescriptor.createOpenApiSchemaReference()));
+                .get("*/*").schema(apiDescriptor.createOpenApiSchemaReference());
 
         pathItem.getPut()
                 .description("Processes submitted data from form %s".formatted(apiDescriptor.descriptor()
@@ -78,12 +79,15 @@ class FormsOpenApiCustomizer implements GlobalOpenApiCustomizer {
     }
 
     record FormOpenApiDescriptor(FormApiDescriptor<?> descriptor) {
-        public Schema<?> createOpenApiSchema() {
-            return new JsonSchema();
+        public Schema<?> createOpenApiSchema(OpenAPI openAPI) {
+            ResolvedSchema resolved = ModelConverters.getInstance()
+                    .readAllAsResolvedSchema(descriptor().formType());
+            Schema<?> schema = resolved.schema.name(getSchemaName());
+            return schema;
         }
 
         public Schema<?> createOpenApiSchemaReference() {
-            return new Schema().$ref("/components/schemas/%s".formatted(getSchemaName()));
+            return new Schema().$ref("#/components/schemas/%s".formatted(getSchemaName()));
         }
 
         public String getSchemaName() {

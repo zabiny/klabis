@@ -44,7 +44,6 @@ class FormHandlersRegistryImpl implements FormHandlersRegistry {
     private <T, X extends FormHandler<T>> ParameterizedType getFormTypeInterface(X formHandler) {
         return Stream.of(formHandler.getClass().getGenericInterfaces())
                 .map(ParameterizedType.class::cast)
-                .peek(p -> System.out.println(p))
                 .filter(p -> p.getTypeName().startsWith(FormHandler.class.getTypeName()))
                 .findAny()
                 .orElseThrow(() -> new IllegalArgumentException("No form type found for instance %s".formatted(
