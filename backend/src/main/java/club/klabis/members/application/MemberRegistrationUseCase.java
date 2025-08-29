@@ -5,12 +5,12 @@ import club.klabis.members.domain.MemberRegistrationFailedException;
 import club.klabis.members.domain.RegistrationNumber;
 import club.klabis.members.domain.Sex;
 import club.klabis.members.domain.forms.RegistrationForm;
-import org.springframework.stereotype.Service;
+import club.klabis.shared.config.ddd.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
-@Service
+@UseCase
 public class MemberRegistrationUseCase {
 
     private final MembersRepository membersRepository;

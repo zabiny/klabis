@@ -5,12 +5,12 @@ import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.domain.MembershipCannotBeSuspendedException;
 import club.klabis.members.domain.MembershipSuspensionInfo;
-import org.springframework.stereotype.Service;
+import club.klabis.shared.config.ddd.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@Service
+@UseCase
 public class MembershipSuspendUseCase {
 
     private final MembersRepository membersRepository;

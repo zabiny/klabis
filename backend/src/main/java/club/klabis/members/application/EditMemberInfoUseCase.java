@@ -6,13 +6,13 @@ import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
 import club.klabis.members.domain.forms.MemberEditForm;
+import club.klabis.shared.config.ddd.UseCase;
 import jakarta.validation.Valid;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-@Service
+@UseCase
 @Validated
 public class EditMemberInfoUseCase {
     private final MembersRepository membersRepository;
