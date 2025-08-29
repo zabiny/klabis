@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 // TODO: fix once settled up modulith structure
 @Disabled
-@WebMvcTest(controllers = MembersController.class)
+@WebMvcTest(controllers = MembersApi.class)
 @Import(ApiTestConfiguration.class)
 class MembersControllerTest {
 
