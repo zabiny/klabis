@@ -2,6 +2,9 @@ package club.klabis.shared.config.ddd.forms;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.core.converter.ResolvedSchema;
+import io.swagger.v3.oas.models.media.Schema;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -23,8 +26,11 @@ class FormHandlerController<T> {
     }
 
     @GetMapping(produces = "application/schema+json")
-    public String getFormDataSchema() {
-        return "TBD - JSON schema";
+    public Schema<?> getFormDataSchema() {
+        ResolvedSchema resolved = ModelConverters.getInstance()
+                .readAllAsResolvedSchema(formDescription.formType());
+
+        return resolved.schema;
     }
 
     public void submitFormData(@RequestBody String formData) throws InvalidFormDataException, JsonProcessingException {

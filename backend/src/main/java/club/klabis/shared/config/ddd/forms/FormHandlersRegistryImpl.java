@@ -43,6 +43,7 @@ class FormHandlersRegistryImpl implements FormHandlersRegistry {
 
     private <T, X extends FormHandler<T>> ParameterizedType getFormTypeInterface(X formHandler) {
         return Stream.of(formHandler.getClass().getGenericInterfaces())
+                .filter(ParameterizedType.class::isInstance)
                 .map(ParameterizedType.class::cast)
                 .filter(p -> p.getTypeName().startsWith(FormHandler.class.getTypeName()))
                 .findAny()
