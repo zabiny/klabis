@@ -258,10 +258,6 @@ springdoc:
       display-name: ORIS proxy API
       packages-to-scan:
         - club.klabis.oris
-    - group: 05_forms
-      display-name: BFF
-      paths-to-match:
-        - /form/**
     - group: 98_all
       display-name: X All endpoints
       paths-to-match:
