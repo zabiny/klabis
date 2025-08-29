@@ -85,7 +85,7 @@ dependencies {
 
     // Various
     implementation("org.jmolecules:jmolecules-ddd:1.9.0")
-    //implementation("org.jmolecules:jmolecules-hexagonal-architecture:1.9.0")
+    implementation("org.jmolecules:jmolecules-hexagonal-architecture:1.9.0")
     implementation("org.jmolecules:jmolecules-onion-architecture:1.9.0")
     implementation("org.jmolecules:jmolecules-events:1.9.0")
     testImplementation("org.jmolecules.integrations:jmolecules-archunit:0.28.0")
@@ -150,16 +150,16 @@ openApiGenerate {
         )
     )
 }
-tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
+//tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
 
 // SpringDoc - generate OpenAPI during build from Controllers defined in Java
-//openApi {
-//    apiDocsUrl.set("https://localhost:8443/v3/api-docs")
-//    outputDir.set(file("${layout.buildDirectory}/docs"))
-//    trustStore.set("src/main/resources/https/keystore.p12")
-//    trustStorePassword.set("secret".toCharArray())
-//}
-//tasks.jar.get().dependsOn(tasks.generateOpenApiDocs)
+openApi {
+    apiDocsUrl.set("https://localhost:8443/v3/api-docs")
+    outputDir.set(file("${layout.buildDirectory}/docs"))
+    trustStore.set("src/main/resources/https/keystore.p12")
+    trustStorePassword.set("secret".toCharArray())
+}
+tasks.jar.get().dependsOn(tasks.generateOpenApiDocs)
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {
     imageName = "${project.name}:${project.version}"

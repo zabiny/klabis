@@ -13,5 +13,9 @@ public class ArchitectureTests {
     @ArchTest
     ArchRule simplifiedOnionArchitecture = JMoleculesArchitectureRules.ensureOnionSimple();
 
+    // TODO: switch to hexagonal - https://ersantana.com/software-architecture/jmolecules/jmolecules-hexagonal-architecture-guide
+    @ArchTest
+    ArchRule hexagonalArchitecture = JMoleculesArchitectureRules.ensureHexagonal();
+
 }
 
