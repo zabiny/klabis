@@ -12,6 +12,7 @@ import club.klabis.shared.domain.IncorrectFormDataException;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -66,6 +67,8 @@ public class Member extends AbstractAggregateRoot<Member> {
 
     public static Member fromRegistration(RegistrationForm registrationForm) {
 
+        Assert.notEmpty(registrationForm.contact(), "There must be at least 1 contact defined");
+
         Member result = new Member();
         result.firstName = registrationForm.firstName();
         result.lastName = registrationForm.lastName();
@@ -75,7 +78,9 @@ public class Member extends AbstractAggregateRoot<Member> {
         result.birthCertificateNumber = registrationForm.birthCertificateNumber();
         result.dateOfBirth = registrationForm.dateOfBirth();
         result.contact = registrationForm.contact().stream().toList();
-        result.legalGuardians = registrationForm.guardians().stream().toList();
+        if (registrationForm.guardians() != null) {
+            result.legalGuardians = registrationForm.guardians().stream().toList();
+        }
         result.siCard = registrationForm.siCard();
         result.nationality = registrationForm.nationality();
         result.orisId = registrationForm.orisId();

@@ -3,6 +3,7 @@ package club.klabis.members.domain.forms;
 import club.klabis.members.domain.*;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
@@ -28,6 +29,7 @@ public record RegistrationForm(
         String nationality,
         @NotNull
         Address address,
+        @NotEmpty
         Collection<Contact> contact,
         Collection<LegalGuardian> guardians,
         String siCard,
