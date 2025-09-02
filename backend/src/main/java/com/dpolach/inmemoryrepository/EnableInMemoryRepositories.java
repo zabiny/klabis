@@ -4,9 +4,7 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.jdbc.repository.support.JdbcRepositoryFactoryBean;
 import org.springframework.data.repository.query.QueryLookupStrategy;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 import java.lang.annotation.*;
 
@@ -67,8 +65,7 @@ public @interface EnableInMemoryRepositories {
     String namedQueriesLocation() default "";
 
     /**
-     * Returns the {@link FactoryBean} class to be used for each repository instance. Defaults to
-     * {@link JdbcRepositoryFactoryBean}.
+     * Returns the {@link FactoryBean} class to be used for each repository instance.
      */
     Class<?> repositoryFactoryBeanClass() default InMemoryRepositoryFactoryBean.class;
 
