@@ -7,8 +7,8 @@ import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
 plugins {
     java
-    id("org.springframework.boot") version "3.4.5"
-    id("io.spring.dependency-management") version "1.1.5"
+    id("org.springframework.boot") version "3.5.5"
+    id("io.spring.dependency-management") version "1.1.7"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
     id("org.openapi.generator") version "7.6.0"
 }
@@ -32,25 +32,36 @@ val mapstructSpringExtensionsVersion = "1.1.2"
 
 dependencies {
 
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    //implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
+    // SPRING WEB
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-hateoas")
+
+    // SPRING SECURITY
     implementation("org.springframework.boot:spring-boot-starter-oauth2-authorization-server")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-hateoas")
-    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    testImplementation("org.springframework.security:spring-security-test")
+
+    // SPRING DATA
+    //implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
+    //implementation("org.springframework.boot:spring-boot-starter-data-rest")
+    //implementation("org.springframework.data:spring-data-rest-hal-explorer")
+
+    // MODULITH
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     //implementation("org.springframework.modulith:spring-modulith-starter-jdbc")
-    testImplementation("org.springframework.boot:spring-boot-devtools")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     runtimeOnly("org.springframework.modulith:spring-modulith-starter-insight")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // SPRING TOOLS
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-devtools")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+
+    //implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 
     // Jackson mappings
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
@@ -67,7 +78,7 @@ dependencies {
     //implementation("org.flywaydb:flyway-core")
 
     // OPENAPI
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.12")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
     implementation("org.hibernate:hibernate-validator:8.0.1.Final")
 
