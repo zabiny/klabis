@@ -1,6 +1,7 @@
 package club.klabis.users.infrastructure.restapi;
 
 import club.klabis.members.MemberId;
+import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
 import club.klabis.users.application.ApplicationUserNotFound;
@@ -10,7 +11,6 @@ import club.klabis.users.domain.ApplicationUser;
 import club.klabis.users.infrastructure.restapi.dto.GetAllGrants200ResponseApiDto;
 import club.klabis.users.infrastructure.restapi.dto.GlobalGrantDetailApiDto;
 import club.klabis.users.infrastructure.restapi.dto.MemberGrantsFormApiDto;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,7 +34,9 @@ public class UserPermissionsApiController implements UserPermissionsApi {
     @Override
     public ResponseEntity<GetAllGrants200ResponseApiDto> getAllGrants() {
         Collection<ApplicationGrant> globalGrants = ApplicationGrant.globalGrants();
-        List<GlobalGrantDetailApiDto> convertedGrants = (List<GlobalGrantDetailApiDto>)  conversionService.convert(globalGrants, TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(GlobalGrantDetailApiDto.class)));
+        List<GlobalGrantDetailApiDto> convertedGrants = conversionService.convert(
+                globalGrants,
+                TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(GlobalGrantDetailApiDto.class)));
         return ResponseEntity.ok(GetAllGrants200ResponseApiDto.builder().grants(convertedGrants).build());
     }
 
@@ -53,7 +55,7 @@ public class UserPermissionsApiController implements UserPermissionsApi {
     @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
     public ResponseEntity<Void> updateMemberGrants(Integer memberId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
-        Collection<ApplicationGrant> globalGrants = (Collection<ApplicationGrant>) conversionService.convert(
+        Collection<ApplicationGrant> globalGrants = conversionService.convert(
                 memberGrantsFormApiDto.getGrants(),
                 TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
         userGrantsUpdateUseCase.setGlobalGrants(new MemberId(memberId), globalGrants);

@@ -8,6 +8,7 @@ import club.klabis.members.application.MembershipSuspendUseCase;
 import club.klabis.members.domain.*;
 import club.klabis.members.domain.forms.RegistrationForm;
 import club.klabis.members.infrastructure.restapi.dto.SexApiDto;
+import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.application.LinkWithSocialIdUseCase;
@@ -22,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -75,15 +75,27 @@ public class PresetDataLoader implements ApplicationRunner {
                 membershipSuspendUseCase.suspendMembershipForMember(registeredMember.getId(), true);
             }
             userGrantsUpdateUseCase.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
-            csvLine.getGoogleId().ifPresent(googleId -> linkWithSocialIdUseCase.linkWithGoogleId(csvLine.registrationNumber(), googleId));
+            csvLine.getGoogleId()
+                    .ifPresent(googleId -> linkWithSocialIdUseCase.linkWithGoogleId(csvLine.registrationNumber(),
+                            googleId));
         });
 
         // ... some additional data?
-        Event createdEvent = eventsService.createNewEvent(new EventEditationForm("Example opened event", "Brno", LocalDate.now(), "ZBM", LocalDate.now()
-                .plusDays(3), null));
+        Event createdEvent = eventsService.createNewEvent(new EventEditationForm("Example opened event",
+                "Brno",
+                LocalDate.now(),
+                "ZBM",
+                LocalDate.now()
+                        .plusDays(3),
+                null));
         System.out.printf("Created event with ID %s%n", createdEvent.getId());
-        createdEvent = eventsService.createNewEvent(new EventEditationForm("Example passed event", "Jilemnice", LocalDate.now().minusDays(12), "ZBM", LocalDate.now()
-                .minusDays(20), null));
+        createdEvent = eventsService.createNewEvent(new EventEditationForm("Example passed event",
+                "Jilemnice",
+                LocalDate.now().minusDays(12),
+                "ZBM",
+                LocalDate.now()
+                        .minusDays(20),
+                null));
         System.out.printf("Created event with ID %s%n", createdEvent.getId());
     }
 
@@ -120,9 +132,19 @@ public class PresetDataLoader implements ApplicationRunner {
             Contact emailContact = new Contact(Contact.Type.EMAIL, email, null);
             Contact phoneContact = new Contact(Contact.Type.PHONE, phone, null);
             return new RegistrationForm(
-                    firstName, lastName, conversionService.convert(sex, Sex.class), conversionService.convert(dateOfBirth, LocalDate.class), birthCertificateNumber, nationality, address, List.of(emailContact, phoneContact),
+                    firstName,
+                    lastName,
+                    conversionService.convert(sex, Sex.class),
+                    conversionService.convert(dateOfBirth, LocalDate.class),
+                    birthCertificateNumber,
+                    nationality,
+                    address,
+                    List.of(emailContact, phoneContact),
                     List.of(),
-                    siCard, bankAccount, registrationNumber, orisId
+                    siCard,
+                    bankAccount,
+                    registrationNumber,
+                    orisId
             );
         }
 
