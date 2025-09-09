@@ -3,7 +3,7 @@ package club.klabis.members.infrastructure.restapi.mappers;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.forms.RegistrationFormBuilder;
 import club.klabis.members.infrastructure.restapi.dto.LicencesApiDto;
-import club.klabis.members.infrastructure.restapi.dto.MemberApiDto;
+import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.tests.common.MapperTest;
@@ -29,10 +29,10 @@ class MemberFullViewMapperTest {
         var form = RegistrationFormBuilder.builder().firstName("Test").lastName("Something").build();
         Member m = Member.fromRegistration(form);
 
-        MemberApiDto item = conversionService.convert(m,
-                club.klabis.members.infrastructure.restapi.dto.MemberApiDto.class);
+        MembersApiResponse item = conversionService.convert(m,
+                MembersApiResponse.class);
 
-        MemberApiDto expected = new MemberApiDto();
+        MembersApiResponse expected = new MembersApiResponse();
         expected.setFirstName("Test");
         expected.setLastName("Something");
         expected.setLicences(new LicencesApiDto());

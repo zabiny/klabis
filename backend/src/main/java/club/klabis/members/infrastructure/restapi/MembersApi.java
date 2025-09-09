@@ -9,8 +9,8 @@ import club.klabis.members.MemberId;
 import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
+import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.members.infrastructure.restapi.dto.MembersListItemsInnerApiDto;
-import club.klabis.shared.ConversionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -20,16 +20,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collection;
-import java.util.function.Function;
 
 @Validated
 @Tag(name = "Members")
@@ -38,11 +35,11 @@ import java.util.function.Function;
 public class MembersApi {
 
     private final MembersRepository membersRepository;
-    private final ConversionService conversionService;
+    private final MemberModelAssembler memberModelAssembler;
 
-    public MembersApi(MembersRepository membersRepository, ConversionService conversionService) {
+    public MembersApi(MembersRepository membersRepository, MemberModelAssembler memberModelAssembler) {
         this.membersRepository = membersRepository;
-        this.conversionService = conversionService;
+        this.memberModelAssembler = memberModelAssembler;
     }
 
     /**
@@ -59,16 +56,8 @@ public class MembersApi {
             summary = "List all club members",
             description = "Returns a list of all club members",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "A list of club members", content = {
-                            @Content(mediaType = "application/json"),
-                            @Content(mediaType = "application/klabis+json"),
-                            @Content(mediaType = "application/hal+json"),
-                            @Content(mediaType = "application/problem+json")
-                    }),
+                    @ApiResponse(responseCode = "200", description = "A list of club members"),
                     @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/klabis+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
-                            @Content(mediaType = "application/hal+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
                     })
             }
@@ -76,37 +65,16 @@ public class MembersApi {
     @RequestMapping(
             method = RequestMethod.GET,
             value = "/members",
-            produces = {"application/json", "application/klabis+json", "application/hal+json", "application/problem+json"}
+            produces = {"application/json", "application/klabis+json", "application/hal+json"}
     )
-    ResponseEntity<PagedModel<MembersListItemsInnerApiDto>> membersGet(
+    ResponseEntity<PagedModel<EntityModel<MembersListItemsInnerApiDto>>> membersGet(
             @Parameter(name = "view", description = "Defines set of returned data  | view option | description                                                                                   | |-------------|-----------------------------------------------------------------------------------------------| | `full`        | all member data that are displayable to the user are returned                                 | | `compact`     | `id`, `firstName`, `lastName`, `registrationNumber` are returned                             | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "view", required = false, defaultValue = "compact") String view,
             @Parameter(name = "suspended", description = "| value | effect | |---|---| | `true` | returns both active and suspended members |  | `false` | return only active members | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             Pageable pageable
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
 
-        var response = create(result,
-                (i) -> convertToApiDto(i, view),
-                ResolvableType.forClass(MembersListItemsInnerApiDto.class));
-
-        return ResponseEntity.ok(response);
-    }
-
-    private <T, O> PagedModel<O> create(Page<T> items, Function<T, O> converter, ResolvableType itemsType) {
-        if (items.isEmpty()) {
-            return PagedModel.empty(itemsType);
-        }
-
-        PagedModel.PageMetadata metadata = metadata(items);
-        Collection<O> data = items.getContent().stream().map(converter).toList();
-        return PagedModel.of(data, metadata);
-    }
-
-    private static PagedModel.PageMetadata metadata(Page<?> items) {
-        return new PagedModel.PageMetadata(items.getSize(),
-                items.getNumber(),
-                items.getTotalElements(),
-                items.getTotalPages());
+        return ResponseEntity.ok(memberModelAssembler.toPagedModel(result, pageable));
     }
 
     /**
@@ -123,16 +91,11 @@ public class MembersApi {
             summary = "Get member by ID",
             description = "Returns a member",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "A single member", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MemberApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MemberApiDto.class))
-                    }),
+                    @ApiResponse(responseCode = "200", description = "A single member"),
                     @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
                     }),
                     @ApiResponse(responseCode = "404", description = "Requested resource wasn't found", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
                     })
             }
@@ -140,30 +103,15 @@ public class MembersApi {
     @RequestMapping(
             method = RequestMethod.GET,
             value = "/members/{memberId}",
-            produces = {"application/json", "application/problem+json"}
+            produces = {"application/json", "application/klabis+json", "application/hal+json"}
     )
-    public ResponseEntity<club.klabis.members.infrastructure.restapi.dto.MemberApiDto> membersMemberIdGet(
+    public ResponseEntity<MembersApiResponse> membersMemberIdGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
     ) {
         return membersRepository.findById(new MemberId(memberId))
-                .map(m -> mapToResponseEntity(m, club.klabis.members.infrastructure.restapi.dto.MemberApiDto.class))
+                .map(memberModelAssembler::toFullModel)
+                .map(ResponseEntity::ok)
                 .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
-    }
-
-    ;
-
-    private club.klabis.members.infrastructure.restapi.dto.MembersListItemsInnerApiDto convertToApiDto(Member item, String view) {
-        if ("full".equalsIgnoreCase(view)) {
-            return conversionService.convert(item, club.klabis.members.infrastructure.restapi.dto.MemberApiDto.class);
-        } else {
-            return conversionService.convert(item,
-                    club.klabis.members.infrastructure.restapi.dto.MemberViewCompactApiDto.class);
-        }
-    }
-
-    private <T> ResponseEntity<T> mapToResponseEntity(Object data, Class<T> apiDtoType) {
-        T payload = conversionService.convert(data, apiDtoType);
-        return ResponseEntity.ok(payload);
     }
 
 }

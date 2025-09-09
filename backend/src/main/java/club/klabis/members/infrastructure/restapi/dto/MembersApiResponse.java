@@ -1,5 +1,6 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,9 +20,10 @@ import java.util.Objects;
  * MemberApiDto
  */
 
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonTypeName("Member")
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
-public class MemberApiDto extends RepresentationModel<MemberApiDto> implements MembersListItemsInnerApiDto {
+public class MembersApiResponse extends RepresentationModel<MembersApiResponse> implements MembersListItemsInnerApiDto {
 
     private Integer id;
 
@@ -62,14 +64,14 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
 
     private Boolean medicCourse;
 
-    public MemberApiDto() {
+    public MembersApiResponse() {
         super();
     }
 
     /**
      * Constructor with only required parameters
      */
-    public MemberApiDto(Integer id, String firstName, String lastName, String registrationNumber, AddressApiDto address, LocalDate dateOfBirth, String nationality, SexApiDto sex) {
+    public MembersApiResponse(Integer id, String firstName, String lastName, String registrationNumber, AddressApiDto address, LocalDate dateOfBirth, String nationality, SexApiDto sex) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -80,7 +82,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.sex = sex;
     }
 
-    public MemberApiDto id(Integer id) {
+    public MembersApiResponse id(Integer id) {
         this.id = id;
         return this;
     }
@@ -101,7 +103,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.id = id;
     }
 
-    public MemberApiDto firstName(String firstName) {
+    public MembersApiResponse firstName(String firstName) {
         this.firstName = firstName;
         return this;
     }
@@ -122,7 +124,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.firstName = firstName;
     }
 
-    public MemberApiDto lastName(String lastName) {
+    public MembersApiResponse lastName(String lastName) {
         this.lastName = lastName;
         return this;
     }
@@ -143,7 +145,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.lastName = lastName;
     }
 
-    public MemberApiDto registrationNumber(String registrationNumber) {
+    public MembersApiResponse registrationNumber(String registrationNumber) {
         this.registrationNumber = registrationNumber;
         return this;
     }
@@ -165,7 +167,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.registrationNumber = registrationNumber;
     }
 
-    public MemberApiDto birthCertificateNumber(String birthCertificateNumber) {
+    public MembersApiResponse birthCertificateNumber(String birthCertificateNumber) {
         this.birthCertificateNumber = birthCertificateNumber;
         return this;
     }
@@ -186,7 +188,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.birthCertificateNumber = birthCertificateNumber;
     }
 
-    public MemberApiDto identityCard(IdentityCardApiDto identityCard) {
+    public MembersApiResponse identityCard(IdentityCardApiDto identityCard) {
         this.identityCard = identityCard;
         return this;
     }
@@ -207,7 +209,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.identityCard = identityCard;
     }
 
-    public MemberApiDto address(AddressApiDto address) {
+    public MembersApiResponse address(AddressApiDto address) {
         this.address = address;
         return this;
     }
@@ -229,7 +231,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.address = address;
     }
 
-    public MemberApiDto dateOfBirth(LocalDate dateOfBirth) {
+    public MembersApiResponse dateOfBirth(LocalDate dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
         return this;
     }
@@ -251,7 +253,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.dateOfBirth = dateOfBirth;
     }
 
-    public MemberApiDto contact(ContactApiDto contact) {
+    public MembersApiResponse contact(ContactApiDto contact) {
         this.contact = contact;
         return this;
     }
@@ -272,12 +274,12 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.contact = contact;
     }
 
-    public MemberApiDto legalGuardians(List<@Valid LegalGuardianApiDto> legalGuardians) {
+    public MembersApiResponse legalGuardians(List<@Valid LegalGuardianApiDto> legalGuardians) {
         this.legalGuardians = legalGuardians;
         return this;
     }
 
-    public MemberApiDto addLegalGuardiansItem(LegalGuardianApiDto legalGuardiansItem) {
+    public MembersApiResponse addLegalGuardiansItem(LegalGuardianApiDto legalGuardiansItem) {
         if (this.legalGuardians == null) {
             this.legalGuardians = new ArrayList<>();
         }
@@ -301,7 +303,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.legalGuardians = legalGuardians;
     }
 
-    public MemberApiDto siCard(Integer siCard) {
+    public MembersApiResponse siCard(Integer siCard) {
         this.siCard = siCard;
         return this;
     }
@@ -322,7 +324,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.siCard = siCard;
     }
 
-    public MemberApiDto nationality(String nationality) {
+    public MembersApiResponse nationality(String nationality) {
         this.nationality = nationality;
         return this;
     }
@@ -344,7 +346,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.nationality = nationality;
     }
 
-    public MemberApiDto sex(SexApiDto sex) {
+    public MembersApiResponse sex(SexApiDto sex) {
         this.sex = sex;
         return this;
     }
@@ -366,7 +368,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.sex = sex;
     }
 
-    public MemberApiDto licences(LicencesApiDto licences) {
+    public MembersApiResponse licences(LicencesApiDto licences) {
         this.licences = licences;
         return this;
     }
@@ -387,7 +389,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.licences = licences;
     }
 
-    public MemberApiDto bankAccount(String bankAccount) {
+    public MembersApiResponse bankAccount(String bankAccount) {
         this.bankAccount = bankAccount;
         return this;
     }
@@ -408,7 +410,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.bankAccount = bankAccount;
     }
 
-    public MemberApiDto dietaryRestrictions(String dietaryRestrictions) {
+    public MembersApiResponse dietaryRestrictions(String dietaryRestrictions) {
         this.dietaryRestrictions = dietaryRestrictions;
         return this;
     }
@@ -429,12 +431,12 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.dietaryRestrictions = dietaryRestrictions;
     }
 
-    public MemberApiDto drivingLicence(List<DrivingLicenceApiDto> drivingLicence) {
+    public MembersApiResponse drivingLicence(List<DrivingLicenceApiDto> drivingLicence) {
         this.drivingLicence = drivingLicence;
         return this;
     }
 
-    public MemberApiDto addDrivingLicenceItem(DrivingLicenceApiDto drivingLicenceItem) {
+    public MembersApiResponse addDrivingLicenceItem(DrivingLicenceApiDto drivingLicenceItem) {
         if (this.drivingLicence == null) {
             this.drivingLicence = new ArrayList<>();
         }
@@ -458,7 +460,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         this.drivingLicence = drivingLicence;
     }
 
-    public MemberApiDto medicCourse(Boolean medicCourse) {
+    public MembersApiResponse medicCourse(Boolean medicCourse) {
         this.medicCourse = medicCourse;
         return this;
     }
@@ -487,7 +489,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        MemberApiDto member = (MemberApiDto) o;
+        MembersApiResponse member = (MembersApiResponse) o;
         return Objects.equals(this.id, member.id) &&
                Objects.equals(this.firstName, member.firstName) &&
                Objects.equals(this.lastName, member.lastName) &&
@@ -569,17 +571,17 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
 
     public static class Builder {
 
-        private MemberApiDto instance;
+        private MembersApiResponse instance;
 
         public Builder() {
-            this(new MemberApiDto());
+            this(new MembersApiResponse());
         }
 
-        protected Builder(MemberApiDto instance) {
+        protected Builder(MembersApiResponse instance) {
             this.instance = instance;
         }
 
-        protected Builder copyOf(MemberApiDto value) {
+        protected Builder copyOf(MembersApiResponse value) {
             this.instance.setId(value.id);
             this.instance.setFirstName(value.firstName);
             this.instance.setLastName(value.lastName);
@@ -696,7 +698,7 @@ public class MemberApiDto extends RepresentationModel<MemberApiDto> implements M
          * <p>
          * The builder is not reusable (NullPointerException)
          */
-        public MemberApiDto build() {
+        public MembersApiResponse build() {
             try {
                 return this.instance;
             } finally {
