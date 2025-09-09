@@ -13,7 +13,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.converters.models.PageableAsQueryParam;
+import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,13 +27,16 @@ import java.util.Collection;
 @Tag(name = "Event registrations")
 @SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
+@RequestMapping(produces = "application/json")
 public class EventRegistrationsController {
     private final EventsRepository eventsRepository;
     private final EventRegistrationUseCase useCase;
+    private final EventModelAssembler eventModelAssembler;
 
-    public EventRegistrationsController(EventsRepository eventsRepository, EventRegistrationUseCase useCase) {
+    public EventRegistrationsController(EventsRepository eventsRepository, EventRegistrationUseCase useCase, EventModelAssembler eventModelAssembler) {
         this.eventsRepository = eventsRepository;
         this.useCase = useCase;
+        this.eventModelAssembler = eventModelAssembler;
     }
 
     @Operation(
@@ -47,14 +54,10 @@ public class EventRegistrationsController {
                     @ApiResponse(responseCode = "404", description = "Event with given doesn't exist")
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/events/{eventId}/registrationForm/{memberId}",
-            produces = {"application/json"}
-    )
+    @GetMapping("/events/{eventId}/registrationForm/{memberId}")
     @ResponseStatus(HttpStatus.OK)
-    EventRegistrationForm getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
-        return useCase.createEventRegistrationForm(new Event.Id(event), new MemberId(memberId));
+    ResponseEntity<EventRegistrationForm> getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
+        return ResponseEntity.ok(useCase.createEventRegistrationForm(new Event.Id(event), new MemberId(memberId)));
     }
 
     @Operation(
@@ -72,11 +75,7 @@ public class EventRegistrationsController {
                     @ApiResponse(responseCode = "404", description = "Event with given doesn't exist")
             }
     )
-    @RequestMapping(
-            method = RequestMethod.PUT,
-            value = "/events/{eventId}/registrationForm/{memberId}",
-            produces = {"application/json"}
-    )
+    @PutMapping("/events/{eventId}/registrationForm/{memberId}")
     @ResponseStatus(HttpStatus.CREATED)
     void submitRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId, @RequestBody EventRegistrationForm form) {
         useCase.registerForEvent(new Event.Id(event), new MemberId(memberId), form);
@@ -97,11 +96,10 @@ public class EventRegistrationsController {
             value = "/member/{memberId}/registeredEvents",
             produces = {"application/json"}
     )
-    Collection<EventListItemApiDto> getMemberRegistrations(@PathVariable(name = "memberId") int memberId) {
-        return eventsRepository.findEventsByRegistrationsContaining(new MemberId(memberId))
-                .stream()
-                .map(EventsController::toDetailDto)
-                .toList();
+    @PageableAsQueryParam
+    CollectionModel<EventListItemApiDto> getMemberRegistrations(@PathVariable(name = "memberId") int memberId, @Parameter(hidden = true) Pageable pageable) {
+        Collection<Event> events = eventsRepository.findEventsByRegistrationsContaining(new MemberId(memberId),
+                pageable);
+        return eventModelAssembler.toCollectionModel(events);
     }
-
 }

@@ -9,35 +9,36 @@ import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
 import club.klabis.events.infrastructure.restapi.dto.EventListItemApiDto;
-import club.klabis.events.infrastructure.restapi.dto.GetEvents200ResponseApiDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @Validated
 @Tag(name = "Events")
 @SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
+@RequestMapping(value = "/events", produces = {"application/json", "application/klabis+json", "application/hal+json"})
 public class EventsController {
     private final EventsRepository eventsRepository;
+    private final EventModelAssembler eventModelAssembler;
 
-    EventsController(EventsRepository eventsRepository) {
+    EventsController(EventsRepository eventsRepository, EventModelAssembler eventModelAssembler) {
         this.eventsRepository = eventsRepository;
+        this.eventModelAssembler = eventModelAssembler;
     }
 
     /**
@@ -49,62 +50,36 @@ public class EventsController {
             operationId = "getEvents",
             summary = "Returns events",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Events", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = GetEvents200ResponseApiDto.class))
-                    })
+                    @ApiResponse(responseCode = "200", description = "Events")
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/events",
-            produces = {"application/json"}
-    )
+    @GetMapping
     @PageableAsQueryParam
-    ResponseEntity<GetEvents200ResponseApiDto> getEvents(@Parameter(hidden = true) Pageable pageable) {
-        List<EventListItemApiDto> items = eventsRepository.findAll(pageable)
-                .stream().map(EventsController::toListDto).toList();
+    ResponseEntity<CollectionModel<EventListItemApiDto>> getEvents(@Parameter(hidden = true) Pageable pageable) {
+        PagedModel<EventListItemApiDto> data = eventModelAssembler.toPagedModel(eventsRepository.findAll(pageable));
 
-        return ResponseEntity.ok(new GetEvents200ResponseApiDto().items(items));
+        return ResponseEntity.ok(data);
     }
 
     @Operation(
             operationId = "getEventById",
             summary = "Returns event details",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Event details", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = EventListItemApiDto.class))
-                    })
+                    @ApiResponse(responseCode = "200", description = "Event details")
             },
             parameters = {
                     @Parameter(name = "eventId", description = "ID eventu", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer"))
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/event/{eventId}",
-            produces = {"application/json"}
+    @GetMapping(
+            value = "/{eventId}"
     )
     ResponseEntity<EventListItemApiDto> getEventById(@PathVariable("eventId") int eventId) {
-        Event event = eventsRepository.findById(new Event.Id(eventId))
+        EventListItemApiDto response = eventsRepository.findById(new Event.Id(eventId))
+                .map(eventModelAssembler::toModel)
                 .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
 
-        return ResponseEntity.ok(toDetailDto(event));
+        return ResponseEntity.ok(response);
     }
-
-    private static EventListItemApiDto toListDto(Event oriEvent) {
-        return new EventListItemApiDto()
-                .id(oriEvent.getId().value())
-                .date(oriEvent.getDate())
-                .name(oriEvent.getName())
-                //.type(EventListItemApiDto.TypeEnum.S)
-                .organizer(oriEvent.getOrganizer())
-                //.coordinator("")
-                .registrationDeadline(oriEvent.getRegistrationDeadline());
-    }
-
-    static EventListItemApiDto toDetailDto(Event event) {
-        return toListDto(event);
-    }
-
 
 }

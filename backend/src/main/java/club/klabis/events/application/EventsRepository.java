@@ -3,6 +3,7 @@ package club.klabis.events.application;
 import club.klabis.events.domain.Event;
 import club.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Repository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -15,9 +16,11 @@ public interface EventsRepository extends ListCrudRepository<Event, Event.Id>, P
 
     Optional<Event> findByOrisId(int orisId);
 
-    default Collection<Event> findEventsByRegistrationsContaining(MemberId participantId) {
+    default Collection<Event> findEventsByRegistrationsContaining(MemberId participantId, Pageable pageable) {
         return findAll().stream()
                 .filter(it -> it.getEventRegistrations().stream().anyMatch(r -> r.memberId().equals(participantId)))
+                .skip(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .collect(
                         Collectors.toList());
     }
