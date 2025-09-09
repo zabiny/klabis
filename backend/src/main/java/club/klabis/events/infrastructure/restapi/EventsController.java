@@ -16,7 +16,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.PagedModel;
@@ -55,10 +57,12 @@ public class EventsController {
     )
     @GetMapping
     @PageableAsQueryParam
-    ResponseEntity<CollectionModel<EventListItemApiDto>> getEvents(@Parameter(hidden = true) Pageable pageable) {
-        PagedModel<EventListItemApiDto> data = eventModelAssembler.toPagedModel(eventsRepository.findAll(pageable));
+    ResponseEntity<CollectionModel<EventListItemApiDto>> getEvents(@ParameterObject EventsRepository.EventsFilter filter, @Parameter(hidden = true) Pageable pageable) {
+        Page<Event> data = eventsRepository.findEvents(filter, pageable);
 
-        return ResponseEntity.ok(data);
+        PagedModel<EventListItemApiDto> responseModel = eventModelAssembler.toPagedModel(data);
+
+        return ResponseEntity.ok(responseModel);
     }
 
     @Operation(

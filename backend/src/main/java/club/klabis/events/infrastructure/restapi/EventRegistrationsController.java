@@ -4,7 +4,6 @@ import club.klabis.events.application.EventRegistrationUseCase;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventRegistrationForm;
-import club.klabis.events.infrastructure.restapi.dto.EventListItemApiDto;
 import club.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,15 +12,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springdoc.core.converters.models.PageableAsQueryParam;
-import org.springframework.data.domain.Pageable;
-import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Collection;
 
 @Validated
 @Tag(name = "Event registrations")
@@ -89,17 +83,5 @@ public class EventRegistrationsController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void cancelEventRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
         useCase.cancelMemberRegistration(new Event.Id(eventId), new MemberId(memberId));
-    }
-
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/member/{memberId}/registeredEvents",
-            produces = {"application/json"}
-    )
-    @PageableAsQueryParam
-    CollectionModel<EventListItemApiDto> getMemberRegistrations(@PathVariable(name = "memberId") int memberId, @Parameter(hidden = true) Pageable pageable) {
-        Collection<Event> events = eventsRepository.findEventsByRegistrationsContaining(new MemberId(memberId),
-                pageable);
-        return eventModelAssembler.toCollectionModel(events);
     }
 }

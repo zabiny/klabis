@@ -2,8 +2,8 @@ package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.domain.Event;
 import club.klabis.events.infrastructure.restapi.dto.EventListItemApiDto;
+import club.klabis.members.MemberId;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.Link;
@@ -53,11 +53,11 @@ class EventModelAssembler implements RepresentationModelAssembler<Event, EventLi
     }
 
     private Collection<Link> collectionLinks() {
-        final int memberId = 1;
+        final MemberId memberId = new MemberId(1);
 
         Collection<Link> result = new ArrayList<>();
-        result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                .getMemberRegistrations(memberId, Pageable.ofSize(5).first())).withRel("myEvents"));
+        // define links for collection resources (both CollectionModel and PagedModel)
+
 
         return result;
     }
