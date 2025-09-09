@@ -1,6 +1,6 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
-import club.klabis.shared.config.restapi.ResponseViews;
+import club.klabis.members.infrastructure.restapi.ResponseViews;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;

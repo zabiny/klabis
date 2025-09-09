@@ -10,7 +10,8 @@ import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
-import club.klabis.shared.config.restapi.ResponseViews;
+import club.klabis.shared.config.restapi.JsonViewMapping;
+import club.klabis.shared.config.restapi.JsonViewParameter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -57,8 +58,8 @@ public class MembersApi {
      */
     @Operation(
             operationId = "membersGet",
-            summary = "List all club members",
-            description = "Returns a list of all club members",
+            summary = "Club members list",
+            description = "Returns club members",
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of club members"),
                     @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
@@ -68,8 +69,12 @@ public class MembersApi {
     )
     @GetMapping
     @PageableAsQueryParam
+    @JsonViewParameter(name = "view", defaultValue = "SUMMARY", mapping = {
+            @JsonViewMapping(name = "SUMMARY", jsonView = ResponseViews.Summary.class),
+            @JsonViewMapping(name = "DETAILED", jsonView = ResponseViews.Detailed.class)
+    })
+    @Parameter(name = "view", in = ParameterIn.QUERY, description = "Defines how many data are returned for every item", schema = @Schema(type = "string", defaultValue = "DETAILED", allowableValues = {"SUMMARY", "DETAILED"}))
     ResponseEntity<PagedModel<MembersApiResponse>> membersGet(
-            @Valid @RequestParam(value = "view", required = false, defaultValue = "SUMMARY") ResponseViews view,
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
