@@ -24,10 +24,8 @@ import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,20 +68,17 @@ public class MembersApi {
     )
     @GetMapping
     @PageableAsQueryParam
-    ResponseEntity<MappingJacksonValue> membersGet(
+    ResponseEntity<PagedModel<MembersApiResponse>> membersGet(
             @Valid @RequestParam(value = "view", required = false, defaultValue = "SUMMARY") ResponseViews view,
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
 
-        PagedModel<EntityModel<MembersApiResponse>> model = pagedResourcesAssembler.toModel(result,
+        PagedModel<MembersApiResponse> model = pagedResourcesAssembler.toModel(result,
                 memberModelAssembler);
 
-        MappingJacksonValue viewWrapper = new MappingJacksonValue(model);
-        viewWrapper.setSerializationView(view.getJsonView());
-
-        return ResponseEntity.ok(viewWrapper);
+        return ResponseEntity.ok(model);
     }
 
     /**
@@ -114,7 +109,7 @@ public class MembersApi {
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
     ) {
         return membersRepository.findById(new MemberId(memberId))
-                .map(memberModelAssembler::toFullModel)
+                .map(memberModelAssembler::toModel)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
     }
