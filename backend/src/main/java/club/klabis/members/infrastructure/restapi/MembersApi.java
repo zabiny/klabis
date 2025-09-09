@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
@@ -36,10 +37,12 @@ public class MembersApi {
 
     private final MembersRepository membersRepository;
     private final MemberModelAssembler memberModelAssembler;
+    private final PagedResourcesAssembler<Member> pagedResourcesAssembler;
 
-    public MembersApi(MembersRepository membersRepository, MemberModelAssembler memberModelAssembler) {
+    public MembersApi(MembersRepository membersRepository, MemberModelAssembler memberModelAssembler, PagedResourcesAssembler<Member> pagedResourcesAssembler) {
         this.membersRepository = membersRepository;
         this.memberModelAssembler = memberModelAssembler;
+        this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
     /**
@@ -74,7 +77,7 @@ public class MembersApi {
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
 
-        return ResponseEntity.ok(memberModelAssembler.toPagedModel(result, pageable));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(result, memberModelAssembler));
     }
 
     /**

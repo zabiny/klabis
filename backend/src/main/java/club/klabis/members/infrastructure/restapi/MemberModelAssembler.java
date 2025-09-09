@@ -5,15 +5,13 @@ import club.klabis.members.infrastructure.restapi.dto.MemberViewCompactApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.members.infrastructure.restapi.dto.MembersListItemsInnerApiDto;
 import club.klabis.shared.ConversionService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
-import org.springframework.hateoas.PagedModel;
+import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MemberModelAssembler extends KlabisModelAssembler<Member, EntityModel<MembersListItemsInnerApiDto>> {
+public class MemberModelAssembler implements RepresentationModelAssembler<Member, EntityModel<MembersListItemsInnerApiDto>> {
 
     private final ConversionService conversionService;
 
@@ -38,12 +36,4 @@ public class MemberModelAssembler extends KlabisModelAssembler<Member, EntityMod
 
         return responseDto;
     }
-
-    public PagedModel<EntityModel<MembersListItemsInnerApiDto>> toPagedModel(Page<Member> data, Pageable pageable) {
-        PagedModel<EntityModel<MembersListItemsInnerApiDto>> model = super.toPagedModel(data, pageable);
-        model.add(Link.of("/members", "createMember"));
-
-        return model;
-    }
-
 }
