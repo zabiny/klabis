@@ -19,7 +19,7 @@ public interface EventsRepository extends ListCrudRepository<Event, Event.Id>, P
 
     Optional<Event> findByOrisId(int orisId);
 
-    default Page<Event> findEvents(EventsFilter filter, Pageable pageable) {
+    default Page<Event> findEvents(EventsQuery filter, Pageable pageable) {
         Predicate<Event> filterPredicate = (e) -> true;
 
         if (filter.registeredMember() != null) {
@@ -33,10 +33,10 @@ public interface EventsRepository extends ListCrudRepository<Event, Event.Id>, P
         return PageUtils.create(allData, pageable);
     }
 
-    record EventsFilter(MemberId registeredMember) {
+    record EventsQuery(MemberId registeredMember) {
 
-        public static EventsFilter forRegisteredMember(MemberId memberId) {
-            return new EventsFilter(memberId);
+        public static EventsQuery forRegisteredMember(MemberId memberId) {
+            return new EventsQuery(memberId);
         }
 
     }

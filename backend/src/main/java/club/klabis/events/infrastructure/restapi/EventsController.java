@@ -57,7 +57,7 @@ public class EventsController {
     )
     @GetMapping
     @PageableAsQueryParam
-    ResponseEntity<CollectionModel<EventResponseItem>> getEvents(@ParameterObject EventsRepository.EventsFilter filter, @Parameter(hidden = true) Pageable pageable) {
+    ResponseEntity<CollectionModel<EventResponseItem>> getEvents(@ParameterObject EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
         Page<Event> data = eventsRepository.findEvents(filter, pageable);
 
         PagedModel<EventResponseItem> responseModel = eventModelAssembler.toPagedModel(data);
