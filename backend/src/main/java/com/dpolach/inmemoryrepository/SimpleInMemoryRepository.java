@@ -10,6 +10,7 @@ import org.springframework.lang.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
 
@@ -100,5 +101,17 @@ class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
     public Page<T> findAll(@NonNull Pageable pageable) {
         List<T> allData = findAll();
         return PageUtils.create(allData, pageable);
+    }
+
+    @Override
+    public List<T> findAll(Predicate<T> predicate) {
+        return findAll().stream().filter(predicate).toList();
+    }
+
+    @Override
+    public Page<T> findAll(Predicate<T> predicate, Pageable pageable) {
+        List<T> allItems = findAll(predicate);
+
+        return PageUtils.create(allItems, pageable);
     }
 }
