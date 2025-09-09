@@ -1,7 +1,7 @@
 package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.domain.Event;
-import club.klabis.events.infrastructure.restapi.dto.EventListItemApiDto;
+import club.klabis.events.infrastructure.restapi.dto.EventResponseItem;
 import club.klabis.members.MemberId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 @Component
-class EventModelAssembler implements RepresentationModelAssembler<Event, EventListItemApiDto> {
+class EventModelAssembler implements RepresentationModelAssembler<Event, EventResponseItem> {
 
     private final PagedResourcesAssembler<Event> pagedResourcesAssembler;
 
@@ -25,8 +25,8 @@ class EventModelAssembler implements RepresentationModelAssembler<Event, EventLi
     }
 
     @Override
-    public EventListItemApiDto toModel(Event event) {
-        EventListItemApiDto response = new EventListItemApiDto()
+    public EventResponseItem toModel(Event event) {
+        EventResponseItem response = new EventResponseItem()
                 .id(event.getId().value())
                 .date(event.getDate())
                 .name(event.getName())
@@ -44,8 +44,8 @@ class EventModelAssembler implements RepresentationModelAssembler<Event, EventLi
     }
 
     @Override
-    public CollectionModel<EventListItemApiDto> toCollectionModel(Iterable<? extends Event> entities) {
-        CollectionModel<EventListItemApiDto> result = RepresentationModelAssembler.super.toCollectionModel(entities);
+    public CollectionModel<EventResponseItem> toCollectionModel(Iterable<? extends Event> entities) {
+        CollectionModel<EventResponseItem> result = RepresentationModelAssembler.super.toCollectionModel(entities);
 
         collectionLinks().forEach(result::add);
 
@@ -62,8 +62,8 @@ class EventModelAssembler implements RepresentationModelAssembler<Event, EventLi
         return result;
     }
 
-    public PagedModel<EventListItemApiDto> toPagedModel(Page<Event> events) {
-        PagedModel<EventListItemApiDto> result = pagedResourcesAssembler.toModel(events, this);
+    public PagedModel<EventResponseItem> toPagedModel(Page<Event> events) {
+        PagedModel<EventResponseItem> result = pagedResourcesAssembler.toModel(events, this);
 
         collectionLinks().forEach(result::add);
 

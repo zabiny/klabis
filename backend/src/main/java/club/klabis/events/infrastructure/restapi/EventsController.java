@@ -8,7 +8,7 @@ package club.klabis.events.infrastructure.restapi;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
-import club.klabis.events.infrastructure.restapi.dto.EventListItemApiDto;
+import club.klabis.events.infrastructure.restapi.dto.EventResponseItem;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -57,10 +57,10 @@ public class EventsController {
     )
     @GetMapping
     @PageableAsQueryParam
-    ResponseEntity<CollectionModel<EventListItemApiDto>> getEvents(@ParameterObject EventsRepository.EventsFilter filter, @Parameter(hidden = true) Pageable pageable) {
+    ResponseEntity<CollectionModel<EventResponseItem>> getEvents(@ParameterObject EventsRepository.EventsFilter filter, @Parameter(hidden = true) Pageable pageable) {
         Page<Event> data = eventsRepository.findEvents(filter, pageable);
 
-        PagedModel<EventListItemApiDto> responseModel = eventModelAssembler.toPagedModel(data);
+        PagedModel<EventResponseItem> responseModel = eventModelAssembler.toPagedModel(data);
 
         return ResponseEntity.ok(responseModel);
     }
@@ -78,8 +78,8 @@ public class EventsController {
     @GetMapping(
             value = "/{eventId}"
     )
-    ResponseEntity<EventListItemApiDto> getEventById(@PathVariable("eventId") int eventId) {
-        EventListItemApiDto response = eventsRepository.findById(new Event.Id(eventId))
+    ResponseEntity<EventResponseItem> getEventById(@PathVariable("eventId") int eventId) {
+        EventResponseItem response = eventsRepository.findById(new Event.Id(eventId))
                 .map(eventModelAssembler::toModel)
                 .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
 

@@ -20,7 +20,7 @@ import java.util.Objects;
 
 @JsonTypeName("EventListItem")
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
-public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto> {
+public class EventResponseItem extends RepresentationModel<EventResponseItem> {
 
     private Integer id;
 
@@ -75,14 +75,14 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
 
     private String coordinator;
 
-    public EventListItemApiDto() {
+    public EventResponseItem() {
         super();
     }
 
     /**
      * Constructor with only required parameters
      */
-    public EventListItemApiDto(Integer id, LocalDate date, String name, String organizer, TypeEnum type) {
+    public EventResponseItem(Integer id, LocalDate date, String name, String organizer, TypeEnum type) {
         this.id = id;
         this.date = date;
         this.name = name;
@@ -90,7 +90,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         this.type = type;
     }
 
-    public EventListItemApiDto id(Integer id) {
+    public EventResponseItem id(Integer id) {
         this.id = id;
         return this;
     }
@@ -111,7 +111,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         this.id = id;
     }
 
-    public EventListItemApiDto date(LocalDate date) {
+    public EventResponseItem date(LocalDate date) {
         this.date = date;
         return this;
     }
@@ -133,7 +133,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         this.date = date;
     }
 
-    public EventListItemApiDto name(String name) {
+    public EventResponseItem name(String name) {
         this.name = name;
         return this;
     }
@@ -154,7 +154,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         this.name = name;
     }
 
-    public EventListItemApiDto organizer(String organizer) {
+    public EventResponseItem organizer(String organizer) {
         this.organizer = organizer;
         return this;
     }
@@ -175,7 +175,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         this.organizer = organizer;
     }
 
-    public EventListItemApiDto type(TypeEnum type) {
+    public EventResponseItem type(TypeEnum type) {
         this.type = type;
         return this;
     }
@@ -196,7 +196,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         this.type = type;
     }
 
-    public EventListItemApiDto web(String web) {
+    public EventResponseItem web(String web) {
         this.web = web;
         return this;
     }
@@ -217,7 +217,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         this.web = web;
     }
 
-    public EventListItemApiDto registrationDeadline(LocalDate registrationDeadline) {
+    public EventResponseItem registrationDeadline(LocalDate registrationDeadline) {
         this.registrationDeadline = registrationDeadline;
         return this;
     }
@@ -238,7 +238,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         this.registrationDeadline = registrationDeadline;
     }
 
-    public EventListItemApiDto coordinator(String coordinator) {
+    public EventResponseItem coordinator(String coordinator) {
         this.coordinator = coordinator;
         return this;
     }
@@ -267,7 +267,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        EventListItemApiDto eventListItem = (EventListItemApiDto) o;
+        EventResponseItem eventListItem = (EventResponseItem) o;
         return Objects.equals(this.id, eventListItem.id) &&
                Objects.equals(this.date, eventListItem.date) &&
                Objects.equals(this.name, eventListItem.name) &&
@@ -312,17 +312,17 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
 
     public static class Builder {
 
-        private EventListItemApiDto instance;
+        private EventResponseItem instance;
 
         public Builder() {
-            this(new EventListItemApiDto());
+            this(new EventResponseItem());
         }
 
-        protected Builder(EventListItemApiDto instance) {
+        protected Builder(EventResponseItem instance) {
             this.instance = instance;
         }
 
-        protected Builder copyOf(EventListItemApiDto value) {
+        protected Builder copyOf(EventResponseItem value) {
             this.instance.setId(value.id);
             this.instance.setDate(value.date);
             this.instance.setName(value.name);
@@ -379,7 +379,7 @@ public class EventListItemApiDto extends RepresentationModel<EventListItemApiDto
          * <p>
          * The builder is not reusable (NullPointerException)
          */
-        public EventListItemApiDto build() {
+        public EventResponseItem build() {
             try {
                 return this.instance;
             } finally {
