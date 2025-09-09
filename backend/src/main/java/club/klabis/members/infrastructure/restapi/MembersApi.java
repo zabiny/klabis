@@ -71,8 +71,8 @@ public class MembersApi {
     @GetMapping
     @PageableAsQueryParam
     ResponseEntity<MappingJacksonValue> membersGet(
-            @Parameter(name = "view", description = "Defines set of returned data  | view option | description                                                                                   | |-------------|-----------------------------------------------------------------------------------------------| | `full`        | all member data that are displayable to the user are returned                                 | | `compact`     | `id`, `firstName`, `lastName`, `registrationNumber` are returned                             | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "view", required = false, defaultValue = "compact") String view,
-            @Parameter(name = "suspended", description = "| value | effect | |---|---| | `true` | returns both active and suspended members |  | `false` | return only active members | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
+            @Valid @RequestParam(value = "view", required = false, defaultValue = "SUMMARY") ResponseViews view,
+            @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
@@ -81,14 +81,7 @@ public class MembersApi {
                 memberModelAssembler);
 
         MappingJacksonValue viewWrapper = new MappingJacksonValue(model);
-
-        switch (view) {
-            case "full":
-                viewWrapper.setSerializationView(ResponseViews.Summary.class);
-                break;
-            default:
-                viewWrapper.setSerializationView(ResponseViews.Detailed.class);
-        }
+        viewWrapper.setSerializationView(view.getJsonView());
 
         return ResponseEntity.ok(viewWrapper);
     }

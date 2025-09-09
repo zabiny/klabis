@@ -16,21 +16,6 @@ public enum ResponseViews {
         return jsonView;
     }
 
-    public String getRequestParamValue() {
-        return requestParamValue;
-    }
-
-    public static ResponseViews ofRequestParam(String value) {
-        return switch (value) {
-            case "detailed":
-                yield ResponseViews.DETAILED;
-            case "summary":
-                yield ResponseViews.SUMMARY;
-            default:
-                yield ResponseViews.SUMMARY;
-        };
-    }
-
     public interface Summary {
     }
 
