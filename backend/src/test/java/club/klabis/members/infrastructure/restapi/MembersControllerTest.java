@@ -10,6 +10,7 @@ import club.klabis.members.domain.forms.RegistrationForm;
 import club.klabis.members.domain.forms.RegistrationFormBuilder;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.application.UserGrantsUpdateUseCase;
+import com.dpolach.inmemoryrepository.PageUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,6 +26,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -69,7 +73,8 @@ class MembersControllerTest {
             ReflectionTestUtils.setField(data, "registration", RegistrationNumber.ofRegistrationId("ZBM8000"));
             ReflectionTestUtils.setField(data, "dateOfBirth", LocalDate.of(1970, 10, 21));
 
-            when(membersRepositoryMock.findAll(false)).thenReturn(List.of(data));
+            when(membersRepositoryMock.findAllBySuspended(eq(false), any())).thenReturn(PageUtils.create(List.of(data),
+                    Pageable.unpaged()));
 
             mockMvc.perform(get("/members?view=full"))
                     .andExpect(jsonPath("$.firstName").value("Test"))
@@ -88,7 +93,8 @@ class MembersControllerTest {
             ReflectionTestUtils.setField(data, "registration", RegistrationNumber.ofRegistrationId("ZBM8000"));
             ReflectionTestUtils.setField(data, "dateOfBirth", LocalDate.of(1970, 10, 21));
 
-            when(membersRepositoryMock.findAll(false)).thenReturn(List.of(data));
+            when(membersRepositoryMock.findAllBySuspended(eq(false), any())).thenReturn(PageUtils.create(List.of(data),
+                    Pageable.unpaged()));
 
             mockMvc.perform(get("/members?view=compact"))
                     .andExpect(jsonPath("$.firstName").value("Test"))

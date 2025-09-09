@@ -20,11 +20,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.core.ResolvableType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.function.Function;
 
 @Validated
 @Tag(name = "Members")
@@ -55,10 +60,10 @@ public class MembersApi {
             description = "Returns a list of all club members",
             responses = {
                     @ApiResponse(responseCode = "200", description = "A list of club members", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MembersListApiDto.class)),
-                            @Content(mediaType = "application/klabis+json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MembersListApiDto.class)),
-                            @Content(mediaType = "application/hal+json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MembersListApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MembersListApiDto.class))
+                            @Content(mediaType = "application/json"),
+                            @Content(mediaType = "application/klabis+json"),
+                            @Content(mediaType = "application/hal+json"),
+                            @Content(mediaType = "application/problem+json")
                     }),
                     @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class)),
@@ -73,21 +78,36 @@ public class MembersApi {
             value = "/members",
             produces = {"application/json", "application/klabis+json", "application/hal+json", "application/problem+json"}
     )
-    ResponseEntity<club.klabis.members.infrastructure.restapi.dto.MembersListApiDto> membersGet(
+    ResponseEntity<PagedModel<MembersListItemsInnerApiDto>> membersGet(
             @Parameter(name = "view", description = "Defines set of returned data  | view option | description                                                                                   | |-------------|-----------------------------------------------------------------------------------------------| | `full`        | all member data that are displayable to the user are returned                                 | | `compact`     | `id`, `firstName`, `lastName`, `registrationNumber` are returned                             | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "view", required = false, defaultValue = "compact") String view,
-            @Parameter(name = "suspended", description = "| value | effect | |---|---| | `true` | returns both active and suspended members |  | `false` | return only active members | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended
+            @Parameter(name = "suspended", description = "| value | effect | |---|---| | `true` | returns both active and suspended members |  | `false` | return only active members | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
+            Pageable pageable
     ) {
-        List<? extends MembersListItemsInnerApiDto> result = membersRepository.findAll(
-                        suspended)
-                .stream()
-                .map(t -> convertToApiDto(t, view))
-                .toList();
-        return ResponseEntity.ok(club.klabis.members.infrastructure.restapi.dto.MembersListApiDto.builder()
-                .items((List<club.klabis.members.infrastructure.restapi.dto.MembersListItemsInnerApiDto>) result)
-                .build());
+        Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
+
+        var response = create(result,
+                (i) -> convertToApiDto(i, view),
+                ResolvableType.forClass(MembersListItemsInnerApiDto.class));
+
+        return ResponseEntity.ok(response);
     }
 
-    ;
+    private <T, O> PagedModel<O> create(Page<T> items, Function<T, O> converter, ResolvableType itemsType) {
+        if (items.isEmpty()) {
+            return PagedModel.empty(itemsType);
+        }
+
+        PagedModel.PageMetadata metadata = metadata(items);
+        Collection<O> data = items.getContent().stream().map(converter).toList();
+        return PagedModel.of(data, metadata);
+    }
+
+    private static PagedModel.PageMetadata metadata(Page<?> items) {
+        return new PagedModel.PageMetadata(items.getSize(),
+                items.getNumber(),
+                items.getTotalElements(),
+                items.getTotalPages());
+    }
 
     /**
      * GET /members/{memberId} : Get member by ID

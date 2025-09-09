@@ -6,13 +6,12 @@ import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.text.Collator;
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @ValueObject
-public final class RegistrationNumber implements Comparator<RegistrationNumber> {
+public final class RegistrationNumber implements Comparable<RegistrationNumber> {
 
     private static final Pattern REGISTRATION_NUMBER_FORMAT = Pattern.compile("([A-Z]{3})([0-9]{2})([0-9]{2})");
     private final String club;
@@ -69,16 +68,6 @@ public final class RegistrationNumber implements Comparator<RegistrationNumber> 
     }
 
     @Override
-    public int compare(RegistrationNumber registrationNumber, RegistrationNumber t1) {
-        if (registrationNumber == null) {
-            return 1;
-        } else if (t1 == null) {
-            return -1;
-        }
-        return Collator.getInstance().compare(registrationNumber.toRegistrationId(), t1.toRegistrationId());
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
@@ -93,4 +82,11 @@ public final class RegistrationNumber implements Comparator<RegistrationNumber> 
         return Objects.hash(club, yearOfBirth, yearOrder);
     }
 
+    @Override
+    public int compareTo(RegistrationNumber o) {
+        if (o == null) {
+            return -1;
+        }
+        return Collator.getInstance().compare(this.toRegistrationId(), o.toRegistrationId());
+    }
 }
