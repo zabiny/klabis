@@ -98,7 +98,7 @@ const EditMemberFormUI = ({
                         <TextField
                             fullWidth
                             label="Ulice a číslo"
-                            value={formState.address.streetAndNumber}
+                            value={formState.address?.streetAndNumber || ''}
                             onChange={(e) => handleInputChange('address.streetAndNumber', e.target.value)}
                             required
                         />
@@ -107,7 +107,7 @@ const EditMemberFormUI = ({
                         <TextField
                             fullWidth
                             label="Město"
-                            value={formState.address.city}
+                            value={formState.address?.city || ''}
                             onChange={(e) => handleInputChange('address.city', e.target.value)}
                             required
                         />
@@ -116,7 +116,7 @@ const EditMemberFormUI = ({
                         <TextField
                             fullWidth
                             label="PSČ"
-                            value={formState.address.postalCode}
+                            value={formState.address?.postalCode || ''}
                             onChange={(e) => handleInputChange('address.postalCode', e.target.value)}
                             required
                         />

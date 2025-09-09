@@ -13,7 +13,7 @@ export interface EventListItem {
 }
 
 export interface EventsList {
-    items: EventListItem[];
+    content: EventListItem[];
 }
 
 // Hooks for events API

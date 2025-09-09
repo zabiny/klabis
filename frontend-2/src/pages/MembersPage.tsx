@@ -104,7 +104,7 @@ const MembersPage = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {membersResponse?.data.items
+                                {membersResponse?.data.content
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map((member) => (
                                         <TableRow
@@ -132,7 +132,7 @@ const MembersPage = () => {
                     <TablePagination
                         rowsPerPageOptions={[5, 10, 25]}
                         component="div"
-                        count={membersResponse?.data.items.length || 0}
+                        count={membersResponse?.data.content.length || 0}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onPageChange={handleChangePage}

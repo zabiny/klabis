@@ -6,15 +6,18 @@ export interface Member {
     firstName: string;
     lastName: string;
     registrationNumber: string;
-    sex?: 'male' | 'female';
-    dateOfBirth?: string;
-    nationality?: string;
-    address?: {
+    birthCertificateNumber?: string;
+    identityCard?: {
+        number?: string;
+        expiryDate?: string;
+    };
+    address: {
         streetAndNumber: string;
         city: string;
         postalCode: string;
         country: string;
     };
+    dateOfBirth: string;
     contact?: {
         email?: string;
         phone?: string;
@@ -31,6 +34,8 @@ export interface Member {
         note?: string;
     }>;
     siCard?: number;
+    nationality: string;
+    sex: 'male' | 'female';
     licences?: {
         ob?: {
             licence: string;
@@ -51,7 +56,13 @@ export interface Member {
 }
 
 export interface MembersList {
-    items: Member[];
+    content: Member[];
+    page: {
+        size: number;
+        totalElements: number;
+        totalPages: number;
+        number: number;
+    };
 }
 
 export interface EditMyDetailsForm {
@@ -118,6 +129,49 @@ export interface MembershipSuspensionInfo {
             status: boolean;
         };
     };
+}
+
+export interface EditAnotherMemberDetailsForm {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    birthCertificateNumber?: string;
+    nationality: string;
+    sex: 'male' | 'female';
+}
+
+export interface MemberRegistrationForm {
+    firstName: string;
+    lastName: string;
+    sex: 'male' | 'female';
+    dateOfBirth: string;
+    birthCertificateNumber?: string;
+    nationality: string;
+    address: {
+        streetAndNumber: string;
+        city: string;
+        postalCode: string;
+        country: string;
+    };
+    contact?: {
+        email?: string;
+        phone?: string;
+        note?: string;
+    };
+    guardians?: Array<{
+        firstName: string;
+        lastName: string;
+        contact: {
+            email?: string;
+            phone?: string;
+            note?: string;
+        };
+        note?: string;
+    }>;
+    siCard?: number;
+    bankAccount?: string;
+    registrationNumber?: string;
+    orisId?: number;
 }
 
 export const useGetSuspendMembershipForm = (memberId: number) => {

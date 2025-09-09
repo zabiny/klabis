@@ -92,7 +92,7 @@ const EventsPage = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {response?.data.items
+                                {response?.data.content
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map((event) => (
                                         <TableRow key={event.id} hover>
@@ -101,7 +101,7 @@ const EventsPage = () => {
                                             <TableCell>
                                                 <Chip
                                                     label={getEventTypeLabel(event.type)}
-                                                    color={getEventTypeColor(event.type) as any}
+                                                    color={getEventTypeColor(event.type)}
                                                     size="small"
                                                     icon={<EventIcon/>}
                                                 />
@@ -136,7 +136,7 @@ const EventsPage = () => {
                     <TablePagination
                         rowsPerPageOptions={[5, 10, 25]}
                         component="div"
-                        count={response?.data.items.length || 0}
+                        count={response?.data.content.length || 0}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onPageChange={handleChangePage}
