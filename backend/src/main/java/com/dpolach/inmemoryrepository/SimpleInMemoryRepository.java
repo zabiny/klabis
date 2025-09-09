@@ -1,7 +1,11 @@
 package com.dpolach.inmemoryrepository;
 
 import org.apache.commons.lang3.stream.Streams;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.core.EntityInformation;
+import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.Objects;
@@ -83,4 +87,18 @@ class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
         entityStore.deleteById(domainClass, id);
     }
 
+    @NonNull
+    @Override
+    public Iterable<T> findAll(@NonNull Sort sort) {
+        return entityStore.findAll(domainClass).stream()
+                .sorted(SortComparator.of(sort))
+                .toList();
+    }
+
+    @NonNull
+    @Override
+    public Page<T> findAll(@NonNull Pageable pageable) {
+        List<T> allData = findAll();
+        return PageUtils.create(allData, pageable);
+    }
 }

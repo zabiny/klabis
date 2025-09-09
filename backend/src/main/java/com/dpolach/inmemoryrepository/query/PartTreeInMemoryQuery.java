@@ -1,6 +1,9 @@
 package com.dpolach.inmemoryrepository.query;
 
 import com.dpolach.inmemoryrepository.InMemoryEntityStore;
+import com.dpolach.inmemoryrepository.PageUtils;
+import com.dpolach.inmemoryrepository.SortComparator;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
@@ -17,6 +20,14 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+/**
+ * Implements repository query execution for in-memory operations based on part tree parsing.
+ * This class handles query building and execution for methods that follow Spring Data naming conventions,
+ * supporting various comparison operators, logical combinations, sorting, pagination, and projection types.
+ * <p>
+ * The query execution is performed against an in-memory entity store using predicates constructed from
+ * the parsed part tree of the method name and parameter values.
+ */
 public class PartTreeInMemoryQuery implements RepositoryQuery {
 
     private final InMemoryQueryMethod method;
@@ -41,22 +52,26 @@ public class PartTreeInMemoryQuery implements RepositoryQuery {
             List<?> result = entityStore.findAll(domainClass, predicate);
 
             // Aplikujeme řazení, pokud je specifikováno
-            if (tree.getSort() != null && !tree.getSort().isUnsorted()) {
-                // Implementace řazení by byla v reálném případě složitější
-                // Pro zjednodušení ji zde neimplementujeme
+            if (!tree.getSort().isUnsorted()) {
+                result = result.stream().sorted(SortComparator.of(tree.getSort())).toList();
             }
 
             // Implementace stránkování, pokud je potřeba
             if (method.getParameters().hasPageableParameter()) {
                 Pageable pageable = accessor.getPageable();
-                // Implementace stránkování by byla v reálném případě složitější
-                // Pro zjednodušení ji zde neimplementujeme
+                result = PageUtils.create(result, pageable).getContent();
             }
 
             return result;
+        } else if (method.isPageQuery()) {
+            if (method.getParameters().hasPageableParameter()) {
+                return entityStore.findAll(domainClass, accessor.getPageable(), predicate);
+            } else {
+                return new PageImpl<>(entityStore.findAll(domainClass, predicate));
+            }
         } else if (tree.isExistsProjection()) {
             return entityStore.findOne(domainClass, predicate).isPresent();
-        } else  {
+        } else {
             return entityStore.findOne(domainClass, predicate);
         }
     }
@@ -187,7 +202,7 @@ public class PartTreeInMemoryQuery implements RepositoryQuery {
         return a.equals(b);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private int compareValues(Object a, Object b) {
         if (a == null && b == null) {
             return 0;

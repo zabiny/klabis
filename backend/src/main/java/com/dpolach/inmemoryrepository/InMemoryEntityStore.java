@@ -3,6 +3,8 @@ package com.dpolach.inmemoryrepository;
 import com.nimbusds.jose.shaded.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.core.EntityInformation;
 
 import java.lang.reflect.Type;
@@ -107,6 +109,14 @@ public class InMemoryEntityStore {
                 .stream()
                 .map(s -> gson.fromJson(s, entityClass))
                 .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    public <T> Page<T> findAll(Class<T> entityClass, Pageable pageable, Predicate<T> predicate) {
+        List<T> allData = findAll(entityClass, predicate).stream()
+                .sorted(new SortComparator<>(pageable.getSort()))
+                .toList();
+
+        return PageUtils.create(allData, pageable);
     }
 
     @SuppressWarnings("unchecked")
