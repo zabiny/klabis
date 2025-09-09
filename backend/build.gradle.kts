@@ -61,7 +61,7 @@ dependencies {
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
-    //implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 
     // Jackson mappings
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
