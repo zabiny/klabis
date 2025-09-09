@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Members")
 @SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
+@RequestMapping(value = "/members", produces = {"application/json", "application/klabis+json", "application/hal+json"})
 public class MembersApi {
 
     private final MembersRepository membersRepository;
@@ -65,15 +67,12 @@ public class MembersApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/members",
-            produces = {"application/json", "application/klabis+json", "application/hal+json"}
-    )
+    @GetMapping
+    @PageableAsQueryParam
     ResponseEntity<PagedModel<EntityModel<MembersListItemsInnerApiDto>>> membersGet(
             @Parameter(name = "view", description = "Defines set of returned data  | view option | description                                                                                   | |-------------|-----------------------------------------------------------------------------------------------| | `full`        | all member data that are displayable to the user are returned                                 | | `compact`     | `id`, `firstName`, `lastName`, `registrationNumber` are returned                             | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "view", required = false, defaultValue = "compact") String view,
             @Parameter(name = "suspended", description = "| value | effect | |---|---| | `true` | returns both active and suspended members |  | `false` | return only active members | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
-            Pageable pageable
+            @Parameter(hidden = true) Pageable pageable
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
 
@@ -103,11 +102,7 @@ public class MembersApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/members/{memberId}",
-            produces = {"application/json", "application/klabis+json", "application/hal+json"}
-    )
+    @GetMapping("/{memberId}")
     public ResponseEntity<MembersApiResponse> membersMemberIdGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
     ) {
