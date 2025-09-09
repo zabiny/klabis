@@ -1,8 +1,10 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
+import club.klabis.shared.config.restapi.ResponseViews;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
@@ -25,43 +27,61 @@ import java.util.Objects;
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
 public class MembersApiResponse extends RepresentationModel<MembersApiResponse> implements MembersListItemsInnerApiDto {
 
+    @JsonView(ResponseViews.Summary.class)
     private Integer id;
 
+    @JsonView(ResponseViews.Summary.class)
     private String firstName;
 
+    @JsonView(ResponseViews.Summary.class)
     private String lastName;
 
+    @JsonView(ResponseViews.Summary.class)
     private String registrationNumber;
 
+    @JsonView(ResponseViews.Detailed.class)
     private String birthCertificateNumber;
 
+    @JsonView(ResponseViews.Detailed.class)
     private IdentityCardApiDto identityCard;
 
+    @JsonView(ResponseViews.Detailed.class)
     private AddressApiDto address;
 
+    @JsonView(ResponseViews.Detailed.class)
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate dateOfBirth;
 
+    @JsonView(ResponseViews.Detailed.class)
     private ContactApiDto contact;
 
     @Valid
+    @JsonView(ResponseViews.Detailed.class)
     private List<@Valid LegalGuardianApiDto> legalGuardians = new ArrayList<>();
 
+    @JsonView(ResponseViews.Detailed.class)
     private Integer siCard;
 
+    @JsonView(ResponseViews.Detailed.class)
     private String nationality;
 
+    @JsonView(ResponseViews.Detailed.class)
     private SexApiDto sex;
 
+    @JsonView(ResponseViews.Detailed.class)
     private LicencesApiDto licences;
 
+    @JsonView(ResponseViews.Detailed.class)
     private String bankAccount;
 
+    @JsonView(ResponseViews.Detailed.class)
     private String dietaryRestrictions;
 
     @Valid
+    @JsonView(ResponseViews.Detailed.class)
     private List<DrivingLicenceApiDto> drivingLicence = new ArrayList<>();
 
+    @JsonView(ResponseViews.Detailed.class)
     private Boolean medicCourse;
 
     public MembersApiResponse() {

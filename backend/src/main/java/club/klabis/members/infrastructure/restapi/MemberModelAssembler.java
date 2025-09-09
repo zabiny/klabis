@@ -1,9 +1,7 @@
 package club.klabis.members.infrastructure.restapi;
 
 import club.klabis.members.domain.Member;
-import club.klabis.members.infrastructure.restapi.dto.MemberViewCompactApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
-import club.klabis.members.infrastructure.restapi.dto.MembersListItemsInnerApiDto;
 import club.klabis.shared.ConversionService;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -11,7 +9,7 @@ import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MemberModelAssembler implements RepresentationModelAssembler<Member, EntityModel<MembersListItemsInnerApiDto>> {
+public class MemberModelAssembler implements RepresentationModelAssembler<Member, EntityModel<MembersApiResponse>> {
 
     private final ConversionService conversionService;
 
@@ -20,10 +18,10 @@ public class MemberModelAssembler implements RepresentationModelAssembler<Member
     }
 
     @Override
-    public EntityModel<MembersListItemsInnerApiDto> toModel(Member entity) {
-        MembersListItemsInnerApiDto responseDto = conversionService.convert(entity, MemberViewCompactApiDto.class);
+    public EntityModel<MembersApiResponse> toModel(Member entity) {
+        MembersApiResponse responseDto = conversionService.convert(entity, MembersApiResponse.class);
 
-        EntityModel<MembersListItemsInnerApiDto> result = EntityModel.of(responseDto)
+        EntityModel<MembersApiResponse> result = EntityModel.of(responseDto)
                 .add(Link.of("/test/1", "example"));
 
         return result;

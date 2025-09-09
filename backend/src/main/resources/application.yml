@@ -166,6 +166,10 @@ spring:
     hibernate:
       ddl-auto: validate  # pro persistentni DB pouze zvalidovat schema databaze
 
+  jackson:
+    mapper:
+      default-view-inclusion: true
+
 logging:
   level:
     org.springframework.security.jackson2.SecurityJackson2Modules: info

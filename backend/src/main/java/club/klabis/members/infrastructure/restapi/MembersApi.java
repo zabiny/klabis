@@ -10,7 +10,7 @@ import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
-import club.klabis.members.infrastructure.restapi.dto.MembersListItemsInnerApiDto;
+import club.klabis.shared.config.restapi.ResponseViews;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -27,6 +27,7 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,14 +70,27 @@ public class MembersApi {
     )
     @GetMapping
     @PageableAsQueryParam
-    ResponseEntity<PagedModel<EntityModel<MembersListItemsInnerApiDto>>> membersGet(
+    ResponseEntity<MappingJacksonValue> membersGet(
             @Parameter(name = "view", description = "Defines set of returned data  | view option | description                                                                                   | |-------------|-----------------------------------------------------------------------------------------------| | `full`        | all member data that are displayable to the user are returned                                 | | `compact`     | `id`, `firstName`, `lastName`, `registrationNumber` are returned                             | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "view", required = false, defaultValue = "compact") String view,
             @Parameter(name = "suspended", description = "| value | effect | |---|---| | `true` | returns both active and suspended members |  | `false` | return only active members | ", in = ParameterIn.QUERY) @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
 
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(result, memberModelAssembler));
+        PagedModel<EntityModel<MembersApiResponse>> model = pagedResourcesAssembler.toModel(result,
+                memberModelAssembler);
+
+        MappingJacksonValue viewWrapper = new MappingJacksonValue(model);
+
+        switch (view) {
+            case "full":
+                viewWrapper.setSerializationView(ResponseViews.Summary.class);
+                break;
+            default:
+                viewWrapper.setSerializationView(ResponseViews.Detailed.class);
+        }
+
+        return ResponseEntity.ok(viewWrapper);
     }
 
     /**
