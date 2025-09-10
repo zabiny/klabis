@@ -206,7 +206,6 @@ public class EditMyDetailsFormApiDto extends RepresentationModel<EditMyDetailsFo
      *
      * @return bankAccount
      */
-    @Pattern(regexp = "^[A-Z]{2}[0-9]+$")
     @Schema(name = "bankAccount", description = "Bank account number of the club member IBAN", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("bankAccount")
     public String getBankAccount() {
