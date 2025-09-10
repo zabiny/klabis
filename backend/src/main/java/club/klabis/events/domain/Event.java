@@ -103,7 +103,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     }
 
     private Optional<Registration> getRegistrationForMember(MemberId memberId) {
-        return registrations.stream().filter(it -> Objects.equals(it.memberId(), memberId)).findFirst();
+        return registrations.stream().filter(it -> Objects.equals(it.getMemberId(), memberId)).findFirst();
     }
 
     public boolean areRegistrationsOpen() {
@@ -111,7 +111,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     }
 
     public boolean isMemberRegistered(MemberId memberId) {
-        return registrations.stream().anyMatch(r -> memberId.equals(r.memberId()));
+        return registrations.stream().anyMatch(r -> memberId.equals(r.getMemberId()));
     }
 
     public void registerMember(MemberId memberId, EventRegistrationForm form) {
