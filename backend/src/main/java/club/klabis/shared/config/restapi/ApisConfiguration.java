@@ -112,7 +112,7 @@ public class ApisConfiguration {
 //                "https://klabis-api-docs.otakar.io"
         ));
 
-        //config.setAllowedMethods(Arrays.asList("GET", "POST", "OPTIONS"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
         // Povolené hlavičky
         config.setAllowedHeaders(Arrays.asList(
