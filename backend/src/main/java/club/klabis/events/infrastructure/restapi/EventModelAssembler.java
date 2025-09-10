@@ -35,10 +35,18 @@ class EventModelAssembler implements RepresentationModelAssembler<Event, EventRe
                 //.coordinator("")
                 .registrationDeadline(event.getRegistrationDeadline());
 
-        final int memberId = 1;
+        final MemberId memberId = new MemberId(1);
 
-        response.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                .getEventRegistrationForm(response.getId(), memberId)).withRel("register"));
+        if (event.isMemberRegistered(memberId) && event.areRegistrationsOpen()) {
+            response.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                    .submitRegistrationForm(response.getId(), memberId.value(), null)).withRel("updateRegistration"));
+
+            response.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                    .cancelEventRegistration(response.getId(), memberId.value())).withRel("cancelRegistration"));
+        } else {
+            response.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                    .submitRegistrationForm(response.getId(), memberId.value(), null)).withRel("createRegistration"));
+        }
 
         return response;
     }

@@ -106,6 +106,10 @@ public class Event extends AbstractAggregateRoot<Event> {
         return registrations.stream().filter(it -> Objects.equals(it.memberId(), memberId)).findFirst();
     }
 
+    public boolean areRegistrationsOpen() {
+        return registrationDeadline.isBefore(LocalDate.now());
+    }
+
     public boolean isMemberRegistered(MemberId memberId) {
         return registrations.stream().anyMatch(r -> memberId.equals(r.memberId()));
     }

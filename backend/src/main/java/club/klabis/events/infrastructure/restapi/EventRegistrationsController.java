@@ -1,7 +1,6 @@
 package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.application.EventRegistrationUseCase;
-import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
@@ -12,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -23,19 +23,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(produces = "application/json")
 public class EventRegistrationsController {
-    private final EventsRepository eventsRepository;
     private final EventRegistrationUseCase useCase;
-    private final EventModelAssembler eventModelAssembler;
 
-    public EventRegistrationsController(EventsRepository eventsRepository, EventRegistrationUseCase useCase, EventModelAssembler eventModelAssembler) {
-        this.eventsRepository = eventsRepository;
+    public EventRegistrationsController(EventRegistrationUseCase useCase) {
         this.useCase = useCase;
-        this.eventModelAssembler = eventModelAssembler;
     }
 
     @Operation(
-            operationId = "registerMemberForEvent",
-            summary = "Registers member to event",
+            operationId = "getRegistrationForm",
+            summary = "Returns data for registration form",
             parameters = {
                     @Parameter(name = "eventId", description = "ID události", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer")),
                     @Parameter(name = "memberId", description = "ID clena", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer"))
@@ -48,15 +44,15 @@ public class EventRegistrationsController {
                     @ApiResponse(responseCode = "404", description = "Event with given doesn't exist")
             }
     )
-    @GetMapping("/events/{eventId}/registrationForm/{memberId}")
+    @GetMapping("/events/{eventId}/registrationForms/{memberId}")
     @ResponseStatus(HttpStatus.OK)
     ResponseEntity<EventRegistrationForm> getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
         return ResponseEntity.ok(useCase.createEventRegistrationForm(new Event.Id(event), new MemberId(memberId)));
     }
 
     @Operation(
-            operationId = "registerMemberForEvent",
-            summary = "Registers member to event",
+            operationId = "submitRegistrationForm",
+            summary = "Submits registration form - registers member to event",
             parameters = {
                     @Parameter(name = "eventId", description = "ID události", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer")),
                     @Parameter(name = "memberId", description = "ID clena", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer"))
@@ -69,19 +65,18 @@ public class EventRegistrationsController {
                     @ApiResponse(responseCode = "404", description = "Event with given doesn't exist")
             }
     )
-    @PutMapping("/events/{eventId}/registrationForm/{memberId}")
+    @PutMapping("/events/{eventId}/registrationForms/{memberId}")
     @ResponseStatus(HttpStatus.CREATED)
-    void submitRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId, @RequestBody EventRegistrationForm form) {
+    ResponseEntity<Void> submitRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId, @RequestBody EventRegistrationForm form) {
         useCase.registerForEvent(new Event.Id(event), new MemberId(memberId), form);
+        return ResponseEntity.created(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass())
+                .getEventRegistrationForm(event, memberId)).toUri()).build();
     }
 
-    @RequestMapping(
-            method = RequestMethod.DELETE,
-            value = "/events/{eventId}/registrations/{memberId}",
-            produces = {"application/json"}
-    )
+    @DeleteMapping("/events/{eventId}/registrationForms/{memberId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void cancelEventRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
+    ResponseEntity<Void> cancelEventRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
         useCase.cancelMemberRegistration(new Event.Id(eventId), new MemberId(memberId));
+        return ResponseEntity.noContent().build();
     }
 }
