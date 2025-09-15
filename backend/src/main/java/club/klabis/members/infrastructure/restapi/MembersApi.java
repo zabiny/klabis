@@ -24,7 +24,6 @@ import jakarta.validation.Valid;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -39,12 +38,10 @@ public class MembersApi {
 
     private final MembersRepository membersRepository;
     private final MemberModelAssembler memberModelAssembler;
-    private final PagedResourcesAssembler<Member> pagedResourcesAssembler;
 
-    public MembersApi(MembersRepository membersRepository, MemberModelAssembler memberModelAssembler, PagedResourcesAssembler<Member> pagedResourcesAssembler) {
+    public MembersApi(MembersRepository membersRepository, MemberModelAssembler memberModelAssembler) {
         this.membersRepository = membersRepository;
         this.memberModelAssembler = memberModelAssembler;
-        this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
     /**
@@ -80,10 +77,7 @@ public class MembersApi {
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
 
-        PagedModel<MembersApiResponse> model = pagedResourcesAssembler.toModel(result,
-                memberModelAssembler);
-
-        return ResponseEntity.ok(model);
+        return ResponseEntity.ok(memberModelAssembler.toPagedModel(result));
     }
 
     /**
