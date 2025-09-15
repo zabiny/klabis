@@ -21,6 +21,7 @@ import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material'
 import {useGetMember} from '../api/membersApi';
 import EditOwnMemberInfoForm from '../components/EditOwnMemberInfoForm.tsx';
 import MemberSuspendConfirmationDialog from "../components/MemberSuspendConfirmationDialog.tsx";
+import {hasAction} from "../hooks/klabisJsonUtils.tsx";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -105,12 +106,15 @@ const MemberDetailPage = () => {
                 <Button startIcon={<ArrowBackIcon/>} onClick={handleBack}>
                     Zpět na seznam členů
                 </Button>
-                <Button startIcon={<EditIcon/>} variant="contained" color="primary" onClick={handleEdit}>
-                    Upravit
-                </Button>
-                <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
+                {hasAction(member, "members:editOwnInfo") && (
+                    <Button startIcon={<EditIcon/>} variant="contained" color="primary" onClick={handleEdit}>
+                        Upravit
+                    </Button>
+                )}
+                {hasAction(member, 'cancel') && (
+                    <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
                     Zrušit členství
-                </Button>
+                    </Button>)}
             </Box>
 
             <Dialog open={isEditModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
