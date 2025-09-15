@@ -1,4 +1,4 @@
-import React, {cloneElement, isValidElement, useState} from 'react';
+import React, {isValidElement} from 'react';
 // Import pro MuiTableCell
 import {
     Alert,
@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import {useKlabisApi} from './useKlabisApi';
 import {type SortDirection} from './types';
-import {SortableTableCell} from './SortableTableCell';
+import {KlabisTableProvider, useKlabisTableContext} from "./KlabisTableContext.tsx";
 
 interface KlabisTableProps<T = any> {
     api: string;
@@ -28,72 +28,26 @@ interface KlabisTableProps<T = any> {
     queryKey?: string;
 }
 
-interface TableApiParams {
-    size: number,
-    sort: string[],
-    page: number,
-    additionalParams: Record<string, any>
-}
+const KlabisTableInner = <T extends Record<string, any>>({
+                                                             api,
+                                                             children,
+                                                             onRowClick,
+                                                             queryKey,
+                                                         }: KlabisTableProps<T>) => {
+    const tableContext = useKlabisTableContext();
+    console.table(tableContext);
 
-export const KlabisTable = <T extends Record<string, any>>({
-                                                               api,
-                                                               children,
-                                                               onRowClick,
-                                                               defaultOrderBy,
-                                                               defaultOrderDirection = 'asc',
-                                                               defaultRowsPerPage = 10,
-                                                               additionalParams = {},
-                                                               queryKey,
-                                                           }: KlabisTableProps<T>) => {
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
-    const [orderBy, setOrderBy] = useState<string | undefined>(defaultOrderBy);
-    const [orderDirection, setOrderDirection] = useState<SortDirection>(defaultOrderDirection);
-
-    // Vytvoření parametrů pro API volání
-    const apiParams = {
-        page,
-        size: rowsPerPage,
-        sort: orderBy ? [`${orderBy},${orderDirection}`] : [],
-        ...additionalParams,
-    };
-
-    const {data, isLoading, error} = useKlabisApi<T>(api, apiParams, queryKey);
-
-    const handleChangePage = (event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    const handleRequestSort = (column: string) => {
-        const isAsc = orderBy === column && orderDirection === 'asc';
-        setOrderDirection(isAsc ? 'desc' : 'asc');
-        setOrderBy(column);
-        setPage(0);
-    };
+    const {data, isLoading, error} = useKlabisApi<T>(api, tableContext.createApiParams(), queryKey);
 
     // Funkce pro klonování dětských komponent s props
     const renderHeaderCells = () => {
         return React.Children.map(children, (child) => {
             if (isValidElement(child)) {
-                if (child.type === SortableTableCell) {
-                    return cloneElement(child as React.ReactElement<any>, {
-                        orderBy,
-                        orderDirection,
-                        onRequestSort: handleRequestSort,
-                    });
-                }
                 return child;
             }
             return child;
         });
     };
-
-    console.table(data);
 
     // Funkce pro vykreslení dat v řádcích
     const renderTableRows = () => {
@@ -155,10 +109,10 @@ export const KlabisTable = <T extends Record<string, any>>({
                 rowsPerPageOptions={[5, 10, 25, 50]}
                 component="div"
                 count={data?.data.page.totalElements || 0}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPage={tableContext.rowsPerPage}
+                page={tableContext.page}
+                onPageChange={tableContext.handleChangePage}
+                onRowsPerPageChange={tableContext.handleChangeRowsPerPage}
                 labelRowsPerPage="Řádků na stránku:"
                 labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}
             />
@@ -166,3 +120,8 @@ export const KlabisTable = <T extends Record<string, any>>({
     );
 };
 
+export const KlabisTable = <T extends Record<string, any>>(props: KlabisTableProps<T>) => {
+    return <KlabisTableProvider {...props}>
+        <KlabisTableInner {...props}/>
+    </KlabisTableProvider>
+};

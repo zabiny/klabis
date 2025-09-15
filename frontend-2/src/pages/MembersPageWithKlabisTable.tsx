@@ -96,26 +96,41 @@ const MembersPageWithKlabisTable = () => {
                 />
             )}
 
-            <KlabisTable<Member>
-                api="/members"
-                onRowClick={handleRowClick}
-                defaultOrderBy="lastName"
-                defaultOrderDirection="asc"
-                additionalParams={additionalParams}
-                queryKey="members-table"
-            >
-                <TableCell column="id">ID</TableCell>
-                <SortableTableCell column="firstName">Jméno</SortableTableCell>
-                <SortableTableCell column="lastName">Příjmení</SortableTableCell>
-                <SortableTableCell column="registrationNumber">Registrační číslo</SortableTableCell>
-                {view === 'DETAILED' && (
-                    <>
-                        <TableCell column="sex">Pohlaví</TableCell>
-                        <SortableTableCell column="dateOfBirth">Datum narození</SortableTableCell>
-                        <TableCell column="nationality">Národnost</TableCell>
-                    </>
-                )}
-            </KlabisTable>
+            {view !== 'DETAILED' && (
+                <KlabisTable<Member>
+                    api="/members"
+                    onRowClick={handleRowClick}
+                    defaultOrderBy="lastName"
+                    defaultOrderDirection="asc"
+                    additionalParams={additionalParams}
+                    queryKey="members-table"
+                >
+                    <TableCell column="id">ID</TableCell>
+                    <SortableTableCell column="firstName">Jméno</SortableTableCell>
+                    <SortableTableCell column="lastName">Příjmení</SortableTableCell>
+                    <SortableTableCell column="registrationNumber">Registrační číslo</SortableTableCell>
+                </KlabisTable>
+            )}
+
+            {view === 'DETAILED' && (
+                <KlabisTable<Member>
+                    api="/members"
+                    onRowClick={handleRowClick}
+                    defaultOrderBy="lastName"
+                    defaultOrderDirection="asc"
+                    additionalParams={additionalParams}
+                    queryKey="members-table"
+                >
+                    <TableCell column="id">ID</TableCell>
+                    <SortableTableCell column="firstName">Jméno</SortableTableCell>
+                    <SortableTableCell column="lastName">Příjmení</SortableTableCell>
+                    <SortableTableCell column="registrationNumber">Registrační číslo</SortableTableCell>
+                    <TableCell column="sex">Pohlaví</TableCell>
+                    <SortableTableCell column="dateOfBirth">Datum narození</SortableTableCell>
+                    <TableCell column="nationality">Národnost</TableCell>
+                </KlabisTable>)}
+
+
         </Box>
     );
 };

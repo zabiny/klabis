@@ -22,6 +22,7 @@ export type ApiResponse<T> = {
 export const useApiQuery = <T>(
     queryKey: string[],
     url: string,
+    apiParams?: string | URLSearchParams,
     options?: UseQueryOptions<ApiResponse<T>, AxiosError>
 ) => {
     useApiSetup();
@@ -30,6 +31,7 @@ export const useApiQuery = <T>(
         queryKey,
         queryFn: async () => {
             const response = await apiClient.get<T>(url, {
+                params: apiParams,
                 headers: {
                     Accept: 'application/klabis+json,application/json',
                 },

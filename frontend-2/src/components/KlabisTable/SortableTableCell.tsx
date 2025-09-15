@@ -1,33 +1,28 @@
 import React from 'react';
 import {TableCell as MuiTableCell, TableSortLabel} from '@mui/material';
-import {type SortDirection} from './types';
+import {useKlabisTableContext} from "./KlabisTableContext.tsx";
 
 interface SortableTableCellProps {
     column: string;
-    children: React.ReactNode;
-    orderBy?: string;
-    orderDirection?: SortDirection;
-    onRequestSort?: (column: string) => void;
+    children: React.ReactNode
 }
 
 export const SortableTableCell: React.FC<SortableTableCellProps> = ({
                                                                         column,
                                                                         children,
-                                                                        orderBy,
-                                                                        orderDirection,
-                                                                        onRequestSort,
                                                                     }) => {
+
+    const tableContext = useKlabisTableContext();
+
     const handleSort = () => {
-        if (onRequestSort) {
-            onRequestSort(column);
-        }
+        tableContext.handleRequestSort(column);
     };
 
     return (
         <MuiTableCell>
             <TableSortLabel
-                active={orderBy === column}
-                direction={orderBy === column ? orderDirection : 'asc'}
+                active={tableContext.orderBy === column}
+                direction={tableContext.orderBy === column ? tableContext.orderDirection : 'asc'}
                 onClick={handleSort}
                 sx={{cursor: 'pointer'}}
             >

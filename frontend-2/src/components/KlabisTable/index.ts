@@ -1,4 +1,5 @@
 export {KlabisTable} from './KlabisTable';
 export {TableCell} from './TableCell';
 export {SortableTableCell} from './SortableTableCell';
+export {useKlabisTableContext, KlabisTableProvider} from './KlabisTableContext';
 export * from './types';
