@@ -10,7 +10,7 @@ import GroupsPage from './pages/GroupsPage';
 import LoginPage from './pages/LoginPage';
 
 import theme from './theme';
-import MembersPageWithKlabisTable from "./pages/MembersPageWithKlabisTable.tsx";
+import MembersPage from "./pages/MembersPage.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -46,7 +46,7 @@ function App() {
                         </ProtectedRoute>
                     }>
                         <Route index element={<HomePage/>}/>
-                        <Route path="members" element={<MembersPageWithKlabisTable/>}/>
+                        <Route path="members" element={<MembersPage/>}/>
                         <Route path="members/:memberId" element={<MemberDetailPage/>}/>
                         <Route path="events" element={<EventsPage/>}/>
                         <Route path="groups" element={<GroupsPage/>}/>
