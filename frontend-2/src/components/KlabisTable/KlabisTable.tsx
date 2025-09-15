@@ -1,4 +1,4 @@
-import React, {isValidElement, type ReactElement, type ReactNode} from 'react';
+import React, {isValidElement, type ReactElement, type ReactNode, useEffect} from 'react';
 // Import pro MuiTableCell
 import {
     Alert,
@@ -21,6 +21,8 @@ interface KlabisTableProps<T = any> {
     api: string;
     children: React.ReactNode;
     onRowClick?: (item: T) => void;
+    // can be used to update UI based on klabis actions loaded in API used from Klabis Table.
+    onTableActionsLoaded?: (actions: string[]) => void,
     defaultOrderBy?: string;
     defaultOrderDirection?: SortDirection;
     defaultRowsPerPage?: number;
@@ -61,9 +63,16 @@ const KlabisTableInner = <T extends Record<string, any>>({
                                                              children,
                                                              onRowClick,
                                                              queryKey,
+                                                             onTableActionsLoaded
                                                          }: KlabisTableProps<T>) => {
     const tableContext = useKlabisTableContext();
     const {data, isLoading, error} = useKlabisApi<T>(api, tableContext.createApiParams(), queryKey);
+
+    useEffect(() => {
+        if (onTableActionsLoaded) {
+            onTableActionsLoaded(data?.data._actions || []);
+        }
+    }, [data]);
 
     // Funkce pro klonování dětských komponent s props
     const renderHeaderCells = () => {

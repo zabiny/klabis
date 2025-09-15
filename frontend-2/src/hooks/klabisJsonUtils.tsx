@@ -2,7 +2,24 @@ export interface KlabisHateoasObject {
     _actions?: Array<string>
 }
 
-export const hasAction = (item: KlabisHateoasObject, action: string): boolean => {
-    return (Array.isArray(item?._actions || null) && item._actions?.includes(action)) || false;
+function isKlabisHateoasObject(item: KlabisHateoasObject | string[]) {
+    return (item as KlabisHateoasObject)._actions !== undefined;
 }
+
+export const hasAction = (item: KlabisHateoasObject | string[] | undefined, action: string): boolean => {
+    if (item === undefined) {
+        return false;
+    }
+
+    if (Array.isArray(item)) {
+        return item.includes(action) || false;
+    }
+
+    if (isKlabisHateoasObject(item)) {
+        return hasAction(item._actions || [], action);
+    }
+
+    return false;
+}
+
 

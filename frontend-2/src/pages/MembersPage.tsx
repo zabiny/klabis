@@ -4,7 +4,6 @@ import {Box, Button, FormControlLabel, Switch, Typography,} from '@mui/material'
 import {KlabisTable, SortableTableCell, TableCell} from '../components/KlabisTable';
 import RegisterMemberDialog from "../components/RegisterMemberForm.tsx";
 import {hasAction} from "../hooks/klabisJsonUtils.tsx";
-import {useGetMembers} from '../api/membersApi';
 
 interface Member {
     id: number;
@@ -22,16 +21,7 @@ const MembersPage = () => {
     const [view, setView] = useState<'SUMMARY' | 'DETAILED'>('SUMMARY');
     const [openRegisterDialog, setOpenRegisterDialog] = useState(false);
 
-    // Pro kontrolu oprávnění stále potřebujeme původní API call
-    const {data: membersResponse} = useGetMembers({
-        suspended: showSuspended,
-        view: view,
-        page: 0,
-        size: 1,
-        sort: []
-    });
-
-    console.log(`view: ${view}, Suspended: ${showSuspended}`)
+    const [tableActions, setTableActions] = useState<string[]>();
 
     const handleShowSuspendedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setShowSuspended(event.target.checked);
@@ -45,7 +35,7 @@ const MembersPage = () => {
         navigate(`/members/${member.id}`);
     };
 
-    const canRegisterMember = membersResponse && hasAction(membersResponse.data, 'members:register') || false;
+    const canRegisterMember = hasAction(tableActions, 'members:register') || false;
 
     const additionalParams = {
         suspended: showSuspended,
@@ -104,6 +94,7 @@ const MembersPage = () => {
                 defaultOrderBy="lastName"
                 defaultOrderDirection="asc"
                 additionalParams={additionalParams}
+                onTableActionsLoaded={setTableActions}
                 queryKey="members-table"
             >
                 <TableCell column="id">ID</TableCell>
