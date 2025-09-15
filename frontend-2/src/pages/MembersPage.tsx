@@ -15,6 +15,12 @@ interface Member {
     nationality: string;
 }
 
+const Actions = ({value}: { value: string[] }): React.ReactNode => {
+    return (
+        <span>{value.map(s => <div>{s}</div>)}</span>
+    );
+}
+
 const MembersPage = () => {
     const navigate = useNavigate();
     const [showSuspended, setShowSuspended] = useState(false);
@@ -104,6 +110,8 @@ const MembersPage = () => {
                 <TableCell hidden={view === 'SUMMARY'} column="sex">Pohlaví</TableCell>
                 <TableCell sortable hidden={view === 'SUMMARY'} column="dateOfBirth">Datum narození</TableCell>
                 <TableCell hidden={view === 'SUMMARY'} column="nationality">Národnost</TableCell>
+                <TableCell hidden={view === 'SUMMARY'} column="_actions"
+                           as={props => (<Actions value={props.value}/>)}>Akce</TableCell>
             </KlabisTable>
 
         </Box>
