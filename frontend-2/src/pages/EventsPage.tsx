@@ -1,6 +1,6 @@
 import {Box, Typography,} from '@mui/material';
 import {type EventListItem} from '../api/eventsApi';
-import {KlabisTable, SortableTableCell, TableCell} from "../components/KlabisTable";
+import {KlabisTable, TableCell} from "../components/KlabisTable";
 
 const EventsPage = () => {
     // Function to format date
@@ -40,12 +40,12 @@ const EventsPage = () => {
             </Typography>
 
             <KlabisTable<EventListItem> api={"/events"}>
-                <SortableTableCell column={"date"}>Datum</SortableTableCell>
-                <SortableTableCell column={"name"}>Název</SortableTableCell>
+                <TableCell sortable column={"date"}>Datum</TableCell>
+                <TableCell sortable column={"name"}>Název</TableCell>
                 <TableCell hidden column={"type"}>Typ</TableCell>
-                <SortableTableCell column={"organizer"}>Pořadatel</SortableTableCell>
-                <SortableTableCell hidden column={"coordinator"}>Koordinátor</SortableTableCell>
-                <SortableTableCell column={"registrationDeadline"}>Uzávěrka přihlášek</SortableTableCell>
+                <TableCell sortable column={"organizer"}>Pořadatel</TableCell>
+                <TableCell hidden sortable column={"coordinator"}>Koordinátor</TableCell>
+                <TableCell sortable column={"registrationDeadline"}>Uzávěrka přihlášek</TableCell>
                 <TableCell hidden column={"web"}>Web</TableCell>
 
             </KlabisTable>

@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Box, Button, FormControlLabel, Switch, Typography,} from '@mui/material';
-import {KlabisTable, SortableTableCell, TableCell} from '../components/KlabisTable';
+import {KlabisTable, TableCell} from '../components/KlabisTable';
 import RegisterMemberDialog from "../components/RegisterMemberForm.tsx";
 import {hasAction} from "../hooks/klabisJsonUtils.tsx";
 
@@ -98,12 +98,11 @@ const MembersPage = () => {
                 queryKey="members-table"
             >
                 <TableCell column="id">ID</TableCell>
-                <SortableTableCell column="firstName">Jméno</SortableTableCell>
-                <SortableTableCell column="lastName">Příjmení</SortableTableCell>
-                <SortableTableCell column="registrationNumber">Registrační číslo</SortableTableCell>
+                <TableCell sortable column="firstName">Jméno</TableCell>
+                <TableCell sortable column="lastName">Příjmení</TableCell>
+                <TableCell sortable column="registrationNumber">Registrační číslo</TableCell>
                 <TableCell hidden={view === 'SUMMARY'} column="sex">Pohlaví</TableCell>
-                <SortableTableCell hidden={view === 'SUMMARY'} column="dateOfBirth">Datum
-                    narození</SortableTableCell>
+                <TableCell sortable hidden={view === 'SUMMARY'} column="dateOfBirth">Datum narození</TableCell>
                 <TableCell hidden={view === 'SUMMARY'} column="nationality">Národnost</TableCell>
             </KlabisTable>
 
