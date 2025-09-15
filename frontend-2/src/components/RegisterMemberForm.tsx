@@ -2,6 +2,9 @@ import React, {useState} from 'react';
 import {Alert, Button, Dialog, DialogContent, Grid, MenuItem, Paper, Stack, TextField, Typography} from '@mui/material';
 import {type MemberRegistrationForm, useRegisterMember} from '../api/membersApi.ts';
 
+import AddressFields from './AddressFields';
+import ContactFields from './ContactFields';
+
 // UI komponenta pro formulář registrace nového člena
 interface RegisterMemberFormUIProps {
     formData: MemberRegistrationForm;
@@ -182,72 +185,19 @@ const RegisterMemberFormUI = ({
                     <Grid item xs={12}>
                         <Typography variant="h6" gutterBottom>Adresa</Typography>
                     </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label="Ulice a číslo"
-                            required
-                            value={formState.address.streetAndNumber}
-                            onChange={e => handleInputChange('address.streetAndNumber', e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Město"
-                            required
-                            value={formState.address.city}
-                            onChange={e => handleInputChange('address.city', e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={3}>
-                        <TextField
-                            fullWidth
-                            label="PSČ"
-                            required
-                            value={formState.address.postalCode}
-                            onChange={e => handleInputChange('address.postalCode', e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={3}>
-                        <TextField
-                            fullWidth
-                            label="Země"
-                            required
-                            value={formState.address.country}
-                            onChange={e => handleInputChange('address.country', e.target.value)}
-                        />
-                    </Grid>
+                    <AddressFields
+                        value={formState.address}
+                        onChange={address => setFormState(prev => ({...prev, address}))}
+                    />
 
                     {/* Kontaktní údaje */}
                     <Grid item xs={12}>
                         <Typography variant="h6" gutterBottom>Kontaktní údaje</Typography>
                     </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <TextField
-                            fullWidth
-                            label="Email"
-                            value={formState.contact?.email ?? ''}
-                            onChange={e => handleInputChange('contact.email', e.target.value)}
-                            type="email"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <TextField
-                            fullWidth
-                            label="Telefon"
-                            value={formState.contact?.phone ?? ''}
-                            onChange={e => handleInputChange('contact.phone', e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <TextField
-                            fullWidth
-                            label="Poznámka"
-                            value={formState.contact?.note ?? ''}
-                            onChange={e => handleInputChange('contact.note', e.target.value)}
-                        />
-                    </Grid>
+                    <ContactFields
+                        value={formState.contact ?? {email: '', phone: '', note: ''}}
+                        onChange={contact => setFormState(prev => ({...prev, contact}))}
+                    />
 
                     {/* Právní zástupci */}
                     <Grid item xs={12}>
@@ -282,37 +232,14 @@ const RegisterMemberFormUI = ({
                                                 required
                                             />
                                         </Grid>
-                                        <Grid item xs={12} sm={4}>
-                                            <TextField
-                                                fullWidth
-                                                label="Email"
-                                                value={g.contact?.email || ''}
-                                                onChange={e =>
-                                                    handleGuardianChange(idx, 'contact.email', e.target.value)
-                                                }
-                                                type="email"
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={4}>
-                                            <TextField
-                                                fullWidth
-                                                label="Telefon"
-                                                value={g.contact?.phone || ''}
-                                                onChange={e =>
-                                                    handleGuardianChange(idx, 'contact.phone', e.target.value)
-                                                }
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={4}>
-                                            <TextField
-                                                fullWidth
-                                                label="Poznámka"
-                                                value={g.contact?.note || ''}
-                                                onChange={e =>
-                                                    handleGuardianChange(idx, 'contact.note', e.target.value)
-                                                }
-                                            />
-                                        </Grid>
+                                        <ContactFields
+                                            value={{
+                                                email: g.contact?.email || '',
+                                                phone: g.contact?.phone || '',
+                                                note: g.contact?.note || '',
+                                            }}
+                                            onChange={c => handleGuardianChange(idx, 'contact', c)}
+                                        />
                                         <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
@@ -396,14 +323,6 @@ const RegisterMemberFormUI = ({
                                 disabled={disabled}
                             >
                                 Registrovat člena
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                color="secondary"
-                                onClick={handleReset}
-                                disabled={disabled}
-                            >
-                                Obnovit
                             </Button>
                         </Stack>
                     </Grid>
