@@ -4,13 +4,13 @@ import CssBaseline from '@mui/material/CssBaseline';
 import {AuthProvider, useAuth} from './contexts/AuthContext2';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
-import MembersPage from './pages/MembersPage';
 import MemberDetailPage from './pages/MemberDetailPage';
 import EventsPage from './pages/EventsPage';
 import GroupsPage from './pages/GroupsPage';
 import LoginPage from './pages/LoginPage';
 
 import theme from './theme';
+import MembersPageWithKlabisTable from "./pages/MembersPageWithKlabisTable.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -46,7 +46,7 @@ function App() {
                         </ProtectedRoute>
                     }>
                         <Route index element={<HomePage/>}/>
-                        <Route path="members" element={<MembersPage/>}/>
+                        <Route path="members" element={<MembersPageWithKlabisTable/>}/>
                         <Route path="members/:memberId" element={<MemberDetailPage/>}/>
                         <Route path="events" element={<EventsPage/>}/>
                         <Route path="groups" element={<GroupsPage/>}/>
