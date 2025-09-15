@@ -23,11 +23,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Validated
 @Tag(name = "Members")
@@ -75,9 +79,25 @@ public class MembersApi {
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
-        Page<Member> result = membersRepository.findAllBySuspended(suspended, pageable);
+        Page<Member> result = membersRepository.findAllBySuspended(suspended, toEntityPageable(pageable));
 
         return ResponseEntity.ok(memberModelAssembler.toPagedModel(result));
+    }
+
+    private String translateDtoToEntityPropertyName(String propertyName) {
+        if ("registrationNumber".equals(propertyName)) {
+            return "registration";
+        } else {
+            return propertyName;
+        }
+    }
+
+    private Pageable toEntityPageable(Pageable dtoPageable) {
+        List<Sort.Order> updatedSorts = dtoPageable.getSort()
+                .stream()
+                .map(s -> s.withProperty(translateDtoToEntityPropertyName(s.getProperty())))
+                .toList();
+        return PageRequest.of(dtoPageable.getPageNumber(), dtoPageable.getPageSize(), Sort.by(updatedSorts));
     }
 
     /**

@@ -102,9 +102,40 @@ export interface EditMyDetailsForm {
     medicCourse?: boolean;
 }
 
+export interface GetMembersParams {
+    suspended?: boolean;
+    view?: 'SUMMARY' | 'DETAILED';
+    page?: number;
+    size?: number;
+    sort?: string[];
+}
+
 // Hooks for members API
-export const useGetMembers = (view: 'full' | 'compact' = 'compact', suspended: boolean = false) => {
-    return useApiQuery<MembersList>(['members', view, suspended.toString()], `/members?view=${view}&suspended=${suspended}`);
+export const useGetMembers = (params: GetMembersParams = {}) => {
+    const {
+        suspended = false,
+        view = 'DETAILED',
+        page = 0,
+        size = 20,
+        sort = []
+    } = params;
+
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    queryParams.append('suspended', suspended.toString());
+    queryParams.append('view', view);
+    queryParams.append('page', page.toString());
+    queryParams.append('size', size.toString());
+
+    // Add sort parameters
+    sort.forEach(sortParam => {
+        queryParams.append('sort', sortParam);
+    });
+
+    const queryString = queryParams.toString();
+    const queryKey = ['members', suspended.toString(), view, page.toString(), size.toString(), ...sort];
+
+    return useApiQuery<MembersList>(queryKey, `/members?${queryString}`);
 };
 
 export const useGetMember = (memberId: number) => {

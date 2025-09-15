@@ -268,7 +268,6 @@ interface DialogProps {
 }
 
 export const RegisterMemberFormDialog = ({open, onClose, onSuccess}: DialogProps) => {
-    console.log('Is opened: ' + JSON.stringify(open));
     return (<Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogContent>
             <RegisterMemberForm/>
