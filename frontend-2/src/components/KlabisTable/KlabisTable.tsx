@@ -30,10 +30,17 @@ interface KlabisTableProps<T = any> {
     queryKey?: string;
 }
 
+interface RenderProps {
+    item: any;
+    column: string;
+    value: any;
+}
+
 interface TableColumn {
     headerNode: ReactElement,
     column: string,
-    hidden: boolean
+    hidden: boolean,
+    renderFunc?: (props: RenderProps) => React.ReactNode
 }
 
 const convertToTableColumn = (child: ReactNode): TableColumn | null => {
@@ -44,10 +51,13 @@ const convertToTableColumn = (child: ReactNode): TableColumn | null => {
 
         const hidden = child.props?.hidden as boolean;
         const column = child.props?.column as string;
+        const renderFunc = child.props?.as as ((props: RenderProps) => React.ReactNode) | undefined;
 
         return {
             headerNode: child,
-            hidden: hidden, column: column
+            hidden: hidden,
+            column: column,
+            renderFunc: renderFunc
         } as TableColumn;
     }
 
@@ -102,9 +112,12 @@ const KlabisTableInner = <T extends Record<string, any>>({
                         const column = convertToTableColumn(child);
                         if (column && !column.hidden) {
                             const value = item[column.column];
+                            const cellContent = column.renderFunc
+                                ? column.renderFunc({item, column: column.column, value})
+                                : value;
                             return (
                                 <MuiTableCell key={column.column}>
-                                    {value}
+                                    {cellContent}
                                 </MuiTableCell>
                             );
                         }
@@ -148,7 +161,7 @@ const KlabisTableInner = <T extends Record<string, any>>({
                 rowsPerPageOptions={[5, 10, 25, 50]}
                 component="div"
                 count={data?.data.page.totalElements || 0}
-                rowsPerPage={tableContext.rowsPerPage}
+                rowsPerPage={tableContext.rowsPerPage} x
                 page={tableContext.page}
                 onPageChange={tableContext.handleChangePage}
                 onRowsPerPageChange={tableContext.handleChangeRowsPerPage}

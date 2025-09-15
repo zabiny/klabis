@@ -2,11 +2,18 @@ import React from 'react';
 import {TableCell as MuiTableCell, TableSortLabel} from '@mui/material';
 import {useKlabisTableContext} from "./KlabisTableContext.tsx";
 
+interface RenderProps {
+    item: any;
+    column: string;
+    value: any;
+}
+
 interface TableCellProps {
     column: string;
     hidden?: boolean,
     sortable?: boolean,
     children: React.ReactNode;
+    as?: (props: RenderProps) => React.ReactNode;
 }
 
 interface SortLabelProps {
