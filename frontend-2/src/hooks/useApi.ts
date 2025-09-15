@@ -41,7 +41,7 @@ export const useApiQuery = <T>(
 };
 
 // Hook for POST requests
-export const useApiMutation = <T, R>(
+export const useApiPostMutation = <T, R>(
     url: string,
     options?: UseMutationOptions<ApiResponse<R>, AxiosError, T>
 ) => {

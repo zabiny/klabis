@@ -1,4 +1,4 @@
-import {useApiDeleteMutation, useApiMutation, useApiPutMutation, useApiQuery} from '../hooks/useApi';
+import {useApiDeleteMutation, useApiPostMutation, useApiPutMutation, useApiQuery} from '../hooks/useApi';
 
 // Types based on the API specification
 export interface MembersGroupListItem {
@@ -36,7 +36,7 @@ export const useGetGroup = (groupId: number) => {
 };
 
 export const useCreateGroup = () => {
-    return useApiMutation<MembersGroup, MembersGroup>('/memberGroups');
+    return useApiPostMutation<MembersGroup, MembersGroup>('/memberGroups');
 };
 
 export const useUpdateGroup = (groupId: number) => {

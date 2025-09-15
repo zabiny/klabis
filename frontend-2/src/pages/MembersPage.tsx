@@ -18,6 +18,8 @@ import {
     Typography,
 } from '@mui/material';
 import {useGetMembers} from '../api/membersApi';
+import RegisterMemberDialog from "../components/RegisterMemberForm.tsx";
+import {hasAction} from "../hooks/klabisJsonUtils.tsx";
 
 const MembersPage = () => {
     const navigate = useNavigate();
@@ -50,6 +52,13 @@ const MembersPage = () => {
         navigate(`/members/${memberId}`);
     };
 
+    // Vlastní stav pro otevření/zavření dialogu a logika
+    const [openRegisterDialog, setOpenRegisterDialog] = useState(false);
+
+    // Vyhodnocení povolení akce registrace podle _actions z members response
+    // (hasAction je importován z ../hooks/klabisJsonUtils)
+    const canRegisterMember = membersResponse && hasAction(membersResponse.data, 'members:register') || false;
+
     return (
         <Box>
             <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
@@ -75,8 +84,26 @@ const MembersPage = () => {
                     >
                         {view === 'compact' ? 'Zobrazit detaily' : 'Skrýt detaily'}
                     </Button>
+                    {canRegisterMember && (
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            sx={{ml: 2}}
+                            onClick={() => setOpenRegisterDialog(true)}
+                        >
+                            Registrovat nového člena
+                        </Button>
+                    )}
                 </Box>
             </Box>
+            {/* Dialog pro registraci člena */}
+            {canRegisterMember && (
+                <RegisterMemberDialog
+                    open={openRegisterDialog}
+                    onClose={() => setOpenRegisterDialog(false)}
+                    onSuccess={() => setOpenRegisterDialog(false)}
+                />
+            )}
 
             {isLoading ? (
                 <Box sx={{display: 'flex', justifyContent: 'center', mt: 4}}>

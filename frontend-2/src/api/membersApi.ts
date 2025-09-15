@@ -1,4 +1,4 @@
-import {useApiPutMutation, useApiQuery} from '../hooks/useApi';
+import {useApiPostMutation, useApiPutMutation, useApiQuery} from '../hooks/useApi';
 import {useQueryClient} from '@tanstack/react-query';
 import type {QueryClient} from "@tanstack/query-core";
 import type {KlabisHateoasObject} from '../hooks/klabisJsonUtils'
@@ -58,7 +58,7 @@ export interface Member extends KlabisHateoasObject {
     medicCourse?: boolean;
 }
 
-export interface MembersList {
+export interface MembersList extends KlabisHateoasObject {
     content: Member[];
     page: {
         size: number;
@@ -190,6 +190,29 @@ export interface MemberRegistrationForm {
     registrationNumber?: string;
     orisId?: number;
 }
+
+// --- REGISTRACE NOVÉHO ČLENA ---
+// GET - načte šablonu formuláře pro registraci
+export const useGetMemberRegistrationForm = () => {
+    return useApiQuery<MemberRegistrationForm>(
+        ['memberRegistrationForm'],
+        `/memberRegistrations`
+    );
+};
+
+// POST - odešle data nové registrace
+export const useRegisterMember = () => {
+    const queryClient = useQueryClient();
+    // Případně můžeme invalidovat seznam členů
+    return useApiPostMutation<MemberRegistrationForm, void>(
+        `/memberRegistrations`,
+        {
+            onSuccess: () => {
+                queryClient.invalidateQueries({queryKey: ['members']});
+            }
+        }
+    );
+};
 
 export const useGetSuspendMembershipForm = (memberId: number) => {
     return useApiQuery<MembershipSuspensionInfo>(
