@@ -35,13 +35,19 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
             target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
                     .value())).withRel(
-                    "members:editAnotherMember"));
+                    ApplicationGrant.MEMBERS_EDIT.getGrantName()));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
             target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
                     .value())).withRel(
-                    "members:suspend"));
+                    ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()));
+        }
+
+        if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
+            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                    .value())).withRel(
+                    ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName()));
         }
     }
 

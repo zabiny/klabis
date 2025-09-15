@@ -232,3 +232,45 @@ export const useSuspendMembership = (memberId: number, force: boolean = false) =
         }
     );
 };
+
+// Types for permissions/grants
+export type GrantType = 'members:register' | 'members:edit' | 'members:suspendMembership' | 'members:permissions';
+
+export interface GlobalGrantDetail extends KlabisHateoasObject {
+    grant: GrantType;
+    description: string;
+}
+
+export interface GetAllGrants extends KlabisHateoasObject {
+    grants: GlobalGrantDetail[];
+}
+
+export interface MemberGrantsForm extends KlabisHateoasObject {
+    grants: GrantType[];
+}
+
+// Hooks for grants/permissions API
+export const useGetAllGrants = () => {
+    return useApiQuery<GetAllGrants>(['allGrants'], `/grants`);
+};
+
+export const useGetMemberGrants = (memberId: number) => {
+    return useApiQuery<MemberGrantsForm>(
+        ['memberGrants', memberId.toString()],
+        `/members/${memberId}/changeGrantsForm`
+    );
+};
+
+export const useUpdateMemberGrants = (memberId: number) => {
+    const queryClient = useQueryClient();
+
+    return useApiPutMutation<MemberGrantsForm, void>(
+        `/members/${memberId}/changeGrantsForm`,
+        {
+            onSuccess: () => {
+                queryClient.invalidateQueries({queryKey: ['memberGrants', memberId.toString()]});
+                queryClient.invalidateQueries({queryKey: ['allGrants']});
+            }
+        }
+    );
+};

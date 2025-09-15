@@ -21,6 +21,7 @@ import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material'
 import {useGetMember} from '../api/membersApi';
 import EditOwnMemberInfoForm from '../components/EditOwnMemberInfoForm.tsx';
 import MemberSuspendConfirmationDialog from "../components/MemberSuspendConfirmationDialog.tsx";
+import EditMemberPermissionsDialog from "../components/EditMemberPermissionsDialog.tsx";
 import {hasAction} from "../hooks/klabisJsonUtils.tsx";
 
 interface TabPanelProps {
@@ -51,6 +52,7 @@ const MemberDetailPage = () => {
     const [tabValue, setTabValue] = useState(0);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+    const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
 
     // Fetch member data
     const {data: memberResponse, isLoading, error} = useGetMember(Number(memberId));
@@ -77,6 +79,14 @@ const MemberDetailPage = () => {
 
     const handleCloseConfirmDialog = () => {
         setIsConfirmDialogOpen(false);
+    };
+
+    const handleOpenPermissionsDialog = () => {
+        setIsPermissionsDialogOpen(true);
+    };
+
+    const handleClosePermissionsDialog = () => {
+        setIsPermissionsDialogOpen(false);
     };
 
     if (isLoading) {
@@ -106,15 +116,23 @@ const MemberDetailPage = () => {
                 <Button startIcon={<ArrowBackIcon/>} onClick={handleBack}>
                     Zpět na seznam členů
                 </Button>
-                {hasAction(member, "members:editOwnInfo") && (
-                    <Button startIcon={<EditIcon/>} variant="contained" color="primary" onClick={handleEdit}>
-                        Upravit
-                    </Button>
-                )}
-                {hasAction(member, 'members:suspend') && (
-                    <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
-                    Zrušit členství
-                    </Button>)}
+                <Box sx={{display: 'flex', gap: 2}}>
+                    {hasAction(member, "members:editOwnInfo") && (
+                        <Button startIcon={<EditIcon/>} variant="contained" color="primary" onClick={handleEdit}>
+                            Upravit
+                        </Button>
+                    )}
+                    {hasAction(member, 'members:permissions') && (
+                        <Button variant="contained" color="info" onClick={handleOpenPermissionsDialog}>
+                            Editovat oprávnění
+                        </Button>
+                    )}
+                    {hasAction(member, 'members:suspendMembership') && (
+                        <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
+                            Zrušit členství
+                        </Button>
+                    )}
+                </Box>
             </Box>
 
             <Dialog open={isEditModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
@@ -132,6 +150,12 @@ const MemberDetailPage = () => {
                 memberId={Number(memberId)}
                 open={isConfirmDialogOpen}
                 onClose={handleCloseConfirmDialog}
+            />
+
+            <EditMemberPermissionsDialog
+                memberId={Number(memberId)}
+                open={isPermissionsDialogOpen}
+                onClose={handleClosePermissionsDialog}
             />
 
             <Paper sx={{mb: 3}}>
