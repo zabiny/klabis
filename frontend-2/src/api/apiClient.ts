@@ -18,7 +18,7 @@ const getAuthToken = (): Promise<string | null> => {
 const apiClient: AxiosInstance = axios.create({
     baseURL: '/api', // This will be proxied to the actual API URL in development
     headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/klabis+json',
     },
 });
 

@@ -1,4 +1,6 @@
 import {useApiPutMutation, useApiQuery} from '../hooks/useApi';
+import {useQueryClient} from '@tanstack/react-query';
+import type {QueryClient} from "@tanstack/query-core";
 
 // Types based on the API specification
 export interface Member {
@@ -115,11 +117,25 @@ export const useGetEditMyDetailsForm = (memberId: number) => {
     );
 };
 
+const invalidateMemberData = (memberId: number, queryClient: QueryClient): void => {
+    queryClient.invalidateQueries({queryKey: ['members']});
+    queryClient.invalidateQueries({queryKey: ['member', memberId.toString()]});
+    queryClient.invalidateQueries({queryKey: ['memberEditForm', memberId.toString()]});
+}
+
 export const useUpdateMyDetails = (memberId: number) => {
+    const queryClient = useQueryClient();
+
     return useApiPutMutation<EditMyDetailsForm, void>(
-        `/members/${memberId}/editOwnMemberInfoForm`
+        `/members/${memberId}/editOwnMemberInfoForm`,
+        {
+            onSuccess: () => {
+                invalidateMemberData(memberId, queryClient)
+            }
+        }
     );
 };
+
 
 export interface MembershipSuspensionInfo {
     isSuspended: boolean;
@@ -182,7 +198,13 @@ export const useGetSuspendMembershipForm = (memberId: number) => {
 };
 
 export const useSuspendMembership = (memberId: number, force: boolean = false) => {
+    const queryClient = useQueryClient();
     return useApiPutMutation<void, void>(
-        `/members/${memberId}/suspendMembershipForm?force=${force}`
+        `/members/${memberId}/suspendMembershipForm?force=${force}`,
+        {
+            onSuccess: () => {
+                invalidateMemberData(memberId, queryClient)
+            }
+        }
     );
 };
