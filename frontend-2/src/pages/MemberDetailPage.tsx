@@ -21,7 +21,7 @@ import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material'
 import {useGetMember} from '../api/membersApi';
 import EditOwnMemberInfoForm from '../components/EditOwnMemberInfoForm.tsx';
 import MemberSuspendConfirmationDialog from "../components/MemberSuspendConfirmationDialog.tsx";
-import EditMemberPermissionsDialog from "../components/EditMemberPermissionsDialog.tsx";
+import EditMemberPermissionsForm from "../components/EditMemberPermissionsForm.tsx";
 import {hasAction} from "../hooks/klabisJsonUtils.tsx";
 
 interface TabPanelProps {
@@ -52,7 +52,6 @@ const MemberDetailPage = () => {
     const [tabValue, setTabValue] = useState(0);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-    const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
 
     // Fetch member data
     const {data: memberResponse, isLoading, error} = useGetMember(Number(memberId));
@@ -79,14 +78,6 @@ const MemberDetailPage = () => {
 
     const handleCloseConfirmDialog = () => {
         setIsConfirmDialogOpen(false);
-    };
-
-    const handleOpenPermissionsDialog = () => {
-        setIsPermissionsDialogOpen(true);
-    };
-
-    const handleClosePermissionsDialog = () => {
-        setIsPermissionsDialogOpen(false);
     };
 
     if (isLoading) {
@@ -122,11 +113,6 @@ const MemberDetailPage = () => {
                             Upravit
                         </Button>
                     )}
-                    {hasAction(member, 'members:permissions') && (
-                        <Button variant="contained" color="info" onClick={handleOpenPermissionsDialog}>
-                            Editovat oprávnění
-                        </Button>
-                    )}
                     {hasAction(member, 'members:suspendMembership') && (
                         <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
                             Zrušit členství
@@ -152,12 +138,6 @@ const MemberDetailPage = () => {
                 onClose={handleCloseConfirmDialog}
             />
 
-            <EditMemberPermissionsDialog
-                memberId={Number(memberId)}
-                open={isPermissionsDialogOpen}
-                onClose={handleClosePermissionsDialog}
-            />
-
             <Paper sx={{mb: 3}}>
                 <Box sx={{p: 3}}>
                     <Typography variant="h4" component="h1" gutterBottom>
@@ -172,7 +152,10 @@ const MemberDetailPage = () => {
                     <Tabs value={tabValue} onChange={handleTabChange} aria-label="member tabs">
                         <Tab label="Základní informace" id="member-tab-0" aria-controls="member-tabpanel-0"/>
                         <Tab label="Kontaktní údaje" id="member-tab-1" aria-controls="member-tabpanel-1"/>
-                        <Tab label="Licence a oprávnění" id="member-tab-2" aria-controls="member-tabpanel-2"/>
+                        <Tab label="Různé" id="member-tab-2" aria-controls="member-tabpanel-2"/>
+                        {hasAction(member, 'members:permissions') && (
+                            <Tab label="Oprávnění" id="member-tab-3" aria-controls="member-tabpanel-3"/>
+                        )}
                     </Tabs>
                 </Box>
 
@@ -356,6 +339,12 @@ const MemberDetailPage = () => {
                         </Grid>
                     </Grid>
                 </TabPanel>
+
+                {hasAction(member, 'members:permissions') && (
+                    <TabPanel value={tabValue} index={3}>
+                        <EditMemberPermissionsForm memberId={Number(memberId)}/>
+                    </TabPanel>
+                )}
             </Paper>
         </Box>
     );
