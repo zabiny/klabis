@@ -31,6 +31,8 @@ const MembersPage = () => {
         sort: []
     });
 
+    console.log(`view: ${view}, Suspended: ${showSuspended}`)
+
     const handleShowSuspendedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setShowSuspended(event.target.checked);
     };
@@ -96,40 +98,23 @@ const MembersPage = () => {
                 />
             )}
 
-            {view !== 'DETAILED' && (
-                <KlabisTable<Member>
-                    api="/members"
-                    onRowClick={handleRowClick}
-                    defaultOrderBy="lastName"
-                    defaultOrderDirection="asc"
-                    additionalParams={additionalParams}
-                    queryKey="members-table"
-                >
-                    <TableCell column="id">ID</TableCell>
-                    <SortableTableCell column="firstName">Jméno</SortableTableCell>
-                    <SortableTableCell column="lastName">Příjmení</SortableTableCell>
-                    <SortableTableCell column="registrationNumber">Registrační číslo</SortableTableCell>
-                </KlabisTable>
-            )}
-
-            {view === 'DETAILED' && (
-                <KlabisTable<Member>
-                    api="/members"
-                    onRowClick={handleRowClick}
-                    defaultOrderBy="lastName"
-                    defaultOrderDirection="asc"
-                    additionalParams={additionalParams}
-                    queryKey="members-table"
-                >
-                    <TableCell column="id">ID</TableCell>
-                    <SortableTableCell column="firstName">Jméno</SortableTableCell>
-                    <SortableTableCell column="lastName">Příjmení</SortableTableCell>
-                    <SortableTableCell column="registrationNumber">Registrační číslo</SortableTableCell>
-                    <TableCell column="sex">Pohlaví</TableCell>
-                    <SortableTableCell column="dateOfBirth">Datum narození</SortableTableCell>
-                    <TableCell column="nationality">Národnost</TableCell>
-                </KlabisTable>)}
-
+            <KlabisTable<Member>
+                api="/members"
+                onRowClick={handleRowClick}
+                defaultOrderBy="lastName"
+                defaultOrderDirection="asc"
+                additionalParams={additionalParams}
+                queryKey="members-table"
+            >
+                <TableCell column="id">ID</TableCell>
+                <SortableTableCell column="firstName">Jméno</SortableTableCell>
+                <SortableTableCell column="lastName">Příjmení</SortableTableCell>
+                <SortableTableCell column="registrationNumber">Registrační číslo</SortableTableCell>
+                <TableCell hidden={view === 'SUMMARY'} column="sex">Pohlaví</TableCell>
+                <SortableTableCell hidden={view === 'SUMMARY'} column="dateOfBirth">Datum
+                    narození</SortableTableCell>
+                <TableCell hidden={view === 'SUMMARY'} column="nationality">Národnost</TableCell>
+            </KlabisTable>
 
         </Box>
     );

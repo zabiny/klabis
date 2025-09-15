@@ -1,4 +1,4 @@
-import React, {isValidElement} from 'react';
+import React, {isValidElement, type ReactElement, type ReactNode} from 'react';
 // Import pro MuiTableCell
 import {
     Alert,
@@ -28,6 +28,34 @@ interface KlabisTableProps<T = any> {
     queryKey?: string;
 }
 
+interface TableColumn {
+    headerNode: ReactElement,
+    column: string,
+    hidden: boolean
+}
+
+const convertToTableColumn = (child: ReactNode): TableColumn | null => {
+    if (isReactComponent(child)) {
+        if (!isValidElement(child)) {
+            return false;
+        }
+
+        const hidden = child.props?.hidden as boolean;
+        const column = child.props?.column as string;
+
+        return {
+            headerNode: child,
+            hidden: hidden, column: column
+        } as TableColumn;
+    }
+
+    return null;
+}
+
+function isReactComponent(item: ReactNode): item is ReactElement {
+    return (item as ReactElement).props !== undefined;
+}
+
 const KlabisTableInner = <T extends Record<string, any>>({
                                                              api,
                                                              children,
@@ -35,17 +63,17 @@ const KlabisTableInner = <T extends Record<string, any>>({
                                                              queryKey,
                                                          }: KlabisTableProps<T>) => {
     const tableContext = useKlabisTableContext();
-    console.table(tableContext);
-
     const {data, isLoading, error} = useKlabisApi<T>(api, tableContext.createApiParams(), queryKey);
 
     // Funkce pro klonování dětských komponent s props
     const renderHeaderCells = () => {
         return React.Children.map(children, (child) => {
-            if (isValidElement(child)) {
-                return child;
+            const column = convertToTableColumn(child);
+            if (column && !column.hidden) {
+                return column.headerNode;
+            } else {
+                return null;
             }
-            return child;
         });
     };
 
@@ -60,17 +88,19 @@ const KlabisTableInner = <T extends Record<string, any>>({
                 onClick={() => onRowClick?.(item)}
                 sx={{cursor: onRowClick ? 'pointer' : 'default'}}
             >
-                {React.Children.map(children, (child) => {
-                    if (isValidElement(child) && child.props.column) {
-                        const value = item[child.props.column];
-                        return (
-                            <MuiTableCell key={child.props.column}>
-                                {value}
-                            </MuiTableCell>
-                        );
-                    }
-                    return null;
-                })}
+                {React.Children
+                    .map(children, (child) => {
+                        const column = convertToTableColumn(child);
+                        if (column && !column.hidden) {
+                            const value = item[column.column];
+                            return (
+                                <MuiTableCell key={column.column}>
+                                    {value}
+                                </MuiTableCell>
+                            );
+                        }
+                        return null;
+                    })}
             </TableRow>
         ));
     };
