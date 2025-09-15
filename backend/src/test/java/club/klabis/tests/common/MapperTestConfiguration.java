@@ -1,5 +1,6 @@
 package club.klabis.tests.common;
 
+import club.klabis.shared.application.SpringConversionServiceBridge;
 import club.klabis.shared.config.mapstruct.ConversionServiceAdapter;
 import club.klabis.shared.config.mapstruct.MapperSpringConfig;
 import org.mapstruct.extensions.spring.test.ConverterScan;
@@ -8,6 +9,6 @@ import org.springframework.context.annotation.Import;
 
 @TestConfiguration
 @ConverterScan(basePackageClasses = {MapperSpringConfig.class})
-@Import(ConversionServiceAdapter.class)
+@Import({ConversionServiceAdapter.class, SpringConversionServiceBridge.class})
 public class MapperTestConfiguration {
 }
