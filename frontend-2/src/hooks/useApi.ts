@@ -29,7 +29,11 @@ export const useApiQuery = <T>(
     return useQuery<ApiResponse<T>, AxiosError>({
         queryKey,
         queryFn: async () => {
-            const response = await apiClient.get<T>(url);
+            const response = await apiClient.get<T>(url, {
+                headers: {
+                    Accept: 'application/klabis+json,application/json',
+                },
+            });
             return {data: response.data};
         },
         ...options
