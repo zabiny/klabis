@@ -1,39 +1,8 @@
-import {useState} from 'react';
-import {
-    Alert,
-    Box,
-    Button,
-    Chip,
-    CircularProgress,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    Typography,
-} from '@mui/material';
-import {Event as EventIcon, Link as LinkIcon} from '@mui/icons-material';
-import {useGetEvents} from '../api/eventsApi';
+import {Box, Typography,} from '@mui/material';
+import {type EventListItem} from '../api/eventsApi';
+import {KlabisTable, SortableTableCell, TableCell} from "../components/KlabisTable";
 
 const EventsPage = () => {
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
-
-    // Fetch events data
-    const {data: response, isLoading, error} = useGetEvents();
-
-    const handleChangePage = (event: unknown, newPage: number) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
     // Function to format date
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -70,82 +39,16 @@ const EventsPage = () => {
                 Akce
             </Typography>
 
-            {isLoading ? (
-                <Box sx={{display: 'flex', justifyContent: 'center', mt: 4}}>
-                    <CircularProgress/>
-                </Box>
-            ) : error ? (
-                <Alert severity="error">Nepodařilo se načíst seznam akcí. Zkuste to prosím později.</Alert>
-            ) : (
-                <Paper>
-                    <TableContainer>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Datum</TableCell>
-                                    <TableCell>Název</TableCell>
-                                    <TableCell>Typ</TableCell>
-                                    <TableCell>Pořadatel</TableCell>
-                                    <TableCell>Koordinátor</TableCell>
-                                    <TableCell>Uzávěrka přihlášek</TableCell>
-                                    <TableCell>Web</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {response?.data.content
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((event) => (
-                                        <TableRow key={event.id} hover>
-                                            <TableCell>{formatDate(event.date)}</TableCell>
-                                            <TableCell>{event.name}</TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    label={getEventTypeLabel(event.type)}
-                                                    color={getEventTypeColor(event.type)}
-                                                    size="small"
-                                                    icon={<EventIcon/>}
-                                                />
-                                            </TableCell>
-                                            <TableCell>{event.organizer}</TableCell>
-                                            <TableCell>{event.coordinator || '-'}</TableCell>
-                                            <TableCell>
-                                                {event.registrationDeadline
-                                                    ? formatDate(event.registrationDeadline)
-                                                    : '-'}
-                                            </TableCell>
-                                            <TableCell>
-                                                {event.web ? (
-                                                    <Button
-                                                        href={event.web}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        startIcon={<LinkIcon/>}
-                                                        size="small"
-                                                    >
-                                                        Web
-                                                    </Button>
-                                                ) : (
-                                                    '-'
-                                                )}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                    <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]}
-                        component="div"
-                        count={response?.data.content.length || 0}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        labelRowsPerPage="Řádků na stránku:"
-                        labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}
-                    />
-                </Paper>
-            )}
+            <KlabisTable<EventListItem> api={"/events"}>
+                <SortableTableCell column={"date"}>Datum</SortableTableCell>
+                <SortableTableCell column={"name"}>Název</SortableTableCell>
+                <TableCell hidden column={"type"}>Typ</TableCell>
+                <SortableTableCell column={"organizer"}>Pořadatel</SortableTableCell>
+                <SortableTableCell hidden column={"coordinator"}>Koordinátor</SortableTableCell>
+                <SortableTableCell column={"registrationDeadline"}>Uzávěrka přihlášek</SortableTableCell>
+                <TableCell hidden column={"web"}>Web</TableCell>
+
+            </KlabisTable>
         </Box>
     );
 };
