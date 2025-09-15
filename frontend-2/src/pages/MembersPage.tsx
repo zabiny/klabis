@@ -22,7 +22,7 @@ import {type GetMembersParams, useGetMembers} from '../api/membersApi';
 import RegisterMemberDialog from "../components/RegisterMemberForm.tsx";
 import {hasAction} from "../hooks/klabisJsonUtils.tsx";
 
-type SortableColumn = 'firstName' | 'lastName' | 'registrationNumber';
+type SortableColumn = 'firstName' | 'lastName' | 'registrationNumber' | 'dateOfBirth';
 type SortDirection = 'asc' | 'desc';
 
 const MembersPage = () => {
@@ -161,7 +161,7 @@ const MembersPage = () => {
                                     {view === 'DETAILED' && (
                                         <>
                                             <TableCell>Pohlaví</TableCell>
-                                            <TableCell>Datum narození</TableCell>
+                                            <SortableTableCell column="dateOfBirth">Datum narození</SortableTableCell>
                                             <TableCell>Národnost</TableCell>
                                         </>
                                     )}
