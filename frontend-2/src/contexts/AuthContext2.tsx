@@ -1,6 +1,13 @@
 import React, {createContext, ReactNode, useContext, useEffect, useState,} from 'react';
 import {User, UserManager, WebStorageStateStore,} from 'oidc-client-ts';
 
+export interface AuthUserDetails {
+    firstName: string,
+    lastName: string,
+    id: number,
+    registrationNumber: string
+}
+
 // Your required interface
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -8,7 +15,7 @@ interface AuthContextType {
     login: () => void;
     logout: () => void;
     getAccessToken: () => Promise<string | null>;
-    getUser: () => Promise<User | null>;
+    getUser: () => Promise<AuthUserDetails | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -117,9 +124,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
 
             // Try silent renewal
             const refreshedUser = await userManager.signinSilent();
-            setUser(refreshedUser);
-            setIsAuthenticated(true);
-            return refreshedUser.access_token;
+            if (refreshedUser) {
+                setUser(refreshedUser);
+                setIsAuthenticated(true);
+                return refreshedUser.access_token;
+            } else {
+                console.warn('Didnt receive any refreshed user details')
+            }
         } catch (err) {
             console.error('Error retrieving access token:', err);
             logout();
@@ -127,11 +138,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         }
     };
 
-    const getUser = async (): Promise<User | null> => {
+    const getUser = async (): Promise<AuthUserDetails | null> => {
         try {
             const currentUser = await userManager.getUser();
-            if (currentUser && !currentUser.expired) {
-                return currentUser;
+            if (currentUser) {
+                return {
+                    firstName: currentUser.profile.given_name,
+                    lastName: currentUser.profile.family_name,
+                    id: parseInt(currentUser.profile.sub),
+                    registrationNumber: currentUser.profile.preferred_username
+                } as AuthUserDetails;
             }
             return null;
         } catch (err) {

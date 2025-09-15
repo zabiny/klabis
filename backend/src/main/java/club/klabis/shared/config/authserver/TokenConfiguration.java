@@ -1,9 +1,9 @@
 package club.klabis.shared.config.authserver;
 
-import club.klabis.users.application.ApplicationUsersRepository;
-import club.klabis.shared.config.authserver.generatejwtkeys.JKWKeyGenerator;
-import club.klabis.users.domain.ApplicationUser;
 import club.klabis.members.application.MembersRepository;
+import club.klabis.shared.config.authserver.generatejwtkeys.JKWKeyGenerator;
+import club.klabis.users.application.ApplicationUsersRepository;
+import club.klabis.users.domain.ApplicationUser;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
@@ -37,7 +37,7 @@ public class TokenConfiguration {
             if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())) {
                 appusersRepository.findByUserName(context.getPrincipal().getName()).flatMap(ApplicationUser::getMemberId).ifPresent(memberId -> {
                     context.getClaims().claim(StandardClaimNames.PREFERRED_USERNAME, context.getPrincipal().getName());
-                    context.getClaims().claim(StandardClaimNames.SUB, memberId);
+                    context.getClaims().claim(StandardClaimNames.SUB, memberId.value());
                     membersRepository.findById(memberId).ifPresent(existingMember -> {
                         context.getClaims().claim(StandardClaimNames.GIVEN_NAME, existingMember.getFirstName());
                         context.getClaims().claim(StandardClaimNames.FAMILY_NAME, existingMember.getLastName());

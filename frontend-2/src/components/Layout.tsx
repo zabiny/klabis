@@ -24,7 +24,7 @@ import {
     Menu as MenuIcon,
     People as PeopleIcon,
 } from '@mui/icons-material';
-import {useAuth} from '../contexts/AuthContext2';
+import {type AuthUserDetails, useAuth} from '../contexts/AuthContext2';
 
 const drawerWidth = 240;
 
@@ -49,21 +49,15 @@ const Main = styled('main', {shouldForwardProp: (prop) => prop !== 'open'})<{
 
 const Layout = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [userName, setUserName] = useState<string>('');
     const navigate = useNavigate();
     const {logout, getUser, isAuthenticated} = useAuth();
-
+    const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
     useEffect(() => {
         const loadUserName = async () => {
             if (isAuthenticated) {
                 try {
                     const user = await getUser();
-                    if (user && user.profile) {
-                        const userName = `${user?.profile.given_name} ${user?.profile.family_name} [${user?.profile.preferred_username}]`
-                        setUserName(userName);
-                    } else {
-                        setUserName('!! uknown !!')
-                    }
+                    setUserDetails(user)
                 } catch (error) {
                     console.error('Error loading user name:', error);
                 }
@@ -85,6 +79,12 @@ const Layout = () => {
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const handleUserNameClick = () => {
+        if (userDetails) {
+            navigate(`members/${userDetails.id}`);
+        }
     };
 
     const menuItems = [
@@ -110,10 +110,20 @@ const Layout = () => {
                     <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
                         Klabis - Členská sekce
                     </Typography>
-                    {userName && (
-                        <Typography variant="body1" sx={{mr: 2, color: 'inherit'}}>
-                            {userName}
-                        </Typography>
+                    {userDetails && (
+                        <Button
+                            color="inherit"
+                            onClick={handleUserNameClick}
+                            sx={{
+                                mr: 2,
+                                textTransform: 'none',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }}
+                        >
+                            {userDetails.firstName} {userDetails.lastName} [{userDetails.registrationNumber}]
+                        </Button>
                     )}
                     <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon/>}>
                         Odhlásit

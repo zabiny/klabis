@@ -9,7 +9,6 @@ import MemberDetailPage from './pages/MemberDetailPage';
 import EventsPage from './pages/EventsPage';
 import GroupsPage from './pages/GroupsPage';
 import LoginPage from './pages/LoginPage';
-import NotFoundPage from './pages/NotFoundPage';
 
 import theme from './theme';
 
@@ -51,7 +50,7 @@ function App() {
                         <Route path="members/:memberId" element={<MemberDetailPage/>}/>
                         <Route path="events" element={<EventsPage/>}/>
                         <Route path="groups" element={<GroupsPage/>}/>
-                        <Route path="*" element={<NotFoundPage/>}/>
+                        <Route path="*" element={<HomePage/>}/>
                     </Route>
                 </Routes>
             </AuthProvider>
