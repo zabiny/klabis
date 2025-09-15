@@ -4,6 +4,7 @@ import {type MemberRegistrationForm, useRegisterMember} from '../api/membersApi.
 
 import AddressFields from './AddressFields';
 import ContactFields from './ContactFields';
+import GuardiansFields from './GuardiansFields';
 
 // UI komponenta pro formulář registrace nového člena
 interface RegisterMemberFormUIProps {
@@ -64,48 +65,9 @@ const RegisterMemberFormUI = ({
         });
     };
 
-    // Ovládání pro více zákonných zástupců
-    const handleGuardianChange = (idx: number, path: string, value: any) => {
-        setFormState(prev => {
-            const guardians = prev.guardians ? [...prev.guardians] : [];
-            const keys = path.split('.');
-            let obj = guardians[idx];
-            if (!obj) {
-                guardians[idx] = {firstName: '', lastName: '', contact: {}};
-                obj = guardians[idx];
-            }
-            let ref = obj;
-            for (let i = 0; i < keys.length - 1; i++) {
-                if (!(keys[i] in ref)) ref[keys[i]] = {};
-                ref = ref[keys[i]];
-            }
-            ref[keys[keys.length - 1]] = value;
-            return {...prev, guardians};
-        });
-    };
-    const handleAddGuardian = () => {
-        setFormState(prev => ({
-            ...prev,
-            guardians: [
-                ...(prev.guardians || []),
-                {firstName: '', lastName: '', contact: {email: '', phone: '', note: ''}, note: ''}
-            ]
-        }));
-    };
-    const handleRemoveGuardian = (idx: number) => {
-        setFormState(prev => ({
-            ...prev,
-            guardians: (prev.guardians || []).filter((_, i) => i !== idx)
-        }));
-    };
-
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         onSubmit(formState);
-    };
-
-    const handleReset = () => {
-        setFormState(formData);
     };
 
     return (
@@ -201,75 +163,11 @@ const RegisterMemberFormUI = ({
 
                     {/* Právní zástupci */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>Zákonní zástupci</Typography>
-                        <Stack spacing={2}>
-                            {(formState.guardians || []).map((g, idx) => (
-                                <Paper
-                                    key={idx}
-                                    variant="outlined"
-                                    sx={{p: 2, bgcolor: "#f9f9f9", position: "relative"}}
-                                >
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                fullWidth
-                                                label="Jméno"
-                                                value={g.firstName || ''}
-                                                onChange={e =>
-                                                    handleGuardianChange(idx, 'firstName', e.target.value)
-                                                }
-                                                required
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                fullWidth
-                                                label="Příjmení"
-                                                value={g.lastName || ''}
-                                                onChange={e =>
-                                                    handleGuardianChange(idx, 'lastName', e.target.value)
-                                                }
-                                                required
-                                            />
-                                        </Grid>
-                                        <ContactFields
-                                            value={{
-                                                email: g.contact?.email || '',
-                                                phone: g.contact?.phone || '',
-                                                note: g.contact?.note || '',
-                                            }}
-                                            onChange={c => handleGuardianChange(idx, 'contact', c)}
-                                        />
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                fullWidth
-                                                label="Poznámka k zástupci"
-                                                value={g.note || ''}
-                                                onChange={e =>
-                                                    handleGuardianChange(idx, 'note', e.target.value)
-                                                }
-                                            />
-                                        </Grid>
-                                    </Grid>
-                                    <Button
-                                        sx={{position: "absolute", top: 10, right: 10}}
-                                        size="small"
-                                        variant="outlined"
-                                        color="secondary"
-                                        onClick={() => handleRemoveGuardian(idx)}
-                                    >
-                                        Odebrat
-                                    </Button>
-                                </Paper>
-                            ))}
-                            <Button
-                                variant="outlined"
-                                onClick={handleAddGuardian}
-                                disabled={disabled}
-                            >
-                                Přidat zástupce
-                            </Button>
-                        </Stack>
+                        <GuardiansFields
+                            value={formState.guardians || []}
+                            onChange={guardians => setFormState(prev => ({...prev, guardians}))}
+                            disabled={disabled}
+                        />
                     </Grid>
 
                     {/* Ostatní údaje */}
