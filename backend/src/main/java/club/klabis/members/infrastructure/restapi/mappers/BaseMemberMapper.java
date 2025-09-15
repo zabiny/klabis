@@ -37,6 +37,12 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
                     .value())).withRel(
                     "members:editAnotherMember"));
         }
+
+        if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
+            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                    .value())).withRel(
+                    "members:suspend"));
+        }
     }
 
     @Autowired

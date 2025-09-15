@@ -111,7 +111,7 @@ const MemberDetailPage = () => {
                         Upravit
                     </Button>
                 )}
-                {hasAction(member, 'members:register') && (
+                {hasAction(member, 'members:suspend') && (
                     <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
                     Zrušit členství
                     </Button>)}
