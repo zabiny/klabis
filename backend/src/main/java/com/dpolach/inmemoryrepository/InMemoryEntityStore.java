@@ -23,6 +23,9 @@ public class InMemoryEntityStore {
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+            .registerTypeAdapter(java.time.LocalDateTime.class, new LocalDateTimeAdapter())
+            .registerTypeAdapter(java.time.ZonedDateTime.class, new ZonedDateTimeAdapter())
+            .registerTypeAdapter(java.time.Instant.class, new InstantAdapter())
             .create();
 
     public InMemoryEntityStore() {
@@ -209,6 +212,72 @@ class LocalDateAdapter implements JsonSerializer<LocalDate>, JsonDeserializer<Lo
             return LocalDate.parse(json.getAsString());
         } catch (DateTimeException e) {
             throw new JsonParseException("could not parse date '" + json.getAsString() + "'", e);
+        }
+    }
+}
+
+// GSON adapter for java.time.LocalDateTime
+class LocalDateTimeAdapter implements JsonSerializer<java.time.LocalDateTime>, JsonDeserializer<java.time.LocalDateTime> {
+    @Override
+    public JsonElement serialize(java.time.LocalDateTime dateTime, Type typeOfSrc, JsonSerializationContext context) {
+        return new JsonPrimitive(dateTime.toString());
+    }
+
+    @Override
+    public java.time.LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        if (json.isJsonNull()) {
+            return null;
+        } else if (!json.isJsonPrimitive()) {
+            throw new JsonParseException(json + " is not a json primitive");
+        }
+        try {
+            return java.time.LocalDateTime.parse(json.getAsString());
+        } catch (DateTimeException e) {
+            throw new JsonParseException("could not parse datetime '" + json.getAsString() + "'", e);
+        }
+    }
+}
+
+// GSON adapter for java.time.ZonedDateTime
+class ZonedDateTimeAdapter implements JsonSerializer<java.time.ZonedDateTime>, JsonDeserializer<java.time.ZonedDateTime> {
+    @Override
+    public JsonElement serialize(java.time.ZonedDateTime zonedDateTime, Type typeOfSrc, JsonSerializationContext context) {
+        return new JsonPrimitive(zonedDateTime.toString());
+    }
+
+    @Override
+    public java.time.ZonedDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        if (json.isJsonNull()) {
+            return null;
+        } else if (!json.isJsonPrimitive()) {
+            throw new JsonParseException(json + " is not a json primitive");
+        }
+        try {
+            return java.time.ZonedDateTime.parse(json.getAsString());
+        } catch (DateTimeException e) {
+            throw new JsonParseException("could not parse zoneddatetime '" + json.getAsString() + "'", e);
+        }
+    }
+}
+
+// GSON adapter for java.time.Instant
+class InstantAdapter implements JsonSerializer<java.time.Instant>, JsonDeserializer<java.time.Instant> {
+    @Override
+    public JsonElement serialize(java.time.Instant instant, Type typeOfSrc, JsonSerializationContext context) {
+        return new JsonPrimitive(instant.toString());
+    }
+
+    @Override
+    public java.time.Instant deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        if (json.isJsonNull()) {
+            return null;
+        } else if (!json.isJsonPrimitive()) {
+            throw new JsonParseException(json + " is not a json primitive");
+        }
+        try {
+            return java.time.Instant.parse(json.getAsString());
+        } catch (DateTimeException e) {
+            throw new JsonParseException("could not parse instant '" + json.getAsString() + "'", e);
         }
     }
 }

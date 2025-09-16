@@ -1,9 +1,9 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
+import club.klabis.members.infrastructure.restapi.validators.ApiValidationAnnotations.BirthCertificateIsDefinedForCzechiaForApi;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -19,8 +19,7 @@ import java.util.Objects;
 
 @Schema(name = "EditAnotherMemberDetailsForm", description = "Member attributes editable by authorized user who can change details about other members  #### Required authorization - requires `members:edit` grant  Additional validations:  - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value")
 @JsonTypeName("EditAnotherMemberDetailsForm")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
-@club.klabis.members.domain.forms.BirthCertificateIsDefinedForCzechia
+@BirthCertificateIsDefinedForCzechiaForApi
 public class EditAnotherMemberDetailsFormApiDto extends RepresentationModel<EditAnotherMemberDetailsFormApiDto> {
 
     private String firstName;

@@ -186,8 +186,6 @@ logging:
   
     # Web security logování
     #org.springframework.security.web: TRACE
-    org.springframework.web.cors: DEBUG
-    club.klabis: DEBUG
     oauthserver: info
     oauthclient: info
   pattern:

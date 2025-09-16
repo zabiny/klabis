@@ -1,17 +1,16 @@
 package club.klabis.shared.application;
 
 import club.klabis.shared.ConversionService;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.stereotype.Component;
 
 @Component
-class SpringConversionServiceBridge implements ConversionService {
+public class SpringConversionServiceBridge implements ConversionService {
 
     private final org.springframework.core.convert.ConversionService delegate;
 
-    public SpringConversionServiceBridge(@Qualifier("mvcConversionService") org.springframework.core.convert.ConversionService delegate) {
-        this.delegate = delegate;
+    public SpringConversionServiceBridge(org.springframework.core.convert.ConversionService mvcConversionService) {
+        this.delegate = mvcConversionService;
     }
 
     @Override

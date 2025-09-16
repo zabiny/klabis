@@ -21,9 +21,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
@@ -32,6 +32,7 @@ import java.net.URI;
 @Tag(name = "Register members")
 @SecurityRequirement(name = "klabis", scopes = {"openapi"})
 @RestController
+@RequestMapping(value = "/memberRegistrations")
 public class RegisterNewMemberController {
     private final MemberRegistrationUseCase service;
     private final ConversionService conversionService;
@@ -74,9 +75,7 @@ public class RegisterNewMemberController {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.POST,
-            value = "/memberRegistrations",
+    @PostMapping(
             produces = {"application/problem+json"},
             consumes = {"application/json"}
     )
