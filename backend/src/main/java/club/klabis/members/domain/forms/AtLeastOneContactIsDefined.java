@@ -9,8 +9,7 @@ import java.lang.annotation.*;
 @Constraint(validatedBy = {
         AtLeastOneContactIsDefinedConstraint.MemberEditFormValidator.class,
         AtLeastOneContactIsDefinedConstraint.RegistrationFormValidator.class,
-        AtLeastOneContactIsDefinedConstraint.EditOwnMemberInfoFormValidator.class,
-        AtLeastOneContactIsDefinedConstraint.EditMyDetailsFormApiDtoFormValidator.class
+        AtLeastOneContactIsDefinedConstraint.EditOwnMemberInfoFormValidator.class
 })
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

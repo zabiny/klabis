@@ -1,9 +1,9 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
+import club.klabis.members.infrastructure.restapi.validators.ApiValidationAnnotations.AtLeastOneContactIsDefinedForApi;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -19,11 +19,8 @@ import java.util.Objects;
 
 @Schema(name = "EditMyDetailsForm", description = "Member attributes which can be updated by member himself (member can update some own attributes)    #### Required authorization - user can edit own member data   Additional validations: - either contact or at least 1 guardian needs to be entered ")
 @JsonTypeName("EditMyDetailsForm")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
-@club.klabis.members.domain.forms.AtLeastOneContactIsDefined.List({
-        @club.klabis.members.domain.forms.AtLeastOneContactIsDefined(contactType = club.klabis.members.domain.Contact.Type.EMAIL, message = "At least one email contact must be provided"),
-        @club.klabis.members.domain.forms.AtLeastOneContactIsDefined(contactType = club.klabis.members.domain.Contact.Type.PHONE, message = "At least one phone contact must be provided")
-})
+@AtLeastOneContactIsDefinedForApi(contactType = club.klabis.members.domain.Contact.Type.EMAIL, message = "At least one email contact must be provided")
+@AtLeastOneContactIsDefinedForApi(contactType = club.klabis.members.domain.Contact.Type.PHONE, message = "At least one phone contact must be provided")
 public class EditMyDetailsFormApiDto extends RepresentationModel<EditMyDetailsFormApiDto> {
 
     private IdentityCardApiDto identityCard;

@@ -11,8 +11,7 @@ import java.lang.annotation.Target;
 @Constraint(validatedBy = {
         BirthCertificateIsDefinedForCzechiaConstraint.RegistrationFormValidator.class,
         BirthCertificateIsDefinedForCzechiaConstraint.MemberEditFormValidator.class,
-        BirthCertificateIsDefinedForCzechiaConstraint.EditAnotherMemberInfoByAdminFormValidator.class,
-        BirthCertificateIsDefinedForCzechiaConstraint.EditAnotherMemberDetailsFormApiDtoValidator.class
+        BirthCertificateIsDefinedForCzechiaConstraint.EditAnotherMemberInfoByAdminFormValidator.class
 })
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
