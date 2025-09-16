@@ -17,7 +17,7 @@ This project is licensed under the GNU General Public License v3 (GPL-3.0)
 
 I’m open to cooperation!  
 If you’d like to use this project in a commercial setting, please reach out to me to discuss licensing options:  
-📧 *[sem vlož svůj e-mail nebo odkaz na profil]*
+📧 [dapolach](https://github.com/dapolach)
 
 For the full details, see the [LICENSE](./LICENSE) file.
 
@@ -48,4 +48,5 @@ UI: https://klabis.otakar.io/
 UI PoC 'frontend-2': TBD
 
 API: https://klabis-api-docs.otakar.io/
+
 
