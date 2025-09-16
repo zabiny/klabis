@@ -1,5 +1,11 @@
+export type KlabisActionName = string;
+
+export type KlabisAction = KlabisActionName;
+
+export type KlabisActions = Array<KlabisAction>;
+
 export interface KlabisHateoasObject {
-    _actions?: Array<string>
+    _actions?: KlabisActions
 }
 
 function isKlabisHateoasObject(item: KlabisHateoasObject | string[]) {

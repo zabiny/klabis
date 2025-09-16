@@ -2,8 +2,8 @@ import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Box, Button, FormControlLabel, Switch, Typography,} from '@mui/material';
 import {KlabisTable, TableCell} from '../components/KlabisTable';
-import RegisterMemberDialog from "../components/RegisterMemberForm.tsx";
-import {hasAction} from "../hooks/klabisJsonUtils.tsx";
+import {hasAction} from "../api/klabisJsonUtils.tsx";
+import RegisterMemberFormDialog from "../components/RegisterMemberForm.tsx";
 
 interface Member {
     id: number;
@@ -27,7 +27,7 @@ const MembersPage = () => {
     const [view, setView] = useState<'SUMMARY' | 'DETAILED'>('SUMMARY');
     const [openRegisterDialog, setOpenRegisterDialog] = useState(false);
 
-    const [tableActions, setTableActions] = useState<string[]>();
+    const [tableActions, setTableActions] = useState<string[]>([]);
 
     const handleShowSuspendedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setShowSuspended(event.target.checked);
@@ -40,8 +40,6 @@ const MembersPage = () => {
     const handleRowClick = (member: Member) => {
         navigate(`/members/${member.id}`);
     };
-
-    const canRegisterMember = hasAction(tableActions, 'members:register') || false;
 
     const additionalParams = {
         suspended: showSuspended,
@@ -73,26 +71,26 @@ const MembersPage = () => {
                     >
                         {view === 'SUMMARY' ? 'Zobrazit detaily' : 'Skrýt detaily'}
                     </Button>
-                    {canRegisterMember && (
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            sx={{ml: 2}}
-                            onClick={() => setOpenRegisterDialog(true)}
-                        >
-                            Registrovat nového člena
-                        </Button>
+                    {hasAction(tableActions, 'members:register') && (
+                        <>
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                sx={{ml: 2}}
+                                onClick={() => setOpenRegisterDialog(true)}
+                            >
+                                Registrovat nového člena
+                            </Button>
+
+                            <RegisterMemberFormDialog
+                                open={openRegisterDialog}
+                                onClose={() => setOpenRegisterDialog(false)}
+                                onSuccess={() => setOpenRegisterDialog(false)}
+                            />
+                        </>
                     )}
                 </Box>
             </Box>
-
-            {canRegisterMember && (
-                <RegisterMemberDialog
-                    open={openRegisterDialog}
-                    onClose={() => setOpenRegisterDialog(false)}
-                    onSuccess={() => setOpenRegisterDialog(false)}
-                />
-            )}
 
             <KlabisTable<Member>
                 api="/members"
@@ -115,7 +113,8 @@ const MembersPage = () => {
             </KlabisTable>
 
         </Box>
-    );
+    )
+        ;
 };
 
 export default MembersPage;
