@@ -14,7 +14,7 @@ public class SpringdocSecurityConfiguration {
     @Bean("swaggerDocChain")
     @Order(value = AuthorizationServerConfiguration.BEFORE_AUTH_SERVER_SECURITY_ORDER)
     public SecurityFilterChain swaggerFilterChain(HttpSecurity http) throws Exception {
-        http.securityMatcher("/swagger-ui/*", "/v3/api-docs/*", "/v3/api-docs", "/klabis-api-spec.yaml")
+        http.securityMatcher("/swagger-ui/*", "/v3/api-docs/*", "/v3/api-docs", "/klabis-api-spec.yaml", "/redoc.html")
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         c -> c.anyRequest().permitAll()
