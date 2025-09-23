@@ -1,6 +1,8 @@
-import {useState} from 'react';
+import React from 'react';
 import {Alert, Button, Checkbox, FormControlLabel, Grid, Paper, Stack, TextField, Typography,} from '@mui/material';
 import {type EditMyDetailsForm, useGetEditMyDetailsForm, useUpdateMyDetails} from '../api/membersApi.ts';
+import {Form, Formik, type FormikHandlers} from "formik";
+import * as Yup from 'yup';
 
 interface EditMemberFormUIProps {
     formData: EditMyDetailsForm;
@@ -15,52 +17,41 @@ const FormLoadingUI = () => <Typography>Načítání...</Typography>;
 const EditMemberFormUI = ({
                               formData, onSubmit, successMessage, failureMessage, disabled = false,
                           }: EditMemberFormUIProps) => {
-    const [formState, setFormState] = useState<EditMyDetailsForm>({
-        nationality: formData.nationality ?? '',
-        address: {
-            streetAndNumber: formData.address?.streetAndNumber ?? '',
-            city: formData.address?.city ?? '',
-            postalCode: formData.address?.postalCode ?? '',
-            country: formData.address?.country ?? '',
-        },
-        contact: {
-            email: formData.contact?.email ?? '',
-            phone: formData.contact?.phone ?? '',
-            note: formData.contact?.note ?? '',
-        },
-        identityCard: {
-            number: formData.identityCard?.number ?? '',
-            expiryDate: formData.identityCard?.expiryDate ?? '',
-        },
-        bankAccount: formData.bankAccount ?? '',
-        dietaryRestrictions: formData.dietaryRestrictions ?? '',
-        medicCourse: formData.medicCourse ?? false,
-        siCard: formData.siCard ?? undefined,
-        drivingLicence: formData.drivingLicence ?? [],
-    });
 
-    const handleInputChange = (path: string, value: any) => {
-        setFormState((prev) => {
-            const newState = {...prev};
-            const keys = path.split('.');
-            let current: any = newState;
-
-            for (let i = 0; i < keys.length - 1; i++) {
-                current = current[keys[i]];
-            }
-            current[keys[keys.length - 1]] = value;
-            return newState;
-        });
-    };
-
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        onSubmit(formState);
+    /// https://formik.org/docs/examples/with-material-ui
+    interface FormikMuiProps {
+        name: string,
+        value: any,
+        onChange: any,
+        onBlur: any,
+        error: boolean,
+        helperText?: string,
+        checked: boolean
     }
 
-    const handleReset = () => {
-        setFormState(formData);
-    };
+    // TODO: shall we use Formik MUI integration instead? - https://stackworx.github.io/formik-mui/docs/api/mui/
+    const getMuiProps = (fieldName: string, formik: FormikHandlers): FormikMuiProps => {
+        const meta = formik.getFieldMeta(fieldName);
+
+        return {
+            name: fieldName,
+            value: meta.value,
+            onChange: formik.handleChange,
+            onBlur: formik.handleBlur,
+            error: meta.touched && !!meta.error,
+            helperText: meta.touched && meta.error || undefined,
+            checked: !!meta.value || false
+        };
+    }
+
+    const validationSchema = Yup.object().shape(
+        {
+            nationality: Yup.string().required().min(2).max(2),
+            address: Yup.object().shape({
+                postalCode: Yup.string().required().min(5).max(5)
+            })
+        }
+    );
 
     return (
         <Paper sx={{p: 3}}>
@@ -76,142 +67,92 @@ const EditMemberFormUI = ({
                 <Alert severity="error" sx={{mb: 2}}>{failureMessage}</Alert>
             )}
 
-            <form onSubmit={handleSubmit}>
-                <Grid container spacing={3}>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label="Národnost"
-                            value={formState.nationality}
-                            onChange={(e) => handleInputChange('nationality', e.target.value)}
-                            required
-                        />
-                    </Grid>
+            <Formik initialValues={formData} onSubmit={onSubmit} validationSchema={validationSchema}>
+                {formik =>
+                    <Form>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <TextField fullWidth required
+                                           label="Narodnost" {...getMuiProps('nationality', formik)}/>
+                            </Grid>
 
-                    {/* Adresa */}
-                    <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>
-                            Adresa
-                        </Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label="Ulice a číslo"
-                            value={formState.address?.streetAndNumber || ''}
-                            onChange={(e) => handleInputChange('address.streetAndNumber', e.target.value)}
-                            required
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Město"
-                            value={formState.address?.city || ''}
-                            onChange={(e) => handleInputChange('address.city', e.target.value)}
-                            required
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="PSČ"
-                            value={formState.address?.postalCode || ''}
-                            onChange={(e) => handleInputChange('address.postalCode', e.target.value)}
-                            required
-                        />
-                    </Grid>
+                            <Grid item xs={12}>
+                                <Typography variant="h6" gutterBottom>
+                                    Adresa
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField fullWidth required
+                                           label="Ulice" {...getMuiProps('address.streetAndNumber', formik)}/>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField fullWidth required label="Město" {...getMuiProps('address.city', formik)}/>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField fullWidth required
+                                           label="PSČ" {...getMuiProps('address.postalCode', formik)}/>
+                            </Grid>
 
-                    {/* Kontakt */}
-                    <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>
-                            Kontaktní údaje
-                        </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Email"
-                            type="email"
-                            value={formState.contact?.email ?? ''}
-                            onChange={(e) => handleInputChange('contact.email', e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Telefon"
-                            value={formState.contact?.phone ?? ''}
-                            onChange={(e) => handleInputChange('contact.phone', e.target.value)}
-                        />
-                    </Grid>
 
-                    {/* Ostatní údaje */}
-                    <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom>
-                            Další údaje
-                        </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Číslo SI čipu"
-                            value={formState.siCard ?? ''}
-                            onChange={(e) => handleInputChange('siCard', e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            fullWidth
-                            label="Bankovní účet"
-                            value={formState.bankAccount ?? ''}
-                            onChange={(e) => handleInputChange('bankAccount', e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label="Dietní omezení"
-                            multiline
-                            rows={2}
-                            value={formState.dietaryRestrictions ?? ''}
-                            onChange={(e) => handleInputChange('dietaryRestrictions', e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={formState.medicCourse ?? false}
-                                    onChange={(e) => handleInputChange('medicCourse', e.target.checked)}
+                            {/* Kontakt */}
+                            <Grid item xs={12}>
+                                <Typography variant="h6" gutterBottom>
+                                    Kontaktní údaje
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField fullWidth required label="Email" {...getMuiProps('contact.email', formik)}/>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField fullWidth required
+                                           label="Telefon" {...getMuiProps('contact.phone', formik)}/>
+                            </Grid>
+
+                            {/* Ostatní údaje */}
+                            <Grid item xs={12}>
+                                <Typography variant="h6" gutterBottom>
+                                    Další údaje
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField fullWidth required label="Číslo SI čipu" {...getMuiProps('siCard', formik)}/>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField fullWidth required
+                                           label="Bankovní účet" {...getMuiProps('bankAccount', formik)}/>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField fullWidth required
+                                           label="Dietní omezení" {...getMuiProps('dietaryRestrictions', formik)}
+                                           rows={2}/>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox {...getMuiProps('medicCourse', formik)}/>
+                                    }
+                                    label="Zdravotnický kurz"
                                 />
-                            }
-                            label="Zdravotnický kurz"
-                        />
-                    </Grid>
+                            </Grid>
 
-                    <Grid item xs={12}>
-                        <Stack direction="row" spacing={2}>
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                color="primary"
-                                disabled={disabled}
-                            >
-                                Uložit změny
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                color="secondary"
-                                onClick={handleReset}
-                                disabled={disabled}
-                            >
-                                Obnovit
-                            </Button>
-                        </Stack>
-                    </Grid>
-                </Grid>
-            </form>
+                            <Grid item xs={12}>
+                                <Stack direction="row" spacing={2}>
+                                    <Button
+                                        type="submit"
+                                        variant="contained"
+                                        color="primary"
+                                        disabled={formik.isSubmitting}>Uložit změny</Button>
+                                    <Button
+                                        type="reset"
+                                        variant="outlined"
+                                        color="secondary"
+                                        disabled={formik.isSubmitting}>Obnovit</Button>
+                                </Stack>
+                            </Grid>
+                        </Grid>
+                    </Form>
+                }
+            </Formik>
         </Paper>
     );
 };
