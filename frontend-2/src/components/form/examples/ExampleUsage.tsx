@@ -1,5 +1,6 @@
 import React from 'react';
 import {Field, Form} from '../index.ts';
+import {type FieldRenderProps} from "../types";
 
 interface PersonFormData {
     firstName: string;
@@ -55,7 +56,7 @@ export const ExamplePersonForm: React.FC = () => {
             errors['contact.email'] = 'Neplatný email';
         }
 
-        return Object.keys(errors).length > 0 ? errors : null;
+        return Object.keys(errors).length > 0 ? errors : {};
     };
 
     const handleSubmit = (data: PersonFormData) => {
@@ -73,7 +74,7 @@ export const ExamplePersonForm: React.FC = () => {
                 validate={validateForm}
             >
                 <Field name="firstName">
-                    {({value, onChange, hasError}) => (
+                    {({value, onChange, hasError}: FieldRenderProps<string>) => (
                         <div className="mb-4">
                             <label className="block text-sm font-medium mb-2">Jméno</label>
                             <input
@@ -89,7 +90,7 @@ export const ExamplePersonForm: React.FC = () => {
                 </Field>
 
                 <Field name="lastName">
-                    {({value, onChange, hasError}) => (
+                    {({value, onChange, hasError}: FieldRenderProps<string>) => (
                         <div className="mb-4">
                             <label className="block text-sm font-medium mb-2">Příjmení</label>
                             <input
@@ -105,7 +106,7 @@ export const ExamplePersonForm: React.FC = () => {
                 </Field>
 
                 <Field name="address.city">
-                    {({value, onChange, hasError}) => (
+                    {({value, onChange, hasError}: FieldRenderProps<string>) => (
                         <div className="mb-4">
                             <label className="block text-sm font-medium mb-2">Město</label>
                             <input
@@ -122,14 +123,14 @@ export const ExamplePersonForm: React.FC = () => {
 
                 <Field
                     name="contact.email"
-                    validate={(value) => {
+                    validate={(value: string) => {
                         if (value && !value.includes('@')) {
                             return 'Neplatný formát emailu';
                         }
                         return null;
                     }}
                 >
-                    {({value, onChange, hasError}) => (
+                    {({value, onChange, hasError}: FieldRenderProps<string>) => (
                         <div className="mb-4">
                             <label className="block text-sm font-medium mb-2">Email</label>
                             <input

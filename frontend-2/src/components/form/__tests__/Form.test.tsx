@@ -1,4 +1,3 @@
-import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {Form} from '../Form';
 import {Field} from '../Field';
@@ -10,15 +9,6 @@ describe('Form Component', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
-
-    const TestInput = ({value, onChange, hasError}: any) => (
-        <input
-            data-testid="test-input"
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            className={hasError ? 'error-input' : 'normal-input'}
-        />
-    );
 
     it('should render form with submit button', () => {
         render(
@@ -36,13 +26,11 @@ describe('Form Component', () => {
 
         render(
             <Form value={formValue} onSubmit={mockSubmit}>
-                <Field name="firstName">
-                    {({value}) => <span data-testid="field-value">{value}</span>}
-                </Field>
+                <Field name="firstName"/>
             </Form>
         );
 
-        expect(screen.getByTestId('field-value')).toHaveTextContent('Jan');
+        expect(screen.getByRole('textbox')).toHaveAttribute('value', 'Jan');
     });
 
     it('should handle field value changes', async () => {
@@ -50,13 +38,11 @@ describe('Form Component', () => {
 
         render(
             <Form value={formValue} onSubmit={mockSubmit}>
-                <Field name="firstName">
-                    {TestInput}
-                </Field>
+                <Field name="firstName"/>
             </Form>
         );
 
-        const input = screen.getByTestId('test-input');
+        const input = screen.getByRole('textbox');
         fireEvent.change(input, {target: {value: 'Nové jméno'}});
 
         await waitFor(() => {
@@ -69,7 +55,7 @@ describe('Form Component', () => {
 
         render(
             <Form value={formValue} onSubmit={mockSubmit}>
-                <Field name="firstName">{TestInput}</Field>
+                <Field name="firstName"/>
             </Form>
         );
 
@@ -85,7 +71,7 @@ describe('Form Component', () => {
 
         render(
             <Form value={{firstName: ''}} onSubmit={mockSubmit} validate={mockValidate}>
-                <Field name="firstName">{TestInput}</Field>
+                <Field name="firstName"/>
             </Form>
         );
 
@@ -102,19 +88,7 @@ describe('Form Component', () => {
 
         render(
             <Form value={{firstName: ''}} onSubmit={mockSubmit} validate={mockValidate}>
-                <Field name="firstName">
-                    {({value, onChange, hasError, errorMessage}) => (
-                        <div>
-                            <input
-                                data-testid="error-input"
-                                value={value || ''}
-                                onChange={(e) => onChange(e.target.value)}
-                                className={hasError ? 'error-input' : 'normal-input'}
-                            />
-                            {errorMessage && <span data-testid="field-error">{errorMessage}</span>}
-                        </div>
-                    )}
-                </Field>
+                <Field name="firstName"/>
             </Form>
         );
 
@@ -134,7 +108,7 @@ describe('Form Component', () => {
 
         render(
             <Form value={{firstName: ''}} onSubmit={mockSubmit} validate={mockValidate}>
-                <Field name="firstName">{TestInput}</Field>
+                <Field name="firstName"/>
             </Form>
         );
 
@@ -155,17 +129,13 @@ describe('Form Component', () => {
 
         render(
             <Form value={formValue} onSubmit={mockSubmit}>
-                <Field name="address.city">
-                    {({value}) => <span data-testid="city-value">{value}</span>}
-                </Field>
-                <Field name="address.street">
-                    {({value}) => <span data-testid="street-value">{value}</span>}
-                </Field>
+                <Field name="address.city"/>
+                <Field name="address.street"/>
             </Form>
         );
 
-        expect(screen.getByTestId('city-value')).toHaveTextContent('Praha');
-        expect(screen.getByTestId('street-value')).toHaveTextContent('Hlavní 123');
+        expect(screen.getByRole('textbox', {name: 'address.city'})).toHaveAttribute('value', 'Praha');
+        expect(screen.getByRole('textbox', {name: 'address.street'})).toHaveAttribute('value', 'Hlavní 123');
     });
 
     it('should clear field errors when field value changes', async () => {
@@ -173,18 +143,7 @@ describe('Form Component', () => {
 
         render(
             <Form value={{firstName: ''}} onSubmit={mockSubmit} validate={mockValidate}>
-                <Field name="firstName">
-                    {({value, onChange, errorMessage}) => (
-                        <div>
-                            <input
-                                data-testid="clearing-input"
-                                value={value || ''}
-                                onChange={(e) => onChange(e.target.value)}
-                            />
-                            {errorMessage && <span data-testid="clearing-error">{errorMessage}</span>}
-                        </div>
-                    )}
-                </Field>
+                <Field name="firstName"/>
             </Form>
         );
 
@@ -203,23 +162,12 @@ describe('Form Component', () => {
         });
     });
 
-    it('should handle field-level validation', async () => {
+    it('should validate field-level validations when submitting form', async () => {
         const fieldValidate = jest.fn().mockReturnValue('Field validation error');
 
         render(
             <Form value={{firstName: 'test'}} onSubmit={mockSubmit}>
-                <Field name="firstName" validate={fieldValidate}>
-                    {({value, onChange, errorMessage}) => (
-                        <div>
-                            <input
-                                data-testid="field-validated-input"
-                                value={value || ''}
-                                onChange={(e) => onChange(e.target.value)}
-                            />
-                            {errorMessage && <span data-testid="field-validation-error">{errorMessage}</span>}
-                        </div>
-                    )}
-                </Field>
+                <Field name="firstName" validate={fieldValidate}/>
             </Form>
         );
 
@@ -227,7 +175,7 @@ describe('Form Component', () => {
 
         await waitFor(() => {
             expect(fieldValidate).toHaveBeenCalledWith('test');
-            expect(screen.getByTestId('field-validation-error')).toHaveTextContent('Field validation error');
+            expect(screen.getByTestId('error-message')).toHaveTextContent('Field validation error');
             expect(mockSubmit).not.toHaveBeenCalled();
         });
     });
@@ -237,7 +185,7 @@ describe('Form Component', () => {
 
         render(
             <Form value={{firstName: 'Jan'}} onSubmit={mockSubmit} validate={mockValidate}>
-                <Field name="firstName">{TestInput}</Field>
+                <Field name="firstName"/>
             </Form>
         );
 

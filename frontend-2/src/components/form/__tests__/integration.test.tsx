@@ -2,6 +2,7 @@ import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {Form} from '../Form';
 import {Field} from '../Field';
+import {ValidationErrors} from "../types";
 
 interface PersonData {
     firstName: string;
@@ -20,7 +21,7 @@ describe('Form Integration Tests', () => {
         jest.clearAllMocks();
     });
 
-    const validateForm = (data: PersonData) => {
+    const validateForm = (data: PersonData): ValidationErrors => {
         const errors: Record<string, string> = {};
 
         if (!data.firstName) {
@@ -43,74 +44,21 @@ describe('Form Integration Tests', () => {
             errors.general = 'Admin účet není povolen';
         }
 
-        return Object.keys(errors).length > 0 ? errors : null;
+        return Object.keys(errors).length > 0 ? errors : {};
     };
 
     const CompleteForm: React.FC<{ initialData: PersonData }> = ({initialData}) => (
         <Form value={initialData} onSubmit={mockSubmit} validate={validateForm}>
-            <Field name="firstName">
-                {({value, onChange, hasError, errorMessage}) => (
-                    <div>
-                        <label>Jméno:</label>
-                        <input
-                            data-testid="firstName"
-                            value={value || ''}
-                            onChange={(e) => onChange(e.target.value)}
-                            className={hasError ? 'error' : 'normal'}
-                        />
-                        {errorMessage && <span data-testid="firstName-error">{errorMessage}</span>}
-                    </div>
-                )}
-            </Field>
+            <Field name="firstName"/>
 
-            <Field name="lastName">
-                {({value, onChange, hasError, errorMessage}) => (
-                    <div>
-                        <label>Příjmení:</label>
-                        <input
-                            data-testid="lastName"
-                            value={value || ''}
-                            onChange={(e) => onChange(e.target.value)}
-                            className={hasError ? 'error' : 'normal'}
-                        />
-                        {errorMessage && <span data-testid="lastName-error">{errorMessage}</span>}
-                    </div>
-                )}
-            </Field>
+            <Field name="lastName"/>
 
-            <Field name="address.city">
-                {({value, onChange, hasError, errorMessage}) => (
-                    <div>
-                        <label>Město:</label>
-                        <input
-                            data-testid="city"
-                            value={value || ''}
-                            onChange={(e) => onChange(e.target.value)}
-                            className={hasError ? 'error' : 'normal'}
-                        />
-                        {errorMessage && <span data-testid="city-error">{errorMessage}</span>}
-                    </div>
-                )}
-            </Field>
+            <Field name="address.city"/>
 
             <Field
                 name="email"
-                validate={(value) => value && !value.includes('@') ? 'Neplatný email formát' : null}
-            >
-                {({value, onChange, hasError, errorMessage}) => (
-                    <div>
-                        <label>Email:</label>
-                        <input
-                            data-testid="email"
-                            type="email"
-                            value={value || ''}
-                            onChange={(e) => onChange(e.target.value)}
-                            className={hasError ? 'error' : 'normal'}
-                        />
-                        {errorMessage && <span data-testid="email-error">{errorMessage}</span>}
-                    </div>
-                )}
-            </Field>
+                inputType="email"
+                validate={(value) => value && !value.includes('@') ? 'Neplatný email formát' : null}/>
         </Form>
     );
 

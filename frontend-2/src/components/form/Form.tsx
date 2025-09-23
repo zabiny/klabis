@@ -3,11 +3,11 @@ import {FieldProps, FormProps, ValidationErrors} from './types';
 import {getNestedValue, setNestedValue} from './utils';
 import {Field} from "./Field";
 
-const getFieldProps = (element: unknown): FieldProps | null => {
+const getFieldProps = (element: unknown): FieldProps<unknown> | null => {
     if (!isValidElement(element)) {
         return null;
     }
-    const props = element.props as Partial<FieldProps>;
+    const props = element.props as Partial<FieldProps<unknown>>;
 
     // Ensure the required 'name' attribute exists and is a string
     if (typeof props.name !== 'string') {
@@ -15,18 +15,19 @@ const getFieldProps = (element: unknown): FieldProps | null => {
     }
 
     // Return the props typed as FieldProps (other attributes are optional)
-    return props as FieldProps;
+    return props as FieldProps<unknown>;
 };
 
 // Duplicate getFieldProps definition removed – functionality consolidated above.
 
-export const Form: React.FC<FormProps> = ({
-                                              value,
-                                              onSubmit,
-                                              validate,
-                                              children, ariaLabel
-                                          }) => {
-    const [formValue, setFormValue] = useState(value);
+export const Form = <T, >({
+                              value,
+                              onSubmit,
+                              validate,
+                              children,
+                              ariaLabel,
+                          }: FormProps<T>) => {
+    const [formValue, setFormValue] = useState<T>(value);
     const [errors, setErrors] = useState<ValidationErrors>({});
     const [formLevelErrors, setFormLevelErrors] = useState<string[]>([]);
 
@@ -56,7 +57,7 @@ export const Form: React.FC<FormProps> = ({
         const fieldErrors: ValidationErrors = {};
         const processFieldValidation = (element: React.ReactElement) => {
             if (element.type === Field || (element.type as any).name === 'Field') {
-                const fieldProps = element.props as FieldProps;
+                const fieldProps = element.props as FieldProps<unknown>;
                 if (fieldProps.validate && fieldProps.name) {
                     const fieldValue = getNestedValue(formValue, fieldProps.name);
                     const fieldError = fieldProps.validate(fieldValue);
@@ -101,16 +102,16 @@ export const Form: React.FC<FormProps> = ({
 
             // Pokud je to Field komponenta, předáme jí props
             if (child.type === Field || (child.type as any).name === 'Field') {
-                const fieldProps = child.props as FieldProps;
+                const fieldProps = child.props as FieldProps<unknown>;
                 const fieldValue = getNestedValue(formValue, fieldProps.name);
                 const fieldError = errors[fieldProps.name];
 
                 // Přetypování na ReactElement<any>, aby TypeScript akceptoval rozšířené props
-                return cloneElement(child as React.ReactElement<FieldProps>, {
+                return cloneElement(child as React.ReactElement<FieldProps<unknown>>, {
                     ...fieldProps,
                     value: fieldValue,
                     onChange: (newValue: unknown) => handleFieldChange(fieldProps.name, newValue),
-                    errorMessage: fieldError
+                    initialErrorMessage: fieldError
                 });
             }
 
