@@ -54,14 +54,14 @@ const MemberSuspendConfirmationDialog = ({memberId, open, onClose}: MemberSuspen
                             Jste si jisti, že chcete zrušit členství uživatele?
                         </Typography>
                         <Typography variant="body1" gutterBottom>
-                            Stav členství: {suspendInfo.data.isSuspended ? 'Zrušeno' : 'Aktivní'}
+                            Stav členství: {suspendInfo.isSuspended ? 'Zrušeno' : 'Aktivní'}
                         </Typography>
                         <Typography variant="body1" gutterBottom>
-                            Možnost zrušení: {suspendInfo.data.canSuspend ? 'Ano' : 'Ne'}
+                            Možnost zrušení: {suspendInfo.canSuspend ? 'Ano' : 'Ne'}
                         </Typography>
-                        {suspendInfo.data.details?.finance && (
+                        {suspendInfo.details?.finance && (
                             <Typography variant="body1" gutterBottom>
-                                Finanční stav: {suspendInfo.data.details.finance.status ? 'V pořádku' : 'Nevhodný'}
+                                Finanční stav: {suspendInfo.details.finance.status ? 'V pořádku' : 'Nevhodný'}
                             </Typography>
                         )}
                     </Box>

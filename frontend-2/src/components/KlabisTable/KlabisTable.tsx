@@ -80,7 +80,7 @@ const KlabisTableInner = <T extends Record<string, any>>({
 
     useEffect(() => {
         if (onTableActionsLoaded) {
-            onTableActionsLoaded(data?.data._actions || []);
+            onTableActionsLoaded(data?._actions || []);
         }
     }, [data]);
 
@@ -98,9 +98,9 @@ const KlabisTableInner = <T extends Record<string, any>>({
 
     // Funkce pro vykreslení dat v řádcích
     const renderTableRows = () => {
-        if (!data?.data.content) return null;
+        if (!data?.content) return null;
 
-        return data.data.content.map((item, index) => (
+        return data.content.map((item, index) => (
             <TableRow
                 key={item.id || index}
                 hover
@@ -160,7 +160,7 @@ const KlabisTableInner = <T extends Record<string, any>>({
             <TablePagination
                 rowsPerPageOptions={[5, 10, 25, 50]}
                 component="div"
-                count={data?.data.page.totalElements || 0}
+                count={data?.page.totalElements || 0}
                 rowsPerPage={tableContext.rowsPerPage} x
                 page={tableContext.page}
                 onPageChange={tableContext.handleChangePage}

@@ -1,7 +1,8 @@
 import {useApiPostMutation, useApiPutMutation, useApiQuery} from '../hooks/useApi';
-import {useQueryClient} from '@tanstack/react-query';
+import {type UseMutationOptions, useQueryClient} from '@tanstack/react-query';
 import type {QueryClient} from "@tanstack/query-core";
 import type {KlabisHateoasObject} from './klabisJsonUtils.tsx'
+import {AxiosError} from "axios";
 
 // Types based on the API specification
 export interface Member extends KlabisHateoasObject {
@@ -164,7 +165,7 @@ export const useUpdateMyDetails = (memberId: number) => {
             onSuccess: () => {
                 invalidateMemberData(memberId, queryClient)
             }
-        }
+        } as UseMutationOptions<any, AxiosError, any>
     );
 };
 

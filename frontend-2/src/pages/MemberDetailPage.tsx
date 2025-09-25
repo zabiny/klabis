@@ -23,7 +23,7 @@ import {EditMemberFormUI} from '../components/members/EditOwnMemberInfoForm.tsx'
 import MemberSuspendConfirmationDialog from "../components/members/MemberSuspendConfirmationDialog.tsx";
 import EditMemberPermissionsForm from "../components/members/EditMemberPermissionsForm.tsx";
 import {hasAction} from "../api/klabisJsonUtils.tsx";
-import {KlabisApiForm} from "../components/KlabisApiForm";
+import {KlabisApiForm} from "../components/KlabisForm";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -100,7 +100,7 @@ const MemberDetailPage = () => {
         );
     }
 
-    const member = memberResponse.data;
+    const member = memberResponse;
 
     return (
         <Box>

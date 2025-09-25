@@ -4,11 +4,6 @@ import {useEffect} from 'react';
 import apiClient, {setAuthTokenGetter} from '../api/apiClient';
 import {useAuth} from '../contexts/AuthContext2';
 
-// Generic type for API responses
-export type ApiResponse<T> = {
-    data: T;
-};
-
 export const useKlabisApiClient = (): AxiosInstance => {
     const {getAccessToken} = useAuth();
 
@@ -24,11 +19,11 @@ export const useApiQuery = <T>(
     queryKey: string[],
     url: string,
     apiParams?: string | URLSearchParams,
-    options?: UseQueryOptions<ApiResponse<T>, AxiosError>
+    options?: UseQueryOptions<T, AxiosError>
 ) => {
     const klabisAxios = useKlabisApiClient();
 
-    return useQuery<ApiResponse<T>, AxiosError>({
+    return useQuery<T, AxiosError>({
         queryKey,
         queryFn: async () => {
             const response = await klabisAxios.get<T>(url, {
@@ -37,7 +32,7 @@ export const useApiQuery = <T>(
                     Accept: 'application/klabis+json,application/json',
                 },
             });
-            return {data: response.data};
+            return response.data;
         },
         ...options
     });
@@ -46,14 +41,14 @@ export const useApiQuery = <T>(
 // Hook for POST requests
 export const useApiPostMutation = <T, R>(
     url: string,
-    options?: UseMutationOptions<ApiResponse<R>, AxiosError, T>
+    options?: UseMutationOptions<R, AxiosError, T>
 ) => {
     const klabisAxios = useKlabisApiClient();
 
-    return useMutation<ApiResponse<R>, AxiosError, T>({
+    return useMutation<R, AxiosError, T>({
             mutationFn: async (data: T) => {
                 const response = await klabisAxios.post<R>(url, data);
-                return {data: response.data};
+                return response.data;
             },
             ...options
         }
@@ -63,14 +58,14 @@ export const useApiPostMutation = <T, R>(
 // Hook for PUT requests
 export const useApiPutMutation = <T, R>(
     url: string,
-    options?: UseMutationOptions<ApiResponse<R>, AxiosError, T>
+    options?: UseMutationOptions<R, AxiosError, T>
 ) => {
     const klabisAxios = useKlabisApiClient();
 
-    return useMutation<ApiResponse<R>, AxiosError, T>({
+    return useMutation<R, AxiosError, T>({
             mutationFn: async (data: T) => {
                 const response = await klabisAxios.put<R>(url, data);
-                return {data: response.data};
+                return response.data;
             },
             ...options
         }
@@ -80,14 +75,14 @@ export const useApiPutMutation = <T, R>(
 // Hook for DELETE requests
 export const useApiDeleteMutation = <R>(
     url: string,
-    options?: UseMutationOptions<ApiResponse<R>, AxiosError, void>
+    options?: UseMutationOptions<R, AxiosError, void>
 ) => {
     const klabisAxios = useKlabisApiClient();
 
-    return useMutation<ApiResponse<R>, AxiosError, void>({
+    return useMutation<R, AxiosError, void>({
             mutationFn: async () => {
                 const response = await klabisAxios.delete<R>(url);
-                return {data: response.data};
+                return response.data;
             },
             ...options
         }

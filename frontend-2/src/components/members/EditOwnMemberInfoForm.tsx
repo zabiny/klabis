@@ -3,7 +3,7 @@ import {Checkbox, TextField} from 'formik-mui';
 import {type EditMyDetailsForm, useGetEditMyDetailsForm, useUpdateMyDetails} from '../../api/membersApi.ts';
 import {Field, Form, Formik, type FormikHelpers} from "formik";
 import * as Yup from 'yup';
-import {type KlabisFormProperties} from "../KlabisForm.types";
+import {type KlabisFormProperties} from "../KlabisForm";
 
 const FormLoadingUI = () => <Typography>Načítání...</Typography>;
 
@@ -88,7 +88,7 @@ export const EditMemberFormUI = ({
                             <Grid item xs={12}>
                                 <FormControlLabel
                                     control={
-                                        <Field name="medicCourse" component={Checkbox}/>
+                                        <Field type="checkbox" name="medicCourse" component={Checkbox}/>
                                     }
                                     label="Zdravotnický kurz"
                                 />
