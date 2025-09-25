@@ -50,7 +50,7 @@ const convertToTableColumn = (child: ReactNode): TableColumn | null => {
             return false;
         }
 
-        const hidden = child.props?.hidden as boolean;
+        const hidden = child.props?.hidden as boolean || false;
         const column = child.props?.column as string;
         const renderFunc = child.props?.as as ((props: RenderProps) => React.ReactNode) | undefined;
 
@@ -177,7 +177,7 @@ const KlabisTableInner = <T extends Record<string, any>>({
 };
 
 export const KlabisTable = <T extends Record<string, any>>(props: KlabisTableProps<T>) => {
-    return <KlabisTableProvider {...props}>
+    return <KlabisTableProvider {...props} colDefs={props.children}>
         <KlabisTableInner {...props}/>
     </KlabisTableProvider>
 };
