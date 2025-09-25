@@ -10,7 +10,6 @@ import java.lang.annotation.Target;
 
 @Constraint(validatedBy = {
         BirthCertificateIsDefinedForCzechiaConstraint.RegistrationFormValidator.class,
-        BirthCertificateIsDefinedForCzechiaConstraint.MemberEditFormValidator.class,
         BirthCertificateIsDefinedForCzechiaConstraint.EditAnotherMemberInfoByAdminFormValidator.class
 })
 @Target({ElementType.TYPE})

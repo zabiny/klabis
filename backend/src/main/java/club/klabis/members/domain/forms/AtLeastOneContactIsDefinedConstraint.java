@@ -59,19 +59,4 @@ class AtLeastOneContactIsDefinedConstraint {
 
     }
 
-    static class MemberEditFormValidator implements ConstraintValidator<AtLeastOneContactIsDefined, MemberEditForm> {
-        private AtLeastOneContactIsDefined annotation;
-
-        @Override
-        public void initialize(AtLeastOneContactIsDefined constraintAnnotation) {
-            this.annotation = constraintAnnotation;
-        }
-
-        @Override
-        public boolean isValid(MemberEditForm editForm, ConstraintValidatorContext constraintValidatorContext) {
-            return AtLeastOneContactIsDefinedConstraint.isValid(editForm.contact(), editForm.guardians(), annotation.contactType());
-        }
-
-    }
-
 }

@@ -1,5 +1,6 @@
 package club.klabis.users.application;
 
+import club.klabis.members.MemberId;
 import club.klabis.shared.config.restapi.KlabisUserAuthentication;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
@@ -27,9 +28,9 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
     }
 
     @Override
-    public boolean canEditMemberData(int dataMemberId) {
+    public boolean canEditMemberData(MemberId dataMemberId) {
         boolean canEditMemberData = getPrincipal().flatMap(ApplicationUser::getMemberId)
-                .map(authMemberId -> authMemberId.value() == dataMemberId)
+                .map(dataMemberId::equals)
                 .orElse(false);
 
         LOG.trace("Application user with ID {} attempt to edit data of member {} - {}",

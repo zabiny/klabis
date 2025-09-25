@@ -7,7 +7,6 @@ import jakarta.validation.Payload;
 import java.lang.annotation.*;
 
 @Constraint(validatedBy = {
-        AtLeastOneContactIsDefinedConstraint.MemberEditFormValidator.class,
         AtLeastOneContactIsDefinedConstraint.RegistrationFormValidator.class,
         AtLeastOneContactIsDefinedConstraint.EditOwnMemberInfoFormValidator.class
 })

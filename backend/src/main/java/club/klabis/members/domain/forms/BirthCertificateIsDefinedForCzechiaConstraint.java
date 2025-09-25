@@ -22,14 +22,6 @@ class BirthCertificateIsDefinedForCzechiaConstraint {
         }
     }
 
-    static class MemberEditFormValidator implements ConstraintValidator<BirthCertificateIsDefinedForCzechia, MemberEditForm> {
-
-        @Override
-        public boolean isValid(MemberEditForm memberEditForm, ConstraintValidatorContext constraintValidatorContext) {
-            return BirthCertificateIsDefinedForCzechiaConstraint.isValid(memberEditForm.nationality(), memberEditForm.birthCertificateNumber());
-        }
-    }
-
     static class EditAnotherMemberInfoByAdminFormValidator implements ConstraintValidator<BirthCertificateIsDefinedForCzechia, EditAnotherMemberInfoByAdminForm> {
         @Override
         public boolean isValid(EditAnotherMemberInfoByAdminForm memberEditForm, ConstraintValidatorContext constraintValidatorContext) {

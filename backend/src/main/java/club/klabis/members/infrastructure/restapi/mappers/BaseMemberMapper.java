@@ -35,7 +35,7 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
             return;
         }
 
-        if (securityService.canEditMemberData(entity.getId().value())) {
+        if (securityService.canEditMemberData(entity.getId())) {
             target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
                     entity.getId().value())).withRel(
                     "members:editOwnInfo"));

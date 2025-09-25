@@ -6,7 +6,6 @@ import club.klabis.members.domain.events.MemberEditedEvent;
 import club.klabis.members.domain.events.MembershipSuspendedEvent;
 import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
-import club.klabis.members.domain.forms.MemberEditForm;
 import club.klabis.members.domain.forms.RegistrationForm;
 import club.klabis.shared.domain.IncorrectFormDataException;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -106,28 +105,6 @@ public class Member extends AbstractAggregateRoot<Member> {
         if (dateOfBirth != null && !registration.isValidForBirthdate(dateOfBirth)) {
             throw new IncorrectFormDataException("Registration number '%s' is not correct for birth date '%s'".formatted(registration, dateOfBirth));
         }
-    }
-
-    public void edit(MemberEditForm form) {
-        this.firstName = form.firstName();
-        this.lastName = form.lastName();
-        this.identityCard = form.identityCard();
-        this.nationality = form.nationality();
-        this.address = form.address();
-        this.contact.clear();
-        this.contact.addAll(form.contact());
-        this.legalGuardians.clear();
-        this.legalGuardians.addAll(form.guardians());
-        this.siCard = form.siCard();
-        this.bankAccount = form.bankAccount();
-        this.dietaryRestrictions = form.dietaryRestrictions();
-        this.drivingLicence.clear();
-        this.drivingLicence.addAll(form.drivingLicence());
-        this.medicCourse = form.medicCourse();
-        this.dateOfBirth = form.dateOfBirth();
-        this.birthCertificateNumber = form.birthCertificateNumber();
-        this.sex = form.sex();
-        this.andEvent(new MemberEditedEvent(this));
     }
 
     public void edit(EditOwnMemberInfoForm form) {

@@ -11,8 +11,6 @@ import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
-import club.klabis.shared.config.security.ApplicationGrant;
-import club.klabis.shared.config.security.HasGrant;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -131,7 +129,6 @@ public class EditMemberUseCaseControllers {
             produces = {"application/problem+json"},
             consumes = {"application/json"}
     )
-    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     ResponseEntity<Void> membersMemberIdEditOwnMemberInfoFormPut(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
             @Parameter(name = "EditMyDetailsFormApiDto", description = "", required = true) @Valid @RequestBody club.klabis.members.infrastructure.restapi.dto.EditMyDetailsFormApiDto editMyDetailsFormApiDto
@@ -184,7 +181,6 @@ public class EditMemberUseCaseControllers {
             value = "/members/{memberId}/editByAdminForm",
             produces = {"application/json", "application/problem+json"}
     )
-    @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     public ResponseEntity<club.klabis.members.infrastructure.restapi.dto.EditAnotherMemberDetailsFormApiDto> getMemberEditByAdminForm(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
     ) {
@@ -228,7 +224,6 @@ public class EditMemberUseCaseControllers {
             produces = {"application/problem+json"},
             consumes = {"application/json"}
     )
-    @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     ResponseEntity<Void> putMemberEditByAdminForm(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
             @Parameter(name = "EditAnotherMemberDetailsFormApiDto", description = "", required = true) @Valid @RequestBody club.klabis.members.infrastructure.restapi.dto.EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto
