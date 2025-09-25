@@ -10,6 +10,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+/**
+ * Can be used to populate data repositories with some example data after application starts. This shall be removed once we move to some persistent storage in later phase of development.
+ */
 public interface PresetDataLoader {
     public void loadData() throws Exception;
 
