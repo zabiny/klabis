@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,8 +18,7 @@ import java.util.Objects;
  */
 
 @JsonTypeName("EventListItem")
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
-public class EventResponseItem extends RepresentationModel<EventResponseItem> {
+public class EventListResponse extends RepresentationModel<EventListResponse> {
 
     private Integer id;
 
@@ -29,15 +27,17 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
 
     private String name;
 
+    private String location;
+
     private String organizer;
 
     /**
      * Gets or Sets type
      */
     public enum TypeEnum {
-        T("T"),
+        TRAINING("T"),
 
-        S("S");
+        COMPETITION("C");
 
         private String value;
 
@@ -75,14 +75,14 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
 
     private String coordinator;
 
-    public EventResponseItem() {
+    public EventListResponse() {
         super();
     }
 
     /**
      * Constructor with only required parameters
      */
-    public EventResponseItem(Integer id, LocalDate date, String name, String organizer, TypeEnum type) {
+    public EventListResponse(Integer id, LocalDate date, String name, String organizer, TypeEnum type) {
         this.id = id;
         this.date = date;
         this.name = name;
@@ -90,7 +90,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.type = type;
     }
 
-    public EventResponseItem id(Integer id) {
+    public EventListResponse id(Integer id) {
         this.id = id;
         return this;
     }
@@ -111,7 +111,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.id = id;
     }
 
-    public EventResponseItem date(LocalDate date) {
+    public EventListResponse date(LocalDate date) {
         this.date = date;
         return this;
     }
@@ -133,7 +133,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.date = date;
     }
 
-    public EventResponseItem name(String name) {
+    public EventListResponse name(String name) {
         this.name = name;
         return this;
     }
@@ -154,7 +154,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.name = name;
     }
 
-    public EventResponseItem organizer(String organizer) {
+    public EventListResponse organizer(String organizer) {
         this.organizer = organizer;
         return this;
     }
@@ -175,7 +175,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.organizer = organizer;
     }
 
-    public EventResponseItem type(TypeEnum type) {
+    public EventListResponse type(TypeEnum type) {
         this.type = type;
         return this;
     }
@@ -196,7 +196,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.type = type;
     }
 
-    public EventResponseItem web(String web) {
+    public EventListResponse web(String web) {
         this.web = web;
         return this;
     }
@@ -217,7 +217,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.web = web;
     }
 
-    public EventResponseItem registrationDeadline(LocalDate registrationDeadline) {
+    public EventListResponse registrationDeadline(LocalDate registrationDeadline) {
         this.registrationDeadline = registrationDeadline;
         return this;
     }
@@ -238,7 +238,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.registrationDeadline = registrationDeadline;
     }
 
-    public EventResponseItem coordinator(String coordinator) {
+    public EventListResponse coordinator(String coordinator) {
         this.coordinator = coordinator;
         return this;
     }
@@ -259,6 +259,16 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         this.coordinator = coordinator;
     }
 
+    @Schema(name = "location", example = "Vacenovice", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("location")
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -267,9 +277,10 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        EventResponseItem eventListItem = (EventResponseItem) o;
+        EventListResponse eventListItem = (EventListResponse) o;
         return Objects.equals(this.id, eventListItem.id) &&
                Objects.equals(this.date, eventListItem.date) &&
+               Objects.equals(this.location, eventListItem.location) &&
                Objects.equals(this.name, eventListItem.name) &&
                Objects.equals(this.organizer, eventListItem.organizer) &&
                Objects.equals(this.type, eventListItem.type) &&
@@ -291,6 +302,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
         sb.append("    date: ").append(toIndentedString(date)).append("\n");
         sb.append("    name: ").append(toIndentedString(name)).append("\n");
         sb.append("    organizer: ").append(toIndentedString(organizer)).append("\n");
+        sb.append("    location: ").append(toIndentedString(location)).append("\n");
         sb.append("    type: ").append(toIndentedString(type)).append("\n");
         sb.append("    web: ").append(toIndentedString(web)).append("\n");
         sb.append("    registrationDeadline: ").append(toIndentedString(registrationDeadline)).append("\n");
@@ -312,23 +324,24 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
 
     public static class Builder {
 
-        private EventResponseItem instance;
+        private EventListResponse instance;
 
         public Builder() {
-            this(new EventResponseItem());
+            this(new EventListResponse());
         }
 
-        protected Builder(EventResponseItem instance) {
+        protected Builder(EventListResponse instance) {
             this.instance = instance;
         }
 
-        protected Builder copyOf(EventResponseItem value) {
+        protected Builder copyOf(EventListResponse value) {
             this.instance.setId(value.id);
             this.instance.setDate(value.date);
             this.instance.setName(value.name);
             this.instance.setOrganizer(value.organizer);
             this.instance.setType(value.type);
             this.instance.setWeb(value.web);
+            this.instance.setLocation(value.location);
             this.instance.setRegistrationDeadline(value.registrationDeadline);
             this.instance.setCoordinator(value.coordinator);
             return this;
@@ -351,6 +364,11 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
 
         public Builder organizer(String organizer) {
             this.instance.organizer(organizer);
+            return this;
+        }
+
+        public Builder location(String location) {
+            this.instance.organizer(location);
             return this;
         }
 
@@ -379,7 +397,7 @@ public class EventResponseItem extends RepresentationModel<EventResponseItem> {
          * <p>
          * The builder is not reusable (NullPointerException)
          */
-        public EventResponseItem build() {
+        public EventListResponse build() {
             try {
                 return this.instance;
             } finally {

@@ -8,7 +8,7 @@ package club.klabis.events.infrastructure.restapi;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
-import club.klabis.events.infrastructure.restapi.dto.EventResponseItem;
+import club.klabis.events.infrastructure.restapi.dto.EventListResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -36,11 +36,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "/events", produces = {"application/json", "application/klabis+json", "application/hal+json"})
 public class EventsController {
     private final EventsRepository eventsRepository;
-    private final EventModelAssembler eventModelAssembler;
+    private final EventModelMapper eventModelMapper;
 
-    EventsController(EventsRepository eventsRepository, EventModelAssembler eventModelAssembler) {
+    EventsController(EventsRepository eventsRepository, EventModelMapper eventModelMapper) {
         this.eventsRepository = eventsRepository;
-        this.eventModelAssembler = eventModelAssembler;
+        this.eventModelMapper = eventModelMapper;
     }
 
     /**
@@ -57,10 +57,10 @@ public class EventsController {
     )
     @GetMapping
     @PageableAsQueryParam
-    ResponseEntity<CollectionModel<EventResponseItem>> getEvents(@ParameterObject EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
+    ResponseEntity<CollectionModel<EventListResponse>> getEvents(@ParameterObject EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
         Page<Event> data = eventsRepository.findEvents(filter, pageable);
 
-        PagedModel<EventResponseItem> responseModel = eventModelAssembler.toPagedModel(data);
+        PagedModel<EventListResponse> responseModel = eventModelMapper.toPagedModel(data);
 
         return ResponseEntity.ok(responseModel);
     }
@@ -78,9 +78,9 @@ public class EventsController {
     @GetMapping(
             value = "/{eventId}"
     )
-    ResponseEntity<EventResponseItem> getEventById(@PathVariable("eventId") int eventId) {
-        EventResponseItem response = eventsRepository.findById(new Event.Id(eventId))
-                .map(eventModelAssembler::toModel)
+    ResponseEntity<EventListResponse> getEventById(@PathVariable("eventId") int eventId) {
+        EventListResponse response = eventsRepository.findById(new Event.Id(eventId))
+                .map(eventModelMapper::toModel)
                 .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
 
         return ResponseEntity.ok(response);
