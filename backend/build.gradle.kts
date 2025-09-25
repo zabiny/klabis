@@ -40,6 +40,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-authorization-server")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    runtimeOnly("io.zipkin.reporter2:zipkin-reporter-brave")
+    runtimeOnly("io.micrometer:micrometer-tracing-bridge-brave")
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     testImplementation("org.springframework.security:spring-security-test")
 
     // SPRING DATA
@@ -52,7 +55,6 @@ dependencies {
     implementation("org.springframework.modulith:spring-modulith-starter-core")
     //implementation("org.springframework.modulith:spring-modulith-starter-jdbc")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
-    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     runtimeOnly("org.springframework.modulith:spring-modulith-starter-insight")
 
     // SPRING TOOLS

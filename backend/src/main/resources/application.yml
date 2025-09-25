@@ -1,5 +1,8 @@
 spring:
 
+  application:
+    name: Klabis API
+
   profiles:
     active:
       - generatedSwaggerUI
@@ -8,7 +11,7 @@ spring:
       - http2
       - hateoas
       - oris
-
+  #      - zipkin
   security:
     oauth2:
       authorizationserver:
@@ -207,7 +210,7 @@ management:
     web:
       exposure:
         #include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
-        include: loggers, caches, env, info, mappings, health, modulith, prometheus
+        include: loggers, caches, env, info, mappings, health, modulith, prometheus, metrics
 
 springdoc:
   swagger-ui:
@@ -315,3 +318,17 @@ spring:
       on-profile: oris
 oris-integration:
   enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: zipkin
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
