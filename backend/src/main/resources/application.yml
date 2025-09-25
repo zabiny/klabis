@@ -7,6 +7,7 @@ spring:
       - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
       - http2
       - hateoas
+      - oris
 
   security:
     oauth2:
@@ -305,3 +306,11 @@ spring:
 server:
   forward-headers-strategy: framework # For hateoas proper URL hostname detection
 
+---
+
+spring:
+  config:
+    activate:
+      on-profile: oris
+oris-integration:
+  enabled: true

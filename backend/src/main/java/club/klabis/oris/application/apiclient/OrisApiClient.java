@@ -6,6 +6,7 @@ import club.klabis.oris.application.apiclient.dto.OrisEventListFilter;
 import club.klabis.oris.application.apiclient.dto.OrisUserInfo;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jmolecules.architecture.hexagonal.SecondaryPort;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 // TODO: move into adapters
+@SecondaryPort
 public interface OrisApiClient {
 
     int CLUB_ID_ZBM = 205;

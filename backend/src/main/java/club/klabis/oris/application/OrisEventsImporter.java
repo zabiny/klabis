@@ -3,11 +3,14 @@ package club.klabis.oris.application;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventEditationForm;
+import club.klabis.events.domain.forms.EventEditationFormBuilder;
 import club.klabis.oris.application.apiclient.OrisApiClient;
 import club.klabis.oris.application.apiclient.dto.OrisEvent;
 import club.klabis.oris.application.apiclient.dto.OrisEventListFilter;
+import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +20,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 @Service
+@ConditionalOnProperty(prefix = "oris-integration", name = "enabled", havingValue = "true")
+@PrimaryAdapter
 class OrisEventsImporter {
 
     private static final Logger logger = LoggerFactory.getLogger(OrisEventsImporter.class);
@@ -65,12 +70,13 @@ class OrisEventsImporter {
     }
 
     private EventEditationForm createEventEditationForm(OrisEvent orisEvent) {
-        EventEditationForm form = new EventEditationForm(orisEvent.name(),
-                orisEvent.location(),
-                orisEvent.date(),
-                orisEvent.organizer1().abbreviation(),
-                getEntryDate(orisEvent).toLocalDate(),
-                null);
+        EventEditationForm form = EventEditationFormBuilder.builder()
+                .name(orisEvent.name())
+                .location(orisEvent.location())
+                .date(orisEvent.date())
+                .organizer(orisEvent.organizer1().abbreviation())
+                .registrationDeadline(getEntryDate(orisEvent).toLocalDate())
+                .build();
         return form;
     }
 }

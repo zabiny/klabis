@@ -31,9 +31,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Configuration
-class OrisConfiguration implements ClientHttpRequestInterceptor {
+class OrisApiClientConfiguration implements ClientHttpRequestInterceptor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(OrisConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OrisApiClientConfiguration.class);
 
 
     @Bean

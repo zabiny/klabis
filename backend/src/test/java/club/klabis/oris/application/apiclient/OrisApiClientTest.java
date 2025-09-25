@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
-@RestClientTest(OrisConfiguration.class)
+@RestClientTest(OrisApiClientConfiguration.class)
 class OrisApiClientTest {
 
     @Autowired
