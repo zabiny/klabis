@@ -3,27 +3,26 @@ package club.klabis.members.infrastructure.restapi.mappers;
 import club.klabis.members.domain.Member;
 import club.klabis.members.infrastructure.restapi.EditMemberUseCaseControllers;
 import club.klabis.members.infrastructure.restapi.MembersApi;
+import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
-import org.mapstruct.AfterMapping;
-import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.RepresentationModel;
-import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
+
+import java.util.Collection;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends RepresentationModelAssemblerSupport<Member, T> implements Converter<Member, T> {
+public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends AbstractRepresentationModelMapper<Member, T> implements Converter<Member, T> {
     private KlabisSecurityService securityService;
 
-    public BaseMemberMapper(Class<?> controllerClass, Class<T> resourceType) {
-        super(controllerClass, resourceType);
-    }
+    @Override
+    public Collection<Link> createItemLinks(Member entity) {
+        Collection<Link> target = super.createItemLinks(entity);
 
-    @AfterMapping
-    void assembleLinks(Member entity, @MappingTarget T target) {
         target.add(linkTo(methodOn(MembersApi.class).membersMemberIdGet(entity.getId().value())).withSelfRel());
 
         if (entity.isSuspended()) {
@@ -32,7 +31,7 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
                         .value())).withRel(
                         ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()));
             }
-            return;
+            return target;
         }
 
         if (securityService.canEditMemberData(entity.getId())) {
@@ -58,6 +57,8 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
                     .value())).withRel(
                     ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName()));
         }
+
+        return target;
     }
 
     @Autowired
