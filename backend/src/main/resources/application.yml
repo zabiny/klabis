@@ -1,8 +1,4 @@
 spring:
-
-  application:
-    name: Klabis API
-
   profiles:
     active:
       - generatedSwaggerUI
@@ -12,6 +8,10 @@ spring:
       - hateoas
       - oris
   #      - zipkin
+
+  application:
+    name: Klabis API
+
   security:
     oauth2:
       authorizationserver:
