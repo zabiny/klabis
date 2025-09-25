@@ -24,6 +24,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -67,14 +68,15 @@ public class PresetDataLoader implements ApplicationRunner {
             return appUsersRepository.save(admin);
         });
 
-
-        ClassPathResource membersFile = new ClassPathResource("presetData/members.csv");
-        loadObjectList(MembersCsvLine.class, membersFile.getInputStream()).forEach(csvLine -> {
+        loadObjectList(MembersCsvLine.class, new ClassPathResource("presetData/members.csv")).forEach(csvLine -> {
             Member registeredMember = memberRegistrationUseCase.registerMember(csvLine.getRegistration(conversionService));
             if (csvLine.disabled()) {
                 membershipSuspendUseCase.suspendMembershipForMember(registeredMember.getId(), true);
             }
-            userGrantsUpdateUseCase.setGlobalGrants(registeredMember.getId(), EnumSet.allOf(ApplicationGrant.class));
+            if (csvLine.admin()) {
+                userGrantsUpdateUseCase.setGlobalGrants(registeredMember.getId(),
+                        EnumSet.allOf(ApplicationGrant.class));
+            }
             csvLine.getGoogleId()
                     .ifPresent(googleId -> linkWithSocialIdUseCase.linkWithGoogleId(csvLine.registrationNumber(),
                             googleId));
@@ -97,6 +99,10 @@ public class PresetDataLoader implements ApplicationRunner {
                         .minusDays(20),
                 null));
         System.out.printf("Created event with ID %s%n", createdEvent.getId());
+    }
+
+    public <T> List<T> loadObjectList(Class<T> type, Resource resourceWithData) throws IOException {
+        return loadObjectList(type, resourceWithData.getInputStream());
     }
 
     public <T> List<T> loadObjectList(Class<T> type, InputStream inputData) throws IOException {
@@ -124,7 +130,8 @@ public class PresetDataLoader implements ApplicationRunner {
             String bankAccount,
             Integer orisId,
             String googleId,
-            boolean disabled
+            boolean disabled,
+            boolean admin
     ) {
 
         public RegistrationForm getRegistration(ConversionService conversionService) {

@@ -1,5 +1,6 @@
 package club.klabis.users.infrastructure.restapi.dto;
 
+import club.klabis.shared.config.security.ApplicationGrant;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.annotation.Generated;
@@ -11,13 +12,15 @@ import jakarta.annotation.Generated;
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
 public enum GlobalGrantsApiDto {
 
-    REGISTER("members:register"),
+    REGISTER(ApplicationGrant.MEMBERS_REGISTER.getGrantName()),
 
-    EDIT("members:edit"),
+    EDIT(ApplicationGrant.MEMBERS_EDIT.getGrantName()),
 
-    SUSPENDMEMBERSHIP("members:suspendMembership"),
+    SUSPENDMEMBERSHIP(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()),
 
-    PERMISSIONS("members:permissions");
+    RESUMEMEMBERSHIP(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()),
+
+    PERMISSIONS(ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName());
 
     private String value;
 

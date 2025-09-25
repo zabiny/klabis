@@ -9,6 +9,7 @@ public enum ApplicationGrant {
     MEMBERS_REGISTER("Může registrovat nové členy klubu", true, false, false, "members:register"),
     MEMBERS_EDIT("Může editovat jiné členy klubu", true, false, false, "members:edit"),
     MEMBERS_SUSPENDMEMBERSHIP("Může suspendovat členství v klubu", true, false, false, "members:suspendMembership"),
+    MEMBERS_RESUMEMEMBERSHIP("Může obnovit členství v klubu", true, false, false, "members:resumeMembership"),
     APPUSERS_PERMISSIONS("Může spravovat oprávnění v aplikaci", true, false, false, "members:permissions");
 
     private final String description;

@@ -26,6 +26,15 @@ public abstract class BaseMemberMapper<T extends RepresentationModel<T>> extends
     void assembleLinks(Member entity, @MappingTarget T target) {
         target.add(linkTo(methodOn(MembersApi.class).membersMemberIdGet(entity.getId().value())).withSelfRel());
 
+        if (entity.isSuspended()) {
+            if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
+                target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                        .value())).withRel(
+                        ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()));
+            }
+            return;
+        }
+
         if (securityService.canEditMemberData(entity.getId().value())) {
             target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
                     entity.getId().value())).withRel(
