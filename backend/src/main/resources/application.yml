@@ -174,6 +174,7 @@ spring:
 
 logging:
   level:
+    club.klabis: debug
     org.springframework.security.jackson2.SecurityJackson2Modules: info
     org.springframework.security.web.savedrequest.HttpSessionRequestCache: trace
     #org.springframework.data.repository.config.RepositoryConfigurationDelegate: trace
