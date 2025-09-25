@@ -14,7 +14,7 @@ public class ActuatorSecurity {
     @Bean("actuatorSecurityFilterChain")
     @Order(value = AuthorizationServerConfiguration.BEFORE_AUTH_SERVER_SECURITY_ORDER)
     public SecurityFilterChain errorPageFilterChain(HttpSecurity http) throws Exception {
-        http.securityMatcher(EndpointRequest.to("health"))
+        http.securityMatcher(EndpointRequest.to("health", "prometheus"))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         c -> c.anyRequest().permitAll()

@@ -35,6 +35,15 @@ URL: https://github.com/zabiny/klabis
 
 PR vyžaduje approve od [@dapolach](https://github.com/dapolach)
 
+### Lokalni prostredi
+
+Podpurne nastroje (Prometheus/Grafana/Zipkin, apod) je mozne pustit pomoci [docker-compose](./docker-compose.yml). Pak
+jsou dostupne tyto sluzby:
+
+- [Prometheus](http://localhost:9090)
+- [Grafana](http://localhost:9030) (default user `admin`:`admin`)
+- [Zipkin](http://localhost:9411)
+
 ## Analýza
 
 Motivace: https://miro.com/app/board/uXjVMZ6CEqU=/?moveToWidget=3458764550128692580&cot=14

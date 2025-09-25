@@ -1,0 +1,49 @@
+version: '3.9'
+services:
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: klabis-zipkin
+    ports:
+      - "9411:9411"
+    environment:
+      - STORAGE_TYPE=mem
+    networks:
+      - klabis-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: klabis-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./support/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - klabis-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: klabis-grafana
+    ports:
+      - "9030:3000"
+    environment:
+      #- GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - DS_PROMETHEUS=Prometheus
+    volumes:
+      - ./support/grafana/ds.yaml:/etc/grafana/provisioning/datasources/ds.yaml
+      - ./support/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./support/grafana/dashboards:/etc/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - klabis-network
+
+networks:
+  klabis-network:
+    driver: bridge

@@ -7,6 +7,10 @@ Authorization: Bearer {{$auth.token("frontend")}}
 GET {{host}}/actuator/health
 Accept: application/json
 
+### Prometheus endpoint (public)
+GET {{host}}/actuator/prometheus
+Accept: application/json
+
 ### List of loggers and their settings
 GET {{host}}/actuator/loggers/oauthserver
 Accept: application/json
