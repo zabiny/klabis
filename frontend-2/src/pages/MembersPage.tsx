@@ -101,7 +101,7 @@ const MembersPage = () => {
                 onTableActionsLoaded={setTableActions}
                 queryKey="members-table"
             >
-                <TableCell column="id">ID</TableCell>
+                <TableCell hidden={view === 'SUMMARY'} column="id">ID</TableCell>
                 <TableCell sortable column="firstName">Jméno</TableCell>
                 <TableCell sortable column="lastName">Příjmení</TableCell>
                 <TableCell sortable column="registrationNumber">Registrační číslo</TableCell>
