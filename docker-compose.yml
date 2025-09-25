@@ -18,7 +18,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./support/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./tools/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     networks:
@@ -38,9 +38,9 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - DS_PROMETHEUS=Prometheus
     volumes:
-      - ./support/grafana/ds.yaml:/etc/grafana/provisioning/datasources/ds.yaml
-      - ./support/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ./support/grafana/dashboards:/etc/grafana/dashboards
+      - ./tools/grafana/ds.yaml:/etc/grafana/provisioning/datasources/ds.yaml
+      - ./tools/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./tools/grafana/dashboards:/etc/grafana/dashboards
     depends_on:
       - prometheus
     networks:
