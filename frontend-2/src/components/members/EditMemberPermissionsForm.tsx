@@ -7,7 +7,7 @@ import {
     useGetAllGrants,
     useGetMemberGrants,
     useUpdateMemberGrants
-} from '../api/membersApi.ts';
+} from '../../api/membersApi.ts';
 
 interface EditMemberPermissionsFormUIProps {
     allGrants: GetAllGrants;

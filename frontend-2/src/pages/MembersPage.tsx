@@ -3,7 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import {Box, Button, FormControlLabel, Switch, Typography,} from '@mui/material';
 import {KlabisTable, TableCell} from '../components/KlabisTable';
 import {hasAction} from "../api/klabisJsonUtils.tsx";
-import RegisterMemberFormDialog from "../components/RegisterMemberForm.tsx";
+import RegisterMemberFormDialog from "../components/members/RegisterMemberForm.tsx";
 
 interface Member {
     id: number;

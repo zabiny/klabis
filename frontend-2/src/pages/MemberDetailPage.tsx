@@ -19,9 +19,9 @@ import {
 } from '@mui/material';
 import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material';
 import {useGetMember} from '../api/membersApi';
-import EditOwnMemberInfoForm from '../components/EditOwnMemberInfoForm.tsx';
-import MemberSuspendConfirmationDialog from "../components/MemberSuspendConfirmationDialog.tsx";
-import EditMemberPermissionsForm from "../components/EditMemberPermissionsForm.tsx";
+import EditOwnMemberInfoForm from '../components/members/EditOwnMemberInfoForm.tsx';
+import MemberSuspendConfirmationDialog from "../components/members/MemberSuspendConfirmationDialog.tsx";
+import EditMemberPermissionsForm from "../components/members/EditMemberPermissionsForm.tsx";
 import {hasAction} from "../api/klabisJsonUtils.tsx";
 
 interface TabPanelProps {

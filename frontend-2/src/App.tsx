@@ -2,7 +2,7 @@ import {Navigate, Route, Routes} from 'react-router-dom';
 import {ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import {AuthProvider, useAuth} from './contexts/AuthContext2';
-import Layout from './components/Layout';
+import Layout from './pages/Layout';
 import HomePage from './pages/HomePage';
 import MemberDetailPage from './pages/MemberDetailPage';
 import EventsPage from './pages/EventsPage';

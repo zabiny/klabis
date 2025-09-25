@@ -1,7 +1,7 @@
 import React from "react";
 import {Button, Grid, Paper, Stack, TextField, Typography} from "@mui/material";
 import ContactFields from "./ContactFields";
-import type {MemberRegistrationForm} from "../api/membersApi";
+import type {MemberRegistrationForm} from "../../api/membersApi";
 
 type Guardian = NonNullable<MemberRegistrationForm['guardians']>[number];
 

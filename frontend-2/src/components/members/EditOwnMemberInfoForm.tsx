@@ -1,9 +1,9 @@
 import {Alert, Button, FormControlLabel, Grid, Paper, Stack, Typography,} from '@mui/material';
 import {Checkbox, TextField} from 'formik-mui';
-import {type EditMyDetailsForm, useGetEditMyDetailsForm, useUpdateMyDetails} from '../api/membersApi.ts';
+import {type EditMyDetailsForm, useGetEditMyDetailsForm, useUpdateMyDetails} from '../../api/membersApi.ts';
 import {Field, Form, Formik, type FormikHelpers} from "formik";
 import * as Yup from 'yup';
-import {type KlabisFormProperties} from "./KlabisForm.types";
+import {type KlabisFormProperties} from "../KlabisForm.types";
 
 const FormLoadingUI = () => <Typography>Načítání...</Typography>;
 

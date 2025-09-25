@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {Alert, Button, Dialog, DialogContent, Grid, MenuItem, Paper, Stack, TextField, Typography} from '@mui/material';
-import {type MemberRegistrationForm, useRegisterMember} from '../api/membersApi.ts';
+import {type MemberRegistrationForm, useRegisterMember} from '../../api/membersApi.ts';
 
 import AddressFields from './AddressFields';
 import ContactFields from './ContactFields';

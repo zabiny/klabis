@@ -8,7 +8,7 @@ import {
     DialogTitle,
     Typography,
 } from '@mui/material';
-import {useGetSuspendMembershipForm, useSuspendMembership} from '../api/membersApi';
+import {useGetSuspendMembershipForm, useSuspendMembership} from '../../api/membersApi';
 
 interface MemberSuspendConfirmationDialogProps {
     memberId: number;
