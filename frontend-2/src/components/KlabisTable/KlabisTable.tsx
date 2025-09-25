@@ -7,6 +7,7 @@ import {
     Paper,
     Table,
     TableBody,
+    TableCell,
     TableCell as MuiTableCell,
     TableContainer,
     TableHead,
@@ -98,7 +99,10 @@ const KlabisTableInner = <T extends Record<string, any>>({
 
     // Funkce pro vykreslení dat v řádcích
     const renderTableRows = () => {
-        if (!data?.content) return null;
+        if (!data?.content) return (
+            <TableRow key={0}><TableCell align={"center"} colSpan={React.Children.toArray(children).length}>No
+                content</TableCell></TableRow>
+        );
 
         return data.content.map((item, index) => (
             <TableRow
