@@ -107,7 +107,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     }
 
     public boolean areRegistrationsOpen() {
-        return registrationDeadline.isBefore(LocalDate.now());
+        return registrationDeadline.isAfter(LocalDate.now());
     }
 
     public boolean isMemberRegistered(MemberId memberId) {

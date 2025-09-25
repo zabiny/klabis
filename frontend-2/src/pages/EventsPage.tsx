@@ -42,12 +42,14 @@ const EventsPage = () => {
             <KlabisTable<EventListItem> api={"/events"} queryKey={"events"}>
                 <TableCell sortable column={"date"} as={({value}) => formatDate(value)}>Datum</TableCell>
                 <TableCell sortable column={"name"}>Název</TableCell>
-                <TableCell hidden column={"type"}>Typ</TableCell>
-                <TableCell hidden sortable column={"coordinator"}>Koordinátor</TableCell>
+                <TableCell sortable column={"location"}>Místo</TableCell>
                 <TableCell sortable column={"organizer"}>Pořadatel</TableCell>
-                <TableCell sortable column={"registrationDeadline"} as={({value}) => formatDate(value)}>Uzávěrka
-                    přihlášek</TableCell>
-                <TableCell hidden column={"web"}>Web</TableCell>
+                <TableCell column={"type"}>Typ</TableCell>
+                <TableCell column={"web"}>Web</TableCell>
+                <TableCell column={"_actions"}>Možnosti</TableCell>
+                <TableCell sortable column={"registrationDeadline"}
+                           as={({value}) => formatDate(value)}>Přihlášky</TableCell>
+                <TableCell sortable column={"coordinator"}>Vedoucí</TableCell>
 
             </KlabisTable>
         </Box>

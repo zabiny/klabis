@@ -46,17 +46,20 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
 
         final MemberId memberId = new MemberId(1);
 
-        if (event.isMemberRegistered(memberId) && event.areRegistrationsOpen()) {
-            result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                            .submitRegistrationForm(event.getId().value(), memberId.value(), null))
-                    .withRel("updateRegistration"));
+        if (event.areRegistrationsOpen()) {
+            if (event.isMemberRegistered(memberId)) {
+                result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                                .submitRegistrationForm(event.getId().value(), memberId.value(), null))
+                        .withRel("updateRegistration"));
 
-            result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                    .cancelEventRegistration(event.getId().value(), memberId.value())).withRel("cancelRegistration"));
-        } else {
-            result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                            .submitRegistrationForm(event.getId().value(), memberId.value(), null))
-                    .withRel("createRegistration"));
+                result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                                .cancelEventRegistration(event.getId().value(), memberId.value()))
+                        .withRel("cancelRegistration"));
+            } else {
+                result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                                .submitRegistrationForm(event.getId().value(), memberId.value(), null))
+                        .withRel("createRegistration"));
+            }
         }
 
         return result;
