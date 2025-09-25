@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -82,7 +81,6 @@ public class EditMemberUseCaseControllers {
             value = "/members/{memberId}/editOwnMemberInfoForm",
             produces = {"application/json", "application/problem+json"}
     )
-    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
     public ResponseEntity<club.klabis.members.infrastructure.restapi.dto.EditMyDetailsFormApiDto> membersMemberIdEditOwnMemberInfoFormGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
     ) {
