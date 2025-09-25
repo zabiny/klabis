@@ -142,14 +142,14 @@ const EditMemberPermissionsForm = ({memberId}: EditMemberPermissionsFormProps) =
         return <FormLoadingUI/>;
     }
 
-    if (!allGrants?.data || !memberGrants?.data) {
+    if (!allGrants || !memberGrants) {
         return <Typography>Nepodařilo se načíst data</Typography>;
     }
 
     return (
         <EditMemberPermissionsFormUI
-            allGrants={allGrants.data}
-            memberGrants={memberGrants.data}
+            allGrants={allGrants}
+            memberGrants={memberGrants}
             onSubmit={handleSubmit}
             successMessage={mutation.isSuccess ? 'Oprávnění byla úspěšně aktualizována' : null}
             failureMessage={mutation.isError ? 'Při ukládání oprávnění došlo k chybě' : null}
