@@ -1,14 +1,14 @@
+import React from "react";
+
 export interface PaginatedResponse<T> {
-    data: {
-        content: T[];
-        page: {
-            totalElements: number;
-            totalPages: number;
-            size: number;
-            number: number;
-        };
-        _actions?: string[];
+    content: T[];
+    page: {
+        totalElements: number;
+        totalPages: number;
+        size: number;
+        number: number;
     };
+    _actions?: string[];
 }
 
 export interface ApiParams {
@@ -21,11 +21,16 @@ export interface ApiParams {
 
 export type SortDirection = 'asc' | 'desc';
 
-export interface TableColumn {
+export interface TableCellRenderProps {
+    item: any;
     column: string;
-    children: React.ReactNode;
+    value: any;
 }
 
-export interface SortableTableColumn extends TableColumn {
-    sortable: true;
+export interface TableCellProps {
+    column: string;
+    hidden?: boolean,
+    sortable?: boolean,
+    children: React.ReactNode;
+    dataRender?: (props: TableCellRenderProps) => React.ReactNode;
 }

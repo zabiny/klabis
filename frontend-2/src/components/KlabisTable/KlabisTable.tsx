@@ -1,4 +1,4 @@
-import React, {isValidElement, type ReactElement, type ReactNode, useEffect} from 'react';
+import React, {ReactNode, useEffect} from 'react';
 // Import pro MuiTableCell
 import {
     Alert,
@@ -8,7 +8,6 @@ import {
     Table,
     TableBody,
     TableCell,
-    TableCell as MuiTableCell,
     TableContainer,
     TableHead,
     TablePagination,
@@ -31,105 +30,21 @@ interface KlabisTableProps<T = any> {
     queryKey?: string;
 }
 
-interface RenderProps {
-    item: any;
-    column: string;
-    value: any;
-}
-
-interface TableColumn {
-    headerNode: ReactElement,
-    column: string,
-    hidden: boolean,
-    renderFunc?: (props: RenderProps) => React.ReactNode
-}
-
-const convertToTableColumn = (child: ReactNode): TableColumn | null => {
-    if (isReactComponent(child)) {
-        if (!isValidElement(child)) {
-            return false;
-        }
-
-        const hidden = child.props?.hidden as boolean || false;
-        const column = child.props?.column as string;
-        const renderFunc = child.props?.as as ((props: RenderProps) => React.ReactNode) | undefined;
-
-        return {
-            headerNode: child,
-            hidden: hidden,
-            column: column,
-            renderFunc: renderFunc
-        } as TableColumn;
-    }
-
-    return null;
-}
-
-function isReactComponent(item: ReactNode): item is ReactElement {
-    return (item as ReactElement).props !== undefined;
-}
-
 const KlabisTableInner = <T extends Record<string, any>>({
                                                              api,
-                                                             children,
                                                              onRowClick,
                                                              queryKey,
-                                                             onTableActionsLoaded
+                                                             onTableActionsLoaded = (actions) => {
+                                                             }
                                                          }: KlabisTableProps<T>) => {
     const tableContext = useKlabisTableContext();
-    const {data, isLoading, error} = useKlabisApi<T>(api, tableContext.createApiParams(), queryKey);
+    const {data, isLoading, error, isSuccess} = useKlabisApi<T>(api, tableContext.createApiParams(), queryKey);
 
     useEffect(() => {
-        if (onTableActionsLoaded) {
+        if (isSuccess) {
             onTableActionsLoaded(data?._actions || []);
         }
-    }, [data]);
-
-    // Funkce pro klonování dětských komponent s props
-    const renderHeaderCells = () => {
-        return React.Children.map(children, (child) => {
-            const column = convertToTableColumn(child);
-            if (column && !column.hidden) {
-                return column.headerNode;
-            } else {
-                return null;
-            }
-        });
-    };
-
-    // Funkce pro vykreslení dat v řádcích
-    const renderTableRows = () => {
-        if (!data?.content) return (
-            <TableRow key={0}><TableCell align={"center"} colSpan={React.Children.toArray(children).length}>No
-                content</TableCell></TableRow>
-        );
-
-        return data.content.map((item, index) => (
-            <TableRow
-                key={item.id || index}
-                hover
-                onClick={() => onRowClick?.(item)}
-                sx={{cursor: onRowClick ? 'pointer' : 'default'}}
-            >
-                {React.Children
-                    .map(children, (child) => {
-                        const column = convertToTableColumn(child);
-                        if (column && !column.hidden) {
-                            const value = item[column.column];
-                            const cellContent = column.renderFunc
-                                ? column.renderFunc({item, column: column.column, value})
-                                : value;
-                            return (
-                                <MuiTableCell key={column.column}>
-                                    {cellContent}
-                                </MuiTableCell>
-                            );
-                        }
-                        return null;
-                    })}
-            </TableRow>
-        ));
-    };
+    }, [isSuccess, onTableActionsLoaded, data]);
 
     if (isLoading) {
         return (
@@ -147,17 +62,39 @@ const KlabisTableInner = <T extends Record<string, any>>({
         );
     }
 
+    const tableModel = tableContext.tableModel;
+
+    const renderRows = (rows: object[]): ReactNode => {
+        if (!rows) return (
+            <TableRow key={0}><TableCell align={"center"} colSpan={tableContext.columnsCount}>No
+                content</TableCell></TableRow>
+        );
+
+        return rows
+            .map((item, index) => (
+                <TableRow
+                    key={item.id || index}
+                    hover
+                    onClick={() => onRowClick?.(item)}
+                    sx={{cursor: onRowClick ? 'pointer' : 'default'}}
+                >
+                    {tableModel.renderCellsForRow(item)}
+                </TableRow>
+            ));
+    };
+
+
     return (
         <Paper>
             <TableContainer>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            {renderHeaderCells()}
+                            {tableModel.renderHeaders()}
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {renderTableRows()}
+                        {renderRows(data?.content)}
                     </TableBody>
                 </Table>
             </TableContainer>

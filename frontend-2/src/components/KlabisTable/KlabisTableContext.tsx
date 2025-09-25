@@ -1,9 +1,12 @@
 import React, {createContext, isValidElement, type ReactElement, ReactNode, useContext, useState} from 'react';
-import {type ApiParams, type SortDirection} from './types';
+import {type ApiParams, type SortDirection, TableCellProps, TableCellRenderProps} from './types';
+import {TableCell as MuiTableCell} from "@mui/material";
 
 interface KlabisTableContextType {
     // Pagination state
     page: number;
+    columnsCount: number;
+    tableModel: TableModel;
     rowsPerPage: number;
     setPage: (page: number) => void;
     setRowsPerPage: (rowsPerPage: number) => void;
@@ -33,62 +36,81 @@ interface KlabisTableProviderProps {
     additionalParams?: Record<string, any>;
 }
 
+const defaultRenderFunc = (props: TableCellRenderProps): ReactNode => {
+    return props.value;
+}
+
 class ColumnModel {
     name: string;
     headerCell: ReactElement;
     hidden: boolean;
     sortable: boolean;
-    dataRender: (props: RenderProps) => ReactNode | undefined;
+    dataRender: (props: TableCellRenderProps) => ReactNode;
 
-    constructor(name: string, headerCell: ReactElement, hidden: boolean, sortable: boolean, dataRender: (props: RenderProps) => ReactNode | undefined) {
+    constructor(name: string, headerCell: ReactElement, hidden: boolean, sortable: boolean, dataRender: (props: TableCellRenderProps) => ReactNode) {
         this.name = name;
         this.headerCell = headerCell;
         this.hidden = hidden;
         this.sortable = sortable;
         this.dataRender = dataRender;
     }
-}
 
-class TableModel<T> {
-    columns: ColumnModel[];
-    rows: T[];
+    renderCellForRow(item: Record<string, any>): ReactNode {
+        const value = this.getCellValue(item);
+        const cellContent = this.dataRender({item, column: this.name, value});
+        return (
+            <MuiTableCell key={this.name}>
+                {cellContent}
+            </MuiTableCell>
+        );
+    }
 
-    constructor(columns: ColumnModel[]) {
-        this.columns = columns;
-        this.rows = [];
+    getCellValue(row: Record<string, any>): ReactNode {
+        return row[this.name];
     }
 }
 
-interface RenderProps {
-    item: any;
-    column: string;
-    value: any;
+class TableModel {
+    columns: ColumnModel[];
+
+    constructor(columns: ColumnModel[]) {
+        this.columns = columns;
+    }
+
+    /**
+     * Iterate over columns that are not hidden.
+     * @param callback Function to execute for each visible column.
+     */
+    mapVisibleColumns<T, >(callback: (col: ColumnModel) => T): T[] {
+        return this.columns.filter(col => !col.hidden).map(callback);
+    }
+
+    renderCellsForRow(row: object): ReactNode[] {
+        return this.mapVisibleColumns(col => col.renderCellForRow(row));
+    }
+
+    renderHeaders() {
+        return this.mapVisibleColumns(col => col.headerCell);
+    }
+
 }
 
-function isReactComponent(item: ReactNode): item is ReactElement {
-    return (item as ReactElement).props !== undefined;
+function isTableCellComponent(item: ReactNode): item is ReactElement<TableCellProps> {
+    return isValidElement(item) && (item.props as Partial<TableCellProps>).column !== undefined;
 }
 
 
-const convertToTableColumn = (child: ReactNode): ColumnModel | null => {
-    if (isReactComponent(child)) {
-        if (!isValidElement(child)) {
-            return false;
-        }
-
-        const hidden = child.props?.hidden as boolean;
-        const column = child.props?.column as string;
-        const renderFunc = child.props?.dataRender as ((props: RenderProps) => React.ReactNode) | undefined;
-
-        return new ColumnModel(column, child, hidden, false, renderFunc);
+const convertToColumnModel = (child: ReactNode): ColumnModel | null => {
+    if (isTableCellComponent(child)) {
+        return new ColumnModel(child.props.column, child, child.props.hidden || false, child.props.sortable || false, child.props.dataRender || defaultRenderFunc);
     }
 
     return null;
 }
 
-const createModelFromChildren = <T, >(children): TableModel<T> => {
-    const columns = React.Children.map(children, child => convertToTableColumn(child));
-    return new TableModel<T>(columns);
+const createModelFromChildren = (children): TableModel => {
+    const columns = React.Children.map(children, child => convertToColumnModel(child));
+    return new TableModel(columns);
 }
 
 export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
@@ -105,8 +127,6 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
     const [orderDirection, setOrderDirection] = useState<SortDirection>(defaultOrderDirection);
 
     const tableModel = createModelFromChildren(colDefs);
-
-    console.log(tableModel);
 
     const handleRequestSort = (column: string) => {
         const isAsc = orderBy === column && orderDirection === 'asc';
@@ -134,7 +154,11 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
         } as ApiParams;
     }
 
+    const columnsCount = tableModel.columns.length;
+
     const contextValue: KlabisTableContextType = {
+        columnsCount,
+        tableModel,
         page,
         rowsPerPage,
         setPage,
@@ -162,3 +186,11 @@ export const useKlabisTableContext = (): KlabisTableContextType => {
     }
     return context;
 };
+
+export const useTableModel = (): TableModel => {
+    const context = useContext(KlabisTableContext);
+    if (context === undefined) {
+        throw new Error('useTableModel must be used within a KlabisTableProvider');
+    }
+    return context.tableModel;
+}
