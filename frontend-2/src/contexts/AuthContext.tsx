@@ -7,7 +7,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: () => void;
     logout: () => void;
-    getAccessToken: () => string | null;
+    getAccessToken: () => Promise<string | null>;
 }
 
 // Create the auth context
@@ -49,7 +49,7 @@ const AuthProviderContent: React.FC<AuthProviderProps> = ({children}) => {
     }, [token]);
 
     // Get the access token
-    const getAccessToken = (): string | null => {
+    const getAccessToken = (): Promise<string | null> => {
         return token || null;
     };
 
