@@ -13,7 +13,7 @@ interface TableCellProps {
     hidden?: boolean,
     sortable?: boolean,
     children: React.ReactNode;
-    as?: (props: RenderProps) => React.ReactNode;
+    dataRender?: (props: RenderProps) => React.ReactNode;
 }
 
 interface SortLabelProps {

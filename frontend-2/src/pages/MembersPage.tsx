@@ -109,7 +109,7 @@ const MembersPage = () => {
                 <TableCell sortable hidden={view === 'SUMMARY'} column="dateOfBirth">Datum narození</TableCell>
                 <TableCell hidden={view === 'SUMMARY'} column="nationality">Národnost</TableCell>
                 <TableCell hidden={view === 'SUMMARY'} column="_actions"
-                           as={props => (<Actions value={props.value}/>)}>Akce</TableCell>
+                           dataRender={props => (<Actions value={props.value}/>)}>Akce</TableCell>
             </KlabisTable>
 
         </Box>
