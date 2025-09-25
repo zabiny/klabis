@@ -7,7 +7,7 @@ import {type KlabisFormProperties} from "../KlabisForm.types";
 
 const FormLoadingUI = () => <Typography>Načítání...</Typography>;
 
-const EditMemberFormUI = ({
+export const EditMemberFormUI = ({
                               formData, onSubmit
                           }: KlabisFormProperties<EditMyDetailsForm>) => {
 

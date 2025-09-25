@@ -19,10 +19,11 @@ import {
 } from '@mui/material';
 import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material';
 import {useGetMember} from '../api/membersApi';
-import EditOwnMemberInfoForm from '../components/members/EditOwnMemberInfoForm.tsx';
+import {EditMemberFormUI} from '../components/members/EditOwnMemberInfoForm.tsx';
 import MemberSuspendConfirmationDialog from "../components/members/MemberSuspendConfirmationDialog.tsx";
 import EditMemberPermissionsForm from "../components/members/EditMemberPermissionsForm.tsx";
 import {hasAction} from "../api/klabisJsonUtils.tsx";
+import {KlabisApiForm} from "../components/KlabisApiForm";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -109,34 +110,39 @@ const MemberDetailPage = () => {
                 </Button>
                 <Box sx={{display: 'flex', gap: 2}}>
                     {hasAction(member, "members:editOwnInfo") && (
-                        <Button startIcon={<EditIcon/>} variant="contained" color="primary" onClick={handleEdit}>
-                            Upravit
-                        </Button>
+                        <>
+                            <Button startIcon={<EditIcon/>} variant="contained" color="primary" onClick={handleEdit}>
+                                Upravit
+                            </Button>
+
+                            <Dialog open={isEditModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
+                                <DialogContent>
+                                    <KlabisApiForm apiPath={`/members/${memberId}/editOwnMemberInfoForm`}
+                                                   form={EditMemberFormUI}/>
+                                </DialogContent>
+                                {/*<DialogActions>*/}
+                                {/*    <Button onClick={handleCloseModal} color="primary">*/}
+                                {/*        Zavřít*/}
+                                {/*    </Button>*/}
+                                {/*</DialogActions>*/}
+                            </Dialog>
+
+                        </>
                     )}
                     {hasAction(member, 'members:suspendMembership') && (
-                        <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
-                            Zrušit členství
-                        </Button>
+                        <>
+                            <Button variant="contained" color="secondary" onClick={handleOpenConfirmDialog}>
+                                Zrušit členství
+                            </Button>
+                            <MemberSuspendConfirmationDialog
+                                memberId={Number(memberId)}
+                                open={isConfirmDialogOpen}
+                                onClose={handleCloseConfirmDialog}
+                            />
+                        </>
                     )}
                 </Box>
             </Box>
-
-            <Dialog open={isEditModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
-                <DialogContent>
-                    <EditOwnMemberInfoForm memberId={Number(memberId)}/>
-                </DialogContent>
-                {/*<DialogActions>*/}
-                {/*    <Button onClick={handleCloseModal} color="primary">*/}
-                {/*        Zavřít*/}
-                {/*    </Button>*/}
-                {/*</DialogActions>*/}
-            </Dialog>
-
-            <MemberSuspendConfirmationDialog
-                memberId={Number(memberId)}
-                open={isConfirmDialogOpen}
-                onClose={handleCloseConfirmDialog}
-            />
 
             <Paper sx={{mb: 3}}>
                 <Box sx={{p: 3}}>
