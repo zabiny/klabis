@@ -1,48 +1,15 @@
-import React from 'react';
-import {Alert, Button, Checkbox, FormControlLabel, Grid, Paper, Stack, TextField, Typography,} from '@mui/material';
+import {Alert, Button, FormControlLabel, Grid, Paper, Stack, Typography,} from '@mui/material';
+import {Checkbox, TextField} from 'formik-mui';
 import {type EditMyDetailsForm, useGetEditMyDetailsForm, useUpdateMyDetails} from '../api/membersApi.ts';
-import {Form, Formik, type FormikHandlers} from "formik";
+import {Field, Form, Formik, type FormikHelpers} from "formik";
 import * as Yup from 'yup';
-
-interface EditMemberFormUIProps {
-    formData: EditMyDetailsForm;
-    onSubmit: (formData: EditMyDetailsForm) => void;
-    successMessage: string | null
-    failureMessage: string | null
-    disabled?: boolean;
-}
+import {type KlabisFormProperties} from "./KlabisForm.types";
 
 const FormLoadingUI = () => <Typography>Načítání...</Typography>;
 
 const EditMemberFormUI = ({
-                              formData, onSubmit, successMessage, failureMessage, disabled = false,
-                          }: EditMemberFormUIProps) => {
-
-    /// https://formik.org/docs/examples/with-material-ui
-    interface FormikMuiProps {
-        name: string,
-        value: any,
-        onChange: any,
-        onBlur: any,
-        error: boolean,
-        helperText?: string,
-        checked: boolean
-    }
-
-    // TODO: shall we use Formik MUI integration instead? - https://stackworx.github.io/formik-mui/docs/api/mui/
-    const getMuiProps = (fieldName: string, formik: FormikHandlers): FormikMuiProps => {
-        const meta = formik.getFieldMeta(fieldName);
-
-        return {
-            name: fieldName,
-            value: meta.value,
-            onChange: formik.handleChange,
-            onBlur: formik.handleBlur,
-            error: meta.touched && !!meta.error,
-            helperText: meta.touched && meta.error || undefined,
-            checked: !!meta.value || false
-        };
-    }
+                              formData, onSubmit
+                          }: KlabisFormProperties<EditMyDetailsForm>) => {
 
     const validationSchema = Yup.object().shape(
         {
@@ -53,27 +20,24 @@ const EditMemberFormUI = ({
         }
     );
 
+    const formikSubmit = async (values: EditMyDetailsForm, helpers: FormikHelpers<EditMyDetailsForm>): Promise<void> => {
+        await onSubmit(values);
+        helpers.setSubmitting(false);
+    }
+
     return (
         <Paper sx={{p: 3}}>
             <Typography variant="h5" gutterBottom>
                 Úprava osobních údajů
             </Typography>
 
-            {successMessage && (
-                <Alert severity="success" sx={{mb: 2}}>{successMessage}</Alert>
-            )}
-
-            {failureMessage && (
-                <Alert severity="error" sx={{mb: 2}}>{failureMessage}</Alert>
-            )}
-
-            <Formik initialValues={formData} onSubmit={onSubmit} validationSchema={validationSchema}>
+            <Formik<EditMyDetailsForm> initialValues={formData} onSubmit={formikSubmit}
+                                       validationSchema={validationSchema}>
                 {formik =>
                     <Form>
                         <Grid container spacing={3}>
                             <Grid item xs={12}>
-                                <TextField fullWidth required
-                                           label="Narodnost" {...getMuiProps('nationality', formik)}/>
+                                <Field name="nationality" label="Národnost" fullWidth component={TextField}/>
                             </Grid>
 
                             <Grid item xs={12}>
@@ -82,15 +46,13 @@ const EditMemberFormUI = ({
                                 </Typography>
                             </Grid>
                             <Grid item xs={12}>
-                                <TextField fullWidth required
-                                           label="Ulice" {...getMuiProps('address.streetAndNumber', formik)}/>
+                                <Field name="address.streetAndNumber" fullWidth label="Ulice" component={TextField}/>
                             </Grid>
                             <Grid item xs={12} sm={6}>
-                                <TextField fullWidth required label="Město" {...getMuiProps('address.city', formik)}/>
+                                <Field name="address.city" label="Národnost" fullWidth component={TextField}/>
                             </Grid>
                             <Grid item xs={12} sm={6}>
-                                <TextField fullWidth required
-                                           label="PSČ" {...getMuiProps('address.postalCode', formik)}/>
+                                <Field name="address.postalCode" label="PSČ" fullWidth component={TextField}/>
                             </Grid>
 
 
@@ -101,11 +63,10 @@ const EditMemberFormUI = ({
                                 </Typography>
                             </Grid>
                             <Grid item xs={12} sm={6}>
-                                <TextField fullWidth required label="Email" {...getMuiProps('contact.email', formik)}/>
+                                <Field name="contact.email" label="Email" fullWidth component={TextField}/>
                             </Grid>
                             <Grid item xs={12} sm={6}>
-                                <TextField fullWidth required
-                                           label="Telefon" {...getMuiProps('contact.phone', formik)}/>
+                                <Field name="contact.phone" label="Telefon" fullWidth component={TextField}/>
                             </Grid>
 
                             {/* Ostatní údaje */}
@@ -115,21 +76,19 @@ const EditMemberFormUI = ({
                                 </Typography>
                             </Grid>
                             <Grid item xs={12} sm={6}>
-                                <TextField fullWidth required label="Číslo SI čipu" {...getMuiProps('siCard', formik)}/>
+                                <Field name="siCard" label="Číslo SI čipu" fullWidth component={TextField}/>
                             </Grid>
                             <Grid item xs={12} sm={6}>
-                                <TextField fullWidth required
-                                           label="Bankovní účet" {...getMuiProps('bankAccount', formik)}/>
+                                <Field name="bankAccount" label="Bankovní účet" fullWidth component={TextField}/>
                             </Grid>
                             <Grid item xs={12}>
-                                <TextField fullWidth required
-                                           label="Dietní omezení" {...getMuiProps('dietaryRestrictions', formik)}
-                                           rows={2}/>
+                                <Field name="dietaryRestrictions" label="Dietní omezení" fullWidth rows="2"
+                                       component={TextField}/>
                             </Grid>
                             <Grid item xs={12}>
                                 <FormControlLabel
                                     control={
-                                        <Checkbox {...getMuiProps('medicCourse', formik)}/>
+                                        <Field name="medicCourse" component={Checkbox}/>
                                     }
                                     label="Zdravotnický kurz"
                                 />
@@ -179,13 +138,21 @@ const EditMemberForm = ({memberId}: EditMemberFormProps) => {
     }
 
     return (
-        <EditMemberFormUI
-            formData={formData?.data ?? {} as EditMyDetailsForm}
-            onSubmit={handleSubmit}
-            successMessage={mutation.isSuccess ? 'Změny byly úspěšně uloženy' : null}
-            failureMessage={mutation.isError ? 'Při ukládání došlo k chybě' : null}
-            disabled={mutation.isPending}
-        />
+        <>
+            {mutation.isSuccess && (
+                <Alert severity="success" sx={{mb: 2}}>Změny byly úspěšně uloženy</Alert>
+            )}
+
+            {mutation.isError && (
+                <Alert severity="error" sx={{mb: 2}}>Při ukládání došlo k chybě</Alert>
+            )}
+
+
+            <EditMemberFormUI
+                formData={formData?.data ?? {} as EditMyDetailsForm}
+                onSubmit={handleSubmit}
+            />
+        </>
     );
 };
 
