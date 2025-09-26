@@ -74,7 +74,7 @@ public class MembersApi {
             @JsonViewMapping(name = "SUMMARY", jsonView = ResponseViews.Summary.class),
             @JsonViewMapping(name = "DETAILED", jsonView = ResponseViews.Detailed.class)
     })
-    @Parameter(name = "view", in = ParameterIn.QUERY, description = "Defines how many data are returned for every item", schema = @Schema(type = "string", defaultValue = "DETAILED", allowableValues = {"SUMMARY", "DETAILED"}))
+    @Parameter(name = "view", in = ParameterIn.QUERY, description = "Defines how many data are returned for every item", schema = @Schema(type = "string", defaultValue = "SUMMARY", allowableValues = {"SUMMARY", "DETAILED"}))
     ResponseEntity<PagedModel<MembersApiResponse>> membersGet(
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
@@ -84,18 +84,10 @@ public class MembersApi {
         return ResponseEntity.ok(memberModelAssembler.toPagedModel(result));
     }
 
-    private String translateDtoToEntityPropertyName(String propertyName) {
-        if ("registrationNumber".equals(propertyName)) {
-            return "registration";
-        } else {
-            return propertyName;
-        }
-    }
-
     private Pageable toEntityPageable(Pageable dtoPageable) {
         List<Sort.Order> updatedSorts = dtoPageable.getSort()
                 .stream()
-                .map(s -> s.withProperty(translateDtoToEntityPropertyName(s.getProperty())))
+                .map(s -> s.withProperty(memberModelAssembler.translateDtoToEntityPropertyName(s.getProperty())))
                 .toList();
         return PageRequest.of(dtoPageable.getPageNumber(), dtoPageable.getPageSize(), Sort.by(updatedSorts));
     }

@@ -58,4 +58,12 @@ public class MemberModelAssembler implements RepresentationModelAssembler<Member
 
         return result;
     }
+
+    String translateDtoToEntityPropertyName(String propertyName) {
+        if ("registrationNumber".equals(propertyName)) {
+            return "registration";
+        } else {
+            return propertyName;
+        }
+    }
 }
