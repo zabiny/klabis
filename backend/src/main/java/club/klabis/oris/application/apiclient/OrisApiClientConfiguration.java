@@ -1,6 +1,7 @@
 package club.klabis.oris.application.apiclient;
 
 import club.klabis.oris.application.apiclient.dto.OrisEventListFilter;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.GenericHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.web.client.HttpClientErrorException;
@@ -37,7 +39,12 @@ class OrisApiClientConfiguration implements ClientHttpRequestInterceptor {
 
 
     @Bean
-    OrisApiClient orisApiClient(RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
+    OrisApiClient orisApiClient(RestClient.Builder restClientBuilder, Jackson2ObjectMapperBuilder objectMapperBuilder) {
+
+        ObjectMapper objectMapper = objectMapperBuilder
+                // ORIS API returns empty array in place of objects where such object is missing (instead of null)
+                .featuresToEnable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT)
+                .build();
 
         MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter(objectMapper);
         messageConverter.setSupportedMediaTypes(List.of(MediaType.valueOf("application/javascript")));
@@ -74,35 +81,32 @@ class OrisApiClientConfiguration implements ClientHttpRequestInterceptor {
 
 
 class OrisApiQuirksHandlingMessageConverter implements GenericHttpMessageConverter<Object> {
+    private static final Logger log = LoggerFactory.getLogger(OrisApiQuirksHandlingMessageConverter.class);
     private final GenericHttpMessageConverter<Object> delegate;
 
     OrisApiQuirksHandlingMessageConverter(GenericHttpMessageConverter<Object> delegate) {
         this.delegate = delegate;
     }
 
-    private boolean isQuirkParsingErrorForSingleItemNotFoundResponseWithWrongDataPayloadAsArray(HttpMessageNotReadableException ex) {
-        // for ex "JSON parse error: Cannot deserialize value of type `club.klabis.oris.adapters.apiclient.OrisApiClient$OrisUserInfo` from Array value (token `JsonToken.START_ARRAY`)".equals(ex.getMessage());
-        return ex.getMessage().startsWith("JSON parse error: Cannot deserialize value of type `") && ex.getMessage()
-                .endsWith("` from Array value (token `JsonToken.START_ARRAY`)");
-    }
-
     @Override
     public Object read(Type type, Class<?> contextClass, HttpInputMessage inputMessage) throws IOException, HttpMessageNotReadableException {
         inputMessage.getBody().mark(Integer.MAX_VALUE);
-        try {
-            return delegate.read(type, contextClass, inputMessage);
-        } catch (HttpMessageNotReadableException ex) {
-            // any better way how to detect that ORIS returns "item not found" response (HTTP 200 + data with array) instead of expected object?
-            if (isQuirkParsingErrorForSingleItemNotFoundResponseWithWrongDataPayloadAsArray(ex)) {
+
+        Object result = delegate.read(type, contextClass, inputMessage);
+
+        // ORIS respond with HTTP 200 and empty "data" attribute in the response instead of HTTP 404. Convert it to HTTP 404 exception so our clients can be "normal"
+        if (result instanceof OrisApiClient.OrisResponse<?> typedResponse) {
+            if (typedResponse.data() == null) {
+                log.debug(
+                        "Oris responded with HTTP 200 + empty 'data' attribute meaning data were not found. Converting to HTTP 404 error");
                 throw HttpClientErrorException.create(HttpStatusCode.valueOf(404),
                         "NOT_FOUND",
                         new HttpHeaders(),
                         inputMessage.getBody().readAllBytes(),
                         StandardCharsets.UTF_8);
-            } else {
-                throw ex;
             }
         }
+        return result;
     }
 
     @Override
@@ -167,11 +171,13 @@ class OrisEventListArgumentResolver implements HttpServiceArgumentResolver {
                 OrisEventListFilter typedArgument = (OrisEventListFilter) argument;
 
                 if (typedArgument.dateFrom() != null) {
-                    requestValues.addRequestParameter("datefrom", formatLocalDateForOrisRequestParameter(typedArgument.dateFrom()));
+                    requestValues.addRequestParameter("datefrom",
+                            formatLocalDateForOrisRequestParameter(typedArgument.dateFrom()));
                 }
 
                 if (typedArgument.dateTo() != null) {
-                    requestValues.addRequestParameter("dateto", formatLocalDateForOrisRequestParameter(typedArgument.dateTo()));
+                    requestValues.addRequestParameter("dateto",
+                            formatLocalDateForOrisRequestParameter(typedArgument.dateTo()));
                 }
 
                 if (typedArgument.region() != null) {
