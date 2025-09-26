@@ -2,7 +2,7 @@ package club.klabis.oris.application.apiclient.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record OrisEventDiscipline(
+public record Level(
         @JsonProperty("ID")
         int id,
         @JsonProperty("ShortName")
@@ -12,4 +12,5 @@ public record OrisEventDiscipline(
         @JsonProperty("NameEN")
         String nameEN
 ) {
+
 }

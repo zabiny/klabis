@@ -28,9 +28,11 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.TimeZone;
 
 @Configuration
 class OrisApiClientConfiguration implements ClientHttpRequestInterceptor {
@@ -41,9 +43,15 @@ class OrisApiClientConfiguration implements ClientHttpRequestInterceptor {
     @Bean
     OrisApiClient orisApiClient(RestClient.Builder restClientBuilder, Jackson2ObjectMapperBuilder objectMapperBuilder) {
 
+        SimpleDateFormat orisDateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        orisDateTimeFormat.setTimeZone(TimeZone.getTimeZone("Europe/Prague"));
+
         ObjectMapper objectMapper = objectMapperBuilder
                 // ORIS API returns empty array in place of objects where such object is missing (instead of null)
                 .featuresToEnable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT)
+                // parse datetimes from ORIS in Prague timezone + honor timezone from data if is it present (otherwise adjust for Prague)
+                .dateFormat(orisDateTimeFormat)
+                .featuresToDisable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
                 .build();
 
         MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter(objectMapper);

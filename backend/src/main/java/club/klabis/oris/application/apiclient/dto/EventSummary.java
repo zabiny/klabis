@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public record OrisEvent(
+public record EventSummary(
         @JsonProperty("ID")
         int id,
         @JsonProperty("Name")
@@ -16,13 +16,13 @@ public record OrisEvent(
         @JsonProperty("Place")
         String location,
         @JsonProperty("Org1")
-        OrisEventOrg organizer1,
+        Organizer organizer1,
         @JsonProperty("Level")
-        OrisEventLevel level,
+        Level level,
         @JsonProperty("Sport")
-        OrisEventSport sport,
+        Sport sport,
         @JsonProperty("Discipline")
-        OrisEventDiscipline discipline,
+        Discipline discipline,
         @JsonProperty("EntryDate1")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         LocalDateTime entryDate1,

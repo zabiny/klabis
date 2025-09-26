@@ -1,7 +1,8 @@
 package club.klabis.oris.application.apiclient;
 
 
-import club.klabis.oris.application.apiclient.dto.OrisEvent;
+import club.klabis.oris.application.apiclient.dto.EventDetails;
+import club.klabis.oris.application.apiclient.dto.EventSummary;
 import club.klabis.oris.application.apiclient.dto.OrisEventListFilter;
 import club.klabis.oris.application.apiclient.dto.OrisUserInfo;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -29,7 +30,11 @@ public interface OrisApiClient {
 
     @Cacheable(cacheNames = "oris:eventList")
     @GetExchange("/API/?format=json&method=getEventList&myClubId=" + CLUB_ID_ZBM)
-    OrisResponse<Map<String, OrisEvent>> getEventList(OrisEventListFilter filter);
+    OrisResponse<Map<String, EventSummary>> getEventList(OrisEventListFilter filter);
+
+    @Cacheable(cacheNames = "oris:event")
+    @GetExchange("/API/?format=json&method=getEvent")
+    OrisResponse<EventDetails> getEventDetails(@RequestParam("id") int eventId);
 
     record OrisResponse<T>(
             @JsonProperty("Data") T data,

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -97,22 +98,22 @@ class OrisApiClientTest {
             restServiceServer.expect(MockRestRequestMatchers.anything())
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
 
-            OrisApiClient.OrisResponse<Map<String, OrisEvent>> expectedData = new OrisApiClient.OrisResponse<>(
-                    Map.of("Event_9160", new OrisEvent(
+            OrisApiClient.OrisResponse<Map<String, EventSummary>> expectedData = new OrisApiClient.OrisResponse<>(
+                    Map.of("Event_9160", new EventSummary(
                             9160,
                             "Západočeský žebříček - jaro 2025",
                             LocalDate.of(2025, 1, 1),
                             "",
-                            new OrisEventOrg(
+                            new Organizer(
                                     646, "ZCO", "Západočeská oblast"
                             ),
-                            new OrisEventLevel(
+                            new Level(
                                     4, "OŽ", "Oblastní žebříček", "Local event"
                             ),
-                            new OrisEventSport(
+                            new Sport(
                                     1, "OB", "Foot O"
                             ),
-                            new OrisEventDiscipline(
+                            new Discipline(
                                     10, "Z", "Dlouhodobé žebříčky", "Cups and ranking"
                             ),
                             LocalDateTime.parse("2025-01-05T23:59:59"),
@@ -157,4 +158,79 @@ class OrisApiClientTest {
         }
 
     }
+
+
+    @DisplayName("getEventDetails API tests")
+    @Nested
+    class GetEventDetailsApiTests {
+        @Test
+        @DisplayName("it should return parsed data from response")
+        void itShouldReturnExpectedData() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.anything())
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventDetailsResponse.json"));
+
+            var actualResponse = testedClient.getEventDetails(12345);
+
+            EventDetails expected = EventDetailsBuilder.builder()
+                    .id(2252)
+                    .name("Haná Orienteering Festival")
+                    .date(LocalDate.of(2013, 3, 30))
+                    .currentEntriesCount(263)
+                    .entryDate1(ZonedDateTime.parse("2013-03-05T23:59:59+01:00[Europe/Prague]"))
+                    .entryDate2(ZonedDateTime.parse("2013-03-23T21:30:59+01:00[Europe/Prague]"))
+                    .entryDate3(null)
+                    .build();
+
+            assertThat(actualResponse).isNotNull();
+            assertThat(actualResponse.status()).isEqualTo("OK");
+            assertThat(actualResponse.format()).isEqualTo("json");
+            assertThat(actualResponse.method()).isEqualTo("getEvent");
+            assertThat(actualResponse.data()).isNotNull();
+            assertThat(actualResponse.data())
+                    .usingRecursiveComparison()
+                    .ignoringExpectedNullFields()
+                    .isEqualTo(expected);
+
+            // some minimal check that classes were parsed
+            assertThat(actualResponse.data().classes())
+                    .values().extracting(EventClass::name)
+                    .containsExactly("D10",
+                            "D12",
+                            "D14",
+                            "D16",
+                            "D18",
+                            "D21A",
+                            "D21B",
+                            "D35",
+                            "D45",
+                            "D55",
+                            "DH10N",
+                            "H10",
+                            "H12",
+                            "H14",
+                            "H16",
+                            "H18",
+                            "H21A",
+                            "H21B",
+                            "H35",
+                            "H45",
+                            "H55",
+                            "H65",
+                            "HDR",
+                            "P");
+        }
+
+        @Test
+        @DisplayName("it should call expected API with parameters")
+        void itShouldCallExpectedApi() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.requestTo(
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEvent&id=12345"))
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventDetailsResponse.json"));
+
+            testedClient.getEventDetails(12345);
+
+            restServiceServer.verify();
+        }
+    }
+
 }

@@ -2,11 +2,10 @@ package club.klabis.oris.application.apiclient.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record OrisEventOrg(
+public record Region(
         @JsonProperty("ID")
-        int id,
-        @JsonProperty("Abbr")
-        String abbreviation,
+        String id,
+
         @JsonProperty("Name")
         String name
 ) {
