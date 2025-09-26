@@ -20,6 +20,8 @@ public enum GlobalGrantsApiDto {
 
     RESUMEMEMBERSHIP(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()),
 
+    SYSTEM_ADMIN(ApplicationGrant.SYSTEM_ADMIN.getGrantName()),
+
     PERMISSIONS(ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName());
 
     private String value;

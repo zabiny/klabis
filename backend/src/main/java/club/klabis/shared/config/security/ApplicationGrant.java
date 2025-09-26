@@ -10,6 +10,9 @@ public enum ApplicationGrant {
     MEMBERS_EDIT("Může editovat jiné členy klubu", true, false, false, "members:edit"),
     MEMBERS_SUSPENDMEMBERSHIP("Může suspendovat členství v klubu", true, false, false, "members:suspendMembership"),
     MEMBERS_RESUMEMEMBERSHIP("Může obnovit členství v klubu", true, false, false, "members:resumeMembership"),
+
+    SYSTEM_ADMIN("Spravuje systemove veci", true, false, false, "system:admin"),
+
     APPUSERS_PERMISSIONS("Může spravovat oprávnění v aplikaci", true, false, false, "members:permissions");
 
     private final String description;
