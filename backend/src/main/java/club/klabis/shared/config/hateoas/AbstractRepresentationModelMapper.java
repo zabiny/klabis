@@ -27,7 +27,7 @@ public abstract class AbstractRepresentationModelMapper<DOMAIN, DTO extends Repr
         return new ArrayList<>();
     }
 
-    private Collection<Link> createCollectionLinks() {
+    public Collection<Link> createCollectionLinks() {
         return new ArrayList<>();
     }
 
