@@ -1,8 +1,8 @@
-package club.klabis.oris.application.apiclient.dto;
+package club.klabis.oris.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record Level(
+public record Discipline(
         @JsonProperty("ID")
         int id,
         @JsonProperty("ShortName")
@@ -12,5 +12,4 @@ public record Level(
         @JsonProperty("NameEN")
         String nameEN
 ) {
-
 }

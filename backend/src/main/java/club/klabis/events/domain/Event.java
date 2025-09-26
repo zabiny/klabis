@@ -1,5 +1,6 @@
 package club.klabis.events.domain;
 
+import club.klabis.events.application.OrisData;
 import club.klabis.events.domain.events.EventEditedEvent;
 import club.klabis.events.domain.forms.EventEditationForm;
 import club.klabis.events.domain.forms.EventRegistrationForm;
@@ -9,6 +10,7 @@ import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 @AggregateRoot
@@ -38,7 +40,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     private String name;
     private String location;
     private String organizer;
-    private LocalDate registrationDeadline;
+    private ZonedDateTime registrationDeadline;
     private MemberId coordinator;
     private Integer orisId;
 
@@ -72,8 +74,12 @@ public class Event extends AbstractAggregateRoot<Event> {
         return organizer;
     }
 
-    public LocalDate getRegistrationDeadline() {
+    public ZonedDateTime getRegistrationDeadline() {
         return registrationDeadline;
+    }
+
+    public boolean hasOrisId() {
+        return orisId != null;
     }
 
     public static Event newEvent(EventEditationForm form) {
@@ -93,7 +99,22 @@ public class Event extends AbstractAggregateRoot<Event> {
         this.andEvent(new EventEditedEvent(this));
     }
 
-    public void closeRegistrations(LocalDate registrationDeadline) {
+    public static Event importFrom(OrisData orisData) {
+        Event event = new Event();
+        event.synchronize(orisData);
+        return event;
+    }
+
+    public void synchronize(OrisData orisData) {
+        this.name = orisData.name();
+        this.location = orisData.location();
+        this.organizer = orisData.organizer();
+        this.date = orisData.eventDate();
+        this.registrationDeadline = orisData.registrationsDeadline();
+        this.linkWithOris(orisData.orisId());
+    }
+
+    public void closeRegistrations(ZonedDateTime registrationDeadline) {
         this.registrationDeadline = registrationDeadline;
     }
 
@@ -107,7 +128,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     }
 
     public boolean areRegistrationsOpen() {
-        return registrationDeadline.isAfter(LocalDate.now());
+        return registrationDeadline.isAfter(ZonedDateTime.now());
     }
 
     public boolean isMemberRegistered(MemberId memberId) {
@@ -115,7 +136,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     }
 
     public void registerMember(MemberId memberId, EventRegistrationForm form) {
-        if (this.registrationDeadline.isBefore(LocalDate.now())) {
+        if (!this.areRegistrationsOpen()) {
             throw new EventException(this.id,
                     "Cannot add new registration to event, registrations are already closed",
                     EventException.Type.REGISTRATION_DEADLINE_PASSED);
@@ -129,7 +150,7 @@ public class Event extends AbstractAggregateRoot<Event> {
     }
 
     public void cancelMemberRegistration(MemberId memberId) {
-        if (this.registrationDeadline.isBefore(LocalDate.now())) {
+        if (!areRegistrationsOpen()) {
             throw new EventException(this.id,
                     "Cannot remove registration from event, registrations are already closed",
                     EventException.Type.REGISTRATION_DEADLINE_PASSED);

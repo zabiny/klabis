@@ -1,4 +1,4 @@
-package club.klabis.oris.application.apiclient.dto;
+package club.klabis.oris.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -217,13 +217,13 @@ public record EventDetails(
         String eventWarning,
 
         @JsonProperty("Documents")
-        List<Document> documents,
+        Map<String, Document> documents,
 
         @JsonProperty("Links")
         Map<String, Link> links,
 
         @JsonProperty("Locations")
-        List<Location> locations,
+        Map<String, Location> locations,
 
         @JsonProperty("Waves")
         List<Wave> waves,
@@ -244,6 +244,6 @@ public record EventDetails(
         int currentResultsCount,
 
         @JsonProperty("News")
-        List<News> news
+        Map<String, News> news
 ) {
 }

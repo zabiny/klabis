@@ -21,8 +21,11 @@ import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+
+import java.util.Collection;
 
 @Validated
 @Tag(name = "ORIS", description = "Integration endpoints with ORIS - https://oris.orientacnisporty.cz/")
@@ -77,4 +80,26 @@ public interface OrisApi {
             @Pattern(regexp = "^[A-Z]{3}[0-9]{4}$") @Parameter(name = "regNum", description = "Registration number of user to retrieve ORIS data about", required = true, in = ParameterIn.PATH) @PathVariable("regNum") String regNum
     );
 
+    @Operation(
+            operationId = "orisSynchronizeEvents",
+            summary = "Triggers events synchronization with ORIS",
+            description = "#### Required authorization requires `system:admin` grant ",
+            tags = {"ORIS"},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully triggered events synchronization"),
+                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed"),
+                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation")
+            }
+    )
+    @RequestMapping(
+            method = RequestMethod.POST,
+            value = "/oris/synchronizeEvents",
+            produces = {"application/json", "application/problem+json"}
+    )
+    ResponseEntity<Void> synchronizeEventsFromOris(
+            @Parameter(description = "DTO containing event IDs to synchronize", required = false) @RequestBody SynchronizeEventsRequest request
+    );
+
+    record SynchronizeEventsRequest(Collection<Integer> eventIds) {
+    }
 }

@@ -1,6 +1,6 @@
-package club.klabis.oris.application.apiclient;
+package club.klabis.oris.infrastructure.apiclient;
 
-import club.klabis.oris.application.apiclient.dto.*;
+import club.klabis.oris.application.dto.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

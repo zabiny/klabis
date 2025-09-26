@@ -1,6 +1,6 @@
-package club.klabis.oris.application.apiclient;
+package club.klabis.oris.infrastructure.apiclient;
 
-import club.klabis.oris.application.apiclient.dto.OrisEventListFilter;
+import club.klabis.oris.application.dto.OrisEventListFilter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;

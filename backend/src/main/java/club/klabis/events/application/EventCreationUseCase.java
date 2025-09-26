@@ -2,6 +2,7 @@ package club.klabis.events.application;
 
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventEditationForm;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,7 +13,7 @@ public class EventCreationUseCase {
         this.repository = repository;
     }
 
-    public Event createNewEvent(EventEditationForm form) {
+    public Event createNewEvent(@Valid EventEditationForm form) {
         return repository.save(Event.newEvent(form));
     }
 

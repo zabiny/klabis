@@ -1,6 +1,6 @@
 package club.klabis.oris.infrastructure.restapi;
 
-import club.klabis.oris.application.apiclient.dto.OrisUserInfo;
+import club.klabis.oris.application.dto.OrisUserInfo;
 import club.klabis.oris.infrastructure.restapi.dto.ORISUserInfoApiDto;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import org.mapstruct.Mapper;

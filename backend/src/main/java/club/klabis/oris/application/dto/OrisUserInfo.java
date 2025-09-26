@@ -1,15 +1,12 @@
-package club.klabis.oris.application.apiclient.dto;
+package club.klabis.oris.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record Person(
+public record OrisUserInfo(
         @JsonProperty("ID")
-        String id,
-
+        int orisId,
         @JsonProperty("FirstName")
         String firstName,
-
         @JsonProperty("LastName")
-        String lastName
-) {
+        String lastName) {
 }

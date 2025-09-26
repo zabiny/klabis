@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 
 // load these data only when ORIS integration is disabled
 @ConditionalOnProperty(prefix = "oris-integration", name = "enabled", havingValue = "false", matchIfMissing = true)
@@ -29,7 +30,7 @@ class EventsPresetDataLoader implements PresetDataLoader {
                 "Brno",
                 LocalDate.now(),
                 "ZBM",
-                LocalDate.now()
+                ZonedDateTime.now()
                         .plusDays(3),
                 null));
         System.out.printf("Created event with ID %s%n", createdEvent.getId());
@@ -37,7 +38,7 @@ class EventsPresetDataLoader implements PresetDataLoader {
                 "Jilemnice",
                 LocalDate.now().minusDays(12),
                 "ZBM",
-                LocalDate.now()
+                ZonedDateTime.now()
                         .minusDays(20),
                 null));
         System.out.printf("Created event with ID %s%n", createdEvent.getId());

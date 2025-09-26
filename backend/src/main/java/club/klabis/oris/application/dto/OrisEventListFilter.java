@@ -1,6 +1,6 @@
-package club.klabis.oris.application.apiclient.dto;
+package club.klabis.oris.application.dto;
 
-import club.klabis.oris.application.apiclient.OrisApiClient;
+import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
 
 import java.time.LocalDate;
 
@@ -13,7 +13,7 @@ public record OrisEventListFilter(
 
     public static OrisEventListFilter createDefault() {
         return new OrisEventListFilter(OrisApiClient.REGION_JIHOMORAVSKA,
-                LocalDate.now(),
+                LocalDate.now().minusMonths(1),
                 LocalDate.now().plusMonths(3));
     }
 

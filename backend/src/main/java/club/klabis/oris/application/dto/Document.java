@@ -1,15 +1,15 @@
-package club.klabis.oris.application.apiclient.dto;
+package club.klabis.oris.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record Wave(
+public record Document(
         @JsonProperty("ID")
         String id,
 
         @JsonProperty("Name")
         String name,
 
-        @JsonProperty("StartTime")
-        String startTime
+        @JsonProperty("Url")
+        String url
 ) {
 }

@@ -1,7 +1,10 @@
 package club.klabis.oris.infrastructure.restapi;
 
+import club.klabis.events.domain.Event;
 import club.klabis.members.domain.RegistrationNumber;
-import club.klabis.oris.application.apiclient.OrisApiClient;
+import club.klabis.oris.application.OrisEventsImporter;
+import club.klabis.oris.application.dto.OrisEventListFilter;
+import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
 import club.klabis.oris.infrastructure.restapi.dto.ORISUserInfoApiDto;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.security.ApplicationGrant;
@@ -19,10 +22,12 @@ import org.springframework.web.client.HttpClientErrorException;
 class OrisProxyController implements OrisApi {
 
     private final OrisApiClient orisApiClient;
+    private final OrisEventsImporter orisEventsImporter;
     private final ConversionService conversionService;
 
-    public OrisProxyController(OrisApiClient orisApiClient, ConversionService conversionService) {
+    public OrisProxyController(OrisApiClient orisApiClient, OrisEventsImporter orisEventsImporter, ConversionService conversionService) {
         this.orisApiClient = orisApiClient;
+        this.orisEventsImporter = orisEventsImporter;
         this.conversionService = conversionService;
     }
 
@@ -33,6 +38,17 @@ class OrisProxyController implements OrisApi {
                 ORISUserInfoApiDto.class);
         userInfoApiDto.setRegistrationNumber(RegistrationNumber.ofRegistrationId(regNum).toRegistrationId());
         return ResponseEntity.ok(userInfoApiDto);
+    }
+
+    @HasGrant(ApplicationGrant.SYSTEM_ADMIN)
+    @Override
+    public ResponseEntity<Void> synchronizeEventsFromOris(SynchronizeEventsRequest request) {
+        if (request.eventIds().isEmpty()) {
+            orisEventsImporter.loadOrisEvents(OrisEventListFilter.createDefault());
+        } else {
+            orisEventsImporter.synchronizeEvents(request.eventIds().stream().map(Event.Id::new).toList());
+        }
+        return ResponseEntity.ok(null);
     }
 
     @ExceptionHandler(HttpClientErrorException.NotFound.class)
