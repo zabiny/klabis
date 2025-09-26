@@ -39,7 +39,7 @@ const EventsPage = () => {
                 Akce
             </Typography>
 
-            <KlabisTable<EventListItem> api={"/events"} queryKey={"events"}>
+            <KlabisTable<EventListItem> api={"/events"} queryKey={"events"} defaultOrderBy={"date"}>
                 <TableCell sortable column={"date"} dataRender={({value}) => formatDate(value)}>Datum</TableCell>
                 <TableCell sortable column={"name"}>Název</TableCell>
                 <TableCell sortable column={"location"}>Místo</TableCell>
