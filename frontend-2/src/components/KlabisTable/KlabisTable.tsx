@@ -28,12 +28,14 @@ interface KlabisTableProps<T = any> {
     defaultRowsPerPage?: number;
     additionalParams?: Record<string, any>;
     queryKey?: string;
+    emptyMessage: string;
 }
 
 const KlabisTableInner = <T extends Record<string, any>>({
                                                              api,
                                                              onRowClick,
                                                              queryKey,
+                                                             emptyMessage = "Žádná data",
                                                              onTableActionsLoaded = (actions) => {
                                                              }
                                                          }: KlabisTableProps<T>) => {
@@ -65,10 +67,12 @@ const KlabisTableInner = <T extends Record<string, any>>({
     const tableModel = tableContext.tableModel;
 
     const renderRows = (rows: object[]): ReactNode => {
-        if (!rows) return (
-            <TableRow key={0}><TableCell align={"center"} colSpan={tableContext.columnsCount}>No
-                content</TableCell></TableRow>
-        );
+        if (!rows || rows.length == 0) {
+            return (
+                <TableRow key={0}><TableCell align={"center"}
+                                             colSpan={tableContext.columnsCount}>{emptyMessage}</TableCell></TableRow>
+            );
+        }
 
         return rows
             .map((item, index) => (
