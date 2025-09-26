@@ -269,6 +269,12 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.location = location;
     }
 
+    public EventListResponse location(String location) {
+        this.location = location;
+        return this;
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -368,7 +374,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         }
 
         public Builder location(String location) {
-            this.instance.organizer(location);
+            this.instance.location(location);
             return this;
         }
 
