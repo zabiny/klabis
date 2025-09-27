@@ -2,12 +2,12 @@ package club.klabis.shared.config.authserver;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +17,6 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -28,12 +27,16 @@ import java.util.List;
 @Configuration
 public class AuthorizationServerConfiguration {
 
-    public static final int AUTH_SERVER_SECURITY_ORDER = Ordered.HIGHEST_PRECEDENCE + 5;
-    public static final int AUTH_SERVER_LOGIN_PAGE = AUTH_SERVER_SECURITY_ORDER + 10;
-    public static final int BEFORE_LOGIN_PAGE = AUTH_SERVER_LOGIN_PAGE - 2;
-    public static final int AFTER_LOGIN_PAGE = AUTH_SERVER_LOGIN_PAGE + 2;
+    protected static final int AUTH_SERVER_SECURITY_ORDER = Ordered.HIGHEST_PRECEDENCE + 5;
+    protected static final int AUTH_SERVER_LOGIN_PAGE = AUTH_SERVER_SECURITY_ORDER + 10;
+
+    // ------ constants in actual order
     public static final int BEFORE_AUTH_SERVER_SECURITY_ORDER = AUTH_SERVER_SECURITY_ORDER - 2;
+    // AUTH_SERVER_SECURITY_ORDER
     public static final int AFTER_AUTH_SERVER_SECURITY_ORDER = AUTH_SERVER_SECURITY_ORDER + 2;
+    public static final int BEFORE_LOGIN_PAGE = AUTH_SERVER_LOGIN_PAGE - 2;
+    // AUTH_SERVER_LOGIN_PAGE
+    public static final int AFTER_LOGIN_PAGE = AUTH_SERVER_LOGIN_PAGE + 2;
 
     private static final String LOVABLE_APP_CLIENT_ID = "aife";
 
@@ -56,9 +59,6 @@ public class AuthorizationServerConfiguration {
                 )
                 .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
 
-        //request cache for requests between Login Page and Authorization server (it's needed if there would be some application UI with own spring security chain to login user)
-        //http.requestCache(applyAuthorizationServerRequestCache());
-
         http.cors(cors -> cors
                 .configurationSource(corsConfigurationSource()));
 
@@ -76,6 +76,7 @@ public class AuthorizationServerConfiguration {
         return http.build();
     }
 
+    @Profile("inmemory")
     @Bean
     public OAuth2AuthorizationService authorizationService() {
         // TODO: replace with DB
@@ -136,15 +137,6 @@ public class AuthorizationServerConfiguration {
         source.registerCorsConfiguration("/oidc/**", config);
 
         return source;
-    }
-
-    // if authorization server is running on same instance as UI with own SpringSecurity login mechanism, then it is good to separate authorization server requests flow using own requests cache with own session attribute name
-    protected static Customizer<RequestCacheConfigurer<HttpSecurity>> applyAuthorizationServerRequestCache() {
-        HttpSessionRequestCache sessionRequestCache = new HttpSessionRequestCache();
-        sessionRequestCache.setSessionAttrName("klabis-auth-server-cached-request");
-
-        return httpSecurityRequestCacheConfigurer -> httpSecurityRequestCacheConfigurer.requestCache(
-                sessionRequestCache);
     }
 
 }
