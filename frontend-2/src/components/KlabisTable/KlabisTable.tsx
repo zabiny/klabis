@@ -2,7 +2,6 @@ import React, {ReactNode, useEffect} from 'react';
 // Import pro MuiTableCell
 import {
     Alert,
-    Box,
     CircularProgress,
     Paper,
     Table,
@@ -28,7 +27,7 @@ interface KlabisTableProps<T = any> {
     defaultRowsPerPage?: number;
     additionalParams?: Record<string, any>;
     queryKey?: string;
-    emptyMessage: string;
+    emptyMessage?: string;
 }
 
 const KlabisTableInner = <T extends Record<string, any>>({
@@ -48,25 +47,27 @@ const KlabisTableInner = <T extends Record<string, any>>({
         }
     }, [isSuccess, onTableActionsLoaded, data]);
 
-    if (isLoading) {
-        return (
-            <Box sx={{display: 'flex', justifyContent: 'center', mt: 4}}>
-                <CircularProgress/>
-            </Box>
-        );
-    }
-
-    if (error) {
-        return (
-            <Alert severity="error">
-                Nepodařilo se načíst data. Zkuste to prosím později.
-            </Alert>
-        );
-    }
-
     const tableModel = tableContext.tableModel;
 
     const renderRows = (rows: object[]): ReactNode => {
+        if (isLoading) {
+            return (
+                <TableRow key={0}><TableCell align={"center"}
+                                             colSpan={tableContext.columnsCount}><CircularProgress/></TableCell></TableRow>
+            );
+        }
+
+        if (error) {
+            return (
+                <TableRow key={0}><TableCell align={"center"}
+                                             colSpan={tableContext.columnsCount}>
+                    <Alert severity="error">
+                        Nepodařilo se načíst data. Zkuste to prosím později.
+                    </Alert>
+                </TableCell></TableRow>
+            );
+        }
+
         if (!rows || rows.length == 0) {
             return (
                 <TableRow key={0}><TableCell align={"center"}
