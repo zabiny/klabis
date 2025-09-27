@@ -10,6 +10,7 @@ import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
+import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.JsonViewMapping;
 import club.klabis.shared.config.restapi.JsonViewParameter;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,26 +19,17 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
-
-@Validated
-@Tag(name = "Members")
-@SecurityRequirement(name = "klabis", scopes = {"openapi"})
-@RestController
-@RequestMapping(value = "/members", produces = {"application/json", "application/klabis+json", "application/hal+json"})
+@ApiController(openApiTagName = "Members", path = "/members", securityScopes = {"members"})
 public class MembersApi {
 
     private final MembersRepository membersRepository;
@@ -79,17 +71,10 @@ public class MembersApi {
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
-        Page<Member> result = membersRepository.findAllBySuspended(suspended, toEntityPageable(pageable));
+        Page<Member> result = membersRepository.findAllBySuspended(suspended,
+                memberModelAssembler.convertAttributeNamesToEntity(pageable));
 
         return ResponseEntity.ok(memberModelAssembler.toPagedModel(result));
-    }
-
-    private Pageable toEntityPageable(Pageable dtoPageable) {
-        List<Sort.Order> updatedSorts = dtoPageable.getSort()
-                .stream()
-                .map(s -> s.withProperty(memberModelAssembler.translateDtoToEntityPropertyName(s.getProperty())))
-                .toList();
-        return PageRequest.of(dtoPageable.getPageNumber(), dtoPageable.getPageSize(), Sort.by(updatedSorts));
     }
 
     /**

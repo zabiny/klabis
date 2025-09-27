@@ -3,58 +3,47 @@ package club.klabis.members.infrastructure.restapi;
 import club.klabis.members.domain.Member;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.ConversionService;
+import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.PagedModel;
-import org.springframework.hateoas.RepresentationModel;
-import org.springframework.hateoas.server.RepresentationModelAssembler;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.hateoas.Link;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+
 @Component
-public class MemberModelAssembler implements RepresentationModelAssembler<Member, MembersApiResponse> {
+public class MemberModelAssembler extends AbstractRepresentationModelMapper<Member, MembersApiResponse> {
 
     private final ConversionService conversionService;
-    private final PagedResourcesAssembler<Member> pagedModelAssembler;
     private final KlabisSecurityService securityService;
 
-    public MemberModelAssembler(ConversionService conversionService, PagedResourcesAssembler<Member> pagedModelAssembler, KlabisSecurityService securityService) {
+    public MemberModelAssembler(ConversionService conversionService, KlabisSecurityService securityService) {
         this.conversionService = conversionService;
-        this.pagedModelAssembler = pagedModelAssembler;
         this.securityService = securityService;
     }
 
     @Override
-    public MembersApiResponse toModel(Member entity) {
-        MembersApiResponse responseDto = conversionService.convert(entity, MembersApiResponse.class);
+    public MembersApiResponse mapDataFromDomain(Member member) {
+        MembersApiResponse responseDto = conversionService.convert(member, MembersApiResponse.class);
 
         return responseDto;
     }
 
-    private void addCollectionLinks(RepresentationModel<?> model) {
-        if (securityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
-            model.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(RegisterNewMemberController.class)
-                    .memberRegistrationsPost(null)).withRel(ApplicationGrant.MEMBERS_REGISTER.getGrantName()));
-        }
-
-    }
-
     @Override
-    public CollectionModel<MembersApiResponse> toCollectionModel(Iterable<? extends Member> entities) {
-        CollectionModel<MembersApiResponse> result = RepresentationModelAssembler.super.toCollectionModel(entities);
+    public Collection<Link> createCollectionLinks() {
+        Collection<Link> result = super.createCollectionLinks();
 
-        addCollectionLinks(result);
-
-        return result;
-    }
-
-    public PagedModel<MembersApiResponse> toPagedModel(Page<Member> entities) {
-        PagedModel<MembersApiResponse> result = pagedModelAssembler.toModel(entities, this);
-
-        addCollectionLinks(result);
+        if (securityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
+            result.add(linkTo(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))
+                    .withRel(ApplicationGrant.MEMBERS_REGISTER.getGrantName())
+                    .andAffordance(afford(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))));
+        }
 
         return result;
     }
@@ -65,5 +54,13 @@ public class MemberModelAssembler implements RepresentationModelAssembler<Member
         } else {
             return propertyName;
         }
+    }
+
+    Pageable convertAttributeNamesToEntity(Pageable dtoPageable) {
+        List<Sort.Order> updatedSorts = dtoPageable.getSort()
+                .stream()
+                .map(s -> s.withProperty(translateDtoToEntityPropertyName(s.getProperty())))
+                .toList();
+        return PageRequest.of(dtoPageable.getPageNumber(), dtoPageable.getPageSize(), Sort.by(updatedSorts));
     }
 }

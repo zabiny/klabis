@@ -25,9 +25,11 @@ import java.util.List;
 @Configuration
 public class KalMediaTypeConfiguration implements HypermediaMappingInformation {
 
+    public static final MediaType KAL_MEDIA_TYPE = MediaType.valueOf("application/klabis+json");
+
     @Override
     public List<MediaType> getMediaTypes() {
-        return List.of(MediaType.valueOf("application/klabis+json"));
+        return List.of(KAL_MEDIA_TYPE);
     }
 
     @Override

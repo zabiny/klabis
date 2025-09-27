@@ -16,6 +16,7 @@ public class SpringdocSecurityConfiguration {
     public SecurityFilterChain swaggerFilterChain(HttpSecurity http) throws Exception {
         http.securityMatcher("/swagger-ui/*", "/v3/api-docs/*", "/v3/api-docs", "/klabis-api-spec.yaml", "/redoc.html")
                 .csrf(AbstractHttpConfigurer::disable)
+                .requestCache(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         c -> c.anyRequest().permitAll()
                 );
