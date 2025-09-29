@@ -17,7 +17,6 @@ import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
 import java.util.Collection;
-import java.util.Optional;
 
 @Mapper(config = DomainToDtoMapperConfiguration.class, componentModel = "spring")
 abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event, EventListResponse> {
@@ -28,10 +27,6 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
         return eventID.value();
     }
 
-    public String mapCoordinatorName(Optional<MemberId> memberId) {
-        return memberId.map(id -> "Coordinator member ID %d".formatted(id.value())).orElse("-");
-    }
-
     @Mapping(target = "type", ignore = true)
     @Mapping(target = "web", ignore = true)
     @Mapping(target = "coordinator", ignore = true)
@@ -40,7 +35,7 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
 
     @AfterMapping
     public EventListResponse afterModelMap(Event event, @MappingTarget EventListResponse eventListResponse) {
-        eventListResponse.setCoordinator(mapCoordinatorName(event.getCoordinator()));
+        eventListResponse.setCoordinator(event.getCoordinator().map(MemberId::value).orElse(null));
         return eventListResponse;
     }
 

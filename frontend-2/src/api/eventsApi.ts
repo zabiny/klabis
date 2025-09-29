@@ -9,7 +9,7 @@ export interface EventListItem {
     type: 'T' | 'S';
     web?: string;
     registrationDeadline?: string;
-    coordinator?: string;
+    coordinator?: number;
 }
 
 export interface EventsList {

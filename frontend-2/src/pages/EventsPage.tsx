@@ -1,6 +1,7 @@
 import {Box, Typography,} from '@mui/material';
 import {type EventListItem} from '../api/eventsApi';
 import {KlabisTable, TableCell} from "../components/KlabisTable";
+import MemberName from "../components/members/MemberName";
 
 const EventsPage = () => {
     // Function to format date
@@ -49,7 +50,8 @@ const EventsPage = () => {
                 <TableCell column={"_actions"}>Možnosti</TableCell>
                 <TableCell sortable column={"registrationDeadline"}
                            dataRender={({value}) => formatDate(value)}>Přihlášky</TableCell>
-                <TableCell sortable column={"coordinator"}>Vedoucí</TableCell>
+                <TableCell sortable column={"coordinator"} dataRender={({value}) => value ?
+                    <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
 
             </KlabisTable>
         </Box>

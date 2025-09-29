@@ -73,7 +73,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate registrationDeadline;
 
-    private String coordinator;
+    private Integer coordinator;
 
     public EventListResponse() {
         super();
@@ -238,7 +238,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.registrationDeadline = registrationDeadline;
     }
 
-    public EventListResponse coordinator(String coordinator) {
+    public EventListResponse coordinator(Integer coordinator) {
         this.coordinator = coordinator;
         return this;
     }
@@ -251,11 +251,11 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
 
     @Schema(name = "coordinator", example = "Josef Pařízek", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("coordinator")
-    public String getCoordinator() {
+    public Integer getCoordinator() {
         return coordinator;
     }
 
-    public void setCoordinator(String coordinator) {
+    public void setCoordinator(Integer coordinator) {
         this.coordinator = coordinator;
     }
 
@@ -393,7 +393,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
             return this;
         }
 
-        public Builder coordinator(String coordinator) {
+        public Builder coordinator(Integer coordinator) {
             this.instance.coordinator(coordinator);
             return this;
         }
