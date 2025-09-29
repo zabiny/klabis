@@ -2,8 +2,10 @@ package com.dpolach.inmemoryrepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
 
+import java.beans.PropertyDescriptor;
 import java.util.Comparator;
 
 public class SortComparator<T> implements Comparator<T> {
@@ -48,17 +50,24 @@ public class SortComparator<T> implements Comparator<T> {
     @SuppressWarnings("unchecked")
     private int compareValues(T o1, T o2, String property) {
         try {
-            var field = o1.getClass().getDeclaredField(property);
-            if (!Comparable.class.isAssignableFrom(field.getType())) {
+            PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(o1.getClass(), property);
+            if (descriptor == null) {
+                descriptor = BeanUtils.getPropertyDescriptor(o2.getClass(), property);
+                if (descriptor == null) {
+                    LOG.warn("Cannot sort by field %s from class %s or %s - no such field was found".formatted(property,
+                            o1.getClass(), o2.getClass()));
+                    return 0;
+                }
+            }
+            if (!Comparable.class.isAssignableFrom(descriptor.getPropertyType())) {
                 LOG.warn("Cannot sort by field %s from class %s - it doesn't implement Comparable interface".formatted(
                         property,
                         o1.getClass().getCanonicalName()));
                 return 0;
             }
 
-            field.setAccessible(true);
-            Comparable<Object> value1 = (Comparable<Object>) field.get(o1);
-            Comparable<Object> value2 = (Comparable<Object>) field.get(o2);
+            Comparable<Object> value1 = (Comparable<Object>) descriptor.getReadMethod().invoke(o1);
+            Comparable<Object> value2 = (Comparable<Object>) descriptor.getReadMethod().invoke(o2);
             if (value1 == null && value2 == null) return 0;
             if (value1 == null) return 1;
             if (value2 == null) return -1;

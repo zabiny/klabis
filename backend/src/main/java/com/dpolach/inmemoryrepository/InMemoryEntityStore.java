@@ -18,42 +18,49 @@ import java.util.stream.Collectors;
 public class InMemoryEntityStore {
 
     private static final Logger log = LoggerFactory.getLogger(InMemoryEntityStore.class);
-    private final Map<Class<?>, Map<Object, String>> entitiesByClass;
-    private final Map<Class<?>, EntityInformation<?, ?>> entityInformationMap;
+    private final Map<Class<?>, Map<Object, Object>> entitiesByClass;
+    private final Collection<InMemoryEntityInformation<?, ?>> entityInformationMap;
 
-    private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
-            .registerTypeAdapter(java.time.LocalDateTime.class, new LocalDateTimeAdapter())
-            .registerTypeAdapter(java.time.ZonedDateTime.class, new ZonedDateTimeAdapter())
-            .registerTypeAdapter(java.time.Instant.class, new InstantAdapter())
-            .create();
+    // at this moment we clone using GSON by serialize and deserialize to/from JSON which creates new instances with same contents. But any better way of deep cloning shall be fine here.
+    private EntityCloner entityCloner = new GsonCloner();
 
     public InMemoryEntityStore() {
-        this(new HashMap<>(), new HashMap<>());
+        this(new HashMap<>(), new ArrayList<>());
     }
 
-    private synchronized void setDataFrom(Map<Class<?>, Map<Object, String>> data) {
+    private Optional<Map<Object, Object>> getEntityStore(Class<?> entityClass) {
+        var entityInformation = getEntityInformation(entityClass);
+        return Optional.ofNullable(entitiesByClass.get(entityInformation.getJavaType()));
+    }
+
+    private <ID, VALUE> Map<ID, VALUE> cloneValues(Map<ID, VALUE> original) {
+        Map<ID, VALUE> clone = new HashMap<>();
+        original.forEach((key, value) -> {
+            clone.put(key, entityCloner.deepClone(value));
+        });
+        return clone;
+    }
+
+    private synchronized void setDataFrom(Map<Class<?>, Map<Object, Object>> data) {
         entitiesByClass.clear();
         data.forEach(
-                (key, value) -> entitiesByClass.put(key, Collections.synchronizedMap(new HashMap<>(value))));
+                (key, value) -> entitiesByClass.put(key, Collections.synchronizedMap(cloneValues(value))));
     }
 
     private InMemoryEntityStore(
-            Map<Class<?>, Map<Object, String>> entitiesByClass,
-            Map<Class<?>, EntityInformation<?, ?>> entityInformationMap
+            Map<Class<?>, Map<Object, Object>> entitiesByClass,
+            Collection<InMemoryEntityInformation<?, ?>> entityInformationMap
     ) {
         this.entitiesByClass = Collections.synchronizedMap(new HashMap<>());
         setDataFrom(entitiesByClass);
-        this.entityInformationMap = entityInformationMap.entrySet()
-                .stream()
-                .collect(Collectors.toConcurrentMap(Map.Entry::getKey, e -> e.getValue()));
+        this.entityInformationMap = new ArrayList<>(entityInformationMap);
     }
 
     protected InMemoryEntityStore backupClone() {
         return new InMemoryEntityStore(entitiesByClass, entityInformationMap);
     }
 
-    private String describeStoredData(Map<Class<?>, Map<Object, String>> entitiesByClass) {
+    private String describeStoredData(Map<Class<?>, Map<Object, Object>> entitiesByClass) {
         return entitiesByClass.entrySet().stream()
                 .map(e -> {
                     String entityName = e.getKey().getSimpleName();
@@ -82,36 +89,29 @@ public class InMemoryEntityStore {
         this.setDataFrom(backup.entitiesByClass);
 
         entityInformationMap.clear();
-        entityInformationMap.putAll(backup.entityInformationMap);
+        entityInformationMap.addAll(backup.entityInformationMap);
     }
 
-    public <T, ID> void register(Class<T> entityClass, EntityInformation<T, ID> entityInformation) {
-        entitiesByClass.putIfAbsent(entityClass, new ConcurrentHashMap<>());
-        entityInformationMap.put(entityClass, entityInformation);
+    <T, ID> void register(InMemoryEntityInformation<T, ID> entityInformation) {
+        var rootEntityType = entityInformation.getJavaType();
+        entitiesByClass.putIfAbsent(rootEntityType, new ConcurrentHashMap<>());
+        entityInformationMap.add(entityInformation);
     }
 
     @SuppressWarnings("unchecked")
     public <T, ID> Optional<T> findById(Class<T> entityClass, ID id) {
-        Map<Object, String> entities = entitiesByClass.get(entityClass);
-        if (entities == null) {
-            return Optional.empty();
-        }
-
-        return Optional.ofNullable(entities.get(id))
-                .map(s -> gson.fromJson(s, entityClass));
+        return (Optional<T>) getEntityStore(entityClass)
+                .flatMap(store -> Optional.of(store.get(id)))
+                .map(value -> entityCloner.deepClone(value));
     }
 
     @SuppressWarnings("unchecked")
     public <T> List<T> findAll(Class<T> entityClass) {
-        Map<Object, String> entities = entitiesByClass.get(entityClass);
-        if (entities == null) {
-            return new ArrayList<>();
-        }
-
-        return entities.values()
-                .stream()
-                .map(s -> gson.fromJson(s, entityClass))
-                .collect(Collectors.toCollection(ArrayList::new));
+        return (List<T>) getEntityStore(entityClass).map(entities -> entities.values()
+                        .stream()
+                        .map(s -> entityCloner.deepClone(s))
+                        .collect(Collectors.toCollection(ArrayList::new)))
+                .orElseGet(ArrayList::new);
     }
 
     public <T> Page<T> findAll(Class<T> entityClass, Pageable pageable, Predicate<T> predicate) {
@@ -138,59 +138,52 @@ public class InMemoryEntityStore {
                 .findFirst();
     }
 
+    private <T> InMemoryEntityInformation<T, Object> getEntityInformation(Class<T> entityClass) {
+        return (InMemoryEntityInformation<T, Object>) entityInformationMap
+                .stream().filter(ei -> ei.isEntity(entityClass)).findAny()
+                .orElseThrow(() -> new IllegalStateException("No EntityInformation registered for " + entityClass));
+    }
+
     @SuppressWarnings("unchecked")
-    public <T, ID> T save(T entity) {
-        Class<?> entityClass = entity.getClass();
-        Map<Object, String> entities = entitiesByClass.computeIfAbsent(entityClass, k -> new HashMap<>());
+    public <T> T save(T entity) {
+        Class<T> entityClass = (Class<T>) entity.getClass();
+        var entityInformation = getEntityInformation(entityClass);
 
-        EntityInformation<T, ID> entityInformation =
-                (EntityInformation<T, ID>) entityInformationMap.get(entityClass);
+        Map<Object, Object> entities = getEntityStore(entityInformation.getJavaType())
+                .orElseGet(() -> entitiesByClass.put(entityInformation.getJavaType(), new HashMap<>()));
 
-        if (entityInformation == null) {
-            throw new IllegalStateException("No EntityInformation registered for " + entityClass);
-        }
-
-        ID id = entityInformation.getId(entity);
+        Object id = entityInformation.getId(entity);
         if (id == null) {
             // Pokud je ID null, měli bychom vytvořit nové ID (pro autogenerované ID)
-            // Pro jednoduchost necháváme tento případ nevyřešený - v reálném použití
-            // byste implementovali strategii generování ID
+            // Pro jednoduchost necháváme tento případ nevyřešený)
             throw new IllegalStateException("ID cannot be null for entity: " + entity);
         }
 
-        entities.put(id, gson.toJson(entity));
+        entities.put(id, entityCloner.deepClone(entity));
         return entity;
     }
 
     @SuppressWarnings("unchecked")
-    public <T, ID> void delete(T entity) {
-        Class<?> entityClass = entity.getClass();
-        Map<Object, String> entities = entitiesByClass.get(entityClass);
-        if (entities == null) {
-            return;
-        }
-
-        EntityInformation<T, ID> entityInformation =
-                (EntityInformation<T, ID>) entityInformationMap.get(entityClass);
+    public <T> void delete(T entity) {
+        Class<T> entityClass = (Class<T>) entity.getClass();
+        EntityInformation<T, Object> entityInformation = getEntityInformation(entityClass);
 
         if (entityInformation == null) {
             throw new IllegalStateException("No EntityInformation registered for " + entityClass);
         }
 
-        ID id = entityInformation.getId(entity);
-        if (id != null) {
-            entities.remove(id);
-        }
+        getEntityStore(entityClass).ifPresent(entities -> {
+            Object id = entityInformation.getId(entity);
+            if (id != null) {
+                entities.remove(id);
+            }
+        });
     }
 
     @SuppressWarnings("unchecked")
     public <T, ID> void deleteById(Class<T> entityClass, ID id) {
-        Map<Object, String> entities = entitiesByClass.get(entityClass);
-        if (entities == null) {
-            return;
-        }
-
-        entities.remove(id);
+        getEntityStore(entityClass)
+                .ifPresent(store -> store.remove(id));
     }
 }
 
@@ -279,5 +272,31 @@ class InstantAdapter implements JsonSerializer<java.time.Instant>, JsonDeseriali
         } catch (DateTimeException e) {
             throw new JsonParseException("could not parse instant '" + json.getAsString() + "'", e);
         }
+    }
+}
+
+/**
+ * Purpose is to clone entities to avoid returning same instance to multiple "threads".
+ */
+interface EntityCloner {
+
+    <T> T deepClone(T original);
+
+}
+
+class GsonCloner implements EntityCloner {
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+            .registerTypeAdapter(java.time.LocalDateTime.class, new LocalDateTimeAdapter())
+            .registerTypeAdapter(java.time.ZonedDateTime.class, new ZonedDateTimeAdapter())
+            .registerTypeAdapter(java.time.Instant.class, new InstantAdapter())
+            .setPrettyPrinting()
+            .create();
+
+
+    @Override
+    public <T> T deepClone(T original) {
+        Class<T> type = (Class<T>) original.getClass();
+        return gson.fromJson(gson.toJson(original), type);
     }
 }

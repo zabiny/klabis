@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -23,14 +22,14 @@ class InMemoryRepositoryFactory extends RepositoryFactorySupport {
     private ObjectProvider<InMemoryEntityStore> entityStoreProvider;
 
     @Override
-    public <T, ID> EntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
+    public <T, ID> InMemoryEntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
         return new InMemoryEntityInformation<>(domainClass);
     }
 
     @Override
     protected Object getTargetRepository(RepositoryInformation information) {
         Class<Object> domainClass = (Class<Object>) information.getDomainType();
-        EntityInformation<Object, ?> entityInformation = getEntityInformation(domainClass);
+        InMemoryEntityInformation<Object, ?> entityInformation = getEntityInformation(domainClass);
 
         log.debug("Creating repository for {} with entity information {}",
                 information.getDomainType(),
@@ -45,7 +44,7 @@ class InMemoryRepositoryFactory extends RepositoryFactorySupport {
                         entityStore);
 
         // Registrujeme entityInformation, abychom ji mohli později použít
-        entityStore.register(domainClass, entityInformation);
+        entityStore.register(entityInformation);
 
         return repository;
     }

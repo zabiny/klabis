@@ -69,4 +69,8 @@ class InMemoryEntityInformation<T, ID> implements EntityInformation<T, ID> {
     public Class<T> getJavaType() {
         return domainClass;
     }
+
+    public boolean isEntity(Class<?> entityClass) {
+        return domainClass.isAssignableFrom(entityClass);
+    }
 }
