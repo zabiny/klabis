@@ -49,13 +49,12 @@ const EventsPage = () => {
                 <TableCell sortable column={"organizer"}>Pořadatel</TableCell>
                 <TableCell column={"type"}>Typ</TableCell>
                 <TableCell column={"web"}>Web</TableCell>
-                <TableCell column="_actions"
-                           dataRender={props => (<Actions value={props.value}/>)}>Možnosti</TableCell>
-
                 <TableCell sortable column={"registrationDeadline"}
-                           dataRender={({value}) => formatDate(value)}>Přihlášky</TableCell>
+                           dataRender={({value}) => formatDate(value)}>Uzávěrka přihlášek</TableCell>
                 <TableCell sortable column={"coordinator"} dataRender={({value}) => value ?
                     <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
+                <TableCell column="_actions"
+                           dataRender={props => (<Actions value={props.value}/>)}>Možnosti</TableCell>
 
             </KlabisTable>
         </Box>
