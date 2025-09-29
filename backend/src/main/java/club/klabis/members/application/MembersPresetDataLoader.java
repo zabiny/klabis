@@ -3,7 +3,6 @@ package club.klabis.members.application;
 import club.klabis.PresetDataLoader;
 import club.klabis.members.domain.*;
 import club.klabis.members.domain.forms.RegistrationForm;
-import club.klabis.members.infrastructure.restapi.dto.SexApiDto;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.application.LinkWithSocialIdUseCase;
@@ -61,7 +60,7 @@ public class MembersPresetDataLoader implements PresetDataLoader {
             String firstName,
             String lastName,
             RegistrationNumber registrationNumber,
-            SexApiDto sex,
+            Sex sex,
             String dateOfBirth,
             String birthCertificateNumber,
             String nationality,
