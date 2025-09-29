@@ -1,9 +1,9 @@
-import {Box, Typography,} from '@mui/material';
+import {Box, Link, Typography,} from '@mui/material';
+import {Public,} from '@mui/icons-material';
 import {type EventListItem} from '../api/eventsApi';
 import {KlabisTable, TableCell} from "../components/KlabisTable";
 import MemberName from "../components/members/MemberName";
 import {Actions} from "../components/Actions";
-import React from "react";
 
 const EventsPage = () => {
     // Function to format date
@@ -48,14 +48,13 @@ const EventsPage = () => {
                 <TableCell sortable column={"location"}>Místo</TableCell>
                 <TableCell sortable column={"organizer"}>Pořadatel</TableCell>
                 <TableCell column={"type"}>Typ</TableCell>
-                <TableCell column={"web"}>Web</TableCell>
+                <TableCell column={"web"} dataRender={({value}) => <Link href={value}><Public/></Link>}>Web</TableCell>
                 <TableCell sortable column={"registrationDeadline"}
                            dataRender={({value}) => formatDate(value)}>Uzávěrka přihlášek</TableCell>
                 <TableCell sortable column={"coordinator"} dataRender={({value}) => value ?
                     <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
                 <TableCell column="_actions"
                            dataRender={props => (<Actions value={props.value}/>)}>Možnosti</TableCell>
-
             </KlabisTable>
         </Box>
     );
