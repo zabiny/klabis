@@ -76,8 +76,8 @@ public class Event extends AbstractAggregateRoot<Event> {
         return organizer;
     }
 
-    public URL getWebsite() {
-        return website;
+    public Optional<URL> getWebsite() {
+        return Optional.ofNullable(website);
     }
 
     public ZonedDateTime getRegistrationDeadline() {

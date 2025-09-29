@@ -28,7 +28,7 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
     }
 
     @Mapping(target = "type", ignore = true)
-    @Mapping(target = "web", ignore = true)
+    @Mapping(target = "web", source = "website")
     @Mapping(target = "coordinator", ignore = true)
     @Override
     public abstract EventListResponse mapDataFromDomain(Event event);
