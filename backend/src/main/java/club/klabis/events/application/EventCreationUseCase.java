@@ -1,5 +1,6 @@
 package club.klabis.events.application;
 
+import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventEditationForm;
 import jakarta.validation.Valid;
@@ -14,7 +15,7 @@ public class EventCreationUseCase {
     }
 
     public Event createNewEvent(@Valid EventEditationForm form) {
-        return repository.save(Event.newEvent(form));
+        return repository.save(Competition.newEvent(form));
     }
 
 }

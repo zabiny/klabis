@@ -29,7 +29,7 @@ class EventTest {
         @DisplayName("Should correctly update Event properties with given form")
         void shouldUpdateEventProperties() {
             // Arrange
-            Event event = new Event();
+            Event event = new Competition();
             LocalDate testDate = LocalDate.of(2025, 7, 22);
             ZonedDateTime registrationDeadline = LocalDate.of(2025, 7, 25).atStartOfDay(ZONE_PRAGUE);
             MemberId coordinator = new MemberId(1);
@@ -58,7 +58,7 @@ class EventTest {
         @DisplayName("Should publish EventEditedEvent when edit is called")
         void shouldPublishEventEditedEvent() {
             // Arrange
-            Event event = new Event();
+            Event event = new Competition();
             EventEditationForm form = new EventEditationForm(
                     "Test Event",
                     "Test Location",
@@ -87,7 +87,7 @@ class EventTest {
         @DisplayName("Should successfully add a registration when all conditions are met")
         void shouldRegisterMemberSuccessfully() {
             // Arrange
-            Event event = Event.newEvent(new EventEditationForm(
+            Event event = Competition.newEvent(new EventEditationForm(
                     "Event Name",
                     "Location",
                     LocalDate.now().plusDays(1),
@@ -109,7 +109,7 @@ class EventTest {
         @DisplayName("Should throw exception when registering after the deadline")
         void shouldThrowExceptionAfterDeadline() {
             // Arrange
-            Event event = Event.newEvent(new EventEditationForm(
+            Event event = Competition.newEvent(new EventEditationForm(
                     "Event Name",
                     "Location",
                     LocalDate.now(),
@@ -130,7 +130,7 @@ class EventTest {
         @DisplayName("Should throw exception when member is already registered")
         void shouldThrowExceptionForDuplicateRegistration() {
             // Arrange
-            Event event = Event.newEvent(new EventEditationForm(
+            Event event = Competition.newEvent(new EventEditationForm(
                     "Event Name",
                     "Location",
                     LocalDate.now().plusDays(1),
@@ -159,7 +159,7 @@ class EventTest {
         @DisplayName("Should successfully remove a registration when all conditions are met")
         void shouldRemoveRegistrationSuccessfully() {
             // Arrange
-            Event event = Event.newEvent(new EventEditationForm(
+            Event event = Competition.newEvent(new EventEditationForm(
                     "Event Name",
                     "Location",
                     LocalDate.now().plusDays(1),
@@ -182,7 +182,7 @@ class EventTest {
         @DisplayName("Should throw exception when removing registration after the deadline")
         void shouldThrowExceptionAfterDeadline() {
             // Arrange
-            Event event = Event.newEvent(new EventEditationForm(
+            Event event = Competition.newEvent(new EventEditationForm(
                     "Event Name",
                     "Location",
                     LocalDate.now().plusDays(10),
@@ -205,7 +205,7 @@ class EventTest {
         @DisplayName("Should throw exception when member is not registered")
         void shouldThrowExceptionWhenMemberNotRegistered() {
             // Arrange
-            Event event = Event.newEvent(new EventEditationForm(
+            Event event = Competition.newEvent(new EventEditationForm(
                     "Event Name",
                     "Location",
                     LocalDate.now().plusDays(1),

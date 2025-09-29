@@ -1,5 +1,7 @@
 package club.klabis.events.infrastructure.restapi.dto;
 
+import club.klabis.events.domain.Competition;
+import club.klabis.events.domain.Event;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -12,6 +14,7 @@ import org.springframework.hateoas.RepresentationModel;
 
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * EventListItemApiDto
@@ -35,34 +38,28 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
      * Gets or Sets type
      */
     public enum TypeEnum {
-        TRAINING("T"),
+        TRAINING,
 
-        COMPETITION("C");
-
-        private String value;
-
-        TypeEnum(String value) {
-            this.value = value;
-        }
+        COMPETITION;
 
         @JsonValue
-        public String getValue() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return String.valueOf(value);
+        public String getJsonValue() {
+            return name();
         }
 
         @JsonCreator
-        public static TypeEnum fromValue(String value) {
-            for (TypeEnum b : TypeEnum.values()) {
-                if (b.value.equals(value)) {
-                    return b;
+        public static TypeEnum fromJsonValue(String value) {
+            return TypeEnum.valueOf(value.toUpperCase());
+        }
+
+        public static Optional<TypeEnum> ofEvent(Event event) {
+            return Optional.ofNullable(event).map(e -> {
+                if (event instanceof Competition) {
+                    return EventListResponse.TypeEnum.COMPETITION;
                 }
-            }
-            throw new IllegalArgumentException("Unexpected value '" + value + "'");
+
+                return null;
+            });
         }
     }
 

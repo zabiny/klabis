@@ -36,6 +36,7 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
     @AfterMapping
     public EventListResponse afterModelMap(Event event, @MappingTarget EventListResponse eventListResponse) {
         eventListResponse.setCoordinator(event.getCoordinator().map(MemberId::value).orElse(null));
+        eventListResponse.setType(EventListResponse.TypeEnum.ofEvent(event).orElse(null));
         return eventListResponse;
     }
 

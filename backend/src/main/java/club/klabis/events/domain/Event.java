@@ -15,7 +15,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 @AggregateRoot
-public class Event extends AbstractAggregateRoot<Event> {
+public abstract class Event extends AbstractAggregateRoot<Event> {
 
     protected Event() {
         id = Id.newId();
@@ -88,12 +88,6 @@ public class Event extends AbstractAggregateRoot<Event> {
         return orisId != null;
     }
 
-    public static Event newEvent(EventEditationForm form) {
-        Event event = new Event();
-        event.edit(form);
-        return event;
-    }
-
     public void edit(EventEditationForm form) {
         this.date = form.date();
         this.name = form.name();
@@ -103,12 +97,6 @@ public class Event extends AbstractAggregateRoot<Event> {
         this.coordinator = form.coordinator();
 
         this.andEvent(new EventEditedEvent(this));
-    }
-
-    public static Event importFrom(OrisData orisData) {
-        Event event = new Event();
-        event.synchronize(orisData);
-        return event;
     }
 
     public void synchronize(OrisData orisData) {
