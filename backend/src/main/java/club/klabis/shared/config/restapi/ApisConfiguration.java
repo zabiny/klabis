@@ -3,6 +3,9 @@ package club.klabis.shared.config.restapi;
 import club.klabis.shared.config.authserver.AuthorizationServerConfiguration;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.application.ApplicationUsersRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -29,6 +32,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.AbstractRequestLoggingFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -73,6 +77,36 @@ public class ApisConfiguration {
     @Bean
     static PrePostTemplateDefaults prePostTemplateDefaults() {
         return new PrePostTemplateDefaults();
+    }
+
+
+    @Bean
+    public AbstractRequestLoggingFilter logFilter() {
+        AbstractRequestLoggingFilter filter = new AbstractRequestLoggingFilter() {
+            private static final Logger LOG = LoggerFactory.getLogger(ApisConfiguration.class);
+
+            @Override
+            protected boolean shouldLog(HttpServletRequest request) {
+                return LOG.isDebugEnabled() && !request.getRequestURI().startsWith("/actuator");
+            }
+
+            @Override
+            protected void beforeRequest(HttpServletRequest request, String message) {
+                LOG.debug(message);
+            }
+
+            @Override
+            protected void afterRequest(HttpServletRequest request, String message) {
+                LOG.debug(message);
+            }
+        };
+        filter.setIncludeQueryString(true);
+        filter.setIncludePayload(true);
+        filter.setMaxPayloadLength(10000);
+        filter.setIncludeHeaders(false);
+        filter.setAfterMessagePrefix("REQUEST DATA: ");
+        filter.setIncludeClientInfo(true);
+        return filter;
     }
 
     // https://stackoverflow.com/questions/69100420/spring-oauth2-resource-server-load-synchronized-user-from-database
