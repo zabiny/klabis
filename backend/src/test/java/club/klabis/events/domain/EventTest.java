@@ -10,12 +10,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.AggregatedRootTestUtils;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("Tests for Event class")
 class EventTest {
+
+    ZoneId ZONE_PRAGUE = ZoneId.of("Europe/Prague");
 
     @Nested
     @DisplayName("edit method tests")
@@ -27,7 +31,7 @@ class EventTest {
             // Arrange
             Event event = new Event();
             LocalDate testDate = LocalDate.of(2025, 7, 22);
-            LocalDate registrationDeadline = LocalDate.of(2025, 7, 25);
+            ZonedDateTime registrationDeadline = LocalDate.of(2025, 7, 25).atStartOfDay(ZONE_PRAGUE);
             MemberId coordinator = new MemberId(1);
             EventEditationForm form = new EventEditationForm(
                     "Updated Event Name",
@@ -60,7 +64,7 @@ class EventTest {
                     "Test Location",
                     LocalDate.of(2025, 7, 23),
                     "Test Organizer",
-                    LocalDate.of(2025, 7, 24),
+                    LocalDate.of(2025, 7, 24).atStartOfDay(ZONE_PRAGUE),
                     null
             );
 
@@ -88,7 +92,7 @@ class EventTest {
                     "Location",
                     LocalDate.now().plusDays(1),
                     "Organizer",
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().plusDays(1).atStartOfDay(ZONE_PRAGUE),
                     null
             ));
             MemberId memberId = new MemberId(1);
@@ -110,7 +114,7 @@ class EventTest {
                     "Location",
                     LocalDate.now(),
                     "Organizer",
-                    LocalDate.now().minusDays(1),
+                    LocalDate.now().minusDays(1).atStartOfDay(ZONE_PRAGUE),
                     null
             ));
             MemberId memberId = new MemberId(1);
@@ -131,7 +135,7 @@ class EventTest {
                     "Location",
                     LocalDate.now().plusDays(1),
                     "Organizer",
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().plusDays(1).atStartOfDay(ZONE_PRAGUE),
                     null
             ));
             MemberId memberId = new MemberId(1);
@@ -160,7 +164,7 @@ class EventTest {
                     "Location",
                     LocalDate.now().plusDays(1),
                     "Organizer",
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().plusDays(1).atStartOfDay(ZONE_PRAGUE),
                     null
             ));
             MemberId memberId = new MemberId(1);
@@ -183,13 +187,13 @@ class EventTest {
                     "Location",
                     LocalDate.now().plusDays(10),
                     "Organizer",
-                    LocalDate.now().plusDays(4),
+                    LocalDate.now().plusDays(4).atStartOfDay(ZONE_PRAGUE),
                     null
             ));
             MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm("SI12345");
             event.registerMember(memberId, form);
-            event.closeRegistrations(LocalDate.now().minusDays(1));
+            event.closeRegistrations(LocalDate.now().minusDays(1).atStartOfDay(ZONE_PRAGUE));
 
             // Act / Assert
             assertThatThrownBy(() -> event.cancelMemberRegistration(memberId))
@@ -206,7 +210,7 @@ class EventTest {
                     "Location",
                     LocalDate.now().plusDays(1),
                     "Organizer",
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().plusDays(1).atStartOfDay(ZONE_PRAGUE),
                     null
             ));
             MemberId memberId = new MemberId(1);
