@@ -13,19 +13,21 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
+import org.springframework.lang.NonNull;
 
 import java.util.Optional;
 
 class InMemoryRepositoryFactory extends RepositoryFactorySupport {
 
     private static final Logger log = LoggerFactory.getLogger(InMemoryRepositoryFactory.class);
-    private ObjectProvider<InMemoryEntityStore> entityStoreProvider;
+    private ObjectProvider<InMemoryEntityStores> entityStoreProvider;
 
     @Override
     public <T, ID> InMemoryEntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
         return new InMemoryEntityInformation<>(domainClass);
     }
 
+    @NonNull
     @Override
     protected Object getTargetRepository(RepositoryInformation information) {
         Class<Object> domainClass = (Class<Object>) information.getDomainType();
@@ -35,7 +37,7 @@ class InMemoryRepositoryFactory extends RepositoryFactorySupport {
                 information.getDomainType(),
                 entityInformation.getIdType());
 
-        InMemoryEntityStore entityStore = getEntityStore().orElseThrow();
+        InMemoryEntityStores entityStore = getEntityStore().orElseThrow();
 
         @SuppressWarnings("unchecked")
         InMemoryRepository<Object, Object> repository =
@@ -44,7 +46,7 @@ class InMemoryRepositoryFactory extends RepositoryFactorySupport {
                         entityStore);
 
         // Registrujeme entityInformation, abychom ji mohli později použít
-        entityStore.register(entityInformation);
+        entityStore.register((InMemoryEntityInformation<Object, Object>) entityInformation);
 
         return repository;
     }
@@ -60,13 +62,13 @@ class InMemoryRepositoryFactory extends RepositoryFactorySupport {
         return getEntityStore().map(entityStore -> InMemoryQueryLookupStrategy.create(entityStore, key));
     }
 
-    private Optional<InMemoryEntityStore> getEntityStore() {
+    private Optional<InMemoryEntityStores> getEntityStore() {
         return Optional.ofNullable(entityStoreProvider.getIfAvailable());
     }
 
     @Override
     public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
         super.setBeanFactory(beanFactory);
-        this.entityStoreProvider = beanFactory.getBeanProvider(InMemoryEntityStore.class);
+        this.entityStoreProvider = beanFactory.getBeanProvider(InMemoryEntityStores.class);
     }
 }

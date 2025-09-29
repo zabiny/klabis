@@ -11,10 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryTransactionManager extends AbstractPlatformTransactionManager {
 
-    private final Map<String, InMemoryEntityStore> transactionBackups = new ConcurrentHashMap<>();
-    private final InMemoryEntityStore store;
+    private final Map<String, InMemoryEntityStores> transactionBackups = new ConcurrentHashMap<>();
+    private final InMemoryEntityStores store;
 
-    public InMemoryTransactionManager(InMemoryEntityStore entityStore) {
+    public InMemoryTransactionManager(InMemoryEntityStores entityStore) {
         this.store = entityStore;
         setNestedTransactionAllowed(false);
     }
@@ -57,7 +57,7 @@ public class InMemoryTransactionManager extends AbstractPlatformTransactionManag
         String txId = txObject.getTransactionId();
 
         // Obnovíme data ze zálohy
-        InMemoryEntityStore backupStore = transactionBackups.get(txId);
+        InMemoryEntityStores backupStore = transactionBackups.get(txId);
         if (backupStore != null) {
             store.restoreFromClone(backupStore);
         }
@@ -69,7 +69,7 @@ public class InMemoryTransactionManager extends AbstractPlatformTransactionManag
     // Třída reprezentující transakci
     private static class InMemoryTransactionObject implements SmartTransactionObject {
         private String transactionId;
-        private InMemoryEntityStore entityStore;
+        private InMemoryEntityStores entityStore;
 
         public String getTransactionId() {
             return transactionId;
@@ -79,11 +79,11 @@ public class InMemoryTransactionManager extends AbstractPlatformTransactionManag
             this.transactionId = transactionId;
         }
 
-        public InMemoryEntityStore getEntityStore() {
+        public InMemoryEntityStores getEntityStore() {
             return entityStore;
         }
 
-        public void setEntityStore(InMemoryEntityStore entityStore) {
+        public void setEntityStore(InMemoryEntityStores entityStore) {
             this.entityStore = entityStore;
         }
 

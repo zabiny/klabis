@@ -1,5 +1,6 @@
 package com.dpolach.inmemoryrepository;
 
+import org.apache.commons.lang3.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -47,6 +48,13 @@ public class SortComparator<T> implements Comparator<T> {
         }
     }
 
+    private Class<?> getNormalizedPropertyType(PropertyDescriptor propertyDescriptor) {
+        if (propertyDescriptor.getPropertyType().isPrimitive()) {
+            return ClassUtils.primitiveToWrapper(propertyDescriptor.getPropertyType());
+        }
+        return propertyDescriptor.getPropertyType();
+    }
+
     @SuppressWarnings("unchecked")
     private int compareValues(T o1, T o2, String property) {
         try {
@@ -59,9 +67,12 @@ public class SortComparator<T> implements Comparator<T> {
                     return 0;
                 }
             }
-            if (!Comparable.class.isAssignableFrom(descriptor.getPropertyType())) {
-                LOG.warn("Cannot sort by field %s from class %s - it doesn't implement Comparable interface".formatted(
+            Class<?> normalizedPropertyType = getNormalizedPropertyType(descriptor);
+
+            if (!Comparable.class.isAssignableFrom(normalizedPropertyType)) {
+                LOG.warn("Cannot sort by field %s (%s) from class %s - it doesn't implement Comparable interface".formatted(
                         property,
+                        normalizedPropertyType,
                         o1.getClass().getCanonicalName()));
                 return 0;
             }

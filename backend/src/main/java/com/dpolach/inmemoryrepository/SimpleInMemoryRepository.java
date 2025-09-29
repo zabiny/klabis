@@ -16,10 +16,10 @@ class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
 
     private final Class<T> domainClass;
     private final EntityInformation<T, ID> entityInformation;
-    private final InMemoryEntityStore entityStore;
+    private final InMemoryEntityStores entityStore;
 
     public SimpleInMemoryRepository(Class<T> domainClass, EntityInformation<T, ID> entityInformation,
-                                    InMemoryEntityStore entityStore) {
+                                    InMemoryEntityStores entityStore) {
         this.domainClass = domainClass;
         this.entityInformation = entityInformation;
         this.entityStore = entityStore;

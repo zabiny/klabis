@@ -16,6 +16,7 @@ class InMemoryEntityInformation<T, ID> implements EntityInformation<T, ID> {
 
     @SuppressWarnings("unchecked")
     public InMemoryEntityInformation(Class<T> domainClass) {
+        //Assert.isTrue(domainClass.isAnnotationPresent(AggregateRoot.class), "Domain class used as repository entity must be annotated with %s but %s is not".formatted(AggregateRoot.class.getCanonicalName(), domainClass.getCanonicalName()));
         this.domainClass = domainClass;
 
         // Hledáme pole s anotací @Id
@@ -36,6 +37,7 @@ class InMemoryEntityInformation<T, ID> implements EntityInformation<T, ID> {
         if (this.idField != null) {
             ReflectionUtils.makeAccessible(this.idField);
         }
+        //Assert.notNull(this.idField, "Couldn't detect ID field for domain class %s".formatted(domainClass.getCanonicalName()));
     }
 
     @Override

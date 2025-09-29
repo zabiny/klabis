@@ -1,6 +1,6 @@
 package com.dpolach.inmemoryrepository.query;
 
-import com.dpolach.inmemoryrepository.InMemoryEntityStore;
+import com.dpolach.inmemoryrepository.InMemoryEntityStores;
 import com.dpolach.inmemoryrepository.PageUtils;
 import com.dpolach.inmemoryrepository.SortComparator;
 import org.springframework.data.domain.PageImpl;
@@ -31,11 +31,11 @@ import java.util.regex.Pattern;
 public class PartTreeInMemoryQuery implements RepositoryQuery {
 
     private final InMemoryQueryMethod method;
-    private final InMemoryEntityStore entityStore;
+    private final InMemoryEntityStores entityStore;
     private final PartTree tree;
     private final Class<Object> domainClass;
 
-    public PartTreeInMemoryQuery(InMemoryQueryMethod method, InMemoryEntityStore entityStore) {
+    public PartTreeInMemoryQuery(InMemoryQueryMethod method, InMemoryEntityStores entityStore) {
         this.method = method;
         this.entityStore = entityStore;
         this.domainClass = (Class<Object>) method.getEntityInformation().getJavaType();

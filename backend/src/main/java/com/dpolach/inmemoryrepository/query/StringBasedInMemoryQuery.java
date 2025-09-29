@@ -1,6 +1,6 @@
 package com.dpolach.inmemoryrepository.query;
 
-import com.dpolach.inmemoryrepository.InMemoryEntityStore;
+import com.dpolach.inmemoryrepository.InMemoryEntityStores;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.expression.Expression;
@@ -12,12 +12,12 @@ public class StringBasedInMemoryQuery implements RepositoryQuery {
 
     private final String queryString;
     private final InMemoryQueryMethod method;
-    private final InMemoryEntityStore entityStore;
+    private final InMemoryEntityStores entityStore;
     private final ExpressionParser parser = new SpelExpressionParser();
     private final Expression expression;
 
     public StringBasedInMemoryQuery(String queryString, InMemoryQueryMethod method,
-                                    InMemoryEntityStore entityStore) {
+                                    InMemoryEntityStores entityStore) {
         this.queryString = queryString;
         this.method = method;
         this.entityStore = entityStore;

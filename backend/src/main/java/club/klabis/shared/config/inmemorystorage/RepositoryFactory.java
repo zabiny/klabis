@@ -1,7 +1,7 @@
 package club.klabis.shared.config.inmemorystorage;
 
 import com.dpolach.inmemoryrepository.EnableInMemoryRepositories;
-import com.dpolach.inmemoryrepository.InMemoryEntityStore;
+import com.dpolach.inmemoryrepository.InMemoryEntityStores;
 import com.dpolach.inmemoryrepository.InMemoryTransactionManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +18,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 class RepositoryFactory {
 
     @Bean
-    public InMemoryEntityStore entityStore() {
-        return new InMemoryEntityStore();
+    public InMemoryEntityStores entityStore() {
+        return new InMemoryEntityStores();
     }
 
     @Bean

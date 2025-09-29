@@ -1,6 +1,6 @@
 package com.dpolach.inmemoryrepository.query;
 
-import com.dpolach.inmemoryrepository.InMemoryEntityStore;
+import com.dpolach.inmemoryrepository.InMemoryEntityStores;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -12,9 +12,9 @@ import java.lang.reflect.Method;
 
 public class InMemoryQueryLookupStrategy implements QueryLookupStrategy {
 
-    private final InMemoryEntityStore entityStore;
+    private final InMemoryEntityStores entityStore;
 
-    public InMemoryQueryLookupStrategy(InMemoryEntityStore entityStore) {
+    public InMemoryQueryLookupStrategy(InMemoryEntityStores entityStore) {
         Assert.notNull(entityStore, "EntityStore must not be null");
         this.entityStore = entityStore;
     }
@@ -39,7 +39,7 @@ public class InMemoryQueryLookupStrategy implements QueryLookupStrategy {
     /**
      * Vytvoří příslušnou strategii podle zadaného klíče.
      */
-    public static QueryLookupStrategy create(InMemoryEntityStore entityStore, Key key) {
+    public static QueryLookupStrategy create(InMemoryEntityStores entityStore, Key key) {
         Assert.notNull(entityStore, "EntityStore must not be null");
 
         if (key == null || key == Key.CREATE_IF_NOT_FOUND) {
@@ -59,9 +59,9 @@ public class InMemoryQueryLookupStrategy implements QueryLookupStrategy {
 
     private static class DeclaredQueryLookupStrategy implements QueryLookupStrategy {
 
-        private final InMemoryEntityStore entityStore;
+        private final InMemoryEntityStores entityStore;
 
-        public DeclaredQueryLookupStrategy(InMemoryEntityStore entityStore) {
+        public DeclaredQueryLookupStrategy(InMemoryEntityStores entityStore) {
             this.entityStore = entityStore;
         }
 
@@ -84,9 +84,9 @@ public class InMemoryQueryLookupStrategy implements QueryLookupStrategy {
 
     private static class CreateQueryLookupStrategy implements QueryLookupStrategy {
 
-        private final InMemoryEntityStore entityStore;
+        private final InMemoryEntityStores entityStore;
 
-        public CreateQueryLookupStrategy(InMemoryEntityStore entityStore) {
+        public CreateQueryLookupStrategy(InMemoryEntityStores entityStore) {
             this.entityStore = entityStore;
         }
 
