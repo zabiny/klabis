@@ -1,6 +1,8 @@
 package club.klabis.events.application;
 
 import club.klabis.events.domain.Event;
+import club.klabis.events.domain.OrisData;
+import club.klabis.oris.domain.OrisId;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +18,7 @@ public class OrisSynchronizationUseCase {
         this.eventsRepository = eventsRepository;
     }
 
-    public Collection<Integer> getOrisIds(Collection<Event.Id> eventIds) {
+    public Collection<OrisId> getOrisIds(Collection<Event.Id> eventIds) {
         return eventIds.stream()
                 .map(eventsRepository::findById)
                 .flatMap(Optional::stream)

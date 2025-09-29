@@ -5,6 +5,7 @@ import club.klabis.oris.application.dto.EventDetails;
 import club.klabis.oris.application.dto.EventSummary;
 import club.klabis.oris.application.dto.OrisEventListFilter;
 import club.klabis.oris.application.dto.OrisUserInfo;
+import club.klabis.oris.domain.OrisId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -36,9 +37,9 @@ class OrisApiDataProvider implements OrisDataProvider {
     }
 
     @Override
-    public Optional<EventDetails> getEventDetails(int eventId) {
+    public Optional<EventDetails> getEventDetails(OrisId eventId) {
         try {
-            return Optional.ofNullable(apiClient.getEventDetails(eventId).data());
+            return Optional.ofNullable(apiClient.getEventDetails(eventId.value()).data());
         } catch (HttpClientErrorException.NotFound exception) {
             return Optional.empty();
         }

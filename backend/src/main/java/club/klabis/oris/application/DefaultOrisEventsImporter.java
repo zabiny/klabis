@@ -1,10 +1,11 @@
 package club.klabis.oris.application;
 
-import club.klabis.events.application.OrisData;
-import club.klabis.events.application.OrisDataBuilder;
 import club.klabis.events.application.OrisSynchronizationUseCase;
 import club.klabis.events.domain.Event;
+import club.klabis.events.domain.OrisData;
+import club.klabis.events.domain.OrisDataBuilder;
 import club.klabis.oris.application.dto.*;
+import club.klabis.oris.domain.OrisId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -48,7 +49,7 @@ class DefaultOrisEventsImporter implements OrisEventsImporter {
     }
 
     private void synchronizeEvent(EventSummary eventSummary) {
-        orisDataProvider.getEventDetails(eventSummary.id())
+        orisDataProvider.getEventDetails(new OrisId(eventSummary.id()))
                 .ifPresent(this::synchronizeEvent);
     }
 
@@ -60,7 +61,7 @@ class DefaultOrisEventsImporter implements OrisEventsImporter {
     private OrisData from(EventDetails eventDetails) {
         return OrisDataBuilder.builder()
                 .name(eventDetails.name())
-                .orisId(eventDetails.id())
+                .orisId(new OrisId(eventDetails.id()))
                 .categories(toCategories(eventDetails.classes().values()))
                 .location(eventDetails.place())
                 .organizer(formatOrganizer(eventDetails.org1(), eventDetails.org2()))
@@ -69,6 +70,7 @@ class DefaultOrisEventsImporter implements OrisEventsImporter {
                         eventDetails.entryDate2(),
                         eventDetails.entryDate3()).orElse(eventDetails.date().atStartOfDay(
                         ZoneId.of("Europe/Prague"))))
+                .website(new OrisId(eventDetails.id()).createEventUrl())
                 .build();
     }
 

@@ -1,14 +1,15 @@
 package club.klabis.events.domain;
 
-import club.klabis.events.application.OrisData;
 import club.klabis.events.domain.events.EventEditedEvent;
 import club.klabis.events.domain.forms.EventEditationForm;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
+import club.klabis.oris.domain.OrisId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
 
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -42,15 +43,16 @@ public class Event extends AbstractAggregateRoot<Event> {
     private String organizer;
     private ZonedDateTime registrationDeadline;
     private MemberId coordinator;
-    private Integer orisId;
+    private OrisId orisId;
+    private URL website;
 
-    private Set<Registration> registrations = new HashSet<>();
+    private final Set<Registration> registrations = new HashSet<>();
 
     public Optional<MemberId> getCoordinator() {
         return Optional.ofNullable(coordinator);
     }
 
-    public Optional<Integer> getOrisId() {
+    public Optional<OrisId> getOrisId() {
         return Optional.ofNullable(orisId);
     }
 
@@ -72,6 +74,10 @@ public class Event extends AbstractAggregateRoot<Event> {
 
     public String getOrganizer() {
         return organizer;
+    }
+
+    public URL getWebsite() {
+        return website;
     }
 
     public ZonedDateTime getRegistrationDeadline() {
@@ -111,6 +117,7 @@ public class Event extends AbstractAggregateRoot<Event> {
         this.organizer = orisData.organizer();
         this.date = orisData.eventDate();
         this.registrationDeadline = orisData.registrationsDeadline();
+        this.website = orisData.website();
         this.linkWithOris(orisData.orisId());
     }
 
@@ -118,7 +125,7 @@ public class Event extends AbstractAggregateRoot<Event> {
         this.registrationDeadline = registrationDeadline;
     }
 
-    public Event linkWithOris(int orisId) {
+    public Event linkWithOris(OrisId orisId) {
         this.orisId = orisId;
         return this;
     }
