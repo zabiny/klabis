@@ -18,7 +18,7 @@ public class EventRegistrationUseCase {
 
     public EventRegistrationForm createEventRegistrationForm(Event.Id eventId, MemberId memberId) {
         // read event and prepare registration form (categories, services, ... )
-        return new EventRegistrationForm("predefinedSiForMember");
+        return new EventRegistrationForm("predefinedSiForMember", null);
     }
 
     @Transactional

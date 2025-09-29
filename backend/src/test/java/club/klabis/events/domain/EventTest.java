@@ -96,13 +96,13 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "D12");
 
             // Act
             event.registerMember(memberId, form);
 
             // Assert
-            assertThat(event.getEventRegistrations()).contains(new Registration(memberId, "SI12345"));
+            assertThat(event.getEventRegistrations()).contains(new Registration(memberId, "SI12345", "D12"));
         }
 
         @Test
@@ -118,7 +118,7 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
 
             // Act / Assert
             assertThatThrownBy(() -> event.registerMember(memberId, form))
@@ -139,7 +139,7 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
 
             // Act
             event.registerMember(memberId, form);
@@ -168,14 +168,14 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "H21");
             event.registerMember(memberId, form);
 
             // Act
             event.cancelMemberRegistration(memberId);
 
             // Assert
-            assertThat(event.getEventRegistrations()).doesNotContain(new Registration(memberId, "SI12345"));
+            assertThat(event.getEventRegistrations()).doesNotContain(new Registration(memberId, "SI12345", "H21"));
         }
 
         @Test
@@ -191,7 +191,7 @@ class EventTest {
                     null
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
             event.registerMember(memberId, form);
             event.closeRegistrations(LocalDate.now().minusDays(1).atStartOfDay(ZONE_PRAGUE));
 

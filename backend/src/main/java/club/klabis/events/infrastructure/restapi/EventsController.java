@@ -8,7 +8,9 @@ package club.klabis.events.infrastructure.restapi;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
-import club.klabis.events.infrastructure.restapi.dto.EventListResponse;
+import club.klabis.events.infrastructure.restapi.dto.EventResponseModel;
+import club.klabis.members.infrastructure.restapi.ResponseViews;
+import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -57,10 +59,11 @@ public class EventsController {
     )
     @GetMapping
     @PageableAsQueryParam
-    ResponseEntity<CollectionModel<EventListResponse>> getEvents(@ParameterObject EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
+    @JsonView(ResponseViews.Summary.class)
+    ResponseEntity<CollectionModel<EventResponseModel>> getEvents(@ParameterObject EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
         Page<Event> data = eventsRepository.findEvents(filter, pageable);
 
-        PagedModel<EventListResponse> responseModel = eventModelMapper.toPagedModel(data);
+        PagedModel<EventResponseModel> responseModel = eventModelMapper.toPagedModel(data);
 
         return ResponseEntity.ok(responseModel);
     }
@@ -78,8 +81,9 @@ public class EventsController {
     @GetMapping(
             value = "/{eventId}"
     )
-    ResponseEntity<EventListResponse> getEventById(@PathVariable("eventId") int eventId) {
-        EventListResponse response = eventsRepository.findById(new Event.Id(eventId))
+    @JsonView(ResponseViews.Detailed.class)
+    ResponseEntity<EventResponseModel> getEventById(@PathVariable("eventId") int eventId) {
+        EventResponseModel response = eventsRepository.findById(new Event.Id(eventId))
                 .map(eventModelMapper::toModel)
                 .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
 

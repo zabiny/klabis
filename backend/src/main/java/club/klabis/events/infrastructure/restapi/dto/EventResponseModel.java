@@ -2,10 +2,8 @@ package club.klabis.events.infrastructure.restapi.dto;
 
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import club.klabis.members.infrastructure.restapi.ResponseViews;
+import com.fasterxml.jackson.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -13,15 +11,14 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.RepresentationModel;
 
 import java.time.LocalDate;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * EventListItemApiDto
  */
 
 @JsonTypeName("EventListItem")
-public class EventListResponse extends RepresentationModel<EventListResponse> {
+public class EventResponseModel extends RepresentationModel<EventResponseModel> {
 
     private Integer id;
 
@@ -55,7 +52,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         public static Optional<TypeEnum> ofEvent(Event event) {
             return Optional.ofNullable(event).map(e -> {
                 if (event instanceof Competition) {
-                    return EventListResponse.TypeEnum.COMPETITION;
+                    return EventResponseModel.TypeEnum.COMPETITION;
                 }
 
                 return null;
@@ -72,14 +69,30 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
 
     private Integer coordinator;
 
-    public EventListResponse() {
+    @JsonView(ResponseViews.Detailed.class)
+    private List<EventRegistrationResponse> registrations = new ArrayList<>();
+
+    public List<EventRegistrationResponse> getRegistrations() {
+        return registrations;
+    }
+
+    public void setRegistrations(Collection<EventRegistrationResponse> registrations) {
+        this.registrations = new ArrayList<>(registrations);
+    }
+
+    public EventResponseModel registrations(List<EventRegistrationResponse> registrations) {
+        this.registrations = new ArrayList<>(registrations);
+        return this;
+    }
+
+    public EventResponseModel() {
         super();
     }
 
     /**
      * Constructor with only required parameters
      */
-    public EventListResponse(Integer id, LocalDate date, String name, String organizer, TypeEnum type) {
+    public EventResponseModel(Integer id, LocalDate date, String name, String organizer, TypeEnum type) {
         this.id = id;
         this.date = date;
         this.name = name;
@@ -87,7 +100,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.type = type;
     }
 
-    public EventListResponse id(Integer id) {
+    public EventResponseModel id(Integer id) {
         this.id = id;
         return this;
     }
@@ -108,7 +121,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.id = id;
     }
 
-    public EventListResponse date(LocalDate date) {
+    public EventResponseModel date(LocalDate date) {
         this.date = date;
         return this;
     }
@@ -130,7 +143,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.date = date;
     }
 
-    public EventListResponse name(String name) {
+    public EventResponseModel name(String name) {
         this.name = name;
         return this;
     }
@@ -151,7 +164,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.name = name;
     }
 
-    public EventListResponse organizer(String organizer) {
+    public EventResponseModel organizer(String organizer) {
         this.organizer = organizer;
         return this;
     }
@@ -172,7 +185,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.organizer = organizer;
     }
 
-    public EventListResponse type(TypeEnum type) {
+    public EventResponseModel type(TypeEnum type) {
         this.type = type;
         return this;
     }
@@ -193,7 +206,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.type = type;
     }
 
-    public EventListResponse web(String web) {
+    public EventResponseModel web(String web) {
         this.web = web;
         return this;
     }
@@ -214,7 +227,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.web = web;
     }
 
-    public EventListResponse registrationDeadline(LocalDate registrationDeadline) {
+    public EventResponseModel registrationDeadline(LocalDate registrationDeadline) {
         this.registrationDeadline = registrationDeadline;
         return this;
     }
@@ -235,7 +248,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.registrationDeadline = registrationDeadline;
     }
 
-    public EventListResponse coordinator(Integer coordinator) {
+    public EventResponseModel coordinator(Integer coordinator) {
         this.coordinator = coordinator;
         return this;
     }
@@ -266,7 +279,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         this.location = location;
     }
 
-    public EventListResponse location(String location) {
+    public EventResponseModel location(String location) {
         this.location = location;
         return this;
     }
@@ -280,7 +293,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        EventListResponse eventListItem = (EventListResponse) o;
+        EventResponseModel eventListItem = (EventResponseModel) o;
         return Objects.equals(this.id, eventListItem.id) &&
                Objects.equals(this.date, eventListItem.date) &&
                Objects.equals(this.location, eventListItem.location) &&
@@ -327,17 +340,17 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
 
     public static class Builder {
 
-        private EventListResponse instance;
+        private EventResponseModel instance;
 
         public Builder() {
-            this(new EventListResponse());
+            this(new EventResponseModel());
         }
 
-        protected Builder(EventListResponse instance) {
+        protected Builder(EventResponseModel instance) {
             this.instance = instance;
         }
 
-        protected Builder copyOf(EventListResponse value) {
+        protected Builder copyOf(EventResponseModel value) {
             this.instance.setId(value.id);
             this.instance.setDate(value.date);
             this.instance.setName(value.name);
@@ -400,7 +413,7 @@ public class EventListResponse extends RepresentationModel<EventListResponse> {
          * <p>
          * The builder is not reusable (NullPointerException)
          */
-        public EventListResponse build() {
+        public EventResponseModel build() {
             try {
                 return this.instance;
             } finally {

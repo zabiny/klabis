@@ -141,7 +141,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
             throw EventException.createAlreadySignedUpException(this.id, memberId);
         }
 
-        this.registrations.add(new Registration(memberId, form.siNumber()));
+        this.registrations.add(new Registration(memberId, form.siNumber(), form.category()));
     }
 
     public void cancelMemberRegistration(MemberId memberId) {

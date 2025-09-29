@@ -1,7 +1,9 @@
 package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.domain.Event;
-import club.klabis.events.infrastructure.restapi.dto.EventListResponse;
+import club.klabis.events.domain.Registration;
+import club.klabis.events.infrastructure.restapi.dto.EventRegistrationResponse;
+import club.klabis.events.infrastructure.restapi.dto.EventResponseModel;
 import club.klabis.members.MemberId;
 import club.klabis.oris.infrastructure.restapi.OrisApi;
 import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
@@ -19,7 +21,7 @@ import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import java.util.Collection;
 
 @Mapper(config = DomainToDtoMapperConfiguration.class, componentModel = "spring")
-abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event, EventListResponse> {
+abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event, EventResponseModel> {
 
     private KlabisSecurityService klabisSecurityService;
 
@@ -31,12 +33,17 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
     @Mapping(target = "web", source = "website")
     @Mapping(target = "coordinator", ignore = true)
     @Override
-    public abstract EventListResponse mapDataFromDomain(Event event);
+    public abstract EventResponseModel mapDataFromDomain(Event event);
+
+    @Mapping(target = "category", constant = "H12")
+    @Mapping(target = "memberId", source = "memberId.value")
+    public abstract EventRegistrationResponse mapDataFromDomain(Registration registration);
 
     @AfterMapping
-    public EventListResponse afterModelMap(Event event, @MappingTarget EventListResponse eventListResponse) {
+    public EventResponseModel afterModelMap(Event event, @MappingTarget EventResponseModel eventListResponse) {
         eventListResponse.setCoordinator(event.getCoordinator().map(MemberId::value).orElse(null));
-        eventListResponse.setType(EventListResponse.TypeEnum.ofEvent(event).orElse(null));
+        eventListResponse.setType(EventResponseModel.TypeEnum.ofEvent(event).orElse(null));
+        eventListResponse.registrations(event.getEventRegistrations().stream().map(this::mapDataFromDomain).toList());
         return eventListResponse;
     }
 
