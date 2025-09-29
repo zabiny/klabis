@@ -4,6 +4,7 @@ import {Box, Button, FormControlLabel, Switch, Typography,} from '@mui/material'
 import {KlabisTable, TableCell} from '../components/KlabisTable';
 import {hasAction} from "../api/klabisJsonUtils.tsx";
 import RegisterMemberFormDialog from "../components/members/RegisterMemberForm.tsx";
+import {Actions} from "../components/Actions";
 
 interface Member {
     id: number;
@@ -13,12 +14,6 @@ interface Member {
     dateOfBirth: string;
     sex: 'male' | 'female';
     nationality: string;
-}
-
-const Actions = ({value}: { value: string[] }): React.ReactNode => {
-    return (
-        <span>{value.map(s => <div>{s}</div>)}</span>
-    );
 }
 
 const MembersPage = () => {
