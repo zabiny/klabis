@@ -54,7 +54,9 @@ const EventsPage = () => {
                 <TableCell sortable column={"coordinator"} dataRender={({value}) => value ?
                     <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
                 <TableCell column="_actions"
-                           dataRender={props => (<Actions value={props.value}/>)}>Možnosti</TableCell>
+                           dataRender={props => (<></>)}>Možnosti</TableCell>
+                <TableCell column="_actions"
+                           dataRender={props => (<Actions value={props.value}/>)}>Akce</TableCell>
             </KlabisTable>
         </Box>
     );
