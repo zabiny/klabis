@@ -281,9 +281,7 @@ export interface paths {
         trace?: never;
     };
 }
-
 export type webhooks = Record<string, never>;
-
 export interface components {
     schemas: {
         Link: {
@@ -732,9 +730,7 @@ export interface components {
     headers: never;
     pathItems: never;
 }
-
 export type $defs = Record<string, never>;
-
 export interface operations {
     membersMemberIdSuspendMembershipFormGet: {
         parameters: {

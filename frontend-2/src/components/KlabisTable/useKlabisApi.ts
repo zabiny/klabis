@@ -1,9 +1,9 @@
-import {type ApiParams, type PaginatedResponse} from './types';
+import {type PaginatedApiParams, type PaginatedResponse} from '../../api';
 import {useApiQuery} from "../../hooks/useApi.ts";
 
 export const useKlabisApi = <T>(
     endpoint: string,
-    params: ApiParams,
+    params: PaginatedApiParams,
     queryKey: string = 'klabis-table'
 ) => {
     const {sort, ...others} = params;

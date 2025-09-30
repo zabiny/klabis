@@ -1,8 +1,8 @@
 import {useApiPostMutation, useApiPutMutation, useApiQuery} from '../hooks/useApi';
 import {type UseMutationOptions, useQueryClient} from '@tanstack/react-query';
 import type {QueryClient} from "@tanstack/query-core";
-import type {KlabisHateoasObject} from './klabisJsonUtils.tsx'
 import {AxiosError} from "axios";
+import {KlabisHateoasObject} from "./types";
 
 // Types based on the API specification
 export interface Member extends KlabisHateoasObject {

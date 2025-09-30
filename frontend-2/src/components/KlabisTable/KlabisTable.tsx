@@ -12,12 +12,11 @@ import {
     TablePagination,
     TableRow,
 } from '@mui/material';
-import {useKlabisApi} from './useKlabisApi';
-import {type SortDirection} from './types';
+import {type KlabisApiGetPaths, type SortDirection, useKlabisApiQuery} from '../../api';
 import {KlabisTableProvider, useKlabisTableContext} from "./KlabisTableContext.tsx";
 
 interface KlabisTableProps<T = any> {
-    api: string;
+    api: KlabisApiGetPaths;
     children: React.ReactNode;
     onRowClick?: (item: T) => void;
     // can be used to update UI based on klabis actions loaded in API used from Klabis Table.
@@ -26,28 +25,31 @@ interface KlabisTableProps<T = any> {
     defaultOrderDirection?: SortDirection;
     defaultRowsPerPage?: number;
     additionalParams?: Record<string, any>;
-    queryKey?: string;
     emptyMessage?: string;
 }
 
 const KlabisTableInner = <T extends Record<string, any>>({
                                                              api,
                                                              onRowClick,
-                                                             queryKey,
                                                              emptyMessage = "Žádná data",
                                                              onTableActionsLoaded = (actions) => {
                                                              }
                                                          }: KlabisTableProps<T>) => {
     const tableContext = useKlabisTableContext();
-    const {data, isLoading, error, isSuccess} = useKlabisApi<T>(api, tableContext.createApiParams(), queryKey);
+    const tableModel = tableContext.tableModel;
+
+    const {
+        data,
+        isLoading,
+        error,
+        isSuccess
+    } = useKlabisApiQuery("get", api, {params: {query: tableContext.createApiParams()}})
 
     useEffect(() => {
         if (isSuccess) {
             onTableActionsLoaded(data?._actions || []);
         }
     }, [isSuccess, onTableActionsLoaded, data]);
-
-    const tableModel = tableContext.tableModel;
 
     const renderRows = (rows: object[]): ReactNode => {
         if (isLoading) {

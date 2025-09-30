@@ -1,6 +1,7 @@
-import React, {createContext, isValidElement, type ReactElement, ReactNode, useContext, useState} from 'react';
-import {type ApiParams, type SortDirection, TableCellProps, TableCellRenderProps} from './types';
+import React, {createContext, isValidElement, type ReactElement, type ReactNode, useContext, useState} from 'react';
+import {type TableCellProps, type TableCellRenderProps} from './types';
 import {TableCell as MuiTableCell} from "@mui/material";
+import {type PaginatedApiParams, type SortDirection} from '../../api'
 
 interface KlabisTableContextType {
     // Pagination state
@@ -17,7 +18,7 @@ interface KlabisTableContextType {
     setOrderBy: (orderBy: string, direction: SortDirection) => void;
 
     // Combined API params
-    createApiParams: () => ApiParams;
+    createApiParams: () => PaginatedApiParams;
 
     // Actions
     handleRequestSort: (column: string) => void;
@@ -45,13 +46,15 @@ class ColumnModel {
     headerCell: ReactElement;
     hidden: boolean;
     sortable: boolean;
+    key?: string;
     dataRender: (props: TableCellRenderProps) => ReactNode;
 
-    constructor(name: string, headerCell: ReactElement, hidden: boolean, sortable: boolean, dataRender: (props: TableCellRenderProps) => ReactNode) {
+    constructor(name: string, headerCell: ReactElement, hidden: boolean, sortable: boolean, key: string | undefined, dataRender: (props: TableCellRenderProps) => ReactNode) {
         this.name = name;
         this.headerCell = headerCell;
         this.hidden = hidden;
         this.sortable = sortable;
+        this.key = key;
         this.dataRender = dataRender;
     }
 
@@ -59,7 +62,7 @@ class ColumnModel {
         const value = this.getCellValue(item);
         const cellContent = this.dataRender({item, column: this.name, value});
         return (
-            <MuiTableCell key={this.name}>
+            <MuiTableCell key={this.key || this.name}>
                 {cellContent}
             </MuiTableCell>
         );
@@ -102,7 +105,7 @@ function isTableCellComponent(item: ReactNode): item is ReactElement<TableCellPr
 
 const convertToColumnModel = (child: ReactNode): ColumnModel | null => {
     if (isTableCellComponent(child)) {
-        return new ColumnModel(child.props.column, child, child.props.hidden || false, child.props.sortable || false, child.props.dataRender || defaultRenderFunc);
+        return new ColumnModel(child.props.column, child, child.props.hidden || false, child.props.sortable || false, child.key || undefined, child.props.dataRender || defaultRenderFunc);
     }
 
     return null;
@@ -145,13 +148,13 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
     };
 
     // Vytvoření parametrů pro API volání
-    function createApiParams(): ApiParams {
+    function createApiParams(): PaginatedApiParams {
         return {
             page: page,
             size: rowsPerPage,
             sort: orderBy ? [`${orderBy},${orderDirection}`] : [],
             ...additionalParams
-        } as ApiParams;
+        } as PaginatedApiParams;
     }
 
     const columnsCount = tableModel.columns.length;

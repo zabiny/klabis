@@ -22,7 +22,7 @@ import {useGetMember} from '../api/membersApi';
 import {EditMemberFormUI} from '../components/members/EditOwnMemberInfoForm.tsx';
 import MemberSuspendConfirmationDialog from "../components/members/MemberSuspendConfirmationDialog.tsx";
 import EditMemberPermissionsForm from "../components/members/EditMemberPermissionsForm.tsx";
-import {hasAction} from "../api/klabisJsonUtils.tsx";
+import {hasAction} from "../api/klabisJsonUtils.ts";
 import {KlabisApiForm} from "../components/KlabisForm";
 
 interface TabPanelProps {

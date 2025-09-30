@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Box, Button, FormControlLabel, Switch, Typography,} from '@mui/material';
 import {KlabisTable, TableCell} from '../components/KlabisTable';
-import {hasAction} from "../api/klabisJsonUtils.tsx";
+import {hasAction} from "../api/klabisJsonUtils.ts";
 import RegisterMemberFormDialog from "../components/members/RegisterMemberForm.tsx";
 import {Actions} from "../components/Actions";
 
@@ -94,7 +94,6 @@ const MembersPage = () => {
                 defaultOrderDirection="asc"
                 additionalParams={additionalParams}
                 onTableActionsLoaded={setTableActions}
-                queryKey="members-table"
             >
                 <TableCell hidden={view === 'SUMMARY'} column="id">ID</TableCell>
                 <TableCell sortable column="firstName">Jméno</TableCell>

@@ -1,12 +1,4 @@
-export type KlabisActionName = string;
-
-export type KlabisAction = KlabisActionName;
-
-export type KlabisActions = Array<KlabisAction>;
-
-export interface KlabisHateoasObject {
-    _actions?: KlabisActions
-}
+import {type KlabisHateoasObject, type PaginatedResponse} from "./types";
 
 function isKlabisHateoasObject(item: KlabisHateoasObject | string[]) {
     return (item as KlabisHateoasObject)._actions !== undefined;
@@ -26,6 +18,13 @@ export const hasAction = (item: KlabisHateoasObject | string[] | undefined, acti
     }
 
     return false;
+}
+
+export const isPaginatedResponse = (item: any): item is PaginatedResponse<object> => {
+    if (item === undefined) {
+        return true;
+    }
+    return (item as PaginatedResponse<object>).content !== undefined && (item as PaginatedResponse<object>).page !== undefined;
 }
 
 
