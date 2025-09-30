@@ -166,12 +166,20 @@ openApiGenerate {
 //tasks.compileJava.get().dependsOn(tasks.openApiGenerate)
 
 // SpringDoc - generate OpenAPI during build from Controllers defined in Java
+// https://github.com/springdoc/springdoc-openapi-gradle-plugin
 openApi {
-    apiDocsUrl.set("https://localhost:8443/v3/api-docs")
-    outputDir.set(file("${layout.buildDirectory}/docs"))
-    trustStore.set("src/main/resources/https/keystore.p12")
-    trustStorePassword.set("secret".toCharArray())
+    outputDir.set(file("$buildDir/openapi"))
+    customBootRun.jvmArgs.set(listOf("-Dspring.profiles.active=generateOpenApiDocs"))
+    groupedApiMappings.putAll( // see group-mappings defined in application.yml for springdoc
+        mapOf(
+            "http://localhost:8080/v3/api-docs/members" to "members.json",
+            "http://localhost:8080/v3/api-docs/events" to "events.json",
+            "http://localhost:8080/v3/api-docs/appusers" to "appusers.json",
+            "http://localhost:8080/v3/api-docs/oris" to "oris.json"
+        )
+    )
 }
+
 tasks.jar.get().dependsOn(tasks.generateOpenApiDocs)
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {

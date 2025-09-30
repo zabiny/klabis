@@ -1,13 +1,15 @@
 spring:
   profiles:
     active:
-      - generatedSwaggerUI
+      - inmemorydb
+      - hateoas
     include:
       - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
       - http2
       - hateoas
       - oris
-  #      - zipkin
+      - generatedSwaggerUI
+  #        - zipkin
 
   application:
     name: Klabis API
@@ -175,6 +177,7 @@ spring:
     mapper:
       default-view-inclusion: true
 
+
 logging:
   level:
     club.klabis: debug
@@ -211,6 +214,8 @@ management:
       exposure:
         #include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
         include: loggers, caches, env, info, mappings, health, modulith, prometheus, metrics
+  tracing:
+    enabled: false
 
 springdoc:
   swagger-ui:
@@ -251,30 +256,30 @@ springdoc:
   api-docs:
     groups:
       enabled: true
-  group-configs:
-    - group: 01_members
+  group-configs: # when updating these, also update groups in generateOpenApiDocs gradle task configuration (build.gradle.kts)
+    - group: members
       display-name: Members API
       packages-to-scan:
         - club.klabis.members
-    - group: 02_events
+    - group: events
       display-name: Events API
       packages-to-scan:
         - club.klabis.events
-    - group: 03_appusers
+    - group: appusers
       display-name: Application users API
       packages-to-scan:
         - club.klabis.users
-    - group: 04_oris
+    - group: oris
       display-name: ORIS proxy API
       packages-to-scan:
         - club.klabis.oris
-    - group: 98_all
+    - group: all
       display-name: X All endpoints
       paths-to-match:
         - /**
       paths-to-exclude:
         - /actuator/**
-    - group: 99_actuator
+    - group: actuator
       display-name: System monitoring endpoints
       paths-to-match:
         - /actuator/**
@@ -329,6 +334,25 @@ management:
   tracing:
     sampling:
       probability: 1.0
+    enabled: true
   zipkin:
     tracing:
       endpoint: http://localhost:9411/api/v2/spans
+
+---
+spring:
+  config:
+    activate:
+      on-profile: generateOpenApiDocs
+server:
+  http2:
+    enabled: false
+  port: 8080
+  ssl:
+    enabled: false
+oris-integration:
+  enabled: false
+klabis:
+  preset-data: false
+springdoc:
+  show-actuator: false

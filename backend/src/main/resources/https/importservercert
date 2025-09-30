@@ -1,0 +1,8 @@
+
+$HOSTNAME=$1   # localhost:8443
+$KEY_STORE_FILE=$2   # cacert-local
+$KEY_STORE_PASSWORD=$3  # changeit
+$KEY_STORE_ALIAS=$4       # klabis-localhost
+
+openssl s_client -connect $HOSTNAME -showcerts </dev/null 2>/dev/null |    openssl x509 -outform PEM > tmp.pem
+keytool -importcert -alias $KEY_STORE_ALIAS -file ./tmp.pem -keystore $KEY_STORE_FILE -storepass $KEY_STORE_PASSWORD
