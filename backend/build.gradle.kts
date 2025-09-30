@@ -177,7 +177,8 @@ openApi {
             "http://localhost:8080/v3/api-docs/members" to "members.json",
             "http://localhost:8080/v3/api-docs/events" to "events.json",
             "http://localhost:8080/v3/api-docs/appusers" to "appusers.json",
-            "http://localhost:8080/v3/api-docs/oris" to "oris.json"
+            "http://localhost:8080/v3/api-docs/oris" to "oris.json",
+            "http://localhost:8080/v3/api-docs" to "klabis-full.json"
         )
     )
 }
