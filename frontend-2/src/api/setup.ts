@@ -23,7 +23,7 @@ const fetchClient = createFetchClient<paths>({
     }
 });
 
-const klabisAuthUserManager: UserManager = createUserManager(authConfig);
+export const klabisAuthUserManager: UserManager = createUserManager(authConfig);
 
 const promiseAccessToken = async (): Promise<string | null> => {
     const authUser = await klabisAuthUserManager.getUser();

@@ -23,6 +23,7 @@ import {
     Logout as LogoutIcon,
     Menu as MenuIcon,
     People as PeopleIcon,
+    Settings,
 } from '@mui/icons-material';
 import {type AuthUserDetails, useAuth} from '../contexts/AuthContext2';
 
@@ -92,6 +93,7 @@ const Layout = () => {
         {text: 'Členové', icon: <PeopleIcon/>, path: '/members'},
         {text: 'Akce', icon: <EventIcon/>, path: '/events'},
         {text: 'Skupiny', icon: <GroupIcon/>, path: '/groups'},
+        {text: 'Hal Navigator', icon: <Settings/>, path: '/sandplace'},
     ];
 
     return (
