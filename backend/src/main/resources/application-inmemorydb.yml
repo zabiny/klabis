@@ -1,0 +1,19 @@
+spring:
+  config:
+    activate:
+      on-profile: inmemorydb
+
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration, org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration, org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration
+
+  # at this moment using custom InMemory repositories
+  #  datasource:
+  #    url: jdbc:h2:mem:klabis
+
+  h2:
+    console:
+      enabled: off
+
+  jpa:
+    hibernate:
+      ddl-auto: create  # H2 DB used in default so far has some quirks against PostgreSQL syntax (for example TINYINT vs SMALLINT for enums)

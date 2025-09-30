@@ -1,16 +1,18 @@
 spring:
   profiles:
     active:
-      - inmemorydb
-      - hateoas
+      - server
     include:
-      - inmemorydb  # For development phase, we use in memory DB to avoid need to migrate data as DB schema evolves during development
       - http2
       - hateoas
-      - oris
-      - generatedSwaggerUI
-  #        - zipkin
-
+      - springdoc
+    group:
+      server:
+        - inmemorydb
+        - oris
+        #- zipkin
+      localhost:
+        - inmemorydb
   application:
     name: Klabis API
 
@@ -126,7 +128,7 @@ spring:
                 - "openid"
                 - "profile"
                 - "email"
-          #            require-authorization-consent: true
+            #            require-authorization-consent: true
             token:
               reuse-refresh-tokens: false
               refresh-token-time-to-live: P5D   # 5 days
@@ -167,7 +169,7 @@ spring:
           #  client-id: ${GITHUB_CLIENT_ID}
           #  client-secret: ${GITHUB_CLIENT_SECRET}
           #  scope:
-#              - openid
+          #              - openid
           #    - profile
   jpa:
     hibernate:
@@ -191,7 +193,7 @@ logging:
 
     # Specifické logování pro CORS
     #org.springframework.web.cors: trace
-  
+
     # Web security logování
     #org.springframework.security.web: TRACE
     oauthserver: info
@@ -218,141 +220,5 @@ management:
     enabled: false
 
 springdoc:
-  swagger-ui:
-    oauth:
-      client-id: apispec
-      client-secret: apispec
-    url: /klabis-api-spec.yaml
-
----
-spring:
-  config:
-    activate:
-      on-profile: inmemorydb
-
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration, org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration, org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration
-
-# at this moment using custom InMemory repositories
-#  datasource:
-#    url: jdbc:h2:mem:klabis
-
-  h2:
-    console:
-      enabled: off
-
-  jpa:
-    hibernate:
-      ddl-auto: create  # H2 DB used in default so far has some quirks against PostgreSQL syntax (for example TINYINT vs SMALLINT for enums)
-
----
-spring:
-  config:
-    activate:
-      on-profile: generatedSwaggerUI
-
-springdoc:
-  show-actuator: true
   api-docs:
-    groups:
-      enabled: true
-  group-configs: # when updating these, also update groups in generateOpenApiDocs gradle task configuration (build.gradle.kts)
-    - group: members
-      display-name: Members API
-      packages-to-scan:
-        - club.klabis.members
-    - group: events
-      display-name: Events API
-      packages-to-scan:
-        - club.klabis.events
-    - group: appusers
-      display-name: Application users API
-      packages-to-scan:
-        - club.klabis.users
-    - group: oris
-      display-name: ORIS proxy API
-      packages-to-scan:
-        - club.klabis.oris
-    - group: all
-      display-name: X All endpoints
-      paths-to-match:
-        - /**
-      paths-to-exclude:
-        - /actuator/**
-    - group: actuator
-      display-name: System monitoring endpoints
-      paths-to-match:
-        - /actuator/**
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: http2
-
-server:
-  http2:
-    enabled: true
-  ssl:
-    key-store: classpath:https/keystore.p12
-    key-store-password: secret
-    #key-password: another-secret
-    key-store-type: PKCS12
-    key-alias: klabisSSL
-  port: 8443
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: hateoas
-
-  hateoas:
-    use-hal-as-default-json-media-type: false
-
-server:
-  forward-headers-strategy: framework # For hateoas proper URL hostname detection
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: oris
-oris-integration:
-  enabled: true
-
----
-spring:
-  config:
-    activate:
-      on-profile: zipkin
-
-management:
-  tracing:
-    sampling:
-      probability: 1.0
-    enabled: true
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
-
----
-spring:
-  config:
-    activate:
-      on-profile: generateOpenApiDocs
-server:
-  http2:
     enabled: false
-  port: 8080
-  ssl:
-    enabled: false
-oris-integration:
-  enabled: false
-klabis:
-  preset-data: false
-springdoc:
-  show-actuator: false

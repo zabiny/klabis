@@ -1,0 +1,17 @@
+server:
+  http2:
+    enabled: false
+  port: 8080
+  ssl:
+    enabled: false
+
+oris-integration:
+  enabled: false
+
+klabis:
+  preset-data: false
+
+springdoc:
+  show-actuator: false
+  api-docs:
+    enabled: true

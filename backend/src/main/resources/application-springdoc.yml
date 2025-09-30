@@ -1,0 +1,37 @@
+springdoc:
+  swagger-ui:
+    oauth:
+      client-id: apispec
+      client-secret: apispec
+    url: /klabis-api-spec.yaml
+  show-actuator: true
+  api-docs:
+    groups:
+      enabled: true
+  group-configs: # when updating these, also update groups in generateOpenApiDocs gradle task configuration (build.gradle.kts)
+    - group: members
+      display-name: Members API
+      packages-to-scan:
+        - club.klabis.members
+    - group: events
+      display-name: Events API
+      packages-to-scan:
+        - club.klabis.events
+    - group: appusers
+      display-name: Application users API
+      packages-to-scan:
+        - club.klabis.users
+    - group: oris
+      display-name: ORIS proxy API
+      packages-to-scan:
+        - club.klabis.oris
+    - group: all
+      display-name: X All endpoints
+      paths-to-match:
+        - /**
+      paths-to-exclude:
+        - /actuator/**
+    - group: actuator
+      display-name: System monitoring endpoints
+      paths-to-match:
+        - /actuator/**

@@ -1,0 +1,6 @@
+spring:
+  hateoas:
+    use-hal-as-default-json-media-type: false
+
+server:
+  forward-headers-strategy: framework # For hateoas proper URL hostname detection
