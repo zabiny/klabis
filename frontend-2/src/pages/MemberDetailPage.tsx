@@ -18,12 +18,12 @@ import {
     Typography,
 } from '@mui/material';
 import {ArrowBack as ArrowBackIcon, Edit as EditIcon} from '@mui/icons-material';
-import {useGetMember} from '../api/membersApi';
 import {EditMemberFormUI} from '../components/members/EditOwnMemberInfoForm.tsx';
 import MemberSuspendConfirmationDialog from "../components/members/MemberSuspendConfirmationDialog.tsx";
 import EditMemberPermissionsForm from "../components/members/EditMemberPermissionsForm.tsx";
 import {hasAction} from "../api/klabisJsonUtils.ts";
 import {KlabisApiForm} from "../components/KlabisForm";
+import {useKlabisApiQuery} from "../api";
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -55,7 +55,12 @@ const MemberDetailPage = () => {
     const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
     // Fetch member data
-    const {data: memberResponse, isLoading, error} = useGetMember(Number(memberId));
+    const memberIdNumber = parseInt(memberId || '0');
+    const {
+        data: memberResponse,
+        isLoading,
+        error
+    } = useKlabisApiQuery("get", "/members/{memberId}", {params: {path: {memberId: memberIdNumber}}});
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);

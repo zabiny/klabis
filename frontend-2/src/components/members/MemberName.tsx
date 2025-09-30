@@ -1,5 +1,5 @@
-import React, {ReactNode} from 'react';
-import {useGetMember} from "../../api/membersApi";
+import {type ReactNode} from 'react';
+import {useKlabisApiQuery} from "../../api";
 
 interface MemberNameProps {
     memberId: number,
@@ -7,7 +7,10 @@ interface MemberNameProps {
 }
 
 function MemberName({memberId, loadingValue = "Loading..."}: MemberNameProps) {
-    const {data: member, isLoading} = useGetMember(memberId);
+    const {
+        data: member,
+        isLoading
+    } = useKlabisApiQuery("get", "/members/{memberId}", {params: {path: {memberId: memberId}}});
 
     if (isLoading) {
         return <>${loadingValue}</>;

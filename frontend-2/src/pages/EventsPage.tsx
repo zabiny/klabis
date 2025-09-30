@@ -1,6 +1,5 @@
 import {Box, Link, Typography,} from '@mui/material';
 import {Public,} from '@mui/icons-material';
-import {type EventListItem} from '../api/eventsApi';
 import {KlabisTable, TableCell} from "../components/KlabisTable";
 import MemberName from "../components/members/MemberName";
 import {Actions} from "../components/Actions";
@@ -19,7 +18,7 @@ const EventsPage = () => {
                 Akce
             </Typography>
 
-            <KlabisTable<EventListItem> api={"/events"} defaultOrderBy={"date"}>
+            <KlabisTable api={"/events"} defaultOrderBy={"date"}>
                 <TableCell sortable column={"date"} dataRender={({value}) => formatDate(value)}>Datum</TableCell>
                 <TableCell sortable column={"name"}>Název</TableCell>
                 <TableCell sortable column={"location"}>Místo</TableCell>

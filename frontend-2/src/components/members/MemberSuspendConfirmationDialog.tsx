@@ -8,7 +8,7 @@ import {
     DialogTitle,
     Typography,
 } from '@mui/material';
-import {useGetSuspendMembershipForm, useSuspendMembership} from '../../api/membersApi';
+import {useKlabisApiMutation, useKlabisApiQuery} from "../../api";
 
 interface MemberSuspendConfirmationDialogProps {
     memberId: number;
@@ -18,20 +18,24 @@ interface MemberSuspendConfirmationDialogProps {
 
 const MemberSuspendConfirmationDialog = ({memberId, open, onClose}: MemberSuspendConfirmationDialogProps) => {
     // Get suspension info
-    const {data: suspendInfo, isLoading: isSuspendInfoLoadingInternal} = useGetSuspendMembershipForm(memberId);
+    const {
+        data: suspendInfo,
+        isLoading: isSuspendInfoLoadingInternal
+    } = useKlabisApiQuery("get", "/members/{memberId}/suspendMembershipForm", {params: {path: {memberId: memberId}}});
 
     // Suspend membership hook
-    const suspendMembership = useSuspendMembership(memberId);
+    const suspendMembership = useKlabisApiMutation("put", "/members/{memberId}/suspendMembershipForm");
 
     const handleSuspendMembership = async () => {
-        try {
-            await suspendMembership.mutateAsync();
-            alert('Membership suspended successfully');
-            onClose();
-        } catch (error) {
-            alert('Failed to suspend membership');
-            onClose();
-        }
+        await suspendMembership.mutateAsync({params: {path: {memberId: memberId}}}, {
+            onError: () => {
+                alert('Failed to suspend membership');
+                onClose();
+            }, onSettled: () => {
+                alert('Membership suspended successfully');
+                onClose();
+            }
+        });
     };
 
     if (isSuspendInfoLoadingInternal) {

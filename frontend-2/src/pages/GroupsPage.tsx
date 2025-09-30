@@ -25,7 +25,7 @@ import {
     Email as EmailIcon,
     Search as SearchIcon,
 } from '@mui/icons-material';
-import {useDeleteGroup, useGetGroups} from '../api/groupsApi';
+import {useKlabisApiMutation, useKlabisApiQuery} from "../api";
 
 const GroupsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -33,8 +33,9 @@ const GroupsPage = () => {
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
     // Fetch groups data
-    const {data, isLoading, error} = useGetGroups();
-    const deleteGroupMutation = useDeleteGroup(selectedGroupId || 0);
+    // TODO: correct API to Groups
+    const {data, isLoading, error} = useKlabisApiQuery("get", "/grants");
+    const deleteGroupMutation = useKlabisApiMutation("put", "/members/{memberId}/changeGrantsForm");
 
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(event.target.value);

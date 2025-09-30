@@ -19,7 +19,7 @@ const authConfig: AuthConfig = {
 const fetchClient = createFetchClient<paths>({
     baseUrl: "/api",
     headers: {
-        "Accept": "application/klabis+json,application/json"
+        "Accept": "application/klabis+json,application/json,application/problem+json"
     }
 });
 

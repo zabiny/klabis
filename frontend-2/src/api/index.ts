@@ -1,5 +1,5 @@
 import {klabisOpenapiQueryClient} from "./setup";
-import type {paths} from "./klabisApi.d.ts";
+import type {components, paths} from "./klabisApi.d.ts";
 import type {PathsWithMethod} from "openapi-typescript-helpers";
 
 export * from './types';
@@ -16,3 +16,10 @@ export type KlabisApiPutPaths = PathsWithMethod<paths, "put">;
 export type KlabisApiDeletePaths = PathsWithMethod<paths, "delete">;
 export type KlabisApiMutationPaths = KlabisApiPostPaths | KlabisApiDeletePaths | KlabisApiPutPaths;
 export type KlabisApiPaths = KlabisApiGetPaths | KlabisApiMutationPaths;
+
+
+export type GetAllGrantsResponse = components["schemas"]["GetAllGrants200ResponseApiDto"];
+export type GetMemberGrantsResponse = components["schemas"]["MemberGrantsForm"]
+
+export type EditMyDetailsForm = components["schemas"]["EditMyDetailsForm"];
+export type MemberRegistrationForm = components["schemas"]["MemberRegistrationForm"]

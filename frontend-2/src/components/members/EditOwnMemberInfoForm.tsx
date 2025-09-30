@@ -1,15 +1,15 @@
 import {Alert, Button, FormControlLabel, Grid, Paper, Stack, Typography,} from '@mui/material';
 import {Checkbox, TextField} from 'formik-mui';
-import {type EditMyDetailsForm, useGetEditMyDetailsForm, useUpdateMyDetails} from '../../api/membersApi.ts';
 import {Field, Form, Formik, type FormikHelpers} from "formik";
 import * as Yup from 'yup';
 import {type KlabisFormProperties} from "../KlabisForm";
+import {type EditMyDetailsForm, useKlabisApiMutation, useKlabisApiQuery} from "../../api";
 
 const FormLoadingUI = () => <Typography>Načítání...</Typography>;
 
 export const EditMemberFormUI = ({
-                              formData, onSubmit
-                          }: KlabisFormProperties<EditMyDetailsForm>) => {
+                                     formData, onSubmit
+                                 }: KlabisFormProperties<EditMyDetailsForm>) => {
 
     const validationSchema = Yup.object().shape(
         {
@@ -121,13 +121,16 @@ interface EditMemberFormProps {
 }
 
 const EditMemberForm = ({memberId}: EditMemberFormProps) => {
-    const {data: formData, isLoading} = useGetEditMyDetailsForm(memberId);
+        const {
+            data: formData,
+            isLoading
+        } = useKlabisApiQuery("get", "/members/{memberId}/editOwnMemberInfoForm", {params: {path: {memberId: memberId}}});
 
-    const mutation = useUpdateMyDetails(memberId);
+        const mutation = useKlabisApiMutation("put", "/members/{memberId}/editOwnMemberInfoForm");
 
     const handleSubmit = async (e: EditMyDetailsForm) => {
         try {
-            await mutation.mutateAsync(e);
+            await mutation.mutateAsync({body: e, params: {path: {memberId: memberId}}});
         } catch (error) {
             console.error('Chyba při ukládání:', error);
         }
@@ -149,11 +152,12 @@ const EditMemberForm = ({memberId}: EditMemberFormProps) => {
 
 
             <EditMemberFormUI
-                formData={formData?.data ?? {} as EditMyDetailsForm}
+                formData={formData?.data}
                 onSubmit={handleSubmit}
             />
         </>
     );
-};
+    }
+;
 
 export default EditMemberForm;

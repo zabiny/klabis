@@ -1,10 +1,10 @@
 import React, {useState} from 'react';
 import {Alert, Button, Dialog, DialogContent, Grid, MenuItem, Paper, Stack, TextField, Typography} from '@mui/material';
-import {type MemberRegistrationForm, useRegisterMember} from '../../api/membersApi.ts';
 
 import AddressFields from './AddressFields';
 import ContactFields from './ContactFields';
 import GuardiansFields from './GuardiansFields';
+import {type MemberRegistrationForm, useKlabisApiMutation} from "../../api";
 
 // UI komponenta pro formulář registrace nového člena
 interface RegisterMemberFormUIProps {
@@ -233,17 +233,13 @@ const RegisterMemberFormUI = ({
 // Hlavní komponenta s načítáním dat a mutation
 const RegisterMemberForm = () => {
     const {data, isLoading} = {data: {} as MemberRegistrationForm, isLoading: false};
-    const mutation = useRegisterMember();
+    const mutation = useKlabisApiMutation("post", "/memberRegistrations");
 
     const [submitted, setSubmitted] = useState(false);
 
-    const handleSubmit = async (v: MemberRegistrationForm) => {
-        try {
-            await mutation.mutateAsync(v);
-            setSubmitted(true);
-        } catch (e) {
-            // Chyba se zobrazí alertem
-        }
+    const handleSubmit = async (form: MemberRegistrationForm) => {
+        await mutation.mutateAsync({body: form});
+        setSubmitted(true);
     };
 
     if (isLoading || !data) {

@@ -1,18 +1,18 @@
 import {useState} from 'react';
 import {Alert, Button, Checkbox, FormControlLabel, FormGroup, Grid, Paper, Stack, Typography,} from '@mui/material';
 import {
-    type GetAllGrants,
-    type GrantType,
-    type MemberGrantsForm,
-    useGetAllGrants,
-    useGetMemberGrants,
-    useUpdateMemberGrants
-} from '../../api/membersApi.ts';
+    type GetAllGrantsResponse,
+    type GetMemberGrantsResponse,
+    useKlabisApiMutation,
+    useKlabisApiQuery
+} from "../../api";
+
+type GrantType = string;
 
 interface EditMemberPermissionsFormUIProps {
-    allGrants: GetAllGrants;
-    memberGrants: MemberGrantsForm;
-    onSubmit: (formData: MemberGrantsForm) => void;
+    allGrants: GetAllGrantsResponse;
+    memberGrants: GetMemberGrantsResponse;
+    onSubmit: (formData: GetMemberGrantsResponse) => void;
     successMessage: string | null;
     failureMessage: string | null;
     disabled?: boolean;
@@ -28,7 +28,7 @@ const EditMemberPermissionsFormUI = ({
                                          failureMessage,
                                          disabled = false,
                                      }: EditMemberPermissionsFormUIProps) => {
-    const [selectedGrants, setSelectedGrants] = useState<GrantType[]>(memberGrants.grants || []);
+    const [selectedGrants, setSelectedGrants] = useState<string[]>(memberGrants.grants || []);
 
     const handleGrantChange = (grant: GrantType, checked: boolean) => {
         setSelectedGrants(prev => {
@@ -125,14 +125,18 @@ interface EditMemberPermissionsFormProps {
 }
 
 const EditMemberPermissionsForm = ({memberId}: EditMemberPermissionsFormProps) => {
-    const {data: allGrants, isLoading: isLoadingGrants} = useGetAllGrants();
-    const {data: memberGrants, isLoading: isLoadingMemberGrants} = useGetMemberGrants(memberId);
+    const {data: allGrants, isLoading: isLoadingGrants} = useKlabisApiQuery("get", "/grants");
+    const {
+        data: memberGrants,
+        isLoading: isLoadingMemberGrants
+    } = useKlabisApiQuery("get", "/members/{memberId}/changeGrantsForm", {params: {path: {memberId: memberId}}});
 
-    const mutation = useUpdateMemberGrants(memberId);
+    const mutation = useKlabisApiMutation("put", "/members/{memberId}/changeGrantsForm");
 
-    const handleSubmit = async (formData: MemberGrantsForm) => {
+    const handleSubmit = async (formData: GetMemberGrantsResponse) => {
         try {
-            await mutation.mutateAsync(formData);
+            // TODO: invalidate related queries
+            await mutation.mutateAsync({body: formData, params: {path: {memberId: memberId}}});
         } catch (error) {
             console.error('Chyba při ukládání oprávnění:', error);
         }
