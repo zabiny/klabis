@@ -1,14 +1,18 @@
-import createFetchClient from "openapi-fetch";
-import createClient from "openapi-react-query";
+import {klabisOpenapiQueryClient} from "./setup";
 import type {paths} from "./klabisApi.d.ts";
 import type {PathsWithMethod} from "openapi-typescript-helpers";
 
-const fetchClient = createFetchClient<paths>({
-    baseUrl: "/api",
-});
+export * from './types';
 
-export const useKlabisApiQuery = createClient(fetchClient).useQuery;
-export const useKlabisApiMutation = createClient(fetchClient).useMutation;
+const client = klabisOpenapiQueryClient;
+
+export const useKlabisApiQuery = client.useQuery;
+export const useKlabisApiMutation = client.useMutation;
 
 
-export type klabisApiGetMethods = PathsWithMethod<paths, "get">;
+export type KlabisApiGetPaths = PathsWithMethod<paths, "get">;
+export type KlabisApiPostPaths = PathsWithMethod<paths, "post">;
+export type KlabisApiPutPaths = PathsWithMethod<paths, "put">;
+export type KlabisApiDeletePaths = PathsWithMethod<paths, "delete">;
+export type KlabisApiMutationPaths = KlabisApiPostPaths | KlabisApiDeletePaths | KlabisApiPutPaths;
+export type KlabisApiPaths = KlabisApiGetPaths | KlabisApiMutationPaths;
