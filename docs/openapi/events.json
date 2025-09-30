@@ -1,0 +1,547 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/events/{eventId}/registrationForms/{memberId}": {
+      "get": {
+        "tags": [
+          "Event registrations"
+        ],
+        "summary": "Returns data for registration form",
+        "operationId": "getRegistrationForm",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "ID události",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "description": "ID clena",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prepared event registration form for member and event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRegistrationForm"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRegistrationForm"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing required user authentication or authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRegistrationForm"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "User is not allowed to perform requested operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRegistrationForm"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Event with given doesn\u0027t exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRegistrationForm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "klabis": [
+              "openapi"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Event registrations"
+        ],
+        "summary": "Submits registration form - registers member to event",
+        "operationId": "submitRegistrationForm",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "ID události",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "description": "ID clena",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventRegistrationForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Member was registered to event successfully"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Missing required user authentication or authentication failed"
+          },
+          "403": {
+            "description": "User is not allowed to perform requested operation"
+          },
+          "404": {
+            "description": "Event with given doesn\u0027t exist"
+          }
+        },
+        "security": [
+          {
+            "klabis": [
+              "openapi"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Event registrations"
+        ],
+        "operationId": "cancelEventRegistration",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "klabis": [
+              "openapi"
+            ]
+          }
+        ]
+      }
+    },
+    "/events": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Returns events",
+        "operationId": "getEvents",
+        "parameters": [
+          {
+            "name": "registeredMember.value",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Zero-based page index (0..N)",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "The size of the page to be returned",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionModelEventResponseModel_Summary"
+                }
+              },
+              "application/klabis+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionModelEventResponseModel_Summary"
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionModelEventResponseModel_Summary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "klabis": [
+              "openapi"
+            ]
+          }
+        ]
+      }
+    },
+    "/events/{eventId}": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Returns event details",
+        "operationId": "getEventById",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "ID eventu",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponseModel_Detailed"
+                }
+              },
+              "application/klabis+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponseModel_Detailed"
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponseModel_Detailed"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "klabis": [
+              "openapi"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EventRegistrationForm": {
+        "type": "object",
+        "properties": {
+          "siNumber": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          }
+        }
+      },
+      "CollectionModelEventResponseModel_Summary": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link_Summary"
+            }
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventResponseModel_Summary"
+            }
+          }
+        }
+      },
+      "EventResponseModel_Summary": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link_Summary"
+            }
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "name": {
+            "type": "string",
+            "example": "Krátký den"
+          },
+          "location": {
+            "type": "string",
+            "example": "Vacenovice"
+          },
+          "organizer": {
+            "type": "string",
+            "example": "ZBM"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TRAINING",
+              "COMPETITION"
+            ]
+          },
+          "web": {
+            "type": "string"
+          },
+          "registrationDeadline": {
+            "type": "string",
+            "format": "date"
+          },
+          "coordinator": {
+            "type": "integer",
+            "format": "int32",
+            "example": "Josef Pařízek"
+          }
+        },
+        "required": [
+          "date",
+          "id",
+          "location",
+          "name",
+          "organizer",
+          "type"
+        ]
+      },
+      "Link_Summary": {
+        "type": "object",
+        "properties": {
+          "rel": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "hreflang": {
+            "type": "string"
+          },
+          "media": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "deprecation": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "EventRegistrationResponse_Detailed": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "category": {
+            "type": "string"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link_Summary"
+            }
+          }
+        }
+      },
+      "EventResponseModel_Detailed": {
+        "type": "object",
+        "properties": {
+          "registrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventRegistrationResponse_Detailed"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link_Summary"
+            }
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "name": {
+            "type": "string",
+            "example": "Krátký den"
+          },
+          "location": {
+            "type": "string",
+            "example": "Vacenovice"
+          },
+          "organizer": {
+            "type": "string",
+            "example": "ZBM"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TRAINING",
+              "COMPETITION"
+            ]
+          },
+          "web": {
+            "type": "string"
+          },
+          "registrationDeadline": {
+            "type": "string",
+            "format": "date"
+          },
+          "coordinator": {
+            "type": "integer",
+            "format": "int32",
+            "example": "Josef Pařízek"
+          }
+        },
+        "required": [
+          "date",
+          "id",
+          "location",
+          "name",
+          "organizer",
+          "type"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "security_auth": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "/oauth/authorize",
+            "tokenUrl": "/oauth/token",
+            "scopes": {}
+          }
+        }
+      }
+    }
+  }
+}

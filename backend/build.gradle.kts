@@ -46,8 +46,10 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
 
     // SPRING DATA
+    implementation("org.springframework.data:spring-data-commons")
+    implementation("org.springframework:spring-tx")
     //implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
+    //implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     //implementation("org.springframework.boot:spring-boot-starter-data-rest")
     //implementation("org.springframework.data:spring-data-rest-hal-explorer")
 
@@ -116,7 +118,7 @@ configurations {
 }
 
 java.sourceSets["main"].java {
-    srcDir("$buildDir/generated/klabisapi/src/main/java")
+    srcDir(layout.buildDirectory.dir("generated/klabisapi/src/main/java"))
 }
 
 val copyApiSpecs = tasks.register<Copy>("copyApiSpecs") {
@@ -140,8 +142,8 @@ tasks.withType<Javadoc>() {
 openApiGenerate {
 //    group = "openapi tools"
     generatorName.set("spring")
-    inputSpec.set("$rootDir/../klabis-api-spec.yaml")
-    outputDir.set("$buildDir/generated/klabisapi")
+    inputSpec.set(layout.projectDirectory.file("../klabis-api-spec.yaml").asFile.absolutePath)
+    outputDir.set(layout.buildDirectory.dir("generated/klabisapi").get().asFile.absolutePath)
     apiPackage.set("club.klabis.api")
     invokerPackage.set("org.openapi.example.invoker")
     modelPackage.set("club.klabis.api.dto")
@@ -168,7 +170,7 @@ openApiGenerate {
 // SpringDoc - generate OpenAPI during build from Controllers defined in Java
 // https://github.com/springdoc/springdoc-openapi-gradle-plugin
 openApi {
-    outputDir.set(file("$buildDir/openapi"))
+    outputDir.set(layout.buildDirectory.dir("openapi"))
     customBootRun.jvmArgs.set(listOf("-Dspring.profiles.active=generateOpenApiDocs"))
     groupedApiMappings.putAll( // see group-mappings defined in application.yml for springdoc
         mapOf(
@@ -181,6 +183,18 @@ openApi {
 }
 
 tasks.jar.get().dependsOn(tasks.generateOpenApiDocs)
+
+// Register a task to copy generated OpenAPI files to the project root (parent of this build script)
+val copyOpenApiDocs = tasks.register<Copy>("copyOpenApiDocs") {
+    from(layout.buildDirectory.dir("openapi"))
+    // Copy to the parent directory of the project (i.e., one level up from backend/)
+    into(layout.projectDirectory.dir("../docs/openapi"))
+}
+
+// Ensure the copy runs after OpenAPI docs are generated
+tasks.named("generateOpenApiDocs") {
+    finalizedBy(copyOpenApiDocs)
+}
 
 tasks.getByName<BootBuildImage>("bootBuildImage") {
     imageName = "${project.name}:${project.version}"
