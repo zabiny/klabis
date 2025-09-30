@@ -22,4 +22,8 @@ export type GetAllGrantsResponse = components["schemas"]["GetAllGrants200Respons
 export type GetMemberGrantsResponse = components["schemas"]["MemberGrantsForm"]
 
 export type EditMyDetailsForm = components["schemas"]["EditMyDetailsForm"];
-export type MemberRegistrationForm = components["schemas"]["MemberRegistrationForm"]
+export type MemberRegistrationForm = components["schemas"]["MemberRegistrationForm"];
+export type EventRegistrationForm = components["schemas"]["EventRegistrationForm"];
+
+export type Link = components["schemas"]["Link"];
+export {type HttpMethod} from 'openapi-typescript-helpers';
