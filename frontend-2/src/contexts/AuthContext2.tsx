@@ -1,5 +1,15 @@
 import React, {createContext, ReactNode, useContext, useEffect, useState,} from 'react';
-import {User, UserManager, WebStorageStateStore,} from 'oidc-client-ts';
+import {User, UserManager,} from 'oidc-client-ts';
+import {type AuthConfig, createUserManager} from "./auth";
+
+// Your required interface
+interface AuthContextType {
+    isAuthenticated: boolean;
+    login: () => void;
+    logout: () => void;
+    isLoading: boolean;
+    getUser: () => Promise<AuthUserDetails | null>;
+}
 
 export interface AuthUserDetails {
     firstName: string,
@@ -8,157 +18,102 @@ export interface AuthUserDetails {
     registrationNumber: string
 }
 
-// Your required interface
-interface AuthContextType {
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    login: () => void;
-    logout: () => void;
-    getAccessToken: () => Promise<string | null>;
-    getUser: () => Promise<AuthUserDetails | null>;
-}
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
     children: ReactNode;
-    config: {
-        authority: string;
-        client_id: string;
-        client_secret?: string;
-        redirect_uri: string;
-        post_logout_redirect_uri: string;
-        response_type?: string;
-        scope?: string;
-    };
+    config: AuthConfig;
 }
 
-let userManager: UserManager;
+const createAuthUserDetails = (user: User | null | undefined): AuthUserDetails | null => {
+    if (user === null || user === undefined) {
+        return null;
+    }
+
+    if (user.expired) {
+        return null;
+    }
+
+    return {
+        firstName: user.profile.given_name,
+        lastName: user.profile.family_name,
+        id: parseInt(user.profile.sub),
+        registrationNumber: user.profile.preferred_username
+    } as AuthUserDetails;
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    const [userManager, setUserManager] = useState<UserManager>();
+    const [isLoading, setLoading] = useState(true);
+
+    const [authUserDetails, setAuthUserDetails] = useState<AuthUserDetails | null>(null);
 
     useEffect(() => {
-        userManager = new UserManager({
-            ...config,
-            response_type: config.response_type ?? 'code',
-            scope: config.scope ?? 'openid profile email',
-            userStore: new WebStorageStateStore({store: window.sessionStorage}),
-            automaticSilentRenew: true,
-            silent_redirect_uri: config.redirect_uri, // Required for silent renew
+        const userManager = createUserManager({
+            onUserLoaded: (user) => setValidUser(user),
+            onUserUnloaded: () => setValidUser(null),
+            onAuthorizationCompleted: () => setLoading(false),
+            ...config
         });
 
-        // Handle the redirect callback on app load
-        if (window.location.pathname === new URL(config.redirect_uri).pathname) {
-            userManager
-                .signinRedirectCallback()
-                .then((user) => {
-                    console.log('Signin redirect callback success:', user);
-                    setUser(user);
-                    setIsAuthenticated(true);
-                    setIsLoading(false);
-                    // Clean URL after processing
-                    window.history.replaceState({}, document.title, '/');
-                })
-                .catch((err) => {
-                    console.error('Signin redirect callback error:', err);
-                    setIsLoading(false);
-                });
+        setUserManager(userManager);
+    }, [config]);
+
+    const setValidUser = (user: User | null): void => {
+        if (user != null && !user.expired) {
+            setAuthUserDetails(createAuthUserDetails(user));
         } else {
-            // Try to get existing user from storage
-            userManager
-                .getUser()
-                .then((user) => {
-                    if (user && !user.expired) {
-                        setUser(user);
-                        setIsAuthenticated(true);
-                    }
-                })
-                .catch(console.error)
-                .finally(() => setIsLoading(false));
+            setAuthUserDetails(null);
         }
+    }
 
-        userManager.events.addUserLoaded((user) => {
-            setUser(user);
-            setIsAuthenticated(true);
-        });
+    useEffect(() => {
+        if (userManager != null) {
+            // Handle the redirect callback on app load
+            if (window.location.pathname === new URL(config.redirect_uri).pathname) {
+                // handling callback from OAuth server
+                userManager
+                    .signinRedirectCallback()
+                    .then((user) => {
+                        console.log('Signin redirect callback success:', user);
+                        setValidUser(user);
+                        setLoading(false);
+                        // Clean URL after processing
+                        window.history.replaceState({}, document.title, '/');
+                    })
+                    .catch((err) => {
+                        console.error('Signin redirect callback error:', err);
+                    });
+            } else {
+                // Try to get existing user from storage
+                userManager
+                    .getUser()
+                    .then((user) => {
+                        setValidUser(user);
+                    })
+                    .catch(console.error)
+                    .finally(() => setLoading(false));
+            }
 
-        userManager.events.addUserUnloaded(() => {
-            setUser(null);
-            setIsAuthenticated(false);
-        });
-
-        userManager.events.addAccessTokenExpired(() => {
-            console.warn('Access token expired');
-            userManager.signinSilent().catch((err) => {
-                console.error('Silent renew failed', err);
-                logout();
-            });
-        });
-
-        userManager.events.addSilentRenewError((err) => {
-            console.error('Silent renew error:', err);
-        });
-
-        userManager.events.addUserSignedOut(() => {
-            console.log('User signed out');
-            logout();
-        });
-    }, []);
+        }
+    }, [userManager, config]);
 
     const login = () => {
-        userManager.signinRedirect();
+        userManager?.signinRedirect();
     };
 
     const logout = () => {
-        userManager.signoutRedirect();
-    };
-
-    const getAccessToken = async (): Promise<string | null> => {
-        try {
-            const currentUser = await userManager.getUser();
-            if (currentUser && !currentUser.expired) {
-                return currentUser.access_token;
-            }
-
-            // Try silent renewal
-            const refreshedUser = await userManager.signinSilent();
-            if (refreshedUser) {
-                setUser(refreshedUser);
-                setIsAuthenticated(true);
-                return refreshedUser.access_token;
-            } else {
-                console.warn('Didnt receive any refreshed user details')
-            }
-        } catch (err) {
-            console.error('Error retrieving access token:', err);
-            logout();
-            return null;
-        }
+        userManager?.signoutRedirect();
     };
 
     const getUser = async (): Promise<AuthUserDetails | null> => {
-        try {
-            const currentUser = await userManager.getUser();
-            if (currentUser) {
-                return {
-                    firstName: currentUser.profile.given_name,
-                    lastName: currentUser.profile.family_name,
-                    id: parseInt(currentUser.profile.sub),
-                    registrationNumber: currentUser.profile.preferred_username
-                } as AuthUserDetails;
-            }
-            return null;
-        } catch (err) {
-            console.error('Error retrieving user:', err);
-            return null;
-        }
+        return authUserDetails;
     };
 
     return (
         <AuthContext.Provider
-            value={{isAuthenticated, isLoading, login, logout, getAccessToken, getUser}}
+            value={{isAuthenticated: authUserDetails !== null, isLoading, login, logout, getUser}}
         >
             {children}
         </AuthContext.Provider>

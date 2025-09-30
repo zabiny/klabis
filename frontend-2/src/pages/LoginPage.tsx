@@ -14,18 +14,20 @@ const LoginPage = () => {
         }
     }, [isAuthenticated, navigate]);
 
-    // Automaticky zahájí login, pokud není autentizováno a není načítání
+    // // Automaticky zahájí login, pokud není autentizováno a není načítání
     useEffect(() => {
         if (!isAuthenticated && !isLoading) {
             login();
         }
     }, [isAuthenticated, isLoading, login]);
 
-    if (isLoading) {
+    if (!isAuthenticated && !isLoading) {
         return (
             <Container maxWidth="sm">
                 <Box sx={{mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                    <Typography variant="h5">Načítání...</Typography>
+                    <Typography variant="h5">
+                        <button onClick={e => login()}>Login back</button>
+                    </Typography>
                 </Box>
             </Container>
         );
