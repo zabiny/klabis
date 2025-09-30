@@ -3,8 +3,7 @@ import {Newspaper, SyncSharp} from "@mui/icons-material";
 import {Tooltip} from "@mui/material";
 
 const addTooltip = (text: string, node: ReactNode): ReactNode => {
-    return <Tooltip title={text}><>{node}</>
-    </Tooltip>;
+    return <Tooltip title={text}><span>{node}</span></Tooltip>;
 }
 
 const createIcon = (actionName: string): ReactNode => {
@@ -20,6 +19,6 @@ const createIcon = (actionName: string): ReactNode => {
 
 export const Actions = ({value}: { value: string[] }): React.ReactNode => {
     return (
-        <span>{value.map(s => <div><Tooltip title={s}><span>{createIcon(s)}</span></Tooltip></div>)}</span>
+        <span>{value.map(s => <div key={s}><Tooltip title={s}><span>{createIcon(s)}</span></Tooltip></div>)}</span>
     );
 }
