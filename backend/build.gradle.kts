@@ -171,7 +171,7 @@ openApiGenerate {
 // https://github.com/springdoc/springdoc-openapi-gradle-plugin
 openApi {
     outputDir.set(layout.buildDirectory.dir("openapi"))
-    customBootRun.jvmArgs.set(listOf("-Dspring.profiles.active=generateOpenApiDocs"))
+    customBootRun.jvmArgs.set(listOf("-Dspring.profiles.active=apidocgenerator"))
     groupedApiMappings.putAll( // see group-mappings defined in application.yml for springdoc
         mapOf(
             "http://localhost:8080/v3/api-docs/members" to "members.json",

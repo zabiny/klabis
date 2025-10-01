@@ -6,6 +6,7 @@ spring:
       - http2
       - hateoas
       - springdoc
+      - inmemorydb
     group:
       server:
         - inmemorydb

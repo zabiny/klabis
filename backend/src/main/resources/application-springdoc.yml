@@ -8,6 +8,7 @@ springdoc:
   api-docs:
     groups:
       enabled: true
+    enabled: true
   group-configs: # when updating these, also update groups in generateOpenApiDocs gradle task configuration (build.gradle.kts)
     - group: members
       display-name: Members API
