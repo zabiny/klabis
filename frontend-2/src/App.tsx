@@ -11,7 +11,7 @@ import LoginPage from './pages/LoginPage';
 
 import theme from './theme';
 import MembersPage from "./pages/MembersPage.tsx";
-import {HalNavigator} from "./pages/HalNavigator";
+import {SandplacePage} from "./pages/HalNavigatorPage";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -51,7 +51,7 @@ function App() {
                         <Route path="members/:memberId" element={<MemberDetailPage/>}/>
                         <Route path="events" element={<EventsPage/>}/>
                         <Route path="groups" element={<GroupsPage/>}/>
-                        <Route path="sandplace" element={<HalNavigator startUrl={"/api"}/>}/>
+                        <Route path="sandplace" element={<SandplacePage/>}/>
                         <Route path="*" element={<HomePage/>}/>
                     </Route>
                 </Routes>
