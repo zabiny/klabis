@@ -8,7 +8,10 @@ const userManager: UserManager = klabisAuthUserManager;
 async function fetchResource(url) {
     const user = await userManager.getUser();
     const res = await fetch(url, {
-        headers: {Accept: "application/hal+json", "Authorization": `Bearer ${user?.access_token}`},
+        headers: {
+            Accept: "application/prs.hal-forms+json,application/hal+json",
+            "Authorization": `Bearer ${user?.access_token}`
+        },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();

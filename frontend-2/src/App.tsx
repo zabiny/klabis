@@ -51,7 +51,7 @@ function App() {
                         <Route path="members/:memberId" element={<MemberDetailPage/>}/>
                         <Route path="events" element={<EventsPage/>}/>
                         <Route path="groups" element={<GroupsPage/>}/>
-                        <Route path="sandplace" element={<HalNavigator startUrl={"/api/members"}/>}/>
+                        <Route path="sandplace" element={<HalNavigator startUrl={"/api"}/>}/>
                         <Route path="*" element={<HomePage/>}/>
                     </Route>
                 </Routes>
