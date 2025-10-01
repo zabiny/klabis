@@ -5,15 +5,29 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.LinkRelationProvider;
 import org.springframework.hateoas.server.SimpleRepresentationModelAssembler;
 
 public abstract class AbstractRepresentationModelMapper<DOMAIN, DTO> implements SimpleRepresentationModelAssembler<DTO> {
 
     private PagedResourcesAssembler<DTO> pagedResourcesAssembler;
+    protected LinkRelationProvider linkRelationProvider;
+    protected EntityLinks entityLinks;
 
     @Autowired
     public void setPagedMapper(PagedResourcesAssembler<DTO> pagedResourcesAssembler) {
         this.pagedResourcesAssembler = pagedResourcesAssembler;
+    }
+
+    @Autowired
+    public void setLinkRelationProvider(LinkRelationProvider linkRelationProvider) {
+        this.linkRelationProvider = linkRelationProvider;
+    }
+
+    @Autowired
+    public void setEntityLinks(EntityLinks entityLinks) {
+        this.entityLinks = entityLinks;
     }
 
     public PagedModel<EntityModel<DTO>> toPagedResponse(Page<DOMAIN> events) {
