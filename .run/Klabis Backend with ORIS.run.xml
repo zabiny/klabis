@@ -1,0 +1,29 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="Klabis Backend with ORIS" type="SpringBootApplicationConfigurationType"
+                   factoryName="Spring Boot">
+        <option name="ACTIVE_PROFILES" value="localhost,oris"/>
+        <additionalParameters>
+            <param>
+                <option name="enabled" value="true"/>
+                <option name="name" value="management.endpoint.env.show-values"/>
+                <option name="value" value="when_authorized"/>
+            </param>
+        </additionalParameters>
+        <option name="envFilePaths">
+            <option value="$PROJECT_DIR$/backend/local.env"/>
+        </option>
+        <module name="club.zabiny.klabis.main"/>
+        <selectedOptions>
+            <option name="environmentVariables"/>
+        </selectedOptions>
+        <option name="SPRING_BOOT_MAIN_CLASS" value="club.klabis.KlabisApplication"/>
+        <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">
+            <option name="credential"/>
+            <option name="region"/>
+            <option name="useCurrentConnection" value="false"/>
+        </extension>
+        <method v="2">
+            <option name="Make" enabled="true"/>
+        </method>
+    </configuration>
+</component>
