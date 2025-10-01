@@ -24,7 +24,8 @@ const EventsPage = () => {
                 <TableCell sortable column={"location"}>Místo</TableCell>
                 <TableCell sortable column={"organizer"}>Pořadatel</TableCell>
                 <TableCell column={"type"} dataRender={({value}) => <EventType eventType={value}/>}>Typ</TableCell>
-                <TableCell column={"web"} dataRender={({value}) => <Link href={value}><Public/></Link>}>Web</TableCell>
+                <TableCell column={"web"}
+                           dataRender={({value}) => <Link hidden={!value} href={value}><Public/></Link>}>Web</TableCell>
                 <TableCell sortable column={"registrationDeadline"} dataRender={({value}) => formatDate(value)}>Uzávěrka
                     přihlášek</TableCell>
                 <TableCell column={"coordinator"} dataRender={({value}) => value ?
