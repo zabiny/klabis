@@ -49,7 +49,7 @@ const Main = styled('main', {shouldForwardProp: (prop) => prop !== 'open'})<{
 }));
 
 const Layout = () => {
-    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [drawerOpen, setDrawerOpen] = useState(true);
     const navigate = useNavigate();
     const {logout, getUser, isAuthenticated} = useAuth();
     const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
@@ -74,7 +74,6 @@ const Layout = () => {
 
     const handleNavigation = (path: string) => {
         navigate(path);
-        setDrawerOpen(false);
     };
 
     const handleLogout = () => {
