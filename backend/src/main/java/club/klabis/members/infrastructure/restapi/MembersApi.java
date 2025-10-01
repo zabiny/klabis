@@ -65,7 +65,6 @@ public class MembersApi {
             @JsonViewMapping(name = "SUMMARY", jsonView = ResponseViews.Summary.class),
             @JsonViewMapping(name = "DETAILED", jsonView = ResponseViews.Detailed.class)
     })
-    @Parameter(name = "view", in = ParameterIn.QUERY, description = "Defines how many data are returned for every item", schema = @Schema(type = "string", defaultValue = "SUMMARY", allowableValues = {"SUMMARY", "DETAILED"}))
     PagedModel<EntityModel<MembersApiResponse>> membersGet(
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
