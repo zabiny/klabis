@@ -17,8 +17,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @MapperTest
-@ConverterScan(basePackageClasses = MemberFullViewMapper.class)
-class MemberFullViewMapperTest {
+@ConverterScan(basePackageClasses = MembersApiResponseConverter.class)
+class MembersApiResponseConverterTest {
 
     @Autowired
     ConversionService conversionService;

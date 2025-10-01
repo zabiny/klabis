@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
 
 @Mapper(componentModel = "spring", config = DomainToDtoMapperConfiguration.class)
-public abstract class MemberFullViewMapper implements Converter<Member, MembersApiResponse> {
+public abstract class MembersApiResponseConverter implements Converter<Member, MembersApiResponse> {
 
     @Override
     @Mapping(source = "registration", target = "registrationNumber")

@@ -39,6 +39,10 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
         Member entity = target.getContent().getMember();
 
         target.add(entityLinks.linkToItemResource(Member.class, entity.getId().value()).withSelfRel());
+        target.add(entityLinks.linkToCollectionResource(Member.class)
+                .withRel(linkRelationProvider.getCollectionResourceRelFor(
+                        Member.class)));
+
 
         if (entity.isSuspended()) {
             if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {

@@ -55,6 +55,10 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
 
         Event event = resource.getContent().source();
 
+        resource.add(entityLinks.linkToItemResource(Event.class, event.getId()).withSelfRel());
+        resource.add(entityLinks.linkToCollectionResource(Event.class)
+                .withRel(linkRelationProvider.getCollectionResourceRelFor(Event.class)));
+
         if (event.getOrisId().isPresent() && klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)) {
             resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(OrisApi.class)
                     .synchronizeEventsFromOris(null)).withRel("synchronize"));
