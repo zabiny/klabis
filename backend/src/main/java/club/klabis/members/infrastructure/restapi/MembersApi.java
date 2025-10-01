@@ -23,8 +23,8 @@ import jakarta.validation.Valid;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -44,7 +44,6 @@ public class MembersApi {
      * GET /members : List all club members
      * Returns a list of all club members
      *
-     * @param view      Defines set of returned data  | view option | description                                                                                   | |-------------|-----------------------------------------------------------------------------------------------| | &#x60;full&#x60;        | all member data that are displayable to the user are returned                                 | | &#x60;compact&#x60;     | &#x60;id&#x60;, &#x60;firstName&#x60;, &#x60;lastName&#x60;, &#x60;registrationNumber&#x60; are returned                             |  (optional, default to compact)
      * @param suspended | value | effect | |---|---| | &#x60;true&#x60; | returns both active and suspended members |  | &#x60;false&#x60; | return only active members |  (optional, default to false)
      * @return A list of club members (status code 200)
      * or Missing required user authentication or authentication failed (status code 401)
@@ -67,14 +66,14 @@ public class MembersApi {
             @JsonViewMapping(name = "DETAILED", jsonView = ResponseViews.Detailed.class)
     })
     @Parameter(name = "view", in = ParameterIn.QUERY, description = "Defines how many data are returned for every item", schema = @Schema(type = "string", defaultValue = "SUMMARY", allowableValues = {"SUMMARY", "DETAILED"}))
-    ResponseEntity<PagedModel<MembersApiResponse>> membersGet(
+    PagedModel<EntityModel<MembersApiResponse>> membersGet(
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended,
                 memberModelAssembler.convertAttributeNamesToEntity(pageable));
 
-        return ResponseEntity.ok(memberModelAssembler.toPagedModel(result));
+        return memberModelAssembler.toPagedResponse(result);
     }
 
     /**
@@ -101,12 +100,11 @@ public class MembersApi {
             }
     )
     @GetMapping("/{memberId}")
-    public ResponseEntity<MembersApiResponse> membersMemberIdGet(
+    public EntityModel<MembersApiResponse> membersMemberIdGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
     ) {
         return membersRepository.findById(new MemberId(memberId))
-                .map(memberModelAssembler::toModel)
-                .map(ResponseEntity::ok)
+                .map(memberModelAssembler::toResponseModel)
                 .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
     }
 

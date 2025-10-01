@@ -9,10 +9,10 @@ import club.klabis.shared.config.security.KlabisSecurityService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.hateoas.Link;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
 import java.util.List;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
@@ -29,23 +29,58 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
     }
 
     @Override
-    public MembersApiResponse mapDataFromDomain(Member member) {
-        MembersApiResponse responseDto = conversionService.convert(member, MembersApiResponse.class);
+    public MembersApiResponse toResponse(Member member) {
+        return conversionService.convert(member, MembersApiResponse.class);
+    }
 
-        return responseDto;
+
+    @Override
+    public void addLinks(EntityModel<MembersApiResponse> target) {
+        Member entity = target.getContent().getMember();
+
+        target.add(linkTo(methodOn(MembersApi.class).membersMemberIdGet(entity.getId().value())).withSelfRel());
+
+        if (entity.isSuspended()) {
+            if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
+                target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                        .value())).withRel(
+                        ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()));
+            }
+            return;
+        }
+
+        if (securityService.canEditMemberData(entity.getId())) {
+            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
+                    entity.getId().value())).withRel(
+                    "members:editOwnInfo"));
+        }
+
+        if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
+            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                    .value())).withRel(
+                    ApplicationGrant.MEMBERS_EDIT.getGrantName()));
+        }
+
+        if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
+            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                    .value())).withRel(
+                    ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()));
+        }
+
+        if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
+            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                    .value())).withRel(
+                    ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName()));
+        }
     }
 
     @Override
-    public Collection<Link> createCollectionLinks() {
-        Collection<Link> result = super.createCollectionLinks();
-
+    public void addLinks(CollectionModel<EntityModel<MembersApiResponse>> model) {
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
-            result.add(linkTo(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))
+            model.add(linkTo(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))
                     .withRel(ApplicationGrant.MEMBERS_REGISTER.getGrantName())
                     .andAffordance(afford(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))));
         }
-
-        return result;
     }
 
     String translateDtoToEntityPropertyName(String propertyName) {

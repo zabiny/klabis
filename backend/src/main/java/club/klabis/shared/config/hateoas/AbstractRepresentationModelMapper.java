@@ -3,60 +3,34 @@ package club.klabis.shared.config.hateoas;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.Link;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
-import org.springframework.hateoas.RepresentationModel;
-import org.springframework.hateoas.server.RepresentationModelAssembler;
+import org.springframework.hateoas.server.SimpleRepresentationModelAssembler;
 
-import java.util.ArrayList;
-import java.util.Collection;
+public abstract class AbstractRepresentationModelMapper<DOMAIN, DTO> implements SimpleRepresentationModelAssembler<DTO> {
 
-public abstract class AbstractRepresentationModelMapper<DOMAIN, DTO extends RepresentationModel<DTO>> implements RepresentationModelAssembler<DOMAIN, DTO> {
-
-    private PagedResourcesAssembler<DOMAIN> pagedResourcesAssembler;
+    private PagedResourcesAssembler<DTO> pagedResourcesAssembler;
 
     @Autowired
-    public void setPagedMapper(PagedResourcesAssembler<DOMAIN> pagedResourcesAssembler) {
+    public void setPagedMapper(PagedResourcesAssembler<DTO> pagedResourcesAssembler) {
         this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
-    public abstract DTO mapDataFromDomain(DOMAIN domain);
-
-    public Collection<Link> createItemLinks(DOMAIN domain) {
-        return new ArrayList<>();
+    public PagedModel<EntityModel<DTO>> toPagedResponse(Page<DOMAIN> events) {
+        return toPagedModel(events.map(this::toResponse));
     }
 
-    public Collection<Link> createCollectionLinks() {
-        return new ArrayList<>();
-    }
-
-
-    @Override
-    public final DTO toModel(DOMAIN domain) {
-        DTO response = mapDataFromDomain(domain);
-
-        createItemLinks(domain).forEach(response::add);
-
-        return response;
-    }
-
-    @Override
-    public final CollectionModel<DTO> toCollectionModel(Iterable<? extends DOMAIN> entities) {
-        CollectionModel<DTO> result = RepresentationModelAssembler.super.toCollectionModel(entities);
-
-        createCollectionLinks().forEach(result::add);
-
+    public PagedModel<EntityModel<DTO>> toPagedModel(Page<DTO> page) {
+        PagedModel<EntityModel<DTO>> result = pagedResourcesAssembler.toModel(page, this);
+        addLinks(result);
         return result;
     }
 
-    public final PagedModel<DTO> toPagedModel(Page<DOMAIN> events) {
-        PagedModel<DTO> result = pagedResourcesAssembler.toModel(events, this);
-
-        createCollectionLinks().forEach(result::add);
-
-        return result;
+    public EntityModel<DTO> toResponseModel(DOMAIN response) {
+        return toModel(toResponse(response));
     }
+
+    abstract public DTO toResponse(DOMAIN event);
 
 
 }

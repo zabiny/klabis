@@ -1,24 +1,13 @@
 package club.klabis.events.infrastructure.restapi.dto;
 
-import org.springframework.hateoas.RepresentationModel;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.soabase.recordbuilder.core.RecordBuilder;
+import org.springframework.hateoas.server.core.Relation;
 
-public class EventRegistrationResponse extends RepresentationModel<EventRegistrationResponse> {
-    private int memberId;
-    private String category;
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public int getMemberId() {
-        return memberId;
-    }
-
-    public void setMemberId(int memberId) {
-        this.memberId = memberId;
-    }
+@RecordBuilder
+@JsonTypeName("EventRegistration")
+@Relation("eventRegistration")
+public record EventRegistrationResponse(
+        int memberId,
+        String category) {
 }

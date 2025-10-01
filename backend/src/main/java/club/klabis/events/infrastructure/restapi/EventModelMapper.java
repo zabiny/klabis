@@ -3,7 +3,8 @@ package club.klabis.events.infrastructure.restapi;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.Registration;
 import club.klabis.events.infrastructure.restapi.dto.EventRegistrationResponse;
-import club.klabis.events.infrastructure.restapi.dto.EventResponseModel;
+import club.klabis.events.infrastructure.restapi.dto.EventResponse;
+import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.members.MemberId;
 import club.klabis.oris.infrastructure.restapi.OrisApi;
 import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
@@ -15,13 +16,12 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Link;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
-import java.util.Collection;
-
 @Mapper(config = DomainToDtoMapperConfiguration.class, componentModel = "spring")
-abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event, EventResponseModel> {
+abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event, EventResponse> {
 
     private KlabisSecurityService klabisSecurityService;
 
@@ -32,62 +32,57 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
     @Mapping(target = "type", ignore = true)
     @Mapping(target = "web", source = "website")
     @Mapping(target = "coordinator", ignore = true)
+    @Mapping(target = "registrations", source = "eventRegistrations")
+    @Mapping(target = "source", source = ".")
     @Override
-    public abstract EventResponseModel mapDataFromDomain(Event event);
+    public abstract EventResponse toResponse(Event event);
 
     @Mapping(target = "category", constant = "H12")
     @Mapping(target = "memberId", source = "memberId.value")
-    public abstract EventRegistrationResponse mapDataFromDomain(Registration registration);
+    public abstract EventRegistrationResponse toResponse(Registration registration);
 
     @AfterMapping
-    public EventResponseModel afterModelMap(Event event, @MappingTarget EventResponseModel eventListResponse) {
-        eventListResponse.setCoordinator(event.getCoordinator().map(MemberId::value).orElse(null));
-        eventListResponse.setType(EventResponseModel.TypeEnum.ofEvent(event).orElse(null));
-        eventListResponse.registrations(event.getEventRegistrations().stream().map(this::mapDataFromDomain).toList());
-        return eventListResponse;
+    public EventResponse afterModelMap(Event event, @MappingTarget EventResponse eventListResponse) {
+        return EventResponseBuilder.builder(eventListResponse)
+                .type(EventResponse.TypeEnum.ofEvent(event).orElse(null))
+                .coordinator(event.getCoordinator().map(MemberId::value).orElse(null))
+                .build();
     }
 
     @Override
-    public Collection<Link> createCollectionLinks() {
-        Collection<Link> result = super.createCollectionLinks();
-
-        if (klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)) {
-            result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(OrisApi.class)
-                    .synchronizeEventsFromOris(null)).withRel("synchronizeAll"));
-        }
-
-        return result;
-    }
-
-    @Override
-    public Collection<Link> createItemLinks(Event event) {
-        Collection<Link> result = super.createItemLinks(event);
-
+    public void addLinks(EntityModel<EventResponse> resource) {
         final MemberId memberId = new MemberId(1);
 
+        Event event = resource.getContent().source();
+
         if (event.getOrisId().isPresent() && klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)) {
-            result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(OrisApi.class)
+            resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(OrisApi.class)
                     .synchronizeEventsFromOris(null)).withRel("synchronize"));
         }
 
         if (event.areRegistrationsOpen()) {
             if (event.isMemberRegistered(memberId)) {
-                result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
                                 .submitRegistrationForm(event.getId().value(), memberId.value(), null))
                         .withRel("updateRegistration"));
 
-                result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
                                 .cancelEventRegistration(event.getId().value(), memberId.value()))
                         .withRel("cancelRegistration"));
             } else {
-                result.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
+                resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
                                 .submitRegistrationForm(event.getId().value(), memberId.value(), null))
                         .withRel("createRegistration"));
             }
         }
+    }
 
-        return result;
-
+    @Override
+    public void addLinks(CollectionModel<EntityModel<EventResponse>> resources) {
+        if (klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)) {
+            resources.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(OrisApi.class)
+                    .synchronizeEventsFromOris(null)).withRel("synchronizeAll"));
+        }
     }
 
     @Autowired

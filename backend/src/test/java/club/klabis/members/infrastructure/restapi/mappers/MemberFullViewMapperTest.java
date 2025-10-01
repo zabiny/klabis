@@ -7,12 +7,10 @@ import club.klabis.members.infrastructure.restapi.dto.ContactApiDto;
 import club.klabis.members.infrastructure.restapi.dto.LicencesApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.ConversionService;
-import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.tests.common.MapperTest;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.extensions.spring.test.ConverterScan;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.List;
 
@@ -24,9 +22,6 @@ class MemberFullViewMapperTest {
 
     @Autowired
     ConversionService conversionService;
-
-    @MockBean
-    KlabisSecurityService securityServiceMock;
 
     @Test
     void convert() {
@@ -42,6 +37,8 @@ class MemberFullViewMapperTest {
                 MembersApiResponse.class);
 
         MembersApiResponse expected = new MembersApiResponse();
+        expected.setId(m.getId().value());
+        expected.setMember(m);
         expected.setFirstName("Test");
         expected.setLastName("Something");
         expected.setLicences(new LicencesApiDto());
@@ -51,7 +48,7 @@ class MemberFullViewMapperTest {
         assertThat(item)
                 .as("Unexpected values")
                 .usingRecursiveComparison()
-                .ignoringFields("links", "id")
+                //.ignoringFields("links", "id")
                 .isEqualTo(expected);
 
     }

@@ -1,17 +1,15 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
+import club.klabis.members.domain.Member;
 import club.klabis.members.infrastructure.restapi.ResponseViews;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,8 +22,12 @@ import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonTypeName("Member")
+@Relation("member")
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
-public class MembersApiResponse extends RepresentationModel<MembersApiResponse> implements MembersListItemsInnerApiDto {
+public class MembersApiResponse implements MembersListItemsInnerApiDto {
+
+    @JsonIgnore
+    private Member member;
 
     @JsonView(ResponseViews.Summary.class)
     private Integer id;
@@ -101,6 +103,20 @@ public class MembersApiResponse extends RepresentationModel<MembersApiResponse> 
         this.nationality = nationality;
         this.sex = sex;
     }
+
+    public Member getMember() {
+        return member;
+    }
+
+    public void setMember(Member member) {
+        this.member = member;
+    }
+
+    public MembersApiResponse member(Member member) {
+        this.member = member;
+        return this;
+    }
+
 
     public MembersApiResponse id(Integer id) {
         this.id = id;
@@ -603,6 +619,7 @@ public class MembersApiResponse extends RepresentationModel<MembersApiResponse> 
 
         protected Builder copyOf(MembersApiResponse value) {
             this.instance.setId(value.id);
+            this.instance.setMember(value.member);
             this.instance.setFirstName(value.firstName);
             this.instance.setLastName(value.lastName);
             this.instance.setRegistrationNumber(value.registrationNumber);
@@ -625,6 +642,11 @@ public class MembersApiResponse extends RepresentationModel<MembersApiResponse> 
 
         public Builder id(Integer id) {
             this.instance.id(id);
+            return this;
+        }
+
+        public Builder member(Member member) {
+            this.instance.member(member);
             return this;
         }
 

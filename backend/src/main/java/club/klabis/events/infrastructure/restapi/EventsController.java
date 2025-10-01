@@ -8,34 +8,25 @@ package club.klabis.events.infrastructure.restapi;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
-import club.klabis.events.infrastructure.restapi.dto.EventResponseModel;
+import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.members.infrastructure.restapi.ResponseViews;
+import club.klabis.shared.config.restapi.ApiController;
 import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-@Validated
-@Tag(name = "Events")
-@SecurityRequirement(name = "klabis", scopes = {"openapi"})
-@RestController
-@RequestMapping(value = "/events", produces = {"application/json", "application/klabis+json", "application/hal+json"})
+@ApiController(openApiTagName = "Events", securityScopes = {"events"}, path = "/events")
 public class EventsController {
     private final EventsRepository eventsRepository;
     private final EventModelMapper eventModelMapper;
@@ -60,12 +51,10 @@ public class EventsController {
     @GetMapping
     @PageableAsQueryParam
     @JsonView(ResponseViews.Summary.class)
-    ResponseEntity<CollectionModel<EventResponseModel>> getEvents(@ParameterObject EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
+    PagedModel<EntityModel<EventResponse>> getEvents(@ParameterObject EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
         Page<Event> data = eventsRepository.findEvents(filter, pageable);
 
-        PagedModel<EventResponseModel> responseModel = eventModelMapper.toPagedModel(data);
-
-        return ResponseEntity.ok(responseModel);
+        return eventModelMapper.toPagedResponse(data);
     }
 
     @Operation(
@@ -82,12 +71,10 @@ public class EventsController {
             value = "/{eventId}"
     )
     @JsonView(ResponseViews.Detailed.class)
-    ResponseEntity<EventResponseModel> getEventById(@PathVariable("eventId") int eventId) {
-        EventResponseModel response = eventsRepository.findById(new Event.Id(eventId))
-                .map(eventModelMapper::toModel)
+    EntityModel<EventResponse> getEventById(@PathVariable("eventId") int eventId) {
+        return eventsRepository.findById(new Event.Id(eventId))
+                .map(eventModelMapper::toResponseModel)
                 .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
-
-        return ResponseEntity.ok(response);
     }
 
 }

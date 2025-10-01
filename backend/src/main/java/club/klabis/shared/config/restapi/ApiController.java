@@ -16,9 +16,9 @@ import java.lang.annotation.Target;
 
 @Validated
 @Tag(name = "Klabis")
-@SecurityRequirement(name = "klabis", scopes = {"klabis"})
+@SecurityRequirement(name = "klabis")
 @RestController
-@RequestMapping(value = "/members", produces = {MediaType.APPLICATION_JSON_VALUE, "application/klabis+json", MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+@RequestMapping(produces = {MediaType.APPLICATION_JSON_VALUE, "application/klabis+json", MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ApiController {
