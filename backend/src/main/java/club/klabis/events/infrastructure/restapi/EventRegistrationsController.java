@@ -4,24 +4,20 @@ import club.klabis.events.application.EventRegistrationUseCase;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
+import club.klabis.shared.config.restapi.ApiController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
-import org.springframework.http.HttpStatus;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.RepresentationModel;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-@Validated
-@Tag(name = "Event registrations")
-@SecurityRequirement(name = "klabis", scopes = {"openapi"})
-@RestController
-@RequestMapping(produces = "application/json")
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+
+@ApiController(path = "/events/{eventId}/registrationForms/{memberId}", openApiTagName = "Event registrations", securityScopes = "klabis")
 public class EventRegistrationsController {
     private final EventRegistrationUseCase useCase;
 
@@ -44,10 +40,20 @@ public class EventRegistrationsController {
                     @ApiResponse(responseCode = "404", description = "Event with given doesn't exist")
             }
     )
-    @GetMapping("/events/{eventId}/registrationForms/{memberId}")
-    @ResponseStatus(HttpStatus.OK)
-    ResponseEntity<EventRegistrationForm> getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
-        return ResponseEntity.ok(useCase.createEventRegistrationForm(new Event.Id(event), new MemberId(memberId)));
+    @GetMapping
+    ResponseEntity<RepresentationModel<EntityModel<EventRegistrationForm>>> getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
+
+        EventRegistrationForm form = useCase.createEventRegistrationForm(
+                new Event.Id(event),
+                new MemberId(memberId));
+
+        return ResponseEntity.ok(EntityModel.of(form,
+                linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(event, memberId)).withRel(
+                                "example")
+                        .andAffordance(afford(methodOn(EventRegistrationsController.class).submitRegistrationForm(event,
+                                memberId,
+                                null)))
+                        .withSelfRel()));
     }
 
     @Operation(
@@ -65,16 +71,14 @@ public class EventRegistrationsController {
                     @ApiResponse(responseCode = "404", description = "Event with given doesn't exist")
             }
     )
-    @PutMapping("/events/{eventId}/registrationForms/{memberId}")
-    @ResponseStatus(HttpStatus.CREATED)
+    @PutMapping
     ResponseEntity<Void> submitRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId, @RequestBody EventRegistrationForm form) {
         useCase.registerForEvent(new Event.Id(event), new MemberId(memberId), form);
-        return ResponseEntity.created(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(this.getClass())
+        return ResponseEntity.created(linkTo(methodOn(this.getClass())
                 .getEventRegistrationForm(event, memberId)).toUri()).build();
     }
 
-    @DeleteMapping("/events/{eventId}/registrationForms/{memberId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @DeleteMapping
     ResponseEntity<Void> cancelEventRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
         useCase.cancelMemberRegistration(new Event.Id(eventId), new MemberId(memberId));
         return ResponseEntity.noContent().build();
