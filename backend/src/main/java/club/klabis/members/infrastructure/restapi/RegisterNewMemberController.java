@@ -8,31 +8,30 @@ package club.klabis.members.infrastructure.restapi;
 import club.klabis.members.application.MemberRegistrationUseCase;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.forms.RegistrationForm;
+import club.klabis.members.infrastructure.restapi.dto.MemberRegistrationFormApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
+import club.klabis.shared.config.restapi.ApiController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 
-@Validated
-@Tag(name = "Register members")
-@SecurityRequirement(name = "klabis", scopes = {"openapi"})
-@RestController
-@RequestMapping(value = "/memberRegistrations")
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
+@ApiController(path = "/memberRegistrations", securityScopes = "members", openApiTagName = "Register members")
 public class RegisterNewMemberController {
     private final MemberRegistrationUseCase service;
     private final ConversionService conversionService;
@@ -75,10 +74,7 @@ public class RegisterNewMemberController {
                     })
             }
     )
-    @PostMapping(
-            produces = {"application/problem+json"},
-            consumes = {"application/json"}
-    )
+    @PostMapping
     ResponseEntity<Void> memberRegistrationsPost(
             @Parameter(name = "MemberRegistrationFormApiDto", description = "", required = true) @Valid @RequestBody club.klabis.members.infrastructure.restapi.dto.MemberRegistrationFormApiDto memberRegistrationFormApiDto
     ) {
@@ -87,6 +83,16 @@ public class RegisterNewMemberController {
         return ResponseEntity.created(URI.create("/members/%s".formatted(createdMember.getId().value())))
                 .header("MemberId", "%d".formatted(createdMember.getId().value()))
                 .build();
+    }
+
+    @GetMapping
+    EntityModel<MemberRegistrationFormApiDto> getRegistrationForm() {
+        MemberRegistrationFormApiDto form = new MemberRegistrationFormApiDto();
+
+        return EntityModel.of(form,
+                WebMvcLinkBuilder.linkTo(this.getClass())
+                        .withSelfRel()
+                        .andAffordance(afford(methodOn(getClass()).memberRegistrationsPost(null))));
     }
 
 }

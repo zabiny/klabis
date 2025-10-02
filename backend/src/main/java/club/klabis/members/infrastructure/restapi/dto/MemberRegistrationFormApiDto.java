@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.hateoas.RepresentationModel;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -22,7 +21,7 @@ import java.util.Objects;
 @Schema(name = "MemberRegistrationForm", description = "Data required to register new member.    #### Required authorization - requires `members:register` grant  Additional validations:  - either contact or guardian needs to be set - when nationality is different than `CZ`, `birthCertificateNumber` value will be ignored")
 @JsonTypeName("MemberRegistrationForm")
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
-public class MemberRegistrationFormApiDto extends RepresentationModel<MemberRegistrationFormApiDto> {
+public class MemberRegistrationFormApiDto {
 
     private String firstName;
 
