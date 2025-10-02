@@ -18,7 +18,6 @@ import {
 } from '@mui/material';
 import {
     Event as EventIcon,
-    Group as GroupIcon,
     Home as HomeIcon,
     Logout as LogoutIcon,
     Menu as MenuIcon,
@@ -91,7 +90,7 @@ const Layout = () => {
         {text: 'Domů', icon: <HomeIcon/>, path: '/'},
         {text: 'Členové', icon: <PeopleIcon/>, path: '/members'},
         {text: 'Akce', icon: <EventIcon/>, path: '/events'},
-        {text: 'Skupiny', icon: <GroupIcon/>, path: '/groups'},
+        //{text: 'Skupiny', icon: <GroupIcon/>, path: '/groups'},
         {text: 'Hal Navigator', icon: <Settings/>, path: '/sandplace'},
     ];
 

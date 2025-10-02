@@ -1,15 +1,12 @@
-import React, {ReactElement, ReactNode, useEffect, useState} from "react";
+import React, {ReactElement, ReactNode, useCallback, useEffect, useState} from "react";
 import {UserManager} from "oidc-client-ts";
 import {HalFormsForm} from "../components/HalFormsForm";
-import {type HalFormsResponse, type HalFormsTemplate} from "../api";
-import {Alert, Box, Button, Grid, Tab, Tabs} from "@mui/material";
+import {type HalFormsTemplate, HalResponse} from "../api";
+import {Alert, Box, Button, Grid, Stack, Tab, Tabs} from "@mui/material";
 import {ErrorBoundary} from 'react-error-boundary';
 import {HalFormsFormController} from "../components/HalFormsForm/HalFormsForm";
 import {klabisAuthUserManager} from "../api/klabisUserManager";
-
-const isHalFormsData = (item: any): item is HalFormsResponse => {
-    return item._templates !== undefined && item._links !== undefined;
-}
+import {isKlabisFormResponse} from "../components/HalFormsForm/utils";
 
 const userManager: UserManager = klabisAuthUserManager;
 
@@ -26,48 +23,111 @@ async function fetchResource(url) {
     return res.json();
 }
 
+const useNavigation = <T, >(): {
+    current: T | null;
+    navigate: (resource: T) => void;
+    back: () => void;
+    isFirst: boolean,
+    isLast: boolean,
+    reset: () => void;
+} => {
+    const [navigation, setNavigation] = useState<Array<T>>([]);
+
+    const navigate = useCallback((resource: T): void => {
+        console.error('navigate')
+        setNavigation(prev => [...prev, resource]);
+    }, []);
+
+    const back = useCallback((): void => {
+        console.error('back')
+        setNavigation(prev => {
+            if (prev.length === 1) return prev;
+            // remove the last item from the navigation stack
+            return prev.slice(0, -1);
+        });
+    }, []);
+
+    const reset = useCallback(() => {
+        console.error('reset')
+        setNavigation(prev => [prev[0]]);
+    }, [])
+
+    const current = navigation && navigation[navigation.length - 1] || null;
+
+    const isFirst = navigation.length == 1;
+    const isLast = true;    // doesn't keep forward (yet)
+
+    console.log(navigation);
+
+    return {current, navigate, back, isFirst, isLast, reset};
+};
+
 function HalNavigatorPage({startUrl}) {
-    const [resource, setResource] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const load = async (url) => {
+    const {current, navigate, back, isFirst, reset} = useNavigation<HalResponse>();
+
+    const load = useCallback(async (url) => {
         setLoading(true);
         setError(null);
         try {
             const data = await fetchResource(url);
-            setResource(data);
+            navigate(data);
         } catch (e) {
             setError(e.message);
         } finally {
             setLoading(false);
         }
-    };
-
-    const restart = (): void => {
-        load(startUrl);
-    }
+    }, [navigate]);
 
     useEffect(() => {
-        restart();
-    }, [startUrl]);
+        load(startUrl)
+    }, [startUrl, load]);
+
+    const resource = current;
+
+    const renderNavigation = (): ReactElement => {
+        return (<Stack direction={"row"}>
+            <Button disabled={isFirst} onClick={e => reset()}>Restart</Button>
+            <Button disabled={isFirst} onClick={e => back()}>Zpět</Button>
+        </Stack>);
+    }
 
     if (loading) return <p>Loading…</p>;
-    if (error) return <p style={{color: "red"}}>Error: {error}<br/>
-        <Button onClick={e => restart()}>Restart</Button>
+    if (error) return <p>
+        {renderNavigation()}
+        <Alert severity={"error"}>Error: {error}</Alert>
     </p>;
     if (!resource) return null;
 
     const links = resource._links || {};
     const embedded = resource._embedded || {};
 
+    const renderFallback = (): ReactNode => {
+        return <Grid>
+            <div>Nejde vyrenderovat HAL FORMS form:</div>
+            <pre>{JSON.stringify(resource, null, 2)}</pre>
+        </Grid>;
+    }
+
+    const renderContent = (): ReactElement => {
+        if (isKlabisFormResponse(current)) {
+            return <ErrorBoundary fallback={renderFallback()} resetKeys={[current]}>
+                <HalFormsForm data={resource} template={resource._templates.default} onSubmit={console.log}/>
+            </ErrorBoundary>;
+        } else {
+            return (
+                <div className="p-3 border rounded bg-gray-50">
+                    <pre className="text-sm">{JSON.stringify(resource, null, 2)}</pre>
+                </div>
+            );
+        }
+    }
+
     return (
         <div className="p-4 space-y-4">
-            <Button onClick={e => restart()}>Restart</Button>
-            {/* Display resource properties */}
-            <div className="p-3 border rounded bg-gray-50">
-                <pre className="text-sm">{JSON.stringify(resource, null, 2)}</pre>
-            </div>
+            {renderNavigation()}
 
             {/* Render actions based on links */}
             <div className="flex flex-wrap gap-2">
@@ -107,6 +167,11 @@ function HalNavigatorPage({startUrl}) {
                     </ul>
                 </div>
             ))}
+
+            {/* Display resource properties */}
+            {renderContent()}
+
+
         </div>
     );
 }
@@ -168,78 +233,20 @@ const demoData = {
 
 function ExampleHalForm(): ReactElement {
 
-    const [resource, setResource] = useState<HalFormsResponse>();
-    const [isLoading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null)
-    const [showExample, setShowExample] = useState(false);
-    const URL = 'http://localhost:3000/api/events/1/registrationForms/1';
+    const resource = {_templates: {default: demoTemplate}, ...demoData};
 
-    const load = async (url: string) => {
-        try {
-            const data = await fetchResource(url);
-            setResource(data);
-            if (!isHalFormsData(data)) {
-                setError(`Returned data are not HAL+FORMS`)
-            }
-        } catch (e) {
-            setError(JSON.stringify(e, null, 2));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const reload = async () => {
-        setLoading(true);
-        setResource({} as HalFormsResponse)
-        return load(URL);
-    };
-
-    useEffect(() => {
-        reload()
-    }, []);
-
-    function showExampleData() {
-        setShowExample(prev => {
-            if (!prev) {
-                setResource({_templates: {default: demoTemplate}, ...demoData});
-            } else {
-                reload();
-            }
-            return !prev;
-        });
-    }
-
-    function renderStatus(): ReactNode {
-        return (<>
-            <Button
-                onClick={e => showExampleData()}>{showExample ? "Prepni na Klabis data" : "Prepni na statickou ukazku"}</Button>
-            {!showExample &&
-                <Button onClick={e => reload()}>Reload</Button>}
-            <div>
+    return (
+        <Grid direction={"column"} spacing={2}>
+            <Grid>
+                <HalFormsForm
+                    key={`exampleForm`} data={resource} template={resource?._templates.default}
+                    onSubmit={data => console.log(JSON.stringify(data, null, 2))}/>
+            </Grid>
+            <Grid>
                 <pre>{JSON.stringify(resource, null, 2)}</pre>
-            </div>
-        </>);
-    }
-
-    function renderForm() {
-        if (isLoading) {
-            return <Alert severity={"info"}>Loading form data</Alert>;
-        }
-        if (!error) {
-            return <ErrorBoundary fallback={<span>Chyba pri renderovani formulare</span>}
-                                  resetKeys={[showExampleData, resource]} onError={console.error}><HalFormsForm
-                key={`showExample${showExample}`} data={resource} template={resource?._templates.default}
-                onSubmit={data => console.log(JSON.stringify(data, null, 2))}/></ErrorBoundary>;
-        } else {
-            return <Alert severity={"error"}>{error}</Alert>;
-        }
-    }
-
-    return (<Grid container spacing={2}>
-        <Grid item xs={12}>{URL}</Grid>
-        <Grid item xs={5}>{renderStatus()}</Grid>
-        <Grid item xs={6}>{renderForm()}</Grid>
-    </Grid>);
+            </Grid>
+        </Grid>
+    );
 }
 
 interface TabPanelProps {
@@ -284,19 +291,21 @@ function SandplacePage(): ReactElement {
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
                 <Tabs value={tabValue} onChange={handleChange} aria-label="basic tabs example">
                     <Tab label="HAL Explorer" {...a11yProps(0)} />
-                    <Tab label="HAL Form" {...a11yProps(1)} />
+                    <Tab label="HAL Form z Klabis API" {...a11yProps(1)} />
                     <Tab label="Example HAL Form" {...a11yProps(1)} />
                 </Tabs>
             </Box>
-            <CustomTabPanel value={tabValue} index={0}>
-                <HalNavigatorPage startUrl={"/api"}/>
-            </CustomTabPanel>
-            <CustomTabPanel value={tabValue} index={1}>
-                <HalFormsFormController api={formsApi}/>
-            </CustomTabPanel>
-            <CustomTabPanel index={2} value={tabValue}>
-                <ExampleHalForm/>
-            </CustomTabPanel>
+            <ErrorBoundary fallback={"Neco se pokazilo"} resetKeys={[tabValue]} onError={console.error}>
+                <CustomTabPanel value={tabValue} index={0}>
+                    <HalNavigatorPage startUrl={"/api"}/>
+                </CustomTabPanel>
+                <CustomTabPanel value={tabValue} index={1}>
+                    <HalFormsFormController api={formsApi}/>
+                </CustomTabPanel>
+                <CustomTabPanel index={2} value={tabValue}>
+                    <ExampleHalForm/>
+                </CustomTabPanel>
+            </ErrorBoundary>
         </Box>
     )
 }

@@ -19,6 +19,7 @@ import React, {ReactElement, type ReactNode, useCallback, useEffect, useState} f
 import {type HalFormsFormProps} from "./index";
 import {type HalFormsProperty, HalFormsResponse, type HalFormsTemplate, Link} from "../../api";
 import {fetchHalFormsData, submitHalFormsData} from "../../api/hateoas";
+import {isHalFormsResponse} from "./utils";
 
 type FormData = Record<string, any>;
 
@@ -31,13 +32,10 @@ function getInitialValues(
     const initialValues: Record<string, any> = {};
     template.properties.forEach((prop) => {
         if (prop.multiple) {
-            initialValues[prop.name] = Array.isArray(data[prop.name])
-                ? data[prop.name]
-                : [];
+            initialValues[prop.name] = Array.isArray(data[prop.name]) ? data[prop.name] : [];
             data[prop.name] = data[prop.name] === null ? [] : data[prop.name];
         } else {
-            initialValues[prop.name] =
-                data[prop.name] !== undefined ? data[prop.name] : prop.value || "";
+            initialValues[prop.name] = data[prop.name] !== undefined ? data[prop.name] : prop.value || "";
             data[prop.name] = data[prop.name] === null ? "" : data[prop.name];
         }
 
@@ -235,14 +233,6 @@ const useHalFormsController = (
 
         fetchData();
     }, [api]);
-
-    const isHalFormsTemplate = (item: any): item is HalFormsTemplate => {
-        return item !== undefined && item !== null && item.properties !== undefined && item.method !== undefined;
-    }
-
-    const isHalFormsResponse = (item: any): item is HalFormsResponse => {
-        return item !== undefined && item !== null && item._templates !== undefined && item._links !== undefined && isHalFormsTemplate(item._templates?.default);
-    }
 
     const submit = useCallback(
         async (data: Record<string, any>) => {
