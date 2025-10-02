@@ -118,7 +118,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         return this;
     }
 
-    private Optional<Registration> getRegistrationForMember(MemberId memberId) {
+    public Optional<Registration> getRegistrationForMember(MemberId memberId) {
         return registrations.stream().filter(it -> Objects.equals(it.getMemberId(), memberId)).findFirst();
     }
 
@@ -139,6 +139,20 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
 
         if (this.getRegistrationForMember(memberId).isPresent()) {
             throw EventException.createAlreadySignedUpException(this.id, memberId);
+        }
+
+        this.registrations.add(new Registration(memberId, form.siNumber(), form.category()));
+    }
+
+    public void changeRegistration(MemberId memberId, EventRegistrationForm form) {
+        if (!this.areRegistrationsOpen()) {
+            throw new EventException(this.id,
+                    "Cannot change registration for event, registrations are already closed",
+                    EventException.Type.REGISTRATION_DEADLINE_PASSED);
+        }
+
+        if (this.getRegistrationForMember(memberId).isEmpty()) {
+            throw EventException.createMemberNotRegisteredForEventException(this.id, memberId);
         }
 
         this.registrations.add(new Registration(memberId, form.siNumber(), form.category()));

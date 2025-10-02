@@ -43,7 +43,7 @@ public class EventRegistrationsController {
     @GetMapping
     ResponseEntity<RepresentationModel<EntityModel<EventRegistrationForm>>> getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
 
-        EventRegistrationForm form = useCase.createEventRegistrationForm(
+        EventRegistrationForm form = useCase.getEventRegistrationForm(
                 new Event.Id(event),
                 new MemberId(memberId));
 
