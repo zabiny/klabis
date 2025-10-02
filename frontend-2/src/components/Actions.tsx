@@ -1,24 +1,42 @@
-import {type ReactNode} from "react";
-import {Newspaper, SyncSharp} from "@mui/icons-material";
-import {Tooltip} from "@mui/material";
+import {type ReactNode, useCallback} from "react";
+import {Delete, Edit, Newspaper, SyncSharp} from "@mui/icons-material";
+import {Link, Stack, Tooltip} from "@mui/material";
 
-const addTooltip = (text: string, node: ReactNode): ReactNode => {
-    return <Tooltip title={text}><span>{node}</span></Tooltip>;
-}
-
-const createIcon = (actionName: string): ReactNode => {
+const createIcon = (actionName: string): ReactNode | undefined => {
     switch (actionName) {
         case 'synchronize':
-            return addTooltip(actionName, <SyncSharp/>);
+            return <SyncSharp/>;
         case 'createRegistration':
-            return addTooltip(actionName, <Newspaper/>);
+            return <Newspaper/>;
+        case 'updateRegistration':
+            return <Edit/>;
+        case 'cancelRegistration':
+            return <Delete/>;
         default:
-            return <>{actionName}</>;
+            return undefined;
     }
 }
 
-export const Actions = ({value}: { value: string[] }): React.ReactNode => {
+type OnClickHandler = (s: string) => void;
+
+export const Actions = ({
+                            value, onClick
+                        }: { value: string[], onClick?: OnClickHandler }): React.ReactNode => {
     return (
-        <span>{value.map(s => <div key={s}><Tooltip title={s}><span>{createIcon(s)}</span></Tooltip></div>)}</span>
+        <Stack direction={"row"} spacing={1}>{value.map(s => <Action actionName={s} onClick={onClick}/>)}</Stack>
     );
+}
+
+const Action = ({actionName, onClick}: { actionName: string, onClick?: OnClickHandler }): ReactNode => {
+    const icon = createIcon(actionName);
+
+    const event = useCallback((e) => {
+        if (onClick) onClick(actionName);
+    }, [actionName, onClick]);
+
+    if (icon) {
+        return <Tooltip key={actionName} title={actionName}><Link onClick={event}>{icon}</Link></Tooltip>
+    } else {
+        return <span onClick={event}>{actionName}</span>
+    }
 }
