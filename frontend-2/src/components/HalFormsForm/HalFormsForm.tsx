@@ -14,8 +14,9 @@ import {
     TextField
 } from "@mui/material";
 import {Field, Form, Formik} from "formik";
-import React, {type ReactNode} from "react";
-import {type HalFormsFormProps, type HalFormsProperty, type HalFormsTemplate} from "./index";
+import React, {ReactElement, type ReactNode} from "react";
+import {type HalFormsFormProps} from "./index";
+import {type HalFormsProperty, type HalFormsTemplate} from "../../api";
 
 type FormData = Record<string, any>;
 
@@ -31,10 +32,13 @@ function getInitialValues(
             initialValues[prop.name] = Array.isArray(data[prop.name])
                 ? data[prop.name]
                 : [];
+            data[prop.name] = data[prop.name] === null ? [] : data[prop.name];
         } else {
             initialValues[prop.name] =
                 data[prop.name] !== undefined ? data[prop.name] : prop.value || "";
+            data[prop.name] = data[prop.name] === null ? "" : data[prop.name];
         }
+
     });
     return initialValues;
 }

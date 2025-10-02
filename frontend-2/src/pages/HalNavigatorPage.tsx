@@ -1,9 +1,10 @@
 import React, {ReactElement, ReactNode, useEffect, useState} from "react";
 import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../api/setup";
-import {HalFormsForm, type HalFormsResponse, HalFormsTemplate} from "../components/HalFormsForm";
+import {HalFormsForm} from "../components/HalFormsForm";
+import {type HalFormsResponse, type HalFormsTemplate} from "../api";
 import {Alert, Button, Grid} from "@mui/material";
-
+import {ErrorBoundary} from 'react-error-boundary';
 
 const isHalFormsData = (item: any): item is HalFormsResponse => {
     return item._templates !== undefined && item._links !== undefined;
@@ -187,6 +188,8 @@ function ExampleHalForm(): ReactElement {
     };
 
     const reload = async () => {
+        setLoading(true);
+        setResource({} as HalFormsResponse)
         return load(URL);
     };
 
@@ -197,7 +200,7 @@ function ExampleHalForm(): ReactElement {
     function showExampleData() {
         setShowExample(prev => {
             if (!prev) {
-                setResource({_templates: {default: demoTemplate}, content: demoData});
+                setResource({_templates: {default: demoTemplate}, ...demoData});
             } else {
                 reload();
             }
@@ -218,14 +221,14 @@ function ExampleHalForm(): ReactElement {
     }
 
     function renderForm() {
-        if (showExample) {
-            return <HalFormsForm data={demoData} template={demoTemplate} onSubmit={data => console.table(data)}/>;
-        }
         if (isLoading) {
             return <Alert severity={"info"}>Loading form data</Alert>;
         }
         if (!error) {
-            return <HalFormsForm data={resource?.content} template={resource?._templates.default}/>;
+            return <ErrorBoundary fallback={<span>Chyba pri renderovani formulare</span>}
+                                  resetKeys={[showExampleData, resource]} onError={console.error}><HalFormsForm
+                key={`showExample${showExample}`} data={resource} template={resource?._templates.default}
+                onSubmit={data => console.log(JSON.stringify(data, null, 2))}/></ErrorBoundary>;
         } else {
             return <Alert severity={"error"}>{error}</Alert>;
         }

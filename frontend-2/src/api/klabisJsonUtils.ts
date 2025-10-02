@@ -1,5 +1,5 @@
 import {
-    type HalModel,
+    type HalResponse,
     type KlabisAction,
     type KlabisActionName,
     type KlabisHateoasObject,
@@ -11,8 +11,8 @@ function isKlabisHateoasObject(item: KlabisHateoasObject | string[]) {
     return (item as KlabisHateoasObject)._actions !== undefined;
 }
 
-function isHalModel(item: any): item is HalModel {
-    return (item as HalModel)._links !== undefined;
+function isHalModel(item: any): item is HalResponse {
+    return (item as HalResponse)._links !== undefined;
 }
 
 export const findAction = (rel: string, actions: KlabisAction[]): KlabisAction | undefined => {

@@ -1,18 +1,8 @@
-import {type AuthConfig, createUserManager} from "../contexts/auth";
 import createFetchClient, {type Middleware} from "openapi-fetch";
 import type {paths} from "./klabisApi";
-import {UserManager} from "oidc-client-ts";
+import {klabisAuthUserManager} from "./klabisUserManager";
 import createClient from "openapi-react-query";
 
-const authConfig: AuthConfig = {
-    authority: 'http://localhost:3000/api',
-    client_id: 'frontend',
-    client_secret: 'fesecret',
-    redirect_uri: 'http://localhost:3000/auth/callback', // must match OIDC config
-    post_logout_redirect_uri: 'http://localhost:8080/oauth/logout',
-    response_type: 'code',
-    scope: 'openid profile email'
-};
 
 // https://openapi-ts.dev
 
@@ -22,8 +12,6 @@ const fetchClient = createFetchClient<paths>({
         "Accept": "application/klabis+json,application/json,application/problem+json"
     }
 });
-
-export const klabisAuthUserManager: UserManager = createUserManager(authConfig);
 
 const promiseAccessToken = async (): Promise<string | null> => {
     const authUser = await klabisAuthUserManager.getUser();

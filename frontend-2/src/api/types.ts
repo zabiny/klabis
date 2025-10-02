@@ -1,4 +1,6 @@
-import {Link} from "./index";
+import type {components} from "./klabisApi";
+
+export type Link = components["schemas"]["Link"];
 
 export interface PaginatedResponse<T> {
     content: T[];
@@ -29,6 +31,39 @@ export interface KlabisHateoasObject {
     _actions?: KlabisActions
 }
 
-export interface HalModel {
-    _links?: Link[]
+export interface HalResponse {
+    _links?: {
+        [rel: string]: Link | Array<Link>;
+    }
+}
+
+export interface HalFormsResponse extends HalResponse {
+    _templates?: {
+        [name: string]: HalFormsTemplate;
+    };
+
+    // allow arbitrary additional properties
+    [key: string]: any;
+}
+
+// --- Typy ---
+export interface HalFormsOption {
+    value?: string | number;
+    prompt?: string;
+}
+
+export interface HalFormsProperty {
+    name: string;
+    prompt?: string;
+    type?: string; // "text" | "number" | "email" | "textarea" | "radio"
+    value?: string | number;
+    required?: boolean;
+    options?: (HalFormsOption | string | number)[];
+    multiple?: boolean;
+}
+
+export interface HalFormsTemplate {
+    method?: string;
+    contentType?: string;
+    properties: Array<HalFormsProperty>
 }
