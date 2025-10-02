@@ -52,7 +52,7 @@ function HalNavigatorPage({startUrl}) {
 
     if (loading) return <p>Loading…</p>;
     if (error) return <p style={{color: "red"}}>Error: {error}<br/>
-        <button onClick={e => restart()}>Restart</button>
+        <Button onClick={e => restart()}>Restart</Button>
     </p>;
     if (!resource) return null;
 
@@ -61,7 +61,7 @@ function HalNavigatorPage({startUrl}) {
 
     return (
         <div className="p-4 space-y-4">
-            <button onClick={e => restart()}>Restart</button>
+            <Button onClick={e => restart()}>Restart</Button>
             {/* Display resource properties */}
             <div className="p-3 border rounded bg-gray-50">
                 <pre className="text-sm">{JSON.stringify(resource, null, 2)}</pre>
@@ -73,13 +73,13 @@ function HalNavigatorPage({startUrl}) {
                     if (rel === "self") return null;
                     const href = Array.isArray(link) ? link[0].href : link.href;
                     return (
-                        <button
+                        <Button
                             key={rel}
                             className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
                             onClick={() => load(href)}
                         >
                             {rel}
-                        </button>
+                        </Button>
                     );
                 })}
             </div>
@@ -93,12 +93,12 @@ function HalNavigatorPage({startUrl}) {
                             <li key={idx}>
                                 {item.name || item.title || JSON.stringify(item)}
                                 {item._links?.self && (
-                                    <button
+                                    <Button
                                         className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
                                         onClick={() => load(item._links.self.href)}
                                     >
                                         Open
-                                    </button>
+                                    </Button>
                                 )}
                             </li>
                         ))}
@@ -208,7 +208,7 @@ function ExampleHalForm(): ReactElement {
     function renderStatus(): ReactNode {
         return (<>
             <Button
-                onClick={e => showExampleData()}>{showExample ? "Ukaz Klabis data" : "Ukaz statickou ukazku"}</Button>
+                onClick={e => showExampleData()}>{showExample ? "Prepni na Klabis data" : "Prepni na statickou ukazku"}</Button>
             {!showExample &&
                 <Button onClick={e => reload()}>Reload</Button>}
             <div>
