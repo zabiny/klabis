@@ -62,8 +62,11 @@ export interface HalFormsProperty {
     multiple?: boolean;
 }
 
+// only update methods as template represents "request body"
+export type HalFormsTemplateMethod = "POST" | "PUT" | "DELETE";
+
 export interface HalFormsTemplate {
-    method?: string;
+    method?: HalFormsTemplateMethod;
     contentType?: string;
     properties: Array<HalFormsProperty>
 }

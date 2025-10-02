@@ -1,10 +1,11 @@
 import React, {ReactElement, ReactNode, useEffect, useState} from "react";
 import {UserManager} from "oidc-client-ts";
-import {klabisAuthUserManager} from "../api/setup";
 import {HalFormsForm} from "../components/HalFormsForm";
 import {type HalFormsResponse, type HalFormsTemplate} from "../api";
-import {Alert, Button, Grid} from "@mui/material";
+import {Alert, Box, Button, Grid, Tab, Tabs} from "@mui/material";
 import {ErrorBoundary} from 'react-error-boundary';
+import {HalFormsFormController} from "../components/HalFormsForm/HalFormsForm";
+import {klabisAuthUserManager} from "../api/klabisUserManager";
 
 const isHalFormsData = (item: any): item is HalFormsResponse => {
     return item._templates !== undefined && item._links !== undefined;
@@ -241,14 +242,66 @@ function ExampleHalForm(): ReactElement {
     </Grid>);
 }
 
-function SandplacePage(): ReactElement {
-    return (<><h1 className="text-xl font-bold">HAL Form</h1>
-            <ExampleHalForm/>
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
 
-            <h1 className="text-xl font-bold">HAL Navigator</h1>
-            <HalNavigatorPage startUrl={"/api"}/></>
+function CustomTabPanel(props: TabPanelProps) {
+    const {children, value, index, ...other} = props;
+
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`simple-tabpanel-${index}`}
+            aria-labelledby={`simple-tab-${index}`}
+            {...other}
+        >
+            {value === index && <Box sx={{p: 3}}>{children}</Box>}
+        </div>
+    );
+}
+
+function a11yProps(index: number) {
+    return {
+        id: `simple-tab-${index}`,
+        'aria-controls': `simple-tabpanel-${index}`,
+    };
+}
+
+function SandplacePage(): ReactElement {
+    const formsApi = {href: 'http://localhost:3000/api/events/1/registrationForms/1'};
+    const [tabValue, setTabValue] = useState(1);
+
+    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
+    };
+
+    return (
+        <Box sx={{width: '100%'}}>
+            <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+                <Tabs value={tabValue} onChange={handleChange} aria-label="basic tabs example">
+                    <Tab label="HAL Explorer" {...a11yProps(0)} />
+                    <Tab label="HAL Form" {...a11yProps(1)} />
+                    <Tab label="Example HAL Form" {...a11yProps(1)} />
+                </Tabs>
+            </Box>
+            <CustomTabPanel value={tabValue} index={0}>
+                <HalNavigatorPage startUrl={"/api"}/>
+            </CustomTabPanel>
+            <CustomTabPanel value={tabValue} index={1}>
+                <HalFormsFormController api={formsApi}/>
+            </CustomTabPanel>
+            <CustomTabPanel index={2} value={tabValue}>
+                <ExampleHalForm/>
+            </CustomTabPanel>
+        </Box>
     )
 }
 
 
-export {SandplacePage};
+export {
+    SandplacePage
+};

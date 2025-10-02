@@ -101,11 +101,10 @@ public class ApisConfiguration {
             }
         };
         filter.setIncludeQueryString(true);
+        filter.setIncludeHeaders(false);
         filter.setIncludePayload(true);
         filter.setMaxPayloadLength(10000);
-        filter.setIncludeHeaders(false);
-        filter.setAfterMessagePrefix("REQUEST DATA: ");
-        filter.setIncludeClientInfo(true);
+        //filter.setIncludeClientInfo(true);
         return filter;
     }
 

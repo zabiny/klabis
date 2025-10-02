@@ -1,5 +1,6 @@
 import * as Yup from "yup";
 import {
+    Alert,
     Button,
     Checkbox,
     FormControl,
@@ -14,9 +15,10 @@ import {
     TextField
 } from "@mui/material";
 import {Field, Form, Formik} from "formik";
-import React, {ReactElement, type ReactNode} from "react";
+import React, {ReactElement, type ReactNode, useCallback, useEffect, useState} from "react";
 import {type HalFormsFormProps} from "./index";
-import {type HalFormsProperty, type HalFormsTemplate} from "../../api";
+import {type HalFormsProperty, HalFormsResponse, type HalFormsTemplate, Link} from "../../api";
+import {fetchHalFormsData, submitHalFormsData} from "../../api/hateoas";
 
 type FormData = Record<string, any>;
 
@@ -194,8 +196,98 @@ function renderField(
     );
 }
 
+const useHalFormsController = (
+    api: Link
+): {
+    isLoading: boolean,
+    submit: (formData: Record<string, any>) => Promise<void>,
+    error?: string,
+    submitError?: string,
+    formData?: HalFormsResponse,
+} => {
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string>();
+    const [formData, setFormData] = useState<HalFormsResponse>();
+    const [submitError, setSubmitError] = useState<string>();
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            setError(undefined);
+
+            try {
+                const data = await fetchHalFormsData(api);
+                if (isHalFormsResponse(data)) {
+                    setFormData(data);
+                } else {
+                    setError("Returned data doesn't have HAL FORMS format");
+                    console.warn("Returned data doesn't have HAL FORMS format");
+                    console.warn(JSON.stringify(data, null, 2));
+                }
+            } catch (fetchError) {
+                setError(
+                    fetchError instanceof Error ? fetchError.message : "Error fetching form data"
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [api]);
+
+    const isHalFormsTemplate = (item: any): item is HalFormsTemplate => {
+        return item !== undefined && item !== null && item.properties !== undefined && item.method !== undefined;
+    }
+
+    const isHalFormsResponse = (item: any): item is HalFormsResponse => {
+        return item !== undefined && item !== null && item._templates !== undefined && item._links !== undefined && isHalFormsTemplate(item._templates?.default);
+    }
+
+    const submit = useCallback(
+        async (data: Record<string, any>) => {
+            const defaultTemplate = formData?._templates?.default;
+            const method = defaultTemplate?.method || "POST";
+
+            try {
+                await submitHalFormsData(method, api, data);
+            } catch (submitError) {
+                setSubmitError(
+                    submitError instanceof Error ? submitError.message : "Error submitting form data"
+                );
+                throw submitError; // Re-throw error in case caller needs to handle it
+            }
+        },
+        [formData, api] // No dependencies as `formData` and methods come from the function context
+    );
+
+    return {isLoading, submit, error, formData, submitError};
+};
+
+const HalFormsFormController = ({api}: { api: Link }): ReactElement => {
+    const {isLoading, submit, error, formData, submitError} = useHalFormsController(api);
+
+    //console.log(`Loading=${isLoading}, error=${error}, formData=${JSON.stringify(formData)}`);
+
+    if (isLoading) {
+        return <span>Loading form data (${api.href})</span>;
+    }
+
+    if (error) {
+        return <Alert severity={"error"}>{error}</Alert>;
+    } else if (!formData?._templates?.default) {
+        return <Alert severity={"error"}>Response doesn't contain form template 'default', can't render HalForms
+            form</Alert>
+    }
+
+    return <div>
+        <HalFormsForm data={formData} template={formData._templates.default} onSubmit={submit}/>
+        {submitError && <Alert severity={"error"}>{submitError}</Alert>}
+    </div>;
+}
+
 // --- Hlavní komponenta ---
-export const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSubmit}) => {
+const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSubmit, submitButtonLabel = "Odeslat"}) => {
     const initialValues = getInitialValues(template, data);
     const validationSchema = getValidationSchema(template);
 
@@ -216,16 +308,13 @@ export const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSub
                         </div>
                     ))}
 
-                    <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        variant="contained"
-                        color="primary"
-                    >
-                        Odeslat
+                    <Button type="submit" disabled={isSubmitting} variant="contained" color="primary">
+                        {submitButtonLabel}
                     </Button>
                 </Form>
             )}
         </Formik>
     );
 };
+
+export {HalFormsForm, HalFormsFormController};
