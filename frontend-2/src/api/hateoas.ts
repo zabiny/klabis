@@ -2,6 +2,8 @@ import {type HalFormsResponse, type HalFormsTemplateMethod, type Link} from "./i
 
 import {klabisAuthUserManager} from "./klabisUserManager";
 
+const HAL_FORMS_CONTENT_TYPE = "application/prs.hal-forms+json; charset=utf-8";
+
 async function fetchHalFormsData(link: Link): Promise<HalFormsResponse> {
     if (!link.href) {
         throw new Error("Incorrect link instance - href is missing!")
@@ -10,7 +12,7 @@ async function fetchHalFormsData(link: Link): Promise<HalFormsResponse> {
     const user = await klabisAuthUserManager.getUser();
     const res = await fetch(link.href, {
         headers: {
-            Accept: "application/prs.hal-forms+json",
+            Accept: HAL_FORMS_CONTENT_TYPE,
             "Authorization": `Bearer ${user?.access_token}`
         },
     });
@@ -28,7 +30,6 @@ async function submitHalFormsData(method: HalFormsTemplateMethod, link: Link, fo
         method: method,
         body: JSON.stringify(formData),
         headers: {
-            Accept: "application/prs.hal-forms+json",
             "Content-type": "application/json",
             "Authorization": `Bearer ${user?.access_token}`
         },
