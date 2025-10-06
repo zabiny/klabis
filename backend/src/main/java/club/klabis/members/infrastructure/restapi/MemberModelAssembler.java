@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
 public class MemberModelAssembler extends AbstractRepresentationModelMapper<Member, MembersApiResponse> {
@@ -82,8 +83,7 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
     public void addLinks(CollectionModel<EntityModel<MembersApiResponse>> model) {
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
             model.add(linkTo(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))
-                    .withRel(ApplicationGrant.MEMBERS_REGISTER.getGrantName())
-                    .andAffordance(afford(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))));
+                    .withRel(ApplicationGrant.MEMBERS_REGISTER.getGrantName()));
         }
     }
 
