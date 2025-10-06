@@ -21,7 +21,7 @@ public class EditMyDetailsFormApiDtoFormValidator implements ConstraintValidator
 
     @Override
     public boolean isValid(EditMyDetailsFormApiDto editForm, ConstraintValidatorContext constraintValidatorContext) {
-        return isValid(editForm.getContact(), editForm.getGuardians(), annotation.contactType());
+        return isValid(editForm.contact(), editForm.guardians(), annotation.contactType());
     }
 
     private static boolean isValid(@Valid ContactApiDto contact, @Valid List<LegalGuardianApiDto> guardians, Contact.Type requiredContactType) {

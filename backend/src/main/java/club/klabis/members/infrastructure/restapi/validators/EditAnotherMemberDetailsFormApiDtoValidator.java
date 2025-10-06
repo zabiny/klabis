@@ -9,8 +9,8 @@ public class EditAnotherMemberDetailsFormApiDtoValidator implements ConstraintVa
 
     @Override
     public boolean isValid(EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto, ConstraintValidatorContext constraintValidatorContext) {
-        return isValid(editAnotherMemberDetailsFormApiDto.getNationality(),
-                editAnotherMemberDetailsFormApiDto.getBirthCertificateNumber());
+        return isValid(editAnotherMemberDetailsFormApiDto.nationality(),
+                editAnotherMemberDetailsFormApiDto.birthCertificateNumber());
     }
 
     private static boolean isValid(String nationality, String birthCertificateNumber) {

@@ -47,7 +47,7 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
 
         if (entity.isSuspended()) {
             if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-                target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
                         .value())).withRel(
                         ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()));
             }
@@ -55,25 +55,25 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
         }
 
         if (securityService.canEditMemberData(entity.getId())) {
-            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
+            target.add(linkTo(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
                     entity.getId().value())).withRel(
                     "members:editOwnInfo"));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
-            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
                     .value())).withRel(
                     ApplicationGrant.MEMBERS_EDIT.getGrantName()));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
                     .value())).withRel(
                     ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()));
         }
 
         if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
-            target.add(linkTo(methodOn(EditMemberUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
                     .value())).withRel(
                     ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName()));
         }

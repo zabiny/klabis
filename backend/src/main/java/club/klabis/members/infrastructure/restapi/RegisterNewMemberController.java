@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.net.URI;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ApiController(path = "/memberRegistrations", securityScopes = "members", openApiTagName = "Register members")
@@ -89,10 +89,8 @@ public class RegisterNewMemberController {
     EntityModel<MemberRegistrationFormApiDto> getRegistrationForm() {
         MemberRegistrationFormApiDto form = new MemberRegistrationFormApiDto();
 
-        return EntityModel.of(form,
-                WebMvcLinkBuilder.linkTo(this.getClass())
-                        .withSelfRel()
-                        .andAffordance(afford(methodOn(getClass()).memberRegistrationsPost(null))));
+        return EntityModel.of(form, WebMvcLinkBuilder.linkTo(this.getClass()).withSelfRel()
+                .andAffordance(affordBetter(methodOn(getClass()).memberRegistrationsPost(null))));
     }
 
 }
