@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.hateoas.InputType;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ public class MemberRegistrationFormApiDto {
 
     private String nationality;
 
+    @InputType("addressX")
     private AddressApiDto address;
 
     private ContactApiDto contact;
