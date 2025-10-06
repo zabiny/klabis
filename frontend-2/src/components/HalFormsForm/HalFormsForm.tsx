@@ -16,7 +16,6 @@ import {
 } from "@mui/material";
 import {Field, Form, Formik} from "formik";
 import React, {ReactElement, type ReactNode, useCallback, useEffect, useState} from "react";
-import {type HalFormsFormProps} from "./index";
 import {type HalFormsProperty, HalFormsResponse, type HalFormsTemplate, Link} from "../../api";
 import {fetchHalFormsData, submitHalFormsData} from "../../api/hateoas";
 import {isHalFormsResponse} from "./utils";
@@ -274,6 +273,13 @@ const HalFormsFormController = ({api}: { api: Link }): ReactElement => {
         <HalFormsForm data={formData} template={formData._templates.default} onSubmit={submit}/>
         {submitError && <Alert severity={"error"}>{submitError}</Alert>}
     </div>;
+}
+
+interface HalFormsFormProps {
+    data: Record<string, any>;
+    template: HalFormsTemplate;
+    onSubmit?: (values: Record<string, any>) => void;
+    submitButtonLabel?: string
 }
 
 // --- Hlavní komponenta ---
