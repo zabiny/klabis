@@ -62,6 +62,12 @@ const useNavigation = <T, >(): {
     return {current, navigate, back, isFirst, isLast, reset};
 };
 
+function JsonPreview({data, label = "Data"}) {
+    return <div><h2>{label}</h2>
+        <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>;
+}
+
 function HalNavigatorPage({startUrl}) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -107,7 +113,7 @@ function HalNavigatorPage({startUrl}) {
     const renderFallback = (): ReactNode => {
         return <Grid>
             <div>Nejde vyrenderovat HAL FORMS form:</div>
-            <pre>{JSON.stringify(resource, null, 2)}</pre>
+            <JsonPreview data={resource}/>
         </Grid>;
     }
 
@@ -115,6 +121,7 @@ function HalNavigatorPage({startUrl}) {
         if (isKlabisFormResponse(current)) {
             return <ErrorBoundary fallback={renderFallback()} resetKeys={[current]}>
                 <HalFormsForm data={resource} template={resource._templates.default} onSubmit={console.log}/>
+                <JsonPreview label={"GET form data response"} data={resource}/>
             </ErrorBoundary>;
         } else {
             return (
