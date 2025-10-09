@@ -41,19 +41,19 @@ public class EventRegistrationsController {
             }
     )
     @GetMapping
-    ResponseEntity<RepresentationModel<EntityModel<EventRegistrationForm>>> getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
+    RepresentationModel<EntityModel<EventRegistrationForm>> getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
 
         EventRegistrationForm form = useCase.getEventRegistrationForm(
                 new Event.Id(event),
                 new MemberId(memberId));
 
-        return ResponseEntity.ok(EntityModel.of(form,
+        return EntityModel.of(form,
                 linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(event, memberId)).withRel(
                                 "example")
                         .andAffordance(afford(methodOn(EventRegistrationsController.class).submitRegistrationForm(event,
                                 memberId,
                                 null)))
-                        .withSelfRel()));
+                        .withSelfRel());
     }
 
     @Operation(

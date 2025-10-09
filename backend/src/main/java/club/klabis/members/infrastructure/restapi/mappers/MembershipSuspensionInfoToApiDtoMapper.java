@@ -11,9 +11,10 @@ import org.springframework.core.convert.converter.Converter;
 @Mapper(config = DomainToDtoMapperConfiguration.class)
 interface MembershipSuspensionInfoToApiDtoMapper extends Converter<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> {
 
-    @Mapping(target = "isSuspended", source = "isMemberSuspended")
+    @Mapping(target = "isSuspended", source = "member.suspended")
     @Mapping(target = "details.finance", source = ".")
     @Mapping(target = "canSuspend", source = ".")
+    @Mapping(target = "force", constant = "false")
     @Override
     MembershipSuspensionInfoApiDto convert(MembershipSuspensionInfo source);
 
@@ -21,7 +22,7 @@ interface MembershipSuspensionInfoToApiDtoMapper extends Converter<MembershipSus
     SuspendMembershipBlockersFinanceApiDto convertFinanceStatus(MembershipSuspensionInfo source);
 
     default boolean mapOveralStatus(MembershipSuspensionInfo source) {
-        return source.canSuspendAccount();
+        return source.canSuspend();
     }
     default boolean mapFinanceStatus(MembershipSuspensionInfo.DetailStatus source) {
         return source.canSuspend();

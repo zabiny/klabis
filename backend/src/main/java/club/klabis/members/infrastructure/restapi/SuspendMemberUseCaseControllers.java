@@ -11,23 +11,26 @@ import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoApiDto;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
+import club.klabis.shared.config.restapi.ApiController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
-@Validated
-@Tag(name = "Suspend member")
-@SecurityRequirement(name = "klabis", scopes = {"openapi"})
-@RestController
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
+@ApiController(path = "/members/{memberId}/suspendMembershipForm", openApiTagName = "Suspend membership", securityScopes = "members")
 public class SuspendMemberUseCaseControllers {
 
     private final ConversionService conversionService;
@@ -53,38 +56,27 @@ public class SuspendMemberUseCaseControllers {
             description = "Returns information about member account to be suspended.   #### Required authorization requires `members:suspendMembership` grant ",
             responses = {
                     @ApiResponse(responseCode = "200", description = "details about member account important for membership suspension", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = MembershipSuspensionInfoApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = MembershipSuspensionInfoApiDto.class))
                     }),
                     @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class)),
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
+                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     }),
                     @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class)),
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/members/{memberId}/suspendMembershipForm",
-            produces = {"application/json", "application/problem+json"}
-    )
-    ResponseEntity<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(
+    @GetMapping
+    EntityModel<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
     ) {
         return useCase.getSuspensionInfoForMember(new MemberId(memberId))
-                .map(d -> mapToResponseEntity(d,
+                .map(d -> conversionService.convert(d,
                         club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoApiDto.class))
+                .map(form -> EntityModel.of(form, WebMvcLinkBuilder.linkTo(getClass(), memberId).withSelfRel()
+                        .andAffordance(affordBetter(methodOn(getClass()).membersMemberIdSuspendMembershipFormPut(
+                                memberId,
+                                null))).withRel("submit")))
                 .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
-    }
-
-    ;
-
-    private <T> ResponseEntity<T> mapToResponseEntity(Object data, Class<T> apiDtoType) {
-        T payload = conversionService.convert(data, apiDtoType);
-        return ResponseEntity.ok(payload);
     }
 
     /**
@@ -113,29 +105,27 @@ public class SuspendMemberUseCaseControllers {
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     }),
                     @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto.class))
+                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     }),
                     @ApiResponse(responseCode = "404", description = "Missing required user authentication or authentication failed", content = {
                             @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     }),
                     @ApiResponse(responseCode = "409", description = "It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons.", content = {
-                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.members.infrastructure.restapi.dto.MembersMemberIdSuspendMembershipFormPut409ResponseApiDto.class))
+                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = RFC7807ErrorResponseApiDto.class))
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.PUT,
-            value = "/members/{memberId}/suspendMembershipForm",
-            produces = {"application/problem+json"}
-    )
+    @PutMapping
     ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
-            @Parameter(name = "force", description = "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension", in = ParameterIn.QUERY) @Valid @RequestParam(value = "force", required = false, defaultValue = "false") Boolean force
-    ) {
-        useCase.suspendMembershipForMember(new MemberId(memberId), force);
+            @Parameter(name = "force", description = "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension") @Valid @RequestBody MembershipSuspensionInfoApiDto form) {
+        useCase.suspendMembershipForMember(new MemberId(memberId), form.force());
         return ResponseEntity.ok(null);
     }
 
-    ;
-
+    @PutMapping(path = "/members/{memberId}/resumeMembershipForm")
+    ResponseEntity<Void> resumeMembership(int memberId) {
+        useCase.resumeMembership(new MemberId(memberId));
+        return ResponseEntity.ok(null);
+    }
 }

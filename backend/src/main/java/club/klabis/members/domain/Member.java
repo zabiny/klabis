@@ -3,6 +3,7 @@ package club.klabis.members.domain;
 import club.klabis.members.MemberId;
 import club.klabis.members.domain.events.MemberCreatedEvent;
 import club.klabis.members.domain.events.MemberEditedEvent;
+import club.klabis.members.domain.events.MembershipResumedEvent;
 import club.klabis.members.domain.events.MembershipSuspendedEvent;
 import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
@@ -139,6 +140,17 @@ public class Member extends AbstractAggregateRoot<Member> {
         if (!this.suspended) {
             this.suspended = true;
             this.andEvent(new MembershipSuspendedEvent(this));
+        } else {
+            throw new MembershipCannotBeSuspendedException(this.id, "Member is already suspended");
+        }
+    }
+
+    public void resumeMembership() {
+        if (this.suspended) {
+            this.suspended = false;
+            this.andEvent(new MembershipResumedEvent(this));
+        } else {
+            throw new MembershipCannotBeSuspendedException(this.id, "Member is not suspended");
         }
     }
 
@@ -229,5 +241,4 @@ public class Member extends AbstractAggregateRoot<Member> {
     public boolean isSuspended() {
         return suspended;
     }
-
 }

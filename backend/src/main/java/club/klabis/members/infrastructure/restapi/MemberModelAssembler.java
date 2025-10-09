@@ -6,6 +6,7 @@ import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
+import club.klabis.users.infrastructure.restapi.UserPermissionsApi;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -47,7 +48,7 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
 
         if (entity.isSuspended()) {
             if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-                target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+                target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(entity.getId()
                         .value())).withRel(
                         ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()));
             }
@@ -67,13 +68,13 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
-                    .value())).withRel(
-                    ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()));
+            target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class,
+                    entity.getId().value()).membersMemberIdSuspendMembershipFormGet(
+                    entity.getId().value())).withRel(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()));
         }
 
         if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
-            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
+            target.add(linkTo(methodOn(UserPermissionsApi.class).getMemberGrants(entity.getId()
                     .value())).withRel(
                     ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName()));
         }
