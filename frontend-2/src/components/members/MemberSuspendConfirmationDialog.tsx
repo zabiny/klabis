@@ -27,7 +27,7 @@ const MemberSuspendConfirmationDialog = ({memberId, open, onClose}: MemberSuspen
     const suspendMembership = useKlabisApiMutation("put", "/members/{memberId}/suspendMembershipForm");
 
     const handleSuspendMembership = async () => {
-        await suspendMembership.mutateAsync({params: {path: {memberId: memberId}}}, {
+        await suspendMembership.mutateAsync({params: {path: {memberId: memberId}}, body: {}}, {
             onError: () => {
                 alert('Failed to suspend membership');
                 onClose();

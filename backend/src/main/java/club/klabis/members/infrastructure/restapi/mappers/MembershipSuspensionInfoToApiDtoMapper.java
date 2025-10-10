@@ -14,7 +14,7 @@ interface MembershipSuspensionInfoToApiDtoMapper extends Converter<MembershipSus
     @Mapping(target = "isSuspended", source = "member.suspended")
     @Mapping(target = "details.finance", source = ".")
     @Mapping(target = "canSuspend", source = ".")
-    @Mapping(target = "force", constant = "false")
+    @Mapping(target = "requestDto.force", constant = "false")
     @Override
     MembershipSuspensionInfoApiDto convert(MembershipSuspensionInfo source);
 

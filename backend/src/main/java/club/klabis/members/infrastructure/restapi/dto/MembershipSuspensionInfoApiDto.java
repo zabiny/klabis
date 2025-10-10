@@ -2,6 +2,7 @@ package club.klabis.members.infrastructure.restapi.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -30,9 +31,9 @@ public record MembershipSuspensionInfoApiDto(
         @JsonProperty(access = JsonProperty.Access.READ_ONLY)
         SuspendMembershipBlockersApiDto details,
 
-        @Schema(name = "force", description = "tells if member account should be suspended even when there are some unfinished things (canSuspend=false)", requiredMode = Schema.RequiredMode.REQUIRED)
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-        Boolean force
+        @JsonUnwrapped
+        MembershipSuspensionInfoRequestDto requestDto
 
 ) {
 
