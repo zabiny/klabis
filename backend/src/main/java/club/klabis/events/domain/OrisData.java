@@ -13,6 +13,6 @@ import java.util.Collection;
 @RecordBuilder
 public record OrisData(OrisId orisId, @NotBlank String name, @NotNull LocalDate eventDate,
                        @NotNull ZonedDateTime registrationsDeadline,
-                       String location, String organizer, Collection<String> categories, URL website) {
+                       String location, String organizer, @NotNull Collection<String> categories, URL website) {
 
 }
