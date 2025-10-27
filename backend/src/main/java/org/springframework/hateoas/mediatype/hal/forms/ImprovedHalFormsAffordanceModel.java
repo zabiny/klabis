@@ -54,6 +54,9 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 }
 
 
+/**
+ * Sorts attribute metadata into defined order (so displaying form from that metadata have defined order of attributes)
+ */
 class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata {
     private final AffordanceModel.InputPayloadMetadata delegate;
     private final List<String> propertiesOrder;
