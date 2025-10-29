@@ -1,4 +1,4 @@
-package club.klabis.oris.domain;
+package club.klabis.events.domain;
 
 import org.springframework.util.Assert;
 

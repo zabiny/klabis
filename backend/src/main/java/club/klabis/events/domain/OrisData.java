@@ -1,6 +1,5 @@
 package club.klabis.events.domain;
 
-import club.klabis.oris.domain.OrisId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
