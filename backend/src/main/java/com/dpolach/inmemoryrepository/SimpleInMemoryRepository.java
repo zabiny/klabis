@@ -1,8 +1,5 @@
 package com.dpolach.inmemoryrepository;
 
-import org.apache.commons.lang3.stream.Streams;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.lang.NonNull;
@@ -10,7 +7,6 @@ import org.springframework.lang.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 
 class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
 
@@ -26,18 +22,8 @@ class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
     }
 
     @Override
-    public <S extends T> List<S> saveAll(Iterable<S> entities) {
-        return Streams.of(entities).map(this::save).toList();
-    }
-
-    @Override
     public List<T> findAll() {
         return entityStore.findAll(domainClass);
-    }
-
-    @Override
-    public List<T> findAllById(Iterable<ID> ids) {
-        return Streams.of(ids).map(this::findById).flatMap(Optional::stream).toList();
     }
 
     @Override
@@ -54,11 +40,6 @@ class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
     }
 
     @Override
-    public boolean existsById(ID id) {
-        return findById(id).isPresent();
-    }
-
-    @Override
     public <S extends T> S save(S entity) {
         return entityStore.save(entity);
     }
@@ -66,16 +47,6 @@ class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
     @Override
     public void delete(T entity) {
         entityStore.delete(entity);
-    }
-
-    @Override
-    public void deleteAllById(Iterable<? extends ID> ids) {
-        Streams.of(ids).forEach(this::deleteById);
-    }
-
-    @Override
-    public void deleteAll(Iterable<? extends T> entities) {
-        Streams.of(entities).forEach(this::delete);
     }
 
     @Override
@@ -96,22 +67,4 @@ class SimpleInMemoryRepository<T, ID> implements InMemoryRepository<T, ID> {
                 .toList();
     }
 
-    @NonNull
-    @Override
-    public Page<T> findAll(@NonNull Pageable pageable) {
-        List<T> allData = findAll();
-        return PageUtils.create(allData, pageable);
-    }
-
-    @Override
-    public List<T> findAll(Predicate<T> predicate) {
-        return findAll().stream().filter(predicate).toList();
-    }
-
-    @Override
-    public Page<T> findAll(Predicate<T> predicate, Pageable pageable) {
-        List<T> allItems = findAll(predicate);
-
-        return PageUtils.create(allItems, pageable);
-    }
 }
