@@ -19,7 +19,7 @@ public class AccountsFactory {
     @Scope("prototype")
     public Accounts getAccounts() {
         Accounts a = new Accounts();
-        eventsRepository.findAll().forEach(a::apply);
+        eventsRepository.rebuild(a);
         return a;
     }
 }

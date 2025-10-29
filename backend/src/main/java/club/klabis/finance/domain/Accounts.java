@@ -1,18 +1,19 @@
 package club.klabis.finance.domain;
 
 import club.klabis.finance.domain.events.AccountCreatedEvent;
-import club.klabis.finance.domain.events.TransferedAmountEvent;
 import club.klabis.members.MemberId;
 import com.dpolach.eventsourcing.BaseEvent;
 import com.dpolach.eventsourcing.CompositeEventsSource;
+import com.dpolach.eventsourcing.Projector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
-public class Accounts extends CompositeEventsSource<Account> {
+public class Accounts extends CompositeEventsSource<Account> implements Projector<Account> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Accounts.class);
 
@@ -41,22 +42,6 @@ public class Accounts extends CompositeEventsSource<Account> {
                 memberId.value())));
     }
 
-    public void transferMoney(MemberId from, MemberId to, MoneyAmount amount) {
-        Account fromAccount = getAccount(from)
-                .orElseThrow(() -> new IllegalStateException("Source account not found"));
-        Account targetAccount = getAccount(to)
-                .orElseThrow(() -> new IllegalStateException("Target account not found"));
-
-        if (MoneyAmount.ZERO.equals(amount)) {
-            throw new IllegalStateException("Cannot transfer zero money amount");
-        }
-        if (!fromAccount.canWithdraw(amount)) {
-            throw new IllegalStateException("Insufficient funds in source account");
-        }
-
-        andEvent(new TransferedAmountEvent(from, to, amount));
-    }
-
     @Override
     public void handleEvent(BaseEvent event) {
         switch (event) {
@@ -66,4 +51,13 @@ public class Accounts extends CompositeEventsSource<Account> {
         }
     }
 
+    @Override
+    public Collection<Account> projectAll() {
+        return List.of();
+    }
+
+    @Override
+    public Optional<Account> projectOne(String id) {
+        return Optional.empty();
+    }
 }

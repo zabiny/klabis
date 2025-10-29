@@ -1,8 +1,15 @@
 package com.dpolach.eventsourcing;
 
-import com.dpolach.inmemoryrepository.InMemoryRepository;
-import org.springframework.stereotype.Repository;
+import java.util.stream.Stream;
 
-@Repository
-public interface EventsRepository extends InMemoryRepository<BaseEvent, Long> {
+public interface EventsRepository {
+    void appendPendingEventsFrom(EventsSource eventsSource);
+
+    Stream<BaseEvent> streamAllEvents();
+
+    default <T extends CompositeEventsSource<?>> T rebuild(T compositeEventsSource) {
+        streamAllEvents().forEach(compositeEventsSource::apply);
+        compositeEventsSource.clearPendingEvents();
+        return compositeEventsSource;
+    }
 }

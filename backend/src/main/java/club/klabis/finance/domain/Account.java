@@ -36,6 +36,17 @@ public class Account extends SingleEventsSource {
         andEvent(new WithdrawnAmountEvent(owner, amount));
     }
 
+    public void transferTo(MemberId target, MoneyAmount amount) {
+        if (MoneyAmount.ZERO.equals(amount)) {
+            throw new IllegalStateException("Cannot transfer zero money amount");
+        } else if (this.balance.isLowerThan(amount)) {
+            throw new IllegalStateException("Insufficient funds on source account");
+        }
+
+        this.balance = this.balance.subtract(amount);
+        andEvent(new TransferedAmountEvent(owner, target, amount));
+    }
+
     public MemberId getOwner() {
         return owner;
     }
