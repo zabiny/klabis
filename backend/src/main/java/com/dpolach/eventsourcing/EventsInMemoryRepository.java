@@ -1,27 +1,37 @@
 package com.dpolach.eventsourcing;
 
 import com.dpolach.inmemoryrepository.InMemoryRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
 
-@Repository
-public interface EventsInMemoryRepository extends InMemoryRepository<BaseEvent, Long>, EventsRepository {
+@Service
+class EventsInMemoryRepository implements EventsRepository {
 
+    private final InMemoryRepository<BaseEvent, Long> eventsRepository;
+    private final ApplicationEventPublisher eventPublisher;
+
+    public EventsInMemoryRepository(Repo repository, ApplicationEventPublisher eventPublisher) {
+        this.eventsRepository = repository;
+        this.eventPublisher = eventPublisher;
+    }
+
+    @Transactional
     @Override
-    default void appendPendingEventsFrom(EventsSource eventsSource) {
-        saveAll(eventsSource.getPendingEvents());
+    public void appendPendingEventsFrom(EventsSource eventsSource) {
+        List<BaseEvent> pendingEvens = eventsSource.getPendingEvents();
+        eventsRepository.saveAll(pendingEvens);
+        pendingEvens.forEach(eventPublisher::publishEvent);
+        eventsSource.clearPendingEvents();
     }
 
     @Override
-    default Stream<BaseEvent> streamAllEvents() {
-        return findAll().stream();
-    }
-
-    @Override
-    default <T extends CompositeEventsSource<?>> T rebuild(T compositeEventsSource) {
-        findAll().forEach(compositeEventsSource::apply);
-        return compositeEventsSource;
+    public Stream<BaseEvent> streamAllEvents() {
+        return eventsRepository.findAll().stream().sorted(Comparator.comparing(BaseEvent::getSequenceId));
     }
 
     // TODO: how to query single item (= findById(Account.class, id)

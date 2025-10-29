@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public class Accounts extends CompositeEventsSource<Account> implements Projector<Account> {
@@ -52,12 +51,7 @@ public class Accounts extends CompositeEventsSource<Account> implements Projecto
     }
 
     @Override
-    public Collection<Account> projectAll() {
-        return List.of();
-    }
-
-    @Override
-    public Optional<Account> projectOne(String id) {
-        return Optional.empty();
+    public void project(BaseEvent event) {
+        this.apply(event);
     }
 }

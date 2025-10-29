@@ -43,6 +43,6 @@ class EventsPresetDataLoader implements PresetDataLoader {
                                 null)
                 )
                 .map(eventsService::createNewEvent)
-                .forEach(createdEvent -> LOG.info("Created event with ID {}$n", createdEvent.getId()));
+                .forEach(createdEvent -> LOG.info("Created event with ID {}", createdEvent.getId()));
     }
 }
