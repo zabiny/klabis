@@ -6,6 +6,7 @@ import club.klabis.members.domain.RegistrationNumber;
 import club.klabis.members.domain.Sex;
 import club.klabis.members.domain.forms.RegistrationForm;
 import club.klabis.shared.config.ddd.UseCase;
+import jakarta.validation.Valid;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -20,7 +21,7 @@ public class MemberRegistrationUseCase {
     }
 
     @Transactional
-    public Member registerMember(RegistrationForm registrationForm) {
+    public Member registerMember(@Valid RegistrationForm registrationForm) {
         if (membersRepository.existsByRegistration(registrationForm.registrationNumber())) {
             throw new MemberRegistrationFailedException("Registration number '%s' is already used".formatted(
                     registrationForm.registrationNumber()));
