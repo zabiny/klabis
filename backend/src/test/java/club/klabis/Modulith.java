@@ -16,6 +16,7 @@ public class Modulith {
         new Documenter(modules)
                 .writeModulesAsPlantUml()
                 .writeIndividualModulesAsPlantUml()
+                .writeAggregatingDocument()
                 .writeModuleCanvases();
     }
 }

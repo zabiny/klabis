@@ -38,7 +38,7 @@ class MembersApiResponseConverterTest {
                 MembersApiResponse.class);
 
         MembersApiResponse expected = MembersApiResponseBuilder.builder()
-                .id(m.getId().value())
+                .id(m.getId())
                 .member(m)
                 .firstName("Test")
                 .lastName("Something")
