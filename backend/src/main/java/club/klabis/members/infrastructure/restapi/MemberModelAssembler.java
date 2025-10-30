@@ -38,7 +38,7 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
 
     @Override
     public void addLinks(EntityModel<MembersApiResponse> target) {
-        Member entity = target.getContent().getMember();
+        Member entity = target.getContent().member();
 
         target.add(entityLinks.linkToItemResource(Member.class, entity.getId().value()).withSelfRel());
         target.add(entityLinks.linkToCollectionResource(Member.class)
