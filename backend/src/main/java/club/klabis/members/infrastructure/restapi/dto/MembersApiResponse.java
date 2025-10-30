@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.server.core.Relation;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -144,5 +145,14 @@ public record MembersApiResponse(
         Boolean medicCourse
 ) {
 
+    public MembersApiResponse {
+        if (drivingLicence() == null) {
+            drivingLicence = new ArrayList<>();
+        }
+
+        if (legalGuardians() == null) {
+            legalGuardians = new ArrayList<>();
+        }
+    }
 }
 

@@ -6,6 +6,7 @@ import club.klabis.members.domain.forms.RegistrationFormBuilder;
 import club.klabis.members.infrastructure.restapi.dto.ContactApiDto;
 import club.klabis.members.infrastructure.restapi.dto.LicencesApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
+import club.klabis.members.infrastructure.restapi.dto.MembersApiResponseBuilder;
 import club.klabis.shared.ConversionService;
 import club.klabis.tests.common.MapperTest;
 import org.junit.jupiter.api.Test;
@@ -36,14 +37,15 @@ class MembersApiResponseConverterTest {
         MembersApiResponse item = conversionService.convert(m,
                 MembersApiResponse.class);
 
-        MembersApiResponse expected = new MembersApiResponse();
-        expected.setId(m.getId().value());
-        expected.setMember(m);
-        expected.setFirstName("Test");
-        expected.setLastName("Something");
-        expected.setLicences(new LicencesApiDto());
-        expected.setMedicCourse(false);
-        expected.setContact(new ContactApiDto().email("email@com.com").note("email domu"));
+        MembersApiResponse expected = MembersApiResponseBuilder.builder()
+                .id(m.getId().value())
+                .member(m)
+                .firstName("Test")
+                .lastName("Something")
+                .licences(new LicencesApiDto())
+                .medicCourse(false)
+                .contact(new ContactApiDto().email("email@com.com").note("email domu"))
+                .build();
 
         assertThat(item)
                 .as("Unexpected values")
