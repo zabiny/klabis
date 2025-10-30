@@ -1,7 +1,7 @@
 package club.klabis.members.application;
 
 import club.klabis.members.MemberId;
-import club.klabis.members.domain.Member;
+import club.klabis.shared.config.restapi.KlabisPrincipal;
 import club.klabis.shared.config.restapi.KlabisUserAuthentication;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
@@ -12,20 +12,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.function.Predicate;
 
 @Component(KlabisSecurityService.BEAN_NAME)
 public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
     private final Logger LOG = LoggerFactory.getLogger(KlabisSecurityServiceImpl.class);
 
-    private final MembersRepository membersRepository;
-
-    public KlabisSecurityServiceImpl(MembersRepository membersRepository) {
-        this.membersRepository = membersRepository;
-    }
-
-    private Optional<ApplicationUser> getPrincipal() {
+    private Optional<KlabisPrincipal> getPrincipal() {
         if (SecurityContextHolder.getContext().getAuthentication() instanceof KlabisUserAuthentication typedAuth) {
             return Optional.of(typedAuth).map(KlabisUserAuthentication::getPrincipal);
             // TODO: doesn't work when logged in "locally" - it gets Google's OAuth2 authentication instead of klabis user...
@@ -36,9 +29,7 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
     private Optional<MemberId> getPrincipalMemberId() {
         return getPrincipal()
-                .map(ApplicationUser::getId)
-                .flatMap(membersRepository::findMemberByAppUserId)
-                .map(Member::getId);
+                .map(KlabisPrincipal::memberId);
     }
 
     public boolean canEditMemberData(int dataMemberId) {
@@ -53,7 +44,7 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
         LOG.trace("Application user with ID {} attempt to edit data of member {} - {}",
                 getPrincipal()
-                        .map(ApplicationUser::getId)
+                        .map(KlabisPrincipal::userId)
                         .map(ApplicationUser.Id::value)
                         .map(String::valueOf)
                         .orElse("no-user-logged-in"),
@@ -65,11 +56,7 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
     @Override
     public boolean hasGrant(ApplicationGrant grant) {
-        return getPrincipal().stream().anyMatch(hasAppGrant(grant));
-    }
-
-    private Predicate<? super ApplicationUser> hasAppGrant(ApplicationGrant grant) {
-        return user -> user.getGlobalGrants().contains(grant);
+        return getPrincipal().stream().anyMatch(principal -> principal.hasAppGrant(grant));
     }
 
 }

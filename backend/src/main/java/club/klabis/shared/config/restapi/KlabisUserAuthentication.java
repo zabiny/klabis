@@ -1,7 +1,6 @@
 package club.klabis.shared.config.restapi;
 
 import club.klabis.shared.config.security.ApplicationGrant;
-import club.klabis.users.domain.ApplicationUser;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,29 +12,34 @@ import java.util.stream.Collectors;
 
 public class KlabisUserAuthentication extends AbstractAuthenticationToken {
 
-    private final ApplicationUser applicationUser;
     private final Jwt authentication;
 
-    private static Collection<GrantedAuthority> forUser(ApplicationUser user) {
+    private final KlabisPrincipal principal;
+
+    private static Collection<GrantedAuthority> forUser(KlabisPrincipal user) {
         if (user == null) {
             return List.of();
         }
-        return user.getGlobalGrants().stream().map(ApplicationGrant::name).map(SimpleGrantedAuthority::new).collect(Collectors.toSet());
+        return user.globalGrants()
+                .stream()
+                .map(ApplicationGrant::name)
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toSet());
     }
 
-    static KlabisUserAuthentication authenticated(ApplicationUser user, Jwt credentials) {
-        return new KlabisUserAuthentication(user, credentials);
+    static KlabisUserAuthentication authenticated(KlabisPrincipal principal, Jwt credentials) {
+        return new KlabisUserAuthentication(principal, credentials);
     }
 
     static KlabisUserAuthentication noUser(Jwt credentials) {
         return new KlabisUserAuthentication(null, credentials);
     }
 
-    private KlabisUserAuthentication(ApplicationUser applicationUser, Jwt authentication) {
-        super(forUser(applicationUser));
-        this.applicationUser = applicationUser;
+    private KlabisUserAuthentication(KlabisPrincipal principal, Jwt authentication) {
+        super(forUser(principal));
+        this.principal = principal;
         this.authentication = authentication;
-        setAuthenticated(applicationUser != null);
+        setAuthenticated(principal != null);
     }
 
     @Override
@@ -44,7 +48,8 @@ public class KlabisUserAuthentication extends AbstractAuthenticationToken {
     }
 
     @Override
-    public ApplicationUser getPrincipal() {
-        return applicationUser;
+    public KlabisPrincipal getPrincipal() {
+        return principal;
     }
+
 }

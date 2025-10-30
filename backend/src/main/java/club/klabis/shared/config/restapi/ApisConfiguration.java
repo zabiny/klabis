@@ -1,5 +1,8 @@
 package club.klabis.shared.config.restapi;
 
+import club.klabis.members.MemberId;
+import club.klabis.members.application.MembersRepository;
+import club.klabis.members.domain.Member;
 import club.klabis.shared.config.authserver.AuthorizationServerConfiguration;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.application.ApplicationUsersRepository;
@@ -37,6 +40,7 @@ import org.springframework.web.filter.AbstractRequestLoggingFilter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -49,7 +53,12 @@ public class ApisConfiguration {
             MediaType.valueOf("application/hal+json"),
             MediaType.valueOf("application/klabis+json"));
 
-    public ApisConfiguration(ApplicationUsersRepository applicationUserRepository) {
+    private final MembersRepository membersRepository;
+    private final ApplicationUsersRepository applicationUserRepository;
+
+
+    public ApisConfiguration(MembersRepository membersRepository, ApplicationUsersRepository applicationUserRepository) {
+        this.membersRepository = membersRepository;
         this.applicationUserRepository = applicationUserRepository;
     }
 
@@ -110,12 +119,22 @@ public class ApisConfiguration {
 
     // https://stackoverflow.com/questions/69100420/spring-oauth2-resource-server-load-synchronized-user-from-database
 
-    private final ApplicationUsersRepository applicationUserRepository;
-
     private Converter<Jwt, KlabisUserAuthentication> klabisMemberEnhanceAuthentication() {
-        return source -> applicationUserRepository.findByUserNameValue(source.getSubject())
-                .map(user -> KlabisUserAuthentication.authenticated(user, source))
+        return source -> principalFromUserId(source.getSubject())
+                .map(principal -> KlabisUserAuthentication.authenticated(principal, source))
                 .orElseGet(() -> KlabisUserAuthentication.noUser(source));
+    }
+
+    public Optional<KlabisPrincipal> principalFromUserId(String userName) {
+        return applicationUserRepository.findByUserNameValue(userName)
+                .map(appUser -> {
+                    MemberId memberId = membersRepository.findMemberByAppUserId(appUser.getId())
+                            .map(Member::getId)
+                            .orElse(null);
+                    return new KlabisPrincipal(appUser.getId(),
+                            memberId,
+                            appUser.getGlobalGrants());
+                });
     }
 
     @Bean
