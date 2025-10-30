@@ -24,7 +24,7 @@ class ApplicationUserDetailsService implements UserDetailsService {
     }
 
     private UserDetails fromMember(ApplicationUser member) {
-        return User.withUsername(member.getUsername())
+        return User.withUsername(member.getUsername().value())
                 .password(member.getPassword())
                 .disabled(member.isDisabled())
                 .build();

@@ -1,12 +1,12 @@
 package club.klabis.users.domain;
 
-import club.klabis.members.MemberId;
-import club.klabis.members.domain.Member;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.domain.events.ApplicationUserEnableStatusChanged;
+import io.micrometer.common.util.StringUtils;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
+import org.springframework.util.Assert;
 
 import java.util.*;
 
@@ -24,27 +24,30 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
 
     @Identity
     private final Id id;
-    private MemberId memberId;
-    private String userName;
+    private UserName userName;
     private String password = "{noop}secret";
     private boolean enabled = true;
     private String googleSubject;
     private String githubSubject;
     private Set<ApplicationGrant> globalGrants = EnumSet.noneOf(ApplicationGrant.class);
-    private List<MemberScopedGrant> memberScopedGrants = List.of();
+    private List<UserScopedGrant> userScopedGrants = List.of();
 
-    public static ApplicationUser newAppUser(String username, String password) {
+    public record UserName(String value) {
+        public UserName {
+            Assert.notNull(value, "UserName must not be null");
+            Assert.isTrue(StringUtils.isNotBlank(value), "UserName must not be blank");
+        }
+
+        public static UserName of(String value) {
+            return new UserName(value);
+        }
+
+    }
+
+    public static ApplicationUser newAppUser(UserName username, String password) {
         ApplicationUser result = new ApplicationUser();
         result.userName = username;
         result.password = password;
-        return result;
-    }
-
-    public static ApplicationUser newAppUser(Member member, String password) {
-        ApplicationUser result = new ApplicationUser();
-        result.userName = member.getRegistration().toRegistrationId();
-        result.password = password;
-        result.memberId = member.getId();
         return result;
     }
 
@@ -73,11 +76,7 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
         return id;
     }
 
-    public Optional<MemberId> getMemberId() {
-        return Optional.ofNullable(memberId);
-    }
-
-    public String getUsername() {
+    public UserName getUsername() {
         return userName;
     }
 
@@ -113,6 +112,6 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
     }
 }
 
-record MemberScopedGrant(ApplicationGrant grant, Integer scopedMemberId) {
+record UserScopedGrant(ApplicationGrant grant, Integer scopedMemberId) {
 
 }

@@ -25,7 +25,7 @@ public class AppUsersPresetDataLoader implements PresetDataLoader {
         // create Admin user
         appUsersRepository.findByUserName("admin").orElseGet(() -> {
             LOG.info("Adding user admin");
-            ApplicationUser admin = ApplicationUser.newAppUser("admin", "{noop}secret");
+            ApplicationUser admin = ApplicationUser.newAppUser(ApplicationUser.UserName.of("admin"), "{noop}secret");
             admin.setGlobalGrants(EnumSet.allOf(ApplicationGrant.class));
             return appUsersRepository.save(admin);
         });
