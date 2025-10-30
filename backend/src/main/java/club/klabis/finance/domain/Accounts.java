@@ -12,6 +12,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 
+/**
+ * @deprecated Replace with Projector adapter which will define "Create" events and all other will delegate to Account (EventSourcedAggregateRoot)
+ */
+@Deprecated
 public class Accounts extends CompositeEventsSource<Account> implements Projector<Account> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Accounts.class);

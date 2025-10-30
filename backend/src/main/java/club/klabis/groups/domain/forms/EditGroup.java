@@ -2,11 +2,13 @@ package club.klabis.groups.domain.forms;
 
 import club.klabis.groups.domain.MemberGroup;
 import club.klabis.members.MemberId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
+@RecordBuilder
 public record EditGroup(String name, String description, String email,
                         Collection<MemberGroup.GroupPermission> permissions,
                         Collection<MemberId> members) {

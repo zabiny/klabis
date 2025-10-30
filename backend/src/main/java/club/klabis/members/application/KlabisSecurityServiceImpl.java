@@ -41,6 +41,10 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
                 .map(Member::getId);
     }
 
+    public boolean canEditMemberData(int dataMemberId) {
+        return canEditMemberData(new MemberId(dataMemberId));
+    }
+
     @Override
     public boolean canEditMemberData(MemberId dataMemberId) {
         boolean canEditMemberData = getPrincipalMemberId()
