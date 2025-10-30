@@ -105,6 +105,7 @@ dependencies {
     implementation("org.jmolecules:jmolecules-events:1.9.0")
     testImplementation("org.jmolecules.integrations:jmolecules-archunit:0.28.0")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
+    testImplementation("org.awaitility:awaitility:4.3.0")
 }
 
 tasks.withType<Test> {
@@ -132,6 +133,14 @@ java.sourceSets["main"].resources {
 
 tasks.withType<JavaCompile>() {
     options.encoding = "UTF-8"
+    options.compilerArgs.addAll(
+        listOf(
+            //"-Amapstruct.verbose=true",
+            //"-Amapstruct.suppressGeneratorTimestamp=true",
+            //"-Amapstruct.suppressGeneratorVersionComment=true",
+            "-Amapstruct.defaultComponentModel=spring"
+        )
+    )
 }
 
 tasks.withType<Javadoc>() {
