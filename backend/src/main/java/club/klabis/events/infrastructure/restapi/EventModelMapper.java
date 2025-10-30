@@ -6,10 +6,8 @@ import club.klabis.events.infrastructure.restapi.dto.EventRegistrationResponse;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.members.MemberId;
-import club.klabis.oris.infrastructure.restapi.OrisApi;
 import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
-import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -59,11 +57,6 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
         resource.add(entityLinks.linkToCollectionResource(Event.class)
                 .withRel(linkRelationProvider.getCollectionResourceRelFor(Event.class)));
 
-        if (event.getOrisId().isPresent() && klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)) {
-            resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(OrisApi.class)
-                    .synchronizeEventsFromOris(null)).withRel("synchronize"));
-        }
-
         if (event.areRegistrationsOpen()) {
             if (event.isMemberRegistered(memberId)) {
                 resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
@@ -83,10 +76,6 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
 
     @Override
     public void addLinks(CollectionModel<EntityModel<EventResponse>> resources) {
-        if (klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)) {
-            resources.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(OrisApi.class)
-                    .synchronizeEventsFromOris(null)).withRel("synchronizeAll"));
-        }
     }
 
     @Autowired
