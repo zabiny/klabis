@@ -4,6 +4,30 @@
  */
 
 export interface paths {
+    "/users/{userId}/changeGrantsForm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * returns grants assigned to member
+         * @description Requires `members:permissions` grant
+         */
+        get: operations["getUserGrants"];
+        /**
+         * updates grants assigned to user
+         * @description Requires `members:permissions` grant
+         */
+        put: operations["updateUserGrants"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/{memberId}/suspendMembershipForm": {
         parameters: {
             query?: never;
@@ -21,6 +45,22 @@ export interface paths {
          * @description Suspends membership for a club member.   If there are some blockers (debt, etc), it responds with HTTP '409' unless `force=true` parameter was used.  #### Required authorization requires `members:suspendMembership` grant
          */
         put: operations["membersMemberIdSuspendMembershipFormPut"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{memberId}/resumeMembershipForm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["resumeMembership"];
         post?: never;
         delete?: never;
         options?: never;
@@ -60,30 +100,6 @@ export interface paths {
         get: operations["getMemberEditByAdminForm"];
         /** Update member information */
         put: operations["putMemberEditByAdminForm"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/members/{memberId}/changeGrantsForm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * returns grants assigned to member
-         * @description Requires `members:permissions` grant
-         */
-        get: operations["getMemberGrants"];
-        /**
-         * updates grants assigned to member
-         * @description Requires `members:permissions` grant
-         */
-        put: operations["updateMemberGrants"];
         post?: never;
         delete?: never;
         options?: never;
@@ -136,7 +152,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["getRegistrationForm_1"];
         put?: never;
         /**
          * Register a new club member
@@ -280,6 +296,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["rootNavigation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -294,6 +326,11 @@ export interface components {
             deprecation?: string;
             profile?: string;
             name?: string;
+        };
+        /** @description Data for form setting member grants */
+        MemberGrantsForm: {
+            links?: components["schemas"]["Link"][];
+            grants?: ("members:register" | "members:edit" | "members:suspendMembership" | "members:resumeMembership" | "system:admin" | "members:permissions")[];
         };
         MembersMemberIdEditMemberInfoFormGet400ResponseAllOfValidationErrorsInnerApiDto: {
             links?: components["schemas"]["Link"][];
@@ -331,50 +368,10 @@ export interface components {
             instance: string;
             type?: string;
         };
-        MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto: {
-            links?: components["schemas"]["Link"][];
-        };
-        MembersMemberIdEditMemberInfoFormGet403ResponseApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description Description of the error status */
-            title: string;
-            /**
-             * Format: int32
-             * @description error status value
-             */
-            status: number;
-            /** @description User friendly description of the error */
-            detail: string;
-            /** @description URI of the resource which has thrown the error */
-            instance: string;
-            type?: string;
-            missingGrant?: components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto"];
-        };
-        MembersMemberIdSuspendMembershipFormPut409ResponseApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description Description of the error status */
-            title: string;
-            /**
-             * Format: int32
-             * @description error status value
-             */
-            status: number;
-            /** @description User friendly description of the error */
-            detail: string;
-            /** @description URI of the resource which has thrown the error */
-            instance: string;
-            type?: string;
-            blockers: components["schemas"]["SuspendMembershipBlockers"];
-        };
-        /** @description describes conditions which may prevent membership suspension and their actual status */
-        SuspendMembershipBlockers: {
-            links?: components["schemas"]["Link"][];
-            finance: components["schemas"]["SuspendMembershipBlockersFinanceApiDto"];
-        };
-        SuspendMembershipBlockersFinanceApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description tells if finance account balance permits membership suspension */
-            status: boolean;
+        /** @description Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension */
+        MembershipSuspensionInfoRequestDto: {
+            /** @description tells if member account should be suspended even when there are some unfinished things (canSuspend=false) */
+            force: boolean;
         };
         AddressApiDto: {
             links?: components["schemas"]["Link"][];
@@ -402,7 +399,6 @@ export interface components {
         };
         /** @description Member attributes which can be updated by member himself (member can update some own attributes)    #### Required authorization - user can edit own member data   Additional validations: - either contact or at least 1 guardian needs to be entered  */
         EditMyDetailsForm: {
-            links?: components["schemas"]["Link"][];
             identityCard?: components["schemas"]["IdentityCardApiDto"];
             /** @description two letter country code, ISO 3166-1 alpha-2 */
             nationality: string;
@@ -442,9 +438,27 @@ export interface components {
             /** @description Note about the guardian (matka, otec) */
             note?: string;
         };
+        MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto: {
+            links?: components["schemas"]["Link"][];
+        };
+        MembersMemberIdEditMemberInfoFormGet403ResponseApiDto: {
+            links?: components["schemas"]["Link"][];
+            /** @description Description of the error status */
+            title: string;
+            /**
+             * Format: int32
+             * @description error status value
+             */
+            status: number;
+            /** @description User friendly description of the error */
+            detail: string;
+            /** @description URI of the resource which has thrown the error */
+            instance: string;
+            type?: string;
+            missingGrant?: components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto"];
+        };
         /** @description Member attributes editable by authorized user who can change details about other members  #### Required authorization - requires `members:edit` grant  Additional validations:  - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value */
         EditAnotherMemberDetailsForm: {
-            links?: components["schemas"]["Link"][];
             /** @description First name of the club member */
             firstName: string;
             /** @description Last name of the club member */
@@ -461,14 +475,9 @@ export interface components {
             /** @enum {string} */
             sex: "male" | "female";
         };
-        /** @description Data for form setting member grants */
-        MemberGrantsForm: {
-            links?: components["schemas"]["Link"][];
-            grants?: ("members:register" | "members:edit" | "members:suspendMembership" | "members:resumeMembership" | "system:admin" | "members:permissions")[];
-        };
         EventRegistrationForm: {
-            siNumber?: string;
-            category?: string;
+            siNumber: string;
+            category: string;
         };
         /** @description DTO containing event IDs to synchronize */
         SynchronizeEventsRequest: {
@@ -496,7 +505,6 @@ export interface components {
         };
         /** @description Data required to register new member.    #### Required authorization - requires `members:register` grant  Additional validations:  - either contact or guardian needs to be set - when nationality is different than `CZ`, `birthCertificateNumber` value will be ignored */
         MemberRegistrationForm: {
-            links?: components["schemas"]["Link"][];
             /** @description First name of the club member */
             firstName: string;
             /** @description Last name of the club member */
@@ -550,19 +558,14 @@ export interface components {
              */
             orisId?: number;
         };
-        LicencesApiDto: {
-            links?: components["schemas"]["Link"][];
-            ob?: components["schemas"]["OBLicenceApiDto"];
-            referee?: components["schemas"]["RefereeLicenceApiDto"];
-            trainer?: components["schemas"]["TrainerLicenceApiDto"];
-        };
-        MembersApiResponse: {
-            links?: components["schemas"]["Link"][];
+        EntityModelMembersApiResponse: {
             /**
              * Format: int32
              * @description Unique identifier for the club member
              */
             id: number;
+            /** Format: int32 */
+            userId?: number;
             /** @description First name of the club member */
             firstName: string;
             /** @description Last name of the club member */
@@ -597,6 +600,13 @@ export interface components {
             drivingLicence?: ("B" | "BE" | "C" | "D")[];
             /** @description Whether the club member has completed the medic course */
             medicCourse?: boolean;
+            links?: components["schemas"]["Link"][];
+        };
+        LicencesApiDto: {
+            links?: components["schemas"]["Link"][];
+            ob?: components["schemas"]["OBLicenceApiDto"];
+            referee?: components["schemas"]["RefereeLicenceApiDto"];
+            trainer?: components["schemas"]["TrainerLicenceApiDto"];
         };
         OBLicenceApiDto: {
             links?: components["schemas"]["Link"][];
@@ -616,9 +626,9 @@ export interface components {
             /** Format: int64 */
             number?: number;
         };
-        PagedModelMembersApiResponse: {
+        PagedModelEntityModelMembersApiResponse: {
             links?: components["schemas"]["Link"][];
-            content?: components["schemas"]["MembersApiResponse"][];
+            content?: components["schemas"]["EntityModelMembersApiResponse"][];
             page?: components["schemas"]["PageMetadata"];
         };
         RefereeLicenceApiDto: {
@@ -647,13 +657,97 @@ export interface components {
              */
             expiryDate: string;
         };
-        MembershipSuspensionInfoApiDto: {
-            links?: components["schemas"]["Link"][];
+        EntityModelMembershipSuspensionInfoApiDto: {
             /** @description tells if member account is currently suspended */
-            isSuspended: boolean;
+            readonly isSuspended: boolean;
             /** @description tells if member account can be suspended */
-            canSuspend: boolean;
-            details: components["schemas"]["SuspendMembershipBlockers"];
+            readonly canSuspend: boolean;
+            readonly details: components["schemas"]["SuspendMembershipBlockers"];
+            /** @description tells if member account should be suspended even when there are some unfinished things (canSuspend=false) */
+            force: boolean;
+            links?: components["schemas"]["Link"][];
+        };
+        /** @description describes conditions which may prevent membership suspension and their actual status */
+        SuspendMembershipBlockers: {
+            finance: components["schemas"]["SuspendMembershipBlockersFinanceApiDto"];
+        };
+        SuspendMembershipBlockersFinanceApiDto: {
+            /** @description tells if finance account balance permits membership suspension */
+            status: boolean;
+        };
+        EntityModelEditMyDetailsForm: {
+            identityCard?: components["schemas"]["IdentityCardApiDto"];
+            /** @description two letter country code, ISO 3166-1 alpha-2 */
+            nationality: string;
+            address: components["schemas"]["AddressApiDto"];
+            contact?: components["schemas"]["Contact"];
+            guardians?: components["schemas"]["LegalGuardianApiDto"][];
+            /**
+             * Format: int32
+             * @description SI chip used by member
+             */
+            siCard?: number;
+            /** @description Bank account number of the club member IBAN */
+            bankAccount?: string;
+            /** @description Dietary restrictions of the club member */
+            dietaryRestrictions?: string;
+            drivingLicence?: ("B" | "BE" | "C" | "D")[];
+            /** @description Whether the club member has completed the medic course */
+            medicCourse?: boolean;
+            links?: components["schemas"]["Link"][];
+        };
+        EntityModelEditAnotherMemberDetailsForm: {
+            /** @description First name of the club member */
+            firstName: string;
+            /** @description Last name of the club member */
+            lastName: string;
+            /**
+             * Format: date
+             * @description Date of birth of the club member
+             */
+            dateOfBirth: string;
+            /** @description Birth certificate number for Czech citizens */
+            birthCertificateNumber?: string;
+            /** @description two letter country code, ISO 3166-1 alpha-2 */
+            nationality: string;
+            /** @enum {string} */
+            sex: "male" | "female";
+            links?: components["schemas"]["Link"][];
+        };
+        EntityModelMemberRegistrationForm: {
+            /** @description First name of the club member */
+            firstName: string;
+            /** @description Last name of the club member */
+            lastName: string;
+            /** @enum {string} */
+            sex: "male" | "female";
+            /**
+             * Format: date
+             * @description Date of birth of the club member
+             */
+            dateOfBirth: string;
+            /** @description Birth certificate number for Czech citizens */
+            birthCertificateNumber?: string;
+            /** @description two letter country code, ISO 3166-1 alpha-2 */
+            nationality: string;
+            address: components["schemas"]["AddressApiDto"];
+            contact?: components["schemas"]["Contact"];
+            guardians?: components["schemas"]["LegalGuardianApiDto"][];
+            /**
+             * Format: int32
+             * @description SI chip used by member
+             */
+            siCard?: number;
+            /** @description Bank account number of the club member IBAN */
+            bankAccount?: string;
+            /** @description ORIS registration number */
+            registrationNumber?: string;
+            /**
+             * Format: int32
+             * @description Oris ID of registered orienteering runner
+             */
+            orisId?: number;
+            links?: components["schemas"]["Link"][];
         };
         GetAllGrants200ResponseApiDto: {
             links?: components["schemas"]["Link"][];
@@ -666,62 +760,56 @@ export interface components {
             /** @description User friendly description of the grant */
             description?: string;
         };
-        CollectionModelEventResponseModel_Summary: {
-            links?: components["schemas"]["Link"][];
-            content?: components["schemas"]["EventResponseModel_Summary"][];
-        };
-        EventResponseModel_Summary: {
-            links?: components["schemas"]["Link"][];
+        EntityModelEventResponse_Summary: {
             /** Format: int32 */
-            readonly id: number;
+            id?: number;
             /** Format: date */
-            date: string;
-            /** @example Krátký den */
-            name: string;
-            /** @example Vacenovice */
-            location: string;
-            /** @example ZBM */
-            organizer: string;
+            date?: string;
+            name?: string;
+            location?: string;
+            organizer?: string;
             /** @enum {string} */
-            type: "TRAINING" | "COMPETITION";
+            type?: "TRAINING" | "COMPETITION";
             web?: string;
             /** Format: date */
             registrationDeadline?: string;
-            /**
-             * Format: int32
-             * @example Josef Pařízek
-             */
+            /** Format: int32 */
             coordinator?: number;
+            links?: components["schemas"]["Link"][];
+        };
+        PagedModelEntityModelEventResponse_Summary: {
+            links?: components["schemas"]["Link"][];
+            content?: components["schemas"]["EntityModelEventResponse_Summary"][];
+            page?: components["schemas"]["PageMetadata"];
+        };
+        EntityModelEventResponse_Detailed: {
+            /** Format: int32 */
+            id?: number;
+            /** Format: date */
+            date?: string;
+            name?: string;
+            location?: string;
+            organizer?: string;
+            /** @enum {string} */
+            type?: "TRAINING" | "COMPETITION";
+            web?: string;
+            /** Format: date */
+            registrationDeadline?: string;
+            /** Format: int32 */
+            coordinator?: number;
+            registrations?: components["schemas"]["EventRegistrationResponse_Detailed"][];
+            links?: components["schemas"]["Link"][];
         };
         EventRegistrationResponse_Detailed: {
             /** Format: int32 */
             memberId?: number;
             category?: string;
+        };
+        RepresentationModelEntityModelEventRegistrationForm: {
             links?: components["schemas"]["Link"][];
         };
-        EventResponseModel_Detailed: {
-            registrations?: components["schemas"]["EventRegistrationResponse_Detailed"][];
+        RepresentationModelObject: {
             links?: components["schemas"]["Link"][];
-            /** Format: int32 */
-            readonly id: number;
-            /** Format: date */
-            date: string;
-            /** @example Krátký den */
-            name: string;
-            /** @example Vacenovice */
-            location: string;
-            /** @example ZBM */
-            organizer: string;
-            /** @enum {string} */
-            type: "TRAINING" | "COMPETITION";
-            web?: string;
-            /** Format: date */
-            registrationDeadline?: string;
-            /**
-             * Format: int32
-             * @example Josef Pařízek
-             */
-            coordinator?: number;
         };
     };
     responses: never;
@@ -732,6 +820,51 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getUserGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Edit member grants form content */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberGrantsForm"];
+                };
+            };
+        };
+    };
+    updateUserGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of application user */
+                userId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MemberGrantsForm"];
+            };
+        };
+        responses: {
+            /** @description User grants were successfully updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     membersMemberIdSuspendMembershipFormGet: {
         parameters: {
             query?: never;
@@ -750,8 +883,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembershipSuspensionInfoApiDto"];
-                    "application/problem+json": components["schemas"]["MembershipSuspensionInfoApiDto"];
+                    "application/json": components["schemas"]["EntityModelMembershipSuspensionInfoApiDto"];
+                    "application/klabis+json": components["schemas"]["EntityModelMembershipSuspensionInfoApiDto"];
+                    "application/hal+json": components["schemas"]["EntityModelMembershipSuspensionInfoApiDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelMembershipSuspensionInfoApiDto"];
                 };
             };
             /** @description User is not allowed to perform requested operation */
@@ -760,8 +895,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -770,7 +904,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                     "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
@@ -778,10 +911,7 @@ export interface operations {
     };
     membersMemberIdSuspendMembershipFormPut: {
         parameters: {
-            query?: {
-                /** @description Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension */
-                force?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description ID of member */
@@ -789,7 +919,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipSuspensionInfoRequestDto"];
+            };
+        };
         responses: {
             /** @description Membership of club member was suspended successfully */
             200: {
@@ -822,7 +956,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -840,8 +974,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdSuspendMembershipFormPut409ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
+            };
+        };
+    };
+    resumeMembership: {
+        parameters: {
+            query: {
+                memberId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -863,8 +1017,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EditMyDetailsForm"];
-                    "application/problem+json": components["schemas"]["EditMyDetailsForm"];
+                    "application/json": components["schemas"]["EntityModelEditMyDetailsForm"];
+                    "application/klabis+json": components["schemas"]["EntityModelEditMyDetailsForm"];
+                    "application/hal+json": components["schemas"]["EntityModelEditMyDetailsForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEditMyDetailsForm"];
                 };
             };
             /** @description Invalid user input */
@@ -873,8 +1029,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -883,7 +1038,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                     "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
@@ -893,8 +1047,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -903,7 +1056,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                     "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
@@ -938,7 +1090,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -956,7 +1108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -988,8 +1140,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EditAnotherMemberDetailsForm"];
-                    "application/problem+json": components["schemas"]["EditAnotherMemberDetailsForm"];
+                    "application/json": components["schemas"]["EntityModelEditAnotherMemberDetailsForm"];
+                    "application/klabis+json": components["schemas"]["EntityModelEditAnotherMemberDetailsForm"];
+                    "application/hal+json": components["schemas"]["EntityModelEditAnotherMemberDetailsForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEditAnotherMemberDetailsForm"];
                 };
             };
             /** @description Invalid user input */
@@ -998,8 +1152,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -1008,7 +1161,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                     "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
@@ -1018,8 +1170,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -1028,7 +1179,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                     "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
                 };
             };
@@ -1095,54 +1245,6 @@ export interface operations {
             };
         };
     };
-    getMemberGrants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of member */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Edit member grants form content */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberGrantsForm"];
-                };
-            };
-        };
-    };
-    updateMemberGrants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of member */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["MemberGrantsForm"];
-            };
-        };
-        responses: {
-            /** @description Member grants were successfully updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     getRegistrationForm: {
         parameters: {
             query?: never;
@@ -1163,7 +1265,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventRegistrationForm"];
+                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
                 };
             };
             /** @description Invalid request */
@@ -1172,7 +1277,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventRegistrationForm"];
+                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -1181,7 +1289,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventRegistrationForm"];
+                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
                 };
             };
             /** @description User is not allowed to perform requested operation */
@@ -1190,7 +1301,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventRegistrationForm"];
+                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
                 };
             };
             /** @description Event with given doesn't exist */
@@ -1199,7 +1313,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventRegistrationForm"];
+                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
                 };
             };
         };
@@ -1271,8 +1388,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1313,6 +1430,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getRegistrationForm_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityModelMemberRegistrationForm"];
+                    "application/klabis+json": components["schemas"]["EntityModelMemberRegistrationForm"];
+                    "application/hal+json": components["schemas"]["EntityModelMemberRegistrationForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberRegistrationForm"];
+                };
             };
         };
     };
@@ -1486,14 +1626,17 @@ export interface operations {
         parameters: {
             query?: {
                 suspended?: boolean;
-                /** @description Defines how many data are returned for every item */
-                view?: "SUMMARY" | "DETAILED";
                 /** @description Zero-based page index (0..N) */
                 page?: number;
                 /** @description The size of the page to be returned */
                 size?: number;
                 /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
                 sort?: string[];
+                /**
+                 * @description Defines how many data are returned for every item
+                 * @example SUMMARY
+                 */
+                view?: "SUMMARY" | "DETAILED";
             };
             header?: never;
             path?: never;
@@ -1507,10 +1650,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PagedModelMembersApiResponse"];
-                    "application/klabis+json": components["schemas"]["PagedModelMembersApiResponse"];
-                    "application/hal+json": components["schemas"]["PagedModelMembersApiResponse"];
-                    "application/prs.hal-forms+json": components["schemas"]["PagedModelMembersApiResponse"];
+                    "application/json": components["schemas"]["PagedModelEntityModelMembersApiResponse"];
+                    "application/klabis+json": components["schemas"]["PagedModelEntityModelMembersApiResponse"];
+                    "application/hal+json": components["schemas"]["PagedModelEntityModelMembersApiResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelMembersApiResponse"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -1542,10 +1685,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembersApiResponse"];
-                    "application/klabis+json": components["schemas"]["MembersApiResponse"];
-                    "application/hal+json": components["schemas"]["MembersApiResponse"];
-                    "application/prs.hal-forms+json": components["schemas"]["MembersApiResponse"];
+                    "application/json": components["schemas"]["EntityModelMembersApiResponse"];
+                    "application/klabis+json": components["schemas"]["EntityModelMembersApiResponse"];
+                    "application/hal+json": components["schemas"]["EntityModelMembersApiResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelMembersApiResponse"];
                 };
             };
             /** @description Missing required user authentication or authentication failed */
@@ -1611,9 +1754,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CollectionModelEventResponseModel_Summary"];
-                    "application/klabis+json": components["schemas"]["CollectionModelEventResponseModel_Summary"];
-                    "application/hal+json": components["schemas"]["CollectionModelEventResponseModel_Summary"];
+                    "application/json": components["schemas"]["PagedModelEntityModelEventResponse_Summary"];
+                    "application/klabis+json": components["schemas"]["PagedModelEntityModelEventResponse_Summary"];
+                    "application/hal+json": components["schemas"]["PagedModelEntityModelEventResponse_Summary"];
+                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelEventResponse_Summary"];
                 };
             };
         };
@@ -1636,9 +1780,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventResponseModel_Detailed"];
-                    "application/klabis+json": components["schemas"]["EventResponseModel_Detailed"];
-                    "application/hal+json": components["schemas"]["EventResponseModel_Detailed"];
+                    "application/json": components["schemas"]["EntityModelEventResponse_Detailed"];
+                    "application/klabis+json": components["schemas"]["EntityModelEventResponse_Detailed"];
+                    "application/hal+json": components["schemas"]["EntityModelEventResponse_Detailed"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventResponse_Detailed"];
+                };
+            };
+        };
+    };
+    rootNavigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepresentationModelObject"];
+                    "application/klabis+json": components["schemas"]["RepresentationModelObject"];
+                    "application/hal+json": components["schemas"]["RepresentationModelObject"];
+                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelObject"];
                 };
             };
         };

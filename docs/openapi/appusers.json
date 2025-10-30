@@ -11,26 +11,15 @@
     }
   ],
   "paths": {
-    "/members/{memberId}/changeGrantsForm": {
+    "/users/{userId}/changeGrantsForm": {
       "get": {
         "tags": [
           "User permissions"
         ],
         "summary": "returns grants assigned to member",
         "description": "Requires `members:permissions` grant",
-        "operationId": "getMemberGrants",
-        "parameters": [
-          {
-            "name": "memberId",
-            "in": "path",
-            "description": "ID of member",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
+        "operationId": "getUserGrants",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "Edit member grants form content",
@@ -60,14 +49,14 @@
         "tags": [
           "User permissions"
         ],
-        "summary": "updates grants assigned to member",
+        "summary": "updates grants assigned to user",
         "description": "Requires `members:permissions` grant",
-        "operationId": "updateMemberGrants",
+        "operationId": "updateUserGrants",
         "parameters": [
           {
-            "name": "memberId",
+            "name": "userId",
             "in": "path",
-            "description": "ID of member",
+            "description": "ID of application user",
             "required": true,
             "schema": {
               "type": "integer",
@@ -86,15 +75,10 @@
         },
         "responses": {
           "200": {
-            "description": "Member grants were successfully updated"
+            "description": "User grants were successfully updated"
           }
         },
         "security": [
-          {
-            "klabis": [
-              "openid"
-            ]
-          },
           {
             "klabis": [
               "openapi"

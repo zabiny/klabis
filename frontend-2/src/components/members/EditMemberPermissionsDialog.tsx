@@ -39,7 +39,7 @@ const EditMemberPermissionsDialog = ({
                 </IconButton>
             </DialogTitle>
             <DialogContent dividers sx={{p: 0}}>
-                <EditMemberPermissionsForm memberId={memberId}/>
+                <EditMemberPermissionsForm userId={memberId}/>
             </DialogContent>
         </Dialog>
     );

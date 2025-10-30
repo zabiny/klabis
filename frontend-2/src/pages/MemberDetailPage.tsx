@@ -62,6 +62,8 @@ const MemberDetailPage = () => {
         error
     } = useKlabisApiQuery("get", "/members/{memberId}", {params: {path: {memberId: memberIdNumber}}});
 
+    const userId: number = memberResponse?.userId;
+
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
     };
@@ -351,9 +353,9 @@ const MemberDetailPage = () => {
                     </Grid>
                 </TabPanel>
 
-                {hasAction(member, 'members:permissions') && (
+                {hasAction(member, 'members:permissions') && userId && (
                     <TabPanel value={tabValue} index={3}>
-                        <EditMemberPermissionsForm memberId={Number(memberId)}/>
+                        <EditMemberPermissionsForm userId={Number(userId)}/>
                     </TabPanel>
                 )}
             </Paper>

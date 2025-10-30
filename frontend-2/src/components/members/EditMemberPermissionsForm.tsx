@@ -121,22 +121,22 @@ const EditMemberPermissionsFormUI = ({
 };
 
 interface EditMemberPermissionsFormProps {
-    memberId: number;
+    userId: number;
 }
 
-const EditMemberPermissionsForm = ({memberId}: EditMemberPermissionsFormProps) => {
+const EditMemberPermissionsForm = ({userId}: EditMemberPermissionsFormProps) => {
     const {data: allGrants, isLoading: isLoadingGrants} = useKlabisApiQuery("get", "/grants");
     const {
         data: memberGrants,
         isLoading: isLoadingMemberGrants
-    } = useKlabisApiQuery("get", "/members/{memberId}/changeGrantsForm", {params: {path: {memberId: memberId}}});
+    } = useKlabisApiQuery("get", "/users/{userId}/changeGrantsForm", {params: {path: {userId: userId}}});
 
-    const mutation = useKlabisApiMutation("put", "/members/{memberId}/changeGrantsForm");
+    const mutation = useKlabisApiMutation("put", "/users/{userId}/changeGrantsForm");
 
     const handleSubmit = async (formData: GetMemberGrantsResponse) => {
         try {
             // TODO: invalidate related queries
-            await mutation.mutateAsync({body: formData, params: {path: {memberId: memberId}}});
+            await mutation.mutateAsync({body: formData, params: {path: {userId: userId}}});
         } catch (error) {
             console.error('Chyba při ukládání oprávnění:', error);
         }

@@ -20,7 +20,7 @@
     "/members/{memberId}/suspendMembershipForm": {
       "get": {
         "tags": [
-          "Suspend member"
+          "Suspend membership"
         ],
         "summary": "Retrieve information about member account status for membership suspension",
         "description": "Returns information about member account to be suspended.   #### Required authorization requires `members:suspendMembership` grant ",
@@ -43,12 +43,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembershipSuspensionInfoApiDto"
+                  "$ref": "#/components/schemas/EntityModelMembershipSuspensionInfoApiDto"
                 }
               },
-              "application/problem+json": {
+              "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembershipSuspensionInfoApiDto"
+                  "$ref": "#/components/schemas/EntityModelMembershipSuspensionInfoApiDto"
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelMembershipSuspensionInfoApiDto"
+                }
+              },
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelMembershipSuspensionInfoApiDto"
                 }
               }
             }
@@ -56,14 +66,9 @@
           "403": {
             "description": "User is not allowed to perform requested operation",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -71,11 +76,6 @@
           "404": {
             "description": "Missing required user authentication or authentication failed",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
@@ -87,14 +87,14 @@
         "security": [
           {
             "klabis": [
-              "openapi"
+              "members"
             ]
           }
         ]
       },
       "put": {
         "tags": [
-          "Suspend member"
+          "Suspend membership"
         ],
         "summary": "Suspend membership for a club member",
         "description": "Suspends membership for a club member.   If there are some blockers (debt, etc), it responds with HTTP \u0027409\u0027 unless `force\u003dtrue` parameter was used.  #### Required authorization requires `members:suspendMembership` grant ",
@@ -109,18 +109,18 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "force",
-            "in": "query",
-            "description": "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MembershipSuspensionInfoRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Membership of club member was suspended successfully"
@@ -150,7 +150,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -170,7 +170,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdSuspendMembershipFormPut409ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -179,7 +179,38 @@
         "security": [
           {
             "klabis": [
-              "openapi"
+              "members"
+            ]
+          }
+        ]
+      }
+    },
+    "/members/{memberId}/resumeMembershipForm": {
+      "put": {
+        "tags": [
+          "Suspend membership"
+        ],
+        "operationId": "resumeMembership",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "klabis": [
+              "members"
             ]
           }
         ]
@@ -210,12 +241,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EditMyDetailsForm"
+                  "$ref": "#/components/schemas/EntityModelEditMyDetailsForm"
                 }
               },
-              "application/problem+json": {
+              "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EditMyDetailsForm"
+                  "$ref": "#/components/schemas/EntityModelEditMyDetailsForm"
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEditMyDetailsForm"
+                }
+              },
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEditMyDetailsForm"
                 }
               }
             }
@@ -223,14 +264,9 @@
           "400": {
             "description": "Invalid user input",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -238,11 +274,6 @@
           "401": {
             "description": "Missing required user authentication or authentication failed",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
@@ -253,14 +284,9 @@
           "403": {
             "description": "User is not allowed to perform requested operation",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -268,11 +294,6 @@
           "404": {
             "description": "Missing required user authentication or authentication failed",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
@@ -284,7 +305,7 @@
         "security": [
           {
             "klabis": [
-              "openapi"
+              "members"
             ]
           }
         ]
@@ -326,7 +347,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -346,7 +367,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -365,7 +386,7 @@
         "security": [
           {
             "klabis": [
-              "openapi"
+              "members"
             ]
           }
         ]
@@ -397,12 +418,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EditAnotherMemberDetailsForm"
+                  "$ref": "#/components/schemas/EntityModelEditAnotherMemberDetailsForm"
                 }
               },
-              "application/problem+json": {
+              "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EditAnotherMemberDetailsForm"
+                  "$ref": "#/components/schemas/EntityModelEditAnotherMemberDetailsForm"
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEditAnotherMemberDetailsForm"
+                }
+              },
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEditAnotherMemberDetailsForm"
                 }
               }
             }
@@ -410,14 +441,9 @@
           "400": {
             "description": "Invalid user input",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -425,11 +451,6 @@
           "401": {
             "description": "Missing required user authentication or authentication failed",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
@@ -440,14 +461,9 @@
           "403": {
             "description": "User is not allowed to perform requested operation",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"
+                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
                 }
               }
             }
@@ -455,11 +471,6 @@
           "404": {
             "description": "Missing required user authentication or authentication failed",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
-                }
-              },
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/RFC7807ErrorResponseApiDto"
@@ -471,7 +482,7 @@
         "security": [
           {
             "klabis": [
-              "openapi"
+              "members"
             ]
           }
         ]
@@ -552,13 +563,53 @@
         "security": [
           {
             "klabis": [
-              "openapi"
+              "members"
             ]
           }
         ]
       }
     },
     "/memberRegistrations": {
+      "get": {
+        "tags": [
+          "Register members"
+        ],
+        "operationId": "getRegistrationForm",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelMemberRegistrationForm"
+                }
+              },
+              "application/klabis+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelMemberRegistrationForm"
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelMemberRegistrationForm"
+                }
+              },
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelMemberRegistrationForm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "klabis": [
+              "members"
+            ]
+          }
+        ]
+      },
       "post": {
         "tags": [
           "Register members"
@@ -624,7 +675,7 @@
         "security": [
           {
             "klabis": [
-              "openapi"
+              "members"
             ]
           }
         ]
@@ -736,19 +787,6 @@
             }
           },
           {
-            "name": "view",
-            "in": "query",
-            "description": "Defines how many data are returned for every item",
-            "schema": {
-              "type": "string",
-              "default": "SUMMARY",
-              "enum": [
-                "SUMMARY",
-                "DETAILED"
-              ]
-            }
-          },
-          {
             "name": "page",
             "in": "query",
             "description": "Zero-based page index (0..N)",
@@ -776,6 +814,20 @@
                 "type": "string"
               }
             }
+          },
+          {
+            "name": "view",
+            "in": "query",
+            "description": "Defines how many data are returned for every item",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SUMMARY",
+                "DETAILED"
+              ]
+            },
+            "example": "SUMMARY"
           }
         ],
         "responses": {
@@ -784,22 +836,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedModelMembersApiResponse"
+                  "$ref": "#/components/schemas/PagedModelEntityModelMembersApiResponse"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedModelMembersApiResponse"
+                  "$ref": "#/components/schemas/PagedModelEntityModelMembersApiResponse"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedModelMembersApiResponse"
+                  "$ref": "#/components/schemas/PagedModelEntityModelMembersApiResponse"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedModelMembersApiResponse"
+                  "$ref": "#/components/schemas/PagedModelEntityModelMembersApiResponse"
                 }
               }
             }
@@ -850,22 +902,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersApiResponse"
+                  "$ref": "#/components/schemas/EntityModelMembersApiResponse"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersApiResponse"
+                  "$ref": "#/components/schemas/EntityModelMembersApiResponse"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersApiResponse"
+                  "$ref": "#/components/schemas/EntityModelMembersApiResponse"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MembersApiResponse"
+                  "$ref": "#/components/schemas/EntityModelMembersApiResponse"
                 }
               }
             }
@@ -1032,132 +1084,18 @@
           "title"
         ]
       },
-      "MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto": {
+      "MembershipSuspensionInfoRequestDto": {
         "type": "object",
+        "description": "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          }
-        }
-      },
-      "MembersMemberIdEditMemberInfoFormGet403ResponseApiDto": {
-        "type": "object",
-        "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          },
-          "title": {
-            "type": "string",
-            "description": "Description of the error status"
-          },
-          "status": {
-            "type": "integer",
-            "format": "int32",
-            "description": "error status value"
-          },
-          "detail": {
-            "type": "string",
-            "description": "User friendly description of the error"
-          },
-          "instance": {
-            "type": "string",
-            "description": "URI of the resource which has thrown the error"
-          },
-          "type": {
-            "type": "string"
-          },
-          "missingGrant": {
-            "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto"
-          }
-        },
-        "required": [
-          "detail",
-          "instance",
-          "status",
-          "title"
-        ]
-      },
-      "MembersMemberIdSuspendMembershipFormPut409ResponseApiDto": {
-        "type": "object",
-        "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          },
-          "title": {
-            "type": "string",
-            "description": "Description of the error status"
-          },
-          "status": {
-            "type": "integer",
-            "format": "int32",
-            "description": "error status value"
-          },
-          "detail": {
-            "type": "string",
-            "description": "User friendly description of the error"
-          },
-          "instance": {
-            "type": "string",
-            "description": "URI of the resource which has thrown the error"
-          },
-          "type": {
-            "type": "string"
-          },
-          "blockers": {
-            "$ref": "#/components/schemas/SuspendMembershipBlockers"
-          }
-        },
-        "required": [
-          "blockers",
-          "detail",
-          "instance",
-          "status",
-          "title"
-        ]
-      },
-      "SuspendMembershipBlockers": {
-        "type": "object",
-        "description": "describes conditions which may prevent membership suspension and their actual status",
-        "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          },
-          "finance": {
-            "$ref": "#/components/schemas/SuspendMembershipBlockersFinanceApiDto"
-          }
-        },
-        "required": [
-          "finance"
-        ]
-      },
-      "SuspendMembershipBlockersFinanceApiDto": {
-        "type": "object",
-        "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          },
-          "status": {
+          "force": {
             "type": "boolean",
-            "description": "tells if finance account balance permits membership suspension"
+            "description": "tells if member account should be suspended even when there are some unfinished things (canSuspend\u003dfalse)",
+            "writeOnly": true
           }
         },
         "required": [
-          "status"
+          "force"
         ]
       },
       "AddressApiDto": {
@@ -1227,12 +1165,6 @@
         "type": "object",
         "description": "Member attributes which can be updated by member himself (member can update some own attributes)    #### Required authorization - user can edit own member data   Additional validations: - either contact or at least 1 guardian needs to be entered ",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          },
           "identityCard": {
             "$ref": "#/components/schemas/IdentityCardApiDto"
           },
@@ -1339,9 +1271,19 @@
           "lastName"
         ]
       },
-      "EditAnotherMemberDetailsForm": {
+      "MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto": {
         "type": "object",
-        "description": "Member attributes editable by authorized user who can change details about other members  #### Required authorization - requires `members:edit` grant  Additional validations:  - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            }
+          }
+        }
+      },
+      "MembersMemberIdEditMemberInfoFormGet403ResponseApiDto": {
+        "type": "object",
         "properties": {
           "links": {
             "type": "array",
@@ -1349,13 +1291,50 @@
               "$ref": "#/components/schemas/Link"
             }
           },
+          "title": {
+            "type": "string",
+            "description": "Description of the error status"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "error status value"
+          },
+          "detail": {
+            "type": "string",
+            "description": "User friendly description of the error"
+          },
+          "instance": {
+            "type": "string",
+            "description": "URI of the resource which has thrown the error"
+          },
+          "type": {
+            "type": "string"
+          },
+          "missingGrant": {
+            "$ref": "#/components/schemas/MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto"
+          }
+        },
+        "required": [
+          "detail",
+          "instance",
+          "status",
+          "title"
+        ]
+      },
+      "EditAnotherMemberDetailsForm": {
+        "type": "object",
+        "description": "Member attributes editable by authorized user who can change details about other members  #### Required authorization - requires `members:edit` grant  Additional validations:  - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value",
+        "properties": {
           "firstName": {
             "type": "string",
-            "description": "First name of the club member"
+            "description": "First name of the club member",
+            "minLength": 1
           },
           "lastName": {
             "type": "string",
-            "description": "Last name of the club member"
+            "description": "Last name of the club member",
+            "minLength": 1
           },
           "dateOfBirth": {
             "type": "string",
@@ -1370,6 +1349,7 @@
           "nationality": {
             "type": "string",
             "description": "two letter country code, ISO 3166-1 alpha-2",
+            "minLength": 1,
             "pattern": "^[A-Z]{2}$"
           },
           "sex": {
@@ -1434,12 +1414,6 @@
         "type": "object",
         "description": "Data required to register new member.    #### Required authorization - requires `members:register` grant  Additional validations:  - either contact or guardian needs to be set - when nationality is different than `CZ`, `birthCertificateNumber` value will be ignored",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          },
           "firstName": {
             "type": "string",
             "description": "First name of the club member"
@@ -1531,39 +1505,17 @@
           "suggestedRegistrationNumber"
         ]
       },
-      "LicencesApiDto": {
+      "EntityModelMembersApiResponse": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          },
-          "ob": {
-            "$ref": "#/components/schemas/OBLicenceApiDto"
-          },
-          "referee": {
-            "$ref": "#/components/schemas/RefereeLicenceApiDto"
-          },
-          "trainer": {
-            "$ref": "#/components/schemas/TrainerLicenceApiDto"
-          }
-        }
-      },
-      "MembersApiResponse": {
-        "type": "object",
-        "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          },
           "id": {
             "type": "integer",
             "format": "int32",
             "description": "Unique identifier for the club member"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32"
           },
           "firstName": {
             "type": "string",
@@ -1647,6 +1599,12 @@
           "medicCourse": {
             "type": "boolean",
             "description": "Whether the club member has completed the medic course"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            }
           }
         },
         "required": [
@@ -1659,6 +1617,26 @@
           "registrationNumber",
           "sex"
         ]
+      },
+      "LicencesApiDto": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            }
+          },
+          "ob": {
+            "$ref": "#/components/schemas/OBLicenceApiDto"
+          },
+          "referee": {
+            "$ref": "#/components/schemas/RefereeLicenceApiDto"
+          },
+          "trainer": {
+            "$ref": "#/components/schemas/TrainerLicenceApiDto"
+          }
+        }
       },
       "OBLicenceApiDto": {
         "type": "object",
@@ -1706,7 +1684,7 @@
           }
         }
       },
-      "PagedModelMembersApiResponse": {
+      "PagedModelEntityModelMembersApiResponse": {
         "type": "object",
         "properties": {
           "links": {
@@ -1718,7 +1696,7 @@
           "content": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MembersApiResponse"
+              "$ref": "#/components/schemas/EntityModelMembersApiResponse"
             }
           },
           "page": {
@@ -1784,31 +1762,260 @@
           "licence"
         ]
       },
-      "MembershipSuspensionInfoApiDto": {
+      "EntityModelMembershipSuspensionInfoApiDto": {
         "type": "object",
         "properties": {
+          "isSuspended": {
+            "type": "boolean",
+            "description": "tells if member account is currently suspended",
+            "readOnly": true
+          },
+          "canSuspend": {
+            "type": "boolean",
+            "description": "tells if member account can be suspended",
+            "readOnly": true
+          },
+          "details": {
+            "$ref": "#/components/schemas/SuspendMembershipBlockers",
+            "readOnly": true
+          },
+          "force": {
+            "type": "boolean",
+            "description": "tells if member account should be suspended even when there are some unfinished things (canSuspend\u003dfalse)",
+            "writeOnly": true
+          },
           "links": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Link"
             }
-          },
-          "isSuspended": {
-            "type": "boolean",
-            "description": "tells if member account is currently suspended"
-          },
-          "canSuspend": {
-            "type": "boolean",
-            "description": "tells if member account can be suspended"
-          },
-          "details": {
-            "$ref": "#/components/schemas/SuspendMembershipBlockers"
           }
         },
         "required": [
           "canSuspend",
           "details",
+          "force",
           "isSuspended"
+        ]
+      },
+      "SuspendMembershipBlockers": {
+        "type": "object",
+        "description": "describes conditions which may prevent membership suspension and their actual status",
+        "properties": {
+          "finance": {
+            "$ref": "#/components/schemas/SuspendMembershipBlockersFinanceApiDto"
+          }
+        },
+        "required": [
+          "finance"
+        ]
+      },
+      "SuspendMembershipBlockersFinanceApiDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "boolean",
+            "description": "tells if finance account balance permits membership suspension"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "EntityModelEditMyDetailsForm": {
+        "type": "object",
+        "properties": {
+          "identityCard": {
+            "$ref": "#/components/schemas/IdentityCardApiDto"
+          },
+          "nationality": {
+            "type": "string",
+            "description": "two letter country code, ISO 3166-1 alpha-2",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "address": {
+            "$ref": "#/components/schemas/AddressApiDto"
+          },
+          "contact": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "guardians": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LegalGuardianApiDto"
+            }
+          },
+          "siCard": {
+            "type": "integer",
+            "format": "int32",
+            "description": "SI chip used by member"
+          },
+          "bankAccount": {
+            "type": "string",
+            "description": "Bank account number of the club member IBAN"
+          },
+          "dietaryRestrictions": {
+            "type": "string",
+            "description": "Dietary restrictions of the club member"
+          },
+          "drivingLicence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "B",
+                "BE",
+                "C",
+                "D"
+              ]
+            }
+          },
+          "medicCourse": {
+            "type": "boolean",
+            "description": "Whether the club member has completed the medic course"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            }
+          }
+        },
+        "required": [
+          "address",
+          "nationality"
+        ]
+      },
+      "EntityModelEditAnotherMemberDetailsForm": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "description": "First name of the club member",
+            "minLength": 1
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Last name of the club member",
+            "minLength": 1
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of birth of the club member"
+          },
+          "birthCertificateNumber": {
+            "type": "string",
+            "description": "Birth certificate number for Czech citizens",
+            "pattern": "^[0-9]{6}/[0-9]{3,4}$"
+          },
+          "nationality": {
+            "type": "string",
+            "description": "two letter country code, ISO 3166-1 alpha-2",
+            "minLength": 1,
+            "pattern": "^[A-Z]{2}$"
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ]
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            }
+          }
+        },
+        "required": [
+          "dateOfBirth",
+          "firstName",
+          "lastName",
+          "nationality",
+          "sex"
+        ]
+      },
+      "EntityModelMemberRegistrationForm": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "description": "First name of the club member"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Last name of the club member"
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ]
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of birth of the club member"
+          },
+          "birthCertificateNumber": {
+            "type": "string",
+            "description": "Birth certificate number for Czech citizens",
+            "pattern": "^[0-9]{6}/[0-9]{3,4}$"
+          },
+          "nationality": {
+            "type": "string",
+            "description": "two letter country code, ISO 3166-1 alpha-2",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "address": {
+            "$ref": "#/components/schemas/AddressApiDto"
+          },
+          "contact": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "guardians": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LegalGuardianApiDto"
+            }
+          },
+          "siCard": {
+            "type": "integer",
+            "format": "int32",
+            "description": "SI chip used by member"
+          },
+          "bankAccount": {
+            "type": "string",
+            "description": "Bank account number of the club member IBAN",
+            "pattern": "^[A-Z]{2}[0-9]+$"
+          },
+          "registrationNumber": {
+            "type": "string",
+            "description": "ORIS registration number",
+            "pattern": "^[A-Z]{3}[0-9]{4}$"
+          },
+          "orisId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Oris ID of registered orienteering runner"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            }
+          }
+        },
+        "required": [
+          "address",
+          "dateOfBirth",
+          "firstName",
+          "lastName",
+          "nationality",
+          "sex"
         ]
       }
     },
