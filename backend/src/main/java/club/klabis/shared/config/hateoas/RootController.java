@@ -2,6 +2,7 @@ package club.klabis.shared.config.hateoas;
 
 import club.klabis.events.domain.Event;
 import club.klabis.finance.infrastructure.restapi.FinanceAccountsController;
+import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.KlabisUserAuthentication;
@@ -40,8 +41,10 @@ class RootController {
                         .withRel(linkRelationProvider.getCollectionResourceRelFor(Event.class)))
                 .build();
 
-        result.addIf(user != null, () -> linkTo(methodOn(FinanceAccountsController.class).getAccount(user.getId()
-                .value())).withRel("finance"));
+        // TODO: fix getAccount parameter - create Principal object which will hold UserId, MemberId and grants
+        result.addIf(user != null,
+                () -> linkTo(methodOn(FinanceAccountsController.class).getAccount(new MemberId(user.getId()
+                        .value()))).withRel("finance"));
 
         return result;
     }

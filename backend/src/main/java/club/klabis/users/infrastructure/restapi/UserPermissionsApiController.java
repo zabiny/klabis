@@ -42,8 +42,7 @@ public class UserPermissionsApiController implements UserPermissionsApi {
 
     @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
-    public ResponseEntity<MemberGrantsFormApiDto> getUserGrants(int userIdValue) {
-        ApplicationUser.Id userId = new ApplicationUser.Id(userIdValue);
+    public ResponseEntity<MemberGrantsFormApiDto> getUserGrants(ApplicationUser.Id userId) {
         ApplicationUser appUser = applicationUsersRepository.findById(userId)
                 .orElseThrow(() -> ApplicationUserNotFound.forUserId(userId));
 
@@ -53,11 +52,11 @@ public class UserPermissionsApiController implements UserPermissionsApi {
 
     @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
-    public ResponseEntity<Void> updateMemberGrants(int userId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
+    public ResponseEntity<Void> updateMemberGrants(ApplicationUser.Id userId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
         Collection<ApplicationGrant> globalGrants = conversionService.convert(
                 memberGrantsFormApiDto.getGrants(),
                 TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
-        userGrantsUpdateUseCase.setGlobalGrants(new ApplicationUser.Id(userId), globalGrants);
+        userGrantsUpdateUseCase.setGlobalGrants(userId, globalGrants);
         return ResponseEntity.ok(null);
     }
 }

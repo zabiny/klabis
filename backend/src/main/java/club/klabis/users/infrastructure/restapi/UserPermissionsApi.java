@@ -6,6 +6,7 @@
 package club.klabis.users.infrastructure.restapi;
 
 import club.klabis.shared.config.restapi.ApiController;
+import club.klabis.users.domain.ApplicationUser;
 import club.klabis.users.infrastructure.restapi.dto.GetAllGrants200ResponseApiDto;
 import club.klabis.users.infrastructure.restapi.dto.MemberGrantsFormApiDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -67,7 +68,7 @@ public interface UserPermissionsApi {
             produces = {"application/json"}
     )
     ResponseEntity<MemberGrantsFormApiDto> getUserGrants(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("userId") int userId
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("userId") ApplicationUser.Id userId
     );
 
     @Operation(
@@ -84,7 +85,7 @@ public interface UserPermissionsApi {
             consumes = {"application/json"}
     )
     ResponseEntity<Void> updateMemberGrants(
-            @Parameter(name = "userId", description = "ID of application user", required = true, in = ParameterIn.PATH) @PathVariable("userId") int userId,
+            @Parameter(name = "userId", description = "ID of application user", required = true, in = ParameterIn.PATH) @PathVariable("userId") ApplicationUser.Id userId,
             @Parameter(name = "MemberGrantsFormApiDto", description = "") @Valid @RequestBody(required = false) MemberGrantsFormApiDto memberGrantsFormApiDto
     );
 

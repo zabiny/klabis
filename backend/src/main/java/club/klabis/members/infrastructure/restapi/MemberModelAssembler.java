@@ -75,7 +75,7 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
         if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
             entity.getAppUserId()
                     .ifPresent(appUserId -> target.add(linkTo(methodOn(UserPermissionsApi.class).getUserGrants(
-                            appUserId.value())).withRel(
+                            appUserId)).withRel(
                             ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName())));
         }
     }

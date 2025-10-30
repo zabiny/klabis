@@ -29,19 +29,19 @@ public class FinanceAccountsController {
 
     @GetMapping(path = "/finance/{accountId}")
     @HasMemberGrant(memberId = "#accountId")
-    public ResponseEntity<EntityModel<AccountReponse>> getAccount(@PathVariable("accountId") Integer accountId) {
+    public ResponseEntity<EntityModel<AccountReponse>> getAccount(@PathVariable("accountId") MemberId accountId) {
         Accounts accounts = eventsRepository.rebuild(new Accounts());
 
-        return accounts.getAccount(new MemberId(accountId))
+        return accounts.getAccount(accountId)
                 .map(accountReponseMapper::toResponseModel)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new AccountNotFoundException(new MemberId(accountId)));
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
 
     @GetMapping(path = "/finance/{accountId}/transactions")
     @HasMemberGrant(memberId = "#accountId")
     @PageableAsQueryParam
-    public ResponseEntity<PagedModel<TransactionItemResponse>> getTransactions(@PathVariable("accountId") Integer accountId, Pageable page) {
+    public ResponseEntity<PagedModel<TransactionItemResponse>> getTransactions(@PathVariable("accountId") MemberId accountId, Pageable page) {
         return ResponseEntity.ok(PagedModel.empty(ResolvableType.forType(TransactionItemResponse.class)));
     }
 

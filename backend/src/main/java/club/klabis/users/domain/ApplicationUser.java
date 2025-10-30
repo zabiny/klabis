@@ -21,6 +21,7 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
             LAST_ID = new Id(LAST_ID.value() + 1);
             return LAST_ID;
         }
+
     }
 
     @Identity

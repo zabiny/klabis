@@ -15,14 +15,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Mapper(config = DomainToDtoMapperConfiguration.class, componentModel = "spring")
 public abstract class AccountResponseModelMapper extends AbstractRepresentationModelMapper<Account, AccountReponse> {
 
-    @Mapping(target = "accountId", source = "owner.value")
+    @Mapping(target = "ownerId", source = "owner")
     @Override
     public abstract AccountReponse toResponse(Account event);
 
     @Override
     public void addLinks(EntityModel<AccountReponse> resource) {
         resource.add(linkTo(methodOn(FinanceAccountsController.class).getTransactions(resource.getContent()
-                .accountId(), Pageable.ofSize(10).first())).withRel("transactions"));
+                .ownerId(), Pageable.ofSize(10).first())).withRel("transactions"));
     }
 
     @Override
