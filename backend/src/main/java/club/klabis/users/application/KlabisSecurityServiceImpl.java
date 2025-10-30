@@ -35,11 +35,16 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
         }
     }
 
+    private Optional<MemberId> getPrincipalMemberId() {
+        return getPrincipal()
+                .map(ApplicationUser::getId)
+                .flatMap(membersRepository::findMemberByAppUserId)
+                .map(Member::getId);
+    }
+
     @Override
     public boolean canEditMemberData(MemberId dataMemberId) {
-        boolean canEditMemberData = getPrincipal().map(ApplicationUser::getId)
-                .flatMap(membersRepository::findMemberByAppUserId)
-                .map(Member::getId)
+        boolean canEditMemberData = getPrincipalMemberId()
                 .map(dataMemberId::equals)
                 .orElse(false);
 
