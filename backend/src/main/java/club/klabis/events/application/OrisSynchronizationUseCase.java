@@ -4,13 +4,13 @@ import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisData;
 import club.klabis.events.domain.OrisId;
+import club.klabis.shared.config.ddd.UseCase;
 import jakarta.validation.Valid;
-import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.Optional;
 
-@Service
+@UseCase
 public class OrisSynchronizationUseCase {
 
     private final EventsRepository eventsRepository;

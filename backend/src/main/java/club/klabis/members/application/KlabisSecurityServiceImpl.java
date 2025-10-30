@@ -1,7 +1,6 @@
-package club.klabis.users.application;
+package club.klabis.members.application;
 
 import club.klabis.members.MemberId;
-import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
 import club.klabis.shared.config.restapi.KlabisUserAuthentication;
 import club.klabis.shared.config.security.ApplicationGrant;
