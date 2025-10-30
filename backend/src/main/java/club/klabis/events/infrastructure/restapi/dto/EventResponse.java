@@ -18,7 +18,7 @@ import java.util.Optional;
 @Relation("event")
 @JsonTypeName("Event")
 @RecordBuilder
-public record EventResponse(@JsonIgnore Event source, Integer id,
+public record EventResponse(@JsonIgnore Event source, Event.Id id,
                             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, String name,
                             String location, String organizer, TypeEnum type,
                             String web, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate registrationDeadline,

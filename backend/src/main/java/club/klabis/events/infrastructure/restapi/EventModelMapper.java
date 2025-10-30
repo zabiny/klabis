@@ -23,10 +23,6 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
 
     private KlabisSecurityService klabisSecurityService;
 
-    public Integer mapId(Event.Id eventID) {
-        return eventID.value();
-    }
-
     @Mapping(target = "type", ignore = true)
     @Mapping(target = "web", source = "website")
     @Mapping(target = "coordinator", ignore = true)
@@ -60,15 +56,15 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
         if (event.areRegistrationsOpen()) {
             if (event.isMemberRegistered(memberId)) {
                 resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .submitRegistrationForm(event.getId().value(), memberId.value(), null))
+                                .submitRegistrationForm(event.getId(), memberId.value(), null))
                         .withRel("updateRegistration"));
 
                 resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .cancelEventRegistration(event.getId().value(), memberId.value()))
+                                .cancelEventRegistration(event.getId(), memberId.value()))
                         .withRel("cancelRegistration"));
             } else {
                 resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .submitRegistrationForm(event.getId().value(), memberId.value(), null))
+                                .submitRegistrationForm(event.getId(), memberId.value(), null))
                         .withRel("createRegistration"));
             }
         }

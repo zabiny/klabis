@@ -41,10 +41,10 @@ public class EventRegistrationsController {
             }
     )
     @GetMapping
-    RepresentationModel<EntityModel<EventRegistrationForm>> getEventRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId) {
+    RepresentationModel<EntityModel<EventRegistrationForm>> getEventRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") int memberId) {
 
         EventRegistrationForm form = useCase.getEventRegistrationForm(
-                new Event.Id(event),
+                event,
                 new MemberId(memberId));
 
         return EntityModel.of(form,
@@ -72,15 +72,15 @@ public class EventRegistrationsController {
             }
     )
     @PutMapping
-    ResponseEntity<Void> submitRegistrationForm(@PathVariable(name = "eventId") int event, @PathVariable(name = "memberId") int memberId, @RequestBody EventRegistrationForm form) {
-        useCase.registerForEvent(new Event.Id(event), new MemberId(memberId), form);
+    ResponseEntity<Void> submitRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") int memberId, @RequestBody EventRegistrationForm form) {
+        useCase.registerForEvent(event, new MemberId(memberId), form);
         return ResponseEntity.created(linkTo(methodOn(this.getClass())
                 .getEventRegistrationForm(event, memberId)).toUri()).build();
     }
 
     @DeleteMapping
-    ResponseEntity<Void> cancelEventRegistration(@PathVariable(name = "eventId") int eventId, @PathVariable(name = "memberId") int memberId) {
-        useCase.cancelMemberRegistration(new Event.Id(eventId), new MemberId(memberId));
+    ResponseEntity<Void> cancelEventRegistration(@PathVariable(name = "eventId") Event.Id eventId, @PathVariable(name = "memberId") int memberId) {
+        useCase.cancelMemberRegistration(eventId, new MemberId(memberId));
         return ResponseEntity.noContent().build();
     }
 }

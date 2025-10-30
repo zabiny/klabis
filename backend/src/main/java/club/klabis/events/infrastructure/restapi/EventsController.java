@@ -73,10 +73,10 @@ public class EventsController {
             value = "/{eventId}"
     )
     @JsonView(ResponseViews.Detailed.class)
-    EntityModel<EventResponse> getEventById(@PathVariable("eventId") int eventId) {
-        return eventsRepository.findById(new Event.Id(eventId))
+    EntityModel<EventResponse> getEventById(@PathVariable("eventId") Event.Id eventId) {
+        return eventsRepository.findById(eventId)
                 .map(eventModelMapper::toResponseModel)
-                .orElseThrow(() -> EventException.createEventNotFoundException(new Event.Id(eventId)));
+                .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
     }
 
 }
