@@ -35,14 +35,17 @@ public class TokenConfiguration {
             ApplicationUsersRepository appusersRepository, MembersRepository membersRepository) {
         return (context) -> {
             if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())) {
-                appusersRepository.findByUserName(context.getPrincipal().getName()).flatMap(ApplicationUser::getMemberId).ifPresent(memberId -> {
-                    context.getClaims().claim(StandardClaimNames.PREFERRED_USERNAME, context.getPrincipal().getName());
-                    context.getClaims().claim(StandardClaimNames.SUB, memberId.value());
-                    membersRepository.findById(memberId).ifPresent(existingMember -> {
-                        context.getClaims().claim(StandardClaimNames.GIVEN_NAME, existingMember.getFirstName());
-                        context.getClaims().claim(StandardClaimNames.FAMILY_NAME, existingMember.getLastName());
-                    });
-                });
+                appusersRepository.findByUserNameValue(context.getPrincipal().getName())
+                        .map(ApplicationUser::getId)
+                        .ifPresent(appUserId -> {
+                            context.getClaims()
+                                    .claim(StandardClaimNames.PREFERRED_USERNAME, context.getPrincipal().getName());
+                            context.getClaims().claim(StandardClaimNames.SUB, appUserId.value());
+                            membersRepository.findMemberByAppUserId(appUserId).ifPresent(existingMember -> {
+                                context.getClaims().claim(StandardClaimNames.GIVEN_NAME, existingMember.getFirstName());
+                                context.getClaims().claim(StandardClaimNames.FAMILY_NAME, existingMember.getLastName());
+                            });
+                        });
             }
         };
     }

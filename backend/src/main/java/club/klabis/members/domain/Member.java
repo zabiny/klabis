@@ -9,6 +9,7 @@ import club.klabis.members.domain.forms.EditAnotherMemberInfoByAdminForm;
 import club.klabis.members.domain.forms.EditOwnMemberInfoForm;
 import club.klabis.members.domain.forms.RegistrationForm;
 import club.klabis.shared.domain.IncorrectFormDataException;
+import club.klabis.users.domain.ApplicationUser;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -34,6 +35,7 @@ public class Member extends AbstractAggregateRoot<Member> {
     // required attributes
     @Identity
     private final MemberId id;
+    private ApplicationUser.Id appUserId;
     private String firstName;
     private String lastName;
     private RegistrationNumber registration;
@@ -154,6 +156,10 @@ public class Member extends AbstractAggregateRoot<Member> {
         }
     }
 
+    public void linkWithApplicationUser(ApplicationUser.Id appUserId) {
+        this.appUserId = appUserId;
+    }
+
     public Address getAddress() {
         return address;
     }
@@ -240,5 +246,9 @@ public class Member extends AbstractAggregateRoot<Member> {
 
     public boolean isSuspended() {
         return suspended;
+    }
+
+    public Optional<ApplicationUser.Id> getAppUserId() {
+        return Optional.ofNullable(appUserId);
     }
 }

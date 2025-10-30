@@ -1,5 +1,8 @@
 package club.klabis.shared.config.authserver.socialloginsupport;
 
+import club.klabis.members.MemberId;
+import club.klabis.members.application.MembersRepository;
+import club.klabis.members.domain.Member;
 import club.klabis.users.domain.ApplicationUser;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,11 +25,13 @@ import java.util.stream.Collectors;
 @Service
 class CustomOidcUserService extends OidcUserService {
     private final Map<String, SocialLoginOidcUserToKlabisOidcUserMapper> mappers;
+    private final MembersRepository membersRepository;
 
-    public CustomOidcUserService(List<SocialLoginOidcUserToKlabisOidcUserMapper> mappers) {
+    public CustomOidcUserService(List<SocialLoginOidcUserToKlabisOidcUserMapper> mappers, MembersRepository membersRepository) {
         this.mappers = mappers.stream()
                 .collect(Collectors.toMap(SocialLoginOidcUserToKlabisOidcUserMapper::getOAuthClientId,
                         Function.identity()));
+        this.membersRepository = membersRepository;
     }
 
     private Optional<SocialLoginOidcUserToKlabisOidcUserMapper> getMapperForRegistrationId(ClientRegistration registration) {
@@ -64,10 +69,13 @@ class CustomOidcUserService extends OidcUserService {
                 .map(roleName -> new SimpleGrantedAuthority(roleName))
                 .collect(Collectors.toSet());
 
+        MemberId memberId = membersRepository.findMemberByAppUserId(user.getId()).map(Member::getId).orElse(null);
+
         Map<String, Object> klabisClaims = new HashMap<>();
         //claims.putAll(idToken.getClaims());
         klabisClaims.put(StandardClaimNames.SUB, user.getUsername());
-        klabisClaims.put("memberId", user.getMemberId().orElse(null));
+        klabisClaims.put("memberId", memberId);
+        klabisClaims.put("appUserId", user.getId());
 //        claims.put(StandardClaimNames.GIVEN_NAME, user.getFirstName());
 //        claims.put(StandardClaimNames.MIDDLE_NAME, user.getMiddleName());
 //        claims.put(StandardClaimNames.FAMILY_NAME, user.getLastName());

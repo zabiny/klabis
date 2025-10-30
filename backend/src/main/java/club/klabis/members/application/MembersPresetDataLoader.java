@@ -7,9 +7,11 @@ import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.application.LinkWithSocialIdUseCase;
 import club.klabis.users.application.UserGrantsUpdateUseCase;
+import club.klabis.users.domain.events.ApplicationUserRegistered;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +20,7 @@ import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @ConditionalOnProperty(name = "klabis.preset-data", havingValue = "true", matchIfMissing = true)
 @Component
@@ -39,21 +42,35 @@ public class MembersPresetDataLoader implements PresetDataLoader {
         this.conversionService = conversionService;
     }
 
+    private Stream<MembersCsvLine> streamMembersData() throws IOException {
+        return loadObjectList(MembersCsvLine.class, new ClassPathResource("presetData/members.csv")).stream();
+    }
+
     @Override
     public void loadData() throws IOException {
-        loadObjectList(MembersCsvLine.class, new ClassPathResource("presetData/members.csv")).forEach(csvLine -> {
+        streamMembersData().forEach(csvLine -> {
             Member registeredMember = memberRegistrationUseCase.registerMember(csvLine.getRegistration(conversionService));
             if (csvLine.disabled()) {
                 membershipSuspendUseCase.suspendMembershipForMember(registeredMember.getId(), true);
             }
-            if (csvLine.admin()) {
-                userGrantsUpdateUseCase.setGlobalGrants(registeredMember.getId(),
-                        EnumSet.allOf(ApplicationGrant.class));
-            }
-            csvLine.getGoogleId()
-                    .ifPresent(googleId -> linkWithSocialIdUseCase.linkWithGoogleId(csvLine.registrationNumber(),
-                            googleId));
         });
+    }
+
+    @EventListener(ApplicationUserRegistered.class)
+    void onApplicationUserRegistered(ApplicationUserRegistered event) throws IOException {
+        streamMembersData()
+                .filter(item -> event.username().value().equals(item.registrationNumber().toRegistrationId()))
+                .forEach(csvLine -> {
+                    LOG.info("Completing onboarding for member %s (app userID %s)".formatted(event.username(),
+                            event.id()));
+
+                    if (csvLine.admin()) {
+                        userGrantsUpdateUseCase.setGlobalGrants(event.id(),
+                                EnumSet.allOf(ApplicationGrant.class));
+                    }
+                    csvLine.getGoogleId()
+                            .ifPresent(googleId -> linkWithSocialIdUseCase.linkWithGoogleId(event.id(), googleId));
+                });
     }
 
     record MembersCsvLine(

@@ -23,7 +23,7 @@ public class AppUsersPresetDataLoader implements PresetDataLoader {
     @Override
     public void loadData() {
         // create Admin user
-        appUsersRepository.findByUserName("admin").orElseGet(() -> {
+        appUsersRepository.findByUserNameValue("admin").orElseGet(() -> {
             LOG.info("Adding user admin");
             ApplicationUser admin = ApplicationUser.newAppUser(ApplicationUser.UserName.of("admin"), "{noop}secret");
             admin.setGlobalGrants(EnumSet.allOf(ApplicationGrant.class));

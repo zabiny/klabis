@@ -2,6 +2,7 @@ package club.klabis.users.domain;
 
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.domain.events.ApplicationUserEnableStatusChanged;
+import club.klabis.users.domain.events.ApplicationUserRegistered;
 import io.micrometer.common.util.StringUtils;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -48,10 +49,10 @@ public class ApplicationUser extends AbstractAggregateRoot<ApplicationUser> {
         ApplicationUser result = new ApplicationUser();
         result.userName = username;
         result.password = password;
-        return result;
+        return result.andEvent(new ApplicationUserRegistered(result.id, username));
     }
 
-    public ApplicationUser() {
+    private ApplicationUser() {
         this.id = Id.newId();
     }
 

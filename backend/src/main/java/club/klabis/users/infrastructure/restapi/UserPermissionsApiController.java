@@ -1,6 +1,5 @@
 package club.klabis.users.infrastructure.restapi;
 
-import club.klabis.members.MemberId;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
@@ -43,10 +42,10 @@ public class UserPermissionsApiController implements UserPermissionsApi {
 
     @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
-    public ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(Integer memberIdValue) {
-        MemberId memberId = new MemberId(memberIdValue);
-        ApplicationUser appUser = applicationUsersRepository.findByMemberId(memberId)
-                .orElseThrow(() -> ApplicationUserNotFound.forMemberId(memberId));
+    public ResponseEntity<MemberGrantsFormApiDto> getUserGrants(int userIdValue) {
+        ApplicationUser.Id userId = new ApplicationUser.Id(userIdValue);
+        ApplicationUser appUser = applicationUsersRepository.findById(userId)
+                .orElseThrow(() -> ApplicationUserNotFound.forUserId(userId));
 
         return ResponseEntity.ok(conversionService.convert(appUser,
                 MemberGrantsFormApiDto.class));
@@ -54,11 +53,11 @@ public class UserPermissionsApiController implements UserPermissionsApi {
 
     @HasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)
     @Override
-    public ResponseEntity<Void> updateMemberGrants(Integer memberId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
+    public ResponseEntity<Void> updateMemberGrants(int userId, MemberGrantsFormApiDto memberGrantsFormApiDto) {
         Collection<ApplicationGrant> globalGrants = conversionService.convert(
                 memberGrantsFormApiDto.getGrants(),
                 TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
-        userGrantsUpdateUseCase.setGlobalGrants(new MemberId(memberId), globalGrants);
+        userGrantsUpdateUseCase.setGlobalGrants(new ApplicationUser.Id(userId), globalGrants);
         return ResponseEntity.ok(null);
     }
 }

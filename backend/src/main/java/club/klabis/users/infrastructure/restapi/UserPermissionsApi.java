@@ -5,6 +5,7 @@
  */
 package club.klabis.users.infrastructure.restapi;
 
+import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.users.infrastructure.restapi.dto.GetAllGrants200ResponseApiDto;
 import club.klabis.users.infrastructure.restapi.dto.MemberGrantsFormApiDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,18 +15,14 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-@Validated
-@Tag(name = "User permissions")
-@SecurityRequirement(name = "klabis", scopes = {"openapi"})
+@ApiController(openApiTagName = "User permissions", securityScopes = {"openapi"})
 public interface UserPermissionsApi {
 
     /**
@@ -51,15 +48,8 @@ public interface UserPermissionsApi {
 
     );
 
-    /**
-     * GET /members/{memberId}/changeGrantsForm : returns grants assigned to member
-     * Requires &#x60;members:permissions&#x60; grant
-     *
-     * @param memberId ID of member (required)
-     * @return Edit member grants form content (status code 200)
-     */
     @Operation(
-            operationId = "getMemberGrants",
+            operationId = "getUserGrants",
             summary = "returns grants assigned to member",
             description = "Requires `members:permissions` grant",
             responses = {
@@ -73,39 +63,28 @@ public interface UserPermissionsApi {
     )
     @RequestMapping(
             method = RequestMethod.GET,
-            value = "/members/{memberId}/changeGrantsForm",
+            value = "/users/{userId}/changeGrantsForm",
             produces = {"application/json"}
     )
-    ResponseEntity<MemberGrantsFormApiDto> getMemberGrants(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
+    ResponseEntity<MemberGrantsFormApiDto> getUserGrants(
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("userId") int userId
     );
 
-    /**
-     * PUT /members/{memberId}/changeGrantsForm : updates grants assigned to member
-     * Requires &#x60;members:permissions&#x60; grant
-     *
-     * @param memberId               ID of member (required)
-     * @param memberGrantsFormApiDto (optional)
-     * @return Member grants were successfully updated (status code 200)
-     */
     @Operation(
-            operationId = "updateMemberGrants",
-            summary = "updates grants assigned to member",
+            operationId = "updateUserGrants",
+            summary = "updates grants assigned to user",
             description = "Requires `members:permissions` grant",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Member grants were successfully updated")
-            },
-            security = {
-                    @SecurityRequirement(name = "klabis", scopes = {"openid"})
+                    @ApiResponse(responseCode = "200", description = "User grants were successfully updated")
             }
     )
     @RequestMapping(
             method = RequestMethod.PUT,
-            value = "/members/{memberId}/changeGrantsForm",
+            value = "/users/{userId}/changeGrantsForm",
             consumes = {"application/json"}
     )
     ResponseEntity<Void> updateMemberGrants(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
+            @Parameter(name = "userId", description = "ID of application user", required = true, in = ParameterIn.PATH) @PathVariable("userId") int userId,
             @Parameter(name = "MemberGrantsFormApiDto", description = "") @Valid @RequestBody(required = false) MemberGrantsFormApiDto memberGrantsFormApiDto
     );
 

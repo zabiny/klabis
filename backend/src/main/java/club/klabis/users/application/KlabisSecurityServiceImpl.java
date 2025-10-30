@@ -1,6 +1,8 @@
 package club.klabis.users.application;
 
 import club.klabis.members.MemberId;
+import club.klabis.members.application.MembersRepository;
+import club.klabis.members.domain.Member;
 import club.klabis.shared.config.restapi.KlabisUserAuthentication;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
@@ -18,6 +20,12 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
     private final Logger LOG = LoggerFactory.getLogger(KlabisSecurityServiceImpl.class);
 
+    private final MembersRepository membersRepository;
+
+    public KlabisSecurityServiceImpl(MembersRepository membersRepository) {
+        this.membersRepository = membersRepository;
+    }
+
     private Optional<ApplicationUser> getPrincipal() {
         if (SecurityContextHolder.getContext().getAuthentication() instanceof KlabisUserAuthentication typedAuth) {
             return Optional.of(typedAuth).map(KlabisUserAuthentication::getPrincipal);
@@ -29,7 +37,9 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
     @Override
     public boolean canEditMemberData(MemberId dataMemberId) {
-        boolean canEditMemberData = getPrincipal().flatMap(ApplicationUser::getMemberId)
+        boolean canEditMemberData = getPrincipal().map(ApplicationUser::getId)
+                .flatMap(membersRepository::findMemberByAppUserId)
+                .map(Member::getId)
                 .map(dataMemberId::equals)
                 .orElse(false);
 

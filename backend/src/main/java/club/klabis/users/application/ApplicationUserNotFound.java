@@ -1,15 +1,11 @@
 package club.klabis.users.application;
 
-import club.klabis.members.MemberId;
-import club.klabis.members.domain.RegistrationNumber;
+import club.klabis.users.domain.ApplicationUser;
 
 public class ApplicationUserNotFound extends RuntimeException {
-    public static ApplicationUserNotFound forMemberId(MemberId memberId) {
-        return new ApplicationUserNotFound("Application user for member ID %s was not found".formatted(memberId));
-    }
 
-    public static ApplicationUserNotFound forRegistrationId(RegistrationNumber registrationNumber) {
-        return new ApplicationUserNotFound("Application user with registration number %s was not found".formatted(registrationNumber.toRegistrationId()));
+    public static ApplicationUserNotFound forUserId(ApplicationUser.Id id) {
+        return new ApplicationUserNotFound("Application user with id %s was not found".formatted(id.value()));
     }
 
     public ApplicationUserNotFound(String message) {

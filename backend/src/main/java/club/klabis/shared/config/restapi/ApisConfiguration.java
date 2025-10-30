@@ -113,7 +113,7 @@ public class ApisConfiguration {
     private final ApplicationUsersRepository applicationUserRepository;
 
     private Converter<Jwt, KlabisUserAuthentication> klabisMemberEnhanceAuthentication() {
-        return source -> applicationUserRepository.findByUserName(source.getSubject())
+        return source -> applicationUserRepository.findByUserNameValue(source.getSubject())
                 .map(user -> KlabisUserAuthentication.authenticated(user, source))
                 .orElseGet(() -> KlabisUserAuthentication.noUser(source));
     }
