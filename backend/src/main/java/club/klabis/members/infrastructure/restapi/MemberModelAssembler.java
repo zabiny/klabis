@@ -57,20 +57,19 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
 
         if (securityService.canEditMemberData(entity.getId())) {
             target.add(linkTo(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
-                    entity.getId().value())).withRel(
+                    entity.getId())).withRel(
                     "members:editOwnInfo"));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
-            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId()
-                    .value())).withRel(
+            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId())).withRel(
                     ApplicationGrant.MEMBERS_EDIT.getGrantName()));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
             target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class,
-                    entity.getId().value()).membersMemberIdSuspendMembershipFormGet(
-                    entity.getId().value())).withRel(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()));
+                    entity.getId()).membersMemberIdSuspendMembershipFormGet(
+                    entity.getId())).withRel(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()));
         }
 
         if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {

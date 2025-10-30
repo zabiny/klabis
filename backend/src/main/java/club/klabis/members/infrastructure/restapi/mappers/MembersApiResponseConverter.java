@@ -17,7 +17,7 @@ public abstract class MembersApiResponseConverter implements Converter<Member, M
     @Override
     @Mapping(source = "registration", target = "registrationNumber")
     @Mapping(target = "licences", source = ".")
-    @Mapping(target = "id", source = "id.value")
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "member", source = ".")
     @Mapping(target = "userId", source = "appUserId")
     public abstract MembersApiResponse convert(Member member);

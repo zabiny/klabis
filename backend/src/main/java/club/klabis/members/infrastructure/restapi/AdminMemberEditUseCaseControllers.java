@@ -75,10 +75,10 @@ public class AdminMemberEditUseCaseControllers {
     )
     @GetMapping
     public EntityModel<EditAnotherMemberDetailsFormApiDto> getMemberEditByAdminForm(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId
     ) {
         EditAnotherMemberDetailsFormApiDto formData = conversionService.convert(editMemberUseCase.getEditAnotherMemberForm(
-                new MemberId(memberId)), EditAnotherMemberDetailsFormApiDto.class);
+                memberId), EditAnotherMemberDetailsFormApiDto.class);
 
         return EntityModel.of(formData)
                 .add(linkTo(getClass(), memberId).withSelfRel()
@@ -117,10 +117,10 @@ public class AdminMemberEditUseCaseControllers {
     )
     @PutMapping
     ResponseEntity<Void> putMemberEditByAdminForm(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId,
             @Parameter(name = "EditAnotherMemberDetailsFormApiDto", description = "", required = true) @Valid @RequestBody EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto
     ) {
-        editMemberUseCase.editMember(new MemberId(memberId),
+        editMemberUseCase.editMember(memberId,
                 conversionService.convert(editAnotherMemberDetailsFormApiDto, EditAnotherMemberInfoByAdminForm.class));
         return ResponseEntity.ok(null);
     }

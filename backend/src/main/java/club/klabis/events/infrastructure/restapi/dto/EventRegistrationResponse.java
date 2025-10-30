@@ -1,5 +1,6 @@
 package club.klabis.events.infrastructure.restapi.dto;
 
+import club.klabis.members.MemberId;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.springframework.hateoas.server.core.Relation;
@@ -8,6 +9,6 @@ import org.springframework.hateoas.server.core.Relation;
 @JsonTypeName("EventRegistration")
 @Relation("eventRegistration")
 public record EventRegistrationResponse(
-        int memberId,
+        MemberId memberId,
         String category) {
 }

@@ -68,16 +68,16 @@ public class SuspendMemberUseCaseControllers {
     )
     @GetMapping("/suspendMembershipForm")
     EntityModel<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId
     ) {
-        return useCase.getSuspensionInfoForMember(new MemberId(memberId))
+        return useCase.getSuspensionInfoForMember(memberId)
                 .map(d -> conversionService.convert(d,
                         club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoApiDto.class))
                 .map(form -> EntityModel.of(form, WebMvcLinkBuilder.linkTo(getClass(), memberId).withSelfRel()
                         .andAffordance(affordBetter(methodOn(getClass()).membersMemberIdSuspendMembershipFormPut(
                                 memberId,
                                 null))).withRel("submit")))
-                .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
     /**
@@ -118,9 +118,9 @@ public class SuspendMemberUseCaseControllers {
     )
     @PutMapping("/suspendMembershipForm")
     ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId,
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId,
             @Parameter(name = "force", description = "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension") @Valid @RequestBody MembershipSuspensionInfoRequestDto form) {
-        useCase.suspendMembershipForMember(new MemberId(memberId), form.force());
+        useCase.suspendMembershipForMember(memberId, form.force());
         return ResponseEntity.ok(null);
     }
 

@@ -32,6 +32,10 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
             LAST_ID = new Id(LAST_ID.value() + 1);
             return LAST_ID;
         }
+
+        public String toString() {
+            return Integer.toString(value);
+        }
     }
 
     @Identity

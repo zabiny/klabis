@@ -1,5 +1,6 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
+import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
 import club.klabis.members.infrastructure.restapi.ResponseViews;
 import com.fasterxml.jackson.annotation.*;
@@ -31,7 +32,7 @@ public record MembersApiResponse(
         @Schema(name = "id", description = "Unique identifier for the club member", requiredMode = Schema.RequiredMode.REQUIRED)
         @JsonProperty("id")
         @JsonView(ResponseViews.Summary.class)
-        Integer id,
+        MemberId id,
 
         @Valid
         @Schema(name = "userId", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

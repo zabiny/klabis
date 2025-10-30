@@ -32,7 +32,6 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
     public abstract EventResponse toResponse(Event event);
 
     @Mapping(target = "category", constant = "H12")
-    @Mapping(target = "memberId", source = "memberId.value")
     public abstract EventRegistrationResponse toResponse(Registration registration);
 
     @AfterMapping

@@ -102,11 +102,11 @@ public class MembersApi {
     )
     @GetMapping("/{memberId}")
     public EntityModel<MembersApiResponse> membersMemberIdGet(
-            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") Integer memberId
+            @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId
     ) {
-        return membersRepository.findById(new MemberId(memberId))
+        return membersRepository.findById(memberId)
                 .map(memberModelAssembler::toResponseModel)
-                .orElseThrow(() -> new MemberNotFoundException(new MemberId(memberId)));
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
 }
