@@ -1,8 +1,8 @@
 package club.klabis.adapters.api;
 
 import club.klabis.shared.config.restapi.ApisConfiguration;
+import club.klabis.shared.config.restapi.KlabisPrincipalSource;
 import club.klabis.shared.config.security.KlabisSecurityService;
-import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.tests.common.MapperTestConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -19,5 +19,8 @@ public class ApiTestConfiguration {
     KlabisSecurityService klabisSecurityServiceMock;
 
     @MockBean
-    ApplicationUsersRepository applicationUsersRepositoryMock;
+    KlabisPrincipalSource klabisPrincipalSourceMock;
+
+//    @MockBean
+//    ApplicationUsersRepository applicationUsersRepositoryMock;
 }
