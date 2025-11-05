@@ -6,7 +6,8 @@ import club.klabis.users.domain.ApplicationUser;
 
 import java.util.Set;
 
-public record KlabisPrincipal(ApplicationUser.Id userId, MemberId memberId, Set<ApplicationGrant> globalGrants) {
+public record KlabisPrincipal(ApplicationUser.Id userId, MemberId memberId, String userName, String firstName,
+                              String lastName, Set<ApplicationGrant> globalGrants) {
 
     public boolean hasAppGrant(ApplicationGrant grant) {
         return globalGrants().contains(grant);

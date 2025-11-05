@@ -6,6 +6,8 @@ import club.klabis.members.domain.Member;
 import club.klabis.shared.config.restapi.KlabisPrincipal;
 import club.klabis.shared.config.restapi.KlabisPrincipalSource;
 import club.klabis.users.application.ApplicationUsersRepository;
+import club.klabis.users.domain.ApplicationUser;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -26,13 +28,28 @@ class KlabisPrincipalSourceImpl implements KlabisPrincipalSource {
     public Optional<KlabisPrincipal> getPrincipalForUserName(String username) {
         return applicationUserRepository.findByUserNameValue(username)
                 .map(appUser -> {
-                    MemberId memberId = membersRepository.findMemberByAppUserId(appUser.getId())
-                            .map(Member::getId)
-                            .orElse(null);
-                    return new KlabisPrincipal(appUser.getId(),
-                            memberId,
-                            appUser.getGlobalGrants());
+                    Member member = membersRepository.findMemberByAppUserId(appUser.getId()).orElse(null);
+                    return createPrincipal(appUser, member);
                 });
     }
+
+    private KlabisPrincipal createPrincipal(ApplicationUser applicationUser, @Nullable Member member) {
+        MemberId memberId = null;
+        String firstName = null;
+        String lastName = null;
+        if (member != null) {
+            memberId = member.getId();
+            firstName = member.getFirstName();
+            lastName = member.getLastName();
+        }
+
+        return new KlabisPrincipal(applicationUser.getId(),
+                memberId,
+                applicationUser.getUsername().value(),
+                firstName, lastName,
+                applicationUser.getGlobalGrants());
+    }
+
+    ;
 
 }

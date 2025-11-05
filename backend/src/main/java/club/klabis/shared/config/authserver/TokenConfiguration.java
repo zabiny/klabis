@@ -1,13 +1,13 @@
 package club.klabis.shared.config.authserver;
 
-import club.klabis.members.application.MembersRepository;
 import club.klabis.shared.config.authserver.generatejwtkeys.JKWKeyGenerator;
-import club.klabis.users.application.ApplicationUsersRepository;
-import club.klabis.users.domain.ApplicationUser;
+import club.klabis.shared.config.restapi.KlabisPrincipalSource;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -22,61 +22,30 @@ import java.text.ParseException;
 @Configuration(proxyBeanMethods = false)
 public class TokenConfiguration {
 
+    private static final Logger LOG = LoggerFactory.getLogger(TokenConfiguration.class);
+
     @Bean
     public JWKSource<SecurityContext> jwkSource() throws IOException, ParseException {
         JWKSet jwkSet = JWKSet.load(new ClassPathResource(JKWKeyGenerator.AUTH_SERVER_JWK_KEYS_RESOURCE_PATH).getInputStream());
         //JWKSet jwkSet = loadFromFile();
-        System.out.println(jwkSet.toString());
+        LOG.debug(jwkSet.toString());
         return new ImmutableJWKSet<>(jwkSet);
     }
 
     @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer(
-            ApplicationUsersRepository appusersRepository, MembersRepository membersRepository) {
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer(KlabisPrincipalSource klabisPrincipalSource) {
         return (context) -> {
             if (OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue())) {
-                appusersRepository.findByUserNameValue(context.getPrincipal().getName())
-                        .map(ApplicationUser::getId)
-                        .ifPresent(appUserId -> {
+                klabisPrincipalSource.getPrincipalForUserName(context.getPrincipal().getName())
+                        .ifPresent(klabisPrincipal -> {
                             context.getClaims()
-                                    .claim(StandardClaimNames.PREFERRED_USERNAME, context.getPrincipal().getName());
-                            context.getClaims().claim(StandardClaimNames.SUB, appUserId.value());
-                            membersRepository.findMemberByAppUserId(appUserId).ifPresent(existingMember -> {
-                                context.getClaims().claim(StandardClaimNames.GIVEN_NAME, existingMember.getFirstName());
-                                context.getClaims().claim(StandardClaimNames.FAMILY_NAME, existingMember.getLastName());
-                            });
+                                    .claim(StandardClaimNames.PREFERRED_USERNAME, klabisPrincipal.userName());
+                            context.getClaims().claim(StandardClaimNames.SUB, klabisPrincipal.userId().value());
+                            context.getClaims().claim(StandardClaimNames.GIVEN_NAME, klabisPrincipal.firstName());
+                            context.getClaims().claim(StandardClaimNames.FAMILY_NAME, klabisPrincipal.lastName());
                         });
             }
         };
     }
 
-//    @Bean
-//    public OAuth2TokenCustomizer<OAuth2TokenClaimsContext> opaqueTokenCustomizer() {
-//        return context -> {
-//            UserDetails userDetails = null;
-//
-//            if (context.getPrincipal() instanceof OAuth2ClientAuthenticationToken) {
-//                userDetails = (UserDetails) context.getPrincipal().getDetails();
-//            } else if (context.getPrincipal() instanceof AbstractAuthenticationToken) {
-//                userDetails = (UserDetails) context.getPrincipal().getPrincipal();
-//            } else {
-//                throw new IllegalStateException("Unexpected token type");
-//            }
-//
-//            if (!StringUtils.hasText(userDetails.getUsername())) {
-//                throw new IllegalStateException("Bad UserDetails, username is empty");
-//            }
-//
-//            context.getClaims()
-//                    .claim(
-//                            "authorities",
-//                            userDetails.getAuthorities().stream()
-//                                    .map(GrantedAuthority::getAuthority)
-//                                    .collect(Collectors.toSet())
-//                    )
-//                    .claim(
-//                            "username", userDetails.getUsername()
-//                    );
-//        };
-//    }
 }
