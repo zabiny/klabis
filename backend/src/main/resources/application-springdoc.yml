@@ -18,6 +18,10 @@ springdoc:
       display-name: Events API
       packages-to-scan:
         - club.klabis.events
+    - group: finance
+      display-name: Finances API
+      packages-to-scan:
+        - club.klabis.finance
     - group: appusers
       display-name: Application users API
       packages-to-scan:
