@@ -2,6 +2,7 @@ package club.klabis.shared.config.hateoas.forms;
 
 import club.klabis.adapters.api.ApiTestConfiguration;
 import club.klabis.shared.config.restapi.ApiController;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.InputType;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.net.URI;
+import java.util.List;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -45,13 +48,48 @@ public class HalFormsTests {
         mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.default.properties[1].prompt").value("Jméno uživatele"));
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='name')].prompt").value("Jméno uživatele"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("It should NOT return record attributes as readOnly if there is not @JsonProperty(readOnly=true)")
+    void itShouldHandleReadOnlyForRecords() throws Exception {
+        mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='id')].readOnly").value(true))
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='name')].readOnly").doesNotHaveJsonPath())
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='address')].readOnly").doesNotHaveJsonPath());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("It should honor input type defined on property using @InputType annotation")
+    void itShouldHonorInputTypeAnnotation() throws Exception {
+        mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='name')].type").value("userName"));
+    }
+
+
+    @Test
+    @WithMockUser
+    @DisplayName("It should return options for fields")
+    void itShouldReturnOptionsForDefinedFields() throws Exception {
+        mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='sex')].options").value(List.of("MALE",
+                        "FEMALE")));
     }
 
     @DisplayName("affordBetter tests")
     @Nested
     class AffordBetterTests {
 
+        // HAL+FORMS returns them sorted by name in default. We rather prefer them in same order as JSON value (so we can reorder it using Jackson annotations)
         @DisplayName("it should return HAL+FORM template properties in expected order")
         @Test
         @WithMockUser
@@ -72,7 +110,7 @@ class TestController {
 
     @GetMapping
     EntityModel<DataModel> getFormData() {
-        EntityModel<DataModel> result = EntityModel.of(new DataModel(1, "name", "surname"))
+        EntityModel<DataModel> result = EntityModel.of(new DataModel(1, "name", "surname", Sex.FEMALE))
                 .add(WebMvcLinkBuilder.linkTo(methodOn(this.getClass()).getFormData())
                         .withSelfRel()
                         .andAffordance(affordBetter(methodOn(getClass()).putFormData(null)))
@@ -87,7 +125,16 @@ class TestController {
         return ResponseEntity.created(URI.create("/formData/1")).build();
     }
 
-    record DataModel(int id, String name, String address) {
+    enum Sex {MALE, FEMALE}
+
+    ;
+
+    record DataModel(
+            @JsonProperty(access = JsonProperty.Access.READ_ONLY) int id,
+            @InputType("userName") String name,
+            @JsonProperty(access = JsonProperty.Access.READ_WRITE) String address,
+            Sex sex
+    ) {
 
     }
 }
