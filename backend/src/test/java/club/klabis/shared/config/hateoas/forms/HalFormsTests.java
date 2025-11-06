@@ -98,7 +98,7 @@ public class HalFormsTests {
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates['default'].properties[*].name",
-                            Matchers.contains("id", "name", "address")));
+                            Matchers.contains("id", "name", "address", "sex")));
         }
     }
 
