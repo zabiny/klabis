@@ -1,7 +1,7 @@
 package club.klabis.shared.config.hateoas.forms;
 
+import club.klabis.adapters.api.ApiTestConfiguration;
 import club.klabis.shared.config.restapi.ApiController;
-import club.klabis.tests.common.MapperTestConfiguration;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,7 +11,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
@@ -26,18 +25,28 @@ import java.net.URI;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("HAL+FORMS tests")
-@Import({MapperTestConfiguration.class})
+@Import(ApiTestConfiguration.class)
 @WebMvcTest(controllers = TestController.class)
-@EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL_FORMS)
 public class HalFormsTests {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Test
+    @WithMockUser
+    @DisplayName("It should returns correctly encoded prompts in _template data loaded from rest-default-messages.properties")
+    void itShouldReturnCorrectlyEncodedFormData() throws Exception {
+        mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates.default.properties[1].prompt").value("Jméno uživatele"));
+    }
 
     @DisplayName("affordBetter tests")
     @Nested
