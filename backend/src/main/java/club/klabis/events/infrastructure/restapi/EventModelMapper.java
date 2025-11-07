@@ -55,15 +55,15 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
         if (event.areRegistrationsOpen()) {
             if (event.isMemberRegistered(memberId)) {
                 resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .submitRegistrationForm(event.getId(), memberId.value(), null))
+                                .submitRegistrationForm(event.getId(), memberId, null))
                         .withRel("updateRegistration"));
 
                 resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .cancelEventRegistration(event.getId(), memberId.value()))
+                                .cancelEventRegistration(event.getId(), memberId))
                         .withRel("cancelRegistration"));
             } else {
                 resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .submitRegistrationForm(event.getId(), memberId.value(), null))
+                                .submitRegistrationForm(event.getId(), memberId, null))
                         .withRel("createRegistration"));
             }
         }

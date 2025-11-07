@@ -1,10 +1,10 @@
 package org.springframework.hateoas.mediatype.hal.forms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.ResolvableType;
 import org.springframework.hateoas.AffordanceModel;
@@ -13,17 +13,52 @@ import org.springframework.hateoas.QueryParameter;
 import org.springframework.hateoas.mediatype.ConfiguredAffordance;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 
-    public static ConfiguredAffordance fromModel(AffordanceModel model, List<String> propertiesOrder) {
+    private Map<String, HalFormsOptions> customOptions = new HashMap<>();
+
+    public static AffordanceModel improveHalFormsAffordance(AffordanceModel original) {
+        Class<?> requestBodyType = getRequestBodyType(original.getInput());
+
+        List<String> expectedPropertiesOrder = expectedPropertiesOrder(requestBodyType);
+
+        return new ImprovedHalFormsAffordanceModel(ImprovedHalFormsAffordanceModel.fromModel(original,
+                expectedPropertiesOrder));
+    }
+
+    public void defineOptions(String propertyName, HalFormsOptions options) {
+        this.customOptions.put(propertyName, options);
+    }
+
+    static final SerializationConfig objectMapper = new ObjectMapper()
+            .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false)
+            .registerModule(new ParameterNamesModule())
+            .getSerializationConfig();
+
+    static List<String> expectedPropertiesOrder(Class<?> bodyType) {
+        return objectMapper.introspect(TypeFactory.defaultInstance().constructType(bodyType))
+                .findProperties()
+                .stream()
+                .map(BeanPropertyDefinition::getName)
+                .toList();
+    }
+
+    static Class<?> getRequestBodyType(AffordanceModel.InputPayloadMetadata metadata) {
+        Assert.notNull(metadata.getType(),
+                "Input payload type is null (need to read it from method paramter annotated with RequestBody)");
+        return metadata.getType();
+    }
+
+
+    static ConfiguredAffordance fromModel(AffordanceModel model, List<String> propertiesOrder) {
+
         return new ConfiguredAffordance() {
             @Override
             public String getNameOrDefault() {
@@ -67,7 +102,16 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
         BiFunction<InputPayloadMetadata, PropertyMetadata, T> decoratedCreator = (payload, metadata) ->
                 creator.apply(payload, improvePropertyMetadata(payload, metadata));
 
+        decoratedCreator = decoratedCreator.andThen(this::postProcessProperty);
+
         return super.createProperties(decoratedCreator);
+    }
+
+    public <T> T postProcessProperty(T prop) {
+        if (prop instanceof HalFormsProperty typedProp && customOptions.containsKey(typedProp.getName())) {
+            return (T) typedProp.withOptions(customOptions.get(typedProp.getName()));
+        }
+        return prop;
     }
 
     private AffordanceModel.PropertyMetadata improvePropertyMetadata(InputPayloadMetadata payload, AffordanceModel.PropertyMetadata property) {

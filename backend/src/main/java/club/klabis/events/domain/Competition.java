@@ -13,7 +13,7 @@ public class Competition extends Event {
         super();
     }
 
-    private Set<Category> categories = new HashSet<>();
+    private final Set<Category> categories = new HashSet<>();
 
     public record Category(String name) {
 
@@ -29,6 +29,10 @@ public class Competition extends Event {
         Event event = new Competition();
         event.synchronize(orisData);
         return event;
+    }
+
+    public Set<Category> getCategories() {
+        return new HashSet<>(categories);
     }
 
     @Override

@@ -10,10 +10,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.*;
+import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
+import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -43,20 +46,38 @@ public class EventRegistrationsController {
             }
     )
     @GetMapping
-    RepresentationModel<EntityModel<EventRegistrationForm>> getEventRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") int memberId) {
+    RepresentationModel<EntityModel<EventRegistrationForm>> getEventRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") MemberId memberId) {
 
-        EventRegistrationForm form = useCase.getEventRegistrationForm(
-                event,
-                new MemberId(memberId));
+        EventRegistrationForm form = useCase.getEventRegistrationForm(event, memberId);
 
-        return EntityModel.of(form,
-                linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(event, memberId)).withRel(
-                                "example")
+        EntityModel<EventRegistrationForm> result = EntityModel.of(form,
+                linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(event, memberId))
+                        .withSelfRel()
                         .andAffordance(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
                                 event,
                                 memberId,
-                                null)))
-                        .withSelfRel());
+                                null))));
+
+
+        result.mapLink(LinkRelation.of("self"), l -> this.addOptions(l, event, memberId));
+        
+        return result;
+    }
+
+    @GetMapping("/categories")
+    public List<String> getEventCategories(@PathVariable Event.Id eventId, @PathVariable MemberId memberId) {
+        return useCase.getEventCategories(eventId);
+    }
+
+    private Link addOptions(Link link, Event.Id eventId, MemberId memberId) {
+        HalFormsOptions categoryOptions = HalFormsOptions.remote(linkTo(methodOn(this.getClass()).getEventCategories(
+                eventId,
+                memberId)).withRel("categories"));
+
+        link.getAffordances().stream().map(a -> a.getAffordanceModel(MediaTypes.HAL_FORMS_JSON)).filter(
+                        ImprovedHalFormsAffordanceModel.class::isInstance).map(ImprovedHalFormsAffordanceModel.class::cast)
+                .forEach(a -> a.defineOptions("category", categoryOptions));
+        return link;
     }
 
     @Operation(
@@ -75,15 +96,15 @@ public class EventRegistrationsController {
             }
     )
     @PutMapping
-    ResponseEntity<Void> submitRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") int memberId, @RequestBody EventRegistrationForm form) {
-        useCase.registerForEvent(event, new MemberId(memberId), form);
+    ResponseEntity<Void> submitRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") MemberId memberId, @RequestBody EventRegistrationForm form) {
+        useCase.registerForEvent(event, memberId, form);
         return ResponseEntity.created(linkTo(methodOn(this.getClass())
                 .getEventRegistrationForm(event, memberId)).toUri()).build();
     }
 
     @DeleteMapping
-    ResponseEntity<Void> cancelEventRegistration(@PathVariable(name = "eventId") Event.Id eventId, @PathVariable(name = "memberId") int memberId) {
-        useCase.cancelMemberRegistration(eventId, new MemberId(memberId));
+    ResponseEntity<Void> cancelEventRegistration(@PathVariable(name = "eventId") Event.Id eventId, @PathVariable(name = "memberId") MemberId memberId) {
+        useCase.cancelMemberRegistration(eventId, memberId);
         return ResponseEntity.noContent().build();
     }
 }

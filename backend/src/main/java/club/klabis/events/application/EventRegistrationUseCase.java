@@ -1,5 +1,6 @@
 package club.klabis.events.application;
 
+import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
 import club.klabis.events.domain.Registration;
@@ -8,6 +9,8 @@ import club.klabis.events.domain.forms.EventRegistrationFormBuilder;
 import club.klabis.members.MemberId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class EventRegistrationUseCase {
@@ -25,6 +28,16 @@ public class EventRegistrationUseCase {
         return event.getRegistrationForMember(memberId)
                 .map(registration -> toForm(event, registration))
                 .orElseGet(() -> new EventRegistrationForm("predefinedSiForMember", null));
+    }
+
+    public List<String> getEventCategories(Event.Id eventId) {
+        Event event = eventsRepository.findById(eventId)
+                .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
+
+        if (event instanceof Competition competition) {
+            return competition.getCategories().stream().map(Competition.Category::name).toList();
+        }
+        return List.of();
     }
 
     private EventRegistrationForm toForm(Event event, Registration registration) {
