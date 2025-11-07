@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -59,6 +60,25 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
     public ImprovedHalFormsAffordanceModel(ConfiguredAffordance configured) {
         super(configured);
     }
+
+    // Method used in HalFormsPropertiesFactory to create properties. We want improve some property data, so let's do that :)
+    @Override
+    public <T> List<T> createProperties(BiFunction<InputPayloadMetadata, PropertyMetadata, T> creator) {
+        BiFunction<InputPayloadMetadata, PropertyMetadata, T> decoratedCreator = (payload, metadata) ->
+                creator.apply(payload, improvePropertyMetadata(payload, metadata));
+
+        return super.createProperties(decoratedCreator);
+    }
+
+    private AffordanceModel.PropertyMetadata improvePropertyMetadata(InputPayloadMetadata payload, AffordanceModel.PropertyMetadata property) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JavaType javaType = objectMapper.getTypeFactory().constructType(payload.getType());
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
+
+        property = new ImprovedPropertyMetadata(payload, property, beanDescription);
+        return property;
+    }
+
 }
 
 
@@ -104,51 +124,48 @@ class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata
         return delegate.stream().sorted(Comparator.comparingInt(p -> {
             int idx = propertiesOrder.indexOf(p.getName());
             return idx >= 0 ? idx : Integer.MAX_VALUE;
-        })).map(this::updatePropertyMetadata);
+        }));
     }
 
-    private AffordanceModel.PropertyMetadata updatePropertyMetadata(AffordanceModel.PropertyMetadata item) {
-        // TODO: optimize this - instead of doing it on-the-fly during return, do it when initializing this class instead
-        if (Record.class.isAssignableFrom(delegate.getType())) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JavaType javaType = objectMapper.getTypeFactory().constructType(delegate.getType());
-            BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
+}
 
-            item = new RecordPropertyMetadata(item, beanDescription);
-        }
-        return item;
+class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
+
+    private final AffordanceModel.PropertyMetadata delegate;
+    private final BeanDescription beanDescription;
+    private final AffordanceModel.PayloadMetadata payloadMetadata;
+
+    ImprovedPropertyMetadata(AffordanceModel.PayloadMetadata payloadMetadata, AffordanceModel.PropertyMetadata delegate, BeanDescription beanDescription) {
+        this.delegate = delegate;
+        this.beanDescription = beanDescription;
+        this.payloadMetadata = payloadMetadata;
     }
 
-    static class RecordPropertyMetadata implements AffordanceModel.PropertyMetadata {
+    private boolean isRecordPayload() {
+        return payloadMetadata.getType() != null && Record.class.isAssignableFrom(payloadMetadata.getType());
+    }
 
-        private final AffordanceModel.PropertyMetadata delegate;
-        private final BeanDescription beanDescription;
+    @Override
+    public String getName() {
+        return delegate.getName();
+    }
 
-        RecordPropertyMetadata(AffordanceModel.PropertyMetadata delegate, BeanDescription beanDescription) {
-            this.delegate = delegate;
-            this.beanDescription = beanDescription;
-        }
+    @Override
+    public boolean isRequired() {
+        return delegate.isRequired();
+    }
 
-        @Override
-        public String getName() {
-            return delegate.getName();
-        }
+    private BeanPropertyDefinition getPropertyDefinition() {
+        return beanDescription.findProperties()
+                .stream()
+                .filter(adept -> StringUtils.equals(delegate.getName(), adept.getName()))
+                .findFirst()
+                .orElseThrow();
+    }
 
-        @Override
-        public boolean isRequired() {
-            return delegate.isRequired();
-        }
-
-        private BeanPropertyDefinition getPropertyDefinition() {
-            return beanDescription.findProperties()
-                    .stream()
-                    .filter(adept -> StringUtils.equals(delegate.getName(), adept.getName()))
-                    .findFirst()
-                    .orElseThrow();
-        }
-
-        @Override
-        public boolean isReadOnly() {
+    @Override
+    public boolean isReadOnly() {
+        if (isRecordPayload()) {
             BeanPropertyDefinition propertyDefinition = getPropertyDefinition();
             if (propertyDefinition.couldDeserialize()) {
                 JsonProperty propertyAnnotation = propertyDefinition.getField().getAnnotation(JsonProperty.class);
@@ -160,34 +177,37 @@ class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata
             } else {
                 return true;
             }
-        }
-
-        @Override
-        public Optional<String> getPattern() {
-            return delegate.getPattern();
-        }
-
-        @Override
-        public ResolvableType getType() {
-            return delegate.getType();
-        }
-
-        @Override
-        public String getInputType() {
-            String result = delegate.getInputType();
-
-            if (StringUtils.isBlank(result)) {
-                if (getType().getRawClass() != null) {
-                    if (Enum.class.isAssignableFrom(getType().getRawClass())) {
-                        return "radio";
-                    }
-
-                    return getType().getType().getTypeName();
-                }
-            }
-
-            return result;
+        } else {
+            return delegate.isReadOnly();
         }
     }
 
+    @Override
+    public Optional<String> getPattern() {
+        return delegate.getPattern();
+    }
+
+    @Override
+    public ResolvableType getType() {
+        return delegate.getType();
+    }
+
+    @Override
+    public String getInputType() {
+        String result = delegate.getInputType();
+
+        if (StringUtils.isBlank(result)) {
+            if (getType().getRawClass() != null) {
+                if (Enum.class.isAssignableFrom(getType().getRawClass())) {
+                    return "radio";
+                } else if (Boolean.class.isAssignableFrom(getType().getRawClass())) {
+                    return "checkbox";
+                }
+
+                return getType().getRawClass().getSimpleName();
+            }
+        }
+
+        return result;
+    }
 }

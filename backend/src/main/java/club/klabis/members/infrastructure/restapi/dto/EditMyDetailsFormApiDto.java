@@ -1,12 +1,14 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
 import club.klabis.members.infrastructure.restapi.validators.ApiValidationAnnotations.AtLeastOneContactIsDefinedForApi;
+import club.klabis.shared.config.hateoas.forms.InputOptions;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import org.springframework.hateoas.InputType;
 
 import java.util.List;
 
@@ -33,14 +35,17 @@ public record EditMyDetailsFormApiDto(
         @NotNull
         @Valid
         @Schema(name = "address", requiredMode = Schema.RequiredMode.REQUIRED)
+        @InputType("Address")
         AddressApiDto address,
 
         @Valid
         @Schema(name = "contact", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+        @InputType("Contact")
         ContactApiDto contact,
 
         @Valid
         @Schema(name = "guardians", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+        @InputType("LegalGuardians")
         List<@Valid LegalGuardianApiDto> guardians,
 
         @Schema(name = "siCard", description = "SI chip used by member", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
@@ -54,6 +59,7 @@ public record EditMyDetailsFormApiDto(
 
         @Valid
         @Schema(name = "drivingLicence", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+        @InputOptions(sourceEnum = DrivingLicenceApiDto.class, inputType = "checkbox")
         List<DrivingLicenceApiDto> drivingLicence,
 
         @Schema(name = "medicCourse", description = "Whether the club member has completed the medic course", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

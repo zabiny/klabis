@@ -1,6 +1,7 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
 import club.klabis.members.infrastructure.restapi.validators.ApiValidationAnnotations.BirthCertificateIsDefinedForCzechiaForApi;
+import club.klabis.shared.config.hateoas.forms.InputOptions;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,6 +45,7 @@ public record EditAnotherMemberDetailsFormApiDto(
 
         @NotNull
         @Schema(name = "sex", requiredMode = Schema.RequiredMode.REQUIRED)
+        @InputOptions
         SexApiDto sex
 
 ) {
