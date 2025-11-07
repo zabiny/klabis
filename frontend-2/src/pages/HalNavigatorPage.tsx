@@ -198,32 +198,38 @@ const demoTemplate: HalFormsTemplate = {
             name: "country",
             prompt: "Země",
             required: true,
-            options: [
+            options: {
+                inline: [
                 {value: "cz", prompt: "Česká republika"},
                 {value: "sk", prompt: "Slovensko"},
                 {value: "pl", prompt: "Polsko"},
-            ],
+                ]
+            },
         },
         {
             name: "hobbies",
             prompt: "Koníčky",
             multiple: true,
-            options: [
+            options: {
+                inline: [
                 {value: "orienteering", prompt: "Orienťák"},
                 {value: "games", prompt: "Hry"},
                 {value: "travel", prompt: "Cestování"},
-            ],
+                ]
+            },
             required: true,
         },
         {
             name: "gender",
             prompt: "Pohlaví",
             type: "radio",
-            options: [
+            options: {
+                inline: [
                 {value: "male", prompt: "Muž"},
                 {value: "female", prompt: "Žena"},
                 {value: "other", prompt: "Jiné"},
-            ],
+                ]
+            },
             required: true,
         },
     ],

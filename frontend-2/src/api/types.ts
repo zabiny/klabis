@@ -47,7 +47,13 @@ export interface HalFormsResponse extends HalResponse {
 }
 
 // --- Typy ---
+/// http://rwcbook.com/hal-forms/#options-element
 export interface HalFormsOption {
+    inline?: (OptionItem | string | number)[]
+    link?: Link
+}
+
+export interface OptionItem {
     value?: string | number;
     prompt?: string;
 }
@@ -58,7 +64,7 @@ export interface HalFormsProperty {
     type?: string; // "text" | "number" | "email" | "textarea" | "radio"
     value?: string | number;
     required?: boolean;
-    options?: (HalFormsOption | string | number)[];
+    options?: HalFormsOption;
     multiple?: boolean;
 }
 

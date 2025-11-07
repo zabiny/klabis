@@ -82,7 +82,7 @@ function renderField(
             <FormControl component="fieldset" error={!!errorText}>
                 <FormLabel>{prop.prompt || prop.name}</FormLabel>
                 <FormGroup>
-                    {prop.options.map((opt, idx) => {
+                    {prop.options.inline.map((opt, idx) => {
                         const val = typeof opt === "object" && "value" in opt ? opt.value : opt;
                         const label = typeof opt === "object" && "prompt" in opt ? opt.prompt : String(opt);
                         return (
@@ -123,7 +123,7 @@ function renderField(
                     value={values[prop.name]}
                     onChange={(e) => setFieldValue(prop.name, e.target.value)}
                 >
-                    {prop.options.map((opt, idx) => {
+                    {prop.options.inline.map((opt, idx) => {
                         const val = typeof opt === "object" && "value" in opt ? opt.value : opt;
                         const label = typeof opt === "object" && "prompt" in opt ? opt.prompt : String(opt);
                         return <FormControlLabel key={idx} value={val} control={<Radio/>} label={label}/>;
@@ -146,7 +146,7 @@ function renderField(
                     <MenuItem value="">
                         <em>-- vyber --</em>
                     </MenuItem>
-                    {prop.options.map((opt, idx) => {
+                    {prop.options.inline.map((opt, idx) => {
                         const val = typeof opt === "object" && "value" in opt ? opt.value : opt;
                         const label = typeof opt === "object" && "prompt" in opt ? opt.prompt : String(opt);
                         return (
