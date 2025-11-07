@@ -18,7 +18,8 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
     private final Logger LOG = LoggerFactory.getLogger(KlabisSecurityServiceImpl.class);
 
-    private Optional<KlabisPrincipal> getPrincipal() {
+    @Override
+    public Optional<KlabisPrincipal> getPrincipal() {
         if (SecurityContextHolder.getContext().getAuthentication() instanceof KlabisUserAuthentication typedAuth) {
             return Optional.of(typedAuth).map(KlabisUserAuthentication::getPrincipal);
             // TODO: doesn't work when logged in "locally" - it gets Google's OAuth2 authentication instead of klabis user...

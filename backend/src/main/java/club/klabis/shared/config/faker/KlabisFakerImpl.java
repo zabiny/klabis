@@ -18,4 +18,9 @@ public class KlabisFakerImpl extends Faker implements KlabisFaker {
         return getProvider(Cities.class, Cities::new, this);
     }
 
+    @Override
+    public Categories categories() {
+        return getProvider(Categories.class, Categories::new, this);
+    }
+
 }

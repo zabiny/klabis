@@ -6,4 +6,6 @@ public interface KlabisFaker {
     Events events();
 
     Cities cities();
+
+    Categories categories();
 }

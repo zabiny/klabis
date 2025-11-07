@@ -8,6 +8,7 @@ import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.shared.config.restapi.KlabisPrincipal;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -16,7 +17,9 @@ import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Mapper(config = DomainToDtoMapperConfiguration.class, componentModel = "spring")
 abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event, EventResponse> {
@@ -48,22 +51,26 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
 
         Event event = resource.getContent().source();
 
+        final KlabisPrincipal klabisPrincipal = klabisSecurityService.getPrincipal().orElseThrow();
+
         resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value()).withSelfRel());
         resource.add(entityLinks.linkToCollectionResource(Event.class)
                 .withRel(linkRelationProvider.getCollectionResourceRelFor(Event.class)));
+        resource.add(linkTo(methodOn(EventRegistrationsController.class).getEventCategories(event.getId(),
+                klabisPrincipal.memberId())).withRel("categories"));
 
         if (event.areRegistrationsOpen()) {
             if (event.isMemberRegistered(memberId)) {
-                resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .submitRegistrationForm(event.getId(), memberId, null))
+                resource.add(linkTo(methodOn(EventRegistrationsController.class)
+                        .submitRegistrationForm(event.getId(), memberId, null))
                         .withRel("updateRegistration"));
 
-                resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .cancelEventRegistration(event.getId(), memberId))
+                resource.add(linkTo(methodOn(EventRegistrationsController.class)
+                        .cancelEventRegistration(event.getId(), memberId))
                         .withRel("cancelRegistration"));
             } else {
-                resource.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(EventRegistrationsController.class)
-                                .submitRegistrationForm(event.getId(), memberId, null))
+                resource.add(linkTo(methodOn(EventRegistrationsController.class)
+                        .submitRegistrationForm(event.getId(), memberId, null))
                         .withRel("createRegistration"));
             }
         }
@@ -77,4 +84,5 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
     public void setKlabisSecurityService(KlabisSecurityService klabisSecurityService) {
         this.klabisSecurityService = klabisSecurityService;
     }
+
 }

@@ -36,6 +36,13 @@ public class Competition extends Event {
     }
 
     @Override
+    public void edit(EventEditationForm form) {
+        super.edit(form);
+        this.categories.clear();
+        form.categories().forEach(this.categories::add);
+    }
+
+    @Override
     public void synchronize(OrisData orisData) {
         super.synchronize(orisData);
         setCategories(orisData.categories().stream().map(Category::new).toList());
