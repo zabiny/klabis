@@ -1,5 +1,13 @@
 package org.springframework.hateoas.mediatype.hal.forms;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.core.ResolvableType;
 import org.springframework.hateoas.AffordanceModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.QueryParameter;
@@ -7,8 +15,10 @@ import org.springframework.hateoas.mediatype.ConfiguredAffordance;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
+import java.beans.PropertyDescriptor;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -60,11 +70,12 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata {
     private final AffordanceModel.InputPayloadMetadata delegate;
     private final List<String> propertiesOrder;
-
+    private final PropertyDescriptor[] properties;
 
     SortedInputPayloadMetadata(AffordanceModel.InputPayloadMetadata delegate, List<String> propertiesOrder) {
         this.delegate = delegate;
         this.propertiesOrder = propertiesOrder;
+        this.properties = BeanUtils.getPropertyDescriptors(delegate.getType());
     }
 
     @Override
@@ -92,6 +103,82 @@ class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata
         return delegate.stream().sorted(Comparator.comparingInt(p -> {
             int idx = propertiesOrder.indexOf(p.getName());
             return idx >= 0 ? idx : Integer.MAX_VALUE;
-        }));
+        })).map(this::updatePropertyMetadata);
     }
+
+    private PropertyDescriptor descriptorFor(String name) {
+        return Stream.of(properties).filter(adept -> name.equals(adept.getName())).findFirst().orElseThrow();
+    }
+
+    private AffordanceModel.PropertyMetadata updatePropertyMetadata(AffordanceModel.PropertyMetadata item) {
+        // TODO: optimize this - instead of doing it on-the-fly during return, do it when initializing this class instead
+        if (Record.class.isAssignableFrom(delegate.getType())) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JavaType javaType = objectMapper.getTypeFactory().constructType(delegate.getType());
+            BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
+
+            item = new RecordPropertyMetadata(item, beanDescription);
+        }
+        return item;
+    }
+
+    static class RecordPropertyMetadata implements AffordanceModel.PropertyMetadata {
+
+        private final AffordanceModel.PropertyMetadata delegate;
+        private final BeanDescription beanDescription;
+
+        RecordPropertyMetadata(AffordanceModel.PropertyMetadata delegate, BeanDescription beanDescription) {
+            this.delegate = delegate;
+            this.beanDescription = beanDescription;
+        }
+
+        @Override
+        public String getName() {
+            return delegate.getName();
+        }
+
+        @Override
+        public boolean isRequired() {
+            return delegate.isRequired();
+        }
+
+        private BeanPropertyDefinition getPropertyDefinition() {
+            return beanDescription.findProperties()
+                    .stream()
+                    .filter(adept -> StringUtils.equals(delegate.getName(), adept.getName()))
+                    .findFirst()
+                    .orElseThrow();
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            BeanPropertyDefinition propertyDefinition = getPropertyDefinition();
+            if (propertyDefinition.couldDeserialize()) {
+                JsonProperty propertyAnnotation = propertyDefinition.getField().getAnnotation(JsonProperty.class);
+                if (propertyAnnotation != null) {
+                    return JsonProperty.Access.READ_ONLY.equals(propertyAnnotation.access());
+                } else {
+                    return false;
+                }
+            } else {
+                return true;
+            }
+        }
+
+        @Override
+        public Optional<String> getPattern() {
+            return delegate.getPattern();
+        }
+
+        @Override
+        public ResolvableType getType() {
+            return delegate.getType();
+        }
+
+        @Override
+        public String getInputType() {
+            return delegate.getInputType();
+        }
+    }
+
 }

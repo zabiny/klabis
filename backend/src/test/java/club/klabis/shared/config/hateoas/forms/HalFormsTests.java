@@ -127,8 +127,6 @@ class TestController {
 
     enum Sex {MALE, FEMALE}
 
-    ;
-
     record DataModel(
             @JsonProperty(access = JsonProperty.Access.READ_ONLY) int id,
             @InputType("userName") String name,
