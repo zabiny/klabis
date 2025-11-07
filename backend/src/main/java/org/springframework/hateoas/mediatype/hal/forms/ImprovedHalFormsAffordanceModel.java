@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.core.ResolvableType;
 import org.springframework.hateoas.AffordanceModel;
 import org.springframework.hateoas.Link;
@@ -15,7 +14,6 @@ import org.springframework.hateoas.mediatype.ConfiguredAffordance;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
-import java.beans.PropertyDescriptor;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -70,12 +68,15 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata {
     private final AffordanceModel.InputPayloadMetadata delegate;
     private final List<String> propertiesOrder;
-    private final PropertyDescriptor[] properties;
 
     SortedInputPayloadMetadata(AffordanceModel.InputPayloadMetadata delegate, List<String> propertiesOrder) {
         this.delegate = delegate;
         this.propertiesOrder = propertiesOrder;
-        this.properties = BeanUtils.getPropertyDescriptors(delegate.getType());
+    }
+
+    @Override
+    public Class<?> getType() {
+        return delegate.getType();
     }
 
     @Override
@@ -104,10 +105,6 @@ class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata
             int idx = propertiesOrder.indexOf(p.getName());
             return idx >= 0 ? idx : Integer.MAX_VALUE;
         })).map(this::updatePropertyMetadata);
-    }
-
-    private PropertyDescriptor descriptorFor(String name) {
-        return Stream.of(properties).filter(adept -> name.equals(adept.getName())).findFirst().orElseThrow();
     }
 
     private AffordanceModel.PropertyMetadata updatePropertyMetadata(AffordanceModel.PropertyMetadata item) {

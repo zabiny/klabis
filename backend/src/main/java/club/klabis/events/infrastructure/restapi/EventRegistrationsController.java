@@ -15,7 +15,9 @@ import org.springframework.hateoas.RepresentationModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ApiController(path = "/events/{eventId}/registrationForms/{memberId}", openApiTagName = "Event registrations", securityScopes = "klabis")
 public class EventRegistrationsController {
@@ -50,7 +52,8 @@ public class EventRegistrationsController {
         return EntityModel.of(form,
                 linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(event, memberId)).withRel(
                                 "example")
-                        .andAffordance(afford(methodOn(EventRegistrationsController.class).submitRegistrationForm(event,
+                        .andAffordance(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
+                                event,
                                 memberId,
                                 null)))
                         .withSelfRel());
