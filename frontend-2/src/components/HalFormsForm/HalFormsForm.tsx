@@ -86,17 +86,17 @@ function renderField(
     const errorText = touched[prop.name] && errors[prop.name] ? errors[prop.name] : "";
 
 // OPTIONS s multiple = Checkboxy
-    if (prop.options && prop.multiple) {
+    if (prop.type === "checkbox") {
         return <HalFormsCheckbox prop={prop} value={values[prop.name]} onValueChanged={setFieldValue}/>;
     }
 
 // OPTIONS + type radio
-    if (prop.options && prop.type === "radio") {
+    if (prop.type === "radio") {
         return <HalFormsRadio prop={prop} value={values[prop.value]} onValueChanged={setFieldValue}/>;
     }
 
     // OPTIONS single = Select
-    if (prop.options) {
+    if (prop.type === "select") {
         return <HalFormsSelect prop={prop} value={values[prop.value]} onValueChanged={setFieldValue}/>;
     }
 
@@ -118,17 +118,23 @@ function renderField(
     }
 
     // Default: TextField
+    if (["text", "email", "password", "number", "date"].includes(prop.type)) {
+        return (
+            <Field
+                as={TextField}
+                id={prop.name}
+                name={prop.name}
+                type={prop.type || "text"}
+                label={prop.prompt || prop.name}
+                fullWidth
+                error={!!errorText}
+                helperText={errorText}
+            />
+        );
+    }
+
     return (
-        <Field
-            as={TextField}
-            id={prop.name}
-            name={prop.name}
-            type={prop.type || "text"}
-            label={prop.prompt || prop.name}
-            fullWidth
-            error={!!errorText}
-            helperText={errorText}
-        />
+        <Alert severity={"warning"}>Neznamy typ formularoveho inputu: '{prop.type}'</Alert>
     );
 }
 
@@ -306,8 +312,8 @@ const HalFormsRadio: React.FC<HalFormsInputProps<string>> = ({prop, errorText, v
     const {options} = useOptionItems(prop.options);
 
     function renderRadioOption(opt: HalFormsOptionType, idx: number): ReactElement {
-        const val = typeof opt === "object" && "value" in opt ? opt.value : opt;
-        const label = typeof opt === "object" && "prompt" in opt ? opt.prompt : String(opt);
+        const val = getValue(opt);
+        const label = getLabel(opt);
         return <FormControlLabel key={idx} value={val} control={<Radio/>} label={label}/>;
     }
 
@@ -366,7 +372,7 @@ function isOptionItem(item: any): item is OptionItem {
     return item !== undefined && item !== null && item.value !== undefined;
 }
 
-function isNumber(item: any): item is Number {
+function isNumber(item: any): item is number {
     return typeof item === 'number';
 }
 
@@ -398,7 +404,9 @@ const HalFormsCheckbox: React.FC<HalFormsInputProps<string[]>> = ({
                                                                   }): ReactElement => {
     const {options} = useOptionItems(prop.options);
 
-    function renderCheckbox(val: string, label: string, idx: number): ReactElement {
+    function renderCheckbox(opt: HalFormsOptionType, idx: number): ReactElement {
+        const val = getValue(opt);
+        const label = getLabel(opt);
         return (
             <FormControlLabel
                 key={idx}
@@ -426,7 +434,7 @@ const HalFormsCheckbox: React.FC<HalFormsInputProps<string[]>> = ({
         <FormControl component="fieldset" error={!!errorText}>
             <FormLabel>{prop.prompt || prop.name}</FormLabel>
             <FormGroup>
-                {options.map((opt, idx) => renderCheckbox(getValue(opt), getLabel(opt), idx))}
+                {options.map((opt, idx) => renderCheckbox(opt, idx))}
             </FormGroup>
             <FormHelperText>{errorText}</FormHelperText>
         </FormControl>

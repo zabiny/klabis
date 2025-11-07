@@ -196,6 +196,7 @@ const demoTemplate: HalFormsTemplate = {
         },
         {
             name: "country",
+            type: "select",
             prompt: "Země",
             required: true,
             options: {
@@ -209,7 +210,7 @@ const demoTemplate: HalFormsTemplate = {
         {
             name: "hobbies",
             prompt: "Koníčky",
-            multiple: true,
+            type: "checkbox",
             options: {
                 inline: [
                 {value: "orienteering", prompt: "Orienťák"},
