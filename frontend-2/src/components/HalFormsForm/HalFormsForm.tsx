@@ -100,6 +100,10 @@ function renderField(
         return <HalFormsSelect prop={prop} value={values[prop.value]} onValueChanged={setFieldValue}/>;
     }
 
+    if (prop.type === "boolean") {
+        return <HalFormsBoolean prop={prop} value={values[prop.value]} onValueChanged={setFieldValue}/>;
+    }
+
     // TEXTAREA
     if (prop.type === "textarea") {
         return (
@@ -134,7 +138,7 @@ function renderField(
     }
 
     return (
-        <Alert severity={"warning"}>Neznamy typ formularoveho inputu: '{prop.type}'</Alert>
+        <Alert severity={"warning"}>{prop.prompt || prop.name}: neznamy typ formularoveho inputu: '{prop.type}'</Alert>
     );
 }
 
@@ -325,7 +329,7 @@ const HalFormsRadio: React.FC<HalFormsInputProps<string>> = ({prop, errorText, v
                 value={value}
                 onChange={(e) => onValueChanged(prop.name, e.target.value)}
             >
-                {options.map((opt, idx) => renderRadioOption(opt, idx))}
+                {renderOptions(options, renderRadioOption)}
             </RadioGroup>
             <FormHelperText>{errorText}</FormHelperText>
         </FormControl>
@@ -361,7 +365,7 @@ const HalFormsSelect: React.FC<HalFormsInputProps<string>> = ({
                 <MenuItem value="">
                     <em>-- vyber --</em>
                 </MenuItem>
-                {options.map((opt, idx) => renderSelectBoxOption(opt, idx))}
+                {renderOptions(options, renderSelectBoxOption)}
             </Select>
             <FormHelperText>{errorText}</FormHelperText>
         </FormControl>
@@ -394,6 +398,14 @@ function getLabel(item: HalFormsOptionType): string {
     } else {
         return item;
     }
+}
+
+function renderOptions(options: HalFormsOptionType[], optionRender: (opt: HalFormsOptionType, key: number) => ReactElement): ReactElement {
+    if (!options) {
+        return <Alert severity={"warning"}>No options available</Alert>;
+    }
+
+    return <>{options.map(optionRender)}</>;
 }
 
 const HalFormsCheckbox: React.FC<HalFormsInputProps<string[]>> = ({
@@ -433,9 +445,29 @@ const HalFormsCheckbox: React.FC<HalFormsInputProps<string[]>> = ({
     return (
         <FormControl component="fieldset" error={!!errorText}>
             <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <FormGroup>
-                {options.map((opt, idx) => renderCheckbox(opt, idx))}
-            </FormGroup>
+            <FormGroup>{renderOptions(options, renderCheckbox)}</FormGroup>
+            <FormHelperText>{errorText}</FormHelperText>
+        </FormControl>
+    );
+
+}
+
+const HalFormsBoolean: React.FC<HalFormsInputProps<boolean>> = ({
+                                                                    prop,
+                                                                    errorText,
+                                                                    value,
+                                                                    onValueChanged
+                                                                }): ReactElement => {
+
+    return (
+        <FormControl component="fieldset" error={!!errorText}>
+            <FormLabel>{prop.prompt || prop.name}</FormLabel>
+            <Checkbox
+                checked={value}
+                onChange={(e) => {
+                    onValueChanged(prop.name, e.target.checked);
+                }}
+            />
             <FormHelperText>{errorText}</FormHelperText>
         </FormControl>
     );

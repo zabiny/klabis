@@ -1,5 +1,6 @@
 package club.klabis.members.infrastructure.restapi.dto;
 
+import club.klabis.shared.config.hateoas.forms.InputOptions;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -28,6 +29,7 @@ public class MemberRegistrationFormApiDto {
 
     private String lastName;
 
+    @InputOptions
     private SexApiDto sex;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -37,12 +39,12 @@ public class MemberRegistrationFormApiDto {
 
     private String nationality;
 
-    @InputType("addressX")
     private AddressApiDto address;
 
     private ContactApiDto contact;
 
     @Valid
+    @InputType("LegalGuardians")
     private List<@Valid LegalGuardianApiDto> guardians = new ArrayList<>();
 
     private Integer siCard;

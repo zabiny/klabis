@@ -245,7 +245,7 @@ class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
                 if (Enum.class.isAssignableFrom(getType().getRawClass())) {
                     return "radio";
                 } else if (Boolean.class.isAssignableFrom(getType().getRawClass())) {
-                    return "checkbox";
+                    return "boolean";
                 }
 
                 return getType().getRawClass().getSimpleName();
