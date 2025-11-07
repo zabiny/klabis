@@ -47,14 +47,17 @@ export interface HalFormsResponse extends HalResponse {
 }
 
 // --- Typy ---
+
+export type HalFormsOptionType = OptionItem | string | number;
+
 /// http://rwcbook.com/hal-forms/#options-element
 export interface HalFormsOption {
-    inline?: (OptionItem | string | number)[]
+    inline?: HalFormsOptionType[]
     link?: Link
 }
 
 export interface OptionItem {
-    value?: string | number;
+    value: string | number;
     prompt?: string;
 }
 
