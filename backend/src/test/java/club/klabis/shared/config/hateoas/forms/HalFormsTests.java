@@ -3,7 +3,6 @@ package club.klabis.shared.config.hateoas.forms;
 import club.klabis.adapters.api.ApiTestConfiguration;
 import club.klabis.shared.config.restapi.ApiController;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,75 +17,64 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.JsonPathResultMatchers;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.net.URI;
+import java.util.List;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@DisplayName("HAL+FORMS tests - affordBetter method")
+@DisplayName("HAL+FORMS tests")
 @Import(ApiTestConfiguration.class)
 @WebMvcTest(controllers = TestController.class)
 public class HalFormsTests {
 
     @Autowired
-    private MockMvc mockMvc;
+    private MockMvcTester mockMvcTester;
+
+    private MockMvcTester.MockMvcRequestBuilder getFormsTestApi() {
+        return mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE);
+    }
 
     @Test
     @WithMockUser
     @DisplayName("It should returns correctly encoded prompts in _template data loaded from rest-default-messages.properties")
     void itShouldReturnCorrectlyEncodedFormData() throws Exception {
-        mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='name')].prompt").value("Jméno uživatele"));
+        assertThat(getFormsTestApi())
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$._templates.default.properties[?(@.name=='name')].prompt")
+                .asArray()
+                .containsExactly("Jméno uživatele");
     }
 
-    @Test
-    @WithMockUser
-    @DisplayName("It should NOT return record attributes as readOnly if there is not @JsonProperty(readOnly=true)")
-    void itShouldHandleReadOnlyForRecords() throws Exception {
-        mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='id')].readOnly").doesNotHaveJsonPath())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='name')].readOnly").doesNotHaveJsonPath())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='address')].readOnly").value(true));
-    }
 
     @Test
     @WithMockUser
     @DisplayName("It should honor input type defined on property using @InputType annotation")
     void itShouldHonorInputTypeAnnotation() throws Exception {
-        mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name=='name')].type").value("userName"));
-    }
-
-    static JsonPathResultMatchers templateProperty(String templateName, String propertyName, String subPath) {
-        return jsonPath("$._templates.%s.properties[?(@.name=='%s')]%s".formatted(templateName, propertyName, subPath));
-    }
-
-    static JsonPathResultMatchers defaultTemplateProperty(String propertyName, String subPath) {
-        return templateProperty("default", propertyName, subPath);
+        assertThat(getFormsTestApi())
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$._templates.default.properties[?(@.name=='name')].type")
+                .asArray()
+                .containsExactly("userName");
     }
 
     @Test
     @WithMockUser
     @DisplayName("It should return options for enum fields")
     void itShouldReturnOptionsForDefinedFields() throws Exception {
-        mockMvc.perform(get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                .andExpect(status().isOk())
-                .andExpect(defaultTemplateProperty("sex", ".options.inline").value(Matchers.contains("MALE",
-                        "FEMALE")));
+        assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$._templates.default.properties[3].options.inline")
+                .isEqualTo(List.of("MALE", "FEMALE"));
     }
 
     @Disabled
@@ -106,11 +94,26 @@ public class HalFormsTests {
         @Test
         @WithMockUser
         void itShouldReturnTemplatePropertiesInExpectedOrder() throws Exception {
-            mockMvc.perform(MockMvcRequestBuilders.get("/formsTest").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andDo(print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates['default'].properties[*].name",
-                            Matchers.contains("id", "name", "address", "sex")));
+            assertThat(getFormsTestApi())
+                    .hasStatusOk()
+                    .bodyJson()
+                    .extractingPath("$._templates['default'].properties[*].name")
+                    .asArray()
+                    .containsExactly("id", "name", "address", "sex");
+        }
+
+
+        @Test
+        @WithMockUser
+        @DisplayName("It should NOT return record attributes as readOnly if there is not @JsonProperty(readOnly=true)")
+        void itShouldHandleReadOnlyForRecords() throws Exception {
+            assertThat(getFormsTestApi())
+                    .hasStatusOk()
+                    .bodyJson()
+                    .doesNotHavePath("$._templates.default.properties[0].readOnly") // id
+                    .doesNotHavePath("$._templates.default.properties[1].readOnly")// name
+                    .hasPathSatisfying("$._templates.default.properties[2].readOnly",
+                            p -> p.assertThat().isEqualTo(true)); // address
         }
     }
 

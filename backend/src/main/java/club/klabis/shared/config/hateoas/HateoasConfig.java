@@ -1,8 +1,6 @@
 package club.klabis.shared.config.hateoas;
 
-import club.klabis.shared.config.hateoas.forms.InputOptions;
-import com.dpolach.spring.util.annotations.AnnotatedFieldScanner;
-import com.dpolach.spring.util.annotations.AnnotatedFieldVisitor;
+import club.klabis.shared.config.hateoas.forms.OptionsProviderFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,13 +13,8 @@ import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.config.HateoasConfiguration;
 import org.springframework.hateoas.mediatype.MessageResolver;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsConfiguration;
-import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.stream.Stream;
 
 @Profile("hateoas")
 @Configuration
@@ -43,12 +36,9 @@ public class HateoasConfig {
     }
 
     static HalFormsConfiguration addOptionsDefinitions(HalFormsConfiguration configuration) {
-        for (Data d : options().toList()) {
-            LOG.trace("Definiting options for %s#%s".formatted(d.type().getCanonicalName(), d.field.getName()));
-            configuration = configuration.withOptions(d.type(),
-                    d.field.getName(),
-                    propertyMetadata -> HalFormsOptions.inline("H10", "D10", "H12", "D12"));
-            // TODO: return serialized options from enum attribute
+        for (OptionsProviderFactory.HalFormsOptionsDescriptor d : OptionsProviderFactory.optionsProviders().toList()) {
+            LOG.trace(d.describe());
+            configuration = configuration.withOptions(d.type(), d.field().getName(), d.provider()::createOptions);
             // TODO: shall we automatically do that for all Enum types? (and leave InputOptions only for adding options to non-enum or customize default enum behavior?)
         }
 
@@ -83,25 +73,5 @@ public class HateoasConfig {
         };
     }
 
-    record Data(Field field, Class<?> type) {
-    }
 
-    static Stream<Data> options() {
-        AnnotatedFieldScanner scanner = new AnnotatedFieldScanner();
-
-        final Collection<Data> items = new ArrayList<>();
-
-        AnnotatedFieldVisitor visitor = new AnnotatedFieldVisitor() {
-
-            @Override
-            public void visit(Field field, Class<?> enclosingClass) {
-                items.add(new Data(field, enclosingClass));
-            }
-
-        };
-
-        scanner.visitClassesWithAnnotatedFields("club.klabis", InputOptions.class, visitor);
-
-        return items.stream();
-    }
 }

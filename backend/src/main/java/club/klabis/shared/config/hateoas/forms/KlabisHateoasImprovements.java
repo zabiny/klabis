@@ -16,30 +16,37 @@ import org.springframework.util.Assert;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
+
 public class KlabisHateoasImprovements {
 
     /**
-     * Default {@link WebMvcLinkBuilder#afford(Object)} creates affordance where properties in _templates are ordered by their name. For KlabisForm we would like to keep that order - and that's what this alternative can do.
+     * Default {@link WebMvcLinkBuilder#afford(Object)} creates affordance where properties in _templates are ordered by their name.
+     * For KlabisForm we would like to keep that order - and that's what this alternative can do.
+     * <p>
+     * Also some additional improvements are done (Options, types, etc.. )
      *
      * @param invocationValue
      * @return
      */
     public static Affordance affordBetter(Object invocationValue) {
 
-        AffordanceModel halFormsAffordanceModel = WebMvcLinkBuilder.afford(invocationValue)
-                .getAffordanceModel(MediaTypes.HAL_FORMS_JSON);
+        Affordance affordance = afford(invocationValue);
+
+        AffordanceModel halFormsAffordanceModel = affordance.getAffordanceModel(MediaTypes.HAL_FORMS_JSON);
 
         Assert.state(halFormsAffordanceModel != null, "Affordance model should not be null");
 
-        Class<?> requestBodyType = getRequestBodyType(halFormsAffordanceModel.getInput());
+        return new Affordance(Map.of(MediaTypes.HAL_FORMS_JSON, improveHalFormsAffordance(halFormsAffordanceModel)));
+    }
+
+    static AffordanceModel improveHalFormsAffordance(AffordanceModel original) {
+        Class<?> requestBodyType = getRequestBodyType(original.getInput());
 
         List<String> expectedPropertiesOrder = expectedPropertiesOrder(requestBodyType);
 
-        halFormsAffordanceModel = new ImprovedHalFormsAffordanceModel(ImprovedHalFormsAffordanceModel.fromModel(
-                halFormsAffordanceModel,
+        return new ImprovedHalFormsAffordanceModel(ImprovedHalFormsAffordanceModel.fromModel(original,
                 expectedPropertiesOrder));
-
-        return new Affordance(Map.of(MediaTypes.HAL_FORMS_JSON, halFormsAffordanceModel));
     }
 
     static final SerializationConfig objectMapper = new ObjectMapper()

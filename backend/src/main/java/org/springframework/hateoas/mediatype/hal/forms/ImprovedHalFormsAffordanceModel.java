@@ -174,7 +174,19 @@ class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata
 
         @Override
         public String getInputType() {
-            return delegate.getInputType();
+            String result = delegate.getInputType();
+
+            if (StringUtils.isBlank(result)) {
+                if (getType().getRawClass() != null) {
+                    if (Enum.class.isAssignableFrom(getType().getRawClass())) {
+                        return "radio";
+                    }
+
+                    return getType().getType().getTypeName();
+                }
+            }
+
+            return result;
         }
     }
 
