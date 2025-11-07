@@ -95,7 +95,7 @@ function HalNavigatorPage({startUrl}) {
 
     const renderNavigation = (): ReactElement => {
         return (<Stack direction={"row"}>
-            <Button disabled={isFirst} onClick={e => reset()}>Restart</Button>
+            <Button onClick={e => reset()}>Restart</Button>
             <Button disabled={isFirst} onClick={e => back()}>Zpět</Button>
         </Stack>);
     }
