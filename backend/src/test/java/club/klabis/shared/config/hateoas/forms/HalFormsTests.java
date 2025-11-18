@@ -43,7 +43,7 @@ public class HalFormsTests {
 
     @Test
     @WithMockUser
-    @DisplayName("It should returns correctly encoded prompts in _template data loaded from rest-default-messages.properties")
+    @DisplayName("It should returns correctly encoded prompts for _template properties loaded from rest-default-messages.properties")
     void itShouldReturnCorrectlyEncodedFormData() throws Exception {
         assertThat(getFormsTestApi())
                 .hasStatusOk()
@@ -51,6 +51,18 @@ public class HalFormsTests {
                 .extractingPath("$._templates.default.properties[?(@.name=='name')].prompt")
                 .asArray()
                 .containsExactly("Jméno uživatele");
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("It should return correctly encoded title for template loaded from rest-default-messages.properties")
+    void itShouldReturnCorrectlyEncodedTitleForTemplate() {
+        assertThat(getFormsTestApi())
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$._templates.default.title")
+                .asString()
+                .isEqualTo("Nový člen klubu");
     }
 
 
