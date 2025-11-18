@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
@@ -79,8 +78,7 @@ public class AuthorizationServerConfiguration {
     @Profile("inmemory")
     @Bean
     public OAuth2AuthorizationService authorizationService() {
-        // TODO: replace with DB
-        return new InMemoryOAuth2AuthorizationService();
+        return new FileBasedOAuth2AuthorizationService();   // use file for inmemory profile to remember authorizations between app restarts
     }
 
     @Bean
