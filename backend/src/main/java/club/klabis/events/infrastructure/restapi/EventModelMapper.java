@@ -47,11 +47,10 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
 
     @Override
     public void addLinks(EntityModel<EventResponse> resource) {
-        final MemberId memberId = new MemberId(1);
-
         Event event = resource.getContent().source();
 
         final KlabisPrincipal klabisPrincipal = klabisSecurityService.getPrincipal().orElseThrow();
+        final MemberId memberId = klabisPrincipal.memberId();
 
         resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value()).withSelfRel());
         resource.add(entityLinks.linkToCollectionResource(Event.class)
