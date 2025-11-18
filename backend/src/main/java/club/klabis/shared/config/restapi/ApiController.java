@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 @Tag(name = "Klabis")
 @SecurityRequirement(name = "klabis")
 @RestController
-@RequestMapping(produces = {MediaType.APPLICATION_JSON_VALUE, "application/klabis+json", MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+@RequestMapping
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ApiController {
@@ -30,5 +30,8 @@ public @interface ApiController {
 
     @AliasFor(annotation = RequestMapping.class, attribute = "value")
     String path() default "";
+
+    @AliasFor(annotation = RequestMapping.class, attribute = "produces")
+    String[] produces() default {MediaType.APPLICATION_JSON_VALUE, "application/klabis+json", MediaTypes.HAL_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE};
 
 }

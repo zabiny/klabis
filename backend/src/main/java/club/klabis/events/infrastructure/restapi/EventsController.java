@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @ExposesResourceFor(Event.class)
-@ApiController(openApiTagName = "Events", securityScopes = {"events"}, path = "/events")
+@ApiController(openApiTagName = "Events", securityScopes = {"events"}, path = "/events", produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_JSON_VALUE})
 public class EventsController {
     private final EventsRepository eventsRepository;
     private final EventModelMapper eventModelMapper;
