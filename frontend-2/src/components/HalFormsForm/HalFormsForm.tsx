@@ -143,18 +143,21 @@ function renderField(
 }
 
 const useHalFormsController = (
-    api: Link
+    api: Link,
+    inputTemplate?: HalFormsTemplate
 ): {
     isLoading: boolean,
     submit: (formData: Record<string, any>) => Promise<void>,
     error?: string,
     submitError?: string,
+    template?: HalFormsTemplate,
     formData?: HalFormsResponse,
 } => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>();
     const [formData, setFormData] = useState<HalFormsResponse>();
     const [submitError, setSubmitError] = useState<string>();
+    const [actualTemplate, setActualTemplate] = useState<HalFormsTemplate>();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -165,6 +168,7 @@ const useHalFormsController = (
                 const data = await fetchHalFormsData(api);
                 if (isHalFormsResponse(data)) {
                     setFormData(data);
+                    setActualTemplate(data._templates?.default);
                 } else {
                     setError("Returned data doesn't have HAL FORMS format");
                     console.warn("Returned data doesn't have HAL FORMS format");
@@ -178,14 +182,19 @@ const useHalFormsController = (
                 setIsLoading(false);
             }
         };
-
-        fetchData();
-    }, [api]);
+        if (inputTemplate) {
+            setFormData({});
+            setActualTemplate(inputTemplate);
+        } else {
+            fetchData();
+        }
+    }, [api, inputTemplate]);
 
     const submit = useCallback(
         async (data: Record<string, any>) => {
             const defaultTemplate = formData?._templates?.default;
             const method = defaultTemplate?.method || "POST";
+            console.log(`Submitting.... ${method} ${api}`);
 
             try {
                 await submitHalFormsData(method, api, data);
@@ -199,11 +208,14 @@ const useHalFormsController = (
         [formData, api] // No dependencies as `formData` and methods come from the function context
     );
 
-    return {isLoading, submit, error, formData, submitError};
+    return {isLoading, submit, error, formData, template: actualTemplate, submitError};
 };
 
-const HalFormsFormController = ({api}: { api: Link }): ReactElement => {
-    const {isLoading, submit, error, formData, submitError} = useHalFormsController(api);
+const HalFormsFormController = ({api, inputTemplate}: {
+    api: Link,
+    inputTemplate?: HalFormsTemplate
+}): ReactElement => {
+    const {isLoading, submit, error, formData, template, submitError} = useHalFormsController(api, inputTemplate);
 
     //console.log(`Loading=${isLoading}, error=${error}, formData=${JSON.stringify(formData)}`);
 
@@ -213,13 +225,13 @@ const HalFormsFormController = ({api}: { api: Link }): ReactElement => {
 
     if (error) {
         return <Alert severity={"error"}>{error}</Alert>;
-    } else if (!formData?._templates?.default) {
+    } else if (!template) {
         return <Alert severity={"error"}>Response doesn't contain form template 'default', can't render HalForms
             form</Alert>
     }
 
     return <div>
-        <HalFormsForm data={formData} template={formData._templates.default} onSubmit={submit}/>
+        <HalFormsForm data={formData || {}} template={template} onSubmit={submit}/>
         {submitError && <Alert severity={"error"}>{submitError}</Alert>}
     </div>;
 }
@@ -241,10 +253,15 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSubmit, su
             initialValues={initialValues}
             validationSchema={validationSchema}
             onSubmit={(values, {setSubmitting}) => {
-                if (onSubmit) onSubmit(values);
-                setSubmitting(false);
-            }}
-        >
+                console.error("Submitting " + JSON.stringify(values) + " using " + onSubmit);
+                try {
+                    if (onSubmit) {
+                        onSubmit(values);
+                    }
+                } finally {
+                    setSubmitting(false)
+                }
+            }}>
             {({values, setFieldValue, isSubmitting, errors, touched}) => (
                 <Form style={{display: "grid", gap: "1rem"}}>
                     {template.properties.map((prop) => (
