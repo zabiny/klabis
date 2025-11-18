@@ -212,7 +212,8 @@ class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
         if (isRecordPayload()) {
             BeanPropertyDefinition propertyDefinition = getPropertyDefinition();
             if (propertyDefinition.couldDeserialize()) {
-                JsonProperty propertyAnnotation = propertyDefinition.getField().getAnnotation(JsonProperty.class);
+                JsonProperty propertyAnnotation = propertyDefinition.getConstructorParameter()
+                        .getAnnotation(JsonProperty.class);
                 if (propertyAnnotation != null) {
                     return JsonProperty.Access.READ_ONLY.equals(propertyAnnotation.access());
                 } else {
