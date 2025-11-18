@@ -3,6 +3,7 @@ package club.klabis.shared.config.hateoas;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.EntityLinks;
@@ -46,5 +47,13 @@ public abstract class AbstractRepresentationModelMapper<DOMAIN, DTO> implements 
 
     abstract public DTO toResponse(DOMAIN event);
 
+    @Override
+    public void addLinks(EntityModel<DTO> resource) {
 
+    }
+
+    @Override
+    public void addLinks(CollectionModel<EntityModel<DTO>> resources) {
+
+    }
 }
