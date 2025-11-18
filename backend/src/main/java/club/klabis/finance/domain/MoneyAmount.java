@@ -13,6 +13,10 @@ public record MoneyAmount(BigDecimal amount) {
         return new MoneyAmount(BigDecimal.valueOf(amount));
     }
 
+    public static MoneyAmount of(BigDecimal amount) {
+        return new MoneyAmount(amount);
+    }
+
     public static MoneyAmount ZERO = new MoneyAmount(BigDecimal.ZERO);
 
     public MoneyAmount add(MoneyAmount amount) {
