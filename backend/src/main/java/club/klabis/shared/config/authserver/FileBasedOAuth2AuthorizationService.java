@@ -230,6 +230,9 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
             serializable.setPrincipalName(authorization.getPrincipalName());
             serializable.setAuthorizationGrantType(authorization.getAuthorizationGrantType().getValue());
             serializable.setAuthorizedScopes(new HashSet<>(authorization.getAuthorizedScopes()));
+
+            //TODO: when handling refresh_token flow OAuth2RefreshTokenAuthenticationProvider.java:186 attempts to read Principal attribute from here and fails becaujse it expects Principal instance but it gets Map<String,Object> with attribute values.
+            // Find out how JdbcOAuth2AuthorizationService handles this (from short check it seems that it doesn't what is strange).
             serializable.setAttributes(new HashMap<>(authorization.getAttributes()));
 
             Map<String, SerializableToken> tokens = new HashMap<>();
