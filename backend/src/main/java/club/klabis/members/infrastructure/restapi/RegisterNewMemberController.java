@@ -87,7 +87,7 @@ public class RegisterNewMemberController {
 
     @GetMapping
     EntityModel<MemberRegistrationFormApiDto> getRegistrationForm() {
-        MemberRegistrationFormApiDto form = new MemberRegistrationFormApiDto();
+        MemberRegistrationFormApiDto form = MemberRegistrationFormApiDto.empty();
 
         return EntityModel.of(form, WebMvcLinkBuilder.linkTo(this.getClass()).withSelfRel()
                 .andAffordance(affordBetter(methodOn(getClass()).memberRegistrationsPost(null))));
