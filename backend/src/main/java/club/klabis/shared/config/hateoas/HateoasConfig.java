@@ -25,24 +25,14 @@ public class HateoasConfig {
 
     @Bean
     HalFormsConfiguration kalConfiguration() {
-        return addOptionsDefinitions(new HalFormsConfiguration()
+        return OptionsProviderFactory.addOptionsDefinitions(new HalFormsConfiguration()
                 .withMediaType(KalMediaTypeConfiguration.KAL_MEDIA_TYPE)
                 .withObjectMapperCustomizer(this::customizeHalFormsObjectMapper));
     }
 
     @Bean
     HalFormsConfiguration halFormsConfiguration() {
-        return addOptionsDefinitions(new HalFormsConfiguration());
-    }
-
-    static HalFormsConfiguration addOptionsDefinitions(HalFormsConfiguration configuration) {
-        for (OptionsProviderFactory.HalFormsOptionsDescriptor d : OptionsProviderFactory.optionsProviders().toList()) {
-            LOG.trace(d.describe());
-            configuration = configuration.withOptions(d.type(), d.field().getName(), d.provider()::createOptions);
-            // TODO: shall we automatically do that for all Enum types? (and leave InputOptions only for adding options to non-enum or customize default enum behavior?)
-        }
-
-        return configuration;
+        return OptionsProviderFactory.addOptionsDefinitions(new HalFormsConfiguration());
     }
 
     private void customizeHalFormsObjectMapper(ObjectMapper objectMapper) {

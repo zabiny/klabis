@@ -5,7 +5,7 @@ import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 
 import java.util.stream.Stream;
 
-public class EnumOptionsProvider implements HalFormsOptionsProvider {
+class EnumOptionsProvider implements HalFormsOptionsProvider {
     private final Class<Enum<?>> enumClass;
     private final HalFormsOptions halFormsOptions;
 

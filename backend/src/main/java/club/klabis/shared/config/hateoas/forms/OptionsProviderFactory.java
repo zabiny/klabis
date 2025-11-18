@@ -2,6 +2,9 @@ package club.klabis.shared.config.hateoas.forms;
 
 import com.dpolach.spring.util.annotations.AnnotatedFieldScanner;
 import com.dpolach.spring.util.annotations.AnnotatedFieldVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.hateoas.mediatype.hal.forms.HalFormsConfiguration;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -10,7 +13,9 @@ import java.util.stream.Stream;
 
 public class OptionsProviderFactory {
 
-    public static HalFormsOptionsProvider getProvider(Class<?> type, Field property, InputOptions annotation) {
+    private static final Logger LOG = LoggerFactory.getLogger(OptionsProviderFactory.class);
+
+    static HalFormsOptionsProvider getProvider(Class<?> type, Field property, InputOptions annotation) {
         if (annotation.sourceEnum() != Object.class && Enum.class.isAssignableFrom(annotation.sourceEnum())) {
             return new EnumOptionsProvider((Class<Enum<?>>) annotation.sourceEnum());
         } else if (Enum.class.isAssignableFrom(property.getType())) {
@@ -21,7 +26,7 @@ public class OptionsProviderFactory {
         }
     }
 
-    public record HalFormsOptionsDescriptor(Field field, Class<?> type, HalFormsOptionsProvider provider) {
+    record HalFormsOptionsDescriptor(Field field, Class<?> type, HalFormsOptionsProvider provider) {
         public String describe() {
             return String.format("Options for %s#%s with provider by %s".formatted(type.getSimpleName(),
                     field.getName(),
@@ -29,7 +34,17 @@ public class OptionsProviderFactory {
         }
     }
 
-    public static Stream<HalFormsOptionsDescriptor> optionsProviders() {
+    public static HalFormsConfiguration addOptionsDefinitions(HalFormsConfiguration configuration) {
+        for (OptionsProviderFactory.HalFormsOptionsDescriptor d : OptionsProviderFactory.optionsProviders().toList()) {
+            LOG.trace(d.describe());
+            configuration = configuration.withOptions(d.type(), d.field().getName(), d.provider()::createOptions);
+            // TODO: shall we automatically do that for all Enum types? (and leave InputOptions only for adding options to non-enum or customize default enum behavior?)
+        }
+
+        return configuration;
+    }
+
+    static Stream<HalFormsOptionsDescriptor> optionsProviders() {
         AnnotatedFieldScanner scanner = new AnnotatedFieldScanner();
 
         final Collection<HalFormsOptionsDescriptor> items = new ArrayList<>();
