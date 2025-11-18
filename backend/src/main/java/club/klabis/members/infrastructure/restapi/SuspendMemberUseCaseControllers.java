@@ -8,10 +8,11 @@ package club.klabis.members.infrastructure.restapi;
 import club.klabis.members.MemberId;
 import club.klabis.members.application.MembershipSuspendUseCase;
 import club.klabis.members.domain.MemberNotFoundException;
+import club.klabis.members.domain.MembershipSuspensionInfo;
 import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoRequestDto;
-import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
+import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
 import club.klabis.shared.config.restapi.ApiController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,24 +22,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
 @ApiController(path = "/members/{memberId}", openApiTagName = "Suspend membership", securityScopes = "members")
 public class SuspendMemberUseCaseControllers {
 
-    private final ConversionService conversionService;
+    private final AbstractRepresentationModelMapper<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> conversionService;
     private final MembershipSuspendUseCase useCase;
 
-    public SuspendMemberUseCaseControllers(ConversionService conversionService, MembershipSuspendUseCase useCase) {
-        this.conversionService = conversionService;
+    public SuspendMemberUseCaseControllers(AbstractRepresentationModelMapper<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> modelAssembler, MembershipSuspendUseCase useCase) {
+        this.conversionService = modelAssembler;
         this.useCase = useCase;
     }
 
@@ -67,16 +64,11 @@ public class SuspendMemberUseCaseControllers {
             }
     )
     @GetMapping("/suspendMembershipForm")
-    EntityModel<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(
+    public EntityModel<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId
     ) {
         return useCase.getSuspensionInfoForMember(memberId)
-                .map(d -> conversionService.convert(d,
-                        club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoApiDto.class))
-                .map(form -> EntityModel.of(form, WebMvcLinkBuilder.linkTo(getClass(), memberId).withSelfRel()
-                        .andAffordance(affordBetter(methodOn(getClass()).membersMemberIdSuspendMembershipFormPut(
-                                memberId,
-                                null))).withRel("submit")))
+                .map(conversionService::toResponseModel)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
@@ -117,7 +109,7 @@ public class SuspendMemberUseCaseControllers {
             }
     )
     @PutMapping("/suspendMembershipForm")
-    ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(
+    public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId,
             @Parameter(name = "force", description = "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension") @Valid @RequestBody MembershipSuspensionInfoRequestDto form) {
         useCase.suspendMembershipForMember(memberId, form.force());
