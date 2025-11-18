@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+// TODO: update controllers (zrus HAL+FORMS content type pokud endpoint nezobrazuje formular) a HalExplorer: pokud API vrati HAL+FORMS content type => display form. Pokud API vrati jen HAL+JSON, display table (??)
 @Service
 public class EventRegistrationUseCase {
 
@@ -27,7 +28,8 @@ public class EventRegistrationUseCase {
 
         return event.getRegistrationForMember(memberId)
                 .map(registration -> toForm(event, registration))
-                .orElseGet(() -> new EventRegistrationForm("predefinedSiForMember", null));
+                // TODO: get siCard from Member's data
+                .orElseGet(() -> new EventRegistrationForm(event.getName(), "predefinedSiForMember", null));
     }
 
     public List<String> getEventCategories(Event.Id eventId) {

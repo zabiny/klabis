@@ -112,6 +112,7 @@ function renderField(
                 id={prop.name}
                 name={prop.name}
                 label={prop.prompt || prop.name}
+                disabled={prop.readOnly || false}
                 fullWidth
                 multiline
                 rows={4}
@@ -130,6 +131,7 @@ function renderField(
                 name={prop.name}
                 type={prop.type || "text"}
                 label={prop.prompt || prop.name}
+                disabled={prop.readOnly || false}
                 fullWidth
                 error={!!errorText}
                 helperText={errorText}

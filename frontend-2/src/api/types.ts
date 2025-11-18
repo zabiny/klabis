@@ -67,6 +67,7 @@ export interface HalFormsProperty {
     type: string; // "text" | "number" | "email" | "textarea" | "radio"
     value?: string | number;
     required?: boolean;
+    readOnly?: boolean;
     options?: HalFormsOption;
     multiple?: boolean;
 }
