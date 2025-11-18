@@ -30,7 +30,7 @@ import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-@ApiController(path = "/members/{memberId}/editByAdminForm", openApiTagName = "Edit members", securityScopes = "members")
+@ApiController(path = "/members/{memberId}/editByAdminForm", openApiTagName = "Edit members")
 public class AdminMemberEditUseCaseControllers {
 
     private final EditMemberInfoUseCase editMemberUseCase;

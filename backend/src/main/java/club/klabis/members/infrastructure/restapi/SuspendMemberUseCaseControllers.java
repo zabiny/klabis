@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@ApiController(path = "/members/{memberId}", openApiTagName = "Suspend membership", securityScopes = "members")
+@ApiController(path = "/members/{memberId}", openApiTagName = "Suspend membership")
 public class SuspendMemberUseCaseControllers {
 
     private final AbstractRepresentationModelMapper<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> conversionService;

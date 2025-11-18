@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @ExposesResourceFor(Member.class)
-@ApiController(openApiTagName = "Members", path = "/members", securityScopes = {"members"})
+@ApiController(openApiTagName = "Members", path = "/members")
 public class MembersApi {
 
     private final MembersRepository membersRepository;

@@ -22,7 +22,7 @@ import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-@ApiController(path = "/events/{eventId}/registrationForms/{memberId}", openApiTagName = "Event registrations", securityScopes = "klabis")
+@ApiController(path = "/events/{eventId}/registrationForms/{memberId}", openApiTagName = "Event registrations")
 public class EventRegistrationsController {
     private final EventRegistrationUseCase useCase;
 

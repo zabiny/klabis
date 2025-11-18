@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-@ApiController(openApiTagName = "User permissions", securityScopes = {"openapi"})
+@ApiController(openApiTagName = "User permissions")
 public interface UserPermissionsApi {
 
     /**

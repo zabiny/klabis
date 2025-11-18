@@ -151,8 +151,12 @@ spring:
                 - "https://api.klabis.otakar.io/oauth2-redirect.html"
                 - "https://api.klabis.otakar.io/swagger-ui/oauth2-redirect.html"
               scopes:
-                - "openid"
-
+                - klabis
+                - members
+                - events
+                - finance
+                - openid
+                - profile
       client:
         registration: # configurations are used by authorization server's login page - "Resource" server has hardcoded single registration - klabis OIDC
           google:

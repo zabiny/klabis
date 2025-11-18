@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 
 @Validated
 @Tag(name = "Klabis")
-@SecurityRequirement(name = "klabis")
+@SecurityRequirement(name = "klabis_auth")
 @RestController
 @RequestMapping
 @Retention(RetentionPolicy.RUNTIME)

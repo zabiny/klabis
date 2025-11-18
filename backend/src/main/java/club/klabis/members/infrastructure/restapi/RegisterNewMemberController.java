@@ -31,7 +31,7 @@ import java.net.URI;
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-@ApiController(path = "/memberRegistrations", securityScopes = "members", openApiTagName = "Register members")
+@ApiController(path = "/memberRegistrations", openApiTagName = "Register members")
 public class RegisterNewMemberController {
     private final MemberRegistrationUseCase service;
     private final ConversionService conversionService;
