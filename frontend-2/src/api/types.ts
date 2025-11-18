@@ -77,5 +77,6 @@ export type HalFormsTemplateMethod = "POST" | "PUT" | "DELETE";
 export interface HalFormsTemplate {
     method?: HalFormsTemplateMethod;
     contentType?: string;
+    title?: string;
     properties: Array<HalFormsProperty>
 }

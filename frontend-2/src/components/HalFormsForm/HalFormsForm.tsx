@@ -264,6 +264,8 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSubmit, su
             }}>
             {({values, setFieldValue, isSubmitting, errors, touched}) => (
                 <Form style={{display: "grid", gap: "1rem"}}>
+                    {(template.title ? <h2>{template.title}</h2> : <></>)}
+
                     {template.properties.map((prop) => (
                         <div key={prop.name}>
                             {renderField(prop, values, setFieldValue, errors, touched)}
