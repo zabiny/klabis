@@ -2,6 +2,7 @@ package org.springframework.hateoas.mediatype.hal.forms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
@@ -207,13 +208,18 @@ class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
                 .orElseThrow();
     }
 
+    private Annotated getAnnotatedElement(BeanPropertyDefinition propertyDefinition) {
+        return Stream.of(getPropertyDefinition().getConstructorParameter(), getPropertyDefinition().getField())
+                .filter(Objects::nonNull)
+                .findFirst().orElseThrow();
+    }
+
     @Override
     public boolean isReadOnly() {
         if (isRecordPayload()) {
             BeanPropertyDefinition propertyDefinition = getPropertyDefinition();
             if (propertyDefinition.couldDeserialize()) {
-                JsonProperty propertyAnnotation = propertyDefinition.getConstructorParameter()
-                        .getAnnotation(JsonProperty.class);
+                JsonProperty propertyAnnotation = getAnnotatedElement(propertyDefinition).getAnnotation(JsonProperty.class);
                 if (propertyAnnotation != null) {
                     return JsonProperty.Access.READ_ONLY.equals(propertyAnnotation.access());
                 } else {
