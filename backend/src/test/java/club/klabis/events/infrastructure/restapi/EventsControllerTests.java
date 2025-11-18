@@ -66,7 +66,7 @@ public class EventsControllerTests {
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
                 Optional.of(createEventWithOrisId(new OrisId(3))));
 
-        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE, MediaTypes.HAL_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._links.synchronize.href").value("http://localhost/oris/synchronizeEvents"));
@@ -81,7 +81,7 @@ public class EventsControllerTests {
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
                 Optional.of(createEventWithOrisId(new OrisId(3))));
 
-        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE, MediaTypes.HAL_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._links.synchronize").doesNotExist());
