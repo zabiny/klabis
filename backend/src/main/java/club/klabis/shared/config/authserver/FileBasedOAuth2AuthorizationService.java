@@ -18,12 +18,16 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -40,12 +44,13 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final ObjectMapper objectMapper;
     private final File storageFile;
+    private final RegisteredClientRepository registeredClientRepository;
 
     /**
      * Konstruktor s výchozím umístěním souboru
      */
-    public FileBasedOAuth2AuthorizationService() {
-        this("oauth2-authorizations.json");
+    public FileBasedOAuth2AuthorizationService(RegisteredClientRepository registeredClientRepository) {
+        this("oauth2-authorizations.json", registeredClientRepository);
     }
 
     /**
@@ -53,7 +58,8 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
      *
      * @param fileName název souboru pro ukládání dat
      */
-    public FileBasedOAuth2AuthorizationService(String fileName) {
+    public FileBasedOAuth2AuthorizationService(String fileName, RegisteredClientRepository registeredClientRepository) {
+        this.registeredClientRepository = registeredClientRepository;
         Assert.hasText(fileName, "fileName nesmí být prázdný");
         this.storageFile = new File(fileName);
         this.objectMapper = createObjectMapper();
@@ -105,7 +111,7 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
         lock.readLock().lock();
         try {
             SerializableOAuth2Authorization serializable = this.authorizations.get(id);
-            return serializable != null ? serializable.toOAuth2Authorization() : null;
+            return serializable != null ? serializable.toOAuth2Authorization(registeredClientRepository) : null;
         } finally {
             lock.readLock().unlock();
         }
@@ -120,7 +126,7 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
         try {
             for (SerializableOAuth2Authorization serializable : this.authorizations.values()) {
                 if (hasToken(serializable, token, tokenType)) {
-                    return serializable.toOAuth2Authorization();
+                    return serializable.toOAuth2Authorization(registeredClientRepository);
                 }
             }
             return null;
@@ -194,6 +200,7 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
                     new TypeReference<Map<String, SerializableOAuth2Authorization>>() {
                     };
             Map<String, SerializableOAuth2Authorization> loaded = objectMapper.readValue(storageFile, typeRef);
+            //loaded.values().forEach(v -> v.parseAttributes(objectMapper));
             this.authorizations.putAll(loaded);
             logger.info("Načteno {} autorizací ze souboru: {}", loaded.size(), storageFile.getAbsolutePath());
         } catch (IOException e) {
@@ -259,10 +266,14 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
             return serializable;
         }
 
-        public OAuth2Authorization toOAuth2Authorization() {
+        public OAuth2Authorization toOAuth2Authorization(RegisteredClientRepository registeredClientRepository) {
+            RegisteredClient client = registeredClientRepository.findById(registeredClientId);
+            Assert.notNull(client, "No OAuth2 client with ID %s was found in repository".formatted(registeredClientId));
+
             OAuth2Authorization.Builder builder = OAuth2Authorization
-                    .withRegisteredClient(RegisteredClient.withId(registeredClientId).build())
+                    .withRegisteredClient(client)
                     .id(id)
+                    .attributes((attrs) -> attrs.putAll(attributes))
                     .principalName(principalName)
                     .authorizationGrantType(new AuthorizationGrantType(authorizationGrantType))
                     .authorizedScopes(authorizedScopes);
@@ -398,7 +409,7 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
                         tokenValue,
                         issuedAt,
                         expiresAt,
-                        Collections.emptyMap()
+                        (Map<String, Object>) metadata.get(OAuth2Authorization.Token.CLAIMS_METADATA_NAME)
                 );
             }
             throw new IllegalStateException("Neznámý typ tokenu: " + tokenType);
