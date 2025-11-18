@@ -6,6 +6,8 @@ import org.jmolecules.ddd.annotation.Entity;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Entity
 public class Competition extends Event {
@@ -16,7 +18,9 @@ public class Competition extends Event {
     private final Set<Category> categories = new HashSet<>();
 
     public record Category(String name) {
-
+        public static Set<Category> categories(String... categoryNames) {
+            return Stream.of(categoryNames).map(Category::new).collect(Collectors.toSet());
+        }
     }
 
     public static Event newEvent(EventEditationForm form) {

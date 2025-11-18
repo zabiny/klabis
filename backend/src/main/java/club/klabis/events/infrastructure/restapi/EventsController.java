@@ -22,8 +22,10 @@ import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -70,7 +72,7 @@ public class EventsController {
             }
     )
     @GetMapping(
-            value = "/{eventId}"
+            value = "/{eventId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_JSON_VALUE}
     )
     @JsonView(ResponseViews.Detailed.class)
     EntityModel<EventResponse> getEventById(@PathVariable("eventId") Event.Id eventId) {
