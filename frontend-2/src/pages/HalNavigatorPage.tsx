@@ -20,7 +20,10 @@ async function fetchResource(url: string) {
             "Authorization": `Bearer ${user?.access_token}`
         },
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+        console.warn(await res.json());
+        throw new Error(`HTTP ${res.status}`);
+    }
     return res.json();
 }
 
@@ -184,7 +187,8 @@ function HalNavigatorContent({
     }
 
     if (error) {
-        return <Alert severity={"error"}>Nepovedlo se nacist data {toLink(api).href}: {JSON.stringify(error)}</Alert>;
+        console.table(error.stack);
+        return <Alert severity={"error"}>Nepovedlo se nacist data {toLink(api).href}: {error.message}</Alert>;
     }
 
     let content;
@@ -227,7 +231,7 @@ const useSimpleFetch = (resource: NavigationTarget): {
 } => {
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState();
-    const [error, setError] = useState();
+    const [error, setError] = useState<Error>();
 
     const loadData = useCallback(async (link: NavigationTarget) => {
         setLoading(true);
@@ -237,8 +241,11 @@ const useSimpleFetch = (resource: NavigationTarget): {
             const response = await fetchResource(toHref(link));
             setData(response);
         } catch (e) {
-            console.error(e);
-            setError(e);
+            if (e instanceof Error) {
+                setError(e);
+            } else {
+                setError(new Error("Unknown error " + e))
+            }
         } finally {
             setLoading(false);
         }

@@ -49,7 +49,9 @@ export interface HalFormsResponse extends HalResponse {
 
 // --- Typy ---
 
-export type HalFormsOptionType = OptionItem | string | number;
+export type HalFormsOptionValue = string | number;
+
+export type HalFormsOptionType = OptionItem | HalFormsOptionValue;
 
 /// http://rwcbook.com/hal-forms/#options-element
 export interface HalFormsOption {
@@ -58,7 +60,7 @@ export interface HalFormsOption {
 }
 
 export interface OptionItem {
-    value: string | number;
+    value: HalFormsOptionValue;
     prompt?: string;
 }
 

@@ -19,6 +19,7 @@ import React, {type ReactElement, type ReactNode, useCallback, useEffect, useSta
 import {
     type HalFormsOption,
     type HalFormsOptionType,
+    type HalFormsOptionValue,
     type HalFormsProperty,
     type HalFormsResponse,
     type HalFormsTemplate,
@@ -92,16 +93,16 @@ function renderField(
 
 // OPTIONS + type radio
     if (prop.type === "radio") {
-        return <HalFormsRadio prop={prop} value={values[prop.value]} onValueChanged={setFieldValue}/>;
+        return <HalFormsRadio prop={prop} value={values[prop.name]} onValueChanged={setFieldValue}/>;
     }
 
     // OPTIONS single = Select
     if (prop.type === "select") {
-        return <HalFormsSelect prop={prop} value={values[prop.value]} onValueChanged={setFieldValue}/>;
+        return <HalFormsSelect prop={prop} value={values[prop.name]} onValueChanged={setFieldValue}/>;
     }
 
     if (prop.type === "boolean") {
-        return <HalFormsBoolean prop={prop} value={values[prop.value]} onValueChanged={setFieldValue}/>;
+        return <HalFormsBoolean prop={prop} value={values[prop.name]} onValueChanged={setFieldValue}/>;
     }
 
     // TEXTAREA
@@ -338,6 +339,7 @@ const HalFormsRadio: React.FC<HalFormsInputProps<string>> = ({prop, errorText, v
     function renderRadioOption(opt: HalFormsOptionType, idx: number): ReactElement {
         const val = getValue(opt);
         const label = getLabel(opt);
+
         return <FormControlLabel key={idx} value={val} control={<Radio/>} label={label}/>;
     }
 
@@ -400,13 +402,19 @@ function isNumber(item: any): item is number {
     return typeof item === 'number';
 }
 
+function optionValueToString(value: HalFormsOptionValue): string {
+    if (isNumber(value)) {
+        return `${value}`;
+    } else {
+        return value;
+    }
+}
+
 function getValue(item: HalFormsOptionType): string {
     if (isOptionItem(item)) {
         return getValue(item.value);
-    } else if (isNumber(item)) {
-        return `${item}`;
     } else {
-        return item;
+        return optionValueToString(item);
     }
 }
 
