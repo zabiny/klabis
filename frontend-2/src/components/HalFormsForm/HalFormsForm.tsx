@@ -1,6 +1,7 @@
 import * as Yup from "yup";
 import {
     Alert,
+    Box,
     Button,
     Checkbox,
     FormControl,
@@ -55,7 +56,7 @@ function getInitialValues(
 function getValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<any> {
     const shape: Record<string, any> = {};
     template.properties.forEach((prop) => {
-        let validator: any = Yup.string();
+        let validator: any = Yup.mixed().nullable();
 
         if (prop.type === "number") {
             validator = Yup.number().typeError("Musí být číslo");
@@ -88,21 +89,25 @@ function renderField(
 
 // OPTIONS s multiple = Checkboxy
     if (prop.type === "checkbox") {
-        return <HalFormsCheckbox prop={prop} value={values[prop.name]} onValueChanged={setFieldValue}/>;
+        return <HalFormsCheckbox prop={prop} value={values[prop.name]} errorText={errorText}
+                                 onValueChanged={setFieldValue}/>;
     }
 
 // OPTIONS + type radio
     if (prop.type === "radio") {
-        return <HalFormsRadio prop={prop} value={values[prop.name]} onValueChanged={setFieldValue}/>;
+        return <HalFormsRadio prop={prop} value={values[prop.name]} errorText={errorText}
+                              onValueChanged={setFieldValue}/>;
     }
 
     // OPTIONS single = Select
     if (prop.type === "select") {
-        return <HalFormsSelect prop={prop} value={values[prop.name]} onValueChanged={setFieldValue}/>;
+        return <HalFormsSelect prop={prop} value={values[prop.name]} errorText={errorText}
+                               onValueChanged={setFieldValue}/>;
     }
 
     if (prop.type === "boolean") {
-        return <HalFormsBoolean prop={prop} value={values[prop.name]} onValueChanged={setFieldValue}/>;
+        return <HalFormsBoolean prop={prop} value={values[prop.name]} errorText={errorText}
+                                onValueChanged={setFieldValue}/>;
     }
 
     // TEXTAREA
@@ -140,10 +145,10 @@ function renderField(
         );
     }
 
-    return (<>
+    return (<Box sx={errorText ? {border: '1px solid red'} : {}}>
         <Alert severity={"warning"}>{prop.prompt || prop.name}: neznamy typ HAL+FORMS property: '{prop.type}'</Alert>
             {errorText && <Alert severity={"error"}>{errorText}</Alert>}
-        </>
+        </Box>
     );
 }
 
@@ -346,9 +351,10 @@ const HalFormsRadio: React.FC<HalFormsInputProps<string>> = ({prop, errorText, v
     }
 
     return (
-        <FormControl component="fieldset" error={!!errorText}>
+        <FormControl component="fieldset" error={!!errorText} sx={errorText ? {border: '1px solid red', p: 1} : {p: 1}}>
             <FormLabel>{prop.prompt || prop.name}</FormLabel>
             <RadioGroup
+                aria-errormessage={errorText}
                 name={prop.name}
                 value={value}
                 onChange={(e) => onValueChanged(prop.name, e.target.value)}
