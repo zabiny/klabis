@@ -255,7 +255,6 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSubmit, su
             initialValues={initialValues}
             validationSchema={validationSchema}
             onSubmit={(values, {setSubmitting}) => {
-                console.error("Submitting " + JSON.stringify(values) + " using " + onSubmit);
                 try {
                     if (onSubmit) {
                         onSubmit(values);

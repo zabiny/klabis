@@ -2,7 +2,7 @@ import React, {type ReactElement, useCallback, useEffect, useMemo, useState} fro
 import {UserManager} from "oidc-client-ts";
 import {HalFormsForm} from "../components/HalFormsForm";
 import {type HalFormsResponse, type HalFormsTemplate, type HalResponse, type Link, type TemplateTarget} from "../api";
-import {Alert, Box, Button, Grid, Link as MuiLink, Stack, Tab, Tabs} from "@mui/material";
+import {Alert, Box, Button, Checkbox, FormLabel, Grid, Link as MuiLink, Stack, Tab, Tabs} from "@mui/material";
 import {ErrorBoundary} from 'react-error-boundary';
 import {klabisAuthUserManager} from "../api/klabisUserManager";
 import {isHalFormsResponse, isHalResponse} from "../components/HalFormsForm/utils";
@@ -95,7 +95,7 @@ function HalContent({data, navigate}: {
                 {Object.entries(data)
                     .filter(v => ['_embedded', '_links', '_templates'].indexOf(v[0]) === -1)
                     .map(([attrName, value]) => {
-                        return <tr>
+                        return <tr key={attrName}>
                             <td>{attrName}</td>
                             <td>{JSON.stringify(value)}</td>
                         </tr>;
@@ -171,15 +171,14 @@ function HalFormsContent({
 
 function HalNavigatorContent({
                                  api, navigate, navigateBack = () => {
-    }, showSource = false
+    }
                              }: {
     api: NavigationTarget,
     navigate: (target: NavigationTarget) => Promise<void>,
     navigateBack?: () => void,
-    showSource?: boolean
 }): ReactElement {
     const {data, isLoading, error} = useSimpleFetch(api);
-
+    const [showSource, setShowSource] = useState(false);
     if (isLoading) {
         return <Alert severity={"info"}>Nahravam data {toLink(api).href}</Alert>;
     }
@@ -202,7 +201,12 @@ function HalNavigatorContent({
         alignItems: "baseline",
     }}>
         <Grid padding={2} xs={7}>{content}</Grid>
-        {showSource && <Grid overflow={"scroll"} xs={5}><JsonPreview data={data} label={"Response data"}/></Grid>}
+        <Grid overflow={showSource ? "scroll" : "none"} xs={5}>
+            <FormLabel>Zobraz zdrojovy JSON:<Checkbox checked={showSource}
+                                                      onChange={(event, checked) => setShowSource(checked)}>Zdrojovy
+                JSON</Checkbox></FormLabel>
+            {showSource && <JsonPreview data={data} label={"Response data"}/>}
+        </Grid>
     </Grid>);
 }
 
@@ -271,7 +275,6 @@ function HalNavigatorPage({
     startUrl: Link | string
 }) {
     const initState = useMemo(() => toLink(startUrl), [startUrl]);
-
     const {current: state, navigate, back, isFirst, reset} = useNavigation<NavigationTarget>(initState);
 
     const renderNavigation = (): ReactElement => {
