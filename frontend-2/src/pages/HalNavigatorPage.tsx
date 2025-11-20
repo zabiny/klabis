@@ -189,7 +189,7 @@ function HalNavigatorContent({
     }
 
     let content;
-    if (isHalFormsResponse(data)) {
+    if (isHalFormsResponse(data) && data._embedded === undefined) { // TODO: GET /members problem - vraci Members with template for registerNewMember
         content = <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={data}/>;
     } else if (isHalResponse(data)) {
         content = <HalContent data={data} navigate={navigate}/>;
