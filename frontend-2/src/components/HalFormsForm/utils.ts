@@ -1,5 +1,4 @@
 import {type HalFormsResponse, type HalFormsTemplate, HalResponse} from "../../api";
-import {object} from "yup";
 
 export const isHalFormsTemplate = (item: any): item is HalFormsTemplate => {
     return item !== undefined && item !== null && item.properties !== undefined && item.method !== undefined;
@@ -14,5 +13,5 @@ export const isKlabisFormResponse = (item: any): item is HalFormsResponse => {
 }
 
 export const isHalResponse = (item: any): item is HalResponse => {
-    return item !== undefined && item !== null && (item._links === object || item._embedded);
+    return (typeof item._links === "object" || item._embedded);
 }

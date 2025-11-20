@@ -1,4 +1,4 @@
-import React, {ReactElement, ReactNode, useCallback, useEffect, useMemo, useState} from "react";
+import React, {ReactElement, useCallback, useEffect, useMemo, useState} from "react";
 import {UserManager} from "oidc-client-ts";
 import {HalFormsForm} from "../components/HalFormsForm";
 import {type HalFormsTemplate, HalResponse, Link} from "../api";
@@ -57,7 +57,7 @@ const useNavigation = <T, >(initial?: T): {
     return {current, navigate, back, isFirst, isLast, reset};
 };
 
-function JsonPreview({data, label = "Data"}) {
+function JsonPreview({data, label = "Data"}: { data?: object, label?: string }) {
     return <div><h2>{label}</h2>
         <pre>{JSON.stringify(data, null, 2)}</pre>
     </div>;
@@ -83,47 +83,84 @@ function HalLinksUi({links, onClick}: { links: object, onClick: (link: Link) => 
     );
 }
 
-function HalNavigatorContent({current, navigate}: {
+function HalContent({halResponse, navigate}: {
+    halResponse: HalResponse,
+    navigate: (link: Link) => void
+}): ReactElement {
+    return (
+        <>
+            <table>
+                <thead>
+                <tr>
+                    <th>Attribut</th>
+                    <th>Hodnota</th>
+                </tr>
+                </thead>
+                <tbody>
+                {Object.entries(halResponse)
+                    .filter(v => ['_embedded', '_links', '_templates'].indexOf(v[0]) === -1)
+                    .map(([attrName, value]) => {
+                        return <tr>
+                            <td>{attrName}</td>
+                            <td>{JSON.stringify(value)}</td>
+                        </tr>;
+                    })
+                }
+                </tbody>
+            </table>
+            {halResponse._links && <HalLinksUi links={halResponse._links} onClick={navigate}/>}
+
+            {halResponse._embedded && Object.entries(halResponse._embedded).map(([rel, items]) => (
+                    <div key={rel}>
+                        <h2 className="font-semibold">{rel}</h2>
+                        <ul className="list-disc list-inside">
+                            {(Array.isArray(items) ? items : [items]).map((item, idx) => (
+                                <li key={idx}>
+                                    {item.name || item.title || JSON.stringify(item)}
+                                    {item._links?.self && (
+                                        <Button
+                                            className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
+                                            onClick={() => navigate(item._links.self)}
+                                        >
+                                            Open
+                                        </Button>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )
+            )
+            }</>)
+        ;
+}
+
+function HalNavigatorContent({
+                                 current, navigate, showSource = true
+                             }: {
     current: HalResponse,
-    navigate: (target: Link) => Promise<void>
+    navigate: (target: Link) => Promise<void>,
+    showSource?: boolean
 }): ReactElement {
 
+    let content = <JsonPreview data={current} label={"Unrecognized response data"}/>;
+    let isUnknown = true;
     if (isKlabisFormResponse(current) && current._templates?.default) {
-        return (<>
-            <HalFormsForm data={current} template={current._templates.default} onSubmit={console.log}/>
-            <JsonPreview label={"GET form data response"} data={current}/>
-        </>);
-    } else if (isHalResponse(current) && current._embedded) {
-        return (<>
-            {Object.entries(current._embedded).map(([rel, items]) => (
-                <div key={rel}>
-                    <h2 className="font-semibold">{rel}</h2>
-                    <ul className="list-disc list-inside">
-                        {(Array.isArray(items) ? items : [items]).map((item, idx) => (
-                            <li key={idx}>
-                                {item.name || item.title || JSON.stringify(item)}
-                                {item._links?.self && (
-                                    <Button
-                                        className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
-                                        onClick={() => navigate(item._links.self)}
-                                    >
-                                        Open
-                                    </Button>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            ))}
-        </>);
-    } else {
-        return (<>
-            <div className="p-3 border rounded bg-gray-50">
-                <pre className="text-sm">{JSON.stringify(current, null, 2)}</pre>
-            </div>
-            </>
-        );
+        content = <HalFormsForm data={current} template={current._templates.default} onSubmit={console.log}/>;
+        isUnknown = false;
+    } else if (isHalResponse(current)) {
+        content = <HalContent halResponse={current} navigate={navigate}/>;
+        isUnknown = false;
     }
+
+    return (<Grid container spacing={2} sx={{
+        justifyContent: "space-between",
+        alignItems: "baseline",
+    }}>
+        <Grid padding={2} xs={7}>{content}</Grid>
+        {showSource && !isUnknown &&
+            <Grid overflow={"scroll"} xs={5}><JsonPreview data={current} label={"Response data"}/></Grid>}
+    </Grid>);
 }
 
 interface HalNavigatorState {
@@ -139,7 +176,11 @@ function toLink(item: Link | string): Link {
     }
 }
 
-const useSimpleFetch = (resource?: Link): { data?: HalResponse, isLoading: boolean, error?: Error } => {
+const useSimpleFetch = (resource?: Link): {
+    data?: HalResponse,
+    isLoading: boolean,
+    error?: Error
+} => {
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState();
     const [error, setError] = useState();
@@ -163,43 +204,39 @@ const useSimpleFetch = (resource?: Link): { data?: HalResponse, isLoading: boole
         if (resource) {
             loadData(resource);
         }
-    }, [resource]);
+    }, [resource, loadData]);
 
     return {isLoading: loading, data, error};
 }
 
-function HalNavigatorPage({startUrl}: { startUrl: Link | string }) {
+function HalNavigatorPage({
+                              startUrl
+                          }: {
+    startUrl: Link | string
+}) {
     const initState = useMemo(() => toLink(startUrl), [startUrl]);
 
-    const {current, navigate, back, isFirst, reset} = useNavigation<HalNavigatorState>({resource: initState});
-    const {data, isLoading, error} = useSimpleFetch(current?.resource);
-
-    const resource = data;
+    const {current: state, navigate, back, isFirst, reset} = useNavigation<HalNavigatorState>({resource: initState});
+    const {data, isLoading, error} = useSimpleFetch(state?.resource);
 
     const renderNavigation = (): ReactElement => {
         return (<Stack direction={"row"}>
             <Button onClick={reset}>Restart</Button>
             <Button disabled={isFirst} onClick={back}>Zpět</Button>
+            <h3>{state?.resource.href}</h3>
         </Stack>);
     }
 
-    const renderFallback = (): ReactNode => {
-        return <Grid>
-            <div>Nejde vyrenderovat HAL FORMS form:</div>
-            <JsonPreview data={resource}/>
-        </Grid>;
-    }
-    const links = resource?._links || {};
-
     return (
         <div className="p-4 space-y-4">
-            {renderNavigation()}
-            <HalLinksUi links={links} onClick={link => navigate({resource: link})}/>
 
-            <ErrorBoundary fallback={renderFallback()} resetKeys={[current]}>
+        {renderNavigation()}
+
+            <ErrorBoundary fallback={<JsonPreview data={data} label={"Nejde vyrenderovat HAL FORMS form"}/>}
+                           resetKeys={[state]}>
                 {isLoading && <Alert severity={"warning"}>Loading...</Alert>}
                 {error && <Alert severity={"error"}>Error: {JSON.stringify(error, null, 2)}</Alert>}
-                {resource && <HalNavigatorContent current={resource}
+                {data && <HalNavigatorContent current={data}
                                                   navigate={async (link) => await navigate({resource: link})}/>}
             </ErrorBoundary>
 
@@ -262,11 +299,16 @@ const demoTemplate: HalFormsTemplate = {
 
 const demoData = {
     firstName: "David",
-    email: "david@example.com",
-    age: 30,
-    country: "cz",
-    hobbies: ["games"],
-    gender: "male",
+    email:
+        "david@example.com",
+    age:
+        30,
+    country:
+        "cz",
+    hobbies:
+        ["games"],
+    gender:
+        "male",
 };
 
 function ExampleHalForm(): ReactElement {
