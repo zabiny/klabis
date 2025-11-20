@@ -22,7 +22,6 @@ import {
     type HalFormsProperty,
     type HalFormsResponse,
     type HalFormsTemplate,
-    type Link,
     type OptionItem,
     type TemplateTarget
 } from "../../api";
@@ -215,7 +214,7 @@ const useHalFormsController = (
 };
 
 const HalFormsFormController = ({api, inputTemplate}: {
-    api: Link,
+    api: TemplateTarget,
     inputTemplate?: HalFormsTemplate
 }): ReactElement => {
     const {isLoading, submit, error, formData, template, submitError} = useHalFormsController(api, inputTemplate);
@@ -223,7 +222,7 @@ const HalFormsFormController = ({api, inputTemplate}: {
     //console.log(`Loading=${isLoading}, error=${error}, formData=${JSON.stringify(formData)}`);
 
     if (isLoading) {
-        return <span>Loading form data (${api.href})</span>;
+        return <span>Loading form data (${api.target})</span>;
     }
 
     if (error) {

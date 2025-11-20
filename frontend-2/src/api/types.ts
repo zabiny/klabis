@@ -42,7 +42,7 @@ export interface HalResponse {
 }
 
 export interface HalFormsResponse extends HalResponse {
-    _templates?: {
+    _templates: {
         [name: string]: HalFormsTemplate;
     };
 }

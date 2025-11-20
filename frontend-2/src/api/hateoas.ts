@@ -20,7 +20,7 @@ async function fetchHalFormsData(link: TemplateTarget): Promise<HalFormsResponse
     return res.json();
 }
 
-async function submitHalFormsData(link: TemplateTarget, formData: Record<string, any>) {
+async function submitHalFormsData(link: TemplateTarget, formData: Record<string, any>): Promise<Response> {
     if (!link.target) {
         throw new Error("Incorrect link instance - href is missing!")
     }
@@ -35,7 +35,7 @@ async function submitHalFormsData(link: TemplateTarget, formData: Record<string,
         },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return;
+    return res;
 }
 
 
