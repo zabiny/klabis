@@ -118,8 +118,8 @@ public class SuspendMemberUseCaseControllers {
 
 
     @PutMapping(path = "/resumeMembershipForm")
-    ResponseEntity<Void> resumeMembership(int memberId) {
-        useCase.resumeMembership(new MemberId(memberId));
+    ResponseEntity<Void> resumeMembership(@PathVariable("memberId") MemberId memberId) {
+        useCase.resumeMembership(memberId);
         return ResponseEntity.ok(null);
     }
 }

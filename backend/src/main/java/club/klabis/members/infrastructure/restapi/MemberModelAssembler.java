@@ -45,38 +45,36 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
                 .withRel(linkRelationProvider.getCollectionResourceRelFor(
                         Member.class)));
 
-
         if (entity.isSuspended()) {
             if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-                target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(entity.getId()
-                        .value())).withRel(
-                        ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()));
+                target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(entity.getId())).withRel(
+                        ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()).withName("Obnovit členství"));
             }
             return;
         }
 
         if (securityService.canEditMemberData(entity.getId())) {
             target.add(linkTo(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
-                    entity.getId())).withRel(
-                    "members:editOwnInfo"));
+                    entity.getId())).withRel("members:editOwnInfo").withName("Upravit moje údaje"));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
             target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId())).withRel(
-                    ApplicationGrant.MEMBERS_EDIT.getGrantName()));
+                    ApplicationGrant.MEMBERS_EDIT.getGrantName()).withName("Upravit údaje člena klubu"));
         }
 
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
             target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class,
                     entity.getId()).membersMemberIdSuspendMembershipFormGet(
-                    entity.getId())).withRel(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName()));
+                    entity.getId())).withRel(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName())
+                    .withName("Pozastavit členství"));
         }
 
         if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
             entity.getAppUserId()
                     .ifPresent(appUserId -> target.add(linkTo(methodOn(UserPermissionsApi.class).getUserGrants(
                             appUserId)).withRel(
-                            ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName())));
+                            ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName()).withName("Upravit oprávnění")));
         }
     }
 
@@ -84,7 +82,7 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
     public void addLinks(CollectionModel<EntityModel<MembersApiResponse>> model) {
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
             model.add(linkTo(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))
-                    .withRel(ApplicationGrant.MEMBERS_REGISTER.getGrantName()));
+                    .withRel(ApplicationGrant.MEMBERS_REGISTER.getGrantName()).withName("Nový člen klubu"));
         }
     }
 
