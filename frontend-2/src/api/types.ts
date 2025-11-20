@@ -35,15 +35,16 @@ export interface HalResponse {
     _links?: {
         [rel: string]: Link | Array<Link>;
     }
+    _embedded: object,
+
+    // allow arbitrary additional properties
+    [key: string]: any;
 }
 
 export interface HalFormsResponse extends HalResponse {
     _templates?: {
         [name: string]: HalFormsTemplate;
     };
-
-    // allow arbitrary additional properties
-    [key: string]: any;
 }
 
 // --- Typy ---

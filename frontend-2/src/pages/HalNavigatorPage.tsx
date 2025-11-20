@@ -1,12 +1,12 @@
 import React, {ReactElement, ReactNode, useCallback, useEffect, useState} from "react";
 import {UserManager} from "oidc-client-ts";
 import {HalFormsForm} from "../components/HalFormsForm";
-import {type HalFormsTemplate, HalResponse} from "../api";
+import {type HalFormsTemplate, HalResponse, Link} from "../api";
 import {Alert, Box, Button, Grid, Stack, Tab, Tabs} from "@mui/material";
 import {ErrorBoundary} from 'react-error-boundary';
 import {HalFormsFormController} from "../components/HalFormsForm/HalFormsForm";
 import {klabisAuthUserManager} from "../api/klabisUserManager";
-import {isKlabisFormResponse} from "../components/HalFormsForm/utils";
+import {isHalResponse, isKlabisFormResponse} from "../components/HalFormsForm/utils";
 
 const userManager: UserManager = klabisAuthUserManager;
 
@@ -68,6 +68,52 @@ function JsonPreview({data, label = "Data"}) {
     </div>;
 }
 
+function HalNavigatorContent({current, navigate}: {
+    current: HalResponse,
+    navigate: (target: Link) => Promise<void>
+}): ReactElement {
+    if (isKlabisFormResponse(current) && current._templates?.default) {
+        return (<>
+            <HalFormsForm data={current} template={current._templates.default} onSubmit={console.log}/>
+            <JsonPreview label={"GET form data response"} data={current}/>
+        </>);
+    } else if (isHalResponse(current) && current._embedded) {
+        return (<>
+            {Object.entries(current._embedded).map(([rel, items]) => (
+                <div key={rel}>
+                    <h2 className="font-semibold">{rel}</h2>
+                    <ul className="list-disc list-inside">
+                        {(Array.isArray(items) ? items : [items]).map((item, idx) => (
+                            <li key={idx}>
+                                {item.name || item.title || JSON.stringify(item)}
+                                {item._links?.self && (
+                                    <Button
+                                        className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
+                                        onClick={() => navigate(item._links.self)}
+                                    >
+                                        Open
+                                    </Button>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            ))}
+        </>);
+    } else {
+        return (
+            <div className="p-3 border rounded bg-gray-50">
+                <pre className="text-sm">{JSON.stringify(current, null, 2)}</pre>
+            </div>
+        );
+    }
+}
+
+interface HalNavigatorState {
+    resource: Link,
+    template?: HalFormsTemplate
+}
+
 function HalNavigatorPage({startUrl}) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -108,7 +154,6 @@ function HalNavigatorPage({startUrl}) {
     if (!resource) return null;
 
     const links = resource._links || {};
-    const embedded = resource._embedded || {};
 
     const renderFallback = (): ReactNode => {
         return <Grid>
@@ -117,23 +162,9 @@ function HalNavigatorPage({startUrl}) {
         </Grid>;
     }
 
-    const renderContent = (): ReactElement => {
-        if (isKlabisFormResponse(current)) {
-            return <ErrorBoundary fallback={renderFallback()} resetKeys={[current]}>
-                <HalFormsForm data={resource} template={resource._templates.default} onSubmit={console.log}/>
-                <JsonPreview label={"GET form data response"} data={resource}/>
-            </ErrorBoundary>;
-        } else {
-            return (
-                <div className="p-3 border rounded bg-gray-50">
-                    <pre className="text-sm">{JSON.stringify(resource, null, 2)}</pre>
-                </div>
-            );
-        }
-    }
-
     return (
         <div className="p-4 space-y-4">
+            <pre>{JSON.stringify(current)}</pre>
             {renderNavigation()}
 
             {/* Render actions based on links */}
@@ -153,31 +184,10 @@ function HalNavigatorPage({startUrl}) {
                 })}
             </div>
 
-            {/* Render embedded collections/entities */}
-            {Object.entries(embedded).map(([rel, items]) => (
-                <div key={rel}>
-                    <h2 className="font-semibold">{rel}</h2>
-                    <ul className="list-disc list-inside">
-                        {(Array.isArray(items) ? items : [items]).map((item, idx) => (
-                            <li key={idx}>
-                                {item.name || item.title || JSON.stringify(item)}
-                                {item._links?.self && (
-                                    <Button
-                                        className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
-                                        onClick={() => load(item._links.self.href)}
-                                    >
-                                        Open
-                                    </Button>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            ))}
-
-            {/* Display resource properties */}
-            {renderContent()}
-
+            <ErrorBoundary fallback={renderFallback()} resetKeys={[current]}>
+                {/* Display resource properties */}
+                <HalNavigatorContent current={current} navigate={async (link) => await load(link.href)}/>
+            </ErrorBoundary>
 
         </div>
     );
@@ -201,9 +211,9 @@ const demoTemplate: HalFormsTemplate = {
             required: true,
             options: {
                 inline: [
-                {value: "cz", prompt: "Česká republika"},
-                {value: "sk", prompt: "Slovensko"},
-                {value: "pl", prompt: "Polsko"},
+                    {value: "cz", prompt: "Česká republika"},
+                    {value: "sk", prompt: "Slovensko"},
+                    {value: "pl", prompt: "Polsko"},
                 ]
             },
         },
@@ -213,9 +223,9 @@ const demoTemplate: HalFormsTemplate = {
             type: "checkbox",
             options: {
                 inline: [
-                {value: "orienteering", prompt: "Orienťák"},
-                {value: "games", prompt: "Hry"},
-                {value: "travel", prompt: "Cestování"},
+                    {value: "orienteering", prompt: "Orienťák"},
+                    {value: "games", prompt: "Hry"},
+                    {value: "travel", prompt: "Cestování"},
                 ]
             },
             required: true,
@@ -226,9 +236,9 @@ const demoTemplate: HalFormsTemplate = {
             type: "radio",
             options: {
                 inline: [
-                {value: "male", prompt: "Muž"},
-                {value: "female", prompt: "Žena"},
-                {value: "other", prompt: "Jiné"},
+                    {value: "male", prompt: "Muž"},
+                    {value: "female", prompt: "Žena"},
+                    {value: "other", prompt: "Jiné"},
                 ]
             },
             required: true,
