@@ -145,9 +145,11 @@ public class ApisConfiguration {
                 "http://localhost:3000",
                 "https://preview--orienter-club-hub.lovable.app",
                 "https://*.lovableproject.com",
-                "https://klabis.otakar.io"
-//                "https://wiki.zabiny.club",
-//                "https://klabis-api-docs.otakar.io"
+                "https://klabis.otakar.io",
+                "https://toedter.github.io",
+                // HAL+FORMS explorer demo page URI => https://toedter.github.io/hal-explorer/release/hal-explorer/#theme=Zephyr&httpOptions=true&allHttpMethodsForLinks=true&hkey0=Authorization&hval0=eyJraWQiOiJmZDQ5YjUzMS1kZWIyLTRkNmItYjZmMS1lMTkyYzIyMDc4NjAiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJaQk04MDAzIiwiYXVkIjoiZnJvbnRlbmQiLCJuYmYiOjE3NjM2NjAwNjksInNjb3BlIjpbIm9wZW5pZCIsInByb2ZpbGUiLCJlbWFpbCJdLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo4NDQzIiwiZXhwIjoxNzYzNjYzNjY5LCJpYXQiOjE3NjM2NjAwNjksImp0aSI6Ijg5YjdhZDZiLTM2YjAtNDBlZS1iMjRlLTk5MWM4YzRiZDRlNSJ9.XrnTZQ2qgoIMwMO3JOagt598cJ0xkuR0A1wCrK9oNmZZIyPzxq_ePfKZmqQwgzYQmVdeYrElBA_LCsbONLtnoI74zZfWmGPsmn7p5iwQ-vZod4LMHYv1s8gHoEUOn7H3qdBCRbxd57_oltsf9yCCZgi6-4Kby4aPR3t8_2G4OoidiHj842zXDDXG14vd6RIFmfF2JGqAzxkaCFkd3LVhMs4CUJi4eLnJQyYRGCZiV8kuRyCUjGCw7TGA8mtw1A932my8QAFzFVZOd662t1BtcMCgmjCt-AMzSTqvQLEUNY4iJIHij7BospeWsqTo_NeN2Bw8TRN-if4bHlbNHX7mDw&hkey1=Accept&hval1=application/prs.hal-forms+json,application/hal+json&uri=https://localhost:8443/events/1
+                "https://wiki.zabiny.club",
+                "https://klabis-api-docs.otakar.io"
         ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
