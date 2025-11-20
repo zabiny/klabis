@@ -23,7 +23,8 @@ import {
     type HalFormsResponse,
     type HalFormsTemplate,
     type Link,
-    type OptionItem
+    type OptionItem,
+    type TemplateTarget
 } from "../../api";
 import {fetchHalFormsData, submitHalFormsData} from "../../api/hateoas";
 import {isHalFormsResponse} from "./utils";
@@ -145,7 +146,7 @@ function renderField(
 }
 
 const useHalFormsController = (
-    api: Link,
+    api: TemplateTarget,
     inputTemplate?: HalFormsTemplate
 ): {
     isLoading: boolean,
@@ -185,7 +186,7 @@ const useHalFormsController = (
             }
         };
         if (inputTemplate) {
-            setFormData({});
+            setFormData({_templates: {default: inputTemplate}});
             setActualTemplate(inputTemplate);
         } else {
             fetchData();
@@ -199,7 +200,7 @@ const useHalFormsController = (
             console.log(`Submitting.... ${method} ${api}`);
 
             try {
-                await submitHalFormsData(method, api, data);
+                await submitHalFormsData(api, data);
             } catch (submitError) {
                 setSubmitError(
                     submitError instanceof Error ? submitError.message : "Error submitting form data"

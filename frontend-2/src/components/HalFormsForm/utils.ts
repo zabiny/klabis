@@ -13,5 +13,5 @@ export const isKlabisFormResponse = (item: any): item is HalFormsResponse => {
 }
 
 export const isHalResponse = (item: any): item is HalResponse => {
-    return (typeof item._links === "object" || item._embedded);
+    return item !== undefined && item !== null && (typeof item._links === "object" || item._embedded);
 }

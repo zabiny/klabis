@@ -35,7 +35,7 @@ export interface HalResponse {
     _links?: {
         [rel: string]: Link | Array<Link>;
     }
-    _embedded: object,
+    _embedded?: object,
 
     // allow arbitrary additional properties
     [key: string]: any;
@@ -76,9 +76,17 @@ export interface HalFormsProperty {
 // only update methods as template represents "request body"
 export type HalFormsTemplateMethod = "POST" | "PUT" | "DELETE";
 
+export interface TemplateTarget {
+    target: string,
+    method?: HalFormsTemplateMethod
+}
+
 export interface HalFormsTemplate {
-    method?: HalFormsTemplateMethod;
+    method?: HalFormsTemplateMethod
+    target?: string,
     contentType?: string;
     title?: string;
     properties: Array<HalFormsProperty>
 }
+
+

@@ -48,7 +48,7 @@ export const isPaginatedResponse = (item: any): item is PaginatedResponse<object
 
 
 export const isLink = (item: any): item is Link => {
-    return (item as Link).href !== undefined;
+    return item !== undefined && item !== null && (item as Link).href !== undefined;
 }
 
 export const getApiPath = (url: Link | KlabisApiGetPaths): KlabisApiGetPaths => {
