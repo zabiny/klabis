@@ -140,8 +140,10 @@ function renderField(
         );
     }
 
-    return (
+    return (<>
         <Alert severity={"warning"}>{prop.prompt || prop.name}: neznamy typ HAL+FORMS property: '{prop.type}'</Alert>
+            {errorText && <Alert severity={"error"}>{errorText}</Alert>}
+        </>
     );
 }
 
