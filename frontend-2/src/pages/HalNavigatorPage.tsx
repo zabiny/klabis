@@ -1,12 +1,12 @@
-import React, {ReactElement, ReactNode, useCallback, useEffect, useState} from "react";
+import React, {ReactElement, ReactNode, useCallback, useEffect, useMemo, useState} from "react";
 import {UserManager} from "oidc-client-ts";
 import {HalFormsForm} from "../components/HalFormsForm";
 import {type HalFormsTemplate, HalResponse, Link} from "../api";
 import {Alert, Box, Button, Grid, Stack, Tab, Tabs} from "@mui/material";
 import {ErrorBoundary} from 'react-error-boundary';
-import {HalFormsFormController} from "../components/HalFormsForm/HalFormsForm";
 import {klabisAuthUserManager} from "../api/klabisUserManager";
 import {isHalResponse, isKlabisFormResponse} from "../components/HalFormsForm/utils";
+import {isLink} from "../api/klabisJsonUtils";
 
 const userManager: UserManager = klabisAuthUserManager;
 
@@ -23,41 +23,36 @@ async function fetchResource(url) {
     return res.json();
 }
 
-const useNavigation = <T, >(): {
-    current: T | null;
+const useNavigation = <T, >(initial?: T): {
+    current: T | undefined;
     navigate: (resource: T) => void;
     back: () => void;
     isFirst: boolean,
     isLast: boolean,
     reset: () => void;
 } => {
-    const [navigation, setNavigation] = useState<Array<T>>([]);
+    const [navigation, setNavigation] = useState<Array<T>>(initial && [initial] || []);
 
     const navigate = useCallback((resource: T): void => {
-        console.error('navigate')
         setNavigation(prev => [...prev, resource]);
     }, []);
 
     const back = useCallback((): void => {
-        console.error('back')
         setNavigation(prev => {
-            if (prev.length === 1) return prev;
+            if (prev.length < 2) return prev;
             // remove the last item from the navigation stack
             return prev.slice(0, -1);
         });
     }, []);
 
     const reset = useCallback(() => {
-        console.error('reset')
         setNavigation(prev => [prev[0]]);
     }, [])
 
-    const current = navigation && navigation[navigation.length - 1] || null;
+    const current = useMemo(() => navigation && navigation[navigation.length - 1] || initial || undefined, [navigation, initial]);
 
     const isFirst = navigation.length == 1;
     const isLast = true;    // doesn't keep forward (yet)
-
-    console.log(navigation);
 
     return {current, navigate, back, isFirst, isLast, reset};
 };
@@ -68,10 +63,31 @@ function JsonPreview({data, label = "Data"}) {
     </div>;
 }
 
+function HalLinksUi({links, onClick}: { links: object, onClick: (link: Link) => void }): ReactElement {
+    return (
+        <div className="flex flex-wrap gap-2">
+            {Object.entries(links).map(([rel, link]) => {
+                if (rel === "self") return null;
+                const simpleLink = Array.isArray(link) ? link[0] : link;
+                return (
+                    <Button
+                        key={rel}
+                        className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+                        onClick={() => onClick(simpleLink)}
+                    >
+                        {rel}
+                    </Button>
+                );
+            })}
+        </div>
+    );
+}
+
 function HalNavigatorContent({current, navigate}: {
     current: HalResponse,
     navigate: (target: Link) => Promise<void>
 }): ReactElement {
+
     if (isKlabisFormResponse(current) && current._templates?.default) {
         return (<>
             <HalFormsForm data={current} template={current._templates.default} onSubmit={console.log}/>
@@ -101,10 +117,11 @@ function HalNavigatorContent({current, navigate}: {
             ))}
         </>);
     } else {
-        return (
+        return (<>
             <div className="p-3 border rounded bg-gray-50">
                 <pre className="text-sm">{JSON.stringify(current, null, 2)}</pre>
             </div>
+            </>
         );
     }
 }
@@ -114,46 +131,57 @@ interface HalNavigatorState {
     template?: HalFormsTemplate
 }
 
-function HalNavigatorPage({startUrl}) {
+function toLink(item: Link | string): Link {
+    if (isLink(item)) {
+        return item;
+    } else {
+        return {href: item};
+    }
+}
+
+const useSimpleFetch = (resource?: Link): { data?: HalResponse, isLoading: boolean, error?: Error } => {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [data, setData] = useState();
+    const [error, setError] = useState();
 
-    const {current, navigate, back, isFirst, reset} = useNavigation<HalResponse>();
-
-    const load = useCallback(async (url) => {
+    const loadData = useCallback(async (link: Link) => {
         setLoading(true);
-        setError(null);
+        setError(undefined);
+        setData(undefined);
         try {
-            const data = await fetchResource(url);
-            navigate(data);
+            const response = await fetchResource(link.href);
+            setData(response);
         } catch (e) {
-            setError(e.message);
+            console.error(e);
+            setError(e);
         } finally {
             setLoading(false);
         }
-    }, [navigate]);
+    }, []);
 
     useEffect(() => {
-        load(startUrl)
-    }, [startUrl, load]);
+        if (resource) {
+            loadData(resource);
+        }
+    }, [resource]);
 
-    const resource = current;
+    return {isLoading: loading, data, error};
+}
+
+function HalNavigatorPage({startUrl}: { startUrl: Link | string }) {
+    const initState = useMemo(() => toLink(startUrl), [startUrl]);
+
+    const {current, navigate, back, isFirst, reset} = useNavigation<HalNavigatorState>({resource: initState});
+    const {data, isLoading, error} = useSimpleFetch(current?.resource);
+
+    const resource = data;
 
     const renderNavigation = (): ReactElement => {
         return (<Stack direction={"row"}>
-            <Button onClick={e => reset()}>Restart</Button>
-            <Button disabled={isFirst} onClick={e => back()}>Zpět</Button>
+            <Button onClick={reset}>Restart</Button>
+            <Button disabled={isFirst} onClick={back}>Zpět</Button>
         </Stack>);
     }
-
-    if (loading) return <p>Loading…</p>;
-    if (error) return <p>
-        {renderNavigation()}
-        <Alert severity={"error"}>Error: {error}</Alert>
-    </p>;
-    if (!resource) return null;
-
-    const links = resource._links || {};
 
     const renderFallback = (): ReactNode => {
         return <Grid>
@@ -161,32 +189,18 @@ function HalNavigatorPage({startUrl}) {
             <JsonPreview data={resource}/>
         </Grid>;
     }
+    const links = resource?._links || {};
 
     return (
         <div className="p-4 space-y-4">
-            <pre>{JSON.stringify(current)}</pre>
             {renderNavigation()}
-
-            {/* Render actions based on links */}
-            <div className="flex flex-wrap gap-2">
-                {Object.entries(links).map(([rel, link]) => {
-                    if (rel === "self") return null;
-                    const href = Array.isArray(link) ? link[0].href : link.href;
-                    return (
-                        <Button
-                            key={rel}
-                            className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
-                            onClick={() => load(href)}
-                        >
-                            {rel}
-                        </Button>
-                    );
-                })}
-            </div>
+            <HalLinksUi links={links} onClick={link => navigate({resource: link})}/>
 
             <ErrorBoundary fallback={renderFallback()} resetKeys={[current]}>
-                {/* Display resource properties */}
-                <HalNavigatorContent current={current} navigate={async (link) => await load(link.href)}/>
+                {isLoading && <Alert severity={"warning"}>Loading...</Alert>}
+                {error && <Alert severity={"error"}>Error: {JSON.stringify(error, null, 2)}</Alert>}
+                {resource && <HalNavigatorContent current={resource}
+                                                  navigate={async (link) => await navigate({resource: link})}/>}
             </ErrorBoundary>
 
         </div>
@@ -303,7 +317,6 @@ function a11yProps(index: number) {
 }
 
 function SandplacePage(): ReactElement {
-    const formsApi = {href: 'http://localhost:3000/api/events/1/registrationForms/1'};
     const [tabValue, setTabValue] = useState(1);
 
     const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -315,7 +328,6 @@ function SandplacePage(): ReactElement {
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
                 <Tabs value={tabValue} onChange={handleChange} aria-label="basic tabs example">
                     <Tab label="HAL Explorer" {...a11yProps(0)} />
-                    <Tab label="HAL Form z Klabis API" {...a11yProps(1)} />
                     <Tab label="Example HAL Form" {...a11yProps(1)} />
                 </Tabs>
             </Box>
@@ -323,10 +335,7 @@ function SandplacePage(): ReactElement {
                 <CustomTabPanel value={tabValue} index={0}>
                     <HalNavigatorPage startUrl={"/api"}/>
                 </CustomTabPanel>
-                <CustomTabPanel value={tabValue} index={1}>
-                    <HalFormsFormController api={formsApi}/>
-                </CustomTabPanel>
-                <CustomTabPanel index={2} value={tabValue}>
+                <CustomTabPanel index={1} value={tabValue}>
                     <ExampleHalForm/>
                 </CustomTabPanel>
             </ErrorBoundary>
