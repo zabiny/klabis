@@ -73,7 +73,7 @@ class CustomOidcUserService extends OidcUserService {
 
         Map<String, Object> klabisClaims = new HashMap<>();
         //claims.putAll(idToken.getClaims());
-        klabisClaims.put(StandardClaimNames.SUB, user.getUsername());
+        klabisClaims.put(StandardClaimNames.SUB, user.getUsername().value());
         klabisClaims.put("memberId", memberId);
         klabisClaims.put("appUserId", user.getId());
 //        claims.put(StandardClaimNames.GIVEN_NAME, user.getFirstName());

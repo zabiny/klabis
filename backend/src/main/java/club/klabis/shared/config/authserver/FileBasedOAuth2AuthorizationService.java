@@ -1,8 +1,13 @@
 package club.klabis.shared.config.authserver;
 
+import club.klabis.users.domain.ApplicationUser;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +76,7 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.addMixIn(ApplicationUser.UserName.class, ValueObjectTestMixin.class);
         return mapper;
     }
 
@@ -457,6 +463,17 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
 
         public void setTokenType(String tokenType) {
             this.tokenType = tokenType;
+        }
+    }
+
+    @JsonSerialize(using = ValueObjectSerializer.class)
+    private static class ValueObjectTestMixin {
+    }
+
+    private static class ValueObjectSerializer extends JsonSerializer<ApplicationUser.UserName> {
+        @Override
+        public void serialize(ApplicationUser.UserName value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeString(value.value());
         }
     }
 }
