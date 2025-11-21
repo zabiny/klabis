@@ -10,7 +10,7 @@ spring:
     group:
       server:
         - inmemorydb
-        - oris
+        #- oris
         #- zipkin
       localhost:
         - inmemorydb
