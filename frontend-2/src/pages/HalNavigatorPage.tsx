@@ -81,10 +81,17 @@ function HalLinksUi({links, onClick}: { links: Record<string, Link>, onClick: (l
     );
 }
 
+function omitMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_links'> {
+    const {_links, ...rest} = obj;
+    return rest;
+}
+
 function HalContent({data, navigate}: {
     data: HalResponse,
     navigate: (link: Link) => void
 }): ReactElement {
+
+
     return (
         <>
             <table>
@@ -114,7 +121,7 @@ function HalContent({data, navigate}: {
                         <ul className="list-disc list-inside">
                             {(Array.isArray(items) ? items : [items]).map((item, idx) => (
                                 <li key={idx}>
-                                    {item.name || item.title || JSON.stringify(item)}
+                                    {JSON.stringify(omitMetadataAttributes(item))}
                                     {item._links?.self && (
                                         <Button
                                             className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
@@ -192,7 +199,7 @@ function HalNavigatorContent({
     }
 
     let content;
-    if (isHalFormsResponse(data) && data._embedded === undefined) { // TODO: GET /members problem - vraci Members with template for registerNewMember
+    if (isHalFormsResponse(data) && data.page === undefined) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
         content = <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={data}/>;
     } else if (isHalResponse(data)) {
         content = <HalContent data={data} navigate={navigate}/>;
