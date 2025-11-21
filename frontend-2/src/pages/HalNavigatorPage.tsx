@@ -86,33 +86,17 @@ function omitMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_l
     return rest;
 }
 
-function HalContent({data, navigate}: {
+const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
+
+function HalCollectionContent({data, navigate}: {
     data: HalResponse,
     navigate: (link: Link) => void
 }): ReactElement {
 
+    // TODO: split links into collection links and other links. Display collection links "bellow" table and other links above table as actions.
 
     return (
         <>
-            <table>
-                <thead>
-                <tr>
-                    <th>Attribut</th>
-                    <th>Hodnota</th>
-                </tr>
-                </thead>
-                <tbody>
-                {Object.entries(data)
-                    .filter(v => ['_embedded', '_links', '_templates'].indexOf(v[0]) === -1)
-                    .map(([attrName, value]) => {
-                        return <tr key={attrName}>
-                            <td>{attrName}</td>
-                            <td>{JSON.stringify(value)}</td>
-                        </tr>;
-                    })
-                }
-                </tbody>
-            </table>
             {data._links && <HalLinksUi links={data._links} onClick={navigate}/>}
 
             {data._embedded && Object.entries(data._embedded).map(([rel, items]) => (
@@ -137,11 +121,57 @@ function HalContent({data, navigate}: {
                 )
             )
             }</>)
-        ;
+
+}
+
+function HalItemContent({data, navigate}: {
+    data: HalResponse,
+    navigate: (link: Link) => void
+}): ReactElement {
+    return (
+        <>
+            <table>
+                <thead>
+                <tr>
+                    <th>Attribut</th>
+                    <th>Hodnota</th>
+                </tr>
+                </thead>
+                <tbody>
+                {Object.entries(data)
+                    .filter(v => ['_embedded', '_links', '_templates'].indexOf(v[0]) === -1)
+                    .map(([attrName, value]) => {
+                        return <tr key={attrName}>
+                            <td>{attrName}</td>
+                            <td>{JSON.stringify(value)}</td>
+                        </tr>;
+                    })
+                }
+                </tbody>
+            </table>
+            {data._links && <HalLinksUi links={data._links} onClick={navigate}/>}
+        </>);
+}
+
+
+function HalContent({data, navigate}: {
+    data: HalResponse,
+    navigate: (link: Link) => void
+}): ReactElement {
+
+    if (data.page === undefined) {
+        return <HalItemContent data={data} navigate={navigate}/>
+    } else {
+        return <HalCollectionContent data={data} navigate={navigate}/>
+    }
 }
 
 function isTemplateTarget(item: any): item is TemplateTarget {
-    return item !== undefined && item !== null && ['POST', 'PUT', 'DELETE'].indexOf(item.method) !== -1;
+    return item !== undefined && item !== null && item.target !== null;
+}
+
+function isFormTarget(item: any): item is TemplateTarget {
+    return isTemplateTarget(item) && ['POST', 'PUT', 'DELETE', 'PATCH'].indexOf(item.method) !== -1;
 }
 
 type NavigationTarget = Link | TemplateTarget | string;
