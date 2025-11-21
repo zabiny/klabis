@@ -1,13 +1,36 @@
 import React, {type ReactElement, useCallback, useEffect, useMemo, useState} from "react";
 import {UserManager} from "oidc-client-ts";
 import {HalFormsForm} from "../components/HalFormsForm";
-import {type HalFormsResponse, type HalFormsTemplate, type HalResponse, type Link, type TemplateTarget} from "../api";
-import {Alert, Box, Button, Checkbox, FormLabel, Grid, Link as MuiLink, Stack, Tab, Tabs} from "@mui/material";
+import {
+    AddressApiDto,
+    type HalFormsResponse,
+    type HalFormsTemplate,
+    type HalResponse,
+    type Link,
+    type TemplateTarget
+} from "../api";
+import {
+    Alert,
+    Box,
+    Button,
+    Checkbox,
+    FormGroup,
+    FormLabel,
+    Grid,
+    Link as MuiLink,
+    Stack,
+    Tab,
+    Tabs,
+    TextField
+} from "@mui/material";
 import {ErrorBoundary} from 'react-error-boundary';
 import {klabisAuthUserManager} from "../api/klabisUserManager";
 import {isHalFormsResponse, isHalResponse} from "../components/HalFormsForm/utils";
 import {isLink} from "../api/klabisJsonUtils";
 import {submitHalFormsData} from "../api/hateoas";
+import {expandMuiFieldsFactory} from "../components/HalFormsForm/MuiHalFormsFieldsFactory";
+import {HalFormsInputProps} from "../components/HalFormsForm/types";
+import {Field} from "formik";
 
 const userManager: UserManager = klabisAuthUserManager;
 
@@ -21,7 +44,10 @@ async function fetchResource(url: string) {
         },
     });
     if (!res.ok) {
-        console.warn(await res.json());
+        if (res.body) {
+            const bodyText = await res.text();
+            console.warn(bodyText ? `Response body: ${bodyText}` : 'No response body');
+        }
         throw new Error(`HTTP ${res.status}`);
     }
     return res.json();
@@ -167,7 +193,7 @@ function HalContent({data, navigate}: {
 }
 
 function isTemplateTarget(item: any): item is TemplateTarget {
-    return item !== undefined && item !== null && item.target !== null;
+    return item && item.target;
 }
 
 function isFormTarget(item: any): item is TemplateTarget {
@@ -175,6 +201,40 @@ function isFormTarget(item: any): item is TemplateTarget {
 }
 
 type NavigationTarget = Link | TemplateTarget | string;
+
+const AddressDtoField: React.FC<HalFormsInputProps<AddressApiDto>> = ({
+                                                                          prop,
+                                                                          errorText,
+                                                                          value,
+                                                                          onValueChanged
+                                                                      }): ReactElement => {
+
+    return <FormGroup>
+        <Field
+            as={TextField}
+            id={`${prop.name}.streetAndNumber`}
+            name={prop.name + '.streetAndNumber'}
+            type={"text"}
+            label={"Ulice"}
+            disabled={prop.readOnly || false}
+            fullWidth
+            error={!!errorText}
+            helperText={errorText}
+        />
+        <Field
+            as={TextField}
+            id={`${prop.name}.city`}
+            name={prop.name + '.city'}
+            type={"text"}
+            label={"Mesto"}
+            disabled={prop.readOnly || false}
+            fullWidth
+            error={!!errorText}
+            helperText={errorText}
+        />
+    </FormGroup>;
+
+}
 
 function HalFormsContent({
                              submitApi, initTemplate, initData, afterSubmit = () => {
@@ -203,8 +263,21 @@ function HalFormsContent({
         }
     }, [submitApi, afterSubmit]);
 
+    const fieldsFactory = expandMuiFieldsFactory((fieldType: string, conf: HalFormsInputProps<any>): ReactElement | null => {
+        switch (fieldType) {
+            case "AddressApiDto":
+                return <AddressDtoField {...conf}/>;
+            case "ContactApiDto":
+                return <AddressDtoField {...conf}/>;
+            case "LegalGuardians":
+                return <AddressDtoField {...conf}/>;
+            default:
+                return null;
+        }
+    });
+
     return (<>
-        <HalFormsForm data={initData} template={activeTemplate} onSubmit={submit}/>
+        <HalFormsForm data={initData} template={activeTemplate} onSubmit={submit} fieldsFactory={fieldsFactory}/>
         {error && <Alert severity={"error"}>{error.message}</Alert>}
     </>);
 }
@@ -318,10 +391,10 @@ function HalNavigatorPage({
                           }: {
     startUrl: Link | string
 }) {
-    const initState = useMemo(() => toLink(startUrl), [startUrl]);
-    const {current: state, navigate, back, isFirst, reset} = useNavigation<NavigationTarget>(initState);
+    const {current: state, navigate, back, isFirst, reset} = useNavigation<NavigationTarget>(startUrl);
 
     const renderNavigation = (): ReactElement => {
+        console.log(startUrl);
         return (<Stack direction={"row"}>
             <Button onClick={reset}>Restart</Button>
             <Button disabled={isFirst} onClick={back}>Zpět</Button>

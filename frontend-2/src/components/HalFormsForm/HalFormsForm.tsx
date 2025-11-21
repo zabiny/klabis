@@ -1,35 +1,12 @@
 import * as Yup from "yup";
-import {
-    Alert,
-    Box,
-    Button,
-    Checkbox,
-    FormControl,
-    FormControlLabel,
-    FormGroup,
-    FormHelperText,
-    FormLabel,
-    MenuItem,
-    Radio,
-    RadioGroup,
-    Select,
-    TextField
-} from "@mui/material";
-import {Field, Form, Formik} from "formik";
+import {Alert, Box, Button} from "@mui/material";
+import {Form, Formik} from "formik";
 import React, {type ReactElement, type ReactNode, useCallback, useEffect, useState} from "react";
-import {
-    type HalFormsOption,
-    type HalFormsOptionType,
-    type HalFormsOptionValue,
-    type HalFormsProperty,
-    type HalFormsResponse,
-    type HalFormsTemplate,
-    type OptionItem,
-    type TemplateTarget
-} from "../../api";
+import {type HalFormsProperty, type HalFormsResponse, type HalFormsTemplate, type TemplateTarget} from "../../api";
 import {fetchHalFormsData, submitHalFormsData} from "../../api/hateoas";
 import {isHalFormsResponse} from "./utils";
-import {klabisAuthUserManager} from "../../api/klabisUserManager";
+import {type HalFormFieldFactory} from "./types";
+import {muiHalFormsFieldsFactory} from "./MuiHalFormsFieldsFactory";
 
 type FormData = Record<string, any>;
 
@@ -72,6 +49,10 @@ function getValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<any> 
             validator = validator.required("Povinné pole");
         }
 
+        if (prop.regex) {
+            validator = Yup.string().required().matches(new RegExp(prop.regex), "Nespravny format");
+        }
+
         shape[prop.name] = validator;
     });
     return Yup.object().shape(shape);
@@ -83,70 +64,25 @@ function renderField(
     values: Record<string, any>,
     setFieldValue: (field: string, value: any) => void,
     errors: Record<string, any>,
-    touched: Record<string, any>
+    touched: Record<string, any>,
+    fieldFactory?: HalFormFieldFactory
 ): ReactNode {
     const errorText = touched[prop.name] && errors[prop.name] ? errors[prop.name] : "";
 
-// OPTIONS s multiple = Checkboxy
-    if (prop.type === "checkbox") {
-        return <HalFormsCheckbox prop={prop} value={values[prop.name]} errorText={errorText}
-                                 onValueChanged={setFieldValue}/>;
-    }
+    const result = fieldFactory && fieldFactory(prop.type, {
+        prop: prop,
+        errorText,
+        onValueChanged: setFieldValue,
+        value: values[prop.name]
+    });
 
-// OPTIONS + type radio
-    if (prop.type === "radio") {
-        return <HalFormsRadio prop={prop} value={values[prop.name]} errorText={errorText}
-                              onValueChanged={setFieldValue}/>;
-    }
-
-    // OPTIONS single = Select
-    if (prop.type === "select") {
-        return <HalFormsSelect prop={prop} value={values[prop.name]} errorText={errorText}
-                               onValueChanged={setFieldValue}/>;
-    }
-
-    if (prop.type === "boolean") {
-        return <HalFormsBoolean prop={prop} value={values[prop.name]} errorText={errorText}
-                                onValueChanged={setFieldValue}/>;
-    }
-
-    // TEXTAREA
-    if (prop.type === "textarea") {
-        return (
-            <Field
-                as={TextField}
-                id={prop.name}
-                name={prop.name}
-                label={prop.prompt || prop.name}
-                disabled={prop.readOnly || false}
-                fullWidth
-                multiline
-                rows={4}
-                error={!!errorText}
-                helperText={errorText}
-            />
-        );
-    }
-
-    // Default: TextField
-    if (["text", "email", "password", "number", "date"].includes(prop.type)) {
-        return (
-            <Field
-                as={TextField}
-                id={prop.name}
-                name={prop.name}
-                type={prop.type || "text"}
-                label={prop.prompt || prop.name}
-                disabled={prop.readOnly || false}
-                fullWidth
-                error={!!errorText}
-                helperText={errorText}
-            />
-        );
+    if (result) {
+        return result;
     }
 
     return (<Box sx={errorText ? {border: '1px solid red'} : {}}>
-        <Alert severity={"warning"}>{prop.prompt || prop.name}: neznamy typ HAL+FORMS property: '{prop.type}'</Alert>
+            <Alert severity={"warning"}>{prop.prompt || prop.name}: neznamy typ HAL+FORMS property:
+                '{prop.type}'</Alert>
             {errorText && <Alert severity={"error"}>{errorText}</Alert>}
         </Box>
     );
@@ -250,11 +186,18 @@ interface HalFormsFormProps {
     data: Record<string, any>;
     template: HalFormsTemplate;
     onSubmit?: (values: Record<string, any>) => void;
-    submitButtonLabel?: string
+    submitButtonLabel?: string,
+    fieldsFactory?: HalFormFieldFactory
 }
 
 // --- Hlavní komponenta ---
-const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSubmit, submitButtonLabel = "Odeslat"}) => {
+const HalFormsForm: React.FC<HalFormsFormProps> = ({
+                                                       data,
+                                                       template,
+                                                       onSubmit,
+                                                       fieldsFactory = muiHalFormsFieldsFactory,
+                                                       submitButtonLabel = "Odeslat"
+                                                   }) => {
     const initialValues = getInitialValues(template, data);
     const validationSchema = getValidationSchema(template);
 
@@ -277,7 +220,7 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSubmit, su
 
                     {template.properties.map((prop) => (
                         <div key={prop.name}>
-                            {renderField(prop, values, setFieldValue, errors, touched)}
+                            {renderField(prop, values, setFieldValue, errors, touched, fieldsFactory)}
                         </div>
                     ))}
 
@@ -289,226 +232,6 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({data, template, onSubmit, su
         </Formik>
     );
 };
-
-interface HalFormsInputProps<T> {
-    prop: HalFormsProperty,
-    errorText?: string,
-    value: T,
-    onValueChanged: (attrName: string, value: T) => void
-}
-
-const useOptionItems = (def: HalFormsOption | undefined): { isLoading: boolean, options: HalFormsOptionType[] } => {
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [options, setOptions] = useState<HalFormsOptionType[]>([]);
-
-    const fetchData = async (url: string): Promise<void> => {
-        setIsLoading(true);
-
-        try {
-
-            const user = await klabisAuthUserManager.getUser();
-            const res = await fetch(url, {
-                headers: {
-                    Accept: "application/json",
-                    "Authorization": `Bearer ${user?.access_token}`
-                },
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-            const data = await res.json();
-
-            setOptions(data);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (def?.link && def.link.href) {
-            fetchData(def.link.href);
-        }
-    }, [def]);
-
-    if (def?.inline) {
-        return {isLoading: false, options: def.inline};
-    } else if (def?.link) {
-        return {isLoading: isLoading, options: options};
-    } else {
-        return {isLoading: false, options: []}
-    }
-
-}
-
-const HalFormsRadio: React.FC<HalFormsInputProps<string>> = ({prop, errorText, value, onValueChanged}) => {
-
-    const {options} = useOptionItems(prop.options);
-
-    function renderRadioOption(opt: HalFormsOptionType, idx: number): ReactElement {
-        const val = getValue(opt);
-        const label = getLabel(opt);
-
-        return <FormControlLabel key={idx} value={val} control={<Radio/>} label={label}/>;
-    }
-
-    return (
-        <FormControl component="fieldset" error={!!errorText} sx={errorText ? {border: '1px solid red', p: 1} : {p: 1}}>
-            <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <RadioGroup
-                aria-errormessage={errorText}
-                name={prop.name}
-                value={value}
-                onChange={(e) => onValueChanged(prop.name, e.target.value)}
-            >
-                {renderOptions(options, renderRadioOption)}
-            </RadioGroup>
-            <FormHelperText>{errorText}</FormHelperText>
-        </FormControl>
-    );
-
-}
-
-const HalFormsSelect: React.FC<HalFormsInputProps<string>> = ({
-                                                                  prop,
-                                                                  errorText,
-                                                                  value,
-                                                                  onValueChanged
-                                                              }): ReactElement => {
-    const {options} = useOptionItems(prop.options);
-
-    function renderSelectBoxOption(opt: HalFormsOptionType, idx: number): ReactElement {
-        const val = getValue(opt);
-        const label = getLabel(opt);
-        return (
-            <MenuItem key={idx} value={val}>
-                {label}
-            </MenuItem>
-        );
-    }
-
-    return (
-        <FormControl fullWidth error={!!errorText}>
-            <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <Select
-                value={value}
-                onChange={(e) => onValueChanged(prop.name, e.target.value)}
-            >
-                <MenuItem value="">
-                    <em>-- vyber --</em>
-                </MenuItem>
-                {renderOptions(options, renderSelectBoxOption)}
-            </Select>
-            <FormHelperText>{errorText}</FormHelperText>
-        </FormControl>
-    );
-}
-
-function isOptionItem(item: any): item is OptionItem {
-    return item !== undefined && item !== null && item.value !== undefined;
-}
-
-function isNumber(item: any): item is number {
-    return typeof item === 'number';
-}
-
-function optionValueToString(value: HalFormsOptionValue): string {
-    if (isNumber(value)) {
-        return `${value}`;
-    } else {
-        return value;
-    }
-}
-
-function getValue(item: HalFormsOptionType): string {
-    if (isOptionItem(item)) {
-        return getValue(item.value);
-    } else {
-        return optionValueToString(item);
-    }
-}
-
-function getLabel(item: HalFormsOptionType): string {
-    if (isOptionItem(item)) {
-        return item.prompt || getLabel(item.value);
-    } else if (isNumber(item)) {
-        return `${item}`;
-    } else {
-        return item;
-    }
-}
-
-function renderOptions(options: HalFormsOptionType[], optionRender: (opt: HalFormsOptionType, key: number) => ReactElement): ReactElement {
-    if (!options) {
-        return <Alert severity={"warning"}>No options available</Alert>;
-    }
-
-    return <>{options.map(optionRender)}</>;
-}
-
-const HalFormsCheckbox: React.FC<HalFormsInputProps<string[]>> = ({
-                                                                      prop,
-                                                                      errorText,
-                                                                      value,
-                                                                      onValueChanged
-                                                                  }): ReactElement => {
-    const {options} = useOptionItems(prop.options);
-
-    function renderCheckbox(opt: HalFormsOptionType, idx: number): ReactElement {
-        const val = getValue(opt);
-        const label = getLabel(opt);
-        return (
-            <FormControlLabel
-                key={idx}
-                control={
-                    <Checkbox
-                        checked={value.includes(val)}
-                        onChange={(e) => {
-                            if (e.target.checked) {
-                                onValueChanged(prop.name, [...value, val]);
-                            } else {
-                                onValueChanged(
-                                    prop.name,
-                                    value.filter((v: string) => v !== val)
-                                );
-                            }
-                        }}
-                    />
-                }
-                label={label}
-            />
-        );
-    }
-
-    return (
-        <FormControl component="fieldset" error={!!errorText}>
-            <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <FormGroup>{renderOptions(options, renderCheckbox)}</FormGroup>
-            <FormHelperText>{errorText}</FormHelperText>
-        </FormControl>
-    );
-
-}
-
-const HalFormsBoolean: React.FC<HalFormsInputProps<boolean>> = ({
-                                                                    prop,
-                                                                    errorText,
-                                                                    value,
-                                                                    onValueChanged
-                                                                }): ReactElement => {
-
-    return (
-        <FormControl component="fieldset" error={!!errorText}>
-            <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <Checkbox
-                checked={value}
-                onChange={(e) => {
-                    onValueChanged(prop.name, e.target.checked);
-                }}
-            />
-            <FormHelperText>{errorText}</FormHelperText>
-        </FormControl>
-    );
-
-}
 
 
 export {HalFormsForm, HalFormsFormController};

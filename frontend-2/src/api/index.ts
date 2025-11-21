@@ -23,6 +23,8 @@ export type GetMemberGrantsResponse = components["schemas"]["MemberGrantsForm"]
 
 export type EditMyDetailsForm = components["schemas"]["EditMyDetailsForm"];
 export type MemberRegistrationForm = components["schemas"]["MemberRegistrationForm"];
+export type AddressApiDto = components["schemas"]["AddressApiDto"];
+
 export type EventRegistrationForm = components["schemas"]["EventRegistrationForm"];
 
 export type Link = components["schemas"]["Link"];
