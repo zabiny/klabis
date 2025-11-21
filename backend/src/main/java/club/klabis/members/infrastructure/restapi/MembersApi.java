@@ -30,6 +30,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 @ExposesResourceFor(Member.class)
 @ApiController(openApiTagName = "Members", path = "/members")
 public class MembersApi {
@@ -74,7 +77,11 @@ public class MembersApi {
         Page<Member> result = membersRepository.findAllBySuspended(suspended,
                 memberModelAssembler.convertAttributeNamesToEntity(pageable));
 
-        return memberModelAssembler.toPagedResponse(result);
+        var resultModel = memberModelAssembler.toPagedResponse(result);
+        resultModel.add(linkTo(methodOn(getClass()).membersGet(!suspended,
+                pageable.first())).withRel(suspended ? "active" : "suspended")
+                .withName(suspended ? "Aktivní členové" : "Suspendovaní členové"));
+        return resultModel;
     }
 
     /**
