@@ -193,7 +193,7 @@ function HalNavigatorContent({
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
     const {data, isLoading, error} = useSimpleFetch(api);
-    const [showSource, setShowSource] = useState(false);
+    const [showSource, setShowSource] = useState(true);
     if (isLoading) {
         return <Alert severity={"info"}>Nahravam data {toLink(api).href}</Alert>;
     }
