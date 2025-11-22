@@ -30,7 +30,7 @@ function getInitialValues(
     return initialValues;
 }
 
-function getValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<any> {
+function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<any> {
     const shape: Record<string, any> = {};
     template.properties.forEach((prop) => {
         let validator: any = Yup.mixed().nullable();
@@ -199,7 +199,7 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
                                                        submitButtonLabel = "Odeslat"
                                                    }) => {
     const initialValues = getInitialValues(template, data);
-    const validationSchema = getValidationSchema(template);
+    const validationSchema = createValidationSchema(template);
 
     return (
         <Formik
