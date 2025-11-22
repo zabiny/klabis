@@ -12,7 +12,6 @@ import {
     Radio,
     RadioGroup,
     Select,
-    Switch,
     TextField
 } from "@mui/material";
 import {Checkbox} from "formik-mui";
@@ -187,9 +186,9 @@ export const HalFormsCheckbox: React.FC<HalFormsInputProps<boolean>> = ({
 
 
 export const HalFormsCheckboxGroup: React.FC<HalFormsInputProps<string[]>> = ({
-                                                                             prop,
+                                                                                  prop,
                                                                                   errorText
-                                                                         }): ReactElement => {
+                                                                              }): ReactElement => {
     const {options} = useOptionItems(prop.options);
 
     function renderCheckbox(opt: HalFormsOptionType, idx: number): ReactElement {
@@ -218,27 +217,12 @@ export const HalFormsCheckboxGroup: React.FC<HalFormsInputProps<string[]>> = ({
 
 }
 
-export const HalFormsBoolean: React.FC<HalFormsInputProps<boolean>> = ({
-                                                                           prop,
-                                                                           errorText,
-                                                                           value,
-                                                                           onValueChanged
-                                                                       }): ReactElement => {
-
+export const HalFormsBoolean: React.FC<HalFormsInputProps<boolean>> = (props): ReactElement => {
+    // TODO: find way how to do it using MUI Switch component
     return (
-
-        <FormControlLabel
-            key={prop.name}
-            name={prop.name}
-            value={true}
-            label={prop.prompt || prop.name}
-            control={
-                <Field type={"radio"} as={Switch} error={errorText}/>
-            }
-        />
-
-
+        <HalFormsCheckbox {...props}/>
     );
+
 
 }
 
