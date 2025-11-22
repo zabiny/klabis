@@ -203,21 +203,29 @@ function HalNavigatorContent({
         return <Alert severity={"error"}>Nepovedlo se nacist data {toLink(api).href}: {error.message}</Alert>;
     }
 
-    let content;
-    if (isHalFormsResponse(data) && data.page === undefined) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
-        content =
-            <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={data} fieldsFactory={fieldsFactory}/>;
-    } else if (isHalResponse(data)) {
-        content = <HalContent data={data} navigate={navigate}/>;
-    } else {
-        content = <JsonPreview data={data} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
+    function renderContent(): ReactElement {
+        let content;
+        if (isHalFormsResponse(data) && data.page === undefined) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
+            content =
+                <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={data}
+                                 fieldsFactory={fieldsFactory}/>;
+        } else if (isHalResponse(data)) {
+            content = <HalContent data={data} navigate={navigate}/>;
+        } else {
+            content = <JsonPreview data={data} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
+        }
+        return content;
     }
 
     return (<Grid container spacing={2} sx={{
         justifyContent: "space-between",
         alignItems: "baseline",
     }}>
-        <Grid padding={2} xs={7}>{content}</Grid>
+        <Grid padding={2} xs={7}>
+            <ErrorBoundary fallback={<JsonPreview label={"Nelze vyrenderovat Hal/HalForms obsah"} data={api}/>}>
+                {renderContent()}
+            </ErrorBoundary>
+        </Grid>
         <Grid overflow={showSource ? "scroll" : "none"} xs={5}>
             <FormLabel>Zobraz zdrojovy JSON:<Checkbox checked={showSource}
                                                       onChange={(event, checked) => setShowSource(checked)}>Zdrojovy
