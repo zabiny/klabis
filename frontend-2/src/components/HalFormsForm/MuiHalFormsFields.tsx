@@ -12,6 +12,7 @@ import {
     Radio,
     RadioGroup,
     Select,
+    Switch,
     TextField
 } from "@mui/material";
 import {Checkbox} from "formik-mui";
@@ -75,7 +76,7 @@ export const HalFormsRadio: React.FC<HalFormsInputProps> = ({prop, errorText}) =
     return (
         <FormControl component="fieldset" error={!!errorText} sx={errorText ? {border: '1px solid red', p: 1} : {p: 1}}>
             <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <Field name={prop.name} render={(props: FieldProps<unknown>) =>
+            <Field type="radion" name={prop.name} render={(props: FieldProps<unknown>) =>
                 <RadioGroup {...props.field}>{renderOptions(options, renderRadioOption)}</RadioGroup>}/>
             <FormHelperText>{errorText}</FormHelperText>
         </FormControl>
@@ -208,13 +209,18 @@ export const HalFormsCheckboxGroup: React.FC<HalFormsInputProps> = ({
 
 }
 
-export const HalFormsBoolean: React.FC<HalFormsInputProps> = (props): ReactElement => {
-    // TODO: find way how to do it using MUI Switch component
+export const HalFormsBoolean: React.FC<HalFormsInputProps> = ({prop, errorText}): ReactElement => {
     return (
-        <HalFormsCheckbox {...props}/>
+        <FormControlLabel
+            key={prop.name}
+            name={prop.name}
+            control={
+                <Field type={"checkbox"} render={(props: FieldProps<unknown>) => <Switch {...props.field}/>}
+                       error={errorText}/>
+            }
+            label={prop.prompt || prop.name}
+        />
     );
-
-
 }
 
 export const HalFormsTextArea: React.FC<HalFormsInputProps> = ({
