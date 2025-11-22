@@ -71,7 +71,7 @@ public record MemberRegistrationFormApiDto(
         ContactApiDto contact,
 
         @Valid
-        @InputType("LegalGuardians")
+        @InputType("LegalGuardiansApiDto")
         @Schema(name = "guardians", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
         @JsonProperty("guardians")
         List<@Valid LegalGuardianApiDto> guardians,
