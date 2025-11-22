@@ -14,7 +14,7 @@ import {klabisAuthUserManager} from "../../api/klabisUserManager";
 import {useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
 import {isHalFormsResponse, isHalResponse} from "../HalFormsForm/utils";
-import {submitHalFormsData} from "../../api/hateoas";
+import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
 
 
@@ -180,6 +180,8 @@ function HalFormsContent({
     return (<>
         <HalFormsForm data={initData} template={activeTemplate} onSubmit={submit} fieldsFactory={fieldsFactory}/>
         {error && <Alert severity={"error"}>{error.message}</Alert>}
+        {isFormValidationError(error) && Object.entries(error.validationErrors).map((entry, message) => <Alert
+            severity={"error"}>{entry[0]}:&nbsp;{entry[1]}</Alert>)}
     </>);
 }
 

@@ -3,7 +3,7 @@ import {Alert, Box, Button} from "@mui/material";
 import {Form, Formik} from "formik";
 import React, {type ReactElement, type ReactNode, useCallback, useEffect, useState} from "react";
 import {type HalFormsProperty, type HalFormsResponse, type HalFormsTemplate, type TemplateTarget} from "../../api";
-import {fetchHalFormsData, submitHalFormsData} from "../../api/hateoas";
+import {fetchHalFormsData, isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isHalFormsResponse} from "./utils";
 import {type HalFormFieldFactory, type HalFormsInputProps, SubElementConfiguration} from "./types";
 import {muiHalFormsFieldsFactory} from "./MuiHalFormsFieldsFactory";
@@ -30,6 +30,7 @@ function getInitialValues(
     return initialValues;
 }
 
+// TODO: do we want "frontend validation"? There may be validations which can't be done on frontend...
 function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<any> {
     const shape: Record<string, any> = {};
     template.properties.forEach((prop) => {
@@ -122,14 +123,14 @@ const useHalFormsController = (
     isLoading: boolean,
     submit: (formData: Record<string, any>) => Promise<void>,
     error?: string,
-    submitError?: string,
+    submitError?: Error,
     template?: HalFormsTemplate,
     formData?: HalFormsResponse,
 } => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>();
     const [formData, setFormData] = useState<HalFormsResponse>();
-    const [submitError, setSubmitError] = useState<string>();
+    const [submitError, setSubmitError] = useState<Error>();
     const [actualTemplate, setActualTemplate] = useState<HalFormsTemplate>();
 
     useEffect(() => {
@@ -165,24 +166,19 @@ const useHalFormsController = (
 
     const submit = useCallback(
         async (data: Record<string, any>) => {
-            const defaultTemplate = formData?._templates?.default;
-            const method = defaultTemplate?.method || "POST";
-            console.log(`Submitting.... ${method} ${api}`);
-
             try {
                 await submitHalFormsData(api, data);
             } catch (submitError) {
                 setSubmitError(
-                    submitError instanceof Error ? submitError.message : "Error submitting form data"
-                );
+                    submitError instanceof Error ? submitError : new Error("Error submitting form data")
+                )
                 throw submitError; // Re-throw error in case caller needs to handle it
             }
-        },
-        [formData, api] // No dependencies as `formData` and methods come from the function context
-    );
+        }, [api])
 
     return {isLoading, submit, error, formData, template: actualTemplate, submitError};
-};
+}
+
 
 const HalFormsFormController = ({api, inputTemplate}: {
     api: TemplateTarget,
@@ -205,7 +201,9 @@ const HalFormsFormController = ({api, inputTemplate}: {
 
     return <div>
         <HalFormsForm data={formData || {}} template={template} onSubmit={submit}/>
-        {submitError && <Alert severity={"error"}>{submitError}</Alert>}
+        {submitError && <Alert severity={"error"}>{submitError.message}</Alert>}
+        {isFormValidationError(submitError) && Object.entries(submitError.validationErrors).map((entry, message) =>
+            <Alert severity={"error"}>{entry[0]}:&nbsp;{entry[1]}</Alert>)}
     </div>;
 }
 
