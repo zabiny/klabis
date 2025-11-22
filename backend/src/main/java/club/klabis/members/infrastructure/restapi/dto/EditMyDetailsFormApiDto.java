@@ -12,6 +12,8 @@ import org.springframework.hateoas.InputType;
 
 import java.util.List;
 
+import static club.klabis.shared.config.hateoas.KlabisInputTypes.CHECKBOX_INPUT_TYPE;
+
 /**
  * Member attributes which can be updated by member himself (member can update some own attributes)    #### Required authorization - user can edit own member data   Additional validations: - either contact or at least 1 guardian needs to be entered
  */
@@ -59,7 +61,7 @@ public record EditMyDetailsFormApiDto(
 
         @Valid
         @Schema(name = "drivingLicence", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-        @InputOptions(sourceEnum = DrivingLicenceApiDto.class, inputType = "checkbox")
+        @InputOptions(sourceEnum = DrivingLicenceApiDto.class, inputType = CHECKBOX_INPUT_TYPE)
         List<DrivingLicenceApiDto> drivingLicence,
 
         @Schema(name = "medicCourse", description = "Whether the club member has completed the medic course", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

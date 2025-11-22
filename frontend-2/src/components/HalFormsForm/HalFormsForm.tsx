@@ -5,7 +5,7 @@ import React, {type ReactElement, type ReactNode, useCallback, useEffect, useSta
 import {type HalFormsProperty, type HalFormsResponse, type HalFormsTemplate, type TemplateTarget} from "../../api";
 import {fetchHalFormsData, submitHalFormsData} from "../../api/hateoas";
 import {isHalFormsResponse} from "./utils";
-import {type HalFormFieldFactory} from "./types";
+import {type HalFormFieldFactory, type HalFormsInputProps, SubElementConfiguration} from "./types";
 import {muiHalFormsFieldsFactory} from "./MuiHalFormsFieldsFactory";
 
 type FormData = Record<string, any>;
@@ -58,6 +58,30 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<an
     return Yup.object().shape(shape);
 }
 
+function subElementInputProps(attrName: string, parentProps: HalFormsInputProps<any>, conf: SubElementConfiguration): HalFormsInputProps<any> {
+    function subElementProp(parentProp: HalFormsProperty, attr: string, label: string = attr): HalFormsProperty {
+        return {
+            ...parentProp,
+            name: parentProp.name + "." + attr,
+            prompt: label,
+            regex: undefined,
+            type: conf.type || 'text',
+            options: undefined,
+            multiple: false,
+            value: parentProp.value
+        };
+    }
+
+    return {
+        prop: subElementProp(parentProps.prop, attrName, conf.prompt),
+        value: parentProps.value[attrName],
+        onValueChanged: parentProps.onValueChanged,
+        errorText: undefined,
+        subElementProps: parentProps.subElementProps
+    };
+}
+
+
 // --- Render funkce pro pole ---
 function renderField(
     prop: HalFormsProperty,
@@ -69,12 +93,17 @@ function renderField(
 ): ReactNode {
     const errorText = touched[prop.name] && errors[prop.name] ? errors[prop.name] : "";
 
-    const result = fieldFactory && fieldFactory(prop.type, {
+    const fieldProps = {
         prop: prop,
         errorText,
         onValueChanged: setFieldValue,
-        value: values[prop.name]
-    });
+        value: values[prop.name],
+        subElementProps: (attrName, conf) => {
+            return subElementInputProps(attrName, fieldProps, conf);
+        }
+    }
+
+    const result = fieldFactory && fieldFactory(prop.type, fieldProps);
 
     if (result) {
         return result;
@@ -198,6 +227,7 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
                                                        fieldsFactory = muiHalFormsFieldsFactory,
                                                        submitButtonLabel = "Odeslat"
                                                    }) => {
+
     const initialValues = getInitialValues(template, data);
     const validationSchema = createValidationSchema(template);
 

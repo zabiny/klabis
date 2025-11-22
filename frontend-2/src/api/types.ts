@@ -67,7 +67,7 @@ export interface OptionItem {
 export interface HalFormsProperty {
     name: string;
     prompt?: string;
-    type: string; // "text" | "number" | "email" | "textarea" | "radio"
+    type: string; // "text" | "number" | "email" | "textarea" | "radioGroup" | "checkboxGroup"
     value?: string | number;
     required?: boolean;
     regex?: string;

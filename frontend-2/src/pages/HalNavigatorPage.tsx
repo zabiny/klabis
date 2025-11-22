@@ -34,7 +34,8 @@ const demoTemplate: HalFormsTemplate = {
         {
             name: "hobbies",
             prompt: "Koníčky",
-            type: "checkbox",
+            type: "checkboxGroup",
+            multiple: true,
             options: {
                 inline: [
                     {value: "orienteering", prompt: "Orienťák"},
@@ -47,7 +48,7 @@ const demoTemplate: HalFormsTemplate = {
         {
             name: "gender",
             prompt: "Pohlaví",
-            type: "radio",
+            type: "radioGroup",
             options: {
                 inline: [
                     {value: "male", prompt: "Muž"},
@@ -56,6 +57,11 @@ const demoTemplate: HalFormsTemplate = {
                 ]
             },
             required: true,
+        },
+        {
+            name: "enabled",
+            prompt: "Zapnuty",
+            type: "checkbox"
         },
         {
             name: "active",
@@ -77,7 +83,8 @@ const demoData = {
         ["games"],
     gender:
         "male",
-    active: true
+    active: true,
+    enabled: true
 };
 
 function ExampleHalForm(): ReactElement {

@@ -60,7 +60,7 @@ public class EventRegistrationsController {
 
 
         result.mapLink(LinkRelation.of("self"), l -> this.addOptions(l, event, memberId));
-        
+
         return result;
     }
 
@@ -71,8 +71,9 @@ public class EventRegistrationsController {
 
     private Link addOptions(Link link, Event.Id eventId, MemberId memberId) {
         HalFormsOptions categoryOptions = HalFormsOptions.remote(linkTo(methodOn(this.getClass()).getEventCategories(
-                eventId,
-                memberId)).withRel("categories"));
+                        eventId,
+                        memberId)).withRel("categories"))
+                .withMaxItems(1L);
 
         link.getAffordances().stream().map(a -> a.getAffordanceModel(MediaTypes.HAL_FORMS_JSON)).filter(
                         ImprovedHalFormsAffordanceModel.class::isInstance).map(ImprovedHalFormsAffordanceModel.class::cast)

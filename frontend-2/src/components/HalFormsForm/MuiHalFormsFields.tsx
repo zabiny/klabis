@@ -12,6 +12,7 @@ import {
     Radio,
     RadioGroup,
     Select,
+    Switch,
     TextField
 } from "@mui/material";
 import {Checkbox} from "formik-mui";
@@ -166,11 +167,28 @@ function renderOptions(options: HalFormsOptionType[], optionRender: (opt: HalFor
     return <>{options.map(optionRender)}</>;
 }
 
-export const HalFormsCheckbox: React.FC<HalFormsInputProps<string[]>> = ({
+export const HalFormsCheckbox: React.FC<HalFormsInputProps<boolean>> = ({
+                                                                            prop,
+                                                                            errorText
+                                                                        }): ReactElement => {
+    return (
+        <FormControlLabel
+            key={prop.name}
+            value={prop.value}
+            name={prop.name}
+            control={
+                <Field type={"checkbox"} component={Checkbox} error={errorText}/>
+            }
+            label={prop.prompt || prop.name}
+        />
+    );
+
+}
+
+
+export const HalFormsCheckboxGroup: React.FC<HalFormsInputProps<string[]>> = ({
                                                                              prop,
-                                                                             errorText,
-                                                                             value,
-                                                                             onValueChanged
+                                                                                  errorText
                                                                          }): ReactElement => {
     const {options} = useOptionItems(prop.options);
 
@@ -180,20 +198,10 @@ export const HalFormsCheckbox: React.FC<HalFormsInputProps<string[]>> = ({
         return (
             <FormControlLabel
                 key={idx}
+                value={val}
+                name={prop.name}
                 control={
-                    <Checkbox
-                        checked={value.includes(val)}
-                        onChange={(e) => {
-                            if (e.target.checked) {
-                                onValueChanged(prop.name, [...value, val]);
-                            } else {
-                                onValueChanged(
-                                    prop.name,
-                                    value.filter((v: string) => v !== val)
-                                );
-                            }
-                        }}
-                    />
+                    <Field type={"checkbox"} component={Checkbox}/>
                 }
                 label={label}
             />
@@ -218,16 +226,18 @@ export const HalFormsBoolean: React.FC<HalFormsInputProps<boolean>> = ({
                                                                        }): ReactElement => {
 
     return (
-        <FormControl component="fieldset" error={!!errorText}>
-            <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <Checkbox
-                checked={value}
-                onChange={(e) => {
-                    onValueChanged(prop.name, e.target.checked);
-                }}
-            />
-            <FormHelperText>{errorText}</FormHelperText>
-        </FormControl>
+
+        <FormControlLabel
+            key={prop.name}
+            name={prop.name}
+            value={true}
+            label={prop.prompt || prop.name}
+            control={
+                <Field type={"radio"} as={Switch} error={errorText}/>
+            }
+        />
+
+
     );
 
 }

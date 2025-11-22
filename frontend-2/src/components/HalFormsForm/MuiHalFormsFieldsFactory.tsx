@@ -1,6 +1,7 @@
 import {
     HalFormsBoolean,
     HalFormsCheckbox,
+    HalFormsCheckboxGroup,
     HalFormsInput,
     HalFormsRadio,
     HalFormsSelect,
@@ -11,9 +12,11 @@ import {type ReactElement} from "react";
 
 export const muiHalFormsFieldsFactory = (fieldType: string, conf: HalFormsInputProps<any>): ReactElement | null => {
     switch (fieldType) {
+        case 'checkboxGroup':
+            return <HalFormsCheckboxGroup {...conf}/>;
         case 'checkbox':
             return <HalFormsCheckbox {...conf}/>;
-        case 'radio':
+        case 'radioGroup':
             return <HalFormsRadio {...conf}/>;
         case 'select':
             return <HalFormsSelect {...conf}/>;
