@@ -548,7 +548,7 @@ function SandplacePage(): ReactElement {
                     <Tab label="Example HAL Form" {...a11yProps(1)} />
                 </Tabs>
             </Box>
-            <ErrorBoundary fallback={"Neco se pokazilo"} resetKeys={[tabValue]} onError={console.error}>
+            <ErrorBoundary fallback={"Neco se pokazilo"} resetKeys={[tabValue]}>
                 <CustomTabPanel value={tabValue} index={0}>
                     <HalNavigatorPage startUrl={"/api"}/>
                 </CustomTabPanel>
