@@ -58,7 +58,7 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<an
     return Yup.object().shape(shape);
 }
 
-function subElementInputProps(attrName: string, parentProps: HalFormsInputProps<any>, conf: SubElementConfiguration): HalFormsInputProps<any> {
+function subElementInputProps(attrName: string, parentProps: HalFormsInputProps, conf: SubElementConfiguration): HalFormsInputProps {
     function subElementProp(parentProp: HalFormsProperty, attr: string, label: string = attr): HalFormsProperty {
         return {
             ...parentProp,
@@ -74,8 +74,6 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps<
 
     return {
         prop: subElementProp(parentProps.prop, attrName, conf.prompt),
-        value: parentProps.value[attrName],
-        onValueChanged: parentProps.onValueChanged,
         errorText: undefined,
         subElementProps: parentProps.subElementProps
     };

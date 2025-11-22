@@ -6,15 +6,13 @@ interface SubElementConfiguration {
     type?: string
 }
 
-interface HalFormsInputProps<T> {
+interface HalFormsInputProps {
     prop: HalFormsProperty,
     errorText?: string,
-    value: T,
-    onValueChanged: (attrName: string, value: T) => void,
-    subElementProps: (attrName: string, configuration: SubElementConfiguration) => HalFormsInputProps<any>
+    subElementProps: (attrName: string, configuration: SubElementConfiguration) => HalFormsInputProps
 }
 
-type HalFormFieldFactory = (fieldType: string, conf: HalFormsInputProps<any>) => ReactElement | null;
+type HalFormFieldFactory = (fieldType: string, conf: HalFormsInputProps) => ReactElement | null;
 
 
 export {type HalFormsInputProps, type HalFormFieldFactory, type SubElementConfiguration};

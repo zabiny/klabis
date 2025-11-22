@@ -4,7 +4,7 @@ import React, {type ReactElement} from "react";
 import {FormGroup, FormLabel} from "@mui/material";
 import {HalFormsInput} from "./HalFormsForm/MuiHalFormsFields";
 
-const ContactDtoField: React.FC<HalFormsInputProps<AddressApiDto>> = (props): ReactElement => {
+const ContactDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
 
 
     return <FormGroup>
@@ -17,7 +17,7 @@ const ContactDtoField: React.FC<HalFormsInputProps<AddressApiDto>> = (props): Re
 }
 
 
-const AddressDtoField: React.FC<HalFormsInputProps<AddressApiDto>> = (props): ReactElement => {
+const AddressDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
 
 
     return <FormGroup>
@@ -31,7 +31,7 @@ const AddressDtoField: React.FC<HalFormsInputProps<AddressApiDto>> = (props): Re
 }
 
 
-export const klabisFieldsFactory = expandMuiFieldsFactory((fieldType: string, conf: HalFormsInputProps<any>): ReactElement | null => {
+export const klabisFieldsFactory = expandMuiFieldsFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
         case "AddressApiDto":
             return <AddressDtoField {...conf}/>;

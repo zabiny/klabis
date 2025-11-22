@@ -10,7 +10,7 @@ import {
 import {type HalFormFieldFactory, type HalFormsInputProps} from "./types";
 import {type ReactElement} from "react";
 
-export const muiHalFormsFieldsFactory = (fieldType: string, conf: HalFormsInputProps<any>): ReactElement | null => {
+export const muiHalFormsFieldsFactory = (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
         case 'checkboxGroup':
             return <HalFormsCheckboxGroup {...conf}/>;
@@ -35,7 +35,7 @@ export const muiHalFormsFieldsFactory = (fieldType: string, conf: HalFormsInputP
 }
 
 export const expandMuiFieldsFactory = (additionalFactory: HalFormFieldFactory): HalFormFieldFactory => {
-    return (fieldType: string, conf: HalFormsInputProps<any>): ReactElement | null => {
+    return (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
         const result = additionalFactory(fieldType, conf);
         if (result) {
             return result;

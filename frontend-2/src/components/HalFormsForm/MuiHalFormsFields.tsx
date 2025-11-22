@@ -15,7 +15,7 @@ import {
     TextField
 } from "@mui/material";
 import {Checkbox} from "formik-mui";
-import {Field, FieldProps} from "formik";
+import {Field, type FieldProps} from "formik";
 import {type HalFormsInputProps} from "./types";
 
 
@@ -61,7 +61,7 @@ const useOptionItems = (def: HalFormsOption | undefined): { isLoading: boolean, 
 
 }
 
-export const HalFormsRadio: React.FC<HalFormsInputProps<string>> = ({prop, errorText, value, onValueChanged}) => {
+export const HalFormsRadio: React.FC<HalFormsInputProps> = ({prop, errorText}) => {
 
     const {options} = useOptionItems(prop.options);
 
@@ -75,25 +75,17 @@ export const HalFormsRadio: React.FC<HalFormsInputProps<string>> = ({prop, error
     return (
         <FormControl component="fieldset" error={!!errorText} sx={errorText ? {border: '1px solid red', p: 1} : {p: 1}}>
             <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <RadioGroup
-                aria-errormessage={errorText}
-                name={prop.name}
-                value={value}
-                onChange={(e) => onValueChanged(prop.name, e.target.value)}
-            >
-                {renderOptions(options, renderRadioOption)}
-            </RadioGroup>
+            <Field name={prop.name} render={(props: FieldProps<unknown>) =>
+                <RadioGroup {...props.field}>{renderOptions(options, renderRadioOption)}</RadioGroup>}/>
             <FormHelperText>{errorText}</FormHelperText>
         </FormControl>
     );
 
 }
 
-export const HalFormsSelect: React.FC<HalFormsInputProps<string>> = ({
+export const HalFormsSelect: React.FC<HalFormsInputProps> = ({
                                                                          prop,
-                                                                         errorText,
-                                                                         value,
-                                                                         onValueChanged
+                                                                 errorText
                                                                      }): ReactElement => {
     const {options} = useOptionItems(prop.options);
 
@@ -165,7 +157,7 @@ function renderOptions(options: HalFormsOptionType[], optionRender: (opt: HalFor
     return options.map(optionRender);
 }
 
-export const HalFormsCheckbox: React.FC<HalFormsInputProps<boolean>> = ({
+export const HalFormsCheckbox: React.FC<HalFormsInputProps> = ({
                                                                             prop,
                                                                             errorText
                                                                         }): ReactElement => {
@@ -184,7 +176,7 @@ export const HalFormsCheckbox: React.FC<HalFormsInputProps<boolean>> = ({
 }
 
 
-export const HalFormsCheckboxGroup: React.FC<HalFormsInputProps<string[]>> = ({
+export const HalFormsCheckboxGroup: React.FC<HalFormsInputProps> = ({
                                                                                   prop,
                                                                                   errorText
                                                                               }): ReactElement => {
@@ -216,7 +208,7 @@ export const HalFormsCheckboxGroup: React.FC<HalFormsInputProps<string[]>> = ({
 
 }
 
-export const HalFormsBoolean: React.FC<HalFormsInputProps<boolean>> = (props): ReactElement => {
+export const HalFormsBoolean: React.FC<HalFormsInputProps> = (props): ReactElement => {
     // TODO: find way how to do it using MUI Switch component
     return (
         <HalFormsCheckbox {...props}/>
@@ -225,10 +217,10 @@ export const HalFormsBoolean: React.FC<HalFormsInputProps<boolean>> = (props): R
 
 }
 
-export const HalFormsTextArea: React.FC<HalFormsInputProps<string>> = ({
+export const HalFormsTextArea: React.FC<HalFormsInputProps> = ({
                                                                            prop,
                                                                            errorText
-                                                                       }: HalFormsInputProps<string>): ReactElement => {
+                                                               }: HalFormsInputProps): ReactElement => {
     return (<Field
         as={TextField}
         id={prop.name}
@@ -243,10 +235,10 @@ export const HalFormsTextArea: React.FC<HalFormsInputProps<string>> = ({
     />);
 }
 
-export const HalFormsInput: React.FC<HalFormsInputProps<string>> = ({
+export const HalFormsInput: React.FC<HalFormsInputProps> = ({
                                                                         prop,
                                                                         errorText
-                                                                    }: HalFormsInputProps<string>): ReactElement => {
+                                                            }: HalFormsInputProps): ReactElement => {
     return (
         <Field
             as={TextField}
