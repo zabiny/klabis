@@ -59,14 +59,14 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<an
     return Yup.object().shape(shape);
 }
 
-function subElementInputProps(attrName: string, parentProps: HalFormsInputProps, conf: SubElementConfiguration): HalFormsInputProps {
+function subElementInputProps(attrName: string, parentProps: HalFormsInputProps, conf?: SubElementConfiguration): HalFormsInputProps {
     function subElementProp(parentProp: HalFormsProperty, attr: string, label: string = attr): HalFormsProperty {
         return {
             ...parentProp,
             name: parentProp.name + "." + attr,
             prompt: label,
             regex: undefined,
-            type: conf.type || 'text',
+            type: conf?.type || 'text',
             options: undefined,
             multiple: false,
             value: parentProp.value
@@ -74,7 +74,7 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
     }
 
     return {
-        prop: subElementProp(parentProps.prop, attrName, conf.prompt),
+        prop: subElementProp(parentProps.prop, attrName, conf?.prompt),
         errorText: undefined,
         subElementProps: parentProps.subElementProps
     };
@@ -84,23 +84,19 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
 // --- Render funkce pro pole ---
 function renderField(
     prop: HalFormsProperty,
-    values: Record<string, any>,
-    setFieldValue: (field: string, value: any) => void,
     errors: Record<string, any>,
     touched: Record<string, any>,
     fieldFactory?: HalFormFieldFactory
 ): ReactNode {
     const errorText = touched[prop.name] && errors[prop.name] ? errors[prop.name] : "";
 
-    const fieldProps = {
+    const fieldProps: HalFormsInputProps = {
         prop: prop,
         errorText,
-        onValueChanged: setFieldValue,
-        value: values[prop.name],
         subElementProps: (attrName, conf) => {
             return subElementInputProps(attrName, fieldProps, conf);
         }
-    }
+    };
 
     const result = fieldFactory && fieldFactory(prop.type, fieldProps);
 
@@ -242,13 +238,13 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
                     setSubmitting(false)
                 }
             }}>
-            {({values, setFieldValue, isSubmitting, errors, touched}) => (
+            {({isSubmitting, errors, touched}) => (
                 <Form style={{display: "grid", gap: "1rem"}}>
                     {(template.title ? <h2>{template.title}</h2> : <></>)}
 
                     {template.properties.map((prop) => (
                         <div key={prop.name}>
-                            {renderField(prop, values, setFieldValue, errors, touched, fieldsFactory)}
+                            {renderField(prop, errors, touched, fieldsFactory)}
                         </div>
                     ))}
 
