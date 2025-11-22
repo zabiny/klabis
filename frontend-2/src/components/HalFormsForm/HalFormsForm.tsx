@@ -205,6 +205,8 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
         <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
+            validateOnChange={false}
+            validateOnBlur={true}
             onSubmit={(values, {setSubmitting}) => {
                 try {
                     if (onSubmit) {
