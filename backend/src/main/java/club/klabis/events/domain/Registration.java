@@ -1,6 +1,7 @@
 package club.klabis.events.domain;
 
 import club.klabis.members.MemberId;
+import jakarta.validation.constraints.NotBlank;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -13,7 +14,7 @@ public final class Registration {
     @Identity
     private final MemberId memberId;
     private String siNumber;    // TODO: create value object
-    private final String category;
+    private String category;
 
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;
@@ -69,5 +70,10 @@ public final class Registration {
                "memberId=" + memberId + ", " +
                "category=" + category + ", " +
                "siNumber=" + siNumber + ']';
+    }
+
+    public void update(@NotBlank String category, @NotBlank String siNumber) {
+        this.category = category;
+        this.siNumber = siNumber;
     }
 }

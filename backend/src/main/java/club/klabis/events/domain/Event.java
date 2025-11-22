@@ -154,11 +154,11 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
                     EventException.Type.REGISTRATION_DEADLINE_PASSED);
         }
 
-        if (this.getRegistrationForMember(memberId).isEmpty()) {
+        this.getRegistrationForMember(memberId).ifPresentOrElse(registration -> {
+            registration.update(form.category(), form.siNumber());
+        }, () -> {
             throw EventException.createMemberNotRegisteredForEventException(this.id, memberId);
-        }
-
-        this.registrations.add(new Registration(memberId, form.siNumber(), form.category()));
+        });
     }
 
     public void cancelMemberRegistration(MemberId memberId) {
