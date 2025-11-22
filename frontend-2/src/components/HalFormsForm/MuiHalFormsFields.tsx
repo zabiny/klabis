@@ -15,7 +15,7 @@ import {
     TextField
 } from "@mui/material";
 import {Checkbox} from "formik-mui";
-import {Field} from "formik";
+import {Field, FieldProps} from "formik";
 import {type HalFormsInputProps} from "./types";
 
 
@@ -108,18 +108,17 @@ export const HalFormsSelect: React.FC<HalFormsInputProps<string>> = ({
     }
 
     return (
-        <FormControl fullWidth error={!!errorText}>
+        <FormControl>
             <FormLabel>{prop.prompt || prop.name}</FormLabel>
-            <Select
-                value={value}
-                onChange={(e) => onValueChanged(prop.name, e.target.value)}
-            >
-                <MenuItem value="">
-                    <em>-- vyber --</em>
-                </MenuItem>
-                {renderOptions(options, renderSelectBoxOption)}
-            </Select>
-            <FormHelperText>{errorText}</FormHelperText>
+
+            <Field
+                name={prop.name}
+                error={errorText}
+                type={"select"}
+                render={(props: FieldProps<unknown>) => <Select {...props.field}>
+                    {renderOptions(options, renderSelectBoxOption)}
+                </Select>}/>
+
         </FormControl>
     );
 }
@@ -158,12 +157,12 @@ function getLabel(item: HalFormsOptionType): string {
     }
 }
 
-function renderOptions(options: HalFormsOptionType[], optionRender: (opt: HalFormsOptionType, key: number) => ReactElement): ReactElement {
+function renderOptions(options: HalFormsOptionType[], optionRender: (opt: HalFormsOptionType, key: number) => ReactElement): ReactElement[] {
     if (!options) {
-        return <Alert severity={"warning"}>No options available</Alert>;
+        return [<Alert severity={"warning"}>No options available</Alert>];
     }
 
-    return <>{options.map(optionRender)}</>;
+    return options.map(optionRender);
 }
 
 export const HalFormsCheckbox: React.FC<HalFormsInputProps<boolean>> = ({
