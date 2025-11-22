@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import org.springframework.hateoas.InputType;
 
 import java.util.List;
 
@@ -44,6 +45,7 @@ public record EditMyDetailsFormApiDto(
 
         @Valid
         @Schema(name = "guardians", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+        @InputType("LegalGuardiansApiDto")
         List<@Valid LegalGuardianApiDto> guardians,
 
         @Schema(name = "siCard", description = "SI chip used by member", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
