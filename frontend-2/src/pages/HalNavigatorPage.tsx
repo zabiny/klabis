@@ -5,8 +5,10 @@ import {Box, Grid, Tab, Tabs} from "@mui/material";
 import {ErrorBoundary} from 'react-error-boundary';
 import {HalNavigatorPage} from "../components/HalNavigator";
 import {klabisFieldsFactory} from "../components/KlabisFieldsFactory";
+import {JsonPreview} from "../components/JsonPreview";
 
 const demoTemplate: HalFormsTemplate = {
+    title: "Ukazkovy formular",
     properties: [
         {name: "firstName", prompt: "Jméno", type: "text", required: true},
         {name: "email", prompt: "Email", type: "email", required: true},
@@ -55,6 +57,11 @@ const demoTemplate: HalFormsTemplate = {
             },
             required: true,
         },
+        {
+            name: "active",
+            prompt: "Aktivni",
+            type: "boolean"
+        }
     ],
 };
 
@@ -70,21 +77,24 @@ const demoData = {
         ["games"],
     gender:
         "male",
+    active: true
 };
 
 function ExampleHalForm(): ReactElement {
 
     const resource = {_templates: {default: demoTemplate}, ...demoData};
+    const [submitted, setSubmitted] = useState();
 
     return (
-        <Grid direction={"column"} spacing={2}>
-            <Grid>
+        <Grid container spacing={2}>
+            <Grid xs={6} padding={2}>
                 <HalFormsForm
                     key={`exampleForm`} data={resource} template={resource?._templates.default}
-                    onSubmit={data => console.log(JSON.stringify(data, null, 2))}/>
+                    onSubmit={data => setSubmitted(data)}/>
+                {submitted && <JsonPreview data={submitted} label={"Submitted"}/>}
             </Grid>
-            <Grid>
-                <pre>{JSON.stringify(resource, null, 2)}</pre>
+            <Grid xs={4} padding={2}>
+                <JsonPreview data={resource} label={"Zdrojova data HAL+FORMS"}/>
             </Grid>
         </Grid>
     );
