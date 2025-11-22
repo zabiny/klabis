@@ -1,5 +1,6 @@
 package org.springframework.hateoas.mediatype.hal.forms;
 
+import club.klabis.shared.config.hateoas.KlabisInputTypes;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.Annotated;
@@ -16,14 +17,17 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 
-    private Map<String, HalFormsOptions> customOptions = new HashMap<>();
+    private final HalFormsPropertyOptionsPostprocessor halFormsPropertyPostprocessor = new HalFormsPropertyOptionsPostprocessor();
 
     public static AffordanceModel improveHalFormsAffordance(AffordanceModel original) {
         Class<?> requestBodyType = getRequestBodyType(original.getInput());
@@ -35,7 +39,7 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
     }
 
     public void defineOptions(String propertyName, HalFormsOptions options) {
-        this.customOptions.put(propertyName, options);
+        this.halFormsPropertyPostprocessor.defineOptions(propertyName, options);
     }
 
     static final SerializationConfig objectMapper = new ObjectMapper()
@@ -100,28 +104,42 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
     // Method used in HalFormsPropertiesFactory to create properties. We want improve some property data, so let's do that :)
     @Override
     public <T> List<T> createProperties(BiFunction<InputPayloadMetadata, PropertyMetadata, T> creator) {
-        BiFunction<InputPayloadMetadata, PropertyMetadata, T> decoratedCreator = (payload, metadata) ->
-                creator.apply(payload, improvePropertyMetadata(payload, metadata));
-
-        decoratedCreator = decoratedCreator.andThen(this::postProcessProperty);
-
-        return super.createProperties(decoratedCreator);
+        CreatorWithPostprocess<T> creatorWithPostprocess = new CreatorWithPostprocess<>(creator,
+                this.halFormsPropertyPostprocessor);
+        return super.createProperties(creatorWithPostprocess);
     }
 
-    public <T> T postProcessProperty(T prop) {
-        if (prop instanceof HalFormsProperty typedProp && customOptions.containsKey(typedProp.getName())) {
-            return (T) typedProp.withOptions(customOptions.get(typedProp.getName()));
+    private static class CreatorWithPostprocess<T> implements BiFunction<InputPayloadMetadata, PropertyMetadata, T> {
+
+        private final BiFunction<InputPayloadMetadata, PropertyMetadata, T> decoratedCreator;
+        private final HalFormsPropertyPostprocessor halFormsPropertyPostprocessor;
+        private final ObjectMapper objectMapper = new ObjectMapper();
+
+        private CreatorWithPostprocess(BiFunction<InputPayloadMetadata, PropertyMetadata, T> decoratedCreator, HalFormsPropertyPostprocessor halFormsPropertyPostprocessor) {
+            this.decoratedCreator = decoratedCreator;
+            this.halFormsPropertyPostprocessor = halFormsPropertyPostprocessor;
         }
-        return prop;
-    }
 
-    private AffordanceModel.PropertyMetadata improvePropertyMetadata(InputPayloadMetadata payload, AffordanceModel.PropertyMetadata property) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        JavaType javaType = objectMapper.getTypeFactory().constructType(payload.getType());
-        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
+        @Override
+        public T apply(InputPayloadMetadata inputPayloadMetadata, PropertyMetadata propertyMetadata) {
+            T result = decoratedCreator.apply(inputPayloadMetadata,
+                    improvePropertyMetadata(inputPayloadMetadata, propertyMetadata));
 
-        property = new ImprovedPropertyMetadata(payload, property, beanDescription);
-        return property;
+            if (result instanceof HalFormsProperty typedProp) {
+                result = (T) halFormsPropertyPostprocessor.postprocess(typedProp, propertyMetadata);
+            }
+
+            return result;
+        }
+
+        private AffordanceModel.PropertyMetadata improvePropertyMetadata(InputPayloadMetadata payload, AffordanceModel.PropertyMetadata property) {
+            JavaType javaType = objectMapper.getTypeFactory().constructType(payload.getType());
+            BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
+
+            property = new ImprovedPropertyMetadata(payload, property, beanDescription);
+            return property;
+        }
+
     }
 
 }
@@ -250,9 +268,9 @@ class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
         if (StringUtils.isBlank(result)) {
             if (getType().getRawClass() != null) {
                 if (Enum.class.isAssignableFrom(getType().getRawClass())) {
-                    return "radio";
+                    return KlabisInputTypes.RADIO_INPUT_TYPE;
                 } else if (Boolean.class.isAssignableFrom(getType().getRawClass())) {
-                    return "boolean";
+                    return KlabisInputTypes.BOOLEAN_INPUT_TYPE;
                 }
 
                 return getType().getRawClass().getSimpleName();
