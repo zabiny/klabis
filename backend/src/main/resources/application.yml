@@ -184,6 +184,9 @@ spring:
     mapper:
       default-view-inclusion: true
 
+  mvc:
+    problemdetails:
+      enabled: true
 
 logging:
   level:
