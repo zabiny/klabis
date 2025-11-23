@@ -3,7 +3,8 @@ import {type HalFormsResponse, type TemplateTarget} from "./index";
 import {klabisAuthUserManager} from "./klabisUserManager";
 
 interface FormValidationError extends Error {
-    validationErrors: Record<string, string>
+    validationErrors: Record<string, string>,
+    formData: Record<string, any>
 }
 
 const isFormValidationError = (item: any): item is FormValidationError => {
@@ -46,7 +47,8 @@ async function submitHalFormsData(link: TemplateTarget, formData: Record<string,
         const responseBody = await res.json();
         throw {
             message: "Form validation errors",
-            validationErrors: responseBody.errors
+            validationErrors: responseBody.errors,
+            formData: formData
         } as FormValidationError;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

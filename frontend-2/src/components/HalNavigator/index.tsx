@@ -179,6 +179,7 @@ function HalFormsContent({
         {error && <Alert severity={"error"}>{error.message}</Alert>}
         {isFormValidationError(error) && Object.entries(error.validationErrors).map((entry, message) => <Alert
             severity={"error"}>{entry[0]}:&nbsp;{entry[1]}</Alert>)}
+        {isFormValidationError(error) && <JsonPreview data={error.formData} label={"Odeslana data"}/>}
     </>);
 }
 
