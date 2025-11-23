@@ -92,4 +92,14 @@ export interface HalFormsTemplate {
     properties: Array<HalFormsProperty>
 }
 
+export function isTemplateTarget(item: any): item is TemplateTarget {
+    return item && item.target;
+}
+
+export function isFormTarget(item: any): item is TemplateTarget {
+    return isTemplateTarget(item) && !!item.method && ['POST', 'PUT', 'DELETE', 'PATCH'].indexOf(item.method) !== -1;
+}
+
+
+
 

@@ -2,7 +2,13 @@ import * as Yup from "yup";
 import {Alert, Box, Button} from "@mui/material";
 import {Form, Formik} from "formik";
 import React, {type ReactElement, type ReactNode, useCallback, useEffect, useState} from "react";
-import {type HalFormsProperty, type HalFormsResponse, type HalFormsTemplate, type TemplateTarget} from "../../api";
+import {
+    type HalFormsProperty,
+    type HalFormsResponse,
+    type HalFormsTemplate,
+    isFormTarget,
+    type TemplateTarget
+} from "../../api";
 import {fetchHalFormsData, isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isHalFormsResponse} from "./utils";
 import {type HalFormFieldFactory, type HalFormsInputProps, SubElementConfiguration} from "./types";
@@ -162,8 +168,10 @@ const useHalFormsController = (
 
     const submit = useCallback(
         async (data: Record<string, any>) => {
+            // use target+method from template if is it present
+            const submitTarget: TemplateTarget = isFormTarget(actualTemplate) && actualTemplate || api;
             try {
-                await submitHalFormsData(api, data);
+                await submitHalFormsData(submitTarget, data);
             } catch (submitError) {
                 setSubmitError(
                     submitError instanceof Error ? submitError : new Error("Error submitting form data")
@@ -198,7 +206,7 @@ const HalFormsFormController = ({api, inputTemplate}: {
     return <div>
         <HalFormsForm data={formData || {}} template={template} onSubmit={submit}/>
         {submitError && <Alert severity={"error"}>{submitError.message}</Alert>}
-        {isFormValidationError(submitError) && Object.entries(submitError.validationErrors).map((entry, message) =>
+        {isFormValidationError(submitError) && Object.entries(submitError.validationErrors).map((entry) =>
             <Alert severity={"error"}>{entry[0]}:&nbsp;{entry[1]}</Alert>)}
     </div>;
 }

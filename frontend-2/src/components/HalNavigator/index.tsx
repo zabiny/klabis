@@ -2,6 +2,8 @@ import {
     type HalFormsResponse,
     type HalFormsTemplate,
     type HalResponse,
+    isFormTarget,
+    isTemplateTarget,
     type Link,
     type TemplateTarget
 } from "../../api";
@@ -138,14 +140,6 @@ function HalContent({data, navigate}: {
     }
 }
 
-function isTemplateTarget(item: any): item is TemplateTarget {
-    return item && item.target;
-}
-
-function isFormTarget(item: any): item is TemplateTarget {
-    return isTemplateTarget(item) && ['POST', 'PUT', 'DELETE', 'PATCH'].indexOf(item.method) !== -1;
-}
-
 type NavigationTarget = Link | TemplateTarget | string;
 
 
@@ -162,11 +156,14 @@ function HalFormsContent({
     const [error, setError] = useState<Error>();
 
     const activeTemplate = initTemplate || initData._templates.default;
+    const submitTarget: TemplateTarget = isFormTarget(activeTemplate) && activeTemplate || {
+        target: toHref(submitApi),
+        method: activeTemplate.method || "POST"
+    }
 
     const submit = useCallback(async (formData: Record<string, any>) => {
-        const target: TemplateTarget = {target: toHref(submitApi), method: activeTemplate.method || "POST"};
         try {
-            await submitHalFormsData(target, formData);
+            await submitHalFormsData(submitTarget, formData);
             try {
                 afterSubmit();
             } catch (ex) {
