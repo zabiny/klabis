@@ -22,6 +22,22 @@ interface InMemoryEventsRepository extends InMemoryRepository<Event, Event.Id>, 
             filterPredicate = filterPredicate.and(e -> e.isMemberRegistered(filter.registeredMember()));
         }
 
+        if (filter.onlyOpenedRegistrations() != null && filter.onlyOpenedRegistrations()) {
+            filterPredicate = filterPredicate.and(Event::areRegistrationsOpen);
+        }
+
+        if (filter.eventId() != null) {
+            filterPredicate = filterPredicate.and(e -> e.getId().equals(filter.eventId()));
+        }
+
+        if (filter.before() != null) {
+            filterPredicate = filterPredicate.and(e -> e.getDate().isBefore(filter.before()));
+        }
+
+        if (filter.after() != null) {
+            filterPredicate = filterPredicate.and(e -> e.getDate().isAfter(filter.after()));
+        }
+
         return findAll(filterPredicate, pageable);
     }
 
