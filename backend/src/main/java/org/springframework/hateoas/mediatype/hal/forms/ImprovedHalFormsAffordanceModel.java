@@ -132,12 +132,17 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
             return result;
         }
 
-        private AffordanceModel.PropertyMetadata improvePropertyMetadata(InputPayloadMetadata payload, AffordanceModel.PropertyMetadata property) {
+        private AffordanceModel.PropertyMetadata improvePropertyMetadata(InputPayloadMetadata payload, final AffordanceModel.PropertyMetadata property) {
             JavaType javaType = objectMapper.getTypeFactory().constructType(payload.getType());
             BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
 
-            property = new ImprovedPropertyMetadata(payload, property, beanDescription);
-            return property;
+            BeanPropertyDefinition propertyDefinition = beanDescription.findProperties()
+                    .stream()
+                    .filter(adept -> StringUtils.equals(property.getName(), adept.getName()))
+                    .findFirst()
+                    .orElseThrow();
+
+            return new ImprovedPropertyMetadata(payload, property, propertyDefinition);
         }
 
     }
@@ -195,10 +200,10 @@ class SortedInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata
 class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
 
     private final AffordanceModel.PropertyMetadata delegate;
-    private final BeanDescription beanDescription;
+    private final BeanPropertyDefinition beanDescription;
     private final AffordanceModel.PayloadMetadata payloadMetadata;
 
-    ImprovedPropertyMetadata(AffordanceModel.PayloadMetadata payloadMetadata, AffordanceModel.PropertyMetadata delegate, BeanDescription beanDescription) {
+    ImprovedPropertyMetadata(AffordanceModel.PayloadMetadata payloadMetadata, AffordanceModel.PropertyMetadata delegate, BeanPropertyDefinition beanDescription) {
         this.delegate = delegate;
         this.beanDescription = beanDescription;
         this.payloadMetadata = payloadMetadata;
@@ -218,14 +223,6 @@ class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
         return delegate.isRequired();
     }
 
-    private BeanPropertyDefinition getPropertyDefinition() {
-        return beanDescription.findProperties()
-                .stream()
-                .filter(adept -> StringUtils.equals(delegate.getName(), adept.getName()))
-                .findFirst()
-                .orElseThrow();
-    }
-
     private static Annotated getAnnotatedElement(BeanPropertyDefinition propertyDefinition) {
         return Stream.of(propertyDefinition.getConstructorParameter(), propertyDefinition.getField())
                 .filter(Objects::nonNull)
@@ -235,9 +232,8 @@ class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
     @Override
     public boolean isReadOnly() {
         if (isRecordPayload()) {
-            BeanPropertyDefinition propertyDefinition = getPropertyDefinition();
-            if (propertyDefinition.couldDeserialize()) {
-                JsonProperty propertyAnnotation = getAnnotatedElement(propertyDefinition).getAnnotation(JsonProperty.class);
+            if (beanDescription.couldDeserialize()) {
+                JsonProperty propertyAnnotation = getAnnotatedElement(beanDescription).getAnnotation(JsonProperty.class);
                 if (propertyAnnotation != null) {
                     return JsonProperty.Access.READ_ONLY.equals(propertyAnnotation.access());
                 } else {
