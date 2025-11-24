@@ -54,8 +54,6 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
         resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value()).withSelfRel());
         resource.add(entityLinks.linkToCollectionResource(Event.class)
                 .withRel(linkRelationProvider.getCollectionResourceRelFor(Event.class)));
-        resource.add(linkTo(methodOn(EventRegistrationsController.class).getEventCategories(event.getId(),
-                klabisPrincipal.memberId())).withRel("categories"));
 
         if (event.areRegistrationsOpen()) {
             if (event.isMemberRegistered(memberId)) {
