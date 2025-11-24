@@ -89,6 +89,17 @@ public class HalFormsTests {
                 .isEqualTo(List.of("MALE", "FEMALE"));
     }
 
+    @Test
+    @WithMockUser
+    @DisplayName("it should return 'boolean' for Boolean attribute")
+    void itShouldReturnCorrectInputTypeForBooleanAttribute() {
+        assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$._templates.default.properties[4].type")
+                .isEqualTo("boolean");
+    }
+
     @Disabled
     @Test
     @WithMockUser
@@ -111,7 +122,7 @@ public class HalFormsTests {
                     .bodyJson()
                     .extractingPath("$._templates['default'].properties[*].name")
                     .asArray()
-                    .containsExactly("id", "name", "address", "sex");
+                    .containsExactly("id", "name", "address", "sex", "active");
         }
 
 
@@ -158,8 +169,13 @@ class TestController {
             @JsonProperty(access = JsonProperty.Access.READ_WRITE) int id,
             @InputType("userName") String name,
             @JsonProperty(access = JsonProperty.Access.READ_ONLY) String address,
-            @InputOptions Sex sex
+            @InputOptions Sex sex,
+
+            boolean active
     ) {
+        DataModel(int id, String name, String address, Sex sex) {
+            this(id, name, address, sex, false);
+        }
 
     }
 }

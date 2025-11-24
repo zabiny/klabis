@@ -1,6 +1,5 @@
 package org.springframework.hateoas.mediatype.hal.forms;
 
-import club.klabis.shared.config.hateoas.KlabisInputTypes;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.Annotated;
@@ -8,6 +7,8 @@ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ResolvableType;
 import org.springframework.hateoas.AffordanceModel;
 import org.springframework.hateoas.Link;
@@ -27,7 +28,9 @@ import java.util.stream.Stream;
 
 public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 
-    private final HalFormsPropertyOptionsPostprocessor halFormsPropertyPostprocessor = new HalFormsPropertyOptionsPostprocessor();
+    private static final Logger LOG = LoggerFactory.getLogger(ImprovedHalFormsAffordanceModel.class);
+
+    private final HalFormsPropertyCompositePostprocessor halFormsPropertyPostprocessor = HalFormsPropertyCompositePostprocessor.defaultSetup();
 
     public static AffordanceModel improveHalFormsAffordance(AffordanceModel original) {
         Class<?> requestBodyType = getRequestBodyType(original.getInput());
@@ -39,7 +42,9 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
     }
 
     public void defineOptions(String propertyName, HalFormsOptions options) {
-        this.halFormsPropertyPostprocessor.defineOptions(propertyName, options);
+        this.halFormsPropertyPostprocessor.findPostprocessor(HalFormsPropertyOptionsPostprocessor.class)
+                .ifPresentOrElse(p -> p.defineOptions(propertyName, options),
+                        () -> LOG.warn("No InputOptions postprocessor found in active postprocessors"));
     }
 
     static final SerializationConfig objectMapper = new ObjectMapper()
@@ -82,7 +87,8 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 
             @Override
             public InputPayloadMetadata getInputMetadata() {
-                return new SortedInputPayloadMetadata(model.getInput(), propertiesOrder);
+                InputPayloadMetadata metadata = new SortedInputPayloadMetadata(model.getInput(), propertiesOrder);
+                return metadata;
             }
 
             @Override
@@ -259,20 +265,6 @@ class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
 
     @Override
     public String getInputType() {
-        String result = delegate.getInputType();
-
-        if (StringUtils.isBlank(result)) {
-            if (getType().getRawClass() != null) {
-                if (Enum.class.isAssignableFrom(getType().getRawClass())) {
-                    return KlabisInputTypes.RADIO_INPUT_TYPE;
-                } else if (Boolean.class.isAssignableFrom(getType().getRawClass())) {
-                    return KlabisInputTypes.BOOLEAN_INPUT_TYPE;
-                }
-
-                return getType().getRawClass().getSimpleName();
-            }
-        }
-
-        return result;
+        return delegate.getInputType();
     }
 }
