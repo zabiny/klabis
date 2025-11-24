@@ -64,8 +64,7 @@ public interface UserPermissionsApi {
     )
     @RequestMapping(
             method = RequestMethod.GET,
-            value = "/users/{userId}/changeGrantsForm",
-            produces = {"application/json"}
+            value = "/users/{userId}/changeGrantsForm"
     )
     ResponseEntity<MemberGrantsFormApiDto> getUserGrants(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("userId") ApplicationUser.Id userId
@@ -81,8 +80,7 @@ public interface UserPermissionsApi {
     )
     @RequestMapping(
             method = RequestMethod.PUT,
-            value = "/users/{userId}/changeGrantsForm",
-            consumes = {"application/json"}
+            value = "/users/{userId}/changeGrantsForm"
     )
     ResponseEntity<Void> updateMemberGrants(
             @Parameter(name = "userId", description = "ID of application user", required = true, in = ParameterIn.PATH) @PathVariable("userId") ApplicationUser.Id userId,
