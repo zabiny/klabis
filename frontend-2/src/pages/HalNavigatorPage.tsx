@@ -19,6 +19,11 @@ const demoTemplate: HalFormsTemplate = {
             type: "textarea",
         },
         {
+            name: "birthdate",
+            type: "date",
+            prompt: "Narozeniny"
+        },
+        {
             name: "country",
             type: "select",
             prompt: "Země",
@@ -84,7 +89,8 @@ const demoData = {
     gender:
         "male",
     active: true,
-    enabled: true
+    enabled: true,
+    birthdate: "2020-10-01"
 };
 
 function ExampleHalForm(): ReactElement {
