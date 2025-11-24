@@ -89,7 +89,7 @@ const demoData = {
 
 function ExampleHalForm(): ReactElement {
 
-    const resource = {_templates: {default: demoTemplate}, ...demoData};
+    const resource = {...demoData, _templates: {default: demoTemplate}};
     const [submitted, setSubmitted] = useState();
 
     return (

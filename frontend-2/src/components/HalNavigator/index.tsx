@@ -46,9 +46,10 @@ function HalLinksUi({links, onClick}: { links: Record<string, Link>, onClick: (l
         <Stack direction={"row"} spacing={2}>
             {Object.entries(links).map(([rel, link]) => {
                 if (rel === "self") return null;
-                const simpleLink = Array.isArray(link) ? link[0] : link;
+                const singleLink = Array.isArray(link) ? link[0] : link;
                 return (
-                    <MuiLink key={rel} onClick={() => onClick(simpleLink)}>{simpleLink.name || rel}</MuiLink>
+                    <MuiLink key={rel}
+                             onClick={() => onClick(singleLink)}>{singleLink.title || singleLink.name || rel}</MuiLink>
                 );
             })}
         </Stack>
