@@ -183,6 +183,39 @@ function HalFormsContent({
     </>);
 }
 
+function isHalFormsContentData(data: HalResponse): boolean {
+    function isTemplateTargetCurrentLinkHref(data: HalFormsResponse) {
+        if (!data._templates?.default?.target) {
+            // if default template doesn't have target, it's same as SELF link => true
+            return true;
+        }
+
+        if (data?._links?.self && data?._links.self?.href && toHref(data._templates.default) == (data._links.self ?? "no")) {
+            return true;
+        } else {
+            // if default template has target and it's different than current link, do not display it as Form : it's template for different URI (Spring Hateoas puts first template as default no matter what :( )
+            // This was issue for example for suspended member which has single action - resume membership - then displaying member detail displayed "form" instead of "member detail".
+            return false;
+        }
+    }
+
+    if (!isHalFormsResponse(data)) {
+        return false;
+    }
+
+    if (data.page !== undefined) {
+        // "collection" is never HalForms content
+        return false;
+    }
+
+    // if is there default template with target URL same as self link href, it's HAL+FORMS
+    if (isTemplateTargetCurrentLinkHref(data)) {
+        return true;
+    }
+
+    return false;
+}
+
 function HalNavigatorContent({
                                  api, navigate, fieldsFactory, navigateBack = () => {
     }
@@ -205,7 +238,7 @@ function HalNavigatorContent({
 
     function renderContent(): ReactElement {
         let content;
-        if (isHalFormsResponse(data) && data.page === undefined) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
+        if (isHalFormsContentData(data)) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
             content =
                 <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={data}
                                  fieldsFactory={fieldsFactory}/>;
