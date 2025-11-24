@@ -56,7 +56,7 @@ public class EventRegistrationUseCase {
 
     private EventRegistrationForm toForm(Registration registration) {
         return EventRegistrationFormBuilder.builder()
-                .category(registration.getCategory())
+                .category(registration.getCategory().name())
                 .siNumber(registration.getSiNumber())
                 .build();
     }

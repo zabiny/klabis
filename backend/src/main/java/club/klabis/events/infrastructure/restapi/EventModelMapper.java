@@ -1,5 +1,6 @@
 package club.klabis.events.infrastructure.restapi;
 
+import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.Registration;
 import club.klabis.events.infrastructure.restapi.dto.EventRegistrationResponse;
@@ -35,6 +36,8 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
     public abstract EventResponse toResponse(Event event);
 
     public abstract EventRegistrationResponse toResponse(Registration registration);
+
+    public abstract String toResponse(Competition.Category registration);
 
     @AfterMapping
     public EventResponse afterModelMap(Event event, @MappingTarget EventResponse eventListResponse) {

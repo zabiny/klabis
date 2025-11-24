@@ -14,7 +14,7 @@ public final class Registration {
     @Identity
     private final MemberId memberId;
     private String siNumber;    // TODO: create value object
-    private String category;
+    private Competition.Category category;
 
     private ZonedDateTime createdAt;
     private ZonedDateTime updatedAt;
@@ -36,17 +36,12 @@ public final class Registration {
 
         this.memberId = memberId;
         this.siNumber = siNumber;
-        this.category = category;
+        this.category = new Competition.Category(category);
         this.createdAt = ZonedDateTime.now();
         this.updatedAt = ZonedDateTime.now();
     }
 
-    public void setSiNumber(String siNumber) {
-        this.siNumber = siNumber;
-        this.updatedAt = ZonedDateTime.now();
-    }
-
-    public String getCategory() {
+    public Competition.Category getCategory() {
         return category;
     }
 
@@ -73,7 +68,8 @@ public final class Registration {
     }
 
     public void update(@NotBlank String category, @NotBlank String siNumber) {
-        this.category = category;
+        this.category = new Competition.Category(category);
         this.siNumber = siNumber;
+        this.updatedAt = ZonedDateTime.now();
     }
 }

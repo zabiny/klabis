@@ -96,7 +96,7 @@ class EventTest {
                     null, Competition.Category.categories("D12")
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("Ukazka", "SI12345", "D12");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "D12");
 
             // Act
             event.registerMember(memberId, form);
@@ -118,7 +118,7 @@ class EventTest {
                     null, Competition.Category.categories("D12")
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("Ukazka", "SI12345", "P");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
 
             // Act / Assert
             assertThatThrownBy(() -> event.registerMember(memberId, form))
@@ -139,7 +139,7 @@ class EventTest {
                     null, Competition.Category.categories("D12")
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("Ukazka", "SI12345", "P");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
 
             // Act
             event.registerMember(memberId, form);
@@ -168,7 +168,7 @@ class EventTest {
                     null, Competition.Category.categories("D12")
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("Ukazka", "SI12345", "H21");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "H21");
             event.registerMember(memberId, form);
 
             // Act
@@ -191,7 +191,7 @@ class EventTest {
                     null, Competition.Category.categories("D12")
             ));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("Ukazka", "SI12345", "P");
+            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
             event.registerMember(memberId, form);
             event.closeRegistrations(LocalDate.now().minusDays(1).atStartOfDay(ZONE_PRAGUE));
 
