@@ -226,8 +226,8 @@ class ImprovedPropertyMetadata implements AffordanceModel.PropertyMetadata {
                 .orElseThrow();
     }
 
-    private Annotated getAnnotatedElement(BeanPropertyDefinition propertyDefinition) {
-        return Stream.of(getPropertyDefinition().getConstructorParameter(), getPropertyDefinition().getField())
+    private static Annotated getAnnotatedElement(BeanPropertyDefinition propertyDefinition) {
+        return Stream.of(propertyDefinition.getConstructorParameter(), propertyDefinition.getField())
                 .filter(Objects::nonNull)
                 .findFirst().orElseThrow();
     }
