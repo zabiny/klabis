@@ -20,6 +20,8 @@ class InputTypePostprocessor implements HalFormsPropertyPostprocessor {
                 } else if (Boolean.class.isAssignableFrom(dataType) || boolean.class.isAssignableFrom(dataType)) {
                     return property.withType(KlabisInputTypes.BOOLEAN_INPUT_TYPE);
                 }
+
+                return property.withType(dataType.getSimpleName());
             }
         }
 

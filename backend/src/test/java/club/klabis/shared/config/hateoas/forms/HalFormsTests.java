@@ -3,6 +3,7 @@ package club.klabis.shared.config.hateoas.forms;
 import club.klabis.adapters.api.ApiTestConfiguration;
 import club.klabis.shared.config.restapi.ApiController;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,6 +32,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @DisplayName("HAL+FORMS tests")
 @Import(ApiTestConfiguration.class)
+@WithMockUser
 @WebMvcTest(controllers = HalFormsTestController.class)
 public class HalFormsTests {
 
@@ -42,7 +44,6 @@ public class HalFormsTests {
     }
 
     @Test
-    @WithMockUser
     @DisplayName("It should returns correctly encoded prompts for _template properties loaded from rest-default-messages.properties")
     void itShouldReturnCorrectlyEncodedFormData() throws Exception {
         assertThat(getFormsTestApi())
@@ -54,7 +55,6 @@ public class HalFormsTests {
     }
 
     @Test
-    @WithMockUser
     @DisplayName("It should return correctly encoded title for template loaded from rest-default-messages.properties")
     void itShouldReturnCorrectlyEncodedTitleForTemplate() {
         assertThat(getFormsTestApi())
@@ -67,7 +67,6 @@ public class HalFormsTests {
 
 
     @Test
-    @WithMockUser
     @DisplayName("It should honor input type defined on property using @InputType annotation")
     void itShouldHonorInputTypeAnnotation() throws Exception {
         assertThat(getFormsTestApi())
@@ -79,7 +78,6 @@ public class HalFormsTests {
     }
 
     @Test
-    @WithMockUser
     @DisplayName("It should return options for enum fields")
     void itShouldReturnOptionsForDefinedFields() throws Exception {
         assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -91,20 +89,28 @@ public class HalFormsTests {
 
     @Disabled
     @Test
-    @WithMockUser
     @DisplayName("It should return options for InputOption annotated field")
     void itShouldReturnOptionsForInputOptionAnnotatedFields() throws Exception {
     }
 
     @Test
-    @WithMockUser
     @DisplayName("it should return 'boolean' for Boolean attribute")
     void itShouldReturnCorrectInputTypeForBooleanAttribute() {
         assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .hasStatusOk()
                 .bodyJson()
-                .extractingPath("$._templates.default.properties[4].type")
+                .extractingPath("$._templates.default.properties[5].type")
                 .isEqualTo("boolean");
+    }
+
+    @Test
+    @DisplayName("it should return simple name of DTO for DTO attributes")
+    void itShouldReturnSimpleDtoNameAsTypeForDtoAttributes() {
+        assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$._templates.default.properties[4].type")
+                .isEqualTo("Subobject");
     }
 
     @DisplayName("affordBetter tests")
@@ -114,19 +120,17 @@ public class HalFormsTests {
         // HAL+FORMS returns them sorted by name in default. We rather prefer them in same order as JSON value (so we can reorder it using Jackson annotations)
         @DisplayName("it should return HAL+FORM template properties in expected order")
         @Test
-        @WithMockUser
         void itShouldReturnTemplatePropertiesInExpectedOrder() throws Exception {
             assertThat(getFormsTestApi())
                     .hasStatusOk()
                     .bodyJson()
                     .extractingPath("$._templates['default'].properties[*].name")
                     .asArray()
-                    .containsExactly("id", "name", "address", "sex", "active");
+                    .containsExactly("id", "name", "address", "sex", "subobject", "active");
         }
 
 
         @Test
-        @WithMockUser
         @DisplayName("It should NOT return record attributes as readOnly if there is not @JsonProperty(readOnly=true)")
         void itShouldHandleReadOnlyForRecords() throws Exception {
             assertThat(getFormsTestApi())
@@ -164,16 +168,22 @@ class HalFormsTestController {
 
     enum Sex {MALE, FEMALE}
 
+    record Subobject(String name, int count) {
+    }
+
     record DataModel(
             @JsonProperty(access = JsonProperty.Access.READ_WRITE) int id,
             @InputType("userName") String name,
             @JsonProperty(access = JsonProperty.Access.READ_ONLY) String address,
             @InputOptions Sex sex,
 
+            @NotNull
+            Subobject subobject,
+
             boolean active
     ) {
         DataModel(int id, String name, String address, Sex sex) {
-            this(id, name, address, sex, true);
+            this(id, name, address, sex, new Subobject("auto", 2), true);
         }
     }
 }
