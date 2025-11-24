@@ -7,29 +7,37 @@ import club.klabis.events.domain.Registration;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.events.domain.forms.EventRegistrationFormBuilder;
 import club.klabis.members.MemberId;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-// TODO: update controllers (zrus HAL+FORMS content type pokud endpoint nezobrazuje formular) a HalExplorer: pokud API vrati HAL+FORMS content type => display form. Pokud API vrati jen HAL+JSON, display table (??)
 @Service
 public class EventRegistrationUseCase {
 
     private final EventsRepository eventsRepository;
+    private final MemberSiCardProvider memberSiCardProvider;
 
-    public EventRegistrationUseCase(EventsRepository eventsRepository) {
+    public EventRegistrationUseCase(EventsRepository eventsRepository, MemberSiCardProvider memberSiCardProvider) {
         this.eventsRepository = eventsRepository;
+        this.memberSiCardProvider = memberSiCardProvider;
     }
 
-    public EventRegistrationForm getEventRegistrationForm(Event.Id eventId, MemberId memberId) {
+    public record EventRegistrationFormData(@JsonUnwrapped EventRegistrationForm eventRegistrationForm,
+                                            @JsonProperty(access = JsonProperty.Access.READ_ONLY) String eventName) {
+    }
+
+    public EventRegistrationFormData getEventRegistrationForm(Event.Id eventId, MemberId memberId) {
         Event event = eventsRepository.findById(eventId)
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
 
         return event.getRegistrationForMember(memberId)
-                .map(registration -> toForm(event, registration))
-                // TODO: get siCard from Member's data
-                .orElseGet(() -> new EventRegistrationForm(event.getName(), "predefinedSiForMember", null));
+                .map(registration -> toForm(event, toForm(registration)))
+                .orElseGet(() -> toForm(event,
+                        new EventRegistrationForm(memberSiCardProvider.getSiCardForMember(memberId).orElse(null),
+                                null)));
     }
 
     public List<String> getEventCategories(Event.Id eventId) {
@@ -42,7 +50,11 @@ public class EventRegistrationUseCase {
         return List.of();
     }
 
-    private EventRegistrationForm toForm(Event event, Registration registration) {
+    private EventRegistrationFormData toForm(Event event, EventRegistrationForm registrationForm) {
+        return new EventRegistrationFormData(registrationForm, event.getName());
+    }
+
+    private EventRegistrationForm toForm(Registration registration) {
         return EventRegistrationFormBuilder.builder()
                 .category(registration.getCategory())
                 .siNumber(registration.getSiNumber())

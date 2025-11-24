@@ -46,11 +46,11 @@ public class EventRegistrationsController {
             }
     )
     @GetMapping
-    RepresentationModel<EntityModel<EventRegistrationForm>> getEventRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") MemberId memberId) {
+    RepresentationModel<EntityModel<EventRegistrationUseCase.EventRegistrationFormData>> getEventRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") MemberId memberId) {
 
-        EventRegistrationForm form = useCase.getEventRegistrationForm(event, memberId);
+        EventRegistrationUseCase.EventRegistrationFormData form = useCase.getEventRegistrationForm(event, memberId);
 
-        EntityModel<EventRegistrationForm> result = EntityModel.of(form,
+        EntityModel<EventRegistrationUseCase.EventRegistrationFormData> result = EntityModel.of(form,
                 linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(event, memberId))
                         .withSelfRel()
                         .andAffordance(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
