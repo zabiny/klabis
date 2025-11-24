@@ -31,7 +31,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @DisplayName("HAL+FORMS tests")
 @Import(ApiTestConfiguration.class)
-@WebMvcTest(controllers = TestController.class)
+@WebMvcTest(controllers = HalFormsTestController.class)
 public class HalFormsTests {
 
     @Autowired
@@ -89,6 +89,13 @@ public class HalFormsTests {
                 .isEqualTo(List.of("MALE", "FEMALE"));
     }
 
+    @Disabled
+    @Test
+    @WithMockUser
+    @DisplayName("It should return options for InputOption annotated field")
+    void itShouldReturnOptionsForInputOptionAnnotatedFields() throws Exception {
+    }
+
     @Test
     @WithMockUser
     @DisplayName("it should return 'boolean' for Boolean attribute")
@@ -99,14 +106,6 @@ public class HalFormsTests {
                 .extractingPath("$._templates.default.properties[4].type")
                 .isEqualTo("boolean");
     }
-
-    @Disabled
-    @Test
-    @WithMockUser
-    @DisplayName("It should return options for InputOption annotated field")
-    void itShouldReturnOptionsForInputOptionAnnotatedFields() throws Exception {
-    }
-
 
     @DisplayName("affordBetter tests")
     @Nested
@@ -142,9 +141,9 @@ public class HalFormsTests {
 
 }
 
-@ExposesResourceFor(TestController.DataModel.class)
+@ExposesResourceFor(HalFormsTestController.DataModel.class)
 @ApiController(path = "/formsTest", openApiTagName = "tests")
-class TestController {
+class HalFormsTestController {
 
     @GetMapping
     EntityModel<DataModel> getFormData() {
@@ -174,9 +173,8 @@ class TestController {
             boolean active
     ) {
         DataModel(int id, String name, String address, Sex sex) {
-            this(id, name, address, sex, false);
+            this(id, name, address, sex, true);
         }
-
     }
 }
 
