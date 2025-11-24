@@ -37,7 +37,9 @@ abstract class EventModelMapper extends AbstractRepresentationModelMapper<Event,
 
     public abstract EventRegistrationResponse toResponse(Registration registration);
 
-    public abstract String toResponse(Competition.Category registration);
+    public String toResponse(Competition.Category registration) {
+        return registration.name();
+    }
 
     @AfterMapping
     public EventResponse afterModelMap(Event event, @MappingTarget EventResponse eventListResponse) {

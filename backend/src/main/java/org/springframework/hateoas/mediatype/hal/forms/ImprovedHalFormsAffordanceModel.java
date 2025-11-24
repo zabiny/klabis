@@ -16,7 +16,6 @@ import org.springframework.hateoas.QueryParameter;
 import org.springframework.hateoas.mediatype.ConfiguredAffordance;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.util.Assert;
 
 import java.util.Comparator;
 import java.util.List;
@@ -33,12 +32,20 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
     private final HalFormsPropertyCompositePostprocessor halFormsPropertyPostprocessor = HalFormsPropertyCompositePostprocessor.defaultSetup();
 
     public static AffordanceModel improveHalFormsAffordance(AffordanceModel original) {
-        Class<?> requestBodyType = getRequestBodyType(original.getInput());
-
-        List<String> expectedPropertiesOrder = expectedPropertiesOrder(requestBodyType);
 
         return new ImprovedHalFormsAffordanceModel(ImprovedHalFormsAffordanceModel.fromModel(original,
-                expectedPropertiesOrder));
+                getPropertiesOrder(original)));
+    }
+
+    static List<String> getPropertiesOrder(AffordanceModel model) {
+        if (model.getInput().getType() != null) {
+            // for example API endpoint doesn't have any request body...
+            Class<?> requestBodyType = model.getInput().getType();
+
+            return expectedPropertiesOrder(requestBodyType);
+        } else {
+            return List.of();
+        }
     }
 
     public void defineOptions(String propertyName, HalFormsOptions options) {
@@ -59,13 +66,6 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
                 .map(BeanPropertyDefinition::getName)
                 .toList();
     }
-
-    static Class<?> getRequestBodyType(AffordanceModel.InputPayloadMetadata metadata) {
-        Assert.notNull(metadata.getType(),
-                "Input payload type is null (need to read it from method paramter annotated with RequestBody)");
-        return metadata.getType();
-    }
-
 
     static ConfiguredAffordance fromModel(AffordanceModel model, List<String> propertiesOrder) {
 
