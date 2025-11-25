@@ -1,4 +1,4 @@
-package club.klabis.members.infrastructure.restapi;
+package club.klabis.shared.config.restapi;
 
 public class ResponseViews {
 

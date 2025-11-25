@@ -13,6 +13,7 @@ import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.JsonViewMapping;
 import club.klabis.shared.config.restapi.JsonViewParameter;
+import club.klabis.shared.config.restapi.ResponseViews;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

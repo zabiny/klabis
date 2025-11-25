@@ -2,7 +2,7 @@ package club.klabis.members.infrastructure.restapi.dto;
 
 import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
-import club.klabis.members.infrastructure.restapi.ResponseViews;
+import club.klabis.shared.config.restapi.ResponseViews;
 import com.fasterxml.jackson.annotation.*;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import io.swagger.v3.oas.annotations.media.Schema;
