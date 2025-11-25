@@ -22,6 +22,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,7 @@ import java.net.URI;
 import java.net.URL;
 import java.time.LocalDate;
 
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -115,7 +117,7 @@ class RegistrationsController {
 
     @DeleteMapping
     @Transactional
-    public ResponseEntity<Void> saveRegistration(@PathVariable MemberId memberId, @PathVariable club.klabis.events.domain.Event.Id eventId) {
+    public ResponseEntity<Void> cancelRegistration(@PathVariable MemberId memberId, @PathVariable club.klabis.events.domain.Event.Id eventId) {
         club.klabis.events.domain.Event event = eventsRepository.findById(eventId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Event %s doesn't exist".formatted(eventId)));
@@ -178,4 +180,29 @@ abstract class RegistrationDtoAssembler implements ModelPreparator<EventAndMembe
         return event.getRegistrationForMember(memberId).map(this::toForm).orElse(null);
     }
 
+    @Override
+    public void addLinks(EntityModel<RegistrationsController.RegistrationDto> resource, EventAndMember eventAndMember) {
+        ModelPreparator.super.addLinks(resource, eventAndMember);
+
+        final MemberId memberId = eventAndMember.memberId();
+        final Event event = eventAndMember.event();
+        final Event.Id eventId = event.getId();
+
+        Link selfLink = linkTo(methodOn(RegistrationsController.class).getRegistration(memberId,
+                eventId)).withSelfRel();
+
+        if (eventAndMember.event().areRegistrationsOpen()) {
+            selfLink = selfLink.andAffordance(affordBetter(methodOn(RegistrationsController.class).saveRegistration(
+                    memberId,
+                    eventId,
+                    null)));
+            if (event.isMemberRegistered(memberId)) {
+                selfLink = selfLink.andAffordance(affordBetter(methodOn(RegistrationsController.class).cancelRegistration(
+                        memberId,
+                        eventId)));
+            }
+        }
+
+        resource.add(selfLink);
+    }
 }
