@@ -5,7 +5,8 @@ import club.klabis.events.domain.Event;
 import club.klabis.events.domain.Registration;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
-import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
+import club.klabis.shared.config.hateoas.ModelAssembler;
+import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.hateoas.RootModel;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.shared.config.restapi.ApiController;
@@ -40,10 +41,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @ApiController(path = "/member/{memberId}/registration", openApiTagName = "Events")
 class RegistrationsController {
 
-    private final RegistrationDtoAssembler modelAssembler;
+    private final ModelAssembler<EventAndMember, RegistrationDto> modelAssembler;
     private final EventsRepository eventsRepository;
 
-    RegistrationsController(RegistrationDtoAssembler modelAssembler, EventsRepository eventsRepository) {
+    RegistrationsController(ModelAssembler<EventAndMember, RegistrationDto> modelAssembler, EventsRepository eventsRepository) {
         this.modelAssembler = modelAssembler;
         this.eventsRepository = eventsRepository;
     }
@@ -88,7 +89,7 @@ class RegistrationsController {
         return eventsRepository.findById(eventId)
                 .filter(club.klabis.events.domain.Event::areRegistrationsOpen)
                 .map(e -> new EventAndMember(e, memberId))
-                .map(modelAssembler::toResponseModel)
+                .map(modelAssembler::toEntityResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Registration for member %s and event %s doesn't exist".formatted(memberId, eventId)));
     }
@@ -148,17 +149,15 @@ record EventAndMember(Event event, MemberId memberId) {
 }
 
 @Mapper(config = DomainToDtoMapperConfiguration.class)
-abstract class RegistrationDtoAssembler extends AbstractRepresentationModelMapper<EventAndMember, RegistrationsController.RegistrationDto> {
+abstract class RegistrationDtoAssembler implements ModelPreparator<EventAndMember, RegistrationsController.RegistrationDto> {
 
     @Override
-    public RegistrationsController.RegistrationDto toResponse(EventAndMember event) {
+    public RegistrationsController.RegistrationDto toResponseDto(EventAndMember eventAndMember) {
         return new RegistrationsController.RegistrationDto(
-                toDto(event.event()),
-                toForm(event.event(), event.memberId())
+                toDto(eventAndMember.event()),
+                toForm(eventAndMember.event(), eventAndMember.memberId())
         );
     }
-
-    ;
 
     @Mapping(target = "registrationsDeadline", source = "registrationDeadline")
     @Mapping(target = "eventType", ignore = true)
@@ -178,4 +177,5 @@ abstract class RegistrationDtoAssembler extends AbstractRepresentationModelMappe
         }
         return event.getRegistrationForMember(memberId).map(this::toForm).orElse(null);
     }
+
 }
