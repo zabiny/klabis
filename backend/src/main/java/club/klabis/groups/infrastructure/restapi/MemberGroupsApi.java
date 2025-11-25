@@ -20,10 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 
@@ -58,8 +55,7 @@ public interface MemberGroupsApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.DELETE,
+    @DeleteMapping(
             value = "/memberGroups/{id}",
             produces = {"application/problem+json"}
     )
@@ -95,8 +91,7 @@ public interface MemberGroupsApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
+    @GetMapping(
             value = "/memberGroups/{id}",
             produces = {"application/json", "application/problem+json"}
     )
@@ -120,8 +115,7 @@ public interface MemberGroupsApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
+    @GetMapping(
             value = "/memberGroups",
             produces = {"application/json"}
     )
@@ -152,8 +146,7 @@ public interface MemberGroupsApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.POST,
+    @PostMapping(
             value = "/memberGroups",
             produces = {"application/problem+json"},
             consumes = {"application/json"}
@@ -190,8 +183,7 @@ public interface MemberGroupsApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.PUT,
+    @PutMapping(
             value = "/memberGroups/{id}",
             produces = {"application/problem+json"},
             consumes = {"application/json"}

@@ -1,9 +1,9 @@
 package club.klabis.shared.config.hateoas.forms;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.hateoas.AffordanceModel;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 import org.springframework.util.function.ThrowingFunction;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.stream.Stream;
 

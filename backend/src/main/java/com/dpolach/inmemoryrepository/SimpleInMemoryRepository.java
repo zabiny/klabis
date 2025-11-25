@@ -1,8 +1,8 @@
 package com.dpolach.inmemoryrepository;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.core.EntityInformation;
-import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.Objects;

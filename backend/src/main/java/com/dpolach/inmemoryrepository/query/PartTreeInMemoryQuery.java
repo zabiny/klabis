@@ -159,8 +159,7 @@ public class PartTreeInMemoryQuery implements RepositoryQuery {
                 case FALSE:
                     return Boolean.FALSE.equals(propertyValue);
                 case BETWEEN:
-                    if (value instanceof Object[] && ((Object[]) value).length >= 2) {
-                        Object[] range = (Object[]) value;
+                    if (value instanceof Object[] range && range.length >= 2) {
                         return compareValues(propertyValue, range[0]) >= 0 &&
                                compareValues(propertyValue, range[1]) <= 0;
                     }
@@ -214,8 +213,8 @@ public class PartTreeInMemoryQuery implements RepositoryQuery {
             return 1;
         }
 
-        if (a instanceof Comparable && b instanceof Comparable) {
-            return ((Comparable) a).compareTo(b);
+        if (a instanceof Comparable comparable && b instanceof Comparable) {
+            return comparable.compareTo(b);
         }
 
         return a.toString().compareTo(b.toString());
@@ -253,8 +252,8 @@ public class PartTreeInMemoryQuery implements RepositoryQuery {
                 }
             }
             return false;
-        } else if (collection instanceof Collection) {
-            return ((Collection<?>) collection).contains(propertyValue);
+        } else if (collection instanceof Collection<?> collection1) {
+            return collection1.contains(propertyValue);
         }
 
         return false;

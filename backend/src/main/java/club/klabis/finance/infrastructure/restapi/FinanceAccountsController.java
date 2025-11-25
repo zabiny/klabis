@@ -47,7 +47,7 @@ public class FinanceAccountsController {
 
     private class AccountNotFoundException extends RuntimeException {
         public AccountNotFoundException(MemberId memberId) {
-            super(String.format("Account with id %s not found", memberId));
+            super("Account with id %s not found".formatted(memberId));
         }
     }
 }

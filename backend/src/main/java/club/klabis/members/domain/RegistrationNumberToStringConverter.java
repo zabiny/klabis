@@ -1,9 +1,9 @@
 package club.klabis.members.domain;
 
+import org.jspecify.annotations.NonNull;
 import org.mapstruct.Mapper;
 import org.mapstruct.extensions.spring.DelegatingConverter;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.lang.NonNull;
 
 @Mapper(componentModel = "spring")
 public class RegistrationNumberToStringConverter implements Converter<RegistrationNumber, String> {

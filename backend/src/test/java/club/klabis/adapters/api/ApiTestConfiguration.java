@@ -6,22 +6,22 @@ import club.klabis.shared.config.restapi.KlabisPrincipalSource;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.tests.common.MapperTestConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @TestConfiguration
 @Import({MapperTestConfiguration.class})
 @ComponentScan(basePackageClasses = {ApisConfiguration.class, HateoasConfig.class})
 public class ApiTestConfiguration {
-    @MockBean
+    @MockitoBean
     JwtDecoder jwtDecoderMock;
 
-    @MockBean
+    @MockitoBean
     KlabisSecurityService klabisSecurityServiceMock;
 
-    @MockBean
+    @MockitoBean
     KlabisPrincipalSource klabisPrincipalSourceMock;
 
 //    @MockBean

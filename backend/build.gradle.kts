@@ -7,7 +7,7 @@ import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
 plugins {
     java
-    id("org.springframework.boot") version "3.5.5"
+    id("org.springframework.boot") version "3.5.8"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
     id("org.openapi.generator") version "7.6.0"
@@ -17,10 +17,11 @@ plugins {
 val springModulithVersion by extra("1.3.7")
 
 repositories {
-    maven {
-        url = uri("https://repo.maven.apache.org/maven2/")
-    }
-    mavenLocal()
+    mavenCentral()
+//    maven {
+//        url = uri("https://repo.maven.apache.org/maven2/")
+//    }
+//    mavenLocal()
 }
 
 group = "club.zabiny"
@@ -29,7 +30,7 @@ description = "klabis"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
 val recordbuilderVersion = "41"
-val mapstructVersion = "1.6.2"
+val mapstructVersion = "1.6.3"
 val mapstructSpringExtensionsVersion = "1.1.2"
 
 dependencies {
@@ -70,13 +71,15 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 
     // Jackson mappings
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")
+    //implementation("tools.jackson.dataformat:jackson-dataformat-xml")
+    //implementation("tools.jackson.dataformat:jackson-dataformat-csv")
+    implementation("tools.jackson.dataformat:jackson-dataformat-csv:3.0.2")
+    implementation("tools.jackson.dataformat:jackson-dataformat-xml:3.0.2")
 
     // Test containers
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
 
     // DB
     runtimeOnly("org.postgresql:postgresql")
@@ -84,7 +87,7 @@ dependencies {
     //implementation("org.flywaydb:flyway-core")
 
     // OPENAPI
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.12")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
     implementation("org.hibernate:hibernate-validator:8.0.1.Final")
 
@@ -98,6 +101,7 @@ dependencies {
 
     // RecordBuilder
     annotationProcessor("io.soabase.record-builder:record-builder-processor:${recordbuilderVersion}")
+    annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
     compileOnly("io.soabase.record-builder:record-builder-core:${recordbuilderVersion}")
 
     // OpenRewrite

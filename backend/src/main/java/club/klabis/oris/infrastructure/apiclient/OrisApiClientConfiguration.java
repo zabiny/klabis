@@ -1,7 +1,6 @@
 package club.klabis.oris.infrastructure.apiclient;
 
 import club.klabis.oris.application.dto.OrisEventListFilter;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +23,8 @@ import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpRequestValues;
 import org.springframework.web.service.invoker.HttpServiceArgumentResolver;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -51,7 +52,7 @@ class OrisApiClientConfiguration implements ClientHttpRequestInterceptor {
                 .featuresToEnable(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT)
                 // parse datetimes from ORIS in Prague timezone + honor timezone from data if is it present (otherwise adjust for Prague)
                 .dateFormat(orisDateTimeFormat)
-                .featuresToDisable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
+                .featuresToDisable(DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
                 .build();
 
         MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter(objectMapper);

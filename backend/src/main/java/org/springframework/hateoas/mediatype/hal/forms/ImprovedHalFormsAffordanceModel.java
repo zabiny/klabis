@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +55,6 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 
     static final SerializationConfig objectMapper = new ObjectMapper()
             .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false)
-            .registerModule(new ParameterNamesModule())
             .getSerializationConfig();
 
     static List<String> expectedPropertiesOrder(Class<?> bodyType) {

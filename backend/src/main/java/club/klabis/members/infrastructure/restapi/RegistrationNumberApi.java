@@ -22,8 +22,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
@@ -63,8 +62,7 @@ public interface RegistrationNumberApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
+    @GetMapping(
             value = "/registrationNumber",
             produces = {"application/json", "application/problem+json"}
     )

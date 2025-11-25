@@ -1,6 +1,7 @@
 package com.dpolach.inmemoryrepository;
 
 import com.dpolach.inmemoryrepository.query.InMemoryQueryLookupStrategy;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -13,7 +14,6 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
-import org.springframework.lang.NonNull;
 
 import java.util.Optional;
 
