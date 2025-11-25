@@ -10,6 +10,7 @@ import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
+import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.JsonViewMapping;
 import club.klabis.shared.config.restapi.JsonViewParameter;
@@ -39,9 +40,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class MembersApi {
 
     private final MembersRepository membersRepository;
-    private final MemberModelAssembler memberModelAssembler;
+    private final ModelAssembler<Member, MembersApiResponse> memberModelAssembler;
 
-    public MembersApi(MembersRepository membersRepository, MemberModelAssembler memberModelAssembler) {
+    public MembersApi(MembersRepository membersRepository, ModelAssembler<Member, MembersApiResponse> memberModelAssembler) {
         this.membersRepository = membersRepository;
         this.memberModelAssembler = memberModelAssembler;
     }
@@ -76,7 +77,7 @@ public class MembersApi {
             @Parameter(hidden = true) Pageable pageable
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended,
-                memberModelAssembler.convertAttributeNamesToEntity(pageable));
+                memberModelAssembler.toDomainPageable(pageable));
 
         var resultModel = memberModelAssembler.toPagedResponse(result);
         resultModel.add(linkTo(methodOn(getClass()).membersGet(!suspended,
@@ -113,7 +114,7 @@ public class MembersApi {
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId
     ) {
         return membersRepository.findById(memberId)
-                .map(memberModelAssembler::toResponseModel)
+                .map(memberModelAssembler::toEntityResponse)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 

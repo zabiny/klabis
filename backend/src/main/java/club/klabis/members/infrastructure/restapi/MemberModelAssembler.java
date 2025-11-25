@@ -3,43 +3,42 @@ package club.klabis.members.infrastructure.restapi;
 import club.klabis.members.domain.Member;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.ConversionService;
-import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
+import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.users.infrastructure.restapi.UserPermissionsApi;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.LinkRelationProvider;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
-public class MemberModelAssembler extends AbstractRepresentationModelMapper<Member, MembersApiResponse> {
+public class MemberModelAssembler implements ModelPreparator<Member, MembersApiResponse> {
 
     private final ConversionService conversionService;
     private final KlabisSecurityService securityService;
+    private final EntityLinks entityLinks;
+    private final LinkRelationProvider linkRelationProvider;
 
-    public MemberModelAssembler(ConversionService conversionService, KlabisSecurityService securityService) {
+    public MemberModelAssembler(ConversionService conversionService, KlabisSecurityService securityService, EntityLinks entityLinks, LinkRelationProvider linkRelationProvider) {
         this.conversionService = conversionService;
         this.securityService = securityService;
+        this.entityLinks = entityLinks;
+        this.linkRelationProvider = linkRelationProvider;
     }
 
     @Override
-    public MembersApiResponse toResponse(Member member) {
+    public MembersApiResponse toResponseDto(Member member) {
         return conversionService.convert(member, MembersApiResponse.class);
     }
 
 
     @Override
-    public void addLinks(EntityModel<MembersApiResponse> target) {
-        Member entity = target.getContent().member();
-
+    public void addLinks(EntityModel<MembersApiResponse> target, Member entity) {
         target.add(entityLinks.linkToItemResource(Member.class, entity.getId().value()).withSelfRel());
         target.add(entityLinks.linkToCollectionResource(Member.class)
                 .withRel(linkRelationProvider.getCollectionResourceRelFor(
@@ -86,19 +85,12 @@ public class MemberModelAssembler extends AbstractRepresentationModelMapper<Memb
         }
     }
 
-    String translateDtoToEntityPropertyName(String propertyName) {
-        if ("registrationNumber".equals(propertyName)) {
+    @Override
+    public String toDomainPropertyName(String dtoPropertyName) {
+        if ("registrationNumber".equals(dtoPropertyName)) {
             return "registration";
         } else {
-            return propertyName;
+            return dtoPropertyName;
         }
-    }
-
-    Pageable convertAttributeNamesToEntity(Pageable dtoPageable) {
-        List<Sort.Order> updatedSorts = dtoPageable.getSort()
-                .stream()
-                .map(s -> s.withProperty(translateDtoToEntityPropertyName(s.getProperty())))
-                .toList();
-        return PageRequest.of(dtoPageable.getPageNumber(), dtoPageable.getPageSize(), Sort.by(updatedSorts));
     }
 }

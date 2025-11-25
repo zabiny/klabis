@@ -2,12 +2,16 @@ package club.klabis.shared.config.hateoas;
 
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -43,4 +47,12 @@ class HalResourceAssembler<D, T> implements ModelAssembler<D, T> {
         return result;
     }
 
+    @Override
+    public Pageable toDomainPageable(Pageable dtoPageable) {
+        List<Sort.Order> updatedSorts = dtoPageable.getSort()
+                .stream()
+                .map(s -> s.withProperty(preparator.toDomainPropertyName(s.getProperty())))
+                .toList();
+        return PageRequest.of(dtoPageable.getPageNumber(), dtoPageable.getPageSize(), Sort.by(updatedSorts));
+    }
 }
