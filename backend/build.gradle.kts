@@ -11,7 +11,9 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
     id("org.openapi.generator") version "7.6.0"
+    id("org.openrewrite.rewrite") version ("latest.release")
 }
+
 val springModulithVersion by extra("1.3.7")
 
 repositories {
@@ -97,6 +99,9 @@ dependencies {
     // RecordBuilder
     annotationProcessor("io.soabase.record-builder:record-builder-processor:${recordbuilderVersion}")
     compileOnly("io.soabase.record-builder:record-builder-core:${recordbuilderVersion}")
+
+    // OpenRewrite
+    rewrite("org.openrewrite.recipe:rewrite-spring:6.19.0")
 
     // Various
     implementation("org.jmolecules:jmolecules-ddd:1.9.0")
@@ -225,4 +230,7 @@ dependencyManagement {
     }
 }
 
-
+rewrite {
+    activeRecipe("org.openrewrite.java.spring.boot4.UpgradeSpringBoot_4_0")
+    setExportDatatables(true)
+}
