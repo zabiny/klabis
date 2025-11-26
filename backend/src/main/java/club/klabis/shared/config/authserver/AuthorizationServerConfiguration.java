@@ -2,6 +2,7 @@ package club.klabis.shared.config.authserver;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -9,7 +10,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+@Import(OAuth2AuthorizationServerConfiguration.class)
 public class AuthorizationServerConfiguration {
 
     protected static final int AUTH_SERVER_SECURITY_ORDER = Ordered.HIGHEST_PRECEDENCE + 5;
@@ -45,26 +46,28 @@ public class AuthorizationServerConfiguration {
     public SecurityFilterChain authorizationSecurityFilterChain(
             HttpSecurity http,
             DaoAuthenticationProvider daoAuthenticationProvider
-    ) throws Exception {
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+    ) {
+        //OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
 
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                // Lovable for sandbox environment uses random URL prefixes -> allowing redirect_uri definition for Lovable web with pattern matching to allow all sandboxes to authenticated against Klabis OAuth2
-                .authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(
-                        LOVABLE_APP_CLIENT_ID)))
-                // Is this actually used?? It doesn't seem it is...
-                .tokenEndpoint(tokenEndpoint ->
-                        tokenEndpoint
-                                .authenticationProvider(daoAuthenticationProvider)
-                )
-                .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
+        http
+                // ?? will we miss this one?
+                //.securityMatcher(OAuth2AuthorizationServerConfigurer.getEndpointsMatcher())
+                .oauth2AuthorizationServer(server -> {
+                    // Lovable for sandbox environment uses random URL prefixes -> allowing redirect_uri definition for Lovable web with pattern matching to allow all sandboxes to authenticated against Klabis OAuth2
+                    server.authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(
+                                    LOVABLE_APP_CLIENT_ID)))
+                            // Is this actually used?? It doesn't seem it is...
+                            .tokenEndpoint(tokenEndpoint ->
+                                    tokenEndpoint
+                                            .authenticationProvider(daoAuthenticationProvider))
+                            // Enable OIDC
+                            .oidc(Customizer.withDefaults());
 
-        http.cors(cors -> cors
-                .configurationSource(corsConfigurationSource()));
+                })
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-
-        // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
-        http.oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
+                // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
+                .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
 
         http.exceptionHandling(
                 exceptions ->

@@ -12,7 +12,6 @@ import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.config.HateoasConfiguration;
 import org.springframework.hateoas.mediatype.MessageResolver;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsConfiguration;
-import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 
@@ -26,16 +25,12 @@ public class HateoasConfig {
     @Bean
     HalFormsConfiguration kalConfiguration() {
         return OptionsProviderFactory.addOptionsDefinitions(new HalFormsConfiguration()
-                .withMediaType(KalMediaTypeConfiguration.KAL_MEDIA_TYPE)
-                .withObjectMapperCustomizer(this::customizeHalFormsObjectMapper));
+                .withMediaType(KalMediaTypeConfiguration.KAL_MEDIA_TYPE));
     }
 
     @Bean
     HalFormsConfiguration halFormsConfiguration() {
         return OptionsProviderFactory.addOptionsDefinitions(new HalFormsConfiguration());
-    }
-
-    private void customizeHalFormsObjectMapper(ObjectMapper objectMapper) {
     }
 
     /**

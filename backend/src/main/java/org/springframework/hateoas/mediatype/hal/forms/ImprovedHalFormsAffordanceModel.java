@@ -11,9 +11,14 @@ import org.springframework.hateoas.QueryParameter;
 import org.springframework.hateoas.mediatype.ConfiguredAffordance;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import tools.jackson.databind.*;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.introspect.Annotated;
 import tools.jackson.databind.introspect.BeanPropertyDefinition;
+import tools.jackson.databind.introspect.ClassIntrospector;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.type.TypeFactory;
 
 import java.util.Comparator;
@@ -53,12 +58,13 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
                         () -> LOG.warn("No InputOptions postprocessor found in active postprocessors"));
     }
 
-    static final SerializationConfig objectMapper = new ObjectMapper()
+    static final ClassIntrospector JACKSON_CLASS_INTROSPECTOR = JsonMapper.builder()
             .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false)
-            .getSerializationConfig();
+            .build().serializationConfig().classIntrospectorInstance();
 
     static List<String> expectedPropertiesOrder(Class<?> bodyType) {
-        return objectMapper.introspect(TypeFactory.defaultInstance().constructType(bodyType))
+        return JACKSON_CLASS_INTROSPECTOR.introspectForSerialization(TypeFactory.createDefaultInstance()
+                        .constructType(bodyType), null)
                 .findProperties()
                 .stream()
                 .map(BeanPropertyDefinition::getName)
@@ -138,7 +144,9 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 
         private AffordanceModel.PropertyMetadata improvePropertyMetadata(InputPayloadMetadata payload, final AffordanceModel.PropertyMetadata property) {
             JavaType javaType = objectMapper.getTypeFactory().constructType(payload.getType());
-            BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
+            BeanDescription beanDescription = ImprovedHalFormsAffordanceModel.JACKSON_CLASS_INTROSPECTOR.introspectForSerialization(
+                    javaType,
+                    null);
 
             BeanPropertyDefinition propertyDefinition = beanDescription.findProperties()
                     .stream()

@@ -14,7 +14,7 @@ plugins {
     id("org.openrewrite.rewrite") version ("latest.release")
 }
 
-val springModulithVersion by extra("1.3.7")
+val springModulithVersion by extra("2.0.0")
 
 repositories {
     mavenCentral()
@@ -38,6 +38,7 @@ dependencies {
     // SPRING WEB
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-hateoas")
+    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
 
     // SPRING SECURITY
     implementation("org.springframework.boot:spring-boot-starter-oauth2-authorization-server")
@@ -63,11 +64,12 @@ dependencies {
     runtimeOnly("org.springframework.modulith:spring-modulith-starter-insight")
 
     // SPRING TOOLS
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-devtools")
+    implementation("org.springframework.boot:spring-boot-starter-restclient")
+    testImplementation("org.springframework.boot:spring-boot-restclient-test")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 
     // Jackson mappings

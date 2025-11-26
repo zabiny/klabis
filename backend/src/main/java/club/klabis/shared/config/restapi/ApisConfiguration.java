@@ -16,7 +16,6 @@ import org.springframework.security.access.expression.method.DefaultMethodSecuri
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchyUtils;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,8 +33,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.AbstractRequestLoggingFilter;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -120,12 +117,10 @@ public class ApisConfiguration {
 
     @Bean
     static RoleHierarchy customizedRoleHierarchy() {
-        RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
-        String hierarchyDef = RoleHierarchyUtils.roleHierarchyFromMap(
-                Map.of("ROLE_ADMIN",
-                        List.of(ApplicationGrant.MEMBERS_EDIT.name(), ApplicationGrant.MEMBERS_REGISTER.name()))
-        );
-        hierarchy.setHierarchy(hierarchyDef);
+        RoleHierarchyImpl hierarchy = RoleHierarchyImpl.fromHierarchy("""
+                ROLE_ADMIN > %s
+                ROLE_ADMIN > %s
+                """.formatted(ApplicationGrant.MEMBERS_EDIT.name(), ApplicationGrant.MEMBERS_REGISTER.name()));
         return hierarchy;
     }
 

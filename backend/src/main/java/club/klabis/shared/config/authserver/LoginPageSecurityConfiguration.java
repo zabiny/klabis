@@ -20,9 +20,9 @@ public class LoginPageSecurityConfiguration {
 
     public static RequestMatcher LOGIN_REQUESTS_MATCHER = new OrRequestMatcher(RegexRequestMatcher.regexMatcher(
             CUSTOM_LOGIN_PAGE),
-            RegexRequestMatcher.regexMatcher("/oauth2/**"),
+            RegexRequestMatcher.regexMatcher("/oauth2/.*"),
             RegexRequestMatcher.regexMatcher("/logout"),
-            RegexRequestMatcher.regexMatcher("/login/**"));
+            RegexRequestMatcher.regexMatcher("/login/.*"));
 
     @Bean
     @Order(AuthorizationServerConfiguration.AUTH_SERVER_LOGIN_PAGE)

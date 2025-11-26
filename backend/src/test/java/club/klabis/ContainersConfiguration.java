@@ -14,8 +14,8 @@ public class ContainersConfiguration {
     @Bean
     @ServiceConnection
     @RestartScope
-    PostgreSQLContainer<?> createPostgreSQLDBContainer() {
-        return new PostgreSQLContainer<>("postgres")
+    PostgreSQLContainer createPostgreSQLDBContainer() {
+        return new PostgreSQLContainer("postgres")
                 .withEnv(Map.of("PGDATA", "/var/lib/postgresql/data"))
                 .withTmpFs(Map.of("/var/lib/postgresql/data", "rw"));
     }
