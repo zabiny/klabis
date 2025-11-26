@@ -7,8 +7,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @EnableWebSecurity
@@ -18,11 +18,11 @@ public class LoginPageSecurityConfiguration {
     public static final String CUSTOM_LOGIN_PAGE = "/auth/login";
     public static final String LOGIN_PAGE_ERROR_MESSAGE_SESSION_ATTRIBUTE = "klabis_login_page_error_message";
 
-    public static RequestMatcher LOGIN_REQUESTS_MATCHER = new OrRequestMatcher(AntPathRequestMatcher.antMatcher(
+    public static RequestMatcher LOGIN_REQUESTS_MATCHER = new OrRequestMatcher(RegexRequestMatcher.regexMatcher(
             CUSTOM_LOGIN_PAGE),
-            AntPathRequestMatcher.antMatcher("/oauth2/**"),
-            AntPathRequestMatcher.antMatcher("/logout"),
-            AntPathRequestMatcher.antMatcher("/login/**"));
+            RegexRequestMatcher.regexMatcher("/oauth2/**"),
+            RegexRequestMatcher.regexMatcher("/logout"),
+            RegexRequestMatcher.regexMatcher("/login/**"));
 
     @Bean
     @Order(AuthorizationServerConfiguration.AUTH_SERVER_LOGIN_PAGE)

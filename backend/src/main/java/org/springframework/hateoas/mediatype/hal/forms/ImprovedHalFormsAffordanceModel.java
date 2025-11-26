@@ -1,10 +1,6 @@
 package org.springframework.hateoas.mediatype.hal.forms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +11,10 @@ import org.springframework.hateoas.QueryParameter;
 import org.springframework.hateoas.mediatype.ConfiguredAffordance;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.*;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.BeanPropertyDefinition;
+import tools.jackson.databind.type.TypeFactory;
 
 import java.util.Comparator;
 import java.util.List;

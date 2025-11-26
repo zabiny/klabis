@@ -2,7 +2,7 @@ package club.klabis.members.infrastructure.restapi.mappers;
 
 import club.klabis.members.MemberId;
 import io.micrometer.common.util.StringUtils;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -13,7 +13,7 @@ import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.ValueSerializer;
 
-@JsonComponent
+@JacksonComponent
 public class MemberIdSerDe {
 
     public static class Serializer extends ValueSerializer<MemberId> {

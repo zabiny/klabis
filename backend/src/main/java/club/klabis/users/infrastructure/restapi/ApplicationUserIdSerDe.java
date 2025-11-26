@@ -2,7 +2,7 @@ package club.klabis.users.infrastructure.restapi;
 
 import club.klabis.users.domain.ApplicationUser;
 import io.micrometer.common.util.StringUtils;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -13,7 +13,7 @@ import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.ValueSerializer;
 
-@JsonComponent
+@JacksonComponent
 public class ApplicationUserIdSerDe {
 
     public static class Serializer extends ValueSerializer<ApplicationUser.Id> {

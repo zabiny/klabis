@@ -1,7 +1,7 @@
 package club.klabis.shared.config.security;
 
 import club.klabis.shared.config.authserver.AuthorizationServerConfiguration;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;

@@ -1,14 +1,14 @@
 package club.klabis.shared.config.hateoas;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.springframework.boot.jackson.JsonMixin;
+import org.springframework.boot.jackson.JacksonMixin;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.config.HypermediaMappingInformation;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.module.SimpleModule;
 
 import java.util.List;
 
@@ -21,14 +21,14 @@ public class JsonMediaTypeConfiguration implements HypermediaMappingInformation 
     }
 
     @Override
-    public Module getJacksonModule() {
+    public JacksonModule getJacksonModule() {
         SimpleModule jsonModule = new SimpleModule("jsonInHateoasModule");
         jsonModule.setMixInAnnotation(RepresentationModel.class, JsonRepresentationModelMixin.class);
         return jsonModule;
     }
 }
 
-@JsonMixin(RepresentationModel.class)
+@JacksonMixin(RepresentationModel.class)
 @JsonIgnoreProperties("links")
 interface JsonRepresentationModelMixin {
 }

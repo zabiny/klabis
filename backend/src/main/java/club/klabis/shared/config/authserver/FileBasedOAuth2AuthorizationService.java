@@ -1,14 +1,6 @@
 package club.klabis.shared.config.authserver;
 
 import club.klabis.users.domain.ApplicationUser;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +17,14 @@ import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.util.Assert;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.module.SimpleModule;
 
 import java.io.File;
 import java.io.IOException;
@@ -471,9 +471,9 @@ public class FileBasedOAuth2AuthorizationService implements OAuth2AuthorizationS
     private static class ValueObjectTestMixin {
     }
 
-    private static class ValueObjectSerializer extends JsonSerializer<ApplicationUser.UserName> {
+    private static class ValueObjectSerializer extends ValueSerializer<ApplicationUser.UserName> {
         @Override
-        public void serialize(ApplicationUser.UserName value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(ApplicationUser.UserName value, JsonGenerator gen, SerializationContext serializers) throws IOException {
             gen.writeString(value.value());
         }
     }
