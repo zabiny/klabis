@@ -52,9 +52,12 @@ public class AuthorizationServerConfiguration {
         http
                 // ?? will we miss this one?
                 //.securityMatcher(OAuth2AuthorizationServerConfigurer.getEndpointsMatcher())
+                //.securityMatcher(anyOf(regexMatcher("/oauth.*"), regexMatcher("/oidc.*")))
                 .oauth2AuthorizationServer(server -> {
+                    http.securityMatcher(server.getEndpointsMatcher());
                     // Lovable for sandbox environment uses random URL prefixes -> allowing redirect_uri definition for Lovable web with pattern matching to allow all sandboxes to authenticated against Klabis OAuth2
-                    server.authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(
+                    server
+                            .authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(
                                     LOVABLE_APP_CLIENT_ID)))
                             // Is this actually used?? It doesn't seem it is...
                             .tokenEndpoint(tokenEndpoint ->
@@ -64,6 +67,11 @@ public class AuthorizationServerConfiguration {
                             .oidc(Customizer.withDefaults());
 
                 })
+                .authenticationProvider(new KlabisAuthenticationProvider(principalSource))
+                .authorizeHttpRequests((authorize) ->
+                        authorize
+                                .anyRequest().authenticated()
+                )                // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
