@@ -9,19 +9,17 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-@Component
-class HalResourceAssembler<D, T> implements ModelAssembler<D, T> {
+public class HalResourceAssembler<D, T> implements ModelAssembler<D, T> {
 
     private final ModelPreparator<D, T> preparator;
     private final PagedResourcesAssembler<D> pagedResourcesAssembler;
 
-    HalResourceAssembler(ModelPreparator<D, T> preparator, PagedResourcesAssembler<D> pagedResourcesAssembler) {
+    public HalResourceAssembler(ModelPreparator<D, T> preparator, PagedResourcesAssembler<D> pagedResourcesAssembler) {
         this.preparator = preparator;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
     }

@@ -55,8 +55,6 @@ public class ApisConfiguration {
     @Order(AuthorizationServerConfiguration.AFTER_LOGIN_PAGE)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // this is not safe - asking data through content media type which is not mentioned in matcher makes API unsecured!!!
-                //.securityMatcher(API_ENDPOINTS_MATCHER)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS)
                         .permitAll()    // for CORS preflight requests - OPTIONS must not be authorized

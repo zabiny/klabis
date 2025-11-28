@@ -89,7 +89,7 @@ dependencies {
     //implementation("org.flywaydb:flyway-core")
 
     // OPENAPI
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
     implementation("org.hibernate:hibernate-validator:8.0.1.Final")
 

@@ -2,14 +2,12 @@ package club.klabis.shared.config.authserver;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
-@Import(OAuth2AuthorizationServerConfiguration.class)
+//@Import(OAuth2AuthorizationServerConfiguration.class)
 public class AuthorizationServerConfiguration {
 
     protected static final int AUTH_SERVER_SECURITY_ORDER = Ordered.HIGHEST_PRECEDENCE + 5;
@@ -67,7 +65,6 @@ public class AuthorizationServerConfiguration {
                             .oidc(Customizer.withDefaults());
 
                 })
-                .authenticationProvider(new KlabisAuthenticationProvider(principalSource))
                 .authorizeHttpRequests((authorize) ->
                         authorize
                                 .anyRequest().authenticated()

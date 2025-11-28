@@ -11,7 +11,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class ErrorPageSecurity {
     @Bean("errorPageSecurityFilterChain")
-    @Order(value = AuthorizationServerConfiguration.BEFORE_AUTH_SERVER_SECURITY_ORDER)
+    @Order(value = AuthorizationServerConfiguration.AFTER_AUTH_SERVER_SECURITY_ORDER)
     public SecurityFilterChain errorPageFilterChain(HttpSecurity http) throws Exception {
         http.securityMatcher("/error")
                 .csrf(AbstractHttpConfigurer::disable)
