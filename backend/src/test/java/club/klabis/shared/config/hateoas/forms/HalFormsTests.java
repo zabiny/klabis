@@ -9,8 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.InputType;
 import org.springframework.hateoas.MediaTypes;
@@ -31,9 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @DisplayName("HAL+FORMS tests")
-@Import(ApiTestConfiguration.class)
 @WithMockUser
-@WebMvcTest(controllers = HalFormsTestController.class)
+@ApiTestConfiguration(controllers = HalFormsTestController.class)
 public class HalFormsTests {
 
     @Autowired
@@ -49,7 +46,7 @@ public class HalFormsTests {
         assertThat(getFormsTestApi())
                 .hasStatusOk()
                 .bodyJson()
-                .extractingPath("$._templates.default.properties[?(@.name=='name')].prompt")
+                .extractingPath("$._templates.putFormData.properties[?(@.name=='name')].prompt")
                 .asArray()
                 .containsExactly("Jméno uživatele");
     }
@@ -60,7 +57,7 @@ public class HalFormsTests {
         assertThat(getFormsTestApi())
                 .hasStatusOk()
                 .bodyJson()
-                .extractingPath("$._templates.default.title")
+                .extractingPath("$._templates.putFormData.title")
                 .asString()
                 .isEqualTo("Nový člen klubu");
     }
@@ -72,7 +69,7 @@ public class HalFormsTests {
         assertThat(getFormsTestApi())
                 .hasStatusOk()
                 .bodyJson()
-                .extractingPath("$._templates.default.properties[?(@.name=='name')].type")
+                .extractingPath("$._templates.putFormData.properties[?(@.name=='name')].type")
                 .asArray()
                 .containsExactly("userName");
     }
@@ -83,7 +80,7 @@ public class HalFormsTests {
         assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .hasStatusOk()
                 .bodyJson()
-                .extractingPath("$._templates.default.properties[3].options.inline")
+                .extractingPath("$._templates.putFormData.properties[3].options.inline")
                 .isEqualTo(List.of("MALE", "FEMALE"));
     }
 
@@ -94,12 +91,24 @@ public class HalFormsTests {
     }
 
     @Test
+    @DisplayName("it should return default template (broken after SpringFramework 7 + SpringBoot 4 upgrade)")
+    void itShouldReturnDefaultTemplate() {
+        // from SPring Framework 7 + Spring Boot 4 upgrade, `_templates.default` is replaced by `_templates.putFormData` (made from afforded method name). Adding this test to find out why that happens (and decide if we want that fixed back to default or we rather like that method name there - from some perspectives it's better).
+        // btw. Spring HATEOAS docs says that default template is required by HAL+FORMS specs
+        // I updated all other tests to expect _tempaltes.putFormData to check other requirements for HAL+FORMS.
+        assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .hasStatusOk()
+                .bodyJson()
+                .hasPath("$._templates.default");
+    }
+
+    @Test
     @DisplayName("it should return 'boolean' for Boolean attribute")
     void itShouldReturnCorrectInputTypeForBooleanAttribute() {
         assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .hasStatusOk()
                 .bodyJson()
-                .extractingPath("$._templates.default.properties[5].type")
+                .extractingPath("$._templates.putFormData.properties[5].type")
                 .isEqualTo("boolean");
     }
 
@@ -109,7 +118,7 @@ public class HalFormsTests {
         assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .hasStatusOk()
                 .bodyJson()
-                .extractingPath("$._templates.default.properties[4].type")
+                .extractingPath("$._templates.putFormData.properties[4].type")
                 .isEqualTo("Subobject");
     }
 
@@ -120,11 +129,11 @@ public class HalFormsTests {
         // HAL+FORMS returns them sorted by name in default. We rather prefer them in same order as JSON value (so we can reorder it using Jackson annotations)
         @DisplayName("it should return HAL+FORM template properties in expected order")
         @Test
-        void itShouldReturnTemplatePropertiesInExpectedOrder() throws Exception {
+        void itShouldReturnTemplatePropertiesInExpectedOrder() {
             assertThat(getFormsTestApi())
                     .hasStatusOk()
                     .bodyJson()
-                    .extractingPath("$._templates['default'].properties[*].name")
+                    .extractingPath("$._templates['putFormData'].properties[*].name")
                     .asArray()
                     .containsExactly("id", "name", "address", "sex", "subobject", "active");
         }
@@ -136,9 +145,9 @@ public class HalFormsTests {
             assertThat(getFormsTestApi())
                     .hasStatusOk()
                     .bodyJson()
-                    .doesNotHavePath("$._templates.default.properties[0].readOnly") // id
-                    .doesNotHavePath("$._templates.default.properties[1].readOnly")// name
-                    .hasPathSatisfying("$._templates.default.properties[2].readOnly",
+                    .doesNotHavePath("$._templates.putFormData.properties[0].readOnly") // id
+                    .doesNotHavePath("$._templates.putFormData.properties[1].readOnly")// name
+                    .hasPathSatisfying("$._templates.putFormData.properties[2].readOnly",
                             p -> p.assertThat().isEqualTo(true)); // address
         }
     }
