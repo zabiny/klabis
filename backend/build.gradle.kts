@@ -21,7 +21,7 @@ repositories {
 //    maven {
 //        url = uri("https://repo.maven.apache.org/maven2/")
 //    }
-//    mavenLocal()
+    mavenLocal()
 }
 
 group = "club.zabiny"
@@ -36,9 +36,9 @@ val mapstructSpringExtensionsVersion = "1.1.2"
 dependencies {
 
     // SPRING WEB
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-hateoas")
-    testImplementation("org.springframework.boot:spring-boot-webmvc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 
     // SPRING SECURITY
     implementation("org.springframework.boot:spring-boot-starter-oauth2-authorization-server")
@@ -47,7 +47,7 @@ dependencies {
     runtimeOnly("io.zipkin.reporter2:zipkin-reporter-brave")
     runtimeOnly("io.micrometer:micrometer-tracing-bridge-brave")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
-    testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-security-test")
 
     // SPRING DATA
     implementation("org.springframework.data:spring-data-commons")
