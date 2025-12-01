@@ -5,7 +5,7 @@ import club.klabis.members.domain.MembershipSuspensionInfo;
 import club.klabis.members.infrastructure.restapi.SuspendMemberUseCaseControllers;
 import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoApiDto;
 import club.klabis.members.infrastructure.restapi.dto.SuspendMembershipBlockersFinanceApiDto;
-import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
+import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.shared.config.restapi.context.KlabisRequestContext;
 import org.mapstruct.Mapper;
@@ -18,7 +18,7 @@ import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Mapper(config = DomainToDtoMapperConfiguration.class)
-abstract class MembershipSuspensionInfoToApiDtoMapper extends AbstractRepresentationModelMapper<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> {
+abstract class MembershipSuspensionInfoToApiDtoMapper implements ModelPreparator<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> {
 
     private KlabisRequestContext requestContext;
 
@@ -32,7 +32,7 @@ abstract class MembershipSuspensionInfoToApiDtoMapper extends AbstractRepresenta
     @Mapping(target = "canSuspend", source = ".")
     @Mapping(target = "requestDto.force", constant = "false")
     @Override
-    public abstract MembershipSuspensionInfoApiDto toResponse(MembershipSuspensionInfo source);
+    public abstract MembershipSuspensionInfoApiDto toResponseDto(MembershipSuspensionInfo membershipSuspensionInfo);
 
     @Mapping(target = "status", source = "financeAccount")
     abstract SuspendMembershipBlockersFinanceApiDto convertFinanceStatus(MembershipSuspensionInfo source);
@@ -47,7 +47,7 @@ abstract class MembershipSuspensionInfoToApiDtoMapper extends AbstractRepresenta
     }
 
     @Override
-    public void addLinks(EntityModel<MembershipSuspensionInfoApiDto> resource) {
+    public void addLinks(EntityModel<MembershipSuspensionInfoApiDto> resource, MembershipSuspensionInfo membershipSuspensionInfo) {
         MemberId memberId = requestContext.memberIdParam().orElseThrow();
 
         resource.add(WebMvcLinkBuilder.linkTo(methodOn(SuspendMemberUseCaseControllers.class).membersMemberIdSuspendMembershipFormGet(
@@ -55,7 +55,5 @@ abstract class MembershipSuspensionInfoToApiDtoMapper extends AbstractRepresenta
                 .andAffordance(affordBetter(methodOn(SuspendMemberUseCaseControllers.class).membersMemberIdSuspendMembershipFormPut(
                         memberId,
                         null))).withSelfRel());
-
-        super.addLinks(resource);
     }
 }

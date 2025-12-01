@@ -9,6 +9,8 @@ import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
+import club.klabis.shared.config.hateoas.HalResourceAssembler;
+import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.ResponseViews;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -20,6 +22,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
@@ -32,11 +35,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 @ApiController(openApiTagName = "Events", path = "/events", produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_JSON_VALUE})
 public class EventsController {
     private final EventsRepository eventsRepository;
-    private final EventModelMapper eventModelMapper;
+    private final ModelAssembler<Event, EventResponse> eventModelMapper;
 
-    EventsController(EventsRepository eventsRepository, EventModelMapper eventModelMapper) {
+    EventsController(EventsRepository eventsRepository, EventModelMapper eventModelMapper, PagedResourcesAssembler<Event> pagedResourceAssembler) {
         this.eventsRepository = eventsRepository;
-        this.eventModelMapper = eventModelMapper;
+        this.eventModelMapper = new HalResourceAssembler<>(eventModelMapper, pagedResourceAssembler);
     }
 
     /**
@@ -76,7 +79,7 @@ public class EventsController {
     @JsonView(ResponseViews.Detailed.class)
     EntityModel<EventResponse> getEventById(@PathVariable("eventId") Event.Id eventId) {
         return eventsRepository.findById(eventId)
-                .map(eventModelMapper::toResponseModel)
+                .map(eventModelMapper::toEntityResponse)
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
     }
 
