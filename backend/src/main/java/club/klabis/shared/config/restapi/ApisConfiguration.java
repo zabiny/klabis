@@ -11,7 +11,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -25,8 +24,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -40,10 +37,6 @@ import java.util.Arrays;
 // conversion of ID -> domain (e.g., integer -> Event). It should work once the in-memory repository is completed as a full SpringRest repository. It must be removed if Spring Data REST is added (it conflicts with it as it creates duplicate pageable mapping)
 @Configuration(proxyBeanMethods = false)
 public class ApisConfiguration {
-
-    public static RequestMatcher API_ENDPOINTS_MATCHER = new MediaTypeRequestMatcher(MediaType.APPLICATION_JSON,
-            MediaType.valueOf("application/hal+json"),
-            MediaType.valueOf("application/klabis+json"));
 
     private final KlabisPrincipalSource klabisPrincipalSource;
 
