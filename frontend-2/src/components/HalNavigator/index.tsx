@@ -59,6 +59,24 @@ function HalLinksUi({links, onClick}: {
     );
 }
 
+function HalActionsUi({links, onClick}: {
+    links: Record<string, NavigationTarget>,
+    onClick: (link: NavigationTarget) => void
+}): ReactElement {
+    return (
+        <Stack direction={"row"} spacing={2}>
+            {Object.entries(links).map(([rel, link]) => {
+                if (rel === "self") return null;
+                const singleLink = Array.isArray(link) ? link[0] : link;
+                return (
+                    <Button key={rel}
+                            onClick={() => onClick(singleLink)}>{singleLink.title || singleLink.name || rel}</Button>
+                );
+            })}
+        </Stack>
+    );
+}
+
 function omitMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_links'> {
     const {_links, ...rest} = obj;
     return rest;
@@ -98,7 +116,11 @@ function HalCollectionContent({data, navigation}: {
                     </div>
                 )
             )
-            }</>)
+            }
+
+            {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
+
+        </>)
 
 }
 
@@ -108,6 +130,7 @@ function HalItemContent({data, navigation}: {
 }): ReactElement {
     return (
         <>
+            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
             <table>
                 <thead>
                 <tr>
@@ -127,8 +150,7 @@ function HalItemContent({data, navigation}: {
                 }
                 </tbody>
             </table>
-            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
-            {data._templates && <HalLinksUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
+            {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
         </>);
 }
 
