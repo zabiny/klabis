@@ -7,10 +7,8 @@ import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoAp
 import club.klabis.members.infrastructure.restapi.dto.SuspendMembershipBlockersFinanceApiDto;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
-import club.klabis.shared.config.restapi.context.KlabisRequestContext;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
@@ -19,13 +17,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Mapper(config = DomainToDtoMapperConfiguration.class)
 abstract class MembershipSuspensionInfoToApiDtoMapper implements ModelPreparator<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> {
-
-    private KlabisRequestContext requestContext;
-
-    @Autowired
-    public void setRequestContext(KlabisRequestContext requestContext) {
-        this.requestContext = requestContext;
-    }
 
     @Mapping(target = "isSuspended", source = "member.suspended")
     @Mapping(target = "details.finance", source = ".")
@@ -48,7 +39,7 @@ abstract class MembershipSuspensionInfoToApiDtoMapper implements ModelPreparator
 
     @Override
     public void addLinks(EntityModel<MembershipSuspensionInfoApiDto> resource, MembershipSuspensionInfo membershipSuspensionInfo) {
-        MemberId memberId = requestContext.memberIdParam().orElseThrow();
+        MemberId memberId = membershipSuspensionInfo.member().getId();
 
         resource.add(WebMvcLinkBuilder.linkTo(methodOn(SuspendMemberUseCaseControllers.class).membersMemberIdSuspendMembershipFormGet(
                         memberId)).withSelfRel()
