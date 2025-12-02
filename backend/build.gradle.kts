@@ -71,6 +71,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-restclient-test")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    testImplementation("org.springframework.boot:spring-boot-starter-cache-test")
 
     // Jackson mappings
     //implementation("tools.jackson.dataformat:jackson-dataformat-xml")

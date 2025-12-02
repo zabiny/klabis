@@ -14,10 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,7 +59,7 @@ class DefaultOrisEventsImporter implements OrisEventsImporter {
         return OrisDataBuilder.builder()
                 .name(eventDetails.name())
                 .orisId(new OrisId(eventDetails.id()))
-                .categories(toCategories(eventDetails.classes().values()))
+                .categories(toCategories(eventDetails))
                 .location(eventDetails.place())
                 .organizer(formatOrganizer(eventDetails.org1(), eventDetails.org2()))
                 .eventDate(eventDetails.date())
@@ -72,6 +69,13 @@ class DefaultOrisEventsImporter implements OrisEventsImporter {
                         ZoneId.of("Europe/Prague"))))
                 .website(new OrisId(eventDetails.id()).createEventUrl())
                 .build();
+    }
+
+    private Collection<String> toCategories(EventDetails eventDetails) {
+        if (eventDetails.classes() != null && !eventDetails.classes().isEmpty()) {
+            return toCategories(eventDetails.classes().values());
+        }
+        return Collections.emptyList();
     }
 
     private Collection<String> toCategories(Collection<EventClass> classes) {
