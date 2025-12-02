@@ -13,7 +13,7 @@ import {ErrorBoundary} from "react-error-boundary";
 import {type HalFormFieldFactory, HalFormsForm} from "../HalFormsForm";
 import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../../api/klabisUserManager";
-import {useNavigation} from "../../hooks/useNavigation";
+import {type Navigation, useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
 import {getDefaultTemplate, isHalFormsResponse, isHalFormsTemplate} from "../HalFormsForm/utils";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
@@ -66,16 +66,16 @@ function omitMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_l
 
 const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
 
-function HalCollectionContent({data, navigate}: {
+function HalCollectionContent({data, navigation}: {
     data: HalResponse,
-    navigate: (link: Link) => void
+    navigation: Navigation<NavigationTarget>
 }): ReactElement {
 
     // TODO: split links into collection links and other links. Display collection links "bellow" table and other links above table as actions.
 
     return (
         <>
-            {data._links && <HalLinksUi links={data._links} onClick={navigate}/>}
+            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
 
             {data._embedded && Object.entries(data._embedded).map(([rel, items]) => (
                     <div key={rel}>
@@ -87,7 +87,7 @@ function HalCollectionContent({data, navigate}: {
                                     {item._links?.self && (
                                         <Button
                                             className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
-                                            onClick={() => navigate(item._links.self)}
+                                            onClick={() => navigation.navigate(item._links.self)}
                                         >
                                             Open
                                         </Button>
@@ -102,9 +102,9 @@ function HalCollectionContent({data, navigate}: {
 
 }
 
-function HalItemContent({data, navigate}: {
+function HalItemContent({data, navigation}: {
     data: HalResponse,
-    navigate: (link: NavigationTarget) => void
+    navigation: Navigation<NavigationTarget>
 }): ReactElement {
     return (
         <>
@@ -127,50 +127,40 @@ function HalItemContent({data, navigate}: {
                 }
                 </tbody>
             </table>
-            {data._links && <HalLinksUi links={data._links} onClick={navigate}/>}
-            {data._templates && <HalLinksUi links={data._templates} onClick={navigate}/>}
+            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
+            {data._templates && <HalLinksUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
         </>);
 }
 
 
-function HalContent({data, navigate}: {
+function HalContent({data, navigation}: {
     data: HalResponse,
-    navigate: (link: NavigationTarget) => void
+    navigation: Navigation<NavigationTarget>
 }): ReactElement {
 
     if (data.page === undefined) {
-        return <HalItemContent data={data} navigate={navigate}/>
+        return <HalItemContent data={data} navigation={navigation}/>
     } else {
-        return <HalCollectionContent data={data} navigate={navigate}/>
+        return <HalCollectionContent data={data} navigation={navigation}/>
     }
 }
 
 type NavigationTarget = Link | TemplateTarget | string;
 
 function HalEditableItemContent({
-                                    initData, fieldsFactory, navigate
+                                    initData, fieldsFactory, navigation
                                 }: {
     initData: HalFormsResponse,
-    navigate: (target: NavigationTarget) => void,
+    navigation: Navigation<NavigationTarget>,
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
 
-    const [template, setTemplate] = useState<HalFormsTemplate>();
-
-    const actionOrNavigate = (item: NavigationTarget): void => {
-        if (isHalFormsTemplate(item)) {
-            setTemplate(item);
-        } else {
-            navigate(item);
-        }
-    };
-
-    if (!template) {
-        return <HalItemContent data={initData} navigate={actionOrNavigate}/>;
+    if (isHalFormsTemplate(navigation.current)) {
+        return <HalFormsContent initData={initData} submitApi={navigation.current} fieldsFactory={fieldsFactory}
+                                initTemplate={navigation.current} afterSubmit={() => navigation.back()}
+                                onCancel={() => navigation.back()}/>;
     } else {
-        return <HalFormsContent initData={initData} submitApi={template} fieldsFactory={fieldsFactory}
-                                initTemplate={template} afterSubmit={() => setTemplate(undefined)}
-                                onCancel={() => setTemplate(undefined)}/>;
+        return <HalItemContent data={initData} navigation={navigation}/>;
     }
 }
 
@@ -225,14 +215,12 @@ function isSingleItemContent(data: HalResponse): boolean {
 }
 
 function HalNavigatorContent({
-                                 api, navigate, fieldsFactory, navigateBack = () => {
-    }
+                                 fieldsFactory, navigation
                              }: {
-    api: NavigationTarget,
-    navigate: (target: NavigationTarget) => Promise<void>,
-    navigateBack?: () => void,
+    navigation: Navigation<NavigationTarget>
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
+    const api = navigation.current;
     const {data, isLoading, error} = useSimpleFetch(api);
     const [showSource, setShowSource] = useState(true);
     if (isLoading) {
@@ -246,9 +234,9 @@ function HalNavigatorContent({
 
     function renderContent(item: any): ReactElement {
         if (isCollectionContent(item) || !isHalFormsResponse(item)) {
-            return <HalContent data={item} navigate={navigate}/>;
+            return <HalContent data={item} navigation={navigation}/>;
         } else if (isHalFormsResponse(item)) {
-            return <HalEditableItemContent initData={item} navigate={navigate}/>
+            return <HalEditableItemContent initData={item} navigation={navigation} fieldsFactory={fieldsFactory}/>
         } else {
             return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
         }
@@ -342,14 +330,14 @@ export function HalNavigatorPage({
     startUrl: Link | string,
     fieldsFactory?: HalFormFieldFactory
 }) {
-    const {current: state, navigate, back, isFirst, reset} = useNavigation<NavigationTarget>(startUrl);
+    const navigation = useNavigation<NavigationTarget>(startUrl);
 
     const renderNavigation = (): ReactElement => {
         console.log(startUrl);
         return (<Stack direction={"row"}>
-            <Button onClick={reset}>Restart</Button>
-            <Button disabled={isFirst} onClick={back}>Zpět</Button>
-            <h3>{toHref(state)}</h3>
+            <Button onClick={navigation.reset}>Restart</Button>
+            <Button disabled={navigation.isFirst} onClick={navigation.back}>Zpět</Button>
+            <h3>{toHref(navigation.current)}</h3>
         </Stack>);
     }
 
@@ -358,12 +346,12 @@ export function HalNavigatorPage({
 
             {renderNavigation()}
 
-            <ErrorBoundary fallback={<JsonPreview data={state} label={"Nejde vyrenderovat HAL FORMS form"}/>}
-                           resetKeys={[state]}>
-                <HalNavigatorContent api={state}
+            <ErrorBoundary
+                fallback={<JsonPreview data={navigation.current} label={"Nejde vyrenderovat HAL FORMS form"}/>}
+                resetKeys={[navigation.current]}>
+                <HalNavigatorContent api={navigation.current}
                                      fieldsFactory={fieldsFactory}
-                                     navigate={async (link) => await navigate(link)}
-                                     navigateBack={back}
+                                     navigation={navigation}
                 />
             </ErrorBoundary>
 
