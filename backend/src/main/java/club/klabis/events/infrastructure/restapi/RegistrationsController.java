@@ -11,7 +11,6 @@ import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.hateoas.RootModel;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.shared.config.restapi.ApiController;
-import club.klabis.shared.config.restapi.KlabisPrincipal;
 import club.klabis.shared.config.restapi.ResponseViews;
 import club.klabis.shared.config.security.HasMemberGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
@@ -142,7 +141,7 @@ class RegistrationsRootResourceProcessor implements RepresentationModelProcessor
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisRequestContext.getPrincipal().map(KlabisPrincipal::memberId).ifPresent(memberId -> {
+        klabisRequestContext.getAuthenticatedMemberId().ifPresent(memberId -> {
             model.add(linkTo(methodOn(RegistrationsController.class).getRegistrations(memberId, null)).withRel(
                     "myRegistrations"));
         });

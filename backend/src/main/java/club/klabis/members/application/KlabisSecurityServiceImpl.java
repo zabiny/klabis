@@ -23,7 +23,6 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
         return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication());
     }
 
-    @Override
     public Optional<KlabisPrincipal> getPrincipal() {
         return getAuthentication().flatMap(authentication -> {
             if (authentication instanceof KlabisUserAuthentication typedAuth) {
@@ -43,6 +42,11 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
     public boolean canEditMemberData(int dataMemberId) {
         return canEditMemberData(new MemberId(dataMemberId));
+    }
+
+    @Override
+    public Optional<MemberId> getAuthenticatedMemberId() {
+        return getPrincipal().map(KlabisPrincipal::memberId);
     }
 
     @Override

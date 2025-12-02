@@ -7,7 +7,6 @@ import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
-import club.klabis.shared.config.restapi.KlabisPrincipal;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -63,8 +62,7 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
         resource.add(entityLinks.linkToCollectionResource(Event.class)
                 .withRel(linkRelationProvider.getCollectionResourceRelFor(Event.class)));
 
-        klabisSecurityService.getPrincipal()
-                .map(KlabisPrincipal::memberId)
+        klabisSecurityService.getAuthenticatedMemberId()
                 .ifPresentOrElse(memberId -> {
                     if (event.areRegistrationsOpen()) {
                         if (event.isMemberRegistered(memberId)) {
