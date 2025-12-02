@@ -15,7 +15,7 @@ import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../../api/klabisUserManager";
 import {useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
-import {isHalFormsResponse, isHalResponse} from "../HalFormsForm/utils";
+import {getDefaultTemplate, getSelfLink, isHalFormsResponse, isHalResponse} from "../HalFormsForm/utils";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
 
@@ -156,7 +156,7 @@ function HalFormsContent({
 }): ReactElement {
     const [error, setError] = useState<Error>();
 
-    const activeTemplate = initTemplate || initData._templates.default;
+    const activeTemplate = initTemplate || getDefaultTemplate(initData);
     const submitTarget: TemplateTarget = isFormTarget(activeTemplate) && activeTemplate || {
         target: toHref(submitApi),
         method: activeTemplate.method || "POST"
@@ -186,18 +186,14 @@ function HalFormsContent({
 
 function isHalFormsContentData(data: HalResponse): boolean {
     function isTemplateTargetCurrentLinkHref(data: HalFormsResponse) {
-        if (!data._templates?.default?.target) {
+        const defaultTemplate = getDefaultTemplate(data);
+
+        if (!defaultTemplate.target) {
             // if default template doesn't have target, it's same as SELF link => true
             return true;
         }
 
-        if (data?._links?.self && data?._links.self?.href && toHref(data._templates.default) == (data._links.self ?? "no")) {
-            return true;
-        } else {
-            // if default template has target and it's different than current link, do not display it as Form : it's template for different URI (Spring Hateoas puts first template as default no matter what :( )
-            // This was issue for example for suspended member which has single action - resume membership - then displaying member detail displayed "form" instead of "member detail".
-            return false;
-        }
+        return toHref(getSelfLink(data)) == toHref(defaultTemplate);
     }
 
     if (!isHalFormsResponse(data)) {
@@ -237,18 +233,15 @@ function HalNavigatorContent({
         return <Alert severity={"error"}>Nepovedlo se nacist data {toLink(api).href}: {error.message}</Alert>;
     }
 
-    function renderContent(): ReactElement {
-        let content;
-        if (isHalFormsContentData(data)) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
-            content =
-                <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={data}
-                                 fieldsFactory={fieldsFactory}/>;
-        } else if (isHalResponse(data)) {
-            content = <HalContent data={data} navigate={navigate}/>;
+    function renderContent(item: any): ReactElement {
+        if (isHalFormsContentData(item)) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
+            return <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={item}
+                                    fieldsFactory={fieldsFactory}/>;
+        } else if (isHalResponse(item)) {
+            return <HalContent data={item} navigate={navigate}/>;
         } else {
-            content = <JsonPreview data={data} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
+            return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
         }
-        return content;
     }
 
     return (<Grid container spacing={2} sx={{
@@ -257,7 +250,7 @@ function HalNavigatorContent({
     }}>
         <Grid padding={2} xs={7}>
             <ErrorBoundary fallback={<JsonPreview label={"Nelze vyrenderovat Hal/HalForms obsah"} data={api}/>}>
-                {renderContent()}
+                {renderContent(data)}
             </ErrorBoundary>
         </Grid>
         <Grid overflow={showSource ? "scroll" : "none"} xs={5}>

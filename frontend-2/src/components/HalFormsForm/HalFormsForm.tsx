@@ -10,8 +10,8 @@ import {
     type TemplateTarget
 } from "../../api";
 import {fetchHalFormsData, isFormValidationError, submitHalFormsData} from "../../api/hateoas";
-import {isHalFormsResponse} from "./utils";
-import {type HalFormFieldFactory, type HalFormsInputProps, SubElementConfiguration} from "./types";
+import {getDefaultTemplate, isHalFormsResponse} from "./utils";
+import {type HalFormFieldFactory, type HalFormsInputProps, type SubElementConfiguration} from "./types";
 import {muiHalFormsFieldsFactory} from "./MuiHalFormsFieldsFactory";
 
 type FormData = Record<string, any>;
@@ -144,7 +144,7 @@ const useHalFormsController = (
                 const data = await fetchHalFormsData(api);
                 if (isHalFormsResponse(data)) {
                     setFormData(data);
-                    setActualTemplate(data._templates?.default);
+                    setActualTemplate(getDefaultTemplate(data));
                 } else {
                     setError("Returned data doesn't have HAL FORMS format");
                     console.warn("Returned data doesn't have HAL FORMS format");
@@ -159,7 +159,7 @@ const useHalFormsController = (
             }
         };
         if (inputTemplate) {
-            setFormData({_templates: {default: inputTemplate}});
+            setFormData({_templates: {formTemplate: inputTemplate}});
             setActualTemplate(inputTemplate);
         } else {
             fetchData();
@@ -199,8 +199,7 @@ const HalFormsFormController = ({api, inputTemplate}: {
     if (error) {
         return <Alert severity={"error"}>{error}</Alert>;
     } else if (!template) {
-        return <Alert severity={"error"}>Response doesn't contain form template 'default', can't render HalForms
-            form</Alert>
+        return <Alert severity={"error"}>Response doesn't contain form template, can't render HalForms form</Alert>
     }
 
     return <div>
