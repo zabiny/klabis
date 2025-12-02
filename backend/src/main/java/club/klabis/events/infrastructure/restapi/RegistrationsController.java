@@ -99,6 +99,7 @@ class RegistrationsController {
     }
 
     @PutMapping("/{eventId}")
+    @HasMemberGrant(memberId = "#memberId")
     @Transactional
     public ResponseEntity<Void> saveRegistration(@PathVariable MemberId memberId, @PathVariable club.klabis.events.domain.Event.Id eventId, @RequestBody EventRegistrationForm form) {
         club.klabis.events.domain.Event event = eventsRepository.findById(eventId)
@@ -117,7 +118,8 @@ class RegistrationsController {
         }
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{eventId}")
+    @HasMemberGrant(memberId = "#memberId")
     @Transactional
     public ResponseEntity<Void> cancelRegistration(@PathVariable MemberId memberId, @PathVariable club.klabis.events.domain.Event.Id eventId) {
         club.klabis.events.domain.Event event = eventsRepository.findById(eventId)
