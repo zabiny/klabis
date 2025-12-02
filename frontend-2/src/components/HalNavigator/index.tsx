@@ -15,7 +15,7 @@ import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../../api/klabisUserManager";
 import {useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
-import {getDefaultTemplate, getSelfLink, isHalFormsResponse, isHalFormsTemplate} from "../HalFormsForm/utils";
+import {getDefaultTemplate, isHalFormsResponse, isHalFormsTemplate} from "../HalFormsForm/utils";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
 
@@ -217,35 +217,11 @@ function HalFormsContent({
 }
 
 function isCollectionContent(data: HalResponse): boolean {
-    return (data.page !== undefined);
+    return (data?.page !== undefined);
 }
 
 function isSingleItemContent(data: HalResponse): boolean {
     return !isCollectionContent(data);
-}
-
-function isHalFormsContentData(data: HalResponse): boolean {
-    function isTemplateTargetCurrentLinkHref(data: HalFormsResponse) {
-        const defaultTemplate = getDefaultTemplate(data);
-
-        if (!defaultTemplate.target) {
-            // if default template doesn't have target, it's same as SELF link => true
-            return true;
-        }
-
-        return toHref(getSelfLink(data)) == toHref(defaultTemplate);
-    }
-
-    if (!isHalFormsResponse(data)) {
-        return false;
-    }
-
-    if (isCollectionContent(data)) {
-        // "collection" is never HalForms content
-        return false;
-    }
-
-    return true;
 }
 
 function HalNavigatorContent({
@@ -269,21 +245,13 @@ function HalNavigatorContent({
     }
 
     function renderContent(item: any): ReactElement {
-        if (isCollectionContent(item) || !isHalFormsContentData(item)) {
+        if (isCollectionContent(item) || !isHalFormsResponse(item)) {
             return <HalContent data={item} navigate={navigate}/>;
-        } else if (isHalFormsContentData(item)) {
+        } else if (isHalFormsResponse(item)) {
             return <HalEditableItemContent initData={item} navigate={navigate}/>
         } else {
             return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
         }
-        // if (isHalFormsContentData(item)) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
-        //     return <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={item}
-        //                             fieldsFactory={fieldsFactory}/>;
-        // } else if (isHalResponse(item)) {
-        //     return <HalContent data={item} navigate={navigate}/>;
-        // } else {
-        //     return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
-        // }
     }
 
     return (<Grid container spacing={2} sx={{
