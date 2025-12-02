@@ -15,7 +15,7 @@ import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../../api/klabisUserManager";
 import {useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
-import {getDefaultTemplate, getSelfLink, isHalFormsResponse, isHalResponse} from "../HalFormsForm/utils";
+import {getDefaultTemplate, getSelfLink, isHalFormsResponse, isHalFormsTemplate} from "../HalFormsForm/utils";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
 
@@ -41,7 +41,10 @@ async function fetchResource(url: string) {
     return res.json();
 }
 
-function HalLinksUi({links, onClick}: { links: Record<string, Link>, onClick: (link: Link) => void }): ReactElement {
+function HalLinksUi({links, onClick}: {
+    links: Record<string, NavigationTarget>,
+    onClick: (link: NavigationTarget) => void
+}): ReactElement {
     return (
         <Stack direction={"row"} spacing={2}>
             {Object.entries(links).map(([rel, link]) => {
@@ -101,7 +104,7 @@ function HalCollectionContent({data, navigate}: {
 
 function HalItemContent({data, navigate}: {
     data: HalResponse,
-    navigate: (link: Link) => void
+    navigate: (link: NavigationTarget) => void
 }): ReactElement {
     return (
         <>
@@ -125,13 +128,14 @@ function HalItemContent({data, navigate}: {
                 </tbody>
             </table>
             {data._links && <HalLinksUi links={data._links} onClick={navigate}/>}
+            {data._templates && <HalLinksUi links={data._templates} onClick={navigate}/>}
         </>);
 }
 
 
 function HalContent({data, navigate}: {
     data: HalResponse,
-    navigate: (link: Link) => void
+    navigate: (link: NavigationTarget) => void
 }): ReactElement {
 
     if (data.page === undefined) {
@@ -143,15 +147,42 @@ function HalContent({data, navigate}: {
 
 type NavigationTarget = Link | TemplateTarget | string;
 
+function HalEditableItemContent({
+                                    initData, fieldsFactory, navigate
+                                }: {
+    initData: HalFormsResponse,
+    navigate: (target: NavigationTarget) => void,
+    fieldsFactory?: HalFormFieldFactory
+}): ReactElement {
+
+    const [template, setTemplate] = useState<HalFormsTemplate>();
+
+    const actionOrNavigate = (item: NavigationTarget): void => {
+        if (isHalFormsTemplate(item)) {
+            setTemplate(item);
+        } else {
+            navigate(item);
+        }
+    };
+
+    if (!template) {
+        return <HalItemContent data={initData} navigate={actionOrNavigate}/>;
+    } else {
+        return <HalFormsContent initData={initData} submitApi={template} fieldsFactory={fieldsFactory}
+                                initTemplate={template} afterSubmit={() => setTemplate(undefined)}
+                                onCancel={() => setTemplate(undefined)}/>;
+    }
+}
 
 function HalFormsContent({
-                             submitApi, initTemplate, initData, fieldsFactory, afterSubmit = () => {
+                             submitApi, initTemplate, initData, fieldsFactory, onCancel, afterSubmit = () => {
     }
                          }: {
     submitApi: NavigationTarget,
     initTemplate?: HalFormsTemplate,
     initData: HalFormsResponse,
     afterSubmit?: () => void,
+    onCancel?: () => void,
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
     const [error, setError] = useState<Error>();
@@ -176,12 +207,21 @@ function HalFormsContent({
     }, [submitApi, afterSubmit]);
 
     return (<>
-        <HalFormsForm data={initData} template={activeTemplate} onSubmit={submit} fieldsFactory={fieldsFactory}/>
+        <HalFormsForm data={initData} template={activeTemplate} onSubmit={submit} fieldsFactory={fieldsFactory}
+                      onCancel={onCancel}/>
         {error && <Alert severity={"error"}>{error.message}</Alert>}
         {isFormValidationError(error) && Object.entries(error.validationErrors).map((entry, message) => <Alert
             severity={"error"}>{entry[0]}:&nbsp;{entry[1]}</Alert>)}
         {isFormValidationError(error) && <JsonPreview data={error.formData} label={"Odeslana data"}/>}
     </>);
+}
+
+function isCollectionContent(data: HalResponse): boolean {
+    return (data.page !== undefined);
+}
+
+function isSingleItemContent(data: HalResponse): boolean {
+    return !isCollectionContent(data);
 }
 
 function isHalFormsContentData(data: HalResponse): boolean {
@@ -200,17 +240,12 @@ function isHalFormsContentData(data: HalResponse): boolean {
         return false;
     }
 
-    if (data.page !== undefined) {
+    if (isCollectionContent(data)) {
         // "collection" is never HalForms content
         return false;
     }
 
-    // if is there default template with target URL same as self link href, it's HAL+FORMS
-    if (isTemplateTargetCurrentLinkHref(data)) {
-        return true;
-    }
-
-    return false;
+    return true;
 }
 
 function HalNavigatorContent({
@@ -234,14 +269,21 @@ function HalNavigatorContent({
     }
 
     function renderContent(item: any): ReactElement {
-        if (isHalFormsContentData(item)) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
-            return <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={item}
-                                    fieldsFactory={fieldsFactory}/>;
-        } else if (isHalResponse(item)) {
+        if (isCollectionContent(item) || !isHalFormsContentData(item)) {
             return <HalContent data={item} navigate={navigate}/>;
+        } else if (isHalFormsContentData(item)) {
+            return <HalEditableItemContent initData={item} navigate={navigate}/>
         } else {
             return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
         }
+        // if (isHalFormsContentData(item)) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
+        //     return <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={item}
+        //                             fieldsFactory={fieldsFactory}/>;
+        // } else if (isHalResponse(item)) {
+        //     return <HalContent data={item} navigate={navigate}/>;
+        // } else {
+        //     return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
+        // }
     }
 
     return (<Grid container spacing={2} sx={{
