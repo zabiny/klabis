@@ -8,6 +8,7 @@ import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.users.domain.ApplicationUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -18,14 +19,21 @@ public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
     private final Logger LOG = LoggerFactory.getLogger(KlabisSecurityServiceImpl.class);
 
+    private Optional<Authentication> getAuthentication() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication());
+    }
+
     @Override
     public Optional<KlabisPrincipal> getPrincipal() {
-        if (SecurityContextHolder.getContext().getAuthentication() instanceof KlabisUserAuthentication typedAuth) {
-            return Optional.of(typedAuth).map(KlabisUserAuthentication::getPrincipal);
-            // TODO: doesn't work when logged in "locally" - it gets Google's OAuth2 authentication instead of klabis user...
-        } else {
-            return Optional.empty();
-        }
+        return getAuthentication().flatMap(authentication -> {
+            if (authentication instanceof KlabisUserAuthentication typedAuth) {
+                return Optional.of(typedAuth).map(KlabisUserAuthentication::getPrincipal);
+                // TODO: doesn't work when logged in "locally" - it gets Google's OAuth2 authentication instead of klabis user...
+            } else {
+                LOG.warn("Unexpected authentication type: {}", authentication.getClass());
+                return Optional.empty();
+            }
+        });
     }
 
     private Optional<MemberId> getPrincipalMemberId() {

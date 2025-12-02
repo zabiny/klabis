@@ -1,10 +1,10 @@
 package club.klabis;
 
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvParser;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.springframework.core.io.Resource;
+import tools.jackson.databind.MappingIterator;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvReadFeature;
+import tools.jackson.dataformat.csv.CsvSchema;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,7 +23,7 @@ public interface PresetDataLoader {
 
     default public <T> List<T> loadObjectList(Class<T> type, InputStream inputData) throws IOException {
         CsvSchema bootstrapSchema = CsvSchema.emptySchema().withHeader();
-        CsvMapper mapper = CsvMapper.builder().enable(CsvParser.Feature.EMPTY_STRING_AS_NULL).build();
+        CsvMapper mapper = CsvMapper.builder().enable(CsvReadFeature.EMPTY_STRING_AS_NULL).build();
         MappingIterator<T> readValues = mapper.readerFor(type).with(bootstrapSchema).readValues(inputData);
         return readValues.readAll();
     }

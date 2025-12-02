@@ -1,26 +1,24 @@
 package club.klabis.users.infrastructure.restapi;
 
 import club.klabis.users.domain.ApplicationUser;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import io.micrometer.common.util.StringUtils;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
 
-import java.io.IOException;
-
-@JsonComponent
+@JacksonComponent
 public class ApplicationUserIdSerDe {
 
-    public static class Serializer extends JsonSerializer<ApplicationUser.Id> {
+    public static class Serializer extends ValueSerializer<ApplicationUser.Id> {
         @Override
-        public void serialize(ApplicationUser.Id value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(ApplicationUser.Id value, JsonGenerator gen, SerializationContext serializers) {
             serializers.findValueSerializer(Integer.class).serialize(value.value(), gen, serializers);
         }
     }
@@ -51,10 +49,10 @@ public class ApplicationUserIdSerDe {
     }
 
     // used for request body attributes
-    public static class Deserializer extends JsonDeserializer<ApplicationUser.Id> {
+    public static class Deserializer extends ValueDeserializer<ApplicationUser.Id> {
 
         @Override
-        public ApplicationUser.Id deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+        public ApplicationUser.Id deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
             Integer val = ctxt.readValue(p, Integer.class);
             return new ApplicationUser.Id(val);
         }

@@ -7,19 +7,20 @@ import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 
 plugins {
     java
-    id("org.springframework.boot") version "3.5.5"
+    id("org.springframework.boot") version "4.0.0"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
     id("org.openapi.generator") version "7.6.0"
     id("org.openrewrite.rewrite") version ("latest.release")
 }
 
-val springModulithVersion by extra("1.3.7")
+val springModulithVersion by extra("2.0.0")
 
 repositories {
-    maven {
-        url = uri("https://repo.maven.apache.org/maven2/")
-    }
+    mavenCentral()
+//    maven {
+//        url = uri("https://repo.maven.apache.org/maven2/")
+//    }
     mavenLocal()
 }
 
@@ -29,14 +30,15 @@ description = "klabis"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
 val recordbuilderVersion = "41"
-val mapstructVersion = "1.6.2"
+val mapstructVersion = "1.6.3"
 val mapstructSpringExtensionsVersion = "1.1.2"
 
 dependencies {
 
     // SPRING WEB
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-hateoas")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 
     // SPRING SECURITY
     implementation("org.springframework.boot:spring-boot-starter-oauth2-authorization-server")
@@ -45,7 +47,7 @@ dependencies {
     runtimeOnly("io.zipkin.reporter2:zipkin-reporter-brave")
     runtimeOnly("io.micrometer:micrometer-tracing-bridge-brave")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
-    testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-security-test")
 
     // SPRING DATA
     implementation("org.springframework.data:spring-data-commons")
@@ -62,21 +64,26 @@ dependencies {
     runtimeOnly("org.springframework.modulith:spring-modulith-starter-insight")
 
     // SPRING TOOLS
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-devtools")
+    implementation("org.springframework.boot:spring-boot-starter-restclient")
+    testImplementation("org.springframework.boot:spring-boot-restclient-test")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    testImplementation("org.springframework.boot:spring-boot-starter-cache-test")
 
     // Jackson mappings
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")
+    //implementation("tools.jackson.dataformat:jackson-dataformat-xml")
+    //implementation("tools.jackson.dataformat:jackson-dataformat-csv")
+    implementation("tools.jackson.dataformat:jackson-dataformat-csv:3.0.2")
+    implementation("tools.jackson.dataformat:jackson-dataformat-xml:3.0.2")
 
     // Test containers
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
 
     // DB
     runtimeOnly("org.postgresql:postgresql")
@@ -84,7 +91,7 @@ dependencies {
     //implementation("org.flywaydb:flyway-core")
 
     // OPENAPI
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.12")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.0")
     implementation("org.openapitools:jackson-databind-nullable:0.2.6")
     implementation("org.hibernate:hibernate-validator:8.0.1.Final")
 
@@ -98,6 +105,7 @@ dependencies {
 
     // RecordBuilder
     annotationProcessor("io.soabase.record-builder:record-builder-processor:${recordbuilderVersion}")
+    annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
     compileOnly("io.soabase.record-builder:record-builder-core:${recordbuilderVersion}")
 
     // OpenRewrite

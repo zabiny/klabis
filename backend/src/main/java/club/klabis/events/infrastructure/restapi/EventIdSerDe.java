@@ -1,26 +1,24 @@
 package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.domain.Event;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import io.micrometer.common.util.StringUtils;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
 
-import java.io.IOException;
-
-@JsonComponent
+@JacksonComponent
 public class EventIdSerDe {
 
-    public static class Serializer extends JsonSerializer<Event.Id> {
+    public static class Serializer extends ValueSerializer<Event.Id> {
         @Override
-        public void serialize(Event.Id value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(Event.Id value, JsonGenerator gen, SerializationContext serializers) {
             serializers.findValueSerializer(Integer.class).serialize(value.value(), gen, serializers);
         }
     }
@@ -40,10 +38,10 @@ public class EventIdSerDe {
     }
 
     // used for request body attributes
-    public static class Deserializer extends JsonDeserializer<Event.Id> {
+    public static class Deserializer extends ValueDeserializer<Event.Id> {
 
         @Override
-        public Event.Id deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+        public Event.Id deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
             Integer val = ctxt.readValue(p, Integer.class);
             return new Event.Id(val);
         }

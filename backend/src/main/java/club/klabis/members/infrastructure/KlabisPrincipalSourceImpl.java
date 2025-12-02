@@ -7,7 +7,7 @@ import club.klabis.shared.config.restapi.KlabisPrincipal;
 import club.klabis.shared.config.restapi.KlabisPrincipalSource;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.domain.ApplicationUser;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

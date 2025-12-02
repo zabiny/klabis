@@ -11,11 +11,9 @@ import club.klabis.shared.config.security.KlabisSecurityService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -31,9 +29,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = EventsController.class)
-@Import({ApiTestConfiguration.class, EventModelMapperImpl.class})
-@EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL_FORMS)
+
+@ApiTestConfiguration(controllers = EventsController.class)
+@Import({EventModelMapperImpl.class})
 @ComponentScan("club.klabis.oris.infrastructure.restapi.eventapi")
 public class EventsControllerTests {
     @MockitoBean
@@ -61,6 +59,7 @@ public class EventsControllerTests {
     @WithMockUser
     @DisplayName("it should add synchronize link to event with OrisId for user with SystemAdmin grant")
     void itShouldAddLinkToEventWithOrisId() throws Exception {
+        // TODO: replace with MockUser authorities
         when(klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)).thenReturn(true);
 
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
@@ -76,6 +75,7 @@ public class EventsControllerTests {
     @WithMockUser
     @DisplayName("it should NOT add synchronize link to event with OrisId for user WITHOUT SystemAdmin grant")
     void itShouldNotAddLinkToUnauthorizedUser() throws Exception {
+        // TODO: replace with MockUser authorities
         when(klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)).thenReturn(false);
 
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(

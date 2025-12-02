@@ -1,11 +1,11 @@
 package com.dpolach.inmemoryrepository;
 
 import org.apache.commons.lang3.stream.Streams;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.Optional;

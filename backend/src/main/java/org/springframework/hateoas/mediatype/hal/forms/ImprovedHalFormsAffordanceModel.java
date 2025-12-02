@@ -1,11 +1,6 @@
 package org.springframework.hateoas.mediatype.hal.forms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +11,15 @@ import org.springframework.hateoas.QueryParameter;
 import org.springframework.hateoas.mediatype.ConfiguredAffordance;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.AnnotatedClass;
+import tools.jackson.databind.introspect.BeanPropertyDefinition;
+import tools.jackson.databind.introspect.ClassIntrospector;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Comparator;
 import java.util.List;
@@ -30,6 +34,7 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
     private static final Logger LOG = LoggerFactory.getLogger(ImprovedHalFormsAffordanceModel.class);
 
     private final HalFormsPropertyCompositePostprocessor halFormsPropertyPostprocessor = HalFormsPropertyCompositePostprocessor.defaultSetup();
+    private static final Jackson3Adapter jacksonAdapter = new Jackson3Adapter();
 
     public static AffordanceModel improveHalFormsAffordance(AffordanceModel original) {
 
@@ -54,15 +59,8 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
                         () -> LOG.warn("No InputOptions postprocessor found in active postprocessors"));
     }
 
-    static final SerializationConfig objectMapper = new ObjectMapper()
-            .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false)
-            .registerModule(new ParameterNamesModule())
-            .getSerializationConfig();
-
     static List<String> expectedPropertiesOrder(Class<?> bodyType) {
-        return objectMapper.introspect(TypeFactory.defaultInstance().constructType(bodyType))
-                .findProperties()
-                .stream()
+        return jacksonAdapter.streamJacksonPropertyDefinitions(bodyType)
                 .map(BeanPropertyDefinition::getName)
                 .toList();
     }
@@ -139,13 +137,9 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
         }
 
         private AffordanceModel.PropertyMetadata improvePropertyMetadata(InputPayloadMetadata payload, final AffordanceModel.PropertyMetadata property) {
-            JavaType javaType = objectMapper.getTypeFactory().constructType(payload.getType());
-            BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
-
-            BeanPropertyDefinition propertyDefinition = beanDescription.findProperties()
-                    .stream()
-                    .filter(adept -> StringUtils.equals(property.getName(), adept.getName()))
-                    .findFirst()
+            BeanPropertyDefinition propertyDefinition = jacksonAdapter.getBeanPropertyDefinition(
+                            payload.getType(),
+                            property.getName())
                     .orElseThrow();
 
             return new ImprovedPropertyMetadata(payload, property, propertyDefinition);
@@ -155,6 +149,45 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
 
 }
 
+class Jackson3Adapter {
+
+    Jackson3Adapter() {
+        this(JsonMapper.builder()
+                .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false)
+                .build());
+    }
+
+    Jackson3Adapter(JsonMapper jsonMapper) {
+        JSON_MAPPER = jsonMapper;
+        JACKSON_CLASS_INTROSPECTOR = jsonMapper.serializationConfig().classIntrospectorInstance();
+    }
+
+    private final JsonMapper JSON_MAPPER;
+
+    private final ClassIntrospector JACKSON_CLASS_INTROSPECTOR;
+
+    public Stream<BeanPropertyDefinition> streamJacksonPropertyDefinitions(Class<?> type) {
+        return getBeanDescription(type).findProperties().stream();
+    }
+
+    public Optional<BeanPropertyDefinition> getBeanPropertyDefinition(Class<?> type, String propertyName) {
+        return streamJacksonPropertyDefinitions(type)
+                .filter(adept -> StringUtils.equals(propertyName, adept.getName()))
+                .findFirst();
+    }
+
+    private BeanDescription getBeanDescription(Class<?> type) {
+        JavaType javaType = JSON_MAPPER.getTypeFactory().constructType(type);
+        AnnotatedClass annotatedJavaType = JACKSON_CLASS_INTROSPECTOR.introspectClassAnnotations(javaType);
+
+        BeanDescription beanDescription = JACKSON_CLASS_INTROSPECTOR.introspectForSerialization(
+                javaType,
+                annotatedJavaType);
+
+        return beanDescription;
+
+    }
+}
 
 /**
  * Sorts attribute metadata into defined order (so displaying form from that metadata have defined order of attributes)

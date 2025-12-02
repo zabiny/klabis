@@ -3,13 +3,16 @@ package club.klabis.finance.infrastructure.restapi;
 import club.klabis.finance.domain.Account;
 import club.klabis.finance.domain.Accounts;
 import club.klabis.members.MemberId;
-import club.klabis.shared.config.hateoas.AbstractRepresentationModelMapper;
+import club.klabis.shared.config.hateoas.HalResourceAssembler;
+import club.klabis.shared.config.hateoas.ModelAssembler;
+import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.HasMemberGrant;
 import com.dpolach.eventsourcing.EventsRepository;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
@@ -20,11 +23,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class FinanceAccountsController {
 
     private final EventsRepository eventsRepository;
-    private final AbstractRepresentationModelMapper<Account, AccountReponse> accountReponseMapper;
+    private final ModelAssembler<Account, AccountReponse> accountReponseMapper;
 
-    public FinanceAccountsController(EventsRepository eventsRepository, AbstractRepresentationModelMapper<Account, AccountReponse> accountReponseMapper) {
+    public FinanceAccountsController(EventsRepository eventsRepository, ModelPreparator<Account, AccountReponse> accountReponseMapper, PagedResourcesAssembler<Account> pagedAssembler) {
         this.eventsRepository = eventsRepository;
-        this.accountReponseMapper = accountReponseMapper;
+        this.accountReponseMapper = new HalResourceAssembler<>(accountReponseMapper, pagedAssembler);
     }
 
     @GetMapping(path = "/finance/{accountId}")
@@ -33,7 +36,7 @@ public class FinanceAccountsController {
         Accounts accounts = eventsRepository.rebuild(new Accounts());
 
         return accounts.getAccount(accountId)
-                .map(accountReponseMapper::toResponseModel)
+                .map(accountReponseMapper::toEntityResponse)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
@@ -47,7 +50,7 @@ public class FinanceAccountsController {
 
     private class AccountNotFoundException extends RuntimeException {
         public AccountNotFoundException(MemberId memberId) {
-            super(String.format("Account with id %s not found", memberId));
+            super("Account with id %s not found".formatted(memberId));
         }
     }
 }

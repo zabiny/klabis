@@ -215,7 +215,7 @@ logging:
 management:
   endpoint:
     loggers:
-      enabled: true
+      access: read-only
     health:
       probes:
         enabled: true
@@ -225,7 +225,7 @@ management:
         #include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
         include: loggers, caches, env, info, mappings, health, modulith, prometheus, metrics
   tracing:
-    enabled: false
+    export.enabled: false
 
 springdoc:
   api-docs:

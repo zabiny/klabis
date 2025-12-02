@@ -233,9 +233,9 @@ class EntityStore<T, ID> {
                 .map(e1 -> "%s->%s".formatted(e1.getKey(), e1.getValue()))
                 .collect(Collectors.joining("\n\t", "\n\t", ""))) : "";
 
-        return String.format("Entity %s (%d)%s".formatted(entityInformation.getJavaType(),
+        return "Entity %s (%d)%s".formatted(entityInformation.getJavaType(),
                 entities.size(),
-                dataDescription));
+                dataDescription).formatted();
     }
 
 }

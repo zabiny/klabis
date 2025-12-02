@@ -1,18 +1,17 @@
 package club.klabis.finance.infrastructure.restapi;
 
 import club.klabis.finance.domain.MoneyAmount;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 
-@JsonComponent
-class MoneyAmountSerDe extends JsonSerializer<MoneyAmount> {
+@JacksonComponent
+class MoneyAmountSerDe extends ValueSerializer<MoneyAmount> {
     @Override
-    public void serialize(MoneyAmount value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    public void serialize(MoneyAmount value, JsonGenerator gen, SerializationContext serializers) {
         serializers.findValueSerializer(BigDecimal.class).serialize(value.amount(), gen, serializers);
     }
 }

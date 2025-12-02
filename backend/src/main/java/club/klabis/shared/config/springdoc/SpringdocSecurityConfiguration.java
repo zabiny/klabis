@@ -12,8 +12,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SpringdocSecurityConfiguration {
 
     @Bean("swaggerDocChain")
-    @Order(value = AuthorizationServerConfiguration.BEFORE_AUTH_SERVER_SECURITY_ORDER)
-    public SecurityFilterChain swaggerFilterChain(HttpSecurity http) throws Exception {
+    @Order(value = AuthorizationServerConfiguration.AFTER_AUTH_SERVER_SECURITY_ORDER)
+    public SecurityFilterChain swaggerFilterChain(HttpSecurity http) {
         http.securityMatcher("/swagger-ui/*", "/v3/api-docs/*", "/v3/api-docs", "/klabis-api-spec.yaml", "/redoc.html")
                 .csrf(AbstractHttpConfigurer::disable)
                 .requestCache(AbstractHttpConfigurer::disable)

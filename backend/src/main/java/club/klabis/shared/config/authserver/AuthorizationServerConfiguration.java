@@ -13,8 +13,6 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
@@ -25,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+//@Import(OAuth2AuthorizationServerConfiguration.class)
 public class AuthorizationServerConfiguration {
 
     protected static final int AUTH_SERVER_SECURITY_ORDER = Ordered.HIGHEST_PRECEDENCE + 5;
@@ -45,26 +44,35 @@ public class AuthorizationServerConfiguration {
     public SecurityFilterChain authorizationSecurityFilterChain(
             HttpSecurity http,
             DaoAuthenticationProvider daoAuthenticationProvider
-    ) throws Exception {
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+    ) {
+        //OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
 
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                // Lovable for sandbox environment uses random URL prefixes -> allowing redirect_uri definition for Lovable web with pattern matching to allow all sandboxes to authenticated against Klabis OAuth2
-                .authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(
-                        LOVABLE_APP_CLIENT_ID)))
-                // Is this actually used?? It doesn't seem it is...
-                .tokenEndpoint(tokenEndpoint ->
-                        tokenEndpoint
-                                .authenticationProvider(daoAuthenticationProvider)
-                )
-                .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
+        http
+                // ?? will we miss this one?
+                //.securityMatcher(OAuth2AuthorizationServerConfigurer.getEndpointsMatcher())
+                //.securityMatcher(anyOf(regexMatcher("/oauth.*"), regexMatcher("/oidc.*")))
+                .oauth2AuthorizationServer(server -> {
+                    http.securityMatcher(server.getEndpointsMatcher());
+                    // Lovable for sandbox environment uses random URL prefixes -> allowing redirect_uri definition for Lovable web with pattern matching to allow all sandboxes to authenticated against Klabis OAuth2
+                    server
+                            .authorizationEndpoint(new WildcardRedirectUriForOAuth2AuthorizationEndpointCustomizer(List.of(
+                                    LOVABLE_APP_CLIENT_ID)))
+                            // Is this actually used?? It doesn't seem it is...
+                            .tokenEndpoint(tokenEndpoint ->
+                                    tokenEndpoint
+                                            .authenticationProvider(daoAuthenticationProvider))
+                            // Enable OIDC
+                            .oidc(Customizer.withDefaults());
 
-        http.cors(cors -> cors
-                .configurationSource(corsConfigurationSource()));
+                })
+                .authorizeHttpRequests((authorize) ->
+                        authorize
+                                .anyRequest().authenticated()
+                )                // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-
-        // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
-        http.oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
+                // OAuth2 resource server to authenticate OIDC userInfo and/or client registration endpoints
+                .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
 
         http.exceptionHandling(
                 exceptions ->
@@ -91,8 +99,7 @@ public class AuthorizationServerConfiguration {
     public DaoAuthenticationProvider daoAuthenticationProvider(
             PasswordEncoder passwordEncoder, UserDetailsService userDetailsService
     ) {
-        DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
-        daoAuthenticationProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider(userDetailsService);
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
         return daoAuthenticationProvider;
     }

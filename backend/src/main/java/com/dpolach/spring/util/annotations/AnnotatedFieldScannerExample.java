@@ -18,7 +18,6 @@ public class AnnotatedFieldScannerExample implements CommandLineRunner {
 
     private final AnnotatedFieldScanner scanner;
 
-    @Autowired
     public AnnotatedFieldScannerExample(AnnotatedFieldScanner scanner) {
         this.scanner = scanner;
     }
@@ -65,8 +64,7 @@ public class AnnotatedFieldScannerExample implements CommandLineRunner {
                 "com.dpolach.baseapp",
                 Autowired.class,
                 (field, enclosingClass) -> {
-                    System.out.println(String.format(
-                            "Třída: %s, Pole: %s, Typ: %s",
+                    System.out.println("Třída: %s, Pole: %s, Typ: %s".formatted(
                             enclosingClass.getSimpleName(),
                             field.getName(),
                             field.getType().getSimpleName()

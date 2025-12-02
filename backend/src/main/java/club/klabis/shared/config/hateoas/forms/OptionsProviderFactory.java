@@ -28,9 +28,9 @@ public class OptionsProviderFactory {
 
     record HalFormsOptionsDescriptor(Field field, Class<?> type, HalFormsOptionsProvider provider) {
         public String describe() {
-            return String.format("Options for %s#%s with provider by %s".formatted(type.getSimpleName(),
+            return "Options for %s#%s with provider by %s".formatted(type.getSimpleName(),
                     field.getName(),
-                    provider.getClass().getSimpleName()));
+                    provider.getClass().getSimpleName()).formatted();
         }
     }
 

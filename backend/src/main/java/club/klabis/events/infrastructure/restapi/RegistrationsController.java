@@ -5,6 +5,7 @@ import club.klabis.events.domain.Event;
 import club.klabis.events.domain.Registration;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
+import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.hateoas.RootModel;
@@ -21,6 +22,7 @@ import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
@@ -46,8 +48,8 @@ class RegistrationsController {
     private final ModelAssembler<EventAndMember, RegistrationDto> modelAssembler;
     private final EventsRepository eventsRepository;
 
-    RegistrationsController(ModelAssembler<EventAndMember, RegistrationDto> modelAssembler, EventsRepository eventsRepository) {
-        this.modelAssembler = modelAssembler;
+    RegistrationsController(ModelPreparator<EventAndMember, RegistrationDto> modelAssembler, EventsRepository eventsRepository, PagedResourcesAssembler<EventAndMember> pagedAssembler) {
+        this.modelAssembler = new HalResourceAssembler<>(modelAssembler, pagedAssembler);
         this.eventsRepository = eventsRepository;
     }
 
@@ -97,6 +99,7 @@ class RegistrationsController {
     }
 
     @PutMapping("/{eventId}")
+    @HasMemberGrant(memberId = "#memberId")
     @Transactional
     public ResponseEntity<Void> saveRegistration(@PathVariable MemberId memberId, @PathVariable club.klabis.events.domain.Event.Id eventId, @RequestBody EventRegistrationForm form) {
         club.klabis.events.domain.Event event = eventsRepository.findById(eventId)
@@ -115,7 +118,8 @@ class RegistrationsController {
         }
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{eventId}")
+    @HasMemberGrant(memberId = "#memberId")
     @Transactional
     public ResponseEntity<Void> cancelRegistration(@PathVariable MemberId memberId, @PathVariable club.klabis.events.domain.Event.Id eventId) {
         club.klabis.events.domain.Event event = eventsRepository.findById(eventId)

@@ -18,10 +18,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 @ApiController(openApiTagName = "User permissions")
 public interface UserPermissionsApi {
@@ -40,8 +40,7 @@ public interface UserPermissionsApi {
                     })
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
+    @GetMapping(
             value = "/grants",
             produces = {"application/json"}
     )
@@ -62,10 +61,7 @@ public interface UserPermissionsApi {
                     @SecurityRequirement(name = "klabis", scopes = {"openid"})
             }
     )
-    @RequestMapping(
-            method = RequestMethod.GET,
-            value = "/users/{userId}/changeGrantsForm"
-    )
+    @GetMapping("/users/{userId}/changeGrantsForm")
     ResponseEntity<MemberGrantsFormApiDto> getUserGrants(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("userId") ApplicationUser.Id userId
     );
@@ -78,10 +74,7 @@ public interface UserPermissionsApi {
                     @ApiResponse(responseCode = "200", description = "User grants were successfully updated")
             }
     )
-    @RequestMapping(
-            method = RequestMethod.PUT,
-            value = "/users/{userId}/changeGrantsForm"
-    )
+    @PutMapping("/users/{userId}/changeGrantsForm")
     ResponseEntity<Void> updateMemberGrants(
             @Parameter(name = "userId", description = "ID of application user", required = true, in = ParameterIn.PATH) @PathVariable("userId") ApplicationUser.Id userId,
             @Parameter(name = "MemberGrantsFormApiDto", description = "") @Valid @RequestBody(required = false) MemberGrantsFormApiDto memberGrantsFormApiDto

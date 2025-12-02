@@ -2,13 +2,7 @@ package club.klabis.shared.config.hateoas;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import org.springframework.boot.jackson.JsonMixin;
+import org.springframework.boot.jackson.JacksonMixin;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.hateoas.Link;
@@ -17,8 +11,13 @@ import org.springframework.hateoas.Links;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.config.HypermediaMappingInformation;
 import org.springframework.http.MediaType;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.module.SimpleModule;
 
-import java.io.IOException;
 import java.util.List;
 
 @Profile("hateoas")
@@ -33,14 +32,14 @@ public class KalMediaTypeConfiguration implements HypermediaMappingInformation {
     }
 
     @Override
-    public Module getJacksonModule() {
+    public JacksonModule getJacksonModule() {
         SimpleModule klabisMediaTypeJacksonModule = new SimpleModule();
         klabisMediaTypeJacksonModule.setMixInAnnotation(RepresentationModel.class, KalRepresentationModelMixin.class);
         return klabisMediaTypeJacksonModule;
     }
 }
 
-@JsonMixin(RepresentationModel.class)
+@JacksonMixin(RepresentationModel.class)
 interface KalRepresentationModelMixin {
     @JsonProperty("_actions")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -50,15 +49,15 @@ interface KalRepresentationModelMixin {
     public Links getLinks();
 }
 
-class KalLinksSerializer extends JsonSerializer<Links> {
+class KalLinksSerializer extends ValueSerializer<Links> {
 
     @Override
-    public boolean isEmpty(SerializerProvider provider, Links value) {
+    public boolean isEmpty(SerializationContext provider, Links value) {
         return getActionLinks(value).isEmpty();
     }
 
     //    @Override
-    public void serialize(Link link, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(Link link, JsonGenerator jsonGenerator, SerializationContext serializerProvider) {
         jsonGenerator.writeString(link.getRel().value());
     }
 
@@ -67,7 +66,7 @@ class KalLinksSerializer extends JsonSerializer<Links> {
     }
 
     @Override
-    public void serialize(Links links, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+    public void serialize(Links links, JsonGenerator jsonGenerator, SerializationContext serializerProvider) {
         jsonGenerator.writeStartArray();
         for (Link l : getActionLinks(links)) {
             serialize(l, jsonGenerator, serializerProvider);

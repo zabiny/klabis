@@ -10,7 +10,9 @@ import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
+import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
+import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.JsonViewMapping;
 import club.klabis.shared.config.restapi.JsonViewParameter;
@@ -25,6 +27,7 @@ import jakarta.validation.Valid;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -42,9 +45,9 @@ public class MembersApi {
     private final MembersRepository membersRepository;
     private final ModelAssembler<Member, MembersApiResponse> memberModelAssembler;
 
-    public MembersApi(MembersRepository membersRepository, ModelAssembler<Member, MembersApiResponse> memberModelAssembler) {
+    public MembersApi(MembersRepository membersRepository, ModelPreparator<Member, MembersApiResponse> memberModelAssembler, PagedResourcesAssembler<Member> pagedAssembler) {
         this.membersRepository = membersRepository;
-        this.memberModelAssembler = memberModelAssembler;
+        this.memberModelAssembler = new HalResourceAssembler<>(memberModelAssembler, pagedAssembler);
     }
 
     /**

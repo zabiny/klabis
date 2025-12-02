@@ -1,7 +1,7 @@
 package club.klabis.shared.config.security;
 
 import club.klabis.shared.config.authserver.AuthorizationServerConfiguration;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -14,7 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class ActuatorSecurity {
     @Bean("actuatorSecurityFilterChain")
-    @Order(value = AuthorizationServerConfiguration.BEFORE_AUTH_SERVER_SECURITY_ORDER)
+    @Order(value = AuthorizationServerConfiguration.AFTER_AUTH_SERVER_SECURITY_ORDER)
     public SecurityFilterChain errorPageFilterChain(HttpSecurity http) throws Exception {
         http.securityMatcher(EndpointRequest.to("health", "prometheus"))
                 .csrf(AbstractHttpConfigurer::disable)
