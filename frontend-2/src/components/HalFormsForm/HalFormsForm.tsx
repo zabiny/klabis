@@ -218,6 +218,10 @@ interface HalFormsFormProps {
     fieldsFactory?: HalFormFieldFactory
 }
 
+// TODO: zjednodusit - udelat kontext ktery bude drzet template a udelat hook ktery bude z toho kontextu tahat definici policka pro konkretni nazev
+// TODO: udelat hook/kompomentu (ala Formik Field) ktera zkombinuje HalForms context s Formik a s pomoci Fields factory z jedineho parametru - field name udela kompletni ReactElement daneho fieldu. Takovy hook pak bude mozne pouzit pro libovolny layout formulare stejne jako to umi Formik.
+// TODO: upravit HAL+FORMS: zobrazit "item" vzdy jako read only. Pokud je defalt template pro aktivni metodu, tak zobrazit tlacitko EDIT ktere prepne do editacniho rezimu. Pokud je default template pro GET metodu, tak jen pouzit policka s readonly pro lepsi zobrazeni. Na backendu pridat "default" affordanci pokud pro selflink zadna neexistuje (pouze pro ITEM).
+
 // --- Hlavní komponenta ---
 const HalFormsForm: React.FC<HalFormsFormProps> = ({
                                                        data,

@@ -15,7 +15,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-// TODO: find way how to not reference KLabisRequestContextImpl here
+// TODO: find way how to not reference KlabisPrincipalSource here (possibly will need to cleanup whole security setup)
 @Import({MapperTestConfiguration.class, HateoasConfig.class, ApisConfiguration.class})
 @MockitoBean(types = {JwtDecoder.class, KlabisPrincipalSource.class})
 @WebMvcTest

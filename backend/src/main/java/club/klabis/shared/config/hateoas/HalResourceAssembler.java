@@ -26,7 +26,9 @@ public class HalResourceAssembler<D, T> implements ModelAssembler<D, T> {
 
     @Override
     public PagedModel<EntityModel<T>> toPagedResponse(Page<D> pageOfDomain) {
-        return pagedResourcesAssembler.toModel(pageOfDomain, this::toEntityResponse);
+        PagedModel<EntityModel<T>> result = pagedResourcesAssembler.toModel(pageOfDomain, this::toEntityResponse);
+        preparator.addLinks(result);
+        return result;
     }
 
     @Override
