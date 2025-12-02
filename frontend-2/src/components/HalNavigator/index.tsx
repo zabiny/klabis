@@ -277,6 +277,7 @@ function HalNavigatorContent({
             <FormLabel>Zobraz zdrojovy JSON:<Checkbox checked={showSource}
                                                       onChange={(event, checked) => setShowSource(checked)}>Zdrojovy
                 JSON</Checkbox></FormLabel>
+            {showSource && <JsonPreview data={navigation.current} label={"Current navigation target"}/>}
             {showSource && <JsonPreview data={data} label={"Response data"}/>}
         </Grid>
     </Grid>);
