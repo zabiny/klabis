@@ -7,6 +7,7 @@ import org.springframework.util.Assert;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 
@@ -22,6 +23,13 @@ public class KlabisHateoasImprovements {
      * @return
      */
     public static Affordance affordImproved(Object invocationValue) {
+        return affordImproved(invocationValue, NO_ACTION);
+    }
+
+    private static final Consumer<Object> NO_ACTION = a -> {
+    };
+
+    public static Affordance affordImproved(Object invocationValue, Consumer<? super ImprovedHalFormsAffordanceModel> postprocess) {
 
         Affordance affordance = afford(invocationValue);
 
@@ -30,7 +38,9 @@ public class KlabisHateoasImprovements {
         Assert.state(models.containsKey(MediaTypes.HAL_FORMS_JSON), "Affordance model for HAL+FORMS is not present");
         AffordanceModel originalModel = models.get(MediaTypes.HAL_FORMS_JSON);
 
-        AffordanceModel improvedModel = ImprovedHalFormsAffordanceModel.improveHalFormsAffordance(originalModel);
+        ImprovedHalFormsAffordanceModel improvedModel = ImprovedHalFormsAffordanceModel.improveHalFormsAffordance(
+                originalModel);
+        postprocess.accept(improvedModel);
         models.put(MediaTypes.HAL_FORMS_JSON, improvedModel);
 
         return new Affordance(models);
