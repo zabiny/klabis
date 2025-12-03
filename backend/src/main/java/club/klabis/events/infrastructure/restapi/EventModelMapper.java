@@ -15,16 +15,15 @@ import org.mapstruct.MappingTarget;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.*;
+import org.springframework.hateoas.Affordance;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkRelationProvider;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -93,18 +92,6 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
         resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value())
                 .withSelfRel()
                 .andAffordances(selfAffordances));
-
-        List<String> knownAffordances = resource.getLinks()
-                .stream()
-                .map(Link::getAffordances)
-                .flatMap(Collection::stream)
-                .map(a -> a.getAffordanceModel(MediaTypes.HAL_FORMS_JSON))
-                .filter(
-                        Objects::nonNull)
-                .map(a -> String.format("%s %s".formatted(((AffordanceModel) a).getHttpMethod(),
-                        ((AffordanceModel) a).getName())))
-                .toList();
-        LOG.warn("Event {} with affordances {}", event.getId(), knownAffordances);
     }
 
     private void addOptions(ImprovedHalFormsAffordanceModel affordance, Event event) {
