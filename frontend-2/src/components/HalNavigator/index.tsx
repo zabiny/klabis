@@ -15,7 +15,7 @@ import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../../api/klabisUserManager";
 import {type Navigation, useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
-import {getDefaultTemplate, isHalFormsResponse, isHalFormsTemplate} from "../HalFormsForm/utils";
+import {getDefaultTemplate, isHalFormsTemplate, isHalResponse} from "../HalFormsForm/utils";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
 
@@ -255,10 +255,12 @@ function HalNavigatorContent({
     }
 
     function renderContent(item: any): ReactElement {
-        if (isCollectionContent(item) || !isHalFormsResponse(item)) {
-            return <HalContent data={item} navigation={navigation}/>;
-        } else if (isHalFormsResponse(item)) {
-            return <HalEditableItemContent initData={item} navigation={navigation} fieldsFactory={fieldsFactory}/>
+        if (isCollectionContent(item)) {
+            return <HalCollectionContent data={item} navigation={navigation}/>;
+        } else if (isHalFormsTemplate(navigation.current)) {
+            return <HalEditableItemContent initData={item} navigation={navigation} fieldsFactory={fieldsFactory}/>;
+        } else if (isHalResponse(item)) {
+            return <HalItemContent data={item} navigation={navigation}/>;
         } else {
             return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
         }
