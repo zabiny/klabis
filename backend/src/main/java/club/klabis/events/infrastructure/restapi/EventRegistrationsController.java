@@ -4,30 +4,37 @@ import club.klabis.events.application.EventRegistrationUseCase;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
+import club.klabis.shared.config.hateoas.HalResourceAssembler;
+import club.klabis.shared.config.hateoas.ModelAssembler;
+import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.restapi.ApiController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import org.springframework.hateoas.*;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ApiController(path = "/events/{eventId}/registrationForms/{memberId}", openApiTagName = "Event registrations")
-public class EventRegistrationsController {
+class EventRegistrationsController {
     private final EventRegistrationUseCase useCase;
 
-    public EventRegistrationsController(EventRegistrationUseCase useCase) {
+    private final ModelAssembler<RegistrationData, EventRegistrationUseCase.EventRegistrationFormData> modelAssembler;
+
+    EventRegistrationsController(EventRegistrationUseCase useCase, ModelPreparator<RegistrationData, EventRegistrationUseCase.EventRegistrationFormData> preparator, PagedResourcesAssembler<RegistrationData> pageableAssembler) {
         this.useCase = useCase;
+        this.modelAssembler = new HalResourceAssembler<>(preparator, pageableAssembler);
     }
 
     @Operation(
@@ -46,39 +53,11 @@ public class EventRegistrationsController {
             }
     )
     @GetMapping
-    RepresentationModel<EntityModel<EventRegistrationUseCase.EventRegistrationFormData>> getEventRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") MemberId memberId) {
+    EntityModel<EventRegistrationUseCase.EventRegistrationFormData> getEventRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") MemberId memberId) {
 
         EventRegistrationUseCase.EventRegistrationFormData form = useCase.getEventRegistrationForm(event, memberId);
 
-        EntityModel<EventRegistrationUseCase.EventRegistrationFormData> result = EntityModel.of(form,
-                linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(event, memberId))
-                        .withSelfRel()
-                        .andAffordance(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
-                                event,
-                                memberId,
-                                null))));
-
-
-        result.mapLink(LinkRelation.of("self"), l -> this.addOptions(l, event, memberId));
-
-        return result;
-    }
-
-    @GetMapping("/categories")
-    public List<String> getEventCategories(@PathVariable Event.Id eventId, @PathVariable MemberId memberId) {
-        return useCase.getEventCategories(eventId);
-    }
-
-    private Link addOptions(Link link, Event.Id eventId, MemberId memberId) {
-        HalFormsOptions categoryOptions = HalFormsOptions.remote(linkTo(methodOn(this.getClass()).getEventCategories(
-                        eventId,
-                        memberId)).withRel("categories"))
-                .withMaxItems(1L);
-
-        link.getAffordances().stream().map(a -> a.getAffordanceModel(MediaTypes.HAL_FORMS_JSON)).filter(
-                        ImprovedHalFormsAffordanceModel.class::isInstance).map(ImprovedHalFormsAffordanceModel.class::cast)
-                .forEach(a -> a.defineOptions("category", categoryOptions));
-        return link;
+        return modelAssembler.toEntityResponse(new RegistrationData(event, memberId, form));
     }
 
     @Operation(
@@ -108,4 +87,40 @@ public class EventRegistrationsController {
         useCase.cancelMemberRegistration(eventId, memberId);
         return ResponseEntity.noContent().build();
     }
+}
+
+record RegistrationData(Event.Id eventId, MemberId memberId, EventRegistrationUseCase.EventRegistrationFormData form) {
+}
+
+@Component
+class EventRegistrationModelPreparator implements ModelPreparator<RegistrationData, EventRegistrationUseCase.EventRegistrationFormData> {
+
+    @Override
+    public EventRegistrationUseCase.EventRegistrationFormData toResponseDto(RegistrationData registrationData) {
+        return registrationData.form();
+    }
+
+    @Override
+    public void addLinks(EntityModel<EventRegistrationUseCase.EventRegistrationFormData> resource, RegistrationData registrationData) {
+        ModelPreparator.super.addLinks(resource, registrationData);
+
+        Link selfLink = linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(registrationData.eventId(),
+                registrationData.memberId())).withSelfRel();
+
+        selfLink = selfLink.andAffordance(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
+                registrationData.eventId(),
+                registrationData.memberId(),
+                null), affordance -> this.addOptions(affordance, registrationData)));
+
+        resource.add(selfLink);
+    }
+
+    private void addOptions(ImprovedHalFormsAffordanceModel affordance, RegistrationData registrationData) {
+        HalFormsOptions categoryOptions = HalFormsOptions.remote(linkTo(methodOn(EventsController.class).getEventCategories(
+                        registrationData.eventId())).withRel("categories"))
+                .withMaxItems(1L);
+
+        affordance.defineOptions("category", categoryOptions);
+    }
+
 }

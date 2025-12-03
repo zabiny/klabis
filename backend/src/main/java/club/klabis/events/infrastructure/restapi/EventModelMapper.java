@@ -15,11 +15,18 @@ import org.mapstruct.MappingTarget;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.*;
+import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
+import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkRelationProvider;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -58,34 +65,54 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
     @Override
     public void addLinks(EntityModel<EventResponse> resource, Event event) {
 
-        resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value()).withSelfRel());
-        resource.add(entityLinks.linkToCollectionResource(Event.class)
-                .withRel(linkRelationProvider.getCollectionResourceRelFor(Event.class)));
+        List<Affordance> selfAffordances = new ArrayList<>();
 
         klabisSecurityService.getAuthenticatedMemberId()
                 .ifPresentOrElse(memberId -> {
                     if (event.areRegistrationsOpen()) {
                         if (event.isMemberRegistered(memberId)) {
-                            resource.add(linkTo(methodOn(EventRegistrationsController.class)
-                                    .submitRegistrationForm(event.getId(), memberId, null))
-                                    .withRel("updateRegistration"));
+                            // update registration
+                            selfAffordances.add(affordBetter(methodOn(EventRegistrationsController.class)
+                                    .submitRegistrationForm(event.getId(), memberId, null), a -> addOptions(a, event)));
 
-                            resource.add(linkTo(methodOn(EventRegistrationsController.class)
-                                    .cancelEventRegistration(event.getId(), memberId))
-                                    .withRel("cancelRegistration"));
+                            // cancel registration
+                            selfAffordances.add(affordBetter(methodOn(EventRegistrationsController.class)
+                                    .cancelEventRegistration(event.getId(), memberId)));
                         } else {
-                            resource.add(linkTo(methodOn(EventRegistrationsController.class)
-                                    .submitRegistrationForm(event.getId(), memberId, null))
-                                    .withRel("createRegistration"));
+                            // create registration
+                            selfAffordances.add(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
+                                    event.getId(),
+                                    memberId,
+                                    null), a -> addOptions(a, event)));
                         }
                     }
                 }, () -> {
                     LOG.warn("No authenticated KLabis member available!");
                 });
+
+        resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value())
+                .withSelfRel()
+                .andAffordances(selfAffordances));
+
+        List<String> knownAffordances = resource.getLinks()
+                .stream()
+                .map(Link::getAffordances)
+                .flatMap(Collection::stream)
+                .map(a -> a.getAffordanceModel(MediaTypes.HAL_FORMS_JSON))
+                .filter(
+                        Objects::nonNull)
+                .map(a -> String.format("%s %s".formatted(((AffordanceModel) a).getHttpMethod(),
+                        ((AffordanceModel) a).getName())))
+                .toList();
+        LOG.warn("Event {} with affordances {}", event.getId(), knownAffordances);
     }
 
-    @Override
-    public void addLinks(CollectionModel<EntityModel<EventResponse>> resources) {
+    private void addOptions(ImprovedHalFormsAffordanceModel affordance, Event event) {
+        HalFormsOptions categoryOptions = HalFormsOptions.remote(linkTo(methodOn(EventsController.class).getEventCategories(
+                        event.getId())).withRel("categories"))
+                .withMaxItems(1L);
+
+        affordance.defineOptions("category", categoryOptions);
     }
 
     @Autowired
