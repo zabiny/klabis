@@ -8,13 +8,10 @@ package club.klabis.members.infrastructure.restapi;
 import club.klabis.members.MemberId;
 import club.klabis.members.application.MembershipSuspendUseCase;
 import club.klabis.members.domain.MemberNotFoundException;
-import club.klabis.members.domain.MembershipSuspensionInfo;
 import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoRequestDto;
+import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
-import club.klabis.shared.config.hateoas.HalResourceAssembler;
-import club.klabis.shared.config.hateoas.ModelAssembler;
-import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.restapi.ApiController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,8 +20,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
-import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,11 +29,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 @ApiController(path = "/members/{memberId}", openApiTagName = "Suspend membership")
 public class SuspendMemberUseCaseControllers {
 
-    private final ModelAssembler<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> conversionService;
+    private final ConversionService conversionService;
     private final MembershipSuspendUseCase useCase;
 
-    public SuspendMemberUseCaseControllers(ModelPreparator<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> modelAssembler, MembershipSuspendUseCase useCase, PagedResourcesAssembler<MembershipSuspensionInfo> pagedResourceAssembler) {
-        this.conversionService = new HalResourceAssembler<>(modelAssembler, pagedResourceAssembler);
+    public SuspendMemberUseCaseControllers(MembershipSuspendUseCase useCase, ConversionService conversionService) {
+        this.conversionService = conversionService;
         this.useCase = useCase;
     }
 
@@ -67,11 +62,11 @@ public class SuspendMemberUseCaseControllers {
             }
     )
     @GetMapping("/suspendMembershipForm")
-    public EntityModel<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(
+    public MembershipSuspensionInfoApiDto membersMemberIdSuspendMembershipFormGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId
     ) {
         return useCase.getSuspensionInfoForMember(memberId)
-                .map(conversionService::toEntityResponse)
+                .map(d -> conversionService.convert(d, MembershipSuspensionInfoApiDto.class))
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 

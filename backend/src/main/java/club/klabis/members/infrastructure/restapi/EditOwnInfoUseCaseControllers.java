@@ -19,16 +19,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-
-import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ApiController(path = "/members/{memberId}/editOwnMemberInfoForm", openApiTagName = "Edit members")
 public class EditOwnInfoUseCaseControllers {
@@ -72,17 +67,13 @@ public class EditOwnInfoUseCaseControllers {
             }
     )
     @GetMapping
-    public EntityModel<EditMyDetailsFormApiDto> membersMemberIdEditOwnMemberInfoFormGet(
+    public EditMyDetailsFormApiDto membersMemberIdEditOwnMemberInfoFormGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId
     ) {
         EditMyDetailsFormApiDto formData = conversionService.convert(editMemberUseCase.getEditOwnMemberInfoForm(memberId),
                 EditMyDetailsFormApiDto.class);
 
-        return EntityModel.of(formData)
-                .add(linkTo(getClass(), memberId).withSelfRel()
-                        .andAffordance(affordBetter(methodOn(getClass()).membersMemberIdEditOwnMemberInfoFormPut(
-                                memberId,
-                                null))));
+        return formData;
     }
 
 
