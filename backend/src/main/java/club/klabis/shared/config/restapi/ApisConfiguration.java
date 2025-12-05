@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
@@ -36,6 +37,7 @@ import java.util.Arrays;
 @EnableSpringDataWebSupport
 // conversion of ID -> domain (e.g., integer -> Event). It should work once the in-memory repository is completed as a full SpringRest repository. It must be removed if Spring Data REST is added (it conflicts with it as it creates duplicate pageable mapping)
 @Configuration(proxyBeanMethods = false)
+@Import(ApiExceptionHandlers.class)
 public class ApisConfiguration {
 
     private final KlabisPrincipalSource klabisPrincipalSource;

@@ -6,6 +6,7 @@
 package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.application.EventsRepository;
+import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
@@ -24,15 +25,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.List;
+
 @ExposesResourceFor(Event.class)
-@ApiController(openApiTagName = "Events", path = "/events", produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_JSON_VALUE})
+@ApiController(openApiTagName = "Events", path = "/events")
 public class EventsController {
     private final EventsRepository eventsRepository;
     private final ModelAssembler<Event, EventResponse> eventModelMapper;
@@ -73,14 +74,25 @@ public class EventsController {
                     @Parameter(name = "eventId", description = "ID eventu", required = true, in = ParameterIn.PATH, schema = @Schema(type = "integer"))
             }
     )
-    @GetMapping(
-            value = "/{eventId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_JSON_VALUE}
-    )
+    @GetMapping(value = "/{eventId}")
     @JsonView(ResponseViews.Detailed.class)
     EntityModel<EventResponse> getEventById(@PathVariable("eventId") Event.Id eventId) {
         return eventsRepository.findById(eventId)
                 .map(eventModelMapper::toEntityResponse)
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
     }
+
+
+    @GetMapping("/{eventId}/categories")
+    public List<String> getEventCategories(@PathVariable Event.Id eventId) {
+        Event event = eventsRepository.findById(eventId)
+                .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
+
+        if (event instanceof Competition competition) {
+            return competition.getCategories().stream().map(Competition.Category::name).toList();
+        }
+        return List.of();
+    }
+
 
 }

@@ -36,7 +36,7 @@ public class ImprovedHalFormsAffordanceModel extends HalFormsAffordanceModel {
     private final HalFormsPropertyCompositePostprocessor halFormsPropertyPostprocessor = HalFormsPropertyCompositePostprocessor.defaultSetup();
     private static final Jackson3Adapter jacksonAdapter = new Jackson3Adapter();
 
-    public static AffordanceModel improveHalFormsAffordance(AffordanceModel original) {
+    public static ImprovedHalFormsAffordanceModel improveHalFormsAffordance(AffordanceModel original) {
 
         return new ImprovedHalFormsAffordanceModel(ImprovedHalFormsAffordanceModel.fromModel(original,
                 getPropertiesOrder(original)));

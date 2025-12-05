@@ -211,9 +211,10 @@ const HalFormsFormController = ({api, inputTemplate}: {
 }
 
 interface HalFormsFormProps {
-    data: Record<string, any>;
-    template: HalFormsTemplate;
-    onSubmit?: (values: Record<string, any>) => void;
+    data: Record<string, any>,
+    template: HalFormsTemplate,
+    onSubmit?: (values: Record<string, any>) => void,
+    onCancel?: () => void,
     submitButtonLabel?: string,
     fieldsFactory?: HalFormFieldFactory
 }
@@ -227,6 +228,7 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
                                                        data,
                                                        template,
                                                        onSubmit,
+                                                       onCancel,
                                                        fieldsFactory = muiHalFormsFieldsFactory,
                                                        submitButtonLabel = "Odeslat"
                                                    }) => {
@@ -262,6 +264,8 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
                     <Button type="submit" disabled={isSubmitting} variant="contained" color="primary">
                         {submitButtonLabel}
                     </Button>
+                    {onCancel && <Button type="button" disabled={isSubmitting} variant={"contained"} color="secondary"
+                                         onClick={() => onCancel()}>Zpět</Button>}
                 </Form>
             )}
         </Formik>

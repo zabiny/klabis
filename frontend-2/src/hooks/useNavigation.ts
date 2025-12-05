@@ -1,13 +1,15 @@
 import {useCallback, useMemo, useState} from "react";
 
-export const useNavigation = <T, >(initial?: T): {
-    current: T | undefined;
+export interface Navigation<T> {
+    current: T;
     navigate: (resource: T) => void;
     back: () => void;
     isFirst: boolean,
     isLast: boolean,
     reset: () => void;
-} => {
+}
+
+export const useNavigation = <T, >(initial: T): Navigation<T> => {
     const [navigation, setNavigation] = useState<Array<T>>(initial && [initial] || []);
 
     const navigate = useCallback((resource: T): void => {
@@ -26,7 +28,7 @@ export const useNavigation = <T, >(initial?: T): {
         setNavigation(prev => [prev[0]]);
     }, [])
 
-    const current = useMemo(() => navigation && navigation[navigation.length - 1] || initial || undefined, [navigation, initial]);
+    const current = useMemo(() => navigation && navigation[navigation.length - 1] || initial, [navigation, initial]);
 
     const isFirst = navigation.length == 1;
     const isLast = true;    // doesn't keep forward (yet)

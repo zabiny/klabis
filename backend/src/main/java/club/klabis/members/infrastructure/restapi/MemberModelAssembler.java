@@ -6,14 +6,14 @@ import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
-import club.klabis.users.infrastructure.restapi.UserPermissionsApi;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.LinkRelationProvider;
 import org.springframework.stereotype.Component;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import java.util.ArrayList;
+import java.util.List;
+
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
@@ -22,13 +22,11 @@ public class MemberModelAssembler implements ModelPreparator<Member, MembersApiR
     private final ConversionService conversionService;
     private final KlabisSecurityService securityService;
     private final EntityLinks entityLinks;
-    private final LinkRelationProvider linkRelationProvider;
 
-    public MemberModelAssembler(ConversionService conversionService, KlabisSecurityService securityService, EntityLinks entityLinks, LinkRelationProvider linkRelationProvider) {
+    public MemberModelAssembler(ConversionService conversionService, KlabisSecurityService securityService, EntityLinks entityLinks) {
         this.conversionService = conversionService;
         this.securityService = securityService;
         this.entityLinks = entityLinks;
-        this.linkRelationProvider = linkRelationProvider;
     }
 
     @Override
@@ -39,49 +37,26 @@ public class MemberModelAssembler implements ModelPreparator<Member, MembersApiR
 
     @Override
     public void addLinks(EntityModel<MembersApiResponse> target, Member entity) {
-        target.add(entityLinks.linkToItemResource(Member.class, entity.getId().value()).withSelfRel());
-        target.add(entityLinks.linkToCollectionResource(Member.class)
-                .withRel(linkRelationProvider.getCollectionResourceRelFor(
-                        Member.class)));
+        List<Affordance> selfAffordances = new ArrayList<>();
 
-        if (entity.isSuspended()) {
-            if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-                target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(entity.getId())).withRel(
-                        ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()).withName("Obnovit členství"));
-            }
-            return;
-        }
+        target.add(entityLinks.linkToItemResource(Member.class, entity.getId().value())
+                .withSelfRel()
+                .andAffordances(selfAffordances));
+    }
 
-        if (securityService.canEditMemberData(entity.getId())) {
-            target.add(linkTo(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
-                    entity.getId())).withRel("members:editOwnInfo").withName("Upravit moje údaje"));
-        }
-
-        if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
-            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId())).withRel(
-                    ApplicationGrant.MEMBERS_EDIT.getGrantName()).withName("Upravit údaje člena klubu"));
-        }
-
-        if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-            target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class,
-                    entity.getId()).membersMemberIdSuspendMembershipFormGet(
-                    entity.getId())).withRel(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName())
-                    .withName("Pozastavit členství"));
-        }
-
-        if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
-            entity.getAppUserId()
-                    .ifPresent(appUserId -> target.add(linkTo(methodOn(UserPermissionsApi.class).getUserGrants(
-                            appUserId)).withRel(
-                            ApplicationGrant.APPUSERS_PERMISSIONS.getGrantName()).withName("Upravit oprávnění")));
-        }
+    private void removeSelfAffordances(RepresentationModel<?> resourceModel) {
+        // TODO: doesn't remove links from RepresentationModelProcessor<EntityModel<?>>. Need to find some way how to do that as that model processors seems to be better place to initialize links (= they can be located at the controller which is referenced there, they are called only when HAL+FORMs data are produced into JSON, etc.. )
+        resourceModel.mapLink(LinkRelation.of("self"), Link::withoutAffordances);
     }
 
     @Override
     public void addLinks(CollectionModel<EntityModel<MembersApiResponse>> model) {
+        model.getContent().forEach(this::removeSelfAffordances);
+
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
-            model.add(linkTo(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(null))
-                    .withRel(ApplicationGrant.MEMBERS_REGISTER.getGrantName()).withName("Nový člen klubu"));
+            model.mapLink(LinkRelation.of("self"),
+                    link -> link.andAffordance(affordBetter(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(
+                            null))));
         }
     }
 

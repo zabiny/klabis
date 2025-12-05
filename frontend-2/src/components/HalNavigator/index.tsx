@@ -13,14 +13,28 @@ import {ErrorBoundary} from "react-error-boundary";
 import {type HalFormFieldFactory, HalFormsForm} from "../HalFormsForm";
 import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../../api/klabisUserManager";
-import {useNavigation} from "../../hooks/useNavigation";
+import {type Navigation, useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
-import {getDefaultTemplate, getSelfLink, isHalFormsResponse, isHalResponse} from "../HalFormsForm/utils";
+import {getDefaultTemplate, isHalFormsTemplate, isHalResponse} from "../HalFormsForm/utils";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
 
 
 const userManager: UserManager = klabisAuthUserManager;
+
+class FetchError extends Error {
+    public responseBody?: string;
+    public responseStatus: number;
+    public responseStatusText: string;
+
+    constructor(message: string, responseStatus: number, responseStatusText: string, responseBody?: string) {
+        super(message);
+        this.responseBody = responseBody;
+        this.responseStatus = responseStatus;
+        this.responseStatusText = responseStatusText;
+    }
+
+}
 
 // Generic HAL fetcher
 async function fetchResource(url: string) {
@@ -32,16 +46,20 @@ async function fetchResource(url: string) {
         },
     });
     if (!res.ok) {
+        let bodyText: string | undefined = undefined;
         if (res.body) {
-            const bodyText = await res.text();
+            bodyText = await res.text();
             console.warn(bodyText ? `Response body: ${bodyText}` : 'No response body');
         }
-        throw new Error(`HTTP ${res.status}`);
+        throw new FetchError(`HTTP ${res.status}`, res.status, res.statusText, bodyText);
     }
     return res.json();
 }
 
-function HalLinksUi({links, onClick}: { links: Record<string, Link>, onClick: (link: Link) => void }): ReactElement {
+function HalLinksUi({links, onClick}: {
+    links: Record<string, NavigationTarget>,
+    onClick: (link: NavigationTarget) => void
+}): ReactElement {
     return (
         <Stack direction={"row"} spacing={2}>
             {Object.entries(links).map(([rel, link]) => {
@@ -56,6 +74,24 @@ function HalLinksUi({links, onClick}: { links: Record<string, Link>, onClick: (l
     );
 }
 
+function HalActionsUi({links, onClick}: {
+    links: Record<string, NavigationTarget>,
+    onClick: (link: NavigationTarget) => void
+}): ReactElement {
+    return (
+        <Stack direction={"row"} spacing={2}>
+            {Object.entries(links).map(([rel, link]) => {
+                if (rel === "self") return null;
+                const singleLink = Array.isArray(link) ? link[0] : link;
+                return (
+                    <Button key={rel}
+                            onClick={() => onClick(singleLink)}>{singleLink.title || singleLink.name || rel}</Button>
+                );
+            })}
+        </Stack>
+    );
+}
+
 function omitMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_links'> {
     const {_links, ...rest} = obj;
     return rest;
@@ -63,16 +99,16 @@ function omitMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_l
 
 const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
 
-function HalCollectionContent({data, navigate}: {
+function HalCollectionContent({data, navigation}: {
     data: HalResponse,
-    navigate: (link: Link) => void
+    navigation: Navigation<NavigationTarget>
 }): ReactElement {
 
     // TODO: split links into collection links and other links. Display collection links "bellow" table and other links above table as actions.
 
     return (
         <>
-            {data._links && <HalLinksUi links={data._links} onClick={navigate}/>}
+            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
 
             {data._embedded && Object.entries(data._embedded).map(([rel, items]) => (
                     <div key={rel}>
@@ -84,7 +120,7 @@ function HalCollectionContent({data, navigate}: {
                                     {item._links?.self && (
                                         <Button
                                             className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
-                                            onClick={() => navigate(item._links.self)}
+                                            onClick={() => navigation.navigate(item._links.self)}
                                         >
                                             Open
                                         </Button>
@@ -95,16 +131,21 @@ function HalCollectionContent({data, navigate}: {
                     </div>
                 )
             )
-            }</>)
+            }
+
+            {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
+
+        </>)
 
 }
 
-function HalItemContent({data, navigate}: {
+function HalItemContent({data, navigation}: {
     data: HalResponse,
-    navigate: (link: Link) => void
+    navigation: Navigation<NavigationTarget>
 }): ReactElement {
     return (
         <>
+            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
             <table>
                 <thead>
                 <tr>
@@ -124,34 +165,51 @@ function HalItemContent({data, navigate}: {
                 }
                 </tbody>
             </table>
-            {data._links && <HalLinksUi links={data._links} onClick={navigate}/>}
+            {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
         </>);
 }
 
 
-function HalContent({data, navigate}: {
+function HalContent({data, navigation}: {
     data: HalResponse,
-    navigate: (link: Link) => void
+    navigation: Navigation<NavigationTarget>
 }): ReactElement {
 
     if (data.page === undefined) {
-        return <HalItemContent data={data} navigate={navigate}/>
+        return <HalItemContent data={data} navigation={navigation}/>
     } else {
-        return <HalCollectionContent data={data} navigate={navigate}/>
+        return <HalCollectionContent data={data} navigation={navigation}/>
     }
 }
 
 type NavigationTarget = Link | TemplateTarget | string;
 
+function HalEditableItemContent({
+                                    initData, fieldsFactory, navigation
+                                }: {
+    initData: HalFormsResponse,
+    navigation: Navigation<NavigationTarget>,
+    fieldsFactory?: HalFormFieldFactory
+}): ReactElement {
+
+    if (isHalFormsTemplate(navigation.current)) {
+        return <HalFormsContent initData={initData} submitApi={navigation.current} fieldsFactory={fieldsFactory}
+                                initTemplate={navigation.current} afterSubmit={() => navigation.back()}
+                                onCancel={() => navigation.back()}/>;
+    } else {
+        return <HalItemContent data={initData} navigation={navigation}/>;
+    }
+}
 
 function HalFormsContent({
-                             submitApi, initTemplate, initData, fieldsFactory, afterSubmit = () => {
+                             submitApi, initTemplate, initData, fieldsFactory, onCancel, afterSubmit = () => {
     }
                          }: {
     submitApi: NavigationTarget,
     initTemplate?: HalFormsTemplate,
     initData: HalFormsResponse,
     afterSubmit?: () => void,
+    onCancel?: () => void,
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
     const [error, setError] = useState<Error>();
@@ -176,7 +234,8 @@ function HalFormsContent({
     }, [submitApi, afterSubmit]);
 
     return (<>
-        <HalFormsForm data={initData} template={activeTemplate} onSubmit={submit} fieldsFactory={fieldsFactory}/>
+        <HalFormsForm data={initData} template={activeTemplate} onSubmit={submit} fieldsFactory={fieldsFactory}
+                      onCancel={onCancel}/>
         {error && <Alert severity={"error"}>{error.message}</Alert>}
         {isFormValidationError(error) && Object.entries(error.validationErrors).map((entry, message) => <Alert
             severity={"error"}>{entry[0]}:&nbsp;{entry[1]}</Alert>)}
@@ -184,45 +243,22 @@ function HalFormsContent({
     </>);
 }
 
-function isHalFormsContentData(data: HalResponse): boolean {
-    function isTemplateTargetCurrentLinkHref(data: HalFormsResponse) {
-        const defaultTemplate = getDefaultTemplate(data);
+function isCollectionContent(data: HalResponse): boolean {
+    return (data?.page !== undefined);
+}
 
-        if (!defaultTemplate.target) {
-            // if default template doesn't have target, it's same as SELF link => true
-            return true;
-        }
-
-        return toHref(getSelfLink(data)) == toHref(defaultTemplate);
-    }
-
-    if (!isHalFormsResponse(data)) {
-        return false;
-    }
-
-    if (data.page !== undefined) {
-        // "collection" is never HalForms content
-        return false;
-    }
-
-    // if is there default template with target URL same as self link href, it's HAL+FORMS
-    if (isTemplateTargetCurrentLinkHref(data)) {
-        return true;
-    }
-
-    return false;
+function isSingleItemContent(data: HalResponse): boolean {
+    return !isCollectionContent(data);
 }
 
 function HalNavigatorContent({
-                                 api, navigate, fieldsFactory, navigateBack = () => {
-    }
+                                 fieldsFactory, navigation
                              }: {
-    api: NavigationTarget,
-    navigate: (target: NavigationTarget) => Promise<void>,
-    navigateBack?: () => void,
+    navigation: Navigation<NavigationTarget>
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
-    const {data, isLoading, error} = useSimpleFetch(api);
+    const api = navigation.current;
+    const {data, isLoading, error} = useSimpleFetch(api, {ignoredErrorStatues: [405, 404]});
     const [showSource, setShowSource] = useState(true);
     if (isLoading) {
         return <Alert severity={"info"}>Nahravam data {toLink(api).href}</Alert>;
@@ -234,11 +270,12 @@ function HalNavigatorContent({
     }
 
     function renderContent(item: any): ReactElement {
-        if (isHalFormsContentData(item)) { // TODO: GET /members problem - vraci Members with template for registerNewMember. We check `.page` as all our lists are paged now, so it's able to distinguish Collection resource from HalForms. But we should have bettern distinguishment.
-            return <HalFormsContent submitApi={api} afterSubmit={navigateBack} initData={item}
-                                    fieldsFactory={fieldsFactory}/>;
+        if (isCollectionContent(item)) {
+            return <HalCollectionContent data={item} navigation={navigation}/>;
+        } else if (isHalFormsTemplate(navigation.current)) {
+            return <HalEditableItemContent initData={item} navigation={navigation} fieldsFactory={fieldsFactory}/>;
         } else if (isHalResponse(item)) {
-            return <HalContent data={item} navigate={navigate}/>;
+            return <HalItemContent data={item} navigation={navigation}/>;
         } else {
             return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
         }
@@ -257,6 +294,7 @@ function HalNavigatorContent({
             <FormLabel>Zobraz zdrojovy JSON:<Checkbox checked={showSource}
                                                       onChange={(event, checked) => setShowSource(checked)}>Zdrojovy
                 JSON</Checkbox></FormLabel>
+            {showSource && <JsonPreview data={navigation.current} label={"Current navigation target"}/>}
             {showSource && <JsonPreview data={data} label={"Response data"}/>}
         </Grid>
     </Grid>);
@@ -272,7 +310,12 @@ function toLink(item: NavigationTarget): Link {
     }
 }
 
-const useSimpleFetch = (resource: NavigationTarget): {
+interface SimpleFetchOptions {
+    ignoredErrorStatues?: number[],
+    responseForError?: HalResponse
+}
+
+const useSimpleFetch = (resource: NavigationTarget, options?: SimpleFetchOptions): {
     data?: HalResponse,
     isLoading: boolean,
     error?: Error
@@ -289,7 +332,11 @@ const useSimpleFetch = (resource: NavigationTarget): {
             const response = await fetchResource(toHref(link));
             setData(response);
         } catch (e) {
-            if (e instanceof Error) {
+            const ignoredStatuses = options?.ignoredErrorStatues || [];
+            if (isHalFormsTemplate(link) && e instanceof FetchError && ignoredStatuses.indexOf(e.responseStatus) > -1) {
+                console.warn(`HAL+FORMS API ${toHref(resource)} responded with ${e.responseStatus} - error will be replaced with empty object as Form resources doesn't require GET API if there are no data to be prepopulated in the form`)
+                setData((options?.responseForError || {}))
+            } else if (e instanceof Error) {
                 setError(e);
             } else {
                 setError(new Error("Unknown error " + e))
@@ -332,14 +379,14 @@ export function HalNavigatorPage({
     startUrl: Link | string,
     fieldsFactory?: HalFormFieldFactory
 }) {
-    const {current: state, navigate, back, isFirst, reset} = useNavigation<NavigationTarget>(startUrl);
+    const navigation = useNavigation<NavigationTarget>(startUrl);
 
     const renderNavigation = (): ReactElement => {
         console.log(startUrl);
         return (<Stack direction={"row"}>
-            <Button onClick={reset}>Restart</Button>
-            <Button disabled={isFirst} onClick={back}>Zpět</Button>
-            <h3>{toHref(state)}</h3>
+            <Button onClick={navigation.reset}>Restart</Button>
+            <Button disabled={navigation.isFirst} onClick={navigation.back}>Zpět</Button>
+            <h3>{toHref(navigation.current)}</h3>
         </Stack>);
     }
 
@@ -348,12 +395,12 @@ export function HalNavigatorPage({
 
             {renderNavigation()}
 
-            <ErrorBoundary fallback={<JsonPreview data={state} label={"Nejde vyrenderovat HAL FORMS form"}/>}
-                           resetKeys={[state]}>
-                <HalNavigatorContent api={state}
+            <ErrorBoundary
+                fallback={<JsonPreview data={navigation.current} label={"Nejde vyrenderovat HAL FORMS form"}/>}
+                resetKeys={[navigation.current]}>
+                <HalNavigatorContent api={navigation.current}
                                      fieldsFactory={fieldsFactory}
-                                     navigate={async (link) => await navigate(link)}
-                                     navigateBack={back}
+                                     navigation={navigation}
                 />
             </ErrorBoundary>
 

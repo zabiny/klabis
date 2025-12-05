@@ -9,8 +9,8 @@ import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.ddd.UseCase;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
+import club.klabis.shared.config.security.HasMemberGrant;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
@@ -25,7 +25,7 @@ public class EditMemberInfoUseCase {
         this.conversionService = conversionService;
     }
 
-    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
+    @HasMemberGrant(memberId = "#memberId")
     public EditOwnMemberInfoForm getEditOwnMemberInfoForm(MemberId memberId) {
         return membersRepository.findById(memberId)
                 .map(m -> conversionService.convert(m, EditOwnMemberInfoForm.class))
@@ -33,7 +33,7 @@ public class EditMemberInfoUseCase {
     }
 
     @Transactional
-    @PreAuthorize("@klabisAuthorizationService.canEditMemberData(#memberId)")
+    @HasMemberGrant(memberId = "#memberId")
     public Member editMember(MemberId memberId, @Valid EditOwnMemberInfoForm form) {
         Member member = membersRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));

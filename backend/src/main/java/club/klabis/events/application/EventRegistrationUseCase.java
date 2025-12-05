@@ -1,6 +1,5 @@
 package club.klabis.events.application;
 
-import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
 import club.klabis.events.domain.Registration;
@@ -11,8 +10,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class EventRegistrationUseCase {
@@ -38,16 +35,6 @@ public class EventRegistrationUseCase {
                 .orElseGet(() -> toForm(event,
                         new EventRegistrationForm(memberSiCardProvider.getSiCardForMember(memberId).orElse(null),
                                 null)));
-    }
-
-    public List<String> getEventCategories(Event.Id eventId) {
-        Event event = eventsRepository.findById(eventId)
-                .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
-
-        if (event instanceof Competition competition) {
-            return competition.getCategories().stream().map(Competition.Category::name).toList();
-        }
-        return List.of();
     }
 
     private EventRegistrationFormData toForm(Event event, EventRegistrationForm registrationForm) {

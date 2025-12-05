@@ -7,15 +7,17 @@ package club.klabis.members.infrastructure.restapi;
 
 import club.klabis.members.MemberId;
 import club.klabis.members.application.MembershipSuspendUseCase;
+import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
-import club.klabis.members.domain.MembershipSuspensionInfo;
+import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembershipSuspensionInfoRequestDto;
+import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
-import club.klabis.shared.config.hateoas.HalResourceAssembler;
-import club.klabis.shared.config.hateoas.ModelAssembler;
-import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.restapi.ApiController;
+import club.klabis.shared.config.security.ApplicationGrant;
+import club.klabis.shared.config.security.HasGrant;
+import club.klabis.shared.config.security.KlabisSecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -23,22 +25,27 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
-import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 @ApiController(path = "/members/{memberId}", openApiTagName = "Suspend membership")
 public class SuspendMemberUseCaseControllers {
 
-    private final ModelAssembler<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> conversionService;
+    private final ConversionService conversionService;
     private final MembershipSuspendUseCase useCase;
 
-    public SuspendMemberUseCaseControllers(ModelPreparator<MembershipSuspensionInfo, MembershipSuspensionInfoApiDto> modelAssembler, MembershipSuspendUseCase useCase, PagedResourcesAssembler<MembershipSuspensionInfo> pagedResourceAssembler) {
-        this.conversionService = new HalResourceAssembler<>(modelAssembler, pagedResourceAssembler);
+    public SuspendMemberUseCaseControllers(MembershipSuspendUseCase useCase, ConversionService conversionService) {
+        this.conversionService = conversionService;
         this.useCase = useCase;
     }
 
@@ -67,11 +74,11 @@ public class SuspendMemberUseCaseControllers {
             }
     )
     @GetMapping("/suspendMembershipForm")
-    public EntityModel<MembershipSuspensionInfoApiDto> membersMemberIdSuspendMembershipFormGet(
+    public MembershipSuspensionInfoApiDto membersMemberIdSuspendMembershipFormGet(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId
     ) {
         return useCase.getSuspensionInfoForMember(memberId)
-                .map(conversionService::toEntityResponse)
+                .map(d -> conversionService.convert(d, MembershipSuspensionInfoApiDto.class))
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
@@ -112,6 +119,7 @@ public class SuspendMemberUseCaseControllers {
             }
     )
     @PutMapping("/suspendMembershipForm")
+    @HasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)
     public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId,
             @Parameter(name = "force", description = "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension") @Valid @RequestBody MembershipSuspensionInfoRequestDto form) {
@@ -121,8 +129,41 @@ public class SuspendMemberUseCaseControllers {
 
 
     @PutMapping(path = "/resumeMembershipForm")
+    @HasGrant(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP)
     ResponseEntity<Void> resumeMembership(@PathVariable("memberId") MemberId memberId) {
         useCase.resumeMembership(memberId);
         return ResponseEntity.ok(null);
+    }
+}
+
+@Component
+class SuspendMemberResourceProcessor implements RepresentationModelProcessor<EntityModel<MembersApiResponse>> {
+
+    private final KlabisSecurityService securityService;
+
+    SuspendMemberResourceProcessor(KlabisSecurityService securityService) {
+        this.securityService = securityService;
+    }
+
+    @Override
+    public EntityModel<MembersApiResponse> process(EntityModel<MembersApiResponse> model) {
+        Member entity = model.getContent().member();
+
+        if (entity.isSuspended()) {
+            if (securityService.hasGrant(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP)) {
+                model.mapLink(IanaLinkRelations.SELF,
+                        link -> link.andAffordance(affordBetter(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(
+                                entity.getId()))));
+            }
+        } else {
+            if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
+                model.mapLink(IanaLinkRelations.SELF,
+                        link -> link.andAffordance(affordBetter(methodOn(SuspendMemberUseCaseControllers.class,
+                                entity.getId()).membersMemberIdSuspendMembershipFormPut(
+                                entity.getId(), null))));
+            }
+        }
+
+        return model;
     }
 }

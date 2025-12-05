@@ -19,17 +19,12 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.net.URI;
-
-import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ApiController(path = "/memberRegistrations", openApiTagName = "Register members")
 public class RegisterNewMemberController {
@@ -86,11 +81,10 @@ public class RegisterNewMemberController {
     }
 
     @GetMapping
-    EntityModel<MemberRegistrationFormApiDto> getRegistrationForm() {
+    MemberRegistrationFormApiDto getRegistrationForm() {
         MemberRegistrationFormApiDto form = MemberRegistrationFormApiDto.empty();
 
-        return EntityModel.of(form, WebMvcLinkBuilder.linkTo(this.getClass()).withSelfRel()
-                .andAffordance(affordBetter(methodOn(getClass()).memberRegistrationsPost(null))));
+        return form;
     }
 
 }
