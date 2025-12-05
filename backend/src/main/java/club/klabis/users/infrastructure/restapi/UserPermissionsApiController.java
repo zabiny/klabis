@@ -133,7 +133,7 @@ public class UserPermissionsApiController {
             @Parameter(name = "MemberGrantsFormApiDto", description = "") @Valid @RequestBody(required = false) MemberGrantsFormApiDto memberGrantsFormApiDto
     ) {
         Collection<ApplicationGrant> globalGrants = conversionService.convert(
-                memberGrantsFormApiDto.getGrants(),
+                memberGrantsFormApiDto.grants(),
                 TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
         userGrantsUpdateUseCase.setGlobalGrants(userId, globalGrants);
         return ResponseEntity.ok(null);
