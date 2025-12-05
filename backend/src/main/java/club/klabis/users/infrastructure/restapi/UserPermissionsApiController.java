@@ -1,9 +1,11 @@
 package club.klabis.users.infrastructure.restapi;
 
+import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
+import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.users.application.ApplicationUserNotFound;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.application.UserGrantsUpdateUseCase;
@@ -20,7 +22,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.core.convert.TypeDescriptor;
+import org.springframework.hateoas.Affordance;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,6 +36,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.Collection;
 import java.util.List;
+
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ApiController(openApiTagName = "User permissions")
 public class UserPermissionsApiController {
@@ -68,12 +80,12 @@ public class UserPermissionsApiController {
         return ResponseEntity.ok(GetAllGrants200ResponseApiDto.builder().grants(convertedGrants).build());
     }
 
-    public record HalFormsOptionItem(ApplicationGrant value, String prompt) {
+    public record HalFormsOptionItem(String value, String prompt) {
 
     }
 
     private HalFormsOptionItem fromGrant(ApplicationGrant grant) {
-        return new HalFormsOptionItem(grant, grant.getDescription());
+        return new HalFormsOptionItem(grant.getGrantName(), grant.getDescription());
     }
 
     @GetMapping(value = "/grant_options")
@@ -125,5 +137,35 @@ public class UserPermissionsApiController {
                 TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(ApplicationGrant.class)));
         userGrantsUpdateUseCase.setGlobalGrants(userId, globalGrants);
         return ResponseEntity.ok(null);
+    }
+}
+
+@Component
+class MemberGrantLinksPostprocessor implements RepresentationModelProcessor<EntityModel<MembersApiResponse>> {
+
+    private final KlabisSecurityService securityService;
+
+    MemberGrantLinksPostprocessor(KlabisSecurityService securityService) {
+        this.securityService = securityService;
+    }
+
+    private HalFormsOptions getGrantsOptions() {
+        return HalFormsOptions.remote(linkTo(methodOn(UserPermissionsApiController.class).getAllGrantsOptions()).withSelfRel());
+    }
+
+    private Affordance createChangeGrantsAffordance(ApplicationUser.Id appUserId) {
+        return affordBetter(methodOn(UserPermissionsApiController.class).updateMemberGrants(appUserId, null),
+                a -> a.defineOptions("grants", getGrantsOptions()));
+    }
+
+    @Override
+    public EntityModel<MembersApiResponse> process(EntityModel<MembersApiResponse> model) {
+        if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
+            model.getContent().member().getAppUserId()
+                    .ifPresent(appUserId -> model.mapLink(IanaLinkRelations.SELF,
+                            link -> link.andAffordance(createChangeGrantsAffordance(appUserId))));
+        }
+
+        return model;
     }
 }

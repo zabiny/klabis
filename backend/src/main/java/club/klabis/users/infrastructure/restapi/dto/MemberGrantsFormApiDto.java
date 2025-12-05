@@ -1,10 +1,12 @@
 package club.klabis.users.infrastructure.restapi.dto;
 
+import club.klabis.shared.config.hateoas.KlabisInputTypes;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
+import org.springframework.hateoas.InputType;
 import org.springframework.hateoas.RepresentationModel;
 
 import java.util.ArrayList;
@@ -20,8 +22,9 @@ import java.util.Objects;
 @Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-07-25T23:04:18.674684470+02:00[Europe/Prague]", comments = "Generator version: 7.6.0")
 public class MemberGrantsFormApiDto extends RepresentationModel<MemberGrantsFormApiDto> {
 
+    @InputType(KlabisInputTypes.CHECKBOX_INPUT_TYPE)
     @Valid
-    private List<club.klabis.users.infrastructure.restapi.dto.GlobalGrantsApiDto> grants = new ArrayList<>();
+    private List<GlobalGrantsApiDto> grants = new ArrayList<>();
 
     public MemberGrantsFormApiDto grants(List<club.klabis.users.infrastructure.restapi.dto.GlobalGrantsApiDto> grants) {
         this.grants = grants;
