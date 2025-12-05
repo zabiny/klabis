@@ -1,6 +1,7 @@
 package club.klabis.users.infrastructure.restapi;
 
 import club.klabis.adapters.api.ApiTestConfiguration;
+import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.application.UserGrantsUpdateUseCase;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import java.util.List;
 
@@ -32,10 +34,14 @@ class UserPermissionsApiControllerTest {
     @DisplayName("GET /grant_options")
     class GetGrantsTests {
 
+        MvcTestResult callGetGrants() {
+            return mockMvcTester.get().uri("/grants").exchange();
+        }
+
         @DisplayName("it should respond with HTTP 401 when no one is authenticated")
         @Test
         void itShouldReturnHttp401WhenNoUserAuthenticated() {
-            mockMvcTester.get().uri("/grant_options")
+            callGetGrants()
                     .assertThat()
                     .hasStatus(HttpStatus.UNAUTHORIZED);
         }
@@ -48,16 +54,28 @@ class UserPermissionsApiControllerTest {
         @DisplayName("it should return data in correct format")
         @Test
         void itShouldReturnDataInCorrectFormat() {
-            mockMvcTester.get().uri("/grant_options")
+            callGetGrants()
                     .assertThat()
                     .hasStatus(HttpStatus.OK)
                     .hasContentType(MediaType.APPLICATION_JSON_VALUE)
                     .bodyJson()
                     .hasNoNullFieldsOrProperties()
-                    .extractingPath("$[?(@.value=='APPUSERS_PERMISSIONS')]")
+                    .extractingPath("$[?(@.value=='members:permissions')]")
                     .convertTo(InstanceOfAssertFactories.list(ExpectedOptionJsonStructure.class))
-                    .isEqualTo(List.of(new ExpectedOptionJsonStructure("APPUSERS_PERMISSIONS",
+                    .isEqualTo(List.of(new ExpectedOptionJsonStructure("members:permissions",
                             "Může spravovat oprávnění v aplikaci")));
+        }
+
+        @WithMockUser
+        @DisplayName("it should return all application global grants")
+        @Test
+        void itShouldReturnAllApplicationGrants() {
+            callGetGrants()
+                    .assertThat()
+                    .hasStatus(HttpStatus.OK)
+                    .bodyJson()
+                    .extractingPath("$[*].value")
+                    .isEqualTo(ApplicationGrant.globalGrants().stream().map(ApplicationGrant::getGrantName).toList());
         }
 
 
