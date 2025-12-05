@@ -1,7 +1,7 @@
 package club.klabis.users.infrastructure.restapi;
 
+import club.klabis.members.domain.Member;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
-import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
@@ -40,12 +40,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @ApiController(openApiTagName = "User permissions")
 public class UserPermissionsApiController {
 
-    private final ConversionService conversionService;
     private final UserGrantsUpdateUseCase userGrantsUpdateUseCase;
     private final ApplicationUsersRepository applicationUsersRepository;
 
-    public UserPermissionsApiController(ConversionService conversionService, UserGrantsUpdateUseCase userGrantsUpdateUseCase, ApplicationUsersRepository applicationUsersRepository) {
-        this.conversionService = conversionService;
+    public UserPermissionsApiController(UserGrantsUpdateUseCase userGrantsUpdateUseCase, ApplicationUsersRepository applicationUsersRepository) {
         this.userGrantsUpdateUseCase = userGrantsUpdateUseCase;
         this.applicationUsersRepository = applicationUsersRepository;
     }
@@ -136,9 +134,13 @@ class MemberGrantLinksPostprocessor implements RepresentationModelProcessor<Enti
     @Override
     public EntityModel<MembersApiResponse> process(EntityModel<MembersApiResponse> model) {
         if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
-            model.getContent().member().getAppUserId()
-                    .ifPresent(appUserId -> model.mapLink(IanaLinkRelations.SELF,
-                            link -> link.andAffordance(createChangeGrantsAffordance(appUserId))));
+            Member member = model.getContent().member();
+
+            if (!member.isSuspended()) {
+                member.getAppUserId()
+                        .ifPresent(appUserId -> model.mapLink(IanaLinkRelations.SELF,
+                                link -> link.andAffordance(createChangeGrantsAffordance(appUserId))));
+            }
         }
 
         return model;
