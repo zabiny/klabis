@@ -6,7 +6,7 @@ import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
-import club.klabis.users.infrastructure.restapi.UserPermissionsApi;
+import club.klabis.users.infrastructure.restapi.UserPermissionsApiController;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.stereotype.Component;
@@ -74,7 +74,7 @@ public class MemberModelAssembler implements ModelPreparator<Member, MembersApiR
 
             if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
                 entity.getAppUserId()
-                        .ifPresent(appUserId -> selfAffordances.add(affordBetter(methodOn(UserPermissionsApi.class).updateMemberGrants(
+                        .ifPresent(appUserId -> selfAffordances.add(affordBetter(methodOn(UserPermissionsApiController.class).updateMemberGrants(
                                 appUserId, null))));
             }
         }
