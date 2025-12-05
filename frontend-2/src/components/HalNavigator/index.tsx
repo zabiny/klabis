@@ -22,6 +22,20 @@ import {isLink} from "../../api/klabisJsonUtils";
 
 const userManager: UserManager = klabisAuthUserManager;
 
+class FetchError extends Error {
+    public responseBody?: string;
+    public responseStatus: number;
+    public responseStatusText: string;
+
+    constructor(message: string, responseStatus: number, responseStatusText: string, responseBody?: string) {
+        super(message);
+        this.responseBody = responseBody;
+        this.responseStatus = responseStatus;
+        this.responseStatusText = responseStatusText;
+    }
+
+}
+
 // Generic HAL fetcher
 async function fetchResource(url: string) {
     const user = await userManager.getUser();
@@ -32,11 +46,12 @@ async function fetchResource(url: string) {
         },
     });
     if (!res.ok) {
+        let bodyText: string | undefined = undefined;
         if (res.body) {
-            const bodyText = await res.text();
+            bodyText = await res.text();
             console.warn(bodyText ? `Response body: ${bodyText}` : 'No response body');
         }
-        throw new Error(`HTTP ${res.status}`);
+        throw new FetchError(`HTTP ${res.status}`, res.status, res.statusText, bodyText);
     }
     return res.json();
 }
@@ -243,7 +258,7 @@ function HalNavigatorContent({
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
     const api = navigation.current;
-    const {data, isLoading, error} = useSimpleFetch(api);
+    const {data, isLoading, error} = useSimpleFetch(api, {ignoredErrorStatues: [405, 404]});
     const [showSource, setShowSource] = useState(true);
     if (isLoading) {
         return <Alert severity={"info"}>Nahravam data {toLink(api).href}</Alert>;
@@ -295,7 +310,12 @@ function toLink(item: NavigationTarget): Link {
     }
 }
 
-const useSimpleFetch = (resource: NavigationTarget): {
+interface SimpleFetchOptions {
+    ignoredErrorStatues?: number[],
+    responseForError?: HalResponse
+}
+
+const useSimpleFetch = (resource: NavigationTarget, options?: SimpleFetchOptions): {
     data?: HalResponse,
     isLoading: boolean,
     error?: Error
@@ -312,7 +332,11 @@ const useSimpleFetch = (resource: NavigationTarget): {
             const response = await fetchResource(toHref(link));
             setData(response);
         } catch (e) {
-            if (e instanceof Error) {
+            const ignoredStatuses = options?.ignoredErrorStatues || [];
+            if (isHalFormsTemplate(link) && e instanceof FetchError && ignoredStatuses.indexOf(e.responseStatus) > -1) {
+                console.warn(`HAL+FORMS API ${toHref(resource)} responded with ${e.responseStatus} - error will be replaced with empty object as Form resources doesn't require GET API if there are no data to be prepopulated in the form`)
+                setData((options?.responseForError || {}))
+            } else if (e instanceof Error) {
                 setError(e);
             } else {
                 setError(new Error("Unknown error " + e))
