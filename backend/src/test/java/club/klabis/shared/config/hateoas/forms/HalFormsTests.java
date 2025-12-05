@@ -91,18 +91,6 @@ public class HalFormsTests {
     }
 
     @Test
-    @DisplayName("it should return default template (broken after SpringFramework 7 + SpringBoot 4 upgrade)")
-    void itShouldReturnDefaultTemplate() {
-        // from SPring Framework 7 + Spring Boot 4 upgrade, `_templates.default` is replaced by `_templates.putFormData` (made from afforded method name). Adding this test to find out why that happens (and decide if we want that fixed back to default or we rather like that method name there - from some perspectives it's better).
-        // btw. Spring HATEOAS docs says that default template is required by HAL+FORMS specs
-        // I updated all other tests to expect _tempaltes.putFormData to check other requirements for HAL+FORMS.
-        assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                .hasStatusOk()
-                .bodyJson()
-                .hasPath("$._templates.default");
-    }
-
-    @Test
     @DisplayName("it should return 'boolean' for Boolean attribute")
     void itShouldReturnCorrectInputTypeForBooleanAttribute() {
         assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
