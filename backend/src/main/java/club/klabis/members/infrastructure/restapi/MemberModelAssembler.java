@@ -39,45 +39,13 @@ public class MemberModelAssembler implements ModelPreparator<Member, MembersApiR
     public void addLinks(EntityModel<MembersApiResponse> target, Member entity) {
         List<Affordance> selfAffordances = new ArrayList<>();
 
-        if (entity.isSuspended()) {
-            if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-                selfAffordances.add(affordBetter(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(entity.getId())));
-//                target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(entity.getId())).withRel(
-//                        ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP.getGrantName()).withName("Obnovit členství"));
-            }
-        } else {
-
-            if (securityService.canEditMemberData(entity.getId())) {
-                selfAffordances.add(affordBetter(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormPut(
-                        entity.getId(), null)));
-//            target.add(linkTo(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormGet(
-//                    entity.getId())).withRel("members:editOwnInfo").withName("Upravit moje údaje"));
-            }
-
-            if (securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
-                selfAffordances.add(affordBetter(methodOn(AdminMemberEditUseCaseControllers.class).putMemberEditByAdminForm(
-                        entity.getId(), null)));
-//            target.add(linkTo(methodOn(AdminMemberEditUseCaseControllers.class).getMemberEditByAdminForm(entity.getId())).withRel(
-//                    ApplicationGrant.MEMBERS_EDIT.getGrantName()).withName("Upravit údaje člena klubu"));
-            }
-
-            if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-                selfAffordances.add(affordBetter(methodOn(SuspendMemberUseCaseControllers.class,
-                        entity.getId()).membersMemberIdSuspendMembershipFormPut(
-                        entity.getId(), null)));
-//            target.add(linkTo(methodOn(SuspendMemberUseCaseControllers.class,
-//                    entity.getId()).membersMemberIdSuspendMembershipFormGet(
-//                    entity.getId())).withRel(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP.getGrantName())
-//                    .withName("Pozastavit členství"));
-            }
-
-        }
         target.add(entityLinks.linkToItemResource(Member.class, entity.getId().value())
                 .withSelfRel()
                 .andAffordances(selfAffordances));
     }
 
     private void removeSelfAffordances(RepresentationModel<?> resourceModel) {
+        // TODO: doesn't remove links from RepresentationModelProcessor<EntityModel<?>>. Need to find some way how to do that as that model processors seems to be better place to initialize links (= they can be located at the controller which is referenced there, they are called only when HAL+FORMs data are produced into JSON, etc.. )
         resourceModel.mapLink(LinkRelation.of("self"), Link::withoutAffordances);
     }
 
