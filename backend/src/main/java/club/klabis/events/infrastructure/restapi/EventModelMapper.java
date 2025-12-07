@@ -7,6 +7,7 @@ import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
+import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -65,6 +66,10 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
     public void addLinks(EntityModel<EventResponse> resource, Event event) {
 
         List<Affordance> selfAffordances = new ArrayList<>();
+
+        if (klabisSecurityService.hasGrant(ApplicationGrant.EVENTS_MANAGE)) {
+            selfAffordances.add(affordBetter(methodOn(EventsController.class).updateEventById(event.getId(), null)));
+        }
 
         klabisSecurityService.getAuthenticatedMemberId()
                 .ifPresentOrElse(memberId -> {

@@ -9,11 +9,14 @@ import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
+import club.klabis.events.domain.forms.EventEditationForm;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.ResponseViews;
+import club.klabis.shared.config.security.ApplicationGrant;
+import club.klabis.shared.config.security.HasGrant;
 import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,8 +30,11 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -79,6 +85,21 @@ public class EventsController {
     EntityModel<EventResponse> getEventById(@PathVariable("eventId") Event.Id eventId) {
         return eventsRepository.findById(eventId)
                 .map(eventModelMapper::toEntityResponse)
+                .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
+    }
+
+    @Operation(
+            operationId = "updateEventById",
+            summary = "Updates given event"
+    )
+    @PutMapping(value = "/{eventId}")
+    @HasGrant(ApplicationGrant.EVENTS_MANAGE)
+    public ResponseEntity<?> updateEventById(@PathVariable("eventId") Event.Id eventId, @RequestBody EventEditationForm form) {
+        return eventsRepository.findById(eventId)
+                .map(event -> {
+                    event.edit(form);
+                    return ResponseEntity.ok().build();
+                })
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
     }
 

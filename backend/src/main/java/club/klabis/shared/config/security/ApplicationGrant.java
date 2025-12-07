@@ -11,6 +11,8 @@ public enum ApplicationGrant {
     MEMBERS_SUSPENDMEMBERSHIP("Může suspendovat členství v klubu", true, false, false, "members:suspendMembership"),
     MEMBERS_RESUMEMEMBERSHIP("Může obnovit členství v klubu", true, false, false, "members:resumeMembership"),
 
+    EVENTS_MANAGE("Může spravovat události", true, false, false, "events:manage"),
+
     SYSTEM_ADMIN("Spravuje systemove veci", true, false, false, "system:admin"),
 
     APPUSERS_PERMISSIONS("Může spravovat oprávnění v aplikaci", true, false, false, "members:permissions");
