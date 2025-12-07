@@ -5,6 +5,7 @@ import {
     isFormTarget,
     isTemplateTarget,
     type Link,
+    type NavigationTarget,
     type TemplateTarget
 } from "../../api";
 import {type ReactElement, useCallback, useEffect, useState} from "react";
@@ -18,6 +19,7 @@ import {JsonPreview} from "../JsonPreview";
 import {getDefaultTemplate, isHalFormsTemplate, isHalResponse} from "../HalFormsForm/utils";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
+import {isString} from "formik";
 
 
 const userManager: UserManager = klabisAuthUserManager;
@@ -181,8 +183,6 @@ function HalContent({data, navigation}: {
         return <HalCollectionContent data={data} navigation={navigation}/>
     }
 }
-
-type NavigationTarget = Link | TemplateTarget | string;
 
 function HalEditableItemContent({
                                     initData, fieldsFactory, navigation
@@ -355,6 +355,7 @@ const useSimpleFetch = (resource: NavigationTarget, options?: SimpleFetchOptions
     return {isLoading: loading, data, error};
 }
 
+
 function toHref(source: NavigationTarget): string {
     if (isTemplateTarget(source)) {
         if (!source.target) {
@@ -366,8 +367,10 @@ function toHref(source: NavigationTarget): string {
             throw new Error("Chybi hodnota href attributu v Link instanci (" + JSON.stringify(source) + ")")
         }
         return source.href
-    } else {
+    } else if (isString(source)) {
         return source;
+    } else {
+        throw new Error("Unknown NavigationTarget: " + JSON.stringify(source, null, 2))
     }
 }
 
@@ -379,10 +382,23 @@ export function HalNavigatorPage({
     startUrl: Link | string,
     fieldsFactory?: HalFormFieldFactory
 }) {
-    const navigation = useNavigation<NavigationTarget>(startUrl);
+    const originalNavigation = useNavigation<NavigationTarget>(startUrl);
+    const navigation: Navigation<NavigationTarget> = {
+        ...originalNavigation,
+        navigate: (target) => {
+            // if template target doesn't have 'target' URL, add it before navigating to such target.
+            if (isHalFormsTemplate(target) && !target.target) {
+                target = {
+                    ...target,
+                    target: toHref(originalNavigation.current),
+                };
+            }
+            originalNavigation.navigate(target);
+        }
+    };
 
     const renderNavigation = (): ReactElement => {
-        console.log(startUrl);
+        console.log("Render nav:" + JSON.stringify(navigation.current));
         return (<Stack direction={"row"}>
             <Button onClick={navigation.reset}>Restart</Button>
             <Button disabled={navigation.isFirst} onClick={navigation.back}>Zpět</Button>

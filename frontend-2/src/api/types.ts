@@ -1,4 +1,6 @@
 import type {components} from "./klabisApi";
+import {isLink} from "./klabisJsonUtils";
+import {isString} from "formik";
 
 export type Link = components["schemas"]["Link"];
 
@@ -100,6 +102,10 @@ export function isFormTarget(item: any): item is TemplateTarget {
     return isTemplateTarget(item) && !!item.method && ['POST', 'PUT', 'DELETE', 'PATCH'].indexOf(item.method) !== -1;
 }
 
+export type NavigationTarget = Link | TemplateTarget | string;
 
+export function isNavigationTarget(item: unknown): item is NavigationTarget {
+    return isLink(item) || isTemplateTarget(item) || isString(item);
+}
 
 
