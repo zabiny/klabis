@@ -8,4 +8,6 @@ public class KlabisInputTypes {
     public static final String CHECKBOX_INPUT_TYPE = "checkboxGroup";
     public static final String RADIO_INPUT_TYPE = "radioGroup";
     public static final String BOOLEAN_INPUT_TYPE = "boolean";
+    public static final String DATE_INPUT_TYPE = "date";
+    public static final String DATE_TIME_INPUT_TYPE = "datetime";
 }
