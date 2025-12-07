@@ -1,10 +1,10 @@
 package club.klabis.events.infrastructure.restapi;
 
+import club.klabis.events.application.EventManagementForm;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
-import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
 import club.klabis.shared.config.security.ApplicationGrant;
@@ -43,11 +43,15 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
 
     @Mapping(target = "type", ignore = true)
     @Mapping(target = "web", source = "website")
-    @Mapping(target = "coordinator", ignore = true)
+    @Mapping(target = "managementForm", source = ".")
     @Mapping(target = "registrations", source = "eventRegistrations")
     @Mapping(target = "source", ignore = true)
     @Override
     public abstract EventResponse toResponseDto(Event event);
+
+    EventManagementForm toForm(Event event) {
+        return EventManagementForm.fromEvent(event);
+    }
 
     String map(Competition.Category category) {
         return category.name();
@@ -57,7 +61,6 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
     public EventResponse afterModelMap(Event event, @MappingTarget EventResponse eventListResponse) {
         return EventResponseBuilder.builder(eventListResponse)
                 .type(EventResponse.TypeEnum.ofEvent(event).orElse(null))
-                .coordinator(event.getCoordinator().map(MemberId::value).orElse(null))
                 .source(event)
                 .build();
     }

@@ -7,7 +7,7 @@ public class EventException extends RuntimeException {
     private final Type type;
 
     enum Type {
-        MEMBER_ALREADY_REGISTERED, MEMBER_NOT_REGISTERED, EVENT_NOT_FOUND, REGISTRATION_DEADLINE_PASSED
+        MEMBER_ALREADY_REGISTERED, MEMBER_NOT_REGISTERED, EVENT_NOT_FOUND, REGISTRATION_DEADLINE_PASSED, UNSPECIFIED
     }
 
     public static EventException createAlreadySignedUpException(Event.Id eventId, MemberId memberId) {

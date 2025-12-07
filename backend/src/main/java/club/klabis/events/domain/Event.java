@@ -1,9 +1,8 @@
 package club.klabis.events.domain;
 
-import club.klabis.events.domain.events.EventEditedEvent;
-import club.klabis.events.domain.forms.EventEditationForm;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
+import club.klabis.shared.config.Globals;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -11,13 +10,16 @@ import org.springframework.data.domain.AbstractAggregateRoot;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @AggregateRoot
 public abstract class Event extends AbstractAggregateRoot<Event> {
 
-    protected Event() {
+    public Event(String name, LocalDate eventDate) {
         id = Id.newId();
+        this.setName(name);
+        this.setEventDate(eventDate);
     }
 
     public Collection<Registration> getEventRegistrations() {
@@ -40,7 +42,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
 
     @Identity
     private final Id id;
-    private LocalDate date;
+    private ZonedDateTime eventStart;
     private String name;
     private String location;
     private String organizer;
@@ -60,7 +62,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
     }
 
     public LocalDate getDate() {
-        return date;
+        return eventStart.toLocalDate();
     }
 
     public Id getId() {
@@ -91,22 +93,46 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         return orisId != null;
     }
 
-    public void edit(EventEditationForm form) {
-        this.date = form.date();
-        this.name = form.name();
-        this.location = form.location();
-        this.organizer = form.organizer();
-        this.registrationDeadline = form.registrationDeadline();
-        this.coordinator = form.coordinator();
+    public void setEventDate(LocalDate newDate) {
+        this.eventStart = newDate.atStartOfDay(Globals.KLABIS_ZONE);
 
-        this.andEvent(new EventEditedEvent(this));
+        if (this.registrationDeadline == null) {
+            this.registrationDeadline = newDate.atStartOfDay(Globals.KLABIS_ZONE);
+        } else if (this.registrationDeadline.isAfter(eventStart)) {
+            this.registrationDeadline = eventStart.truncatedTo(ChronoUnit.DAYS);
+        }
+    }
+
+    public void setRegistrationDeadline(ZonedDateTime registrationDeadline) {
+        if (registrationDeadline.isAfter(this.eventStart)) {
+            throw new EventException(getId(),
+                    "Cannot set registration deadline after event start",
+                    EventException.Type.UNSPECIFIED);
+        }
+        this.registrationDeadline = registrationDeadline;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public void setOrganizer(String organizer) {
+        this.organizer = organizer;
+    }
+
+    public void setCoordinator(MemberId coordinator) {
+        this.coordinator = coordinator;
     }
 
     public void synchronize(OrisData orisData) {
         this.name = orisData.name();
         this.location = orisData.location();
         this.organizer = orisData.organizer();
-        this.date = orisData.eventDate();
+        this.setEventDate(orisData.eventDate());
         this.registrationDeadline = orisData.registrationsDeadline();
         this.website = orisData.website();
         this.linkWithOris(orisData.orisId());

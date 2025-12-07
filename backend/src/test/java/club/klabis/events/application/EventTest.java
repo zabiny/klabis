@@ -1,13 +1,14 @@
-package club.klabis.events.domain;
+package club.klabis.events.application;
 
-import club.klabis.events.domain.events.EventEditedEvent;
-import club.klabis.events.domain.forms.EventEditationForm;
+import club.klabis.events.domain.Competition;
+import club.klabis.events.domain.Event;
+import club.klabis.events.domain.EventException;
+import club.klabis.events.domain.Registration;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.AggregatedRootTestUtils;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -29,11 +30,11 @@ class EventTest {
         @DisplayName("Should correctly update Event properties with given form")
         void shouldUpdateEventProperties() {
             // Arrange
-            Event event = new Competition();
-            LocalDate testDate = LocalDate.of(2025, 7, 22);
-            ZonedDateTime registrationDeadline = LocalDate.of(2025, 7, 25).atStartOfDay(ZONE_PRAGUE);
+            Event event = new Competition("Some", LocalDate.now());
+            LocalDate testDate = LocalDate.of(2025, 7, 25);
+            ZonedDateTime registrationDeadline = LocalDate.of(2025, 7, 22).atStartOfDay(ZONE_PRAGUE);
             MemberId coordinator = new MemberId(1);
-            EventEditationForm form = new EventEditationForm(
+            EventManagementForm form = new EventManagementForm(
                     "Updated Event Name",
                     "Updated Location",
                     testDate,
@@ -43,7 +44,7 @@ class EventTest {
             );
 
             // Act
-            event.edit(form);
+            form.apply(event);
 
             // Assert
             assertThat(event.getName()).isEqualTo("Updated Event Name");
@@ -54,29 +55,7 @@ class EventTest {
             assertThat(event.getCoordinator()).contains(coordinator);
         }
 
-        @Test
-        @DisplayName("Should publish EventEditedEvent when edit is called")
-        void shouldPublishEventEditedEvent() {
-            // Arrange
-            Event event = new Competition();
-            EventEditationForm form = new EventEditationForm(
-                    "Test Event",
-                    "Test Location",
-                    LocalDate.of(2025, 7, 23),
-                    "Test Organizer",
-                    LocalDate.of(2025, 7, 24).atStartOfDay(ZONE_PRAGUE),
-                    null, Competition.Category.categories("D12")
-            );
-
-            // Act
-            event.edit(form);
-
-            // Assert
-            AggregatedRootTestUtils.assertThatDomainEventsOf(event)
-                    .hasSize(1)
-                    .first()
-                    .isInstanceOf(EventEditedEvent.class);
-        }
+        // TODO: any domain events after these changes in Event?
     }
 
     @Nested
@@ -87,14 +66,8 @@ class EventTest {
         @DisplayName("Should successfully add a registration when all conditions are met")
         void shouldRegisterMemberSuccessfully() {
             // Arrange
-            Event event = Competition.newEvent(new EventEditationForm(
-                    "Event Name",
-                    "Location",
-                    LocalDate.now().plusDays(1),
-                    "Organizer",
-                    LocalDate.now().plusDays(1).atStartOfDay(ZONE_PRAGUE),
-                    null, Competition.Category.categories("D12")
-            ));
+            Event event = Competition.newEvent("Event Name",
+                    LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm("SI12345", "D12");
 
@@ -109,14 +82,8 @@ class EventTest {
         @DisplayName("Should throw exception when registering after the deadline")
         void shouldThrowExceptionAfterDeadline() {
             // Arrange
-            Event event = Competition.newEvent(new EventEditationForm(
-                    "Event Name",
-                    "Location",
-                    LocalDate.now(),
-                    "Organizer",
-                    LocalDate.now().minusDays(1).atStartOfDay(ZONE_PRAGUE),
-                    null, Competition.Category.categories("D12")
-            ));
+            Event event = Competition.newEvent("Event Name",
+                    LocalDate.now().minusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
 
@@ -130,14 +97,8 @@ class EventTest {
         @DisplayName("Should throw exception when member is already registered")
         void shouldThrowExceptionForDuplicateRegistration() {
             // Arrange
-            Event event = Competition.newEvent(new EventEditationForm(
-                    "Event Name",
-                    "Location",
-                    LocalDate.now().plusDays(1),
-                    "Organizer",
-                    LocalDate.now().plusDays(1).atStartOfDay(ZONE_PRAGUE),
-                    null, Competition.Category.categories("D12")
-            ));
+            Event event = Competition.newEvent("Event Name",
+                    LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
 
@@ -159,14 +120,8 @@ class EventTest {
         @DisplayName("Should successfully remove a registration when all conditions are met")
         void shouldRemoveRegistrationSuccessfully() {
             // Arrange
-            Event event = Competition.newEvent(new EventEditationForm(
-                    "Event Name",
-                    "Location",
-                    LocalDate.now().plusDays(1),
-                    "Organizer",
-                    LocalDate.now().plusDays(1).atStartOfDay(ZONE_PRAGUE),
-                    null, Competition.Category.categories("D12")
-            ));
+            Event event = Competition.newEvent("Event Name",
+                    LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm("SI12345", "H21");
             event.registerMember(memberId, form);
@@ -182,14 +137,8 @@ class EventTest {
         @DisplayName("Should throw exception when removing registration after the deadline")
         void shouldThrowExceptionAfterDeadline() {
             // Arrange
-            Event event = Competition.newEvent(new EventEditationForm(
-                    "Event Name",
-                    "Location",
-                    LocalDate.now().plusDays(10),
-                    "Organizer",
-                    LocalDate.now().plusDays(4).atStartOfDay(ZONE_PRAGUE),
-                    null, Competition.Category.categories("D12")
-            ));
+            Event event = Competition.newEvent("Event Name",
+                    LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
             event.registerMember(memberId, form);
@@ -205,14 +154,8 @@ class EventTest {
         @DisplayName("Should throw exception when member is not registered")
         void shouldThrowExceptionWhenMemberNotRegistered() {
             // Arrange
-            Event event = Competition.newEvent(new EventEditationForm(
-                    "Event Name",
-                    "Location",
-                    LocalDate.now().plusDays(1),
-                    "Organizer",
-                    LocalDate.now().plusDays(1).atStartOfDay(ZONE_PRAGUE),
-                    null, Competition.Category.categories("D12")
-            ));
+            Event event = Competition.newEvent("Event Name",
+                    LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
 
             // Act / Assert

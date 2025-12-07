@@ -1,8 +1,8 @@
 package club.klabis.events.domain;
 
-import club.klabis.events.domain.forms.EventEditationForm;
 import org.jmolecules.ddd.annotation.Entity;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -11,8 +11,8 @@ import java.util.stream.Stream;
 
 @Entity
 public class Competition extends Event {
-    public Competition() {
-        super();
+    public Competition(String name, LocalDate eventDate) {
+        super(name, eventDate);
     }
 
     private final Set<Category> categories = new HashSet<>();
@@ -23,27 +23,20 @@ public class Competition extends Event {
         }
     }
 
-    public static Event newEvent(EventEditationForm form) {
-        Event event = new Competition();
-        event.edit(form);
-        return event;
+    public static Competition newEvent(String name, LocalDate eventDate, Set<Category> categories) {
+        Competition result = new Competition(name, eventDate);
+        result.setCategories(categories);
+        return result;
     }
 
     public static Event importFrom(OrisData orisData) {
-        Event event = new Competition();
+        Event event = new Competition(orisData.name(), orisData.eventDate());
         event.synchronize(orisData);
         return event;
     }
 
     public Set<Category> getCategories() {
         return new HashSet<>(categories);
-    }
-
-    @Override
-    public void edit(EventEditationForm form) {
-        super.edit(form);
-        this.categories.clear();
-        form.categories().forEach(this.categories::add);
     }
 
     @Override

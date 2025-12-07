@@ -1,7 +1,6 @@
 package club.klabis.events.application;
 
 import club.klabis.PresetDataLoader;
-import club.klabis.events.domain.forms.EventEditationForm;
 import club.klabis.shared.config.faker.Events;
 import club.klabis.shared.config.faker.KlabisFaker;
 import club.klabis.shared.config.faker.KlabisFakerImpl;
@@ -26,10 +25,10 @@ class EventsPresetDataLoader implements PresetDataLoader {
         this.eventsService = eventsService;
     }
 
-    private EventEditationForm randomForm(int index) {
+    private EventManagementForm randomForm(int index) {
         Events.Event randomEvent = faker.events().weightedEvent();
 
-        return new EventEditationForm(randomEvent.name(),
+        return new EventManagementForm(randomEvent.name(),
                 faker.cities().weightedCity(),
                 randomEvent.eventDate(),
                 faker.clubs().weightedClub().code(),

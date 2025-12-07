@@ -5,11 +5,11 @@
  */
 package club.klabis.events.infrastructure.restapi;
 
+import club.klabis.events.application.EventManagementForm;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
-import club.klabis.events.domain.forms.EventEditationForm;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
@@ -94,12 +94,10 @@ public class EventsController {
     )
     @PutMapping(value = "/{eventId}")
     @HasGrant(ApplicationGrant.EVENTS_MANAGE)
-    public ResponseEntity<?> updateEventById(@PathVariable("eventId") Event.Id eventId, @RequestBody EventEditationForm form) {
+    public ResponseEntity<?> updateEventById(@PathVariable("eventId") Event.Id eventId, @RequestBody EventManagementForm form) {
         return eventsRepository.findById(eventId)
-                .map(event -> {
-                    event.edit(form);
-                    return ResponseEntity.ok().build();
-                })
+                .map(form::apply)
+                .map(e -> ResponseEntity.ok().build())
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
     }
 
