@@ -8,7 +8,6 @@ import club.klabis.events.domain.OrisId;
 import club.klabis.oris.application.dto.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@ConditionalOnProperty(prefix = "oris-integration", name = "enabled", havingValue = "true")
+@OrisIntegrationComponent
 class DefaultOrisEventsImporter implements OrisEventsImporter {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultOrisEventsImporter.class);

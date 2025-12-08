@@ -43,6 +43,9 @@ public class MemberIdSerDe {
         @Override
         public MemberId deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
             Integer val = ctxt.readValue(p, Integer.class);
+            if (val == null) {
+                return null;
+            }
             return new MemberId(val);
         }
 
