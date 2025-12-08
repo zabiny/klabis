@@ -270,10 +270,10 @@ function HalNavigatorContent({
     }
 
     function renderContent(item: any): ReactElement {
-        if (isCollectionContent(item)) {
-            return <HalCollectionContent data={item} navigation={navigation}/>;
-        } else if (isHalFormsTemplate(navigation.current)) {
+        if (isHalFormsTemplate(navigation.current)) {
             return <HalEditableItemContent initData={item} navigation={navigation} fieldsFactory={fieldsFactory}/>;
+        } else if (isCollectionContent(item)) {
+            return <HalCollectionContent data={item} navigation={navigation}/>;
         } else if (isHalResponse(item)) {
             return <HalItemContent data={item} navigation={navigation}/>;
         } else {

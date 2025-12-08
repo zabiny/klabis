@@ -17,7 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Affordance;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
 import org.springframework.hateoas.server.EntityLinks;
@@ -100,6 +102,16 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
         resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value())
                 .withSelfRel()
                 .andAffordances(selfAffordances));
+    }
+
+    @Override
+    public void addLinks(CollectionModel<EntityModel<EventResponse>> resources) {
+        ModelPreparator.super.addLinks(resources);
+
+        if (klabisSecurityService.hasGrant(ApplicationGrant.EVENTS_MANAGE)) {
+            resources.mapLink(IanaLinkRelations.SELF,
+                    link -> link.andAffordance(affordBetter(methodOn(EventsController.class).createEvent(null))));
+        }
     }
 
     private void addOptions(ImprovedHalFormsAffordanceModel affordance, Event event) {
