@@ -137,7 +137,15 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
     }
 
     public Event linkWithOris(OrisId orisId) {
-        this.orisId = orisId;
+        if (this.orisId != null) {
+            if (!this.orisId.equals(orisId)) {
+                throw new EventException(id,
+                        "Attempt to link event %s with already assigned orisId %s to another orisId %s".formatted(
+                                getId(), this.orisId, orisId), EventException.Type.UNSPECIFIED);
+            }
+        } else {
+            this.orisId = orisId;
+        }
         return this;
     }
 

@@ -1,11 +1,10 @@
 package club.klabis.oris.application;
 
-import club.klabis.events.application.OrisSynchronizationUseCase;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.OrisData;
-import club.klabis.events.domain.OrisDataBuilder;
 import club.klabis.events.domain.OrisId;
 import club.klabis.oris.application.dto.*;
+import club.klabis.oris.domain.OrisData;
+import club.klabis.oris.domain.OrisDataBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;

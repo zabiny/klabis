@@ -1,5 +1,8 @@
-package club.klabis.events.domain;
+package club.klabis.oris.domain;
 
+import club.klabis.events.domain.Competition;
+import club.klabis.events.domain.Event;
+import club.klabis.events.domain.OrisId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,13 +24,6 @@ public record OrisData(OrisId orisId, @NotBlank String name, @NotNull LocalDate 
     }
 
     public Event apply(Event event) {
-        if (event.hasOrisId() && !event.getOrisId().equals(orisId)) {
-            throw new RuntimeException(
-                    "Attempt to write Oris data with orisId %s to event %s having different orisId %s".formatted(orisId,
-                            event.getId(),
-                            event.getOrisId().orElse(null)));
-        }
-
         // for initial import from ORIS
         event.linkWithOris(orisId);
 

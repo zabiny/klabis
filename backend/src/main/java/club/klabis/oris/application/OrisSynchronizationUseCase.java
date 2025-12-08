@@ -1,8 +1,9 @@
-package club.klabis.events.application;
+package club.klabis.oris.application;
 
+import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.OrisData;
 import club.klabis.events.domain.OrisId;
+import club.klabis.oris.domain.OrisData;
 import club.klabis.shared.config.ddd.UseCase;
 import jakarta.validation.Valid;
 
