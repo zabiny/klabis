@@ -6,7 +6,10 @@ import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
-import org.springframework.hateoas.*;
+import org.springframework.hateoas.Affordance;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.LinkRelation;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.stereotype.Component;
 
@@ -44,15 +47,8 @@ public class MemberModelAssembler implements ModelPreparator<Member, MembersApiR
                 .andAffordances(selfAffordances));
     }
 
-    private void removeSelfAffordances(RepresentationModel<?> resourceModel) {
-        // TODO: doesn't remove links from RepresentationModelProcessor<EntityModel<?>>. Need to find some way how to do that as that model processors seems to be better place to initialize links (= they can be located at the controller which is referenced there, they are called only when HAL+FORMs data are produced into JSON, etc.. )
-        resourceModel.mapLink(LinkRelation.of("self"), Link::withoutAffordances);
-    }
-
     @Override
     public void addLinks(CollectionModel<EntityModel<MembersApiResponse>> model) {
-        model.getContent().forEach(this::removeSelfAffordances);
-
         if (securityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
             model.mapLink(LinkRelation.of("self"),
                     link -> link.andAffordance(affordBetter(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(
