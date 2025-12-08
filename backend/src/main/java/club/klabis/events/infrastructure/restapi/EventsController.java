@@ -31,12 +31,12 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ExposesResourceFor(Event.class)
 @ApiController(openApiTagName = "Events", path = "/events")
@@ -68,6 +68,18 @@ public class EventsController {
         Page<Event> data = eventsRepository.findEvents(filter, pageable);
 
         return eventModelMapper.toPagedResponse(data);
+    }
+
+    @Operation(
+            operationId = "createEvent",
+            summary = "Creates new event"
+    )
+    @PostMapping
+    @HasGrant(ApplicationGrant.EVENTS_MANAGE)
+    public ResponseEntity<?> createEvent(@RequestBody EventManagementForm form) {
+        Event createdEvent = eventsRepository.save(form.createNew());
+
+        return ResponseEntity.created(linkTo(methodOn(getClass()).getEventById(createdEvent.getId())).toUri()).build();
     }
 
     @Operation(
