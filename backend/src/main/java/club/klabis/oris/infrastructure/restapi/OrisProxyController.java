@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Tag(name = "ORIS", description = "Integration endpoints with ORIS - https://oris.orientacnisporty.cz/")
@@ -102,7 +103,9 @@ class OrisProxyController {
     @PostMapping("/oris/synchronizeEvents")
     @HasGrant(ApplicationGrant.SYSTEM_ADMIN)
     public ResponseEntity<Void> synchronizeAllEventsWithOris() {
-        orisEventsImporter.loadOrisEvents(OrisEventListFilter.createDefault());
+        orisEventsImporter.loadOrisEvents(OrisEventListFilter.createDefault()
+                .withDateFrom(LocalDate.now().minusMonths(3))
+                .withDateTo(LocalDate.now().plusMonths(6)));
         return ResponseEntity.ok(null);
     }
 
