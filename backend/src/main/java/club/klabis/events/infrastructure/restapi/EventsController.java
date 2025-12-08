@@ -109,6 +109,7 @@ public class EventsController {
     public ResponseEntity<?> updateEventById(@PathVariable("eventId") Event.Id eventId, @RequestBody EventManagementForm form) {
         return eventsRepository.findById(eventId)
                 .map(form::apply)
+                .map(eventsRepository::save)
                 .map(e -> ResponseEntity.ok().build())
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
     }
