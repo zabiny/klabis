@@ -6,6 +6,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -41,8 +42,12 @@ public class TokenConfiguration {
                             context.getClaims()
                                     .claim(StandardClaimNames.PREFERRED_USERNAME, klabisPrincipal.userName());
                             context.getClaims().claim(StandardClaimNames.SUB, klabisPrincipal.userId().value());
-                            context.getClaims().claim(StandardClaimNames.GIVEN_NAME, klabisPrincipal.firstName());
-                            context.getClaims().claim(StandardClaimNames.FAMILY_NAME, klabisPrincipal.lastName());
+                            if (StringUtils.isNotBlank(klabisPrincipal.firstName())) {
+                                context.getClaims().claim(StandardClaimNames.GIVEN_NAME, klabisPrincipal.firstName());
+                            }
+                            if (StringUtils.isNotBlank(klabisPrincipal.lastName())) {
+                                context.getClaims().claim(StandardClaimNames.FAMILY_NAME, klabisPrincipal.lastName());
+                            }
                         });
             }
         };
