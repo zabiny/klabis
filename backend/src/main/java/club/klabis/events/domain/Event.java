@@ -16,6 +16,10 @@ import java.util.*;
 @AggregateRoot
 public abstract class Event extends AbstractAggregateRoot<Event> {
 
+    protected Event() {
+        id = Id.newId();
+    }
+
     public Event(String name, LocalDate eventDate) {
         id = Id.newId();
         this.setName(name);

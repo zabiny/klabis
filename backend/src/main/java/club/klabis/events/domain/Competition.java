@@ -1,7 +1,5 @@
 package club.klabis.events.domain;
 
-import org.jmolecules.ddd.annotation.Entity;
-
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
@@ -9,10 +7,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Entity
 public class Competition extends Event {
     public Competition(String name, LocalDate eventDate) {
         super(name, eventDate);
+    }
+
+    protected Competition() {
+        super();
     }
 
     private final Set<Category> categories = new HashSet<>();

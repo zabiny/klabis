@@ -1,8 +1,11 @@
 package com.dpolach.inmemoryrepository;
 
+import club.klabis.KlabisApplication;
 import com.nimbusds.jose.shaded.gson.*;
+import com.nimbusds.jose.shaded.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -206,7 +209,9 @@ class EntityStore<T, ID> {
             // Pro jednoduchost necháváme tento případ nevyřešený)
             throw new IllegalStateException("ID cannot be null for entity: " + entity);
         }
-
+        if (entity instanceof AbstractAggregateRoot<?> aggregateRoot) {
+            //aggregateRoot.
+        }
         entities.put(id, entityCloner.deepClone(entity));
         return entity;
     }
@@ -343,6 +348,8 @@ class GsonCloner implements EntityCloner {
             .registerTypeAdapter(java.time.LocalDateTime.class, new LocalDateTimeAdapter())
             .registerTypeAdapter(java.time.ZonedDateTime.class, new ZonedDateTimeAdapter())
             .registerTypeAdapter(java.time.Instant.class, new InstantAdapter())
+            //.disableJdkUnsafe()
+            .registerTypeAdapterFactory(new UnsafeInstantiationWarningFactory())
             .setPrettyPrinting()
             .create();
 
@@ -351,5 +358,42 @@ class GsonCloner implements EntityCloner {
     public <T> T deepClone(T original) {
         Class<T> type = (Class<T>) original.getClass();
         return gson.fromJson(gson.toJson(original), type);
+    }
+}
+
+class UnsafeInstantiationWarningFactory implements TypeAdapterFactory {
+
+    private static final String APP_PACKAGE_NAME = KlabisApplication.class.getPackage().getName();
+
+    private static final Logger LOG = LoggerFactory.getLogger(UnsafeInstantiationWarningFactory.class);
+
+    private static Set<Class<?>> warnedTypes = new HashSet<>();
+
+    private boolean isKlabisAppClass(TypeToken<?> clazz) {
+        return clazz.getRawType().getPackage() != null && clazz.getRawType()
+                .getPackage()
+                .getName()
+                .startsWith(APP_PACKAGE_NAME);
+    }
+
+    private boolean hasNoArgumentConstructor(TypeToken<?> type) {
+        return Arrays.stream(type.getRawType().getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
+    }
+
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
+        if (!warnedTypes.contains(typeToken.getRawType()) && isKlabisAppClass(typeToken) && !hasNoArgumentConstructor(
+                typeToken)) {
+            // For example transient attribute like AggregateRoot's domainEvents collection
+            // If such problems happen, easiest solution is to declare no-args constructor for problematic class
+            LOG.warn(
+                    "InMemory repository cloning type {} without no-args constructor - GSON will use Unsafe operation -> deserialized instance may behave incorrectly! (some attributes may have missing value, etc..)",
+                    typeToken.getRawType());
+        }
+
+        warnedTypes.add(typeToken.getRawType());
+
+        // let handle type by other factories
+        return null;
     }
 }
