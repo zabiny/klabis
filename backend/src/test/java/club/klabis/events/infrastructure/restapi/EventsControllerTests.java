@@ -64,14 +64,16 @@ public class EventsControllerTests {
         // TODO: replace with MockUser authorities
         when(klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)).thenReturn(true);
 
-        when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
-                Optional.of(createEventWithOrisId(new OrisId(3))));
+        final Event event = createEventWithOrisId(new OrisId(3));
+        final Event.Id eventId = event.getId();
 
-        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        when(eventsRepositoryMock.findById(eventId)).thenReturn(Optional.of(event));
+
+        mockMvc.perform(get("/events/{eventId}", eventId.value()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._templates.synchronizeEventWithOris.target").value(
-                        "http://localhost/events/1/synchronizeWithOris"));
+                        "http://localhost/events/%d/synchronizeWithOris".formatted(eventId.value())));
     }
 
 
