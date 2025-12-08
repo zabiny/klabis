@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.List;
+
 @RestController
 class OrisProxyController implements OrisApi {
 
@@ -42,12 +44,15 @@ class OrisProxyController implements OrisApi {
 
     @HasGrant(ApplicationGrant.SYSTEM_ADMIN)
     @Override
-    public ResponseEntity<Void> synchronizeEventsFromOris(SynchronizeEventsRequest request) {
-        if (request.eventIds().isEmpty()) {
-            orisEventsImporter.loadOrisEvents(OrisEventListFilter.createDefault());
-        } else {
-            orisEventsImporter.synchronizeEvents(request.eventIds().stream().map(Event.Id::new).toList());
-        }
+    public ResponseEntity<Void> synchronizeAllEventsWithOris() {
+        orisEventsImporter.loadOrisEvents(OrisEventListFilter.createDefault());
+        return ResponseEntity.ok(null);
+    }
+
+    @HasGrant(ApplicationGrant.SYSTEM_ADMIN)
+    @Override
+    public ResponseEntity<Void> synchronizeEventWithOris(Event.Id eventId) {
+        orisEventsImporter.synchronizeEvents(List.of(eventId));
         return ResponseEntity.ok(null);
     }
 

@@ -6,9 +6,12 @@ import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
-import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.stereotype.Component;
+
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
 class EventResponseCollectionModelPostprocessor implements RepresentationModelProcessor<CollectionModel<EntityModel<EventResponse>>> {
@@ -22,8 +25,8 @@ class EventResponseCollectionModelPostprocessor implements RepresentationModelPr
     @Override
     public CollectionModel<EntityModel<EventResponse>> process(CollectionModel<EntityModel<EventResponse>> model) {
         if (klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)) {
-            model.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(OrisApi.class)
-                    .synchronizeEventsFromOris(null)).withRel("synchronizeAll"));
+            model.mapLink(IanaLinkRelations.SELF,
+                    selfLink -> selfLink.andAffordance(affordBetter(methodOn(OrisApi.class).synchronizeAllEventsWithOris())));
         }
 
         return model;

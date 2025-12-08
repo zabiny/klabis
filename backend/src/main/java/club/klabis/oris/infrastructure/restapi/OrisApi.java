@@ -5,6 +5,7 @@
  */
 package club.klabis.oris.infrastructure.restapi;
 
+import club.klabis.events.domain.Event;
 import club.klabis.members.infrastructure.restapi.dto.MembersMemberIdEditMemberInfoFormGet400ResponseApiDto;
 import club.klabis.members.infrastructure.restapi.dto.MembersMemberIdEditMemberInfoFormGet403ResponseApiDto;
 import club.klabis.oris.infrastructure.restapi.dto.ORISUserInfoApiDto;
@@ -18,14 +19,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Pattern;
+import jakarta.websocket.server.PathParam;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
-import java.util.Collection;
 
 @Validated
 @Tag(name = "ORIS", description = "Integration endpoints with ORIS - https://oris.orientacnisporty.cz/")
@@ -80,7 +79,7 @@ public interface OrisApi {
     );
 
     @Operation(
-            operationId = "orisSynchronizeEvents",
+            operationId = "SynchronizeEventWithOris",
             summary = "Triggers events synchronization with ORIS",
             description = "#### Required authorization requires `system:admin` grant ",
             tags = {"ORIS"},
@@ -90,14 +89,21 @@ public interface OrisApi {
                     @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation")
             }
     )
-    @PostMapping(
-            value = "/oris/synchronizeEvents",
-            produces = {"application/json", "application/problem+json"}
-    )
-    ResponseEntity<Void> synchronizeEventsFromOris(
-            @Parameter(description = "DTO containing event IDs to synchronize", required = false) @RequestBody SynchronizeEventsRequest request
-    );
+    @PostMapping("/events/{eventId}/synchronizeWithOris")
+    ResponseEntity<Void> synchronizeEventWithOris(@PathParam("eventId") Event.Id eventId);
 
-    record SynchronizeEventsRequest(Collection<Integer> eventIds) {
-    }
+    @Operation(
+            operationId = "synchronizeAllEventsWithOris",
+            summary = "Triggers events synchronization with ORIS",
+            description = "#### Required authorization requires `system:admin` grant ",
+            tags = {"ORIS"},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully triggered events synchronization"),
+                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed"),
+                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation")
+            }
+    )
+    @PostMapping("/oris/synchronizeEvents")
+    ResponseEntity<Void> synchronizeAllEventsWithOris();
+
 }
