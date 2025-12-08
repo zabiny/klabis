@@ -14,4 +14,35 @@ public record OrisData(OrisId orisId, @NotBlank String name, @NotNull LocalDate 
                        @NotNull ZonedDateTime registrationsDeadline,
                        String location, String organizer, @NotNull Collection<String> categories, URL website) {
 
+    public Competition createCompetition() {
+        Competition result = new Competition(name, eventDate);
+        this.apply(result);
+        return result;
+    }
+
+    public Event apply(Event event) {
+        if (event.hasOrisId() && !event.getOrisId().equals(orisId)) {
+            throw new RuntimeException(
+                    "Attempt to write Oris data with orisId %s to event %s having different orisId %s".formatted(orisId,
+                            event.getId(),
+                            event.getOrisId().orElse(null)));
+        }
+
+        // for initial import from ORIS
+        event.linkWithOris(orisId);
+
+        event.setName(name);
+        event.setLocation(location);
+        event.setOrganizer(organizer);
+        event.setEventDate(eventDate);
+        event.setRegistrationDeadline(registrationsDeadline);
+        event.withWebsite(website);
+
+        if (event instanceof Competition competition) {
+            competition.setCategories(categories.stream().map(Competition.Category::new).toList());
+        }
+
+        return event;
+    }
+
 }

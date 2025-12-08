@@ -132,22 +132,17 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         this.coordinator = coordinator;
     }
 
-    public void synchronize(OrisData orisData) {
-        this.name = orisData.name();
-        this.location = orisData.location();
-        this.organizer = orisData.organizer();
-        this.setEventDate(orisData.eventDate());
-        this.registrationDeadline = orisData.registrationsDeadline();
-        this.website = orisData.website();
-        this.linkWithOris(orisData.orisId());
-    }
-
     public void closeRegistrations(ZonedDateTime registrationDeadline) {
         this.registrationDeadline = registrationDeadline;
     }
 
     public Event linkWithOris(OrisId orisId) {
         this.orisId = orisId;
+        return this;
+    }
+
+    public Event withWebsite(URL website) {
+        this.website = website;
         return this;
     }
 

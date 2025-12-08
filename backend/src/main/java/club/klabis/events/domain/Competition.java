@@ -30,20 +30,8 @@ public class Competition extends Event {
         return result;
     }
 
-    public static Event importFrom(OrisData orisData) {
-        Event event = new Competition(orisData.name(), orisData.eventDate());
-        event.synchronize(orisData);
-        return event;
-    }
-
     public Set<Category> getCategories() {
         return new HashSet<>(categories);
-    }
-
-    @Override
-    public void synchronize(OrisData orisData) {
-        super.synchronize(orisData);
-        setCategories(orisData.categories().stream().map(Category::new).toList());
     }
 
     public void setCategories(Collection<Category> categories) {

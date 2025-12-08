@@ -1,6 +1,5 @@
 package club.klabis.events.application;
 
-import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisData;
 import club.klabis.events.domain.OrisId;
@@ -31,11 +30,8 @@ public class OrisSynchronizationUseCase {
 
     public void importEvent(@Valid OrisData orisData) {
         Event updatedEvent = eventsRepository.findByOrisId(orisData.orisId())
-                .map(e -> {
-                    e.synchronize(orisData);
-                    return e;
-                })
-                .orElse(Competition.importFrom(orisData));
+                .map(orisData::apply)
+                .orElse(orisData.createCompetition());
 
         eventsRepository.save(updatedEvent);
     }

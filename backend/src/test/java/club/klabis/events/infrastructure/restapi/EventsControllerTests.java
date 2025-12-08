@@ -4,7 +4,6 @@ import club.klabis.adapters.api.ApiTestConfiguration;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.OrisData;
 import club.klabis.events.domain.OrisId;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
@@ -19,9 +18,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -44,15 +42,9 @@ public class EventsControllerTests {
     KlabisSecurityService klabisSecurityService;
 
     static Event createEventWithOrisId(OrisId orisId) {
-        return Competition.importFrom(new OrisData(
-                orisId,
-                "Test",
-                LocalDate.now(),
-                ZonedDateTime.now().minusDays(2),
-                "Brno",
-                "ZBM",
-                Collections.emptyList(),
-                null));
+        Competition result = Competition.newEvent("Test", LocalDate.now(), Set.of());
+        result.linkWithOris(orisId);
+        return result;
     }
 
     @Test
