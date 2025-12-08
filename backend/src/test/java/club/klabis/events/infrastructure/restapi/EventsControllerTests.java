@@ -5,6 +5,8 @@ import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisId;
+import club.klabis.oris.application.OrisEventsImporter;
+import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +16,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,10 +33,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ApiTestConfiguration(controllers = EventsController.class)
 @Import({EventModelMapperImpl.class})
-@ComponentScan("club.klabis.oris.infrastructure.restapi.eventapi")
+@ComponentScan("club.klabis.oris.infrastructure.restapi")
+@ActiveProfiles("oris")
 public class EventsControllerTests {
     @MockitoBean
     EventsRepository eventsRepositoryMock;
+
+    @MockitoBean
+    OrisApiClient orisApiClientMock;
+
+    @MockitoBean
+    OrisEventsImporter orisEventsImporter;
 
     @Autowired
     MockMvc mockMvc;
@@ -49,7 +59,7 @@ public class EventsControllerTests {
 
     @Test
     @WithMockUser
-    @DisplayName("it should add synchronize link to event with OrisId for user with SystemAdmin grant")
+    @DisplayName("it should add synchronize affordance to event with OrisId for user with SystemAdmin grant")
     void itShouldAddLinkToEventWithOrisId() throws Exception {
         // TODO: replace with MockUser authorities
         when(klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)).thenReturn(true);
@@ -57,15 +67,17 @@ public class EventsControllerTests {
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
                 Optional.of(createEventWithOrisId(new OrisId(3))));
 
-        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE, MediaTypes.HAL_JSON_VALUE))
+        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._links.synchronize.href").value("http://localhost/oris/synchronizeEvents"));
+                .andExpect(jsonPath("$._templates.synchronizeEventWithOris.target").value(
+                        "http://localhost/events/1/synchronizeWithOris"));
     }
+
 
     @Test
     @WithMockUser
-    @DisplayName("it should NOT add synchronize link to event with OrisId for user WITHOUT SystemAdmin grant")
+    @DisplayName("it should NOT add synchronize affordance to event with OrisId for user WITHOUT SystemAdmin grant")
     void itShouldNotAddLinkToUnauthorizedUser() throws Exception {
         // TODO: replace with MockUser authorities
         when(klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)).thenReturn(false);
@@ -73,10 +85,10 @@ public class EventsControllerTests {
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
                 Optional.of(createEventWithOrisId(new OrisId(3))));
 
-        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE, MediaTypes.HAL_JSON_VALUE))
+        mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._links.synchronize").doesNotExist());
+                .andExpect(jsonPath("$._templates.synchronizeEventWithOris.target").doesNotExist());
     }
 
 }
