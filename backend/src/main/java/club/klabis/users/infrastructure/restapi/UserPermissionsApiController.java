@@ -2,6 +2,7 @@ package club.klabis.users.infrastructure.restapi;
 
 import club.klabis.members.domain.Member;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
+import club.klabis.shared.config.hateoas.HalFormsOptionItem;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
@@ -46,10 +47,6 @@ public class UserPermissionsApiController {
     public UserPermissionsApiController(UserGrantsUpdateUseCase userGrantsUpdateUseCase, ApplicationUsersRepository applicationUsersRepository) {
         this.userGrantsUpdateUseCase = userGrantsUpdateUseCase;
         this.applicationUsersRepository = applicationUsersRepository;
-    }
-
-    public record HalFormsOptionItem<T>(T value, String prompt) {
-
     }
 
     private HalFormsOptionItem<ApplicationGrant> fromGrant(ApplicationGrant grant) {

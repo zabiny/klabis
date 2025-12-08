@@ -1,28 +1,30 @@
 package club.klabis.shared.config.hateoas.forms;
 
+import club.klabis.shared.config.hateoas.HalFormsOptionItem;
 import org.springframework.hateoas.AffordanceModel;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
-import org.springframework.util.function.ThrowingFunction;
-import tools.jackson.databind.ObjectMapper;
 
+import java.util.Collection;
 import java.util.stream.Stream;
 
-class EnumOptionsProvider implements HalFormsOptionsProvider {
+class EnumOptionsProvider<T extends Enum<T>> implements HalFormsOptionsProvider {
     private final HalFormsOptions halFormsOptions;
 
-    public EnumOptionsProvider(Class<Enum<?>> enumClass) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        this.halFormsOptions = createOptions(enumClass, objectMapper::writeValueAsString);
+    public EnumOptionsProvider(Class<T> enumClass) {
+        this.halFormsOptions = createOptions(enumClass);
     }
 
-    static HalFormsOptions createOptions(Class<Enum<?>> enumClass, ThrowingFunction<Enum<?>, String> toValue) {
-        try {
-            Enum<?>[] enumConstants = enumClass.getEnumConstants();
+    HalFormsOptionItem<T> createOption(T value) {
+        return new HalFormsOptionItem<>(value, value.name());
+    }
 
-            return HalFormsOptions.inline(Stream.of(enumConstants)
-                    .map(toValue)
-                    .map(v -> v.replaceAll("\"", ""))
-                    .toArray(String[]::new));
+    HalFormsOptions createOptions(Class<T> enumClass) {
+        try {
+            Collection<HalFormsOptionItem<T>> items = Stream.of(enumClass.getEnumConstants())
+                    .map(this::createOption)
+                    .toList();
+
+            return HalFormsOptions.inline(items);
         } catch (ClassCastException e) {
             throw new IllegalStateException("Failed to process enum values for " + enumClass, e);
         }

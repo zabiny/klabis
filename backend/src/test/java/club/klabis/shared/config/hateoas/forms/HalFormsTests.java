@@ -1,6 +1,7 @@
 package club.klabis.shared.config.hateoas.forms;
 
 import club.klabis.adapters.api.ApiTestConfiguration;
+import club.klabis.shared.config.hateoas.HalFormsOptionItem;
 import club.klabis.shared.config.restapi.ApiController;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
@@ -16,13 +17,13 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.json.AbstractJsonContentAssert;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.net.URI;
-import java.util.List;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,11 +78,18 @@ public class HalFormsTests {
     @Test
     @DisplayName("It should return options for enum fields")
     void itShouldReturnOptionsForDefinedFields() throws Exception {
-        assertThat(mockMvcTester.get().uri("/formsTest").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        AbstractJsonContentAssert<?> bodyAssert = assertThat(mockMvcTester.get()
+                .uri("/formsTest")
+                .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .hasStatusOk()
-                .bodyJson()
-                .extractingPath("$._templates.putFormData.properties[3].options.inline")
-                .isEqualTo(List.of("MALE", "FEMALE"));
+                .bodyJson();
+
+        bodyAssert.extractingPath("$._templates.putFormData.properties[3].options.inline[0]")
+                .convertTo(HalFormsOptionItem.class)
+                .isEqualTo(new HalFormsOptionItem<>("MALE", "MALE"));
+        bodyAssert.extractingPath("$._templates.putFormData.properties[3].options.inline[1]")
+                .convertTo(HalFormsOptionItem.class)
+                .isEqualTo(new HalFormsOptionItem<>("FEMALE", "FEMALE"));
     }
 
     @Disabled
