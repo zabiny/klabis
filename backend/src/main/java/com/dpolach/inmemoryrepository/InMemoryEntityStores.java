@@ -380,15 +380,25 @@ class UnsafeInstantiationWarningFactory implements TypeAdapterFactory {
         return Arrays.stream(type.getRawType().getDeclaredConstructors()).anyMatch(c -> c.getParameterCount() == 0);
     }
 
+    private boolean isAggregateRoot(TypeToken<?> type) {
+        return AbstractAggregateRoot.class.isAssignableFrom(type.getRawType());
+    }
+
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
         if (!warnedTypes.contains(typeToken.getRawType()) && isKlabisAppClass(typeToken) && !hasNoArgumentConstructor(
                 typeToken)) {
             // For example transient attribute like AggregateRoot's domainEvents collection
             // If such problems happen, easiest solution is to declare no-args constructor for problematic class
-            LOG.warn(
-                    "InMemory repository cloning type {} without no-args constructor - GSON will use Unsafe operation -> deserialized instance may behave incorrectly! (some attributes may have missing value, etc..)",
-                    typeToken.getRawType());
+            if (isAggregateRoot(typeToken)) {
+                LOG.error(
+                        "InMemory repository cloning will damage aggregate root's domain events (attempt to using them will throw NPE as list of events will not be properly deserialized into collection instance) for type {} : declare no-args constructor for that type (can be private) so GSON is able to construct instace properly",
+                        typeToken.getRawType().getSimpleName());
+            } else {
+                LOG.warn(
+                        "InMemory repository cloning type {} without no-args constructor - cloned instance may be incomplete (GSON will use unsafe operations to instantiate it when deserializing clone). For example some attributes may have missing value, etc..). Add no-args constructor if there will be such issues.",
+                        typeToken.getRawType());
+            }
         }
 
         warnedTypes.add(typeToken.getRawType());
