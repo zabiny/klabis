@@ -1,4 +1,4 @@
-import React, {ReactNode, useEffect} from 'react';
+import React, {ReactElement, ReactNode, useEffect} from 'react';
 // Import pro MuiTableCell
 import {
     Alert,
@@ -14,6 +14,21 @@ import {
 } from '@mui/material';
 import {type KlabisApiGetPaths, type SortDirection, useKlabisApiQuery} from '../../api';
 import {KlabisTableProvider, useKlabisTableContext} from "./KlabisTableContext.tsx";
+
+const KlabisTablePagination = ({totalElements}: { totalElements?: number }): ReactElement => {
+    const tableContext = useKlabisTableContext();
+    return <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        component="div"
+        count={totalElements || 0}
+        rowsPerPage={tableContext.rowsPerPage} x
+        page={tableContext.page}
+        onPageChange={tableContext.handleChangePage}
+        onRowsPerPageChange={tableContext.handleChangeRowsPerPage}
+        labelRowsPerPage="Řádků na stránku:"
+        labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}
+    />;
+}
 
 interface KlabisTableProps<T = any> {
     api: KlabisApiGetPaths;
@@ -64,7 +79,7 @@ const KlabisTableInner = <T extends Record<string, any>>({
                 <TableRow key={0}><TableCell align={"center"}
                                              colSpan={tableContext.columnsCount}>
                     <Alert severity="error">
-                        Nepodařilo se načíst data. Zkuste to prosím později.
+                        Nepodařilo se načíst data. Zkuste to prosím později. ({JSON.stringify(error)})
                     </Alert>
                 </TableCell></TableRow>
             );
@@ -105,17 +120,7 @@ const KlabisTableInner = <T extends Record<string, any>>({
                     </TableBody>
                 </Table>
             </TableContainer>
-            <TablePagination
-                rowsPerPageOptions={[5, 10, 25, 50]}
-                component="div"
-                count={data?.page.totalElements || 0}
-                rowsPerPage={tableContext.rowsPerPage} x
-                page={tableContext.page}
-                onPageChange={tableContext.handleChangePage}
-                onRowsPerPageChange={tableContext.handleChangeRowsPerPage}
-                labelRowsPerPage="Řádků na stránku:"
-                labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}
-            />
+            <KlabisTablePagination totalElements={data?.page?.totalElements}/>
         </Paper>
     );
 };

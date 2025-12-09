@@ -6,6 +6,7 @@ import {
     isTemplateTarget,
     type Link,
     type NavigationTarget,
+    type PageMetadata,
     type TemplateTarget
 } from "../../api";
 import {type ReactElement, useCallback, useEffect, useState} from "react";
@@ -108,13 +109,11 @@ function HalCollectionContent({data, navigation}: {
 
     // TODO: split links into collection links and other links. Display collection links "bellow" table and other links above table as actions.
 
-    return (
-        <>
-            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
-
-            {data._embedded && Object.entries(data._embedded).map(([rel, items]) => (
-                    <div key={rel}>
-                        <h2 className="font-semibold">{rel}</h2>
+    const renderCollectionContent = (relName: string, items: Array<unknown>, page?: PageMetadata): ReactElement => {
+        switch (relName) {
+            default:
+                return (<div key={relName}>
+                        <h2 className="font-semibold">{relName}</h2>
                         <ul className="list-disc list-inside">
                             {(Array.isArray(items) ? items : [items]).map((item, idx) => (
                                 <li key={idx}>
@@ -131,9 +130,15 @@ function HalCollectionContent({data, navigation}: {
                             ))}
                         </ul>
                     </div>
-                )
-            )
-            }
+                );
+        }
+    }
+
+    return (
+        <>
+            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
+
+            {data._embedded && Object.entries(data._embedded).map(([rel, items]) => renderCollectionContent(rel, items, data?.page))}
 
             {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
 

@@ -1,8 +1,10 @@
 import type {components} from "./klabisApi";
 import {isLink} from "./klabisJsonUtils";
 import {isString} from "formik";
+import {isHalResponse} from "../components/HalFormsForm/utils";
 
 export type Link = components["schemas"]["Link"];
+export type PageMetadata = components["schemas"]["PageMetadata"];
 
 export interface PaginatedResponse<T> {
     content: T[];
@@ -41,6 +43,10 @@ export interface HalResponse {
 
     // allow arbitrary additional properties
     [key: string]: any;
+}
+
+export interface HalCollectionResponse extends HalResponse {
+    page: PageMetadata
 }
 
 export interface HalFormsResponse extends HalResponse {
@@ -108,4 +114,7 @@ export function isNavigationTarget(item: unknown): item is NavigationTarget {
     return isLink(item) || isTemplateTarget(item) || isString(item);
 }
 
+export function isHalCollectionResponse(item: unknown): item is HalCollectionResponse {
+    return isHalResponse(item) && item.page;
+}
 
