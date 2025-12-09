@@ -10,7 +10,7 @@ import {
     type PageMetadata,
     type TemplateTarget
 } from "../../api";
-import React, {type ReactElement, useCallback, useEffect, useState} from "react";
+import React, {createContext, type ReactElement, useCallback, useContext, useState} from "react";
 import {Alert, Box, Button, Checkbox, FormLabel, Grid, Link as MuiLink, Stack, Typography} from "@mui/material";
 import {ErrorBoundary} from "react-error-boundary";
 import {type HalFormFieldFactory, HalFormsForm} from "../HalFormsForm";
@@ -26,6 +26,7 @@ import {type FetchTableDataCallback, KlabisTable, TableCell} from "../KlabisTabl
 import EventType from "../events/EventType";
 import {Public} from "@mui/icons-material";
 import MemberName from "../members/MemberName";
+import {useQuery, UseQueryResult} from "@tanstack/react-query";
 
 
 const userManager: UserManager = klabisAuthUserManager;
@@ -129,10 +130,13 @@ function toURLPath(item: NavigationTarget): string {
     }
 }
 
-function HalCollectionContent({data, navigation}: {
+function HalCollectionContent({navigation}: {
     data: HalResponse,
     navigation: Navigation<NavigationTarget>
 }): ReactElement {
+
+    const data = useResponseBody();
+
     const renderCollectionContent = (relName: string, items: Record<string, unknown>[], paging?: PageMetadata): React.ReactElement => {
 
         const resourceUrlPath = toURLPath(navigation.current);
@@ -367,7 +371,6 @@ function HalNavigatorContent({
     }
 
     if (error) {
-        console.table(error.stack);
         return <Alert severity={"error"}>Nepovedlo se nacist data {toLink(api).href}: {error.message}</Alert>;
     }
 
@@ -417,47 +420,6 @@ interface SimpleFetchOptions {
     responseForError?: HalResponse
 }
 
-const useSimpleFetch = (resource: NavigationTarget, options?: SimpleFetchOptions): {
-    data?: HalResponse,
-    isLoading: boolean,
-    error?: Error
-} => {
-    const [loading, setLoading] = useState(false);
-    const [data, setData] = useState();
-    const [error, setError] = useState<Error>();
-
-    const loadData = useCallback(async (link: NavigationTarget) => {
-        setLoading(true);
-        setError(undefined);
-        setData(undefined);
-        try {
-            const response = await fetchResource(toHref(link));
-            setData(response);
-        } catch (e) {
-            const ignoredStatuses = options?.ignoredErrorStatues || [];
-            if (isHalFormsTemplate(link) && e instanceof FetchError && ignoredStatuses.indexOf(e.responseStatus) > -1) {
-                console.warn(`HAL+FORMS API ${toHref(resource)} responded with ${e.responseStatus} - error will be replaced with empty object as Form resources doesn't require GET API if there are no data to be prepopulated in the form`)
-                setData((options?.responseForError || {}))
-            } else if (e instanceof Error) {
-                setError(e);
-            } else {
-                setError(new Error("Unknown error " + e))
-            }
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (resource) {
-            loadData(resource);
-        }
-    }, [resource, loadData]);
-
-    return {isLoading: loading, data, error};
-}
-
-
 function toHref(source: NavigationTarget): string {
     if (isTemplateTarget(source)) {
         if (!source.target) {
@@ -476,6 +438,11 @@ function toHref(source: NavigationTarget): string {
     }
 }
 
+interface HalNavigatorContextData {
+    navigation: Navigation<NavigationTarget>
+}
+
+const HalNavigatorContext = createContext<HalNavigatorContextData>(null);
 
 export function HalNavigatorPage({
                                      startUrl,
@@ -513,15 +480,101 @@ export function HalNavigatorPage({
 
             {renderNavigation()}
 
-            <ErrorBoundary
-                fallback={<JsonPreview data={navigation.current} label={"Nejde vyrenderovat HAL FORMS form"}/>}
-                resetKeys={[navigation.current]}>
-                <HalNavigatorContent api={navigation.current}
-                                     fieldsFactory={fieldsFactory}
-                                     navigation={navigation}
-                />
-            </ErrorBoundary>
+            <HalNavigatorContext value={{navigation: navigation}}>
+                <ErrorBoundary
+                    fallback={<JsonPreview data={navigation.current} label={"Nejde vyrenderovat HAL FORMS form"}/>}
+                    resetKeys={[navigation.current]}>
+                    <HalNavigatorContent api={navigation.current}
+                                         fieldsFactory={fieldsFactory}
+                                         navigation={navigation}
+                    />
+                </ErrorBoundary>
+            </HalNavigatorContext>
 
         </div>
     );
+}
+
+const useHalExplorerNavigation = (): Navigation<NavigationTarget> => {
+    const {navigation} = useContext(HalNavigatorContext);
+
+    return navigation;
+}
+
+type ResponseData<T> = {
+    body: T,
+    contentType: string,
+    responseStatus: number
+}
+
+const useNavigationTargetResponse = (target?: NavigationTarget): UseQueryResult<ResponseData<HalResponse>, Error> => {
+    const navigation = useHalExplorerNavigation();
+
+    const resourceUrl = toHref(target || navigation.current);
+
+    return useQuery<ResponseData<HalResponse>>({
+        queryKey: [resourceUrl], queryFn: async (context): Promise<ResponseData<HalResponse>> => {
+            const user = await userManager.getUser();
+            const res = await fetch(resourceUrl, {
+                headers: {
+                    Accept: "application/prs.hal-forms+json,application/hal+json",
+                    "Authorization": `Bearer ${user?.access_token}`
+                },
+            });
+            if (!res.ok) {
+                let bodyText: string | undefined = undefined;
+                if (res.body) {
+                    bodyText = await res.text();
+                    console.warn(bodyText ? `Response body: ${bodyText}` : 'No response body');
+                }
+                throw new FetchError(`HTTP ${res.status}`, res.status, res.statusText, bodyText);
+            }
+            return {
+                body: await res.json(),
+                contentType: res.headers.get("Content-Type") || '??? not found ??',
+                responseStatus: res.status
+            };
+        }
+    });
+}
+
+const useResponseBody = (): HalResponse | undefined => {
+    const result = useNavigationTargetResponse();
+
+    if (result.isSuccess && !result.isLoading) {
+        return result.data.body;
+    } else {
+        return undefined;
+    }
+}
+
+const useSimpleFetch = (resource: NavigationTarget, options?: SimpleFetchOptions): {
+    data?: HalResponse,
+    isLoading: boolean,
+    error?: Error
+} => {
+
+    const result = useNavigationTargetResponse();
+
+    if (result.error) {
+        const ignoredStatuses = options?.ignoredErrorStatues || [];
+        if (isHalFormsTemplate(resource) && result.error instanceof FetchError && ignoredStatuses.indexOf(result.error.responseStatus) > -1) {
+            console.warn(`HAL+FORMS API ${toHref(resource)} responded with ${result.error.responseStatus} - error will be replaced with empty object as Form resources doesn't require GET API if there are no data to be prepopulated in the form`)
+
+            return {
+                isLoading: false,
+                data: options?.responseForError || {}
+            }
+        } else {
+            return {
+                isLoading: false,
+                error: result.error
+            }
+        }
+    }
+
+    return {
+        isLoading: result.isLoading,
+        data: result.data?.body
+    }
 }
