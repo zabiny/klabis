@@ -125,13 +125,13 @@ export const useNavigationTargetResponse = (target?: NavigationTarget): UseQuery
     });
 }
 
-export const useResponseBody = (): HalResponse | undefined => {
+export const useResponseBody = (defaultBody?: HalResponse): HalResponse | undefined => {
     const result = useNavigationTargetResponse();
 
     if (result.isSuccess && !result.isLoading) {
         return result.data.body;
     } else {
-        return undefined;
+        return defaultBody;
     }
 }
 
