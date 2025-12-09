@@ -22,7 +22,7 @@ class EventsRepositoryAdapterFromInMemoryRepository implements EventsRepository 
 
     @Transactional
     @Override
-    public void appendPendingEventsFrom(EventsSource eventsSource) {
+    public synchronized void appendPendingEventsFrom(EventsSource eventsSource) {
         List<BaseEvent> pendingEvens = eventsSource.getPendingEvents();
         eventsRepository.saveAll(pendingEvens);
         pendingEvens.forEach(eventPublisher::publishEvent);
@@ -30,7 +30,7 @@ class EventsRepositoryAdapterFromInMemoryRepository implements EventsRepository 
     }
 
     @Override
-    public void appendEvent(BaseEvent event) {
+    public synchronized void appendEvent(BaseEvent event) {
         eventsRepository.save(event);
         eventPublisher.publishEvent(event);
     }
