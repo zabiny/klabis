@@ -1,5 +1,5 @@
 import React from "react";
-import {type PageMetadata} from "../../api";
+import {type PaginatedApiParams} from "../../api";
 
 export interface TableCellRenderProps {
     item: Record<string, unknown>;
@@ -18,13 +18,20 @@ export interface TableCellProps {
 
 export interface Paging {
     page: number,
-    rowsPerPage: number,
-    itemsCount: number
+    rowsPerPage: number
 }
 
+export interface TablePageData {
+    size: number,
+    totalElements: number,
+    totalPages: number,
+    number: number
+}
+
+
 export interface TableData<T> {
-    page: PageMetadata,
+    page?: TablePageData,
     data: T[]
 }
 
-export type FetchTableDataCallback<T> = (page: Omit<Paging, "itemsCount">) => Promise<TableData<T>>;
+export type FetchTableDataCallback<T> = (apiParams: PaginatedApiParams) => Promise<TableData<T>>;

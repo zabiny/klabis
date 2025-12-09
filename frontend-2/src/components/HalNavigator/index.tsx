@@ -7,6 +7,7 @@ import {
     isTemplateTarget,
     type Link,
     type NavigationTarget,
+    type PageMetadata,
     type TemplateTarget
 } from "../../api";
 import React, {type ReactElement, useCallback, useEffect, useState} from "react";
@@ -21,7 +22,7 @@ import {getDefaultTemplate, isHalFormsTemplate, isHalResponse} from "../HalForms
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
 import {isString} from "formik";
-import {KlabisTable, TableCell} from "../KlabisTable";
+import {type FetchTableDataCallback, KlabisTable, TableCell} from "../KlabisTable";
 import EventType from "../events/EventType";
 import {Public} from "@mui/icons-material";
 import MemberName from "../members/MemberName";
@@ -44,7 +45,7 @@ class FetchError extends Error {
 }
 
 // Generic HAL fetcher
-async function fetchResource(url: string) {
+async function fetchResource(url: string | URL) {
     const user = await userManager.getUser();
     const res = await fetch(url, {
         headers: {
@@ -113,13 +114,37 @@ function HalCollectionContent({data, navigation}: {
 
     // TODO: split links into collection links and other links. Display collection links "bellow" table and other links above table as actions.
 
-    const renderCollectionContent = (relName: string, items: Array<unknown>): React.ReactElement => {
+    const renderCollectionContent = (relName: string, items: Record<string, unknown>[], paging?: PageMetadata): React.ReactElement => {
         const formatDate = (dateString: string) => {
             const date = new Date(dateString);
             return new Intl.DateTimeFormat('cs-CZ').format(date);
         };
 
         // TODO: KlabisTable - replace 'api' with async callback which will get table's state (= what page it wants, how many records..). That will make it possible to use it with compiled Typescript clients (= useKlabisApi like on standard pages) and also with HalNavigator    
+
+        const navigateToEntityModel = (item: EntityModel<unknown>): void => {
+            if (item._links.self) {
+                navigation.navigate(item._links.self);
+            } else {
+                alert(`Missing "self" link in entity model ${JSON.stringify(item)}`)
+            }
+        }
+
+        function tableDataFetcherFactory<T>(relName: string): FetchTableDataCallback<T> {
+            return async (apiParams) => {
+                const targetUrl = new URL(toHref(navigation.current));
+                targetUrl.searchParams.append('page', `${apiParams.page}`)
+                targetUrl.searchParams.append('size', `${apiParams.size}`)
+                apiParams.sort.forEach(str => targetUrl.searchParams.append('sort', str));
+
+                const response = await fetchResource(targetUrl);
+                return {
+                    // get data from given embedded relation name (should be same as initial data were)
+                    data: response._embedded[relName] as T[],
+                    page: response.page
+                };
+            }
+        }
 
         switch (relName) {
             case 'membersApiResponseList':
@@ -133,11 +158,8 @@ function HalCollectionContent({data, navigation}: {
                             lastName: string,
                             registrationNumber: string
                         }>>
-                            fetchData={({page, rowsPerPage}) => ({
-                                page: {totalElements: 0, totalPages: 0, size: rowsPerPage, number: page},
-                                data: []
-                            })}    // TODO: provide real HAL/HAL-FORMS data fetching
-                            onRowClick={item => alert(item.id)}
+                            fetchData={tableDataFetcherFactory('membersApiResponseList')}    // TODO: provide real HAL/HAL-FORMS data fetching
+                            onRowClick={navigateToEntityModel}
                             defaultOrderBy="lastName"
                             defaultOrderDirection="asc"
                         >
@@ -147,8 +169,7 @@ function HalCollectionContent({data, navigation}: {
                             {/*<TableCell column="sex">Pohlaví</TableCell>*/}
                             {/*<TableCell sortable column="dateOfBirth">Datum narození</TableCell>*/}
                             {/*<TableCell column="nationality">Národnost</TableCell>*/}
-                            {/* Tabulka interne taha pouze application/json, takze _links v response chybi... %}
-                    {/*<TableCell column="_links"*/}
+                            {/*<TableCell column="_links"*/}
                             {/*           dataRender={props => (<HalLinksUi value={props.value}/>)}>Akce</TableCell>*/}
                         </KlabisTable>
                     </Box>
@@ -160,10 +181,8 @@ function HalCollectionContent({data, navigation}: {
                     </Typography>
 
                     <KlabisTable<EntityModel<{ date: string, name: string, id: number, location: string }>>
-                        fetchData={({page, rowsPerPage}) => ({
-                            page: {totalElements: 0, totalPages: 0, size: rowsPerPage, number: page},
-                            data: []
-                        })} defaultOrderBy={"date"}>
+                        fetchData={tableDataFetcherFactory('eventResponseList')} defaultOrderBy={"date"}
+                        onRowClick={navigateToEntityModel}>
                         <TableCell sortable column={"date"}
                                    dataRender={({value}) => formatDate(value)}>Datum</TableCell>
                         <TableCell sortable column={"name"}>Název</TableCell>
@@ -207,7 +226,7 @@ function HalCollectionContent({data, navigation}: {
         <>
             {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
 
-            {data._embedded && Object.entries(data._embedded).map(([rel, items]) => renderCollectionContent(rel, items))}
+            {data._embedded && Object.entries(data._embedded).map(([rel, items]) => renderCollectionContent(rel, items, data?.page))}
 
             {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
 

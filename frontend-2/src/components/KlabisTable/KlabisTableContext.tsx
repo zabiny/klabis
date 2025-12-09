@@ -1,11 +1,27 @@
-import React, {createContext, isValidElement, type ReactElement, type ReactNode, useContext, useState} from 'react';
-import {type Paging, type TableCellProps, type TableCellRenderProps} from './types';
+import React, {
+    createContext,
+    isValidElement,
+    type ReactElement,
+    type ReactNode,
+    useContext,
+    useEffect,
+    useState
+} from 'react';
+import type {
+    FetchTableDataCallback,
+    Paging,
+    TableCellProps,
+    TableCellRenderProps,
+    TableData,
+    TablePageData
+} from './types';
 import {TableCell as MuiTableCell} from "@mui/material";
 import {type PaginatedApiParams, type SortDirection} from '../../api'
 
-interface KlabisTableContextType {
+interface KlabisTableContextType<T> {
     // Pagination state
-    paging: Omit<Paging, "itemsCount">,
+    paging?: TablePageData,
+    rows: T[],
     columnsCount: number;
     tableModel: TableModel;
     setPage: (page: number) => void;
@@ -24,11 +40,13 @@ interface KlabisTableContextType {
     handlePagingChange: (page: number, rowsPerPage: number) => void;
 }
 
-const KlabisTableContext = createContext<KlabisTableContextType | undefined>(undefined);
+const KlabisTableContext = createContext<KlabisTableContextType<unknown> | undefined>(undefined);
 
-interface KlabisTableProviderProps {
+interface KlabisTableProviderProps<T> {
     children: ReactNode;
     colDefs: ReactNode;
+    fetchData: FetchTableDataCallback<T>;
+    initialData?: TableData<T>,
     defaultOrderBy?: string;
     defaultOrderDirection?: SortDirection;
     defaultRowsPerPage?: number;
@@ -112,16 +130,19 @@ const createModelFromChildren = (children: React.ReactNode): TableModel => {
 }
 
 
-export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
+export const KlabisTableProvider: React.FC<KlabisTableProviderProps<unknown>> = ({
                                                                             children,
                                                                             colDefs,
+                                                                                     fetchData,
+                                                                                     initialData,
                                                                             defaultOrderBy,
                                                                             defaultOrderDirection = 'asc',
                                                                             defaultRowsPerPage = 10,
                                                                         }) => {
-    const [page, setPage] = useState<Omit<Paging, "itemsCount">>({page: 0, rowsPerPage: defaultRowsPerPage});
+    const [page, setPage] = useState<Paging>({page: 0, rowsPerPage: defaultRowsPerPage});
     const [orderBy, setOrderBy] = useState<string | undefined>(defaultOrderBy);
     const [orderDirection, setOrderDirection] = useState<SortDirection>(defaultOrderDirection);
+    const [tableRows, setTableRows] = useState<TableData<unknown> | undefined>(initialData);
 
     const tableModel = createModelFromChildren(colDefs);
 
@@ -147,12 +168,39 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
         } as PaginatedApiParams;
     }
 
+
+    // Fetch data asynchronously via provided callback whenever paging changes
+    useEffect(() => {
+        if (initialData) {
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const apiPagingParams: PaginatedApiParams = {
+                    page: page.page,
+                    size: page.rowsPerPage,
+                    sort: orderBy ? [`${orderBy},${orderDirection}`] : [],
+                }
+                const result = await fetchData(apiPagingParams);
+                if (!cancelled) setTableRows(result);
+            } catch (e) {
+                if (!cancelled) setTableRows(undefined);
+                console.log(e)
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [fetchData, page, orderBy, orderDirection, initialData]);
+
     const columnsCount = tableModel.columns.length;
 
-    const contextValue: KlabisTableContextType = {
+    const contextValue: KlabisTableContextType<unknown> = {
         columnsCount,
         tableModel,
-        paging: page,
+        rows: tableRows?.data || [],
+        paging: tableRows?.page,
         setPage: (p) => setPage((prev) => ({...prev, page: p})),
         setRowsPerPage: (rowsPerPage) => setPage((prev) => ({...prev, rowsPerPage})),
         orderBy,
@@ -170,18 +218,10 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
     );
 };
 
-export const useKlabisTableContext = (): KlabisTableContextType => {
+export const useKlabisTableContext = <T extends Record<string, unknown>>(): KlabisTableContextType<T> => {
     const context = useContext(KlabisTableContext);
     if (context === undefined) {
         throw new Error('useKlabisTableContext must be used within a KlabisTableProvider');
     }
-    return context;
+    return context as KlabisTableContextType<T>;
 };
-
-export const useTableModel = (): TableModel => {
-    const context = useContext(KlabisTableContext);
-    if (context === undefined) {
-        throw new Error('useTableModel must be used within a KlabisTableProvider');
-    }
-    return context.tableModel;
-}
