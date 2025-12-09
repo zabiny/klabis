@@ -1,5 +1,4 @@
 import {
-    type HalFormsResponse,
     type HalFormsTemplate,
     type HalResponse,
     isFormTarget,
@@ -10,13 +9,33 @@ import type {Navigation} from "../../hooks/useNavigation";
 import {type ReactElement, useCallback, useState} from "react";
 import {HalActionsUi, HalLinksUi} from "./halActionComponents";
 import {type HalFormFieldFactory, HalFormsForm} from "../HalFormsForm";
-import {getDefaultTemplate, isHalFormsTemplate} from "../HalFormsForm/utils";
+import {isHalFormsTemplate} from "../HalFormsForm/utils";
 import {toHref} from "./hooks";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {Alert} from "@mui/material";
 import {JsonPreview} from "../JsonPreview";
 
-export function HalItemContent({data, navigation}: {
+
+export function HalEditableItemContent({
+                                           initData, fieldsFactory, navigation
+                                       }: {
+    initData: HalResponse,
+    navigation: Navigation<NavigationTarget>,
+    fieldsFactory?: HalFormFieldFactory
+}): ReactElement {
+
+    const {current, back} = navigation;
+
+    if (isHalFormsTemplate(current)) {
+        return <HalFormsContent initData={initData} submitApi={current} fieldsFactory={fieldsFactory}
+                                initTemplate={current} afterSubmit={() => back()}
+                                onCancel={() => back()}/>;
+    } else {
+        return <HalItemContent data={initData} navigation={navigation}/>;
+    }
+}
+
+function HalItemContent({data, navigation}: {
     data: HalResponse,
     navigation: Navigation<NavigationTarget>
 }): ReactElement {
@@ -46,37 +65,21 @@ export function HalItemContent({data, navigation}: {
         </>);
 }
 
-export function HalEditableItemContent({
-                                           initData, fieldsFactory, navigation
-                                       }: {
-    initData: HalFormsResponse,
-    navigation: Navigation<NavigationTarget>,
-    fieldsFactory?: HalFormFieldFactory
-}): ReactElement {
-
-    if (isHalFormsTemplate(navigation.current)) {
-        return <HalFormsContent initData={initData} submitApi={navigation.current} fieldsFactory={fieldsFactory}
-                                initTemplate={navigation.current} afterSubmit={() => navigation.back()}
-                                onCancel={() => navigation.back()}/>;
-    } else {
-        return <HalItemContent data={initData} navigation={navigation}/>;
-    }
-}
 
 function HalFormsContent({
                              submitApi, initTemplate, initData, fieldsFactory, onCancel, afterSubmit = () => {
     }
                          }: {
     submitApi: NavigationTarget,
-    initTemplate?: HalFormsTemplate,
-    initData: HalFormsResponse,
+    initTemplate: HalFormsTemplate,
+    initData: HalResponse,
     afterSubmit?: () => void,
     onCancel?: () => void,
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
     const [error, setError] = useState<Error>();
 
-    const activeTemplate = initTemplate || getDefaultTemplate(initData);
+    const activeTemplate = initTemplate;
     const submitTarget: TemplateTarget = isFormTarget(activeTemplate) && activeTemplate || {
         target: toHref(submitApi),
         method: activeTemplate.method || "POST"

@@ -6,25 +6,22 @@ import {type HalFormFieldFactory} from "../HalFormsForm";
 import {type Navigation, useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
 import {isHalFormsTemplate, isHalResponse} from "../HalFormsForm/utils";
-import {HalNavigatorContext, toHref, useSimpleFetch} from "./hooks";
+import {HalNavigatorContext, toHref, useHalExplorerNavigation, useSimpleFetch} from "./hooks";
 import {HalCollectionContent} from "./halCollectionContent";
-import {HalEditableItemContent, HalItemContent} from "./halItemContent";
+import {HalEditableItemContent} from "./halItemContent";
 
 
 function isCollectionContent(data: HalResponse): boolean {
     return (data?.page !== undefined);
 }
 
-function isSingleItemContent(data: HalResponse): boolean {
-    return !isCollectionContent(data);
-}
-
 function HalNavigatorContent({
-                                 fieldsFactory, navigation
+                                 fieldsFactory
                              }: {
     navigation: Navigation<NavigationTarget>
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
+    const navigation = useHalExplorerNavigation();
     const api = navigation.current;
     const {data, isLoading, error} = useSimpleFetch(api, {ignoredErrorStatues: [405, 404]});
     const [showSource, setShowSource] = useState(true);
@@ -37,12 +34,10 @@ function HalNavigatorContent({
     }
 
     function renderContent(item: any): ReactElement {
-        if (isHalFormsTemplate(navigation.current)) {
-            return <HalEditableItemContent initData={item} navigation={navigation} fieldsFactory={fieldsFactory}/>;
-        } else if (isCollectionContent(item)) {
+        if (isCollectionContent(item) && !isHalFormsTemplate(navigation.current)) {
             return <HalCollectionContent data={item} navigation={navigation}/>;
-        } else if (isHalResponse(item)) {
-            return <HalItemContent data={item} navigation={navigation}/>;
+        } else if (isHalResponse(item) || isHalFormsTemplate(navigation.current)) {
+            return <HalEditableItemContent initData={item} navigation={navigation} fieldsFactory={fieldsFactory}/>;
         } else {
             return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
         }
