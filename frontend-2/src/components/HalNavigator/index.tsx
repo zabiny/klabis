@@ -9,7 +9,7 @@ import {
     type PageMetadata,
     type TemplateTarget
 } from "../../api";
-import React, {type ReactElement, useCallback, useState} from "react";
+import React, {type ReactElement, ReactNode, useCallback, useState} from "react";
 import {Alert, Box, Button, Checkbox, FormLabel, Grid, Link as MuiLink, Stack, Typography} from "@mui/material";
 import {ErrorBoundary} from "react-error-boundary";
 import {type HalFormFieldFactory, HalFormsForm} from "../HalFormsForm";
@@ -21,7 +21,15 @@ import {type FetchTableDataCallback, KlabisTable, TableCell} from "../KlabisTabl
 import EventType from "../events/EventType";
 import {Public} from "@mui/icons-material";
 import MemberName from "../members/MemberName";
-import {fetchResource, HalNavigatorContext, toHref, toURLPath, useResponseBody, useSimpleFetch} from "./hooks";
+import {
+    fetchResource,
+    HalNavigatorContext,
+    toHref,
+    toURLPath,
+    useHalExplorerNavigation,
+    useResponseBody,
+    useSimpleFetch
+} from "./hooks";
 
 
 const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
@@ -83,7 +91,7 @@ function HalCollectionContent({navigation}: {
 
     const data = useResponseBody();
 
-    const renderCollectionContent = (relName: string, items: Record<string, unknown>[], paging?: PageMetadata): React.ReactElement => {
+    const renderCollectionContent = (relName: string, items: Record<string, unknown>[], paging?: PageMetadata): ReactNode => {
 
         const resourceUrlPath = toURLPath(navigation.current);
 
@@ -171,39 +179,46 @@ function HalCollectionContent({navigation}: {
                     </KlabisTable>
                 </Box>);
             default:
-                return (<div key={relName}>
-                        <Typography variant="h4" component="h1" gutterBottom>{relName}</Typography>
-
-                        <HalLinksUi links={data._links} onClick={navigation.navigate} showPagingNavigation={true}/>
-
-                        <ul className="list-disc list-inside">
-                            {(Array.isArray(items) ? items : [items]).map((item, idx) => (
-                                <li key={idx}>
-                                    {JSON.stringify(omitMetadataAttributes(item))}
-                                    {item._links?.self && (
-                                        <Button
-                                            className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
-                                            onClick={() => navigation.navigate(item._links.self)}
-                                        >
-                                            Open
-                                        </Button>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                );
+                return (<GenericHalCollectionContent label={relName} items={items}/>);
         }
     }
 
     return (
         <>
-            {data._embedded && Object.entries(data._embedded).map(([rel, items]) => renderCollectionContent(rel, items, data?.page))}
+            {data?._embedded && Object.entries(data._embedded).map(([rel, items]) => renderCollectionContent(rel, items, data?.page))}
 
-            {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
+            {data?._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
 
         </>)
 
+}
+
+const GenericHalCollectionContent = ({label, items}: { label: string, items: Record<string, unknown> }): ReactNode => {
+    const navigation = useHalExplorerNavigation();
+    const responseBody = useResponseBody();
+
+    return (<div key={label}>
+            <Typography variant="h4" component="h1" gutterBottom>{label}</Typography>
+
+            <HalLinksUi links={responseBody._links} onClick={navigation.navigate} showPagingNavigation={true}/>
+
+            <ul className="list-disc list-inside">
+                {(Array.isArray(items) ? items : [items]).map((item, idx) => (
+                    <li key={idx}>
+                        {JSON.stringify(omitMetadataAttributes(item))}
+                        {item._links?.self && (
+                            <Button
+                                className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
+                                onClick={() => navigation.navigate(item._links.self)}
+                            >
+                                Open
+                            </Button>
+                        )}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 }
 
 function HalItemContent({data, navigation}: {
