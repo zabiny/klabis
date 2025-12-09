@@ -64,20 +64,26 @@ async function fetchResource(url: string | URL) {
     return res.json();
 }
 
-function HalLinksUi({links, onClick}: {
+const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
+
+
+function HalLinksUi({links, onClick, showPagingNavigation = true}: {
     links: Record<string, NavigationTarget>,
-    onClick: (link: NavigationTarget) => void
+    onClick: (link: NavigationTarget) => void,
+    showPagingNavigation: boolean
 }): ReactElement {
     return (
         <Stack direction={"row"} spacing={2}>
-            {Object.entries(links).map(([rel, link]) => {
-                if (rel === "self") return null;
-                const singleLink = Array.isArray(link) ? link[0] : link;
-                return (
-                    <MuiLink key={rel}
-                             onClick={() => onClick(singleLink)}>{singleLink.title || singleLink.name || rel}</MuiLink>
-                );
-            })}
+            {Object.entries(links)
+                .filter(([rel, _link]) => !COLLECTION_LINK_RELS.includes(rel) || showPagingNavigation)
+                .map(([rel, link]) => {
+                    if (rel === "self") return null;
+                    const singleLink = Array.isArray(link) ? link[0] : link;
+                    return (
+                        <MuiLink key={rel}
+                                 onClick={() => onClick(singleLink)}>{singleLink.title || singleLink.name || rel}</MuiLink>
+                    );
+                })}
         </Stack>
     );
 }
@@ -105,22 +111,31 @@ function omitMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_l
     return rest;
 }
 
-const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
+const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('cs-CZ').format(date);
+};
+
+function toURLPath(item: NavigationTarget): string {
+    const itemHref = toHref(item);
+    if (itemHref.startsWith("/")) {
+        return itemHref;
+    }
+    try {
+        return new URL(toHref(item)).pathname;
+    } catch (e) {
+        console.error(`failed to convert navigation item ${JSON.stringify(item)}: ${e}`)
+        throw e;
+    }
+}
 
 function HalCollectionContent({data, navigation}: {
     data: HalResponse,
     navigation: Navigation<NavigationTarget>
 }): ReactElement {
-
-    // TODO: split links into collection links and other links. Display collection links "bellow" table and other links above table as actions.
-
     const renderCollectionContent = (relName: string, items: Record<string, unknown>[], paging?: PageMetadata): React.ReactElement => {
-        const formatDate = (dateString: string) => {
-            const date = new Date(dateString);
-            return new Intl.DateTimeFormat('cs-CZ').format(date);
-        };
 
-        // TODO: KlabisTable - replace 'api' with async callback which will get table's state (= what page it wants, how many records..). That will make it possible to use it with compiled Typescript clients (= useKlabisApi like on standard pages) and also with HalNavigator    
+        const resourceUrlPath = toURLPath(navigation.current);
 
         const navigateToEntityModel = (item: EntityModel<unknown>): void => {
             if (item._links.self) {
@@ -140,18 +155,21 @@ function HalCollectionContent({data, navigation}: {
                 const response = await fetchResource(targetUrl);
                 return {
                     // get data from given embedded relation name (should be same as initial data were)
-                    data: response._embedded[relName] as T[],
+                    data: response?._embedded?.[relName] as T[] || [],
                     page: response.page
                 };
             }
         }
 
-        switch (relName) {
-            case 'membersApiResponseList':
+        switch (resourceUrlPath) {
+            case '/members':
                 return (<Box>
                         <Typography variant="h4" component="h1" gutterBottom>
                             Adresář
                         </Typography>
+
+                        <HalLinksUi links={data._links} onClick={navigation.navigate} showPagingNavigation={false}/>
+
                         <KlabisTable<EntityModel<{
                             id: number,
                             firstName: string,
@@ -174,14 +192,17 @@ function HalCollectionContent({data, navigation}: {
                         </KlabisTable>
                     </Box>
                 );
-            case 'eventResponseList':
+            case '/events':
                 return (<Box>
                     <Typography variant="h4" component="h1" gutterBottom>
                         Závody
                     </Typography>
 
+                    <HalLinksUi links={data._links} onClick={navigation.navigate} showPagingNavigation={false}/>
+
                     <KlabisTable<EntityModel<{ date: string, name: string, id: number, location: string }>>
                         fetchData={tableDataFetcherFactory('eventResponseList')} defaultOrderBy={"date"}
+                        defaultOrderDirection={'desc'}
                         onRowClick={navigateToEntityModel}>
                         <TableCell sortable column={"date"}
                                    dataRender={({value}) => formatDate(value)}>Datum</TableCell>
@@ -201,7 +222,10 @@ function HalCollectionContent({data, navigation}: {
                 </Box>);
             default:
                 return (<div key={relName}>
-                        <h2 className="font-semibold">{relName}</h2>
+                        <Typography variant="h4" component="h1" gutterBottom>{relName}</Typography>
+
+                        <HalLinksUi links={data._links} onClick={navigation.navigate} showPagingNavigation={true}/>
+
                         <ul className="list-disc list-inside">
                             {(Array.isArray(items) ? items : [items]).map((item, idx) => (
                                 <li key={idx}>
@@ -224,8 +248,6 @@ function HalCollectionContent({data, navigation}: {
 
     return (
         <>
-            {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
-
             {data._embedded && Object.entries(data._embedded).map(([rel, items]) => renderCollectionContent(rel, items, data?.page))}
 
             {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
@@ -262,19 +284,6 @@ function HalItemContent({data, navigation}: {
             </table>
             {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
         </>);
-}
-
-
-function HalContent({data, navigation}: {
-    data: HalResponse,
-    navigation: Navigation<NavigationTarget>
-}): ReactElement {
-
-    if (data.page === undefined) {
-        return <HalItemContent data={data} navigation={navigation}/>
-    } else {
-        return <HalCollectionContent data={data} navigation={navigation}/>
-    }
 }
 
 function HalEditableItemContent({
