@@ -38,9 +38,14 @@ export function HalCollectionContent({navigation}: {
         }
     }
 
+    const matchesUriPath = (regex: RegExp) => regex.test(resourceUrlPath);
 
-    switch (resourceUrlPath) {
-        case '/members':
+    const equalsUriPath = (value: string) => {
+        return value === resourceUrlPath;
+    }
+
+    switch (true) {
+        case equalsUriPath('/members'):
             return (
                 <HalNavigatorCollectionContentLayout includePageNavigation={false} label={"Adresář"}>
                     <HalNavigatorTable<EntityModel<{
@@ -65,7 +70,7 @@ export function HalCollectionContent({navigation}: {
                     </HalNavigatorTable>
                 </HalNavigatorCollectionContentLayout>
             );
-        case '/events':
+        case equalsUriPath('/events'):
             return (<HalNavigatorCollectionContentLayout label={"Závody"} includePageNavigation={false}>
                 <HalNavigatorTable<EntityModel<{ date: string, name: string, id: number, location: string }>>
                     embeddedName={'eventResponseList'} defaultOrderBy={"date"}
@@ -87,6 +92,15 @@ export function HalCollectionContent({navigation}: {
                         <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
                 </HalNavigatorTable>
             </HalNavigatorCollectionContentLayout>);
+        case matchesUriPath(/^\/member\/\d+\/finance-account\/transactions$/):
+            return <HalNavigatorCollectionContentLayout>
+                <HalNavigatorTable<EntityModel<{ date: string, amount: number, note: string }>>
+                    embeddedName={'transactionItemResponseList'} defaultOrderBy={"date"} defaultOrderDirection={'desc'}>
+                    <TableCell column={"date"} dataRender={({value}) => formatDate(value)}>Datum</TableCell>
+                    <TableCell column={"amount"}>Název</TableCell>
+                    <TableCell column={"note"}>Poznámka</TableCell>
+                </HalNavigatorTable>
+            </HalNavigatorCollectionContentLayout>;
         default:
             return (<HalNavigatorCollectionContentLayout>
                 {data?._embedded && Object.entries(data._embedded).map(([rel, items]) => <GenericHalCollectionContent
