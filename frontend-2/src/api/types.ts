@@ -118,3 +118,8 @@ export function isHalCollectionResponse(item: unknown): item is HalCollectionRes
     return isHalResponse(item) && item.page;
 }
 
+export type EntityModel<T> = T & { _links: Link[] };
+
+export type PagedModel<T> = { content: EntityModel<T>[], _links: Link[], page: PageMetadata }
+
+
