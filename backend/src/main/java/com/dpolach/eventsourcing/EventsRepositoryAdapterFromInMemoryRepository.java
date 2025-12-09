@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @Service
-class EventsInMemoryRepository implements EventsRepository {
+class EventsRepositoryAdapterFromInMemoryRepository implements EventsRepository {
 
     private final InMemoryRepository<BaseEvent, Long> eventsRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public EventsInMemoryRepository(Repo repository, ApplicationEventPublisher eventPublisher) {
+    public EventsRepositoryAdapterFromInMemoryRepository(Repo repository, ApplicationEventPublisher eventPublisher) {
         this.eventsRepository = repository;
         this.eventPublisher = eventPublisher;
     }
@@ -32,6 +32,7 @@ class EventsInMemoryRepository implements EventsRepository {
     @Override
     public void appendEvent(BaseEvent event) {
         eventsRepository.save(event);
+        eventPublisher.publishEvent(event);
     }
 
     @Override
@@ -39,7 +40,11 @@ class EventsInMemoryRepository implements EventsRepository {
         return eventsRepository.findAll().stream().sorted(Comparator.comparing(BaseEvent::getSequenceId));
     }
 
-    // TODO: how to query single item (= findById(Account.class, id)
-    // TODO: how to query multiple with order?
+    @Override
+    public long size() {
+        return eventsRepository.count();
+    }
+
+    // TODO: how to query multiple with order? - create projection with needed data and which can be easily ordered - basically Read model is simple CRUD.
 
 }

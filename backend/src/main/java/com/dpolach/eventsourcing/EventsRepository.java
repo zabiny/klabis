@@ -1,5 +1,10 @@
 package com.dpolach.eventsourcing;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -10,11 +15,16 @@ public interface EventsRepository {
 
     Stream<BaseEvent> streamAllEvents();
 
-    default <T extends CompositeEventsSource<?>> T rebuild(T compositeEventsSource) {
-        streamAllEvents().forEach(compositeEventsSource::apply);
-        compositeEventsSource.clearPendingEvents();
-        return compositeEventsSource;
+    default Page<BaseEvent> getEvents(Pageable pageable) {
+        List<BaseEvent> data = streamAllEvents()
+                .skip(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .toList();
+
+        return new PageImpl<>(data, pageable, size());
     }
+
+    long size();
 
     default <T> Optional<T> project(Projector<T> projector) {
         streamAllEvents().forEach(projector::project);

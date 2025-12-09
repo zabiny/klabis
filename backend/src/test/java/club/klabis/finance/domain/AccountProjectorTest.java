@@ -42,6 +42,11 @@ class AccountProjectorTest {
             }
 
             @Override
+            public long size() {
+                return storedEvents.size();
+            }
+
+            @Override
             public void appendEvent(BaseEvent event) {
                 storedEvents.add(event);
             }
