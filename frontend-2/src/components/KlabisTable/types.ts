@@ -35,3 +35,14 @@ export interface TableData<T> {
 }
 
 export type FetchTableDataCallback<T> = (apiParams: PaginatedApiParams) => Promise<TableData<T>>;
+
+
+export interface KlabisTableProps<T extends Record<string, unknown>> {
+    fetchData: FetchTableDataCallback<T>;
+    children: React.ReactNode;
+    onRowClick?: (item: T) => void;
+    defaultOrderBy?: string;
+    defaultOrderDirection?: SortDirection;
+    defaultRowsPerPage?: number;
+    emptyMessage?: string;
+}

@@ -1,9 +1,8 @@
 import React, {type ReactNode} from 'react';
 // Import pro MuiTableCell
 import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow,} from '@mui/material';
-import {type SortDirection} from '../../api';
 import {KlabisTableProvider, useKlabisTableContext} from "./KlabisTableContext.tsx";
-import {type FetchTableDataCallback} from './types';
+import {KlabisTableProps} from "./types";
 
 const KlabisTablePagination = (): ReactNode => {
     const {paging, handlePagingChange: onPagingChange} = useKlabisTableContext();
@@ -19,16 +18,6 @@ const KlabisTablePagination = (): ReactNode => {
         labelRowsPerPage="Řádků na stránku:"
         labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}
     />;
-}
-
-interface KlabisTableProps<T extends Record<string, unknown>> {
-    fetchData: FetchTableDataCallback<T>;
-    children: React.ReactNode;
-    onRowClick?: (item: T) => void;
-    defaultOrderBy?: string;
-    defaultOrderDirection?: SortDirection;
-    defaultRowsPerPage?: number;
-    emptyMessage?: string;
 }
 
 const KlabisTableBody = <T extends Record<string, unknown>>({onRowClick, emptyMessage = "Žádná data"}: {

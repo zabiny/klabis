@@ -17,12 +17,11 @@ import {type Navigation, useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
 import {getDefaultTemplate, isHalFormsTemplate, isHalResponse} from "../HalFormsForm/utils";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
-import {type FetchTableDataCallback, KlabisTable, TableCell} from "../KlabisTable";
+import {TableCell} from "../KlabisTable";
 import EventType from "../events/EventType";
 import {Public} from "@mui/icons-material";
 import MemberName from "../members/MemberName";
 import {
-    fetchResource,
     HalNavigatorContext,
     toHref,
     toURLPath,
@@ -30,6 +29,7 @@ import {
     useResponseBody,
     useSimpleFetch
 } from "./hooks";
+import {HalNavigatorTable} from "./halNavigatorTable";
 
 
 const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
@@ -103,22 +103,6 @@ function HalCollectionContent({navigation}: {
             }
         }
 
-        function tableDataFetcherFactory<T>(relName: string): FetchTableDataCallback<T> {
-            return async (apiParams) => {
-                const targetUrl = new URL(toHref(navigation.current));
-                targetUrl.searchParams.append('page', `${apiParams.page}`)
-                targetUrl.searchParams.append('size', `${apiParams.size}`)
-                apiParams.sort.forEach(str => targetUrl.searchParams.append('sort', str));
-
-                const response = await fetchResource(targetUrl);
-                return {
-                    // get data from given embedded relation name (should be same as initial data were)
-                    data: response?._embedded?.[relName] as T[] || [],
-                    page: response.page
-                };
-            }
-        }
-
         switch (resourceUrlPath) {
             case '/members':
                 return (<Box>
@@ -128,13 +112,13 @@ function HalCollectionContent({navigation}: {
 
                         <HalLinksUi links={data._links} onClick={navigation.navigate} showPagingNavigation={false}/>
 
-                        <KlabisTable<EntityModel<{
+                        <HalNavigatorTable<EntityModel<{
                             id: number,
                             firstName: string,
                             lastName: string,
                             registrationNumber: string
                         }>>
-                            fetchData={tableDataFetcherFactory('membersApiResponseList')}    // TODO: provide real HAL/HAL-FORMS data fetching
+                            embeddedName={'membersApiResponseList'}
                             onRowClick={navigateToEntityModel}
                             defaultOrderBy="lastName"
                             defaultOrderDirection="asc"
@@ -147,7 +131,7 @@ function HalCollectionContent({navigation}: {
                             {/*<TableCell column="nationality">Národnost</TableCell>*/}
                             {/*<TableCell column="_links"*/}
                             {/*           dataRender={props => (<HalLinksUi value={props.value}/>)}>Akce</TableCell>*/}
-                        </KlabisTable>
+                        </HalNavigatorTable>
                     </Box>
                 );
             case '/events':
@@ -158,8 +142,8 @@ function HalCollectionContent({navigation}: {
 
                     <HalLinksUi links={data._links} onClick={navigation.navigate} showPagingNavigation={false}/>
 
-                    <KlabisTable<EntityModel<{ date: string, name: string, id: number, location: string }>>
-                        fetchData={tableDataFetcherFactory('eventResponseList')} defaultOrderBy={"date"}
+                    <HalNavigatorTable<EntityModel<{ date: string, name: string, id: number, location: string }>>
+                        embeddedName={'eventResponseList'} defaultOrderBy={"date"}
                         defaultOrderDirection={'desc'}
                         onRowClick={navigateToEntityModel}>
                         <TableCell sortable column={"date"}
@@ -176,7 +160,7 @@ function HalCollectionContent({navigation}: {
                             přihlášek</TableCell>
                         <TableCell column={"coordinator"} dataRender={({value}) => value ?
                             <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
-                    </KlabisTable>
+                    </HalNavigatorTable>
                 </Box>);
             default:
                 return (<GenericHalCollectionContent label={relName} items={items}/>);
