@@ -78,7 +78,7 @@ export const KlabisTable = <T extends Record<string, unknown>>(props: KlabisTabl
     const {
         children,
         defaultOrderBy,
-        defaultOrderDirection,
+        defaultOrderDirection = 'asc',
         defaultRowsPerPage = 10,
         fetchData,
         onRowClick,
@@ -88,8 +88,7 @@ export const KlabisTable = <T extends Record<string, unknown>>(props: KlabisTabl
     return <KlabisTableProvider
         colDefs={children}
         fetchData={fetchData}
-        defaultOrderBy={defaultOrderBy}
-        defaultOrderDirection={defaultOrderDirection}
+        defaultSort={defaultOrderBy !== undefined ? {by: defaultOrderBy, direction: defaultOrderDirection} : undefined}
         defaultRowsPerPage={defaultRowsPerPage}
     >
         <Paper>

@@ -19,21 +19,13 @@ import {TableCell as MuiTableCell} from "@mui/material";
 import {type PaginatedApiParams, type SortDirection} from '../../api'
 
 interface KlabisTableContextType<T> {
+    rows: T[],
+    tableModel: TableModel;
+
     // Pagination state
     paging?: TablePageData,
-    rows: T[],
-    columnsCount: number;
-    tableModel: TableModel;
-    setPage: (page: number) => void;
-    setRowsPerPage: (rowsPerPage: number) => void;
-
     // Sorting state
-    orderBy?: string;
-    orderDirection: SortDirection;
-    setOrderBy: (orderBy: string, direction: SortDirection) => void;
-
-    // Combined API params
-    createApiParams: () => PaginatedApiParams;
+    sort?: Sort,
 
     // Actions
     handleRequestSort: (column: string) => void;
@@ -47,8 +39,7 @@ interface KlabisTableProviderProps<T> {
     colDefs: ReactNode;
     fetchData: FetchTableDataCallback<T>;
     initialData?: TableData<T>,
-    defaultOrderBy?: string;
-    defaultOrderDirection?: SortDirection;
+    defaultSort?: Sort,
     defaultRowsPerPage?: number;
 }
 
@@ -129,27 +120,37 @@ const createModelFromChildren = (children: React.ReactNode): TableModel => {
     return new TableModel(columns);
 }
 
+interface Sort {
+    by: string,
+    direction: SortDirection
+}
+
+function reverseDirection(sort: Sort): Sort {
+    return {...sort, direction: sort.direction === 'asc' ? 'desc' : 'asc'}
+}
 
 export const KlabisTableProvider: React.FC<KlabisTableProviderProps<unknown>> = ({
-                                                                            children,
-                                                                            colDefs,
+                                                                                     children,
+                                                                                     colDefs,
                                                                                      fetchData,
                                                                                      initialData,
-                                                                            defaultOrderBy,
-                                                                            defaultOrderDirection = 'asc',
-                                                                            defaultRowsPerPage = 10,
-                                                                        }) => {
+                                                                                     defaultSort,
+                                                                                     defaultRowsPerPage = 10,
+                                                                                 }) => {
     const [page, setPage] = useState<Paging>({page: 0, rowsPerPage: defaultRowsPerPage});
-    const [orderBy, setOrderBy] = useState<string | undefined>(defaultOrderBy);
-    const [orderDirection, setOrderDirection] = useState<SortDirection>(defaultOrderDirection);
+    const [sort, setSort] = useState<Sort | undefined>(defaultSort)
     const [tableRows, setTableRows] = useState<TableData<unknown> | undefined>(initialData);
 
     const tableModel = createModelFromChildren(colDefs);
 
     const handleRequestSort = (column: string) => {
-        const isAsc = orderBy === column && orderDirection === 'asc';
-        setOrderDirection(isAsc ? 'desc' : 'asc');
-        setOrderBy(column);
+        setSort(prev => {
+            if (!prev || prev.by !== column) {
+                return {by: column, direction: 'asc'};
+            } else {
+                return reverseDirection(prev);
+            }
+        })
         setPage(prev => ({...prev, page: 0})); // Reset to first page when sorting changes
     };
 
@@ -158,16 +159,6 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps<unknown>> = 
         page: newPage,
         rowsPerPage: newRowsPerPage
     }))
-
-    // Vytvoření parametrů pro API volání
-    function createApiParams(): PaginatedApiParams {
-        return {
-            page: page.page,
-            size: page.rowsPerPage,
-            sort: orderBy ? [`${orderBy},${orderDirection}`] : [],
-        } as PaginatedApiParams;
-    }
-
 
     // Fetch data asynchronously via provided callback whenever paging changes
     useEffect(() => {
@@ -180,7 +171,7 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps<unknown>> = 
                 const apiPagingParams: PaginatedApiParams = {
                     page: page.page,
                     size: page.rowsPerPage,
-                    sort: orderBy ? [`${orderBy},${orderDirection}`] : [],
+                    sort: sort ? [`${sort.by},${sort.direction}`] : [],
                 }
                 const result = await fetchData(apiPagingParams);
                 if (!cancelled) setTableRows(result);
@@ -192,21 +183,13 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps<unknown>> = 
         return () => {
             cancelled = true;
         };
-    }, [fetchData, page, orderBy, orderDirection, initialData]);
-
-    const columnsCount = tableModel.columns.length;
+    }, [fetchData, page, sort, initialData]);
 
     const contextValue: KlabisTableContextType<unknown> = {
-        columnsCount,
         tableModel,
         rows: tableRows?.data || [],
         paging: tableRows?.page,
-        setPage: (p) => setPage((prev) => ({...prev, page: p})),
-        setRowsPerPage: (rowsPerPage) => setPage((prev) => ({...prev, rowsPerPage})),
-        orderBy,
-        orderDirection,
-        setOrderBy,
-        createApiParams,
+        sort: sort,
         handleRequestSort,
         handlePagingChange
     };

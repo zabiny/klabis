@@ -9,15 +9,15 @@ interface SortLabelProps {
 }
 
 const SortLabel = ({column, children}: SortLabelProps) => {
-    const tableContext = useKlabisTableContext();
+    const {sort, handleRequestSort} = useKlabisTableContext();
 
     const handleSort = () => {
-        tableContext.handleRequestSort(column);
+        handleRequestSort(column);
     };
 
     return (<TableSortLabel
-        active={tableContext.orderBy === column}
-        direction={tableContext.orderBy === column ? tableContext.orderDirection : 'asc'}
+        active={sort?.by === column}
+        direction={sort?.direction}
         onClick={handleSort}
         sx={{cursor: 'pointer'}}
     >
