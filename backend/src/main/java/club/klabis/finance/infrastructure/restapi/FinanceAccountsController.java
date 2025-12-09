@@ -33,14 +33,12 @@ public class FinanceAccountsController {
     private final AccountsService accountsService;
     private final ModelAssembler<Account, AccountReponse> accountReponseMapper;
     private final ModelAssembler<TransactionHistory.TransactionItem, TransactionItemResponse> transactionItemResponseMapper;
-    private final TransactionHistoryModelPreparator transactionHistoryModelPreparator;
 
-    public FinanceAccountsController(AccountsService accountsService, ModelPreparator<Account, AccountReponse> accountReponseMapper, PagedResourcesAssembler<Account> pagedAssembler, PagedResourcesAssembler<TransactionHistory.TransactionItem> historyItemPaged, TransactionHistoryModelPreparator transactionHistoryModelPreparator) {
+    public FinanceAccountsController(AccountsService accountsService, ModelPreparator<Account, AccountReponse> accountReponseMapper, PagedResourcesAssembler<Account> pagedAssembler, PagedResourcesAssembler<TransactionHistory.TransactionItem> historyItemPaged) {
         this.accountsService = accountsService;
         this.accountReponseMapper = new HalResourceAssembler<>(accountReponseMapper, pagedAssembler);
         this.transactionItemResponseMapper = new HalResourceAssembler<>(new TransactionHistoryModelPreparator(),
                 historyItemPaged);
-        this.transactionHistoryModelPreparator = transactionHistoryModelPreparator;
     }
 
     @GetMapping
