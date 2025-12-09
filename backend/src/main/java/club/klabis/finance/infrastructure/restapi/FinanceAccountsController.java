@@ -1,56 +1,84 @@
 package club.klabis.finance.infrastructure.restapi;
 
+import club.klabis.finance.application.AccountNotFoundException;
+import club.klabis.finance.application.AccountsService;
+import club.klabis.finance.application.DepositAction;
 import club.klabis.finance.domain.Account;
-import club.klabis.finance.domain.Accounts;
+import club.klabis.finance.domain.TransactionHistory;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.restapi.ApiController;
+import club.klabis.shared.config.security.ApplicationGrant;
+import club.klabis.shared.config.security.HasGrant;
 import club.klabis.shared.config.security.HasMemberGrant;
-import com.dpolach.eventsourcing.EventsRepository;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
-import org.springframework.core.ResolvableType;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
-@ApiController(openApiTagName = "Finance", securityScopes = {"openapi"})
+@ExposesResourceFor(Account.class)
+@ApiController(path = "/member/{memberId}/finance-account", openApiTagName = "Finance", securityScopes = {"openapi"})
 public class FinanceAccountsController {
 
-    private final EventsRepository eventsRepository;
+    private final AccountsService accountsService;
     private final ModelAssembler<Account, AccountReponse> accountReponseMapper;
+    private final ModelAssembler<TransactionHistory.TransactionItem, TransactionItemResponse> transactionItemResponseMapper;
+    private final TransactionHistoryModelPreparator transactionHistoryModelPreparator;
 
-    public FinanceAccountsController(EventsRepository eventsRepository, ModelPreparator<Account, AccountReponse> accountReponseMapper, PagedResourcesAssembler<Account> pagedAssembler) {
-        this.eventsRepository = eventsRepository;
+    public FinanceAccountsController(AccountsService accountsService, ModelPreparator<Account, AccountReponse> accountReponseMapper, PagedResourcesAssembler<Account> pagedAssembler, PagedResourcesAssembler<TransactionHistory.TransactionItem> historyItemPaged, TransactionHistoryModelPreparator transactionHistoryModelPreparator) {
+        this.accountsService = accountsService;
         this.accountReponseMapper = new HalResourceAssembler<>(accountReponseMapper, pagedAssembler);
+        this.transactionItemResponseMapper = new HalResourceAssembler<>(new TransactionHistoryModelPreparator(),
+                historyItemPaged);
+        this.transactionHistoryModelPreparator = transactionHistoryModelPreparator;
     }
 
-    @GetMapping(path = "/finance/{accountId}")
-    @HasMemberGrant(memberId = "#accountId")
-    public ResponseEntity<EntityModel<AccountReponse>> getAccount(@PathVariable("accountId") MemberId accountId) {
-        Accounts accounts = eventsRepository.rebuild(new Accounts());
-
-        return accounts.getAccount(accountId)
+    @GetMapping
+    @HasMemberGrant(memberId = "#memberId")
+    public ResponseEntity<EntityModel<AccountReponse>> getAccount(@PathVariable("memberId") MemberId memberId) {
+        return accountsService.getAccountForMember(memberId)
                 .map(accountReponseMapper::toEntityResponse)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new AccountNotFoundException(accountId));
+                .orElseThrow(() -> new AccountNotFoundException(memberId));
     }
 
-    @GetMapping(path = "/finance/{accountId}/transactions")
-    @HasMemberGrant(memberId = "#accountId")
+    @GetMapping(path = "/transactions")
+    @HasMemberGrant(memberId = "#memberId")
     @PageableAsQueryParam
-    public ResponseEntity<PagedModel<TransactionItemResponse>> getTransactions(@PathVariable("accountId") MemberId accountId, Pageable page) {
-        return ResponseEntity.ok(PagedModel.empty(ResolvableType.forType(TransactionItemResponse.class)));
+    public PagedModel<EntityModel<TransactionItemResponse>> getTransactions(@PathVariable("memberId") MemberId memberId) {
+        return transactionItemResponseMapper.toPagedResponse(new PageImpl<>(accountsService.getTransactionHistory(
+                memberId)));
     }
 
-    private class AccountNotFoundException extends RuntimeException {
-        public AccountNotFoundException(MemberId memberId) {
-            super("Account with id %s not found".formatted(memberId));
-        }
+    @PutMapping(path = "/deposit")
+    @HasGrant(ApplicationGrant.DEPOSIT_FINANCE)
+    public ResponseEntity<Void> deposit(@PathVariable("memberId") MemberId memberId, @RequestBody DepositAction form) {
+        accountsService.deposit(memberId, form);
+
+        return ResponseEntity.ok().build();
     }
+
+}
+
+@Component
+class TransactionHistoryModelPreparator implements ModelPreparator<TransactionHistory.TransactionItem, TransactionItemResponse> {
+
+    @Override
+    public TransactionItemResponse toResponseDto(TransactionHistory.TransactionItem transactionItem) {
+        return new TransactionItemResponse(transactionItem.date(),
+                transactionItem.amount().amount(),
+                transactionItem.note());
+    }
+
+
 }

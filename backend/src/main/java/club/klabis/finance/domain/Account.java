@@ -16,6 +16,7 @@ public class Account extends SingleEventsSource {
     private final MemberId owner;
     private MoneyAmount balance;
 
+
     Account(MemberId owner, MoneyAmount initialBalance) {
         this.owner = owner;
         this.balance = initialBalance;
@@ -34,17 +35,6 @@ public class Account extends SingleEventsSource {
     public void withdraw(MoneyAmount amount) {
         this.balance = this.balance.subtract(amount);
         andEvent(new WithdrawnAmountEvent(owner, amount));
-    }
-
-    public void transferTo(MemberId target, MoneyAmount amount) {
-        if (MoneyAmount.ZERO.equals(amount)) {
-            throw new IllegalStateException("Cannot transfer zero money amount");
-        } else if (this.balance.isLowerThan(amount)) {
-            throw new IllegalStateException("Insufficient funds on source account");
-        }
-
-        this.balance = this.balance.subtract(amount);
-        andEvent(new TransferedAmountEvent(owner, target, amount));
     }
 
     public MemberId getOwner() {
@@ -70,4 +60,7 @@ public class Account extends SingleEventsSource {
             default -> super.handleEvent(event);
         }
     }
+
 }
+
+

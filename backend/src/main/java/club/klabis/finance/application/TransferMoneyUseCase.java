@@ -1,8 +1,9 @@
 package club.klabis.finance.application;
 
 import club.klabis.finance.domain.Account;
-import club.klabis.finance.domain.Accounts;
+import club.klabis.finance.domain.AccountProjector;
 import club.klabis.finance.domain.MoneyAmount;
+import club.klabis.finance.domain.events.TransferedAmountEvent;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.ddd.UseCase;
 import com.dpolach.eventsourcing.EventsRepository;
@@ -19,16 +20,18 @@ public class TransferMoneyUseCase {
 
     @Transactional
     public void transferMoney(MemberId from, MemberId to, MoneyAmount amount) {
-        Accounts accounts = eventsRepository.rebuild(new Accounts());
-
-        Account fromAccount = accounts.getAccount(from)
+        Account fromAccount = eventsRepository.project(new AccountProjector(from))
                 .orElseThrow(() -> new IllegalStateException("Source account not found"));
-        accounts.getAccount(to)
+        Account toAccount = eventsRepository.project(new AccountProjector(to))
                 .orElseThrow(() -> new IllegalStateException("Target account not found"));
 
-        fromAccount.transferTo(to, amount);
+        if (MoneyAmount.ZERO.equals(amount)) {
+            throw new IllegalStateException("Cannot transfer zero money amount");
+        } else if (!fromAccount.canWithdraw(amount)) {
+            throw new IllegalStateException("Insufficient funds on source account");
+        }
 
-        eventsRepository.appendPendingEventsFrom(fromAccount);
+        eventsRepository.appendEvent(new TransferedAmountEvent(fromAccount.getOwner(), toAccount.getOwner(), amount));
     }
 
 }

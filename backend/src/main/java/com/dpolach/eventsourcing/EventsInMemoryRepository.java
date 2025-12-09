@@ -30,6 +30,11 @@ class EventsInMemoryRepository implements EventsRepository {
     }
 
     @Override
+    public void appendEvent(BaseEvent event) {
+        eventsRepository.save(event);
+    }
+
+    @Override
     public Stream<BaseEvent> streamAllEvents() {
         return eventsRepository.findAll().stream().sorted(Comparator.comparing(BaseEvent::getSequenceId));
     }

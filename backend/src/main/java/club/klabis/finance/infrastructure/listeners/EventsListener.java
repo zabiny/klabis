@@ -1,7 +1,8 @@
 package club.klabis.finance.infrastructure.listeners;
 
-import club.klabis.finance.domain.Accounts;
+import club.klabis.finance.domain.AccountProjector;
 import club.klabis.finance.domain.MoneyAmount;
+import club.klabis.finance.domain.events.AccountCreatedEvent;
 import club.klabis.members.MemberId;
 import club.klabis.members.domain.events.MemberCreatedEvent;
 import com.dpolach.eventsourcing.EventsRepository;
@@ -24,19 +25,16 @@ public class EventsListener {
 
     @EventListener
     public void onMemberCreated(MemberCreatedEvent event) {
-        MemberId memberId = event.getAggregate().getId();
+        MemberId accountOwner = event.getAggregate().getId();
 
-        Accounts accounts = eventsRepository.rebuild(new Accounts());
+        boolean accountExists = eventsRepository.project(new AccountProjector(accountOwner)).isPresent();
 
-        if (accounts.getAccount(memberId).isPresent()) {
-            logger.warn("Account already exists for member id " + memberId);
+        if (accountExists) {
+            logger.warn("Account already exists for member id " + accountOwner);
             return;
         }
 
-        logger.debug("Creating finance account for created member %s".formatted(memberId));
-        accounts.createAccount(memberId, MoneyAmount.ZERO);
-
-        eventsRepository.appendPendingEventsFrom(accounts);
+        eventsRepository.appendEvent(new AccountCreatedEvent(accountOwner, MoneyAmount.ZERO));
     }
 
 }

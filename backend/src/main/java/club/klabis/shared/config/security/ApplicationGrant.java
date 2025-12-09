@@ -15,7 +15,8 @@ public enum ApplicationGrant {
 
     SYSTEM_ADMIN("Spravuje systemove veci", true, false, false, "system:admin"),
 
-    APPUSERS_PERMISSIONS("Může spravovat oprávnění v aplikaci", true, false, false, "members:permissions");
+    APPUSERS_PERMISSIONS("Může spravovat oprávnění v aplikaci", true, false, false, "members:permissions"),
+    DEPOSIT_FINANCE("Může připosovat vklady", true, false, false, "finance:deposit");
 
     private final String description;
     // tells if grant represents permission which can be valid across whole application (= can be set to member and then it's valid globally). Use `false` when grant validity is valid only for selected members (must be configured together with scope - either specific member(s) or group(s))

@@ -1,6 +1,6 @@
 package club.klabis.finance;
 
-import club.klabis.finance.domain.Accounts;
+import club.klabis.finance.domain.AccountProjector;
 import club.klabis.members.application.MemberRegistrationUseCase;
 import club.klabis.members.domain.*;
 import club.klabis.members.domain.forms.RegistrationFormBuilder;
@@ -43,7 +43,7 @@ public class FinanceMemberIntegrationTest {
                 .build());
 
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
-                Assertions.assertThat(eventsRepository.rebuild(new Accounts()).getAccount(createdMember.getId()))
+                Assertions.assertThat(eventsRepository.project(new AccountProjector(createdMember.getId())))
                         .isPresent()
         );
     }

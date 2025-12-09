@@ -9,8 +9,8 @@ import club.klabis.members.MemberId;
 import com.dpolach.eventsourcing.BaseEvent;
 import com.dpolach.eventsourcing.EventsRepository;
 import com.dpolach.eventsourcing.EventsSource;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,12 +23,12 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class AccountsTest {
+class AccountProjectorTest {
     final MemberId david = new MemberId(1);
     final MemberId john = new MemberId(2);
 
     private static Optional<Account> rebuildAccount(MemberId accountOwner, BaseEvent... events) {
-        return eventRepositoryWith(events).rebuild(new Accounts()).getAccount(accountOwner);
+        return eventRepositoryWith(events).project(new AccountProjector(accountOwner));
     }
 
     private static EventsRepository eventRepositoryWith(BaseEvent... initialEvents) {
@@ -42,6 +42,11 @@ class AccountsTest {
             }
 
             @Override
+            public void appendEvent(BaseEvent event) {
+                storedEvents.add(event);
+            }
+
+            @Override
             public Stream<BaseEvent> streamAllEvents() {
                 return storedEvents.stream();
             }
@@ -49,11 +54,11 @@ class AccountsTest {
     }
 
     static ListAssert<BaseEvent> assertThatPendingEvents(EventsSource eventsSource) {
-        return Assertions.assertThat(eventsSource.getPendingEvents());
+        return assertThat(eventsSource.getPendingEvents());
     }
 
     static ListAssert<BaseEvent> assertThatStoredEvents(EventsRepository eventsRepository) {
-        return Assertions.assertThat(eventsRepository.streamAllEvents());
+        return assertThat(eventsRepository.streamAllEvents());
     }
 
     @DisplayName("read model tests")
@@ -62,47 +67,68 @@ class AccountsTest {
         @DisplayName("it should rebuild CreateAccount event")
         @Test
         void itShouldRebuildCreateAccountEvent() {
-            Accounts actual = eventRepositoryWith(new AccountCreatedEvent(david, MoneyAmount.of(100)),
-                    new AccountCreatedEvent(john, MoneyAmount.ZERO)).rebuild(new Accounts());
+            BaseEvent[] events = new BaseEvent[]{
+                    new AccountCreatedEvent(david, MoneyAmount.of(100)),
+                    new AccountCreatedEvent(john, MoneyAmount.ZERO)
+            };
 
-            assertThat(actual.getAccount(david)).isPresent().get().extracting("balance").isEqualTo(MoneyAmount.of(100));
-            assertThat(actual.getAccount(john)).isPresent().get().extracting("balance").isEqualTo(MoneyAmount.ZERO);
-            assertThatPendingEvents(actual).isEmpty();
+            assertThat(rebuildAccount(david, events)).isPresent()
+                    .get()
+                    .satisfies(davidAccount -> assertThatPendingEvents(davidAccount).isEmpty())
+                    .extracting("balance").isEqualTo(MoneyAmount.of(100));
+
+            assertThat(rebuildAccount(john, events)).isPresent()
+                    .get()
+                    .satisfies(johnAccount -> assertThatPendingEvents(johnAccount).isEmpty())
+                    .extracting("balance").isEqualTo(MoneyAmount.ZERO);
         }
 
         @DisplayName("it should rebuild transfer money event")
         @Test
         void itShouldRebuildTransferMoneyState() {
-            Accounts actual = eventRepositoryWith(
+            BaseEvent[] events = new BaseEvent[]{
                     new AccountCreatedEvent(john, MoneyAmount.of(100)),
                     new AccountCreatedEvent(david, MoneyAmount.ZERO),
-                    new TransferedAmountEvent(john, david, MoneyAmount.of(33))).rebuild(new Accounts());
+                    new TransferedAmountEvent(john, david, MoneyAmount.of(33))
+            };
 
-            assertThat(actual.getAccount(david)).isPresent().get().extracting("balance").isEqualTo(MoneyAmount.of(33));
-            assertThat(actual.getAccount(john)).isPresent().get().extracting("balance").isEqualTo(MoneyAmount.of(67));
-            assertThatPendingEvents(actual).isEmpty();
+            assertThat(rebuildAccount(david, events)).isPresent()
+                    .get()
+                    .satisfies(davidAccount -> assertThatPendingEvents(davidAccount).isEmpty())
+                    .extracting("balance")
+                    .isEqualTo(MoneyAmount.of(33));
+            assertThat(rebuildAccount(john, events)).isPresent()
+                    .get()
+                    .satisfies(johnAccount -> assertThatPendingEvents(johnAccount).isEmpty())
+                    .extracting("balance")
+                    .isEqualTo(MoneyAmount.of(67));
         }
 
         @DisplayName("it should rebuild deposit money event")
         @Test
         void itShouldRebuildDepositMoneyState() {
-            Accounts actual = eventRepositoryWith(
+            BaseEvent[] events = new BaseEvent[]{
                     new AccountCreatedEvent(david, MoneyAmount.ZERO),
-                    new DepositedAmountEvent(david, MoneyAmount.of(33))).rebuild(new Accounts());
+                    new DepositedAmountEvent(david, MoneyAmount.of(33))
+            };
 
-            assertThat(actual.getAccount(david)).isPresent().get().extracting("balance").isEqualTo(MoneyAmount.of(33));
-            assertThatPendingEvents(actual).isEmpty();
+            assertThat(rebuildAccount(david, events))
+                    .isPresent().get()
+                    .satisfies(davidAccount -> assertThatPendingEvents(davidAccount).isEmpty())
+                    .extracting("balance").isEqualTo(MoneyAmount.of(33));
         }
 
         @DisplayName("it should rebuild withdraw money event")
         @Test
         void itShouldRebuildWithdrawMoneyState() {
-            Accounts actual = eventRepositoryWith(
+            BaseEvent[] events = new BaseEvent[]{
                     new AccountCreatedEvent(david, MoneyAmount.of(100)),
-                    new WithdrawnAmountEvent(david, MoneyAmount.of(33))).rebuild(new Accounts());
+                    new WithdrawnAmountEvent(david, MoneyAmount.of(33))
+            };
 
-            assertThat(actual.getAccount(david)).isPresent().get().extracting("balance").isEqualTo(MoneyAmount.of(67));
-            assertThatPendingEvents(actual).isEmpty();
+            assertThat(rebuildAccount(david, events)).isPresent().get()
+                    .satisfies(davidAccount -> assertThatPendingEvents(davidAccount).isEmpty())
+                    .extracting("balance").isEqualTo(MoneyAmount.of(67));
         }
 
     }
@@ -113,12 +139,15 @@ class AccountsTest {
         @DisplayName("it should create Deposit event")
         @Test
         void itShouldCreateDepositMoneyEvent() {
-            Account actual = rebuildAccount(david,
-                    new AccountCreatedEvent(david, MoneyAmount.of(10))).orElseThrow();
+            BaseEvent[] events = new BaseEvent[]{
+                    new AccountCreatedEvent(david, MoneyAmount.of(10))
+            };
 
-            actual.deposit(MoneyAmount.of(30));
+            Account davidAccount = rebuildAccount(david, events).orElseThrow();
+            davidAccount.deposit(MoneyAmount.of(30));
 
-            Assertions.assertThat(actual.getBalance()).isEqualTo(MoneyAmount.of(40));
+            assertThat(davidAccount.getBalance())
+                    .isEqualTo(MoneyAmount.of(40));
         }
     }
 
@@ -144,7 +173,7 @@ class AccountsTest {
 
             actual.withdraw(MoneyAmount.of(3));
 
-            Assertions.assertThat(actual.getBalance()).isEqualTo(MoneyAmount.of(7));
+            assertThat(actual.getBalance()).isEqualTo(MoneyAmount.of(7));
         }
     }
 
@@ -177,9 +206,12 @@ class AccountsTest {
         @DisplayName("it should throw exception when source account doesn't have sufficient funds for transfer")
         @Test
         void itShouldThrowExceptionWhenSourceAccountDoesntHaveSufficientFunds() {
-            Account account = rebuildAccount(john, new AccountCreatedEvent(john, MoneyAmount.of(10))).orElseThrow();
+            TransferMoneyUseCase useCase = new TransferMoneyUseCase(eventRepositoryWith(
+                    new AccountCreatedEvent(john, MoneyAmount.of(10)),
+                    new AccountCreatedEvent(david, MoneyAmount.ZERO)
+            ));
 
-            assertThatThrownBy(() -> account.transferTo(david, MoneyAmount.of(100)))
+            assertThatThrownBy(() -> useCase.transferMoney(john, david, MoneyAmount.of(100)))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Insufficient funds on source account");
         }
@@ -188,9 +220,12 @@ class AccountsTest {
         @DisplayName("it should throw exception when transfering ZERO amount")
         @Test
         void itShouldThrowExceptionWhenTransferingZeroAmount() {
-            Account account = rebuildAccount(john, new AccountCreatedEvent(john, MoneyAmount.of(100))).orElseThrow();
+            TransferMoneyUseCase useCase = new TransferMoneyUseCase(eventRepositoryWith(
+                    new AccountCreatedEvent(john, MoneyAmount.of(100)),
+                    new AccountCreatedEvent(david, MoneyAmount.ZERO))
+            );
 
-            assertThatThrownBy(() -> account.transferTo(david, MoneyAmount.ZERO))
+            assertThatThrownBy(() -> useCase.transferMoney(john, david, MoneyAmount.ZERO))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Cannot transfer zero money amount");
         }
@@ -198,14 +233,18 @@ class AccountsTest {
         @DisplayName("it should create TransferMoneyEvent")
         @Test
         void itShouldCreateTransferMoneyEvent() {
-            Account account = rebuildAccount(john, new AccountCreatedEvent(john, MoneyAmount.of(100))).orElseThrow();
+            EventsRepository eventsRepository = eventRepositoryWith(
+                    new AccountCreatedEvent(john, MoneyAmount.of(100)),
+                    new AccountCreatedEvent(david, MoneyAmount.ZERO)
+            );
+            TransferMoneyUseCase useCase = new TransferMoneyUseCase(eventsRepository);
 
-            account.transferTo(david, MoneyAmount.of(75));
+            useCase.transferMoney(john, david, MoneyAmount.of(75));
 
-            assertThatPendingEvents(account)
-                    .usingRecursiveComparison()
-                    .ignoringFields("createdAt", "sequenceId")
-                    .isEqualTo(List.of(new TransferedAmountEvent(john, david, MoneyAmount.of(75))));
+            assertThat(eventsRepository.streamAllEvents())
+                    .filteredOn(TransferedAmountEvent.class::isInstance)
+                    .extracting("from", "to", "amount")
+                    .containsExactly(Tuple.tuple(john, david, MoneyAmount.of(75)));
         }
 
     }
