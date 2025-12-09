@@ -26,4 +26,4 @@ export interface TableData {
     data: Record<string, unknown>[]
 }
 
-export type FetchTableDataCallback = (page: Paging) => TableData;
+export type FetchTableDataCallback = (page: Paging) => Promise<TableData>;

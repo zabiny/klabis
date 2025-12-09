@@ -1,19 +1,9 @@
-import React, {ReactElement, ReactNode, useEffect} from 'react';
+import React, {ReactElement, ReactNode, useEffect, useState} from 'react';
 // Import pro MuiTableCell
-import {
-    Alert,
-    CircularProgress,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-} from '@mui/material';
-import {type KlabisApiGetPaths, type SortDirection, useKlabisApiQuery} from '../../api';
+import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow,} from '@mui/material';
+import {type SortDirection} from '../../api';
 import {KlabisTableProvider, useKlabisTableContext} from "./KlabisTableContext.tsx";
+import {type FetchTableDataCallback, type TableData} from './types';
 
 const KlabisTablePagination = ({totalElements}: { totalElements?: number }): ReactElement => {
     const tableContext = useKlabisTableContext();
@@ -21,7 +11,7 @@ const KlabisTablePagination = ({totalElements}: { totalElements?: number }): Rea
         rowsPerPageOptions={[5, 10, 25, 50]}
         component="div"
         count={totalElements || 0}
-        rowsPerPage={tableContext.rowsPerPage} x
+        rowsPerPage={tableContext.rowsPerPage}
         page={tableContext.page}
         onPageChange={tableContext.handleChangePage}
         onRowsPerPageChange={tableContext.handleChangeRowsPerPage}
@@ -30,61 +20,42 @@ const KlabisTablePagination = ({totalElements}: { totalElements?: number }): Rea
     />;
 }
 
-interface KlabisTableProps<T = any> {
-    api: KlabisApiGetPaths;
+interface KlabisTableProps<T = unknown> {
+    fetchData: FetchTableDataCallback;
     children: React.ReactNode;
     onRowClick?: (item: T) => void;
-    // can be used to update UI based on klabis actions loaded in API used from Klabis Table.
-    onTableActionsLoaded?: (actions: string[]) => void,
     defaultOrderBy?: string;
     defaultOrderDirection?: SortDirection;
     defaultRowsPerPage?: number;
-    additionalParams?: Record<string, any>;
     emptyMessage?: string;
 }
 
-const KlabisTableInner = <T extends Record<string, any>>({
-                                                             api,
+const KlabisTableInner = <T extends Record<string, unknown>>({
+                                                                 fetchData,
                                                              onRowClick,
                                                              emptyMessage = "Žádná data",
-                                                             onTableActionsLoaded = (actions) => {
-                                                             }
                                                          }: KlabisTableProps<T>) => {
     const tableContext = useKlabisTableContext();
     const tableModel = tableContext.tableModel;
+    const [data, setData] = useState<TableData | undefined>(undefined);
 
-    const {
-        data,
-        isLoading,
-        error,
-        isSuccess
-    } = useKlabisApiQuery("get", api, {params: {query: tableContext.createApiParams()}})
-
+    // Fetch data asynchronously via provided callback whenever paging changes
     useEffect(() => {
-        if (isSuccess) {
-            onTableActionsLoaded(data?._actions || []);
-        }
-    }, [isSuccess, onTableActionsLoaded, data]);
+        let cancelled = false;
+        (async () => {
+            try {
+                const result = await fetchData({page: tableContext.page, rowsPerPage: tableContext.rowsPerPage});
+                if (!cancelled) setData(result);
+            } catch (e) {
+                if (!cancelled) setData(undefined);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [tableContext.page, tableContext.rowsPerPage, fetchData]);
 
-    const renderRows = (rows: object[]): ReactNode => {
-        if (isLoading) {
-            return (
-                <TableRow key={0}><TableCell align={"center"}
-                                             colSpan={tableContext.columnsCount}><CircularProgress/></TableCell></TableRow>
-            );
-        }
-
-        if (error) {
-            return (
-                <TableRow key={0}><TableCell align={"center"}
-                                             colSpan={tableContext.columnsCount}>
-                    <Alert severity="error">
-                        Nepodařilo se načíst data. Zkuste to prosím později. ({JSON.stringify(error)})
-                    </Alert>
-                </TableCell></TableRow>
-            );
-        }
-
+    const renderRows = (rows?: Record<string, unknown>[]): ReactNode => {
         if (!rows || rows.length == 0) {
             return (
                 <TableRow key={0}><TableCell align={"center"}
@@ -95,7 +66,7 @@ const KlabisTableInner = <T extends Record<string, any>>({
         return rows
             .map((item, index) => (
                 <TableRow
-                    key={item.id || index}
+                    key={item?.id || index}
                     hover
                     onClick={() => onRowClick?.(item)}
                     sx={{cursor: onRowClick ? 'pointer' : 'default'}}
@@ -116,7 +87,7 @@ const KlabisTableInner = <T extends Record<string, any>>({
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {renderRows(data?.content)}
+                        {renderRows(data?.data)}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -125,8 +96,28 @@ const KlabisTableInner = <T extends Record<string, any>>({
     );
 };
 
-export const KlabisTable = <T extends Record<string, any>>(props: KlabisTableProps<T>) => {
-    return <KlabisTableProvider {...props} colDefs={props.children}>
-        <KlabisTableInner {...props}/>
+export const KlabisTable = <T extends Record<string, unknown>>(props: KlabisTableProps<T>) => {
+    const {
+        children,
+        defaultOrderBy,
+        defaultOrderDirection,
+        defaultRowsPerPage,
+        fetchData,
+        onRowClick,
+        emptyMessage
+    } = props;
+
+    return <KlabisTableProvider
+        colDefs={children}
+        defaultOrderBy={defaultOrderBy}
+        defaultOrderDirection={defaultOrderDirection}
+        defaultRowsPerPage={defaultRowsPerPage}
+    >
+        <KlabisTableInner
+            fetchData={fetchData}
+            onRowClick={onRowClick}
+            emptyMessage={emptyMessage}
+            children={children}
+        />
     </KlabisTableProvider>
 };

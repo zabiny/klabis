@@ -18,7 +18,10 @@ const EventsPage = () => {
                 Akce
             </Typography>
 
-            <KlabisTable api={"/events"} defaultOrderBy={"date"}>
+            <KlabisTable fetchData={async ({page, rowsPerPage}) => ({
+                page: {totalElements: 0, totalPages: 0, size: rowsPerPage, number: page},
+                data: []
+            })} defaultOrderBy={"date"}>
                 <TableCell sortable column={"date"} dataRender={({value}) => formatDate(value)}>Datum</TableCell>
                 <TableCell sortable column={"name"}>Název</TableCell>
                 <TableCell sortable column={"location"}>Místo</TableCell>

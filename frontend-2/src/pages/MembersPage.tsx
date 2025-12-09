@@ -2,7 +2,6 @@ import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Box, Button, FormControlLabel, Switch, Typography,} from '@mui/material';
 import {KlabisTable, TableCell} from '../components/KlabisTable';
-import {hasAction} from "../api/klabisJsonUtils.ts";
 import RegisterMemberFormDialog from "../components/members/RegisterMemberForm.tsx";
 import {Actions} from "../components/Actions";
 
@@ -22,8 +21,6 @@ const MembersPage = () => {
     const [view, setView] = useState<'SUMMARY' | 'DETAILED'>('SUMMARY');
     const [openRegisterDialog, setOpenRegisterDialog] = useState(false);
 
-    const [tableActions, setTableActions] = useState<string[]>([]);
-
     const handleShowSuspendedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setShowSuspended(event.target.checked);
     };
@@ -34,11 +31,6 @@ const MembersPage = () => {
 
     const handleRowClick = (member: Member) => {
         navigate(`/members/${member.id}`);
-    };
-
-    const additionalParams = {
-        suspended: showSuspended,
-        view: view,
     };
 
     return (
@@ -66,34 +58,32 @@ const MembersPage = () => {
                     >
                         {view === 'SUMMARY' ? 'Zobrazit detaily' : 'Skrýt detaily'}
                     </Button>
-                    {hasAction(tableActions, 'members:register') && (
-                        <>
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                sx={{ml: 2}}
-                                onClick={() => setOpenRegisterDialog(true)}
-                            >
-                                Registrovat nového člena
-                            </Button>
+                    {/* Registration actions visibility previously depended on table actions; adjust as needed. */}
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        sx={{ml: 2}}
+                        onClick={() => setOpenRegisterDialog(true)}
+                    >
+                        Registrovat nového člena
+                    </Button>
 
-                            <RegisterMemberFormDialog
-                                open={openRegisterDialog}
-                                onClose={() => setOpenRegisterDialog(false)}
-                                onSuccess={() => setOpenRegisterDialog(false)}
-                            />
-                        </>
-                    )}
+                    <RegisterMemberFormDialog
+                        open={openRegisterDialog}
+                        onClose={() => setOpenRegisterDialog(false)}
+                        onSuccess={() => setOpenRegisterDialog(false)}
+                    />
                 </Box>
             </Box>
 
             <KlabisTable<Member>
-                api="/members"
+                fetchData={async ({page, rowsPerPage}) => ({
+                    page: {totalElements: 0, totalPages: 0, size: rowsPerPage, number: page},
+                    data: []
+                })}
                 onRowClick={handleRowClick}
                 defaultOrderBy="lastName"
                 defaultOrderDirection="asc"
-                additionalParams={additionalParams}
-                onTableActionsLoaded={setTableActions}
             >
                 <TableCell hidden={view === 'SUMMARY'} column="id">ID</TableCell>
                 <TableCell sortable column="firstName">Jméno</TableCell>

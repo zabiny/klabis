@@ -1,4 +1,5 @@
 import {
+    EntityModel,
     type HalFormsResponse,
     type HalFormsTemplate,
     type HalResponse,
@@ -6,11 +7,10 @@ import {
     isTemplateTarget,
     type Link,
     type NavigationTarget,
-    type PageMetadata,
     type TemplateTarget
 } from "../../api";
-import {type ReactElement, useCallback, useEffect, useState} from "react";
-import {Alert, Button, Checkbox, FormLabel, Grid, Link as MuiLink, Stack} from "@mui/material";
+import React, {type ReactElement, useCallback, useEffect, useState} from "react";
+import {Alert, Box, Button, Checkbox, FormLabel, Grid, Link as MuiLink, Stack, Typography} from "@mui/material";
 import {ErrorBoundary} from "react-error-boundary";
 import {type HalFormFieldFactory, HalFormsForm} from "../HalFormsForm";
 import {UserManager} from "oidc-client-ts";
@@ -21,6 +21,10 @@ import {getDefaultTemplate, isHalFormsTemplate, isHalResponse} from "../HalForms
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {isLink} from "../../api/klabisJsonUtils";
 import {isString} from "formik";
+import {KlabisTable, TableCell} from "../KlabisTable";
+import EventType from "../events/EventType";
+import {Public} from "@mui/icons-material";
+import MemberName from "../members/MemberName";
 
 
 const userManager: UserManager = klabisAuthUserManager;
@@ -109,8 +113,73 @@ function HalCollectionContent({data, navigation}: {
 
     // TODO: split links into collection links and other links. Display collection links "bellow" table and other links above table as actions.
 
-    const renderCollectionContent = (relName: string, items: Array<unknown>, page?: PageMetadata): ReactElement => {
+    const renderCollectionContent = (relName: string, items: Array<unknown>): React.ReactElement => {
+        const formatDate = (dateString: string) => {
+            const date = new Date(dateString);
+            return new Intl.DateTimeFormat('cs-CZ').format(date);
+        };
+
+        // TODO: KlabisTable - replace 'api' with async callback which will get table's state (= what page it wants, how many records..). That will make it possible to use it with compiled Typescript clients (= useKlabisApi like on standard pages) and also with HalNavigator    
+
         switch (relName) {
+            case 'membersApiResponseList':
+                return (<Box>
+                        <Typography variant="h4" component="h1" gutterBottom>
+                            Adresář
+                        </Typography>
+                        <KlabisTable<EntityModel<{
+                            id: number,
+                            firstName: string,
+                            lastName: string,
+                            registrationNumber: string
+                        }>>
+                            fetchData={({page, rowsPerPage}) => ({
+                                page: {totalElements: 0, totalPages: 0, size: rowsPerPage, number: page},
+                                data: []
+                            })}    // TODO: provide real HAL/HAL-FORMS data fetching
+                            onRowClick={item => alert(item.id)}
+                            defaultOrderBy="lastName"
+                            defaultOrderDirection="asc"
+                        >
+                            <TableCell sortable column="firstName">Jméno</TableCell>
+                            <TableCell sortable column="lastName">Příjmení</TableCell>
+                            <TableCell sortable column="registrationNumber">Registrační číslo</TableCell>
+                            {/*<TableCell column="sex">Pohlaví</TableCell>*/}
+                            {/*<TableCell sortable column="dateOfBirth">Datum narození</TableCell>*/}
+                            {/*<TableCell column="nationality">Národnost</TableCell>*/}
+                            {/* Tabulka interne taha pouze application/json, takze _links v response chybi... %}
+                    {/*<TableCell column="_links"*/}
+                            {/*           dataRender={props => (<HalLinksUi value={props.value}/>)}>Akce</TableCell>*/}
+                        </KlabisTable>
+                    </Box>
+                );
+            case 'eventResponseList':
+                return (<Box>
+                    <Typography variant="h4" component="h1" gutterBottom>
+                        Závody
+                    </Typography>
+
+                    <KlabisTable<EntityModel<{ date: string, name: string, id: number, location: string }>>
+                        fetchData={({page, rowsPerPage}) => ({
+                            page: {totalElements: 0, totalPages: 0, size: rowsPerPage, number: page},
+                            data: []
+                        })} defaultOrderBy={"date"}>
+                        <TableCell sortable column={"date"}
+                                   dataRender={({value}) => formatDate(value)}>Datum</TableCell>
+                        <TableCell sortable column={"name"}>Název</TableCell>
+                        <TableCell sortable column={"location"}>Místo</TableCell>
+                        <TableCell sortable column={"organizer"}>Pořadatel</TableCell>
+                        <TableCell column={"type"}
+                                   dataRender={({value}) => <EventType eventType={value}/>}>Typ</TableCell>
+                        <TableCell column={"web"}
+                                   dataRender={({value}) => <MuiLink hidden={!value}
+                                                                     href={value}><Public/></MuiLink>}>Web</TableCell>
+                        <TableCell sortable column={"registrationDeadline"} dataRender={({value}) => formatDate(value)}>Uzávěrka
+                            přihlášek</TableCell>
+                        <TableCell column={"coordinator"} dataRender={({value}) => value ?
+                            <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
+                    </KlabisTable>
+                </Box>);
             default:
                 return (<div key={relName}>
                         <h2 className="font-semibold">{relName}</h2>
@@ -138,7 +207,7 @@ function HalCollectionContent({data, navigation}: {
         <>
             {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}
 
-            {data._embedded && Object.entries(data._embedded).map(([rel, items]) => renderCollectionContent(rel, items, data?.page))}
+            {data._embedded && Object.entries(data._embedded).map(([rel, items]) => renderCollectionContent(rel, items))}
 
             {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
 

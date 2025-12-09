@@ -34,7 +34,6 @@ interface KlabisTableProviderProps {
     defaultOrderBy?: string;
     defaultOrderDirection?: SortDirection;
     defaultRowsPerPage?: number;
-    additionalParams?: Record<string, string | number>;
 }
 
 const defaultRenderFunc = (props: TableCellRenderProps): ReactNode => {
@@ -121,7 +120,6 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
                                                                             defaultOrderBy,
                                                                             defaultOrderDirection = 'asc',
                                                                             defaultRowsPerPage = 10,
-                                                                            additionalParams = {},
                                                                         }) => {
     const [page, setPage] = useState<Paging>({page: 0, rowsPerPage: defaultRowsPerPage});
     const [orderBy, setOrderBy] = useState<string | undefined>(defaultOrderBy);
@@ -150,7 +148,6 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps> = ({
             page: page.page,
             size: page.rowsPerPage,
             sort: orderBy ? [`${orderBy},${orderDirection}`] : [],
-            ...additionalParams
         } as PaginatedApiParams;
     }
 
