@@ -4,7 +4,7 @@ import club.klabis.members.MemberId;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.RegistrationNumber;
 import club.klabis.members.domain.Sex;
-import club.klabis.shared.config.inmemorystorage.DataRepository;
+import club.klabis.shared.application.DataRepository;
 import club.klabis.users.domain.ApplicationUser;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 import org.jmolecules.ddd.annotation.Repository;

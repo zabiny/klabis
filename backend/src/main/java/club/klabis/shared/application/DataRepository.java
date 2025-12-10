@@ -1,4 +1,4 @@
-package club.klabis.shared.config.inmemorystorage;
+package club.klabis.shared.application;
 
 import java.util.Optional;
 
