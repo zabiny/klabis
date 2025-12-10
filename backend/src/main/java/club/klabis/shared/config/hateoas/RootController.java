@@ -8,7 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @ApiController(path = "/", openApiTagName = "Misc")
-class RootController {
+public class RootController {
 
     // API for HAL ROOT endpoint. Main purpose is to have root node where HAL viewer can start viewing Klabis API. Links are added in postprocessors from respective modules.
     @GetMapping(produces = MediaTypes.HAL_JSON_VALUE)
