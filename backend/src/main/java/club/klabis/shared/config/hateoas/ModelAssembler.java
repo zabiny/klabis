@@ -2,9 +2,13 @@ package club.klabis.shared.config.hateoas;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
+
+import java.util.function.Function;
 
 public interface ModelAssembler<DOMAIN, DTO> {
 
@@ -16,4 +20,8 @@ public interface ModelAssembler<DOMAIN, DTO> {
 
     // can be used to translate attribute names (sort) from DTO to Domain
     Pageable toDomainPageable(Pageable dtoPageable);
+
+    static <D> ModelAssembler<D, D> identityAssembler(Function<D, Link> selfLinkGenerator, PagedResourcesAssembler<D> pagedResourcesAssembler) {
+        return new HalResourceAssembler<>(new IdentityModelPreparator<>(selfLinkGenerator), pagedResourcesAssembler);
+    }
 }
