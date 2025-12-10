@@ -13,6 +13,7 @@ import club.klabis.events.domain.EventException;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
+import club.klabis.shared.config.hateoas.RootModel;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.ResponseViews;
 import club.klabis.shared.config.security.ApplicationGrant;
@@ -28,12 +29,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.LinkRelation;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.LinkRelationProvider;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -64,7 +70,7 @@ public class EventsController {
     @GetMapping
     @PageableAsQueryParam
     @JsonView(ResponseViews.Summary.class)
-    PagedModel<EntityModel<EventResponse>> getEvents(EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
+    PagedModel<EntityModel<EventResponse>> getEvents(@ModelAttribute EventsRepository.EventsQuery filter, @Parameter(hidden = true) Pageable pageable) {
         Page<Event> data = eventsRepository.findEvents(filter, pageable);
 
         return eventModelMapper.toPagedResponse(data);
@@ -126,5 +132,26 @@ public class EventsController {
         return List.of();
     }
 
+}
+
+@Component
+class EventsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+    private final LinkRelationProvider linkRelationProvider;
+
+    public EventsRootPostprocessor(LinkRelationProvider linkRelationProvider) {
+        this.linkRelationProvider = linkRelationProvider;
+    }
+
+    @Override
+    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        LinkRelation eventsRelation = linkRelationProvider.getCollectionResourceRelFor(Event.class);
+
+        model.add(linkTo(methodOn(EventsController.class).getEvents(null, null)).withRel(eventsRelation));
+
+
+        model.mapLink(eventsRelation, link -> link.expand(Map.of("sorted", true)));
+
+        return model;
+    }
 
 }

@@ -4,6 +4,8 @@ import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.KlabisInputTypes;
+import club.klabis.shared.config.restapi.ResponseViews;
+import com.fasterxml.jackson.annotation.JsonView;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,7 +22,7 @@ public record EventManagementForm(@NotBlank String name, String location,
                                   String organizer,
                                   @InputType(KlabisInputTypes.DATE_TIME_INPUT_TYPE) @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime registrationDeadline,
                                   MemberId coordinator,
-                                  Set<Competition.Category> categories) {
+                                  @JsonView(ResponseViews.Detailed.class) Set<Competition.Category> categories) {
 
     public Competition createNew() {
         Competition result = Competition.newEvent(name, date, categories);
