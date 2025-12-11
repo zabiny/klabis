@@ -30,7 +30,7 @@ export const Actions = ({
 const Action = ({actionName, onClick}: { actionName: string, onClick?: OnClickHandler }): ReactNode => {
     const icon = createIcon(actionName);
 
-    const event = useCallback((e) => {
+    const event = useCallback(() => {
         if (onClick) onClick(actionName);
     }, [actionName, onClick]);
 

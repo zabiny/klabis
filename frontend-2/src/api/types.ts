@@ -1,7 +1,6 @@
 import type {components} from "./klabisApi";
 import {isLink} from "./klabisJsonUtils";
 import {isString} from "formik";
-import {isHalResponse} from "../components/HalFormsForm/utils";
 
 export type Link = components["schemas"]["Link"];
 export type PageMetadata = components["schemas"]["PageMetadata"];
@@ -112,10 +111,6 @@ export type NavigationTarget = Link | TemplateTarget | string;
 
 export function isNavigationTarget(item: unknown): item is NavigationTarget {
     return isLink(item) || isTemplateTarget(item) || isString(item);
-}
-
-export function isHalCollectionResponse(item: unknown): item is HalCollectionResponse {
-    return isHalResponse(item) && item.page;
 }
 
 export type EntityModel<T> = T & { _links: Link[] };
