@@ -42,7 +42,7 @@ export interface HalResponse {
     _embedded?: object,
 
     // allow arbitrary additional properties
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface HalCollectionResponse extends HalResponse {

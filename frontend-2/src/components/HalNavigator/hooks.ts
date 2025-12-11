@@ -6,7 +6,6 @@ import {createContext, useContext} from "react";
 import {useQuery, UseQueryResult} from "@tanstack/react-query";
 import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../../api/klabisUserManager";
-import {isHalFormsTemplate} from "../HalFormsForm/utils";
 
 const userManager: UserManager = klabisAuthUserManager;
 
@@ -88,19 +87,19 @@ export const useHalExplorerNavigation = (): Navigation<NavigationTarget> => {
     return navigation;
 }
 
-type ResponseData<T> = {
-    body: T,
+export type NavigationTargetResponse<T> = {
+    body?: T,
     contentType: string,
-    responseStatus: number
+    responseStatus: number,
+    isSuccess: boolean,
+    navigationTarget: NavigationTarget
 }
 
-export const useNavigationTargetResponse = (target?: NavigationTarget): UseQueryResult<ResponseData<HalResponse>, Error> => {
-    const navigation = useHalExplorerNavigation();
+const useQueryNavigationTargetResponse = (target: NavigationTarget): UseQueryResult<NavigationTargetResponse<HalResponse | string>, Error> => {
+    const resourceUrl = toHref(target);
 
-    const resourceUrl = toHref(target || navigation.current);
-
-    return useQuery<ResponseData<HalResponse>>({
-        queryKey: [resourceUrl], queryFn: async (context): Promise<ResponseData<HalResponse>> => {
+    return useQuery<NavigationTargetResponse<HalResponse>>({
+        queryKey: [resourceUrl], queryFn: async (context): Promise<NavigationTargetResponse<HalResponse>> => {
             const user = await userManager.getUser();
             const res = await fetch(resourceUrl, {
                 headers: {
@@ -112,61 +111,51 @@ export const useNavigationTargetResponse = (target?: NavigationTarget): UseQuery
                 let bodyText: string | undefined = undefined;
                 if (res.body) {
                     bodyText = await res.text();
-                    console.warn(bodyText ? `Response body: ${bodyText}` : 'No response body');
                 }
-                throw new FetchError(`HTTP ${res.status}`, res.status, res.statusText, bodyText);
+                return {
+                    contentType: res.headers.get("Content-Type") || "???",
+                    responseStatus: res.status,
+                    body: bodyText,
+                    isSuccess: false,
+                    navigationTarget: target
+                }
             }
             return {
                 body: await res.json(),
-                contentType: res.headers.get("Content-Type") || '??? not found ??',
-                responseStatus: res.status
+                contentType: res.headers.get("Content-Type") || '???',
+                responseStatus: res.status,
+                isSuccess: true,
+                navigationTarget: target
             };
         }
     });
 }
 
+export const useNavigationTargetResponse = (target?: NavigationTarget): NavigationTargetResponse<HalResponse | string> | undefined => {
+    const navigation = useHalExplorerNavigation();
+
+    const navigationTarget = target || navigation.current;
+
+    const result = useQueryNavigationTargetResponse(navigationTarget);
+
+    if (result.isLoading) {
+        return undefined;
+    } else {
+        return result.data;
+    }
+}
+
 export const useResponseBody = (defaultBody?: HalResponse): HalResponse | undefined => {
     const result = useNavigationTargetResponse();
 
-    if (result.isSuccess && !result.isLoading) {
-        return result.data.body;
-    } else {
+    if (!result) {
         return defaultBody;
     }
-}
 
-interface SimpleFetchOptions {
-    ignoredErrorStatues?: number[],
-    responseForError?: HalResponse
-}
-
-export const useSimpleFetch = (resource: NavigationTarget, options?: SimpleFetchOptions): {
-    data?: HalResponse,
-    isLoading: boolean,
-    error?: Error
-} => {
-
-    const result = useNavigationTargetResponse();
-
-    if (result.error) {
-        const ignoredStatuses = options?.ignoredErrorStatues || [];
-        if (isHalFormsTemplate(resource) && result.error instanceof FetchError && ignoredStatuses.indexOf(result.error.responseStatus) > -1) {
-            console.warn(`HAL+FORMS API ${toHref(resource)} responded with ${result.error.responseStatus} - error will be replaced with empty object as Form resources doesn't require GET API if there are no data to be prepopulated in the form`)
-
-            return {
-                isLoading: false,
-                data: options?.responseForError || {}
-            }
-        } else {
-            return {
-                isLoading: false,
-                error: result.error
-            }
-        }
-    }
-
-    return {
-        isLoading: result.isLoading,
-        data: result.data?.body
+    if (typeof result.body === "string") {
+        throw new FetchError(`Response body couldn't be fetched: returned status ${result.responseStatus} and body ${JSON.stringify(result.body)}`, result.responseStatus, '', result.body);
+    } else {
+        return result.body;
     }
 }
+

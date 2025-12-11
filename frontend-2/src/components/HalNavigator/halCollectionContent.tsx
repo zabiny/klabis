@@ -1,4 +1,4 @@
-import type {EntityModel, HalResponse, NavigationTarget} from "../../api";
+import type {EntityModel, HalCollectionResponse, NavigationTarget} from "../../api";
 import type {Navigation} from "../../hooks/useNavigation";
 import React, {type ReactElement, type ReactNode} from "react";
 import {toURLPath, useHalExplorerNavigation, useResponseBody} from "./hooks";
@@ -10,7 +10,7 @@ import EventType from "../events/EventType";
 import {Public} from "@mui/icons-material";
 import MemberName from "../members/MemberName";
 
-function omitMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_links'> {
+function dropMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_links'> {
     const {_links, ...rest} = obj;
     return rest;
 }
@@ -21,7 +21,7 @@ const formatDate = (dateString: string) => {
 };
 
 export function HalCollectionContent({navigation}: {
-    data: HalResponse,
+    data: HalCollectionResponse,
     navigation: Navigation<NavigationTarget>
 }): ReactElement {
 
@@ -104,7 +104,7 @@ export function HalCollectionContent({navigation}: {
         default:
             return (<HalNavigatorCollectionContentLayout>
                 {data?._embedded && Object.entries(data._embedded).map(([rel, items]) => <GenericHalCollectionContent
-                    label={rel} items={items}/>)}
+                    label={rel} items={items}/>) || "Zadne polozky"}
             </HalNavigatorCollectionContentLayout>);
     }
 
@@ -125,11 +125,12 @@ const HalNavigatorCollectionContentLayout = ({
     return (<Box>
         {label && <Typography variant="h4" component="h1" gutterBottom>{label}</Typography>}
 
-        <HalLinksUi links={data._links} onClick={navigation.navigate} showPagingNavigation={includePageNavigation}/>
+        <HalLinksUi links={data?._links || {}} onClick={navigation.navigate}
+                    showPagingNavigation={includePageNavigation}/>
 
         {children}
 
-        {data?._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
+        <HalActionsUi links={data?._templates || {}} onClick={link => navigation.navigate(link)}/>
 
     </Box>);
 
@@ -146,7 +147,7 @@ const GenericHalCollectionContent = ({label, items}: {
             <ul className="list-disc list-inside">
                 {(Array.isArray(items) ? items : [items]).map((item, idx) => (
                     <li key={idx}>
-                        {JSON.stringify(omitMetadataAttributes(item))}
+                        {JSON.stringify(dropMetadataAttributes(item))}
                         {item._links?.self && (
                             <Button
                                 className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"

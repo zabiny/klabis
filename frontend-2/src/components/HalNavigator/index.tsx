@@ -1,4 +1,4 @@
-import {type HalResponse, type Link, type NavigationTarget} from "../../api";
+import {HalCollectionResponse, type HalResponse, type Link, type NavigationTarget} from "../../api";
 import {type ReactElement, useState} from "react";
 import {Alert, Button, Checkbox, FormLabel, Grid, Stack} from "@mui/material";
 import {ErrorBoundary} from "react-error-boundary";
@@ -6,13 +6,78 @@ import {type HalFormFieldFactory} from "../HalFormsForm";
 import {type Navigation, useNavigation} from "../../hooks/useNavigation";
 import {JsonPreview} from "../JsonPreview";
 import {isHalFormsTemplate, isHalResponse} from "../HalFormsForm/utils";
-import {HalNavigatorContext, toHref, useHalExplorerNavigation, useSimpleFetch} from "./hooks";
+import {
+    HalNavigatorContext,
+    type NavigationTargetResponse,
+    toHref,
+    useHalExplorerNavigation,
+    useNavigationTargetResponse
+} from "./hooks";
 import {HalCollectionContent} from "./halCollectionContent";
 import {HalEditableItemContent} from "./halItemContent";
 
 
-function isCollectionContent(data: HalResponse): boolean {
+function isCollectionContent(data: HalResponse): data is HalCollectionResponse {
     return (data?.page !== undefined);
+}
+
+function isNavigationTargetResponse(item: unknown): item is NavigationTargetResponse<unknown> {
+    return item !== null && item !== undefined && item.navigationTarget !== undefined;
+}
+
+function isCollectionNavigationTargetResponse(response: unknown): response is NavigationTargetResponse<HalCollectionResponse> {
+    if (!isNavigationTargetResponse(response) || isErrorNavigationTargetResponse(response)) {
+        return false;
+    }
+
+    if (isHalFormsTemplate(response.navigationTarget)) {
+        return false;
+    }
+
+    return isHalResponse(response.body) && isCollectionContent(response.body);
+}
+
+function isItemNavigationTargetResponse(response: unknown): response is NavigationTargetResponse<HalResponse | string> {
+    if (!isNavigationTargetResponse(response)) {
+        return false;
+    }
+
+    // HAL+FORMS response may be error 404 or 405 (we do not require forms API to be defined for HAL+FORMS forms, so attempt to fetch data from their URI may end up with these errors)
+    if (isErrorNavigationTargetResponse(response)) {
+        return [405, 404].includes(response.responseStatus);
+    } else {
+        return isHalResponse(response.body) && isHalFormsTemplate(response.navigationTarget) || (!isCollectionContent(response.body));
+    }
+}
+
+function isErrorNavigationTargetResponse(response: unknown): response is NavigationTargetResponse<string> {
+    return isNavigationTargetResponse(response) && typeof response.body === "string";
+}
+
+
+function renderContent(item: NavigationTargetResponse<unknown>, navigation: Navigation<NavigationTarget>, fieldsFactory?: HalFormFieldFactory): ReactElement {
+    if (item.navigationTarget !== navigation.current) {
+        console.warn("Difference between navigation target and navigation current... ")
+        // TODO: it's currently unclear to me why response has different navigation target sometimes. It seems to happen mostly on collection resources (for example Create new event )
+        item = {...item, navigationTarget: navigation.current};
+    }
+
+    if (isItemNavigationTargetResponse(item)) {
+        const initData = (!item || !item.body || isErrorNavigationTargetResponse(item)) ? {_embedded: []} : item.body;
+        return <HalEditableItemContent initData={initData}
+                                       navigation={navigation}
+                                       fieldsFactory={fieldsFactory}/>;
+    } else if (isCollectionNavigationTargetResponse(item)) {
+        return <HalCollectionContent data={item.body || {_embedded: [], page: {}}} navigation={navigation}/>;
+    } else if (isErrorNavigationTargetResponse(item)) {
+        return <Alert severity={"error"}>
+            Nepovedlo se nacist data {toHref(item.navigationTarget)}:<br/>
+            Response status {item.responseStatus} ({item.contentType})<br/>
+            {item.body}
+        </Alert>;
+    } else {
+        return <JsonPreview data={item.body} label={`Nepodporovany format dat - ${item?.contentType}`}/>;
+    }
 }
 
 function HalNavigatorContent({
@@ -22,44 +87,52 @@ function HalNavigatorContent({
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
     const navigation = useHalExplorerNavigation();
-    const api = navigation.current;
-    const {data, isLoading, error} = useSimpleFetch(api, {ignoredErrorStatues: [405, 404]});
-    const [showSource, setShowSource] = useState(true);
-    if (isLoading) {
-        return <Alert severity={"info"}>Nahravam data {toHref(api)}</Alert>;
+    const response = useNavigationTargetResponse();
+    if (!response) {
+        return <Alert severity={"info"}>Nahravam data {toHref(navigation.current)}</Alert>;
     }
 
-    if (error) {
-        return <Alert severity={"error"}>Nepovedlo se nacist data {toHref(api)}: {error.message}</Alert>;
-    }
-
-    function renderContent(item: any): ReactElement {
-        if (isCollectionContent(item) && !isHalFormsTemplate(navigation.current)) {
-            return <HalCollectionContent data={item} navigation={navigation}/>;
-        } else if (isHalResponse(item) || isHalFormsTemplate(navigation.current)) {
-            return <HalEditableItemContent initData={item} navigation={navigation} fieldsFactory={fieldsFactory}/>;
-        } else {
-            return <JsonPreview data={item} label={"Neznamy format dat (ocekavam HAL+FORMS nebo HAL)"}/>
-        }
-    }
+    // if (response.isSuccess || (isHalFormsTemplate(navigation.current) && [405, 404].includes(response.responseStatus))) {
+    //     // this is OK - for Hal+Forms template there doesn't necessarily need to be resource defined for GET uri (usually create forms without pre-filled fields).
+    //     // just continue to further code...
+    // } else {
+    //     return <Alert severity={"error"}>Nepovedlo se nacist
+    //         data {toHref(response.navigationTarget)}: {response.responseStatus} {response.body &&
+    //             <JsonPreview data={response.body}/>}</Alert>;
+    // }
 
     return (<Grid container spacing={2} sx={{
         justifyContent: "space-between",
         alignItems: "baseline",
     }}>
         <Grid padding={2} xs={7}>
-            <ErrorBoundary fallback={<JsonPreview label={"Nelze vyrenderovat Hal/HalForms obsah"} data={api}/>}>
-                {renderContent(data)}
+            <ErrorBoundary fallback={<JsonPreview label={"Nelze vyrenderovat Hal/HalForms obsah"}
+                                                  data={response.navigationTarget}/>}>
+                {renderContent(response, navigation, fieldsFactory)}
             </ErrorBoundary>
         </Grid>
-        <Grid overflow={showSource ? "scroll" : "none"} xs={5}>
+        <NavigationTargetSourceDetails/>
+    </Grid>);
+}
+
+const NavigationTargetSourceDetails = (): ReactElement => {
+    const [showSource, setShowSource] = useState(true);
+    const response = useNavigationTargetResponse();
+    const navigation = useHalExplorerNavigation();
+
+    return (<Grid overflow={showSource ? "scroll" : "none"} xs={5}>
             <FormLabel>Zobraz zdrojovy JSON:<Checkbox checked={showSource}
                                                       onChange={(event, checked) => setShowSource(checked)}>Zdrojovy
                 JSON</Checkbox></FormLabel>
-            {showSource && <JsonPreview data={navigation.current} label={"Current navigation target"}/>}
-            {showSource && <JsonPreview data={data} label={"Response data"}/>}
+            {showSource && <>
+                <JsonPreview data={response?.navigationTarget} label={"Current navigation target (response)"}/>
+                <JsonPreview data={navigation.current} label={"Current navigation target (navigation)"}/>
+                <JsonPreview data={response?.body}
+                             label={`Response data (${response?.responseStatus} - ${response?.contentType})`}/>
+            </>}
         </Grid>
-    </Grid>);
+    );
+
 }
 
 export function HalNavigatorPage({
@@ -99,7 +172,8 @@ export function HalNavigatorPage({
 
             <HalNavigatorContext value={{navigation: navigation}}>
                 <ErrorBoundary
-                    fallback={<JsonPreview data={navigation.current} label={"Nejde vyrenderovat HAL FORMS form"}/>}
+                    fallback={<JsonPreview data={navigation.current}
+                                           label={"Nejde vyrenderovat HAL Navigator content"}/>}
                     resetKeys={[navigation.current]}>
                     <HalNavigatorContent api={navigation.current}
                                          fieldsFactory={fieldsFactory}
