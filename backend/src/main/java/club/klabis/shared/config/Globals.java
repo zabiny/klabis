@@ -10,7 +10,7 @@ public class Globals {
 
     public static final ZoneId KLABIS_ZONE = ZoneId.of(KLABIS_ZONE_VALUE);
 
-    public static ZonedDateTime toZonedDateTime(int year, int month, int day) {
+    public static ZonedDateTime createZonedDateTime(int year, int month, int day) {
         return toZonedDateTime(LocalDate.of(year, month, day));
     }
 

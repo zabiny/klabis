@@ -2,7 +2,6 @@ package club.klabis.events.domain;
 
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
-import club.klabis.shared.config.Globals;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.data.domain.AbstractAggregateRoot;
@@ -12,6 +11,8 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+
+import static club.klabis.shared.config.Globals.toZonedDateTime;
 
 @AggregateRoot
 public abstract class Event extends AbstractAggregateRoot<Event> {
@@ -98,10 +99,10 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
     }
 
     public void setEventDate(LocalDate newDate) {
-        this.eventStart = newDate.atStartOfDay(Globals.KLABIS_ZONE);
+        this.eventStart = toZonedDateTime(newDate);
 
         if (this.registrationDeadline == null) {
-            this.registrationDeadline = newDate.atStartOfDay(Globals.KLABIS_ZONE);
+            this.registrationDeadline = toZonedDateTime(newDate);
         } else if (this.registrationDeadline.isAfter(eventStart)) {
             this.registrationDeadline = eventStart.truncatedTo(ChronoUnit.DAYS);
         }

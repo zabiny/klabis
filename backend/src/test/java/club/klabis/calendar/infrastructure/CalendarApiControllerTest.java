@@ -24,7 +24,6 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import java.time.LocalDate;
 import java.util.Optional;
 
-import static club.klabis.shared.config.Globals.toZonedDateTime;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,8 +62,8 @@ class CalendarApiControllerTest {
         @DisplayName("it should return HTTP 200 with requested calendar item")
         @Test
         void itShouldPassCorrectParamsToService() {
-            CalendarItem returnedItem = CalendarItem.calendarItem(toZonedDateTime(2020, 10, 2),
-                    toZonedDateTime(2020, 12, 5)).withNote("Example task");
+            CalendarItem returnedItem = CalendarItem.calendarItem(Globals.createZonedDateTime(2020, 10, 2),
+                    Globals.createZonedDateTime(2020, 12, 5)).withNote("Example task");
 
             when(calendarServiceMock.getCalendarItem(CalendarItem.id(2))).thenReturn(Optional.of(returnedItem));
 
@@ -116,8 +115,8 @@ class CalendarApiControllerTest {
         @Test
         void itShouldReturnExpectedData() {
             CalendarItem item = CalendarItem.calendarItem(
-                            LocalDate.of(2020, 12, 1).atStartOfDay(Globals.KLABIS_ZONE),
-                            LocalDate.of(2020, 12, 12).atStartOfDay(Globals.KLABIS_ZONE))
+                            Globals.createZonedDateTime(2020, 12, 1),
+                            Globals.createZonedDateTime(2020, 12, 12))
                     .withNote("Budou vanoce");
             when(calendarServiceMock.createCalendarItem(any(CreateCalendarItemCommand.class)))
                     .thenReturn(item);

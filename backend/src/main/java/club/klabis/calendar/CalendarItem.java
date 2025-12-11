@@ -1,12 +1,13 @@
 package club.klabis.calendar;
 
-import club.klabis.shared.config.Globals;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Objects;
+
+import static club.klabis.shared.config.Globals.toZonedDateTime;
 
 @Entity
 public class CalendarItem {
@@ -38,8 +39,7 @@ public class CalendarItem {
     }
 
     public static CalendarItem task(LocalDate day, String note) {
-        return calendarItem(day.atStartOfDay(Globals.KLABIS_ZONE),
-                day.atStartOfDay(Globals.KLABIS_ZONE)).withNote(note);
+        return calendarItem(toZonedDateTime(day), toZonedDateTime(day)).withNote(note);
     }
 
     protected CalendarItem() {

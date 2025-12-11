@@ -38,7 +38,7 @@ public class Calendar extends AbstractAggregateRoot<Calendar> {
         }
 
         public boolean includes(ZonedDateTime date) {
-            return includes(date.withZoneSameInstant(Globals.KLABIS_ZONE).toLocalDate());
+            return includes(Globals.toLocalDate(date));
         }
 
         public static CalendarPeriod forType(@NonNull CalendarType type, @Nullable LocalDate referenceDate) {
@@ -90,8 +90,8 @@ public class Calendar extends AbstractAggregateRoot<Calendar> {
         }
 
         CalendarItem result = CalendarItem.calendarItem(
-                        command.start().atStartOfDay(Globals.KLABIS_ZONE),
-                        command.end().atStartOfDay(Globals.KLABIS_ZONE))
+                        Globals.toZonedDateTime(command.start()),
+                        Globals.toZonedDateTime(command.end()))
                 .withNote(command.note());
         this.items.add(result);
         return result;
