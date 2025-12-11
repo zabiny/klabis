@@ -42,18 +42,30 @@ class CalendarApiControllerTest {
     @MockitoBean
     private CalendarService calendarServiceMock;
 
-    @DisplayName("GET /calendar-items tests")
+    @DisplayName("GET /calendar tests")
     @Nested
     class GetCalendarItemsTests {
 
         @DisplayName("it should pass correct parameters to service call")
         @Test
         void itShouldPassCorrectParamsToService() {
-            mockMvcTester.perform(get("/calendar-items")
+            mockMvcTester.perform(get("/calendar")
                             .queryParam("calendarType", "MONTH"))
                     .assertThat()
                     .hasStatus(HttpStatus.OK);
         }
+
+        @DisplayName("it should have 'createCalendarItem' affordance in HAL+FORMS response")
+        @Test
+        void itShouldAddExpectedLinkToRootNavigation() {
+            mockMvcTester.perform(get("/calendar").accept(MediaTypes.HAL_FORMS_JSON))
+                    .assertThat()
+                    .hasStatus(HttpStatus.OK)
+                    .bodyJson()
+                    .extractingPath("_templates")
+                    .hasFieldOrProperty("createCalendarItem");
+        }
+
     }
 
     @DisplayName("GET /calendar-items/{id} tests")
@@ -147,7 +159,7 @@ class CalendarApiControllerTest {
                     .convertTo(EntityModel.class)
                     .extracting(e -> e.getLinks().toList())
                     .asList()
-                    .containsExactly(Link.of("http://localhost/calendar-items?calendarType=MONTH&referenceDate=",
+                    .containsExactly(Link.of("http://localhost/calendar?calendarType=&referenceDate=",
                             "calendar"));
         }
 

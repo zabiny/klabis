@@ -30,11 +30,11 @@ public class Calendar extends AbstractAggregateRoot<Calendar> {
     public record CalendarPeriod(LocalDate periodStart, LocalDate periodEnd) {
 
         public CalendarPeriod {
-            Assert.isTrue(periodStart.isBefore(periodEnd), "Start date must be before end date");
+            Assert.isTrue(!periodStart.isAfter(periodEnd), "Start date must not be after end date");
         }
 
         public boolean includes(LocalDate date) {
-            return periodStart.isBefore(date) && periodEnd.isAfter(date);
+            return periodStart.isBefore(date) && periodEnd.isAfter(date) || periodStart.equals(date);
         }
 
         public boolean includes(ZonedDateTime date) {
