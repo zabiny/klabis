@@ -42,7 +42,8 @@ const LegalGuardiansField: React.FC<HalFormsInputProps> = ({prop, subElementProp
     const {getFieldMeta} = useFormikContext();
 
     /// https://formik.org/docs/examples/field-arrays
-    const fieldValue: object[] = getFieldMeta(prop.name).value || [];
+    const metaVal = getFieldMeta(prop.name).value;
+    const fieldValue: object[] = Array.isArray(metaVal) ? metaVal : [];
 
     // WIP
 
@@ -50,14 +51,13 @@ const LegalGuardiansField: React.FC<HalFormsInputProps> = ({prop, subElementProp
         <FormLabel>{prop.prompt || prop.name}</FormLabel>
         <FieldArray name={prop.name} render={(arrayHelpers: FieldArrayRenderProps) => (
             <div>
-                {fieldValue.map((_, index) => <FormGroup>
+                {fieldValue.map((_, index) => <FormGroup key={index}>
                     <HalFormsInput {...subElementProps("[" + index + "].firstName", {prompt: "Jmeno"})}/>
                     <HalFormsInput {...subElementProps("[" + index + "].lastName", {prompt: "Prijmeni"})}/>
                     <ContactDtoField {...subElementProps("[" + index + "].contact", {prompt: "Kontakt"})}/>
-                    <Button onClick={arrayHelpers.handleRemove(index)}>Odeber</Button>
+                    <Button onClick={() => arrayHelpers.remove(index)}>Odeber</Button>
                 </FormGroup>)}
-
-                <Button onClick={arrayHelpers.handlePush({})}>Pridej</Button>
+                <Button onClick={() => arrayHelpers.push({})}>Pridej</Button>
             </div>
         )}/>
     </FormGroup>;

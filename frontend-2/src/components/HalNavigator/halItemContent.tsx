@@ -61,7 +61,8 @@ function HalItemContent({data, navigation}: {
                 }
                 </tbody>
             </table>
-            {data._templates && <HalActionsUi links={data._templates} onClick={link => navigation.navigate(link)}/>}
+            {data._templates && <HalActionsUi links={data._templates as Record<string, HalFormsTemplate>}
+                                              onClick={link => navigation.navigate(link)}/>}
         </>);
 }
 
@@ -80,12 +81,12 @@ function HalFormsContent({
     const [error, setError] = useState<Error>();
 
     const activeTemplate = initTemplate;
-    const submitTarget: TemplateTarget = isFormTarget(activeTemplate) && activeTemplate || {
-        target: toHref(submitApi),
-        method: activeTemplate.method || "POST"
-    }
+    const submit = useCallback(async (formData: Record<string, unknown>) => {
+        const submitTarget: TemplateTarget = isFormTarget(activeTemplate) && activeTemplate || {
+            target: toHref(submitApi),
+            method: activeTemplate.method || "POST"
+        }
 
-    const submit = useCallback(async (formData: Record<string, any>) => {
         try {
             await submitHalFormsData(submitTarget, formData);
             try {
@@ -94,9 +95,9 @@ function HalFormsContent({
                 console.error(ex);
             }
         } catch (e) {
-            setError(e);
+            setError((e instanceof Error) ? e : new Error(String(e)));
         }
-    }, [submitApi, afterSubmit]);
+    }, [afterSubmit, submitApi, activeTemplate]);
 
     return (<>
         <HalFormsForm data={initData} template={activeTemplate} onSubmit={submit} fieldsFactory={fieldsFactory}

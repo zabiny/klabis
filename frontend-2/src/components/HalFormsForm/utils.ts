@@ -1,11 +1,15 @@
 import {type HalFormsResponse, type HalFormsTemplate, type HalResponse, type Link} from "../../api";
 
 export const isHalFormsTemplate = (item: unknown): item is HalFormsTemplate => {
-    return item !== undefined && item !== null && item.properties !== undefined && item.method !== undefined;
+    return typeof item === 'object' && item !== null && 'properties' in item;
 }
 
-export const getSelfLink = (item: HalResponse): Link => {
-    return item._links?.self;
+export const getSelfLink = (item: HalResponse): Link | undefined => {
+    const self = item._links?.self as Link | Link[] | undefined;
+    if (Array.isArray(self)) {
+        return self[0];
+    }
+    return self;
 }
 
 export const getDefaultTemplate = (item: HalFormsResponse): HalFormsTemplate => {
@@ -22,5 +26,5 @@ export const isKlabisFormResponse = (item: unknown): item is HalFormsResponse =>
 }
 
 export const isHalResponse = (item: unknown): item is HalResponse => {
-    return item !== undefined && item !== null && (item._links !== undefined || item._embedded !== undefined);
+    return typeof item === 'object' && item !== null && ('_links' in item || '_embedded' in item);
 }

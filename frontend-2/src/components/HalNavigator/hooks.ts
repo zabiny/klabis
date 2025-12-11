@@ -1,9 +1,10 @@
-import {Navigation} from "../../hooks/useNavigation";
-import {HalResponse, isTemplateTarget, type NavigationTarget} from "../../api";
+import type {Navigation} from "../../hooks/useNavigation";
+import type {HalResponse, NavigationTarget} from "../../api";
+import {isTemplateTarget} from "../../api";
 import {isLink} from "../../api/klabisJsonUtils";
 import {isString} from "formik";
 import {createContext, useContext} from "react";
-import {useQuery, UseQueryResult} from "@tanstack/react-query";
+import {useQuery, type UseQueryResult} from "@tanstack/react-query";
 import {UserManager} from "oidc-client-ts";
 import {klabisAuthUserManager} from "../../api/klabisUserManager";
 
@@ -79,12 +80,14 @@ interface HalNavigatorContextData {
     navigation: Navigation<NavigationTarget>
 }
 
-export const HalNavigatorContext = createContext<HalNavigatorContextData>(null);
+export const HalNavigatorContext = createContext<HalNavigatorContextData | null>(null);
 
 export const useHalExplorerNavigation = (): Navigation<NavigationTarget> => {
-    const {navigation} = useContext(HalNavigatorContext);
-
-    return navigation;
+    const ctx = useContext(HalNavigatorContext);
+    if (!ctx) {
+        throw new Error("HalNavigatorContext not provided");
+    }
+    return ctx.navigation;
 }
 
 export type NavigationTargetResponse<T> = {
@@ -98,8 +101,8 @@ export type NavigationTargetResponse<T> = {
 const useQueryNavigationTargetResponse = (target: NavigationTarget): UseQueryResult<NavigationTargetResponse<HalResponse | string>, Error> => {
     const resourceUrl = toHref(target);
 
-    return useQuery<NavigationTargetResponse<HalResponse>>({
-        queryKey: [resourceUrl], queryFn: async (context): Promise<NavigationTargetResponse<HalResponse>> => {
+    return useQuery<NavigationTargetResponse<HalResponse | string>>({
+        queryKey: [resourceUrl], queryFn: async (): Promise<NavigationTargetResponse<HalResponse | string>> => {
             const user = await userManager.getUser();
             const res = await fetch(resourceUrl, {
                 headers: {

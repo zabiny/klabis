@@ -1,6 +1,6 @@
-import {HalCollectionResponse, type HalResponse, type Link, type NavigationTarget} from "../../api";
+import type {HalCollectionResponse, HalResponse, Link, NavigationTarget} from "../../api";
 import {type ReactElement, useState} from "react";
-import {Alert, Button, Checkbox, FormLabel, Grid, Stack} from "@mui/material";
+import {Alert, Button, Checkbox, FormControlLabel, Grid, Stack} from "@mui/material";
 import {ErrorBoundary} from "react-error-boundary";
 import {type HalFormFieldFactory} from "../HalFormsForm";
 import {type Navigation, useNavigation} from "../../hooks/useNavigation";
@@ -22,7 +22,7 @@ function isCollectionContent(data: HalResponse): data is HalCollectionResponse {
 }
 
 function isNavigationTargetResponse(item: unknown): item is NavigationTargetResponse<unknown> {
-    return item !== null && item !== undefined && item.navigationTarget !== undefined;
+    return typeof item === 'object' && item !== null && 'navigationTarget' in item;
 }
 
 function isCollectionNavigationTargetResponse(response: unknown): response is NavigationTargetResponse<HalCollectionResponse> {
@@ -63,7 +63,9 @@ function renderContent(item: NavigationTargetResponse<unknown>, navigation: Navi
     }
 
     if (isItemNavigationTargetResponse(item)) {
-        const initData = (!item || !item.body || isErrorNavigationTargetResponse(item)) ? {_embedded: []} : item.body;
+        const initData: HalResponse = (!item || !item.body || isErrorNavigationTargetResponse(item))
+            ? {_embedded: []}
+            : (item.body as HalResponse);
         return <HalEditableItemContent initData={initData}
                                        navigation={navigation}
                                        fieldsFactory={fieldsFactory}/>;
@@ -121,9 +123,9 @@ const NavigationTargetSourceDetails = (): ReactElement => {
     const navigation = useHalExplorerNavigation();
 
     return (<Grid overflow={showSource ? "scroll" : "none"} xs={5}>
-            <FormLabel>Zobraz zdrojovy JSON:<Checkbox checked={showSource}
-                                                      onChange={(event, checked) => setShowSource(checked)}>Zdrojovy
-                JSON</Checkbox></FormLabel>
+            <FormControlLabel control={<Checkbox checked={showSource}
+                                                 onChange={(_event, checked) => setShowSource(checked)}/>}
+                              label="Zobraz zdrojovy JSON"/>
             {showSource && <>
                 <JsonPreview data={response?.navigationTarget} label={"Current navigation target (response)"}/>
                 <JsonPreview data={navigation.current} label={"Current navigation target (navigation)"}/>
@@ -175,8 +177,7 @@ export function HalNavigatorPage({
                     fallback={<JsonPreview data={navigation.current}
                                            label={"Nejde vyrenderovat HAL Navigator content"}/>}
                     resetKeys={[navigation.current]}>
-                    <HalNavigatorContent api={navigation.current}
-                                         fieldsFactory={fieldsFactory}
+                    <HalNavigatorContent fieldsFactory={fieldsFactory}
                                          navigation={navigation}
                     />
                 </ErrorBoundary>

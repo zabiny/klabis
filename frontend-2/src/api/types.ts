@@ -113,8 +113,8 @@ export function isNavigationTarget(item: unknown): item is NavigationTarget {
     return isLink(item) || isTemplateTarget(item) || isString(item);
 }
 
-export type EntityModel<T> = T & { _links: Link[] };
+export type EntityModel<T> = T & { _links: { [rel: string]: Link | Link[] } };
 
-export type PagedModel<T> = { content: EntityModel<T>[], _links: Link[], page: PageMetadata }
+export type PagedModel<T> = { content: EntityModel<T>[], _links: { [rel: string]: Link | Link[] }, page: PageMetadata }
 
 

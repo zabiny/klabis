@@ -188,7 +188,7 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps<unknown>> = 
     const contextValue: KlabisTableContextType<unknown> = {
         tableModel,
         rows: tableRows?.data || [],
-        paging: {...tableRows?.page, size: page.rowsPerPage},
+        paging: tableRows?.page ? {...tableRows.page, size: page.rowsPerPage} : undefined,
         sort: sort,
         handleRequestSort,
         handlePagingChange

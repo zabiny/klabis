@@ -1,4 +1,4 @@
-import type {EntityModel, HalCollectionResponse, NavigationTarget} from "../../api";
+import type {EntityModel, HalCollectionResponse, HalFormsTemplate, NavigationTarget} from "../../api";
 import type {Navigation} from "../../hooks/useNavigation";
 import React, {type ReactElement, type ReactNode} from "react";
 import {toURLPath, useHalExplorerNavigation, useResponseBody} from "./hooks";
@@ -31,8 +31,10 @@ export function HalCollectionContent({navigation}: {
     const resourceUrlPath = toURLPath(navigation.current);
 
     const navigateToEntityModel = (item: EntityModel<unknown>): void => {
-        if (item._links.self) {
-            navigation.navigate(item._links.self);
+        const self = item._links?.self as unknown;
+        const link = Array.isArray(self) ? self[0] : self;
+        if (link) {
+            navigation.navigate(link as NavigationTarget);
         } else {
             alert(`Missing "self" link in entity model ${JSON.stringify(item)}`)
         }
@@ -77,18 +79,19 @@ export function HalCollectionContent({navigation}: {
                     defaultOrderDirection={'desc'}
                     onRowClick={navigateToEntityModel}>
                     <TableCell sortable column={"date"}
-                               dataRender={({value}) => formatDate(value)}>Datum</TableCell>
+                               dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>Datum</TableCell>
                     <TableCell sortable column={"name"}>Název</TableCell>
                     <TableCell sortable column={"location"}>Místo</TableCell>
                     <TableCell sortable column={"organizer"}>Pořadatel</TableCell>
                     <TableCell column={"type"}
-                               dataRender={({value}) => <EventType eventType={value}/>}>Typ</TableCell>
+                               dataRender={({value}) => <EventType eventType={value as any}/>}>Typ</TableCell>
                     <TableCell column={"web"}
-                               dataRender={({value}) => <MuiLink hidden={!value}
-                                                                 href={value}><Public/></MuiLink>}>Web</TableCell>
-                    <TableCell sortable column={"registrationDeadline"} dataRender={({value}) => formatDate(value)}>Uzávěrka
+                               dataRender={({value}) => <MuiLink hidden={!value as any}
+                                                                 href={typeof value === 'string' ? value : undefined}><Public/></MuiLink>}>Web</TableCell>
+                    <TableCell sortable column={"registrationDeadline"}
+                               dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>Uzávěrka
                         přihlášek</TableCell>
-                    <TableCell column={"coordinator"} dataRender={({value}) => value ?
+                    <TableCell column={"coordinator"} dataRender={({value}) => typeof value === 'number' ?
                         <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
                 </HalNavigatorTable>
             </HalNavigatorCollectionContentLayout>);
@@ -96,7 +99,8 @@ export function HalCollectionContent({navigation}: {
             return <HalNavigatorCollectionContentLayout>
                 <HalNavigatorTable<EntityModel<{ date: string, amount: number, note: string }>>
                     embeddedName={'transactionItemResponseList'} defaultOrderBy={"date"} defaultOrderDirection={'desc'}>
-                    <TableCell column={"date"} dataRender={({value}) => formatDate(value)}>Datum</TableCell>
+                    <TableCell column={"date"}
+                               dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>Datum</TableCell>
                     <TableCell column={"amount"}>Název</TableCell>
                     <TableCell column={"note"}>Poznámka</TableCell>
                 </HalNavigatorTable>
@@ -130,7 +134,8 @@ const HalNavigatorCollectionContentLayout = ({
 
         {children}
 
-        <HalActionsUi links={data?._templates || {}} onClick={link => navigation.navigate(link)}/>
+        <HalActionsUi links={(data?._templates || {}) as Record<string, HalFormsTemplate>}
+                      onClick={link => navigation.navigate(link)}/>
 
     </Box>);
 
