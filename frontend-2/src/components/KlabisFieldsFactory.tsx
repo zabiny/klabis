@@ -42,7 +42,7 @@ const LegalGuardiansField: React.FC<HalFormsInputProps> = ({prop, subElementProp
     const {getFieldMeta} = useFormikContext();
 
     /// https://formik.org/docs/examples/field-arrays
-    const fieldValue: object[] = getFieldMeta(prop.name).value;
+    const fieldValue: object[] = getFieldMeta(prop.name).value || [];
 
     // WIP
 
