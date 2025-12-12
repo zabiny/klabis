@@ -10,7 +10,7 @@ import GroupsPage from './pages/GroupsPage';
 import LoginPage from './pages/LoginPage';
 
 import theme from './theme';
-import MembersPage from "./pages/MembersPage.tsx";
+import MembersPage from "./pages/MembersPage";
 import {SandplacePage} from "./pages/HalNavigatorPage";
 
 // Protected route component

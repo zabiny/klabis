@@ -74,7 +74,7 @@ const EditMemberPermissionsFormUI = ({
                                     key={grantDetail.grant}
                                     control={
                                         <Checkbox
-                                            checked={selectedGrants.includes(grantDetail.grant)}
+                                            checked={grantDetail.grant && selectedGrants.includes(grantDetail.grant)}
                                             onChange={(e) => handleGrantChange(grantDetail.grant, e.target.checked)}
                                             disabled={disabled}
                                         />

@@ -1,8 +1,8 @@
-import React, {type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 // Import pro MuiTableCell
 import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow,} from '@mui/material';
-import {KlabisTableProvider, useKlabisTableContext} from "./KlabisTableContext.tsx";
-import {KlabisTableProps} from "./types";
+import {KlabisTableProvider, useKlabisTableContext} from "./KlabisTableContext";
+import {type KlabisTableProps} from "./types";
 
 const KlabisTablePagination = (): ReactNode => {
     const {paging, handlePagingChange: onPagingChange} = useKlabisTableContext();

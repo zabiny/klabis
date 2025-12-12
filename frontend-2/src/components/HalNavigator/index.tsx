@@ -45,8 +45,10 @@ function isItemNavigationTargetResponse(response: unknown): response is Navigati
     // HAL+FORMS response may be error 404 or 405 (we do not require forms API to be defined for HAL+FORMS forms, so attempt to fetch data from their URI may end up with these errors)
     if (isErrorNavigationTargetResponse(response)) {
         return [405, 404].includes(response.responseStatus);
+    } else if (isHalResponse(response.body)) {
+        return isHalFormsTemplate(response.navigationTarget) || (!isCollectionContent(response.body));
     } else {
-        return isHalResponse(response.body) && isHalFormsTemplate(response.navigationTarget) || (!isCollectionContent(response.body));
+        return false;
     }
 }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import {TableCell as MuiTableCell, TableSortLabel} from '@mui/material';
-import {useKlabisTableContext} from "./KlabisTableContext.tsx";
+import {useKlabisTableContext} from "./KlabisTableContext";
 import {type TableCellProps} from "./types";
 
 interface SortLabelProps {

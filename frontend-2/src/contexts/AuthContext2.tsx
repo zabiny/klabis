@@ -1,4 +1,4 @@
-import React, {createContext, ReactNode, useContext, useEffect, useState,} from 'react';
+import React, {createContext, type ReactNode, useContext, useEffect, useState,} from 'react';
 import {User, UserManager,} from 'oidc-client-ts';
 import {type AuthConfig, createUserManager} from "./auth";
 

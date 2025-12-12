@@ -21,9 +21,10 @@ type OnClickHandler = (s: string) => void;
 
 export const Actions = ({
                             value, onClick
-                        }: { value: string[], onClick?: OnClickHandler }): React.ReactNode => {
+                        }: { value?: string[], onClick?: OnClickHandler }): React.ReactNode => {
     return (
-        <Stack direction={"row"} spacing={1}>{value.map(s => <Action actionName={s} onClick={onClick}/>)}</Stack>
+        <Stack direction={"row"} spacing={1}>{value && value.map(s => <Action actionName={s}
+                                                                              onClick={onClick}/>)}</Stack>
     );
 }
 

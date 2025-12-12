@@ -263,7 +263,7 @@ interface DialogProps {
     onSuccess: () => void
 }
 
-export const RegisterMemberFormDialog = ({open, onClose, onSuccess}: DialogProps) => {
+export const RegisterMemberFormDialog = ({open, onClose}: DialogProps) => {
     return (<Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogContent>
             <RegisterMemberForm/>

@@ -1,4 +1,4 @@
-import {type KlabisApiGetPaths, KlabisApiMutationPaths} from "../../api";
+import {type KlabisApiGetPaths, type KlabisApiMutationPaths} from "../../api";
 
 export interface KlabisFormProperties<T> {
     formData: T;

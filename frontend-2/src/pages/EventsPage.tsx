@@ -33,7 +33,7 @@ const EventsPage = () => {
                     přihlášek</TableCell>
                 <TableCell column={"coordinator"} dataRender={({value}) => value ?
                     <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
-                <TableCell key="options" column="_actions" dataRender={props => (<></>)}>Možnosti</TableCell>
+                <TableCell key="options" column="_actions" dataRender={() => (<></>)}>Možnosti</TableCell>
                 <TableCell key="actions" column="_actions"
                            dataRender={props => (<Actions value={props.value}/>)}>Akce</TableCell>
             </KlabisTable>

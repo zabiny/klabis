@@ -1,5 +1,5 @@
 import React from "react";
-import {type PaginatedApiParams} from "../../api";
+import {type PaginatedApiParams, type SortDirection} from "../../api";
 
 export interface TableCellRenderProps {
     item: Record<string, unknown>;
