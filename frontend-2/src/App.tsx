@@ -3,14 +3,9 @@ import {ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import {AuthProvider, useAuth} from './contexts/AuthContext2';
 import Layout from './pages/Layout';
-import HomePage from './pages/HomePage';
-import MemberDetailPage from './pages/MemberDetailPage';
-import EventsPage from './pages/EventsPage';
-import GroupsPage from './pages/GroupsPage';
 import LoginPage from './pages/LoginPage';
 
 import theme from './theme';
-import MembersPage from "./pages/MembersPage";
 import {SandplacePage} from "./pages/HalNavigatorPage";
 
 // Protected route component
@@ -46,13 +41,9 @@ function App() {
                             <Layout/>
                         </ProtectedRoute>
                     }>
-                        <Route index element={<HomePage/>}/>
-                        <Route path="members" element={<MembersPage/>}/>
-                        <Route path="members/:memberId" element={<MemberDetailPage/>}/>
-                        <Route path="events" element={<EventsPage/>}/>
-                        <Route path="groups" element={<GroupsPage/>}/>
+                        <Route index element={<SandplacePage/>}/>
                         <Route path="sandplace" element={<SandplacePage/>}/>
-                        <Route path="*" element={<HomePage/>}/>
+                        <Route path="*" element={<SandplacePage/>}/>
                     </Route>
                 </Routes>
             </AuthProvider>
