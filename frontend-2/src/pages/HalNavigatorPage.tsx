@@ -103,7 +103,7 @@ function ExampleHalForm(): ReactElement {
             <Grid xs={6} padding={2}>
                 <HalFormsForm
                     key={`exampleForm`} data={resource} template={resource?._templates.default}
-                    onSubmit={data => setSubmitted(data)}/>
+                    onSubmit={setSubmitted}/>
                 {submitted && <JsonPreview data={submitted} label={"Submitted"}/>}
             </Grid>
             <Grid xs={4} padding={2}>
@@ -146,7 +146,7 @@ function a11yProps(index: number) {
 function SandplacePage(): ReactElement {
     const [tabValue, setTabValue] = useState(0);
 
-    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
     };
 

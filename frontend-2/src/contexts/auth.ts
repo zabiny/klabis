@@ -14,11 +14,9 @@ export interface AuthConfig {
 }
 
 export const createUserManager = ({
-                                      onUserLoaded = (user) => {
+                                      onUserLoaded = () => {
                                       },
                                       onUserUnloaded = () => {
-                                      },
-                                      onAuthorizationCompleted = () => {
                                       },
                                       ...config
                                   }: AuthConfig): UserManager => {

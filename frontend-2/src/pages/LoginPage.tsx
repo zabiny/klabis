@@ -26,7 +26,7 @@ const LoginPage = () => {
             <Container maxWidth="sm">
                 <Box sx={{mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
                     <Typography variant="h5">
-                        <button onClick={e => login()}>Login back</button>
+                        <button onClick={() => login()}>Login back</button>
                     </Typography>
                 </Box>
             </Container>
