@@ -14,6 +14,7 @@ export default defineConfig({
             '@': resolve(__dirname, 'src'),
         },
     },
+    base: '/',
     server: {
         port: 3000,
         open: true,

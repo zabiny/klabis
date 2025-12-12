@@ -11,6 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "refresh-backend-server-resources": "npm run build && rm -rf ../backend/src/main/resources/static/* && cp -r dist/* ../backend/src/main/resources/static",
     "openapi": "npx openapi-typescript ../docs/openapi/klabis-full.json -o ./src/api/klabisApi.d.ts"
   },
   "dependencies": {
