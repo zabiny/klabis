@@ -7,33 +7,5 @@
     {
       "path": "./tsconfig.node.json"
     }
-  ],
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "strict": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx",
-    "isolatedModules": true,
-    "noEmit": true,
-    "resolveJsonModule": true,
-    "types": [
-      "jest",
-      "@testing-library/jest-dom"
-    ]
-  },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "**/*.test.ts",
-    "**/*.test.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
   ]
 }
