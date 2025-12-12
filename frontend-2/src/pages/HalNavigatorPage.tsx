@@ -96,14 +96,14 @@ const demoData = {
 function ExampleHalForm(): ReactElement {
 
     const resource = {...demoData, _templates: {default: demoTemplate}};
-    const [submitted, setSubmitted] = useState();
+    const [submitted, setSubmitted] = useState<Record<string, unknown>>();
 
     return (
         <Grid container spacing={2}>
             <Grid xs={6} padding={2}>
                 <HalFormsForm
                     key={`exampleForm`} data={resource} template={resource?._templates.default}
-                    onSubmit={setSubmitted}/>
+                    onSubmit={async (data) => setSubmitted(data)}/>
                 {submitted && <JsonPreview data={submitted} label={"Submitted"}/>}
             </Grid>
             <Grid xs={4} padding={2}>

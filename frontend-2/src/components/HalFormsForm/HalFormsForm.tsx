@@ -123,7 +123,7 @@ const useHalFormsController = (
     inputTemplate?: HalFormsTemplate
 ): {
     isLoading: boolean,
-    submit: (formData: Record<string, any>) => Promise<void>,
+    submit: (formData: Record<string, unknown>) => Promise<void>,
     error?: string,
     submitError?: Error,
     template?: HalFormsTemplate,
