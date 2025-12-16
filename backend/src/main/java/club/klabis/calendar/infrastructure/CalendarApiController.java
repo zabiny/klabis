@@ -14,12 +14,8 @@ import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.boot.jackson.JacksonMixin;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.PagedModel;
+import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,10 +56,10 @@ public class CalendarApiController {
 
     // TODO: Rework this endpoint to return Calendar instance with information about period, start date, end date, etc..  It will help with couple of things (displaying some stats in calendar, navigating calendar - as it is weird to have there links like prev/next on collection of items which may be empty... )
     @GetMapping("/calendar")
-    public ResponseEntity<PagedModel<EntityModel<CalendarItem>>> getCalendarItems(@RequestParam(required = false, defaultValue = "MONTH") Calendar.CalendarType calendarType, @RequestParam(required = false) LocalDate referenceDate) {
-        return ResponseEntity.ok(modelAssembler.toPagedResponse(new PageImpl<>(new ArrayList<>(calendarService.getCalendarItems(
+    public ResponseEntity<CollectionModel<EntityModel<CalendarItem>>> getCalendarItems(@RequestParam(required = false, defaultValue = "MONTH") Calendar.CalendarType calendarType, @RequestParam(required = false) LocalDate referenceDate) {
+        return ResponseEntity.ok(modelAssembler.toCollectionModel(new ArrayList<>(calendarService.getCalendarItems(
                 calendarType,
-                referenceDate)))));
+                referenceDate))));
     }
 
     @GetMapping("/calendar-items/{id}")

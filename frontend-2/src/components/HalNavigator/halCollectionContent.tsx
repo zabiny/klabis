@@ -95,6 +95,18 @@ export function HalCollectionContent({navigation}: {
                         <MemberName memberId={value}/> : <>--</>}>Vedoucí</TableCell>
                 </HalNavigatorTable>
             </HalNavigatorCollectionContentLayout>);
+        case matchesUriPath(/^\/calendar.*/):
+            return <HalNavigatorCollectionContentLayout>
+                <HalNavigatorTable<EntityModel<{ id: number, start: string, end: string, note: string }>>
+                    embeddedName={'eventCalendarItemList'} defaultOrderBy={"start"} defaultOrderDirection={'desc'}
+                    onRowClick={navigateToEntityModel}>
+                    <TableCell column={"start"}
+                               dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>Datum</TableCell>
+                    <TableCell column={"end"}
+                               dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>Datum</TableCell>
+                    <TableCell column={"note"}>Poznámka</TableCell>
+                </HalNavigatorTable>
+            </HalNavigatorCollectionContentLayout>;
         case matchesUriPath(/^\/member\/\d+\/finance-account\/transactions$/):
             return <HalNavigatorCollectionContentLayout>
                 <HalNavigatorTable<EntityModel<{ date: string, amount: number, note: string }>>
