@@ -106,6 +106,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         } else if (this.registrationDeadline.isAfter(eventStart)) {
             this.registrationDeadline = eventStart.truncatedTo(ChronoUnit.DAYS);
         }
+        andEvent(new EventDateChangedEvent(this));
     }
 
     public void setRegistrationDeadline(ZonedDateTime registrationDeadline) {
@@ -115,6 +116,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
                     EventException.Type.UNSPECIFIED);
         }
         this.registrationDeadline = registrationDeadline;
+        andEvent(new EventRegistrationsDeadlineChangedEvent(this));
     }
 
     public void setName(String name) {
