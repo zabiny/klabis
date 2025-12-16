@@ -97,11 +97,11 @@ public class MembersMemberIdEditMemberInfoFormGet400ResponseApiDto extends Repre
     /**
      * User friendly description of the error
      *
-     * @return detail
+     * @return relatedItem
      */
     @NotNull
-    @Schema(name = "detail", description = "User friendly description of the error", requiredMode = Schema.RequiredMode.REQUIRED)
-    @JsonProperty("detail")
+    @Schema(name = "relatedItem", description = "User friendly description of the error", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("relatedItem")
     public String getDetail() {
         return detail;
     }
@@ -209,7 +209,7 @@ public class MembersMemberIdEditMemberInfoFormGet400ResponseApiDto extends Repre
         sb.append("class MembersMemberIdEditMemberInfoFormGet400ResponseApiDto {\n");
         sb.append("    title: ").append(toIndentedString(title)).append("\n");
         sb.append("    status: ").append(toIndentedString(status)).append("\n");
-        sb.append("    detail: ").append(toIndentedString(detail)).append("\n");
+        sb.append("    relatedItem: ").append(toIndentedString(detail)).append("\n");
         sb.append("    instance: ").append(toIndentedString(instance)).append("\n");
         sb.append("    type: ").append(toIndentedString(type)).append("\n");
         sb.append("    validationErrors: ").append(toIndentedString(validationErrors)).append("\n");

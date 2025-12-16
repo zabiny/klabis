@@ -102,9 +102,9 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         this.eventStart = toZonedDateTime(newDate);
 
         if (this.registrationDeadline == null) {
-            this.registrationDeadline = toZonedDateTime(newDate);
+            this.setRegistrationDeadline(toZonedDateTime(newDate));
         } else if (this.registrationDeadline.isAfter(eventStart)) {
-            this.registrationDeadline = eventStart.truncatedTo(ChronoUnit.DAYS);
+            this.setRegistrationDeadline(eventStart.truncatedTo(ChronoUnit.DAYS));
         }
         andEvent(new EventDateChangedEvent(this));
     }

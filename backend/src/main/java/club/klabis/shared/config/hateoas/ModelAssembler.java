@@ -22,6 +22,11 @@ public interface ModelAssembler<DOMAIN, DTO> {
     Pageable toDomainPageable(Pageable dtoPageable);
 
     static <D> ModelAssembler<D, D> identityAssembler(Function<D, Link> selfLinkGenerator, PagedResourcesAssembler<D> pagedResourcesAssembler) {
-        return new HalResourceAssembler<>(new IdentityModelPreparator<>(selfLinkGenerator), pagedResourcesAssembler);
+        return mappingAssembler(Function.identity(), selfLinkGenerator, pagedResourcesAssembler);
+    }
+
+    static <D, O> ModelAssembler<D, O> mappingAssembler(Function<D, O> modelMapper, Function<D, Link> selfLinkGenerator, PagedResourcesAssembler<D> pagedResourcesAssembler) {
+        ModelPreparator<D, O> modelPreparator = new MappedModelPreparator<>(modelMapper, selfLinkGenerator);
+        return new HalResourceAssembler<>(modelPreparator, pagedResourcesAssembler);
     }
 }

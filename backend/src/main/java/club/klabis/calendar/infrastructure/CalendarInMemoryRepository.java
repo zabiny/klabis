@@ -14,9 +14,7 @@ interface CalendarInMemoryRepository extends CalendarRepository, InMemoryReposit
 
     @Override
     default Collection<CalendarItem> getCalendar(Calendar.CalendarPeriod calendarPeriod) {
-        return findAll().stream()
-                .filter(new FindPredicate(calendarPeriod))
-                .toList();
+        return findAll(new FindPredicate(calendarPeriod));
     }
 
     @Override
