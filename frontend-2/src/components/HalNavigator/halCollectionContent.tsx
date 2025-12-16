@@ -98,7 +98,7 @@ export function HalCollectionContent({navigation}: {
         case matchesUriPath(/^\/calendar.*/):
             return <HalNavigatorCollectionContentLayout>
                 <HalNavigatorTable<EntityModel<{ id: number, start: string, end: string, note: string }>>
-                    embeddedName={'eventCalendarItemList'} defaultOrderBy={"start"} defaultOrderDirection={'desc'}
+                    embeddedName={'calendarItems'} defaultOrderBy={"start"} defaultOrderDirection={'desc'}
                     onRowClick={navigateToEntityModel}>
                     <TableCell column={"start"}
                                dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>Datum</TableCell>

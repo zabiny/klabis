@@ -53,6 +53,11 @@ public class CalendarItem {
         this.note = note;
     }
 
+    public void reschedule(ZonedDateTime newStart, ZonedDateTime newEnd) {
+        this.start = newStart;
+        this.end = newEnd;
+    }
+
     public CalendarItem withNote(String note) {
         this.note = note;
         return this;
