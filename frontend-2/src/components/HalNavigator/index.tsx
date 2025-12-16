@@ -18,7 +18,7 @@ import {HalEditableItemContent} from "./halItemContent";
 
 
 function isCollectionContent(data: Record<string, unknown>): data is HalCollectionResponse {
-    return (data?.page !== undefined);
+    return (data?.page !== undefined || data?._embedded !== undefined);
 }
 
 function isNavigationTargetResponse(item: unknown): item is NavigationTargetResponse<unknown> {
