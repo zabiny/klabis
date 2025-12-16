@@ -61,6 +61,7 @@ spring:
                 - "refresh_token"
               redirect-uris:
                 - "https://klabis.otakar.io/auth/callback"
+                - "https://api.klabis.otakar.io/auth/callback"
                 - "http://localhost:8788/auth/callback"
                 - "http://localhost:5173/auth/callback"
                 - "http://localhost:3000/auth/callback"
