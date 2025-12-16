@@ -13,6 +13,23 @@ export interface AuthConfig {
     onAuthorizationCompleted?: () => void;
 }
 
+/**
+ * Converts relative URL to absolute using current window.location's hostname. Absolute URL is left unchanged
+ * @param input
+ */
+export const normalizeUrl = (input: string): string => {
+    if (input.startsWith("/")) {
+        // relative paths - normalize against current location URL
+        const result = new URL(window.location.toString());
+        result.pathname = input;
+        result.search = "";
+        return result.toString();
+    } else {
+        // presumably absolute path, return unchanged
+        return input;
+    }
+}
+
 export const createUserManager = ({
                                       onUserLoaded = () => {
                                       },
@@ -20,14 +37,21 @@ export const createUserManager = ({
                                       },
                                       ...config
                                   }: AuthConfig): UserManager => {
-    const userManager = new UserManager({
+
+    const userManagerConfig = {
         ...config,
+        authority: normalizeUrl(config.authority),
         response_type: config.response_type ?? 'code',
         scope: config.scope ?? 'openid profile email',
         userStore: new WebStorageStateStore({store: window.sessionStorage}),
         automaticSilentRenew: true,
-        silent_redirect_uri: config.redirect_uri, // Required for silent renew
-    });
+        redirect_uri: normalizeUrl(config.redirect_uri),
+        silent_redirect_uri: normalizeUrl(config.redirect_uri), // Required for silent renew
+    };
+
+    console.log(JSON.stringify(userManagerConfig, null, 2))
+
+    const userManager = new UserManager(userManagerConfig);
 
     userManager.events.addUserLoaded((user) => {
         console.log(`User loaded: ${user}`);

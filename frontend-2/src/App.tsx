@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 
 import theme from './theme';
 import {SandplacePage} from "./pages/HalNavigatorPage";
+import {authConfig} from "./api/klabisUserManager.ts";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -27,13 +28,7 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline/>
-            <AuthProvider config={{
-                authority: 'http://localhost:3000/api',
-                client_id: 'frontend',
-                client_secret: 'fesecret',
-                redirect_uri: 'http://localhost:3000/auth/callback', // must match OIDC config
-                post_logout_redirect_uri: 'http://localhost:8080/oauth/logout',
-            }}>
+            <AuthProvider config={authConfig}>
                 <Routes>
                     <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/" element={

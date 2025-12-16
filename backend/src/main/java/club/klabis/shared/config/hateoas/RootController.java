@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class RootController {
 
     // API for HAL ROOT endpoint. Main purpose is to have root node where HAL viewer can start viewing Klabis API. Links are added in postprocessors from respective modules.
-    @GetMapping(produces = MediaTypes.HAL_JSON_VALUE)
+    @GetMapping(path = {"/", "/api"}, produces = MediaTypes.HAL_JSON_VALUE)
     public EntityModel<RootModel> rootNavigation(@AuthenticationPrincipal KlabisPrincipal user) {
         return EntityModel.of(new RootModel(user));
     }

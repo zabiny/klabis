@@ -150,6 +150,10 @@ function SandplacePage(): ReactElement {
         setTabValue(newValue);
     };
 
+    const halRootPage = import.meta.env.VITE_HAL_ROOT_URI || '/default';
+
+    console.log(JSON.stringify(import.meta.env, null, 2))
+
     return (
         <Box sx={{width: '100%'}}>
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -160,7 +164,7 @@ function SandplacePage(): ReactElement {
             </Box>
             <ErrorBoundary fallback={"Neco se pokazilo"} resetKeys={[tabValue]}>
                 <CustomTabPanel value={tabValue} index={0}>
-                    <HalNavigatorPage startUrl={"/api"} fieldsFactory={klabisFieldsFactory}/>
+                    <HalNavigatorPage startUrl={halRootPage} fieldsFactory={klabisFieldsFactory}/>
                 </CustomTabPanel>
                 <CustomTabPanel index={1} value={tabValue}>
                     <ExampleHalForm/>

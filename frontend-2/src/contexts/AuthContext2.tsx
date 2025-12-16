@@ -1,6 +1,6 @@
 import React, {createContext, type ReactNode, useContext, useEffect, useState,} from 'react';
 import {User, UserManager,} from 'oidc-client-ts';
-import {type AuthConfig, createUserManager} from "./auth";
+import {type AuthConfig, createUserManager, normalizeUrl} from "./auth";
 
 // Your required interface
 interface AuthContextType {
@@ -68,10 +68,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         }
     }
 
+    const isCurrentLocationSameAsRedirectUri = (config: { redirect_uri: string }): boolean => {
+        return new URL(normalizeUrl(config.redirect_uri)).pathname === window.location.pathname;
+    }
+
     useEffect(() => {
         if (userManager != null) {
             // Handle the redirect callback on app load
-            if (window.location.pathname === new URL(config.redirect_uri).pathname) {
+            if (isCurrentLocationSameAsRedirectUri(config)) {
                 // handling callback from OAuth server
                 userManager
                     .signinRedirectCallback()

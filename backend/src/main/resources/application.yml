@@ -65,6 +65,7 @@ spring:
                 - "http://localhost:5173/auth/callback"
                 - "http://localhost:3000/auth/callback"
                 - "https://localhost:8443/login/oauth2/code/klabis"
+                - "https://localhost:8443/auth/callback"
               post-logout-redirect-uris:
                 - "https://klabis.otakar.io"
                 - "http://localhost:8788"
