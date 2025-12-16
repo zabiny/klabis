@@ -1,32 +1,17 @@
 import {useEffect, useState} from 'react';
 import {Outlet, useNavigate} from 'react-router-dom';
 import {styled} from '@mui/material/styles';
-import {
-    AppBar,
-    Box,
-    Button,
-    Divider,
-    Drawer,
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Toolbar,
-    Typography,
-} from '@mui/material';
+import {AppBar, Box, Button, Toolbar, Typography,} from '@mui/material';
 import {
     Event as EventIcon,
     Home as HomeIcon,
     Logout as LogoutIcon,
-    Menu as MenuIcon,
     People as PeopleIcon,
     Settings,
 } from '@mui/icons-material';
 import {type AuthUserDetails, useAuth} from '../contexts/AuthContext2';
 
-const drawerWidth = 240;
+const drawerWidth = 0;
 
 const Main = styled('main', {shouldForwardProp: (prop) => prop !== 'open'})<{
     open?: boolean;
@@ -98,15 +83,15 @@ const Layout = () => {
         <Box sx={{display: 'flex'}}>
             <AppBar position="fixed" sx={{zIndex: (theme) => theme.zIndex.drawer + 1}}>
                 <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        aria-label="open drawer"
-                        edge="start"
-                        onClick={handleDrawerToggle}
-                        sx={{mr: 2}}
-                    >
-                        <MenuIcon/>
-                    </IconButton>
+                    {/*<IconButton*/}
+                    {/*    color="inherit"*/}
+                    {/*    aria-label="open drawer"*/}
+                    {/*    edge="start"*/}
+                    {/*    onClick={handleDrawerToggle}*/}
+                    {/*    sx={{mr: 2}}*/}
+                    {/*>*/}
+                    {/*    <MenuIcon/>*/}
+                    {/*</IconButton>*/}
                     <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
                         Klabis - Členská sekce
                     </Typography>
@@ -130,34 +115,34 @@ const Layout = () => {
                     </Button>
                 </Toolbar>
             </AppBar>
-            <Drawer
-                variant="persistent"
-                anchor="left"
-                open={drawerOpen}
-                sx={{
-                    width: drawerWidth,
-                    flexShrink: 0,
-                    '& .MuiDrawer-paper': {
-                        width: drawerWidth,
-                        boxSizing: 'border-box',
-                    },
-                }}
-            >
-                <Toolbar/>
-                <Box sx={{overflow: 'auto'}}>
-                    <List>
-                        {menuItems.map((item) => (
-                            <ListItem key={item.text} disablePadding>
-                                <ListItemButton onClick={() => handleNavigation(item.path)}>
-                                    <ListItemIcon>{item.icon}</ListItemIcon>
-                                    <ListItemText primary={item.text}/>
-                                </ListItemButton>
-                            </ListItem>
-                        ))}
-                    </List>
-                    <Divider/>
-                </Box>
-            </Drawer>
+            {/*<Drawer*/}
+            {/*    variant="persistent"*/}
+            {/*    anchor="left"*/}
+            {/*    open={drawerOpen}*/}
+            {/*    sx={{*/}
+            {/*        width: drawerWidth,*/}
+            {/*        flexShrink: 0,*/}
+            {/*        '& .MuiDrawer-paper': {*/}
+            {/*            width: drawerWidth,*/}
+            {/*            boxSizing: 'border-box',*/}
+            {/*        },*/}
+            {/*    }}*/}
+            {/*>*/}
+            {/*    <Toolbar/>*/}
+            {/*    <Box sx={{overflow: 'auto'}}>*/}
+            {/*        <List>*/}
+            {/*            {menuItems.map((item) => (*/}
+            {/*                <ListItem key={item.text} disablePadding>*/}
+            {/*                    <ListItemButton onClick={() => handleNavigation(item.path)}>*/}
+            {/*                        <ListItemIcon>{item.icon}</ListItemIcon>*/}
+            {/*                        <ListItemText primary={item.text}/>*/}
+            {/*                    </ListItemButton>*/}
+            {/*                </ListItem>*/}
+            {/*            ))}*/}
+            {/*        </List>*/}
+            {/*        <Divider/>*/}
+            {/*    </Box>*/}
+            {/*</Drawer>*/}
             <Main open={drawerOpen}>
                 <Toolbar/>
                 <Outlet/>
