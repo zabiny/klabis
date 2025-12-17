@@ -10,4 +10,8 @@ public class MemberEventRegistrationRemoved extends AggregateDomainEvent<Event> 
         super(aggregate);
         this.memberId = memberId;
     }
+
+    public MemberId getMemberId() {
+        return memberId;
+    }
 }

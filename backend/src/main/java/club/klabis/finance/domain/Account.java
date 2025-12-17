@@ -1,5 +1,6 @@
 package club.klabis.finance.domain;
 
+import club.klabis.events.domain.Event;
 import club.klabis.finance.domain.events.AccountCreatedEvent;
 import club.klabis.finance.domain.events.DepositedAmountEvent;
 import club.klabis.finance.domain.events.TransferedAmountEvent;
@@ -61,6 +62,12 @@ public class Account extends SingleEventsSource {
         }
     }
 
+    public void refundEvent(Event registeredEvent) {
+        deposit(registeredEvent.getCost().orElse(MoneyAmount.ZERO));
+    }
+
+    public void registerPaymentForEvent(Event event) {
+        this.withdraw(event.getCost().orElse(MoneyAmount.ZERO));
+    }
+
 }
-
-

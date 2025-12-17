@@ -1,5 +1,9 @@
 package club.klabis.finance.infrastructure.listeners;
 
+import club.klabis.events.domain.Event;
+import club.klabis.events.domain.MemberEventRegistrationCreated;
+import club.klabis.events.domain.MemberEventRegistrationRemoved;
+import club.klabis.finance.domain.Account;
 import club.klabis.finance.domain.AccountProjector;
 import club.klabis.finance.domain.MoneyAmount;
 import club.klabis.finance.domain.events.AccountCreatedEvent;
@@ -10,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+
+import java.util.function.Predicate;
 
 @Service
 public class EventsListener {
@@ -23,7 +29,7 @@ public class EventsListener {
     }
 
 
-    @EventListener
+    @EventListener(MemberCreatedEvent.class)
     public void onMemberCreated(MemberCreatedEvent event) {
         MemberId accountOwner = event.getAggregate().getId();
 
@@ -35,6 +41,43 @@ public class EventsListener {
         }
 
         eventsRepository.appendEvent(new AccountCreatedEvent(accountOwner, MoneyAmount.ZERO));
+    }
+
+
+    @EventListener(MemberEventRegistrationCreated.class)
+    public void onEventRegistrationCreated(MemberEventRegistrationCreated event) {
+
+        Event registeredEvent = event.getAggregate();
+
+        registeredEvent.getCost()
+                .filter(Predicate.not(MoneyAmount::isZero))
+                .ifPresent(registeredEventCost -> {
+                    MemberId registeredUser = event.getMemberId();
+
+                    Account memberAccount = eventsRepository.project(new AccountProjector(registeredUser))
+                            .orElseThrow();
+                    memberAccount.registerPaymentForEvent(registeredEvent);
+
+                    eventsRepository.appendPendingEventsFrom(memberAccount);
+                });
+    }
+
+    @EventListener(MemberEventRegistrationRemoved.class)
+    public void onEventRegistrationCanceled(MemberEventRegistrationRemoved event) {
+
+        Event registeredEvent = event.getAggregate();
+        // TODO: add event transaction item to refund what was paid only and to see money as reserved instead of paid
+        registeredEvent.getCost()
+                .filter(Predicate.not(MoneyAmount::isZero))
+                .ifPresent(registeredEventCost -> {
+                    MemberId registeredUser = event.getMemberId();
+
+                    Account memberAccount = eventsRepository.project(new AccountProjector(registeredUser))
+                            .orElseThrow();
+                    memberAccount.refundEvent(registeredEvent);
+
+                    eventsRepository.appendPendingEventsFrom(memberAccount);
+                });
     }
 
 }

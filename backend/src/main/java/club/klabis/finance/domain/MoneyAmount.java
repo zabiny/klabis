@@ -25,7 +25,7 @@ public record MoneyAmount(BigDecimal amount) {
 
     public MoneyAmount subtract(MoneyAmount amount) {
         if (this.amount.compareTo(amount.amount()) < 0) {
-            throw new IllegalStateException("Insufficient money to withdraw");
+            throw new IllegalStateException("Money can't be negative");
         }
         return new MoneyAmount(this.amount.subtract(amount.amount()));
     }
