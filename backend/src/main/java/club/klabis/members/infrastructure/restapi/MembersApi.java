@@ -17,6 +17,8 @@ import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.JsonViewMapping;
 import club.klabis.shared.config.restapi.JsonViewParameter;
 import club.klabis.shared.config.restapi.ResponseViews;
+import club.klabis.shared.config.security.ApplicationGrant;
+import club.klabis.shared.config.security.KlabisSecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -44,9 +46,11 @@ public class MembersApi {
 
     private final MembersRepository membersRepository;
     private final ModelAssembler<Member, MembersApiResponse> memberModelAssembler;
+    private final KlabisSecurityService klabisSecurityService;
 
-    public MembersApi(MembersRepository membersRepository, ModelPreparator<Member, MembersApiResponse> memberModelAssembler, PagedResourcesAssembler<Member> pagedAssembler) {
+    public MembersApi(MembersRepository membersRepository, ModelPreparator<Member, MembersApiResponse> memberModelAssembler, PagedResourcesAssembler<Member> pagedAssembler, KlabisSecurityService klabisSecurityService) {
         this.membersRepository = membersRepository;
+        this.klabisSecurityService = klabisSecurityService;
         this.memberModelAssembler = new HalResourceAssembler<>(memberModelAssembler, pagedAssembler);
     }
 
@@ -81,11 +85,12 @@ public class MembersApi {
     ) {
         Page<Member> result = membersRepository.findAllBySuspended(suspended,
                 memberModelAssembler.toDomainPageable(pageable));
-
         var resultModel = memberModelAssembler.toPagedResponse(result);
-        resultModel.add(linkTo(methodOn(getClass()).membersGet(!suspended,
-                pageable.first())).withRel(suspended ? "active" : "suspended")
-                .withName(suspended ? "Aktivní členové" : "Suspendovaní členové"));
+        if (klabisSecurityService.hasGrant(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP) || klabisSecurityService.hasGrant(
+                ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
+            resultModel.add(linkTo(methodOn(getClass()).membersGet(!suspended,
+                    pageable.first())).withRel(suspended ? "activeMembers" : "suspendedMembers"));
+        }
         return resultModel;
     }
 

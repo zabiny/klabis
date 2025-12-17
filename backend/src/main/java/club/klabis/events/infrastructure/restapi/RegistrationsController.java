@@ -10,7 +10,6 @@ import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.hateoas.RootModel;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
-import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.ResponseViews;
 import club.klabis.shared.config.security.HasMemberGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
@@ -28,7 +27,6 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,7 +39,7 @@ import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-@ApiController(path = "/member/{memberId}/registration", openApiTagName = "Events")
+//@ApiController(path = "/member/{memberId}/registration", openApiTagName = "Events")
 class RegistrationsController {
 
     private final ModelAssembler<EventAndMember, RegistrationDto> modelAssembler;
@@ -130,7 +128,7 @@ class RegistrationsController {
     }
 }
 
-@Component
+//@Component
 class RegistrationsRootResourceProcessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
     private final KlabisSecurityService klabisRequestContext;

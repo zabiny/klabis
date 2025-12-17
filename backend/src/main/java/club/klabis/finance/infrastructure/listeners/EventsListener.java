@@ -1,6 +1,7 @@
 package club.klabis.finance.infrastructure.listeners;
 
 import club.klabis.events.domain.Event;
+import club.klabis.events.domain.EventCostChangedEvent;
 import club.klabis.events.domain.MemberEventRegistrationCreated;
 import club.klabis.events.domain.MemberEventRegistrationRemoved;
 import club.klabis.finance.domain.Account;
@@ -43,6 +44,11 @@ public class EventsListener {
         eventsRepository.appendEvent(new AccountCreatedEvent(accountOwner, MoneyAmount.ZERO));
     }
 
+
+    @EventListener(EventCostChangedEvent.class)
+    public void onEventCostChanged(EventCostChangedEvent event) {
+        logger.warn("TODO: Add handling of event price change");
+    }
 
     @EventListener(MemberEventRegistrationCreated.class)
     public void onEventRegistrationCreated(MemberEventRegistrationCreated event) {
