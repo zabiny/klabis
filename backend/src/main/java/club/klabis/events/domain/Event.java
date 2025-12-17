@@ -179,6 +179,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
 
     public void updateCost(MoneyAmount newCost) {
         this.cost = newCost;
+        this.andEvent(new EventCostChangedEvent(this));
     }
 
     public void registerMember(MemberId memberId, EventRegistrationForm form) {
@@ -193,6 +194,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         }
 
         this.registrations.add(new Registration(memberId, form.siNumber(), form.category()));
+        this.andEvent(new MemberEventRegistrationCreated(this, memberId));
     }
 
     public void changeRegistration(MemberId memberId, EventRegistrationForm form) {
@@ -216,7 +218,10 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
                     EventException.Type.REGISTRATION_DEADLINE_PASSED);
         }
 
-        getRegistrationForMember(memberId).ifPresentOrElse(registration -> this.registrations.remove(registration),
+        getRegistrationForMember(memberId).ifPresentOrElse(registration -> {
+                    this.registrations.remove(registration);
+                    this.andEvent(new MemberEventRegistrationRemoved(this, registration.getMemberId()));
+                },
                 () -> {
                     throw EventException.createMemberNotRegisteredForEventException(this.id, memberId);
                 });
