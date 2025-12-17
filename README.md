@@ -54,7 +54,7 @@ MVP): https://miro.com/app/board/uXjVMZ6CEqU=/?moveToWidget=3458764559801334302&
 
 UI: https://klabis.otakar.io/
 
-UI PoC 'frontend-2': TBD
+UI PoC 'frontend-2': https://api.klabis.otakar.io/index.html
 
 API: https://klabis-api-docs.otakar.io/
 
