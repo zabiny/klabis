@@ -49,7 +49,7 @@ class CalendarApiControllerTest {
         @DisplayName("it should pass correct parameters to service call")
         @Test
         void itShouldPassCorrectParamsToService() {
-            mockMvcTester.perform(get("/calendar")
+            mockMvcTester.perform(get("/calendar-items")
                             .queryParam("calendarType", "MONTH"))
                     .assertThat()
                     .hasStatus(HttpStatus.OK);
@@ -58,7 +58,7 @@ class CalendarApiControllerTest {
         @DisplayName("it should have 'createCalendarItem' affordance in HAL+FORMS response")
         @Test
         void itShouldAddExpectedLinkToRootNavigation() {
-            mockMvcTester.perform(get("/calendar").accept(MediaTypes.HAL_FORMS_JSON))
+            mockMvcTester.perform(get("/calendar-items").accept(MediaTypes.HAL_FORMS_JSON))
                     .assertThat()
                     .hasStatus(HttpStatus.OK)
                     .bodyJson()
@@ -85,7 +85,7 @@ class CalendarApiControllerTest {
                     .hasStatus(HttpStatus.OK)
                     .bodyJson()
                     .isLenientlyEqualTo("""
-                            {"start":"2020-10-02", "end": "2020-12-05", "note":"Example task", "id": %s}
+                            {"start":"2020-10-02", "end": "2020-12-05", "note":"Example task"}
                             """.formatted(returnedItem.getId().value()));
         }
 
@@ -159,7 +159,7 @@ class CalendarApiControllerTest {
                     .convertTo(EntityModel.class)
                     .extracting(e -> e.getLinks().toList())
                     .asList()
-                    .containsExactly(Link.of("http://localhost/calendar?calendarType=&referenceDate=",
+                    .containsExactly(Link.of("http://localhost/calendar-items?calendarType=&referenceDate=",
                             "calendar"));
         }
 

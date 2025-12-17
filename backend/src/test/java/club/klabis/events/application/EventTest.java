@@ -40,7 +40,7 @@ class EventTest {
                     testDate,
                     "Updated Organizer",
                     registrationDeadline,
-                    coordinator, Competition.Category.categories("D12")
+                    coordinator, Competition.Category.categories("D12"), null
             );
 
             // Act

@@ -34,6 +34,9 @@ public class Account extends SingleEventsSource {
     }
 
     public void withdraw(MoneyAmount amount) {
+        if (balance.isLowerThan(amount)) {
+            throw new IllegalStateException("Insufficient money to withdraw");
+        }
         this.balance = this.balance.subtract(amount);
         andEvent(new WithdrawnAmountEvent(owner, amount));
     }

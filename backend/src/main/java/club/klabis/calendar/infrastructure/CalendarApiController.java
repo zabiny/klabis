@@ -9,20 +9,17 @@ import club.klabis.shared.config.Globals;
 import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.hateoas.RootModel;
 import club.klabis.shared.config.restapi.ApiController;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.jackson.JacksonComponent;
-import org.springframework.boot.jackson.JacksonMixin;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.hateoas.server.core.Relation;
 import org.springframework.http.HttpStatus;
@@ -45,7 +42,8 @@ import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-@ApiController(openApiTagName = "calendar")
+@ApiController(openApiTagName = "calendar", path = "/calendar-items")
+@ExposesResourceFor(CalendarItem.class)
 @Import(CalendarItemListPostprocessor.class)
 public class CalendarApiController {
 
@@ -81,14 +79,14 @@ public class CalendarApiController {
     }
 
     // TODO: Rework this endpoint to return Calendar instance with information about period, start date, end date, etc..  It will help with couple of things (displaying some stats in calendar, navigating calendar - as it is weird to have there links like prev/next on collection of items which may be empty... )
-    @GetMapping("/calendar")
+    @GetMapping
     public ResponseEntity<CollectionModel<EntityModel<CalendarItemDto>>> getCalendarItems(@RequestParam(required = false, defaultValue = "MONTH") Calendar.CalendarType calendarType, @RequestParam(required = false) LocalDate referenceDate) {
         return ResponseEntity.ok(modelAssembler.toCollectionModel(new ArrayList<>(calendarService.getCalendarItems(
                 calendarType,
                 referenceDate))));
     }
 
-    @GetMapping("/calendar-items/{id}")
+    @GetMapping("/{id}")
     public EntityModel<CalendarItemDto> getCalendarItems(@PathVariable CalendarItem.Id id) {
         CalendarItem result = calendarService.getCalendarItem(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -96,7 +94,7 @@ public class CalendarApiController {
         return modelAssembler.toEntityResponse(result);
     }
 
-    @PostMapping("/calendar-items")
+    @PostMapping
     public ResponseEntity<Void> createCalendarItem(@RequestBody CreateCalendarItemCommand command) {
         CalendarItem item = calendarService.createCalendarItem(command);
 
@@ -134,8 +132,10 @@ class CalendarItemPostprocessor implements RepresentationModelProcessor<EntityMo
 class CalendarItemListPostprocessor implements RepresentationModelProcessor<CollectionModel<EntityModel<CalendarApiController.CalendarItemDto>>> {
     @Override
     public CollectionModel<EntityModel<CalendarApiController.CalendarItemDto>> process(CollectionModel<EntityModel<CalendarApiController.CalendarItemDto>> model) {
-        model.mapLink(IanaLinkRelations.SELF,
-                link -> link.andAffordance(affordBetter(methodOn(CalendarApiController.class).createCalendarItem(null))));
+        // TODO: add missing parameter values from current request to have proper "self" link
+        model.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(null, null)).withSelfRel()
+                .expand("", "")
+                .andAffordance(affordBetter(methodOn(CalendarApiController.class).createCalendarItem(null))));
 
         model.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(Calendar.CalendarType.DAY,
                 null)).withRel("calendar-day").expand(""));
@@ -146,15 +146,6 @@ class CalendarItemListPostprocessor implements RepresentationModelProcessor<Coll
 
         return model;
     }
-}
-
-@JacksonMixin(CalendarItem.class)
-@JsonPropertyOrder({"id", "start", "end", "note"})
-class CalendarItemMixin {
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = Globals.KLABIS_ZONE_VALUE)
-    Object start;
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = Globals.KLABIS_ZONE_VALUE)
-    Object end;
 }
 
 @JacksonComponent
