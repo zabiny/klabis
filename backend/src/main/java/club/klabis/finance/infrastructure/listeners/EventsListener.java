@@ -41,7 +41,7 @@ public class EventsListener {
             return;
         }
 
-        eventsRepository.appendEvent(new AccountCreatedEvent(accountOwner, MoneyAmount.ZERO));
+        eventsRepository.appendEvent(new AccountCreatedEvent(accountOwner, MoneyAmount.of(1000)));
     }
 
 
