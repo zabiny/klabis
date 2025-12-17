@@ -1,6 +1,7 @@
 package club.klabis.events.domain;
 
 import club.klabis.events.domain.forms.EventRegistrationForm;
+import club.klabis.finance.domain.MoneyAmount;
 import club.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Predicate;
 
 import static club.klabis.shared.config.Globals.toZonedDateTime;
 
@@ -55,6 +57,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
     private MemberId coordinator;
     private OrisId orisId;
     private URL website;
+    private MoneyAmount cost = MoneyAmount.ZERO;
 
     private final Set<Registration> registrations = new HashSet<>();
 
@@ -88,6 +91,11 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
 
     public Optional<URL> getWebsite() {
         return Optional.ofNullable(website);
+    }
+
+    // TODO: clarify if undefined cost means "zero" cost
+    public Optional<MoneyAmount> getCost() {
+        return Optional.ofNullable(cost).filter(Predicate.not(MoneyAmount.ZERO::equals));
     }
 
     public ZonedDateTime getRegistrationDeadline() {
@@ -167,6 +175,10 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
 
     public boolean isMemberRegistered(MemberId memberId) {
         return registrations.stream().anyMatch(r -> memberId.equals(r.getMemberId()));
+    }
+
+    public void updateCost(MoneyAmount newCost) {
+        this.cost = newCost;
     }
 
     public void registerMember(MemberId memberId, EventRegistrationForm form) {

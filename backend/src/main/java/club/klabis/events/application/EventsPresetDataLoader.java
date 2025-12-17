@@ -33,7 +33,7 @@ class EventsPresetDataLoader implements PresetDataLoader {
                 randomEvent.eventDate(),
                 faker.clubs().weightedClub().code(),
                 randomEvent.registrationsDeadline(),
-                null, faker.categories().weightedCategories());
+                null, faker.categories().weightedCategories(), null);
     }
 
     @Override
