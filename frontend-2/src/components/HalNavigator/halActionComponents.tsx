@@ -10,8 +10,7 @@ export function HalLinksUi({links, onClick, showPagingNavigation = true}: {
     showPagingNavigation?: boolean
 }): ReactElement {
     const getLabel = (rel: string, l: Link): string => {
-        const anyLink = l as unknown as { title?: string; name?: string };
-        return anyLink.title || anyLink.name || rel;
+        return (l.title || l.name || rel) as string;
     };
     return (
         <Stack direction={"row"} spacing={2}>
@@ -21,8 +20,14 @@ export function HalLinksUi({links, onClick, showPagingNavigation = true}: {
                     if (rel === "self") return null;
                     const singleLink = Array.isArray(link) ? link[0] : link;
                     return (
-                        <MuiLink key={rel}
-                                 onClick={() => onClick(singleLink)}>{getLabel(rel, singleLink)}</MuiLink>
+                        <Button
+                            key={rel}
+                            variant="text"
+                            onClick={() => onClick(singleLink)}
+                            aria-label={`Přejít na ${getLabel(rel, singleLink)}`}
+                        >
+                            {getLabel(rel, singleLink)}
+                        </Button>
                     );
                 })}
         </Stack>
@@ -41,10 +46,15 @@ export function HalActionsUi({links, onClick}: {
         <Stack direction={"row"} spacing={2}>
             {Object.entries(links).map(([rel, link]) => {
                 if (rel === "self") return null;
-                const singleLink = Array.isArray(link) ? (link as Link[])[0] : link;
+                const singleLink = Array.isArray(link) ? link[0] : link;
                 return (
-                    <Button key={rel}
-                            onClick={() => onClick(singleLink)}>{getLabel(rel, singleLink as any)}</Button>
+                    <Button
+                        key={rel}
+                        onClick={() => onClick(singleLink)}
+                        aria-label={`${getLabel(rel, singleLink)} - akce`}
+                    >
+                        {getLabel(rel, singleLink)}
+                    </Button>
                 );
             })}
         </Stack>
