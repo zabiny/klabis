@@ -1,6 +1,6 @@
 import type {HalCollectionResponse, HalResponse, Link, NavigationTarget} from "../../api";
-import {type ReactElement, useState} from "react";
-import {Alert, Button, Checkbox, FormControlLabel, Grid, Stack} from "@mui/material";
+import {type ReactElement, useState, useEffect} from "react";
+import {Alert, Button, Checkbox, CircularProgress, FormControlLabel, Grid, Skeleton, Stack, Box} from "@mui/material";
 import {ErrorBoundary} from "react-error-boundary";
 import {type HalFormFieldFactory} from "../HalFormsForm";
 import {type Navigation, useNavigation} from "../../hooks/useNavigation";
@@ -74,7 +74,12 @@ function renderContent(item: NavigationTargetResponse<unknown>, navigation: Navi
     } else if (isCollectionNavigationTargetResponse(item)) {
         return <HalCollectionContent data={item.body || {_embedded: [], page: {}}} navigation={navigation}/>;
     } else if (isErrorNavigationTargetResponse(item)) {
-        return <Alert severity={"error"}>
+        return <Alert
+            severity={"error"}
+            role="alert"
+            aria-live="assertive"
+            aria-label="Chyba načítání dat"
+        >
             Nepovedlo se nacist data {toHref(item.navigationTarget)}:<br/>
             Response status {item.responseStatus} ({item.contentType})<br/>
             {item.body}
@@ -84,16 +89,83 @@ function renderContent(item: NavigationTargetResponse<unknown>, navigation: Navi
     }
 }
 
+function LoadingSkeletonContent(): ReactElement {
+    return (
+        <Grid container spacing={2} sx={{
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+        }}>
+            <Grid padding={2} xs={7}>
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                    {/* Skeleton for heading */}
+                    <Skeleton variant="text" width="40%" height={40}/>
+                    {/* Skeleton for table rows */}
+                    <Skeleton variant="rectangular" height={40}/>
+                    <Skeleton variant="rectangular" height={40}/>
+                    <Skeleton variant="rectangular" height={40}/>
+                    <Skeleton variant="rectangular" height={40}/>
+                </Box>
+            </Grid>
+            <Grid xs={5} padding={2}>
+                <Skeleton variant="rectangular" height={300}/>
+            </Grid>
+        </Grid>
+    );
+}
+
+function LoadingOverlay(): ReactElement {
+    const [showSlowIndicator, setShowSlowIndicator] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShowSlowIndicator(true);
+        }, 2000);
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                py: 4
+            }}
+            role="status"
+            aria-live="polite"
+            aria-label="Stav načítání"
+            aria-busy="true"
+        >
+            <CircularProgress aria-hidden="true"/>
+            <Box sx={{fontSize: '0.875rem', color: 'text.secondary'}}>
+                Načítání...
+            </Box>
+            {showSlowIndicator && (
+                <Box sx={{fontSize: '0.75rem', color: 'warning.main'}}>
+                    Probíhá načítání, prosím čekejte...
+                </Box>
+            )}
+        </Box>
+    );
+}
+
 function HalNavigatorContent({
                                  fieldsFactory
                              }: {
-    navigation: Navigation<NavigationTarget>
     fieldsFactory?: HalFormFieldFactory
 }): ReactElement {
     const navigation = useHalExplorerNavigation();
     const response = useNavigationTargetResponse();
     if (!response) {
-        return <Alert severity={"info"}>Nahravam data {toHref(navigation.current)}</Alert>;
+        return (
+            <>
+                <LoadingOverlay/>
+                <LoadingSkeletonContent/>
+            </>
+        );
     }
 
     // if (response.isSuccess || (isHalFormsTemplate(navigation.current) && [405, 404].includes(response.responseStatus))) {
@@ -123,17 +195,35 @@ const NavigationTargetSourceDetails = (): ReactElement => {
     const [showSource, setShowSource] = useState(true);
     const response = useNavigationTargetResponse();
     const navigation = useHalExplorerNavigation();
+    const isLoading = !response;
 
     return (<Grid overflow={showSource ? "scroll" : "none"} xs={5}>
-            <FormControlLabel control={<Checkbox checked={showSource}
-                                                 onChange={(_event, checked) => setShowSource(checked)}/>}
-                              label="Zobraz zdrojovy JSON"/>
-            {showSource && <>
-                <JsonPreview data={response?.navigationTarget} label={"Current navigation target (response)"}/>
-                <JsonPreview data={navigation.current} label={"Current navigation target (navigation)"}/>
-                <JsonPreview data={response?.body}
-                             label={`Response data (${response?.responseStatus} - ${response?.contentType})`}/>
-            </>}
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={showSource}
+                        onChange={(_event, checked) => setShowSource(checked)}
+                        disabled={isLoading}
+                        aria-label="Zobrazit zdrojový JSON"
+                    />
+                }
+                label="Zobraz zdrojový JSON"
+            />
+            {showSource && (isLoading ? (
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+                    <Skeleton variant="text" width="100%" height={20}/>
+                    <Skeleton variant="rectangular" height={150}/>
+                    <Skeleton variant="text" width="100%" height={20}/>
+                    <Skeleton variant="rectangular" height={150}/>
+                </Box>
+            ) : (
+                <>
+                    <JsonPreview data={response?.navigationTarget} label={"Current navigation target (response)"}/>
+                    <JsonPreview data={navigation.current} label={"Current navigation target (navigation)"}/>
+                    <JsonPreview data={response?.body}
+                                 label={`Response data (${response?.responseStatus} - ${response?.contentType})`}/>
+                </>
+            ))}
         </Grid>
     );
 
@@ -162,10 +252,22 @@ export function HalNavigatorPage({
     };
 
     const renderNavigation = (): ReactElement => {
-        return (<Stack direction={"row"}>
-            <Button onClick={navigation.reset}>Restart</Button>
-            <Button disabled={navigation.isFirst} onClick={navigation.back}>Zpět</Button>
-            <h3>{toHref(navigation.current)}</h3>
+        return (<Stack direction={"row"} alignItems="center" spacing={2}>
+            <Button
+                onClick={navigation.reset}
+                aria-label="Začít znovu"
+            >
+                Restart
+            </Button>
+            <Button
+                disabled={navigation.isFirst}
+                onClick={navigation.back}
+                aria-label={navigation.isFirst ? "Zpět (není kam)" : "Zpět"}
+                aria-disabled={navigation.isFirst}
+            >
+                Zpět
+            </Button>
+            <h3 style={{margin: 0}}>{toHref(navigation.current)}</h3>
         </Stack>);
     }
 
