@@ -26,8 +26,15 @@ const KlabisTableBody = <T extends Record<string, unknown>>({onRowClick, emptyMe
 }): ReactNode => {
     const {tableModel, rows} = useKlabisTableContext<T>();
 
+    const handleRowKeyDown = (event: React.KeyboardEvent, item: T) => {
+        if ((event.key === 'Enter' || event.key === ' ') && onRowClick) {
+            event.preventDefault();
+            onRowClick(item);
+        }
+    };
+
     const renderRows = (rows?: T[]): ReactNode => {
-        if (!rows || rows.length == 0) {
+        if (!rows || rows.length === 0) {
             return (
                 <TableRow key={0}><TableCell align={"center"}
                                              colSpan={tableModel.columns.length}>{emptyMessage}</TableCell></TableRow>
@@ -37,9 +44,13 @@ const KlabisTableBody = <T extends Record<string, unknown>>({onRowClick, emptyMe
         return rows
             .map((item: T, index: number) => (
                 <TableRow
-                    key={'' + item?.id || index}
+                    key={item?.id ? String(item.id) : `row-${index}`}
                     hover
                     onClick={() => onRowClick && onRowClick(item)}
+                    onKeyDown={(e) => handleRowKeyDown(e, item)}
+                    tabIndex={onRowClick ? 0 : -1}
+                    role={onRowClick ? "button" : undefined}
+                    aria-label={`Řádek ${index + 1}`}
                     sx={{cursor: onRowClick ? 'pointer' : 'default'}}
                 >
                     {tableModel.renderCellsForRow(item)}
@@ -82,12 +93,12 @@ export const KlabisTable = <T extends Record<string, unknown>>(props: KlabisTabl
     >
         <Paper>
             <TableContainer>
-                <Table>
+                <Table aria-label="Tabulka dat">
                     <KlabisTableHeaders/>
                     <KlabisTableBody onRowClick={onRowClick} emptyMessage={emptyMessage}/>
                 </Table>
             </TableContainer>
-            {<KlabisTablePagination/>}
+            <KlabisTablePagination/>
         </Paper>
     </KlabisTableProvider>
 };
