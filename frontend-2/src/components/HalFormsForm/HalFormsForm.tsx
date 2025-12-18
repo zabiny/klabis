@@ -55,6 +55,10 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<an
         }
 
         if (prop.regex) {
+            console.log(validator);
+            if (validator.type === "mixed") {
+                validator = Yup.string();
+            }
             validator = validator.matches(new RegExp(prop.regex), "Nespravny format");
         }
 
