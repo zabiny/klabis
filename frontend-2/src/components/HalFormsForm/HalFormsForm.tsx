@@ -1,5 +1,5 @@
 import * as Yup from "yup";
-import {Alert, Box, Button} from "@mui/material";
+import {Alert, Box, Button, CircularProgress} from "@mui/material";
 import {Form, Formik} from "formik";
 import React, {type ReactElement, type ReactNode, useCallback, useEffect, useState} from "react";
 import {
@@ -26,10 +26,8 @@ function getInitialValues(
     template.properties.forEach((prop) => {
         if (prop.multiple) {
             initialValues[prop.name] = Array.isArray(data[prop.name]) ? data[prop.name] : [];
-            data[prop.name] = data[prop.name] === null ? [] : data[prop.name];
         } else {
             initialValues[prop.name] = data[prop.name] !== undefined ? data[prop.name] : prop.value || "";
-            data[prop.name] = data[prop.name] === null ? "" : data[prop.name];
         }
 
     });
@@ -57,7 +55,7 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<an
         }
 
         if (prop.regex) {
-            validator = Yup.string().required().matches(new RegExp(prop.regex), "Nespravny format");
+            validator = validator.matches(new RegExp(prop.regex), "Nespravny format");
         }
 
         shape[prop.name] = validator;
@@ -178,7 +176,7 @@ const useHalFormsController = (
                 )
                 throw submitError; // Re-throw error in case caller needs to handle it
             }
-        }, [api])
+        }, [api, actualTemplate])
 
     return {isLoading, submit, error, formData, template: actualTemplate, submitError};
 }
@@ -193,7 +191,7 @@ const HalFormsFormController = ({api, inputTemplate}: {
     //console.log(`Loading=${isLoading}, error=${error}, formData=${JSON.stringify(formData)}`);
 
     if (isLoading) {
-        return <span>Loading form data (${api.target})</span>;
+        return <span>Loading form data (`${api.target}`)</span>;
     }
 
     if (error) {
@@ -216,7 +214,8 @@ interface HalFormsFormProps {
     onSubmit?: (values: Record<string, any>) => void,
     onCancel?: () => void,
     submitButtonLabel?: string,
-    fieldsFactory?: HalFormFieldFactory
+    fieldsFactory?: HalFormFieldFactory,
+    isSubmitting?: boolean
 }
 
 // TODO: zjednodusit - udelat kontext ktery bude drzet template a udelat hook ktery bude z toho kontextu tahat definici policka pro konkretni nazev
@@ -230,7 +229,8 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
                                                        onSubmit,
                                                        onCancel,
                                                        fieldsFactory = muiHalFormsFieldsFactory,
-                                                       submitButtonLabel = "Odeslat"
+                                                       submitButtonLabel = "Odeslat",
+                                                       isSubmitting: externalIsSubmitting = false
                                                    }) => {
 
     const initialValues = getInitialValues(template, data);
@@ -251,23 +251,42 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
                     setSubmitting(false)
                 }
             }}>
-            {({isSubmitting, errors, touched}) => (
-                <Form style={{display: "grid", gap: "1rem"}}>
-                    {(template.title ? <h2>{template.title}</h2> : <></>)}
+            {({isSubmitting: formikIsSubmitting, errors, touched}) => {
+                const isFormProcessing = formikIsSubmitting || externalIsSubmitting;
+                return (
+                    <Form style={{display: "grid", gap: "1rem"}}>
+                        {(template.title ? <h2>{template.title}</h2> : <></>)}
 
-                    {template.properties.map((prop) => (
-                        <div key={prop.name}>
-                            {renderField(prop, errors, touched, fieldsFactory)}
-                        </div>
-                    ))}
+                        {template.properties.map((prop) => (
+                            <div key={prop.name} style={{opacity: isFormProcessing ? 0.6 : 1, pointerEvents: isFormProcessing ? 'none' : 'auto'}}>
+                                {renderField(prop, errors, touched, fieldsFactory)}
+                            </div>
+                        ))}
 
-                    <Button type="submit" disabled={isSubmitting} variant="contained" color="primary">
-                        {submitButtonLabel}
-                    </Button>
-                    {onCancel && <Button type="button" disabled={isSubmitting} variant={"contained"} color="secondary"
-                                         onClick={() => onCancel()}>Zpět</Button>}
-                </Form>
-            )}
+                        <Box sx={{display: 'flex', gap: 1}}>
+                            <Button
+                                type="submit"
+                                disabled={isFormProcessing}
+                                variant="contained"
+                                color="primary"
+                                sx={{minWidth: 120}}
+                                startIcon={isFormProcessing ? <CircularProgress size={20}/> : undefined}
+                            >
+                                {isFormProcessing ? "Odesílám..." : submitButtonLabel}
+                            </Button>
+                            {onCancel && <Button
+                                type="button"
+                                disabled={isFormProcessing}
+                                variant={"contained"}
+                                color="secondary"
+                                onClick={() => onCancel()}
+                            >
+                                Zpět
+                            </Button>}
+                        </Box>
+                    </Form>
+                );
+            }}
         </Formik>
     );
 };
