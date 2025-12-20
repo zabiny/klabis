@@ -1,11 +1,7 @@
 import {Navigate, Route, Routes} from 'react-router-dom';
-import {ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {AuthProvider, useAuth} from './contexts/AuthContext2';
 import Layout from './pages/Layout';
 import LoginPage from './pages/LoginPage';
-
-import theme from './theme';
 import {SandplacePage} from "./pages/HalNavigatorPage";
 import {authConfig} from "./api/klabisUserManager.ts";
 
@@ -26,23 +22,20 @@ const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
 
 function App() {
     return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline/>
-            <AuthProvider config={authConfig}>
-                <Routes>
-                    <Route path="/login" element={<LoginPage/>}/>
-                    <Route path="/" element={
-                        <ProtectedRoute>
-                            <Layout/>
-                        </ProtectedRoute>
-                    }>
-                        <Route index element={<SandplacePage/>}/>
-                        <Route path="sandplace" element={<SandplacePage/>}/>
-                        <Route path="*" element={<SandplacePage/>}/>
-                    </Route>
-                </Routes>
-            </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider config={authConfig}>
+            <Routes>
+                <Route path="/login" element={<LoginPage/>}/>
+                <Route path="/" element={
+                    <ProtectedRoute>
+                        <Layout/>
+                    </ProtectedRoute>
+                }>
+                    <Route index element={<SandplacePage/>}/>
+                    <Route path="sandplace" element={<SandplacePage/>}/>
+                    <Route path="*" element={<SandplacePage/>}/>
+                </Route>
+            </Routes>
+        </AuthProvider>
     );
 }
 
