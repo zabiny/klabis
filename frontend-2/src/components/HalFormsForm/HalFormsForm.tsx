@@ -1,7 +1,7 @@
 import * as Yup from "yup";
 import {Alert, Box, Button, CircularProgress} from "@mui/material";
 import {Form, Formik} from "formik";
-import React, {type ReactElement, type ReactNode, useCallback, useEffect, useState} from "react";
+import React, {type ReactElement, type ReactNode, useCallback, useContext, useEffect, useState} from "react";
 import {
     type HalFormsProperty,
     type HalFormsResponse,
@@ -212,6 +212,10 @@ const HalFormsFormController = ({api, inputTemplate}: {
     </div>;
 }
 
+type FieldRenderFunc = (fieldName: string) => ReactNode;
+
+type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => ReactElement;
+
 interface HalFormsFormProps {
     data: Record<string, any>,
     template: HalFormsTemplate,
@@ -219,23 +223,28 @@ interface HalFormsFormProps {
     onCancel?: () => void,
     submitButtonLabel?: string,
     fieldsFactory?: HalFormFieldFactory,
-    isSubmitting?: boolean
+    isSubmitting?: boolean,
+    renderForm?: RenderFormCallback
 }
 
 // TODO: zjednodusit - udelat kontext ktery bude drzet template a udelat hook ktery bude z toho kontextu tahat definici policka pro konkretni nazev
 // TODO: udelat hook/kompomentu (ala Formik Field) ktera zkombinuje HalForms context s Formik a s pomoci Fields factory z jedineho parametru - field name udela kompletni ReactElement daneho fieldu. Takovy hook pak bude mozne pouzit pro libovolny layout formulare stejne jako to umi Formik.
 // TODO: upravit HAL+FORMS: zobrazit "item" vzdy jako read only. Pokud je defalt template pro aktivni metodu, tak zobrazit tlacitko EDIT ktere prepne do editacniho rezimu. Pokud je default template pro GET metodu, tak jen pouzit policka s readonly pro lepsi zobrazeni. Na backendu pridat "default" affordanci pokud pro selflink zadna neexistuje (pouze pro ITEM).
 
+const HalFormsFormContext = React.createContext<HalFormsFormContextType>({renderField: (name) => `${name}`});
+
 // --- Hlavní komponenta ---
-const HalFormsForm: React.FC<HalFormsFormProps> = ({
-                                                       data,
-                                                       template,
-                                                       onSubmit,
-                                                       onCancel,
-                                                       fieldsFactory = muiHalFormsFieldsFactory,
-                                                       submitButtonLabel = "Odeslat",
-                                                       isSubmitting: externalIsSubmitting = false
-                                                   }) => {
+const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
+                                                                                data,
+                                                                                template,
+                                                                                onSubmit,
+                                                                                onCancel,
+                                                                                fieldsFactory = muiHalFormsFieldsFactory,
+                                                                                submitButtonLabel = "Odeslat",
+                                                                                isSubmitting: externalIsSubmitting = false,
+                                                                                renderForm,
+                                                                                children
+                                                                            }) => {
 
     const initialValues = getInitialValues(template, data);
     const validationSchema = createValidationSchema(template);
@@ -257,18 +266,11 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
             }}>
             {({isSubmitting: formikIsSubmitting, errors, touched}) => {
                 const isFormProcessing = formikIsSubmitting || externalIsSubmitting;
-                return (
-                    <Form style={{display: "grid", gap: "1rem"}}>
-                        {(template.title ? <h2>{template.title}</h2> : <></>)}
 
-                        {template.properties.map((prop) => (
-                            <div key={prop.name} style={{opacity: isFormProcessing ? 0.6 : 1, pointerEvents: isFormProcessing ? 'none' : 'auto'}}>
-                                {renderField(prop, errors, touched, fieldsFactory)}
-                            </div>
-                        ))}
-
-                        <Box sx={{display: 'flex', gap: 1}}>
-                            <Button
+                const createRenderFieldCallback = (): ((fieldName: string) => ReactElement) => {
+                    return (fieldName: string) => {
+                        if (fieldName === "submit") {
+                            return <Button
                                 type="submit"
                                 disabled={isFormProcessing}
                                 variant="contained"
@@ -277,17 +279,60 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
                                 startIcon={isFormProcessing ? <CircularProgress size={20}/> : undefined}
                             >
                                 {isFormProcessing ? "Odesílám..." : submitButtonLabel}
-                            </Button>
-                            {onCancel && <Button
+                            </Button>;
+                        }
+
+                        if (fieldName === "cancel") {
+                            return <Button
                                 type="button"
-                                disabled={isFormProcessing}
+                                disabled={isFormProcessing || !onCancel}
                                 variant={"contained"}
                                 color="secondary"
-                                onClick={() => onCancel()}
+                                onClick={() => onCancel && onCancel()}
                             >
                                 Zpět
-                            </Button>}
-                        </Box>
+                            </Button>;
+                        }
+
+                        const prop = template.properties.find(p => p.name === fieldName);
+                        if (!prop) {
+                            return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
+                        }
+                        return renderField(prop, errors, touched, fieldsFactory) as ReactElement;
+                    };
+                };
+
+                let formContent: ReactElement;
+                if (children) {
+                    const context: HalFormsFormContextType = {
+                        renderField: createRenderFieldCallback()
+                    };
+                    formContent = <HalFormsFormContext value={context}>
+                        {children}
+                    </HalFormsFormContext>;
+                } else if (renderForm) {
+                    formContent = renderForm(createRenderFieldCallback());
+                } else {
+                    formContent = <>
+                        {(template.title ? <h2>{template.title}</h2> : <></>)}
+
+                        {template.properties.map((prop) => (
+                            <div key={prop.name} style={{
+                                opacity: isFormProcessing ? 0.6 : 1,
+                                pointerEvents: isFormProcessing ? 'none' : 'auto'
+                            }}>
+                                {renderField(prop, errors, touched, fieldsFactory)}
+                            </div>
+                        ))}
+
+                        {createRenderFieldCallback()('submit')}
+                        {onCancel && createRenderFieldCallback()('cancel')}
+                    </>;
+                }
+
+                return (
+                    <Form style={{display: "grid", gap: "1rem"}}>
+                        {formContent}
                     </Form>
                 );
             }}
@@ -295,5 +340,13 @@ const HalFormsForm: React.FC<HalFormsFormProps> = ({
     );
 };
 
+export const HalFormsFormField: React.FC<{ fieldName: string }> = ({fieldName}) => {
+    const {renderField} = useContext(HalFormsFormContext);
+    return renderField(fieldName);
+}
+
+interface HalFormsFormContextType {
+    renderField: FieldRenderFunc
+}
 
 export {HalFormsForm, HalFormsFormController};

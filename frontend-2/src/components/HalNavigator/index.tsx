@@ -1,6 +1,6 @@
 import type {HalCollectionResponse, HalResponse, Link, NavigationTarget} from "../../api";
-import {type ReactElement, useState, useEffect} from "react";
-import {Alert, Button, Checkbox, CircularProgress, FormControlLabel, Grid, Skeleton, Stack, Box} from "@mui/material";
+import {type ReactElement, useEffect, useState} from "react";
+import {Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, Grid, Skeleton, Stack} from "@mui/material";
 import {ErrorBoundary} from "react-error-boundary";
 import {type HalFormFieldFactory} from "../HalFormsForm";
 import {type Navigation, useNavigation} from "../../hooks/useNavigation";
@@ -281,9 +281,7 @@ export function HalNavigatorPage({
                     fallback={<JsonPreview data={navigation.current}
                                            label={"Nejde vyrenderovat HAL Navigator content"}/>}
                     resetKeys={[navigation.current]}>
-                    <HalNavigatorContent fieldsFactory={fieldsFactory}
-                                         navigation={navigation}
-                    />
+                    <HalNavigatorContent fieldsFactory={fieldsFactory}/>
                 </ErrorBoundary>
             </HalNavigatorContext>
 

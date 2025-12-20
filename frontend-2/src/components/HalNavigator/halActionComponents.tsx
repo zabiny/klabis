@@ -20,14 +20,8 @@ export function HalLinksUi({links, onClick, showPagingNavigation = true}: {
                     if (rel === "self") return null;
                     const singleLink = Array.isArray(link) ? link[0] : link;
                     return (
-                        <Button
-                            key={rel}
-                            variant="text"
-                            onClick={() => onClick(singleLink)}
-                            aria-label={`Přejít na ${getLabel(rel, singleLink)}`}
-                        >
-                            {getLabel(rel, singleLink)}
-                        </Button>
+                        <MuiLink key={rel} onClick={() => onClick(singleLink)}
+                                 aria-label={`Přejít na ${getLabel(rel, singleLink)}`}>{getLabel(rel, singleLink)}</MuiLink>
                     );
                 })}
         </Stack>
