@@ -5,25 +5,23 @@ import {
     type NavigationTarget,
     type TemplateTarget
 } from "../../api";
-import type {Navigation} from "../../hooks/useNavigation";
 import {type ReactElement, useCallback, useEffect, useState} from "react";
 import {HalActionsUi, HalLinksUi} from "./halActionComponents";
 import {type HalFormFieldFactory, HalFormsForm} from "../HalFormsForm";
 import {isHalFormsTemplate} from "../HalFormsForm/utils";
-import {toHref} from "./hooks";
+import {toHref, useHalExplorerNavigation, useHalNavigator} from "./hooks";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {Alert, Spinner} from "../UI";
 import {JsonPreview} from "../JsonPreview";
 
 
 export function HalEditableItemContent({
-                                           initData, fieldsFactory, navigation
+                                           initData
                                        }: {
-    initData: HalResponse,
-    navigation: Navigation<NavigationTarget>,
-    fieldsFactory?: HalFormFieldFactory
+    initData: HalResponse
 }): ReactElement {
 
+    const {navigation, fieldsFactory} = useHalNavigator();
     const {current, back} = navigation;
 
     if (isHalFormsTemplate(current)) {
@@ -31,14 +29,14 @@ export function HalEditableItemContent({
                                 initTemplate={current} afterSubmit={() => back()}
                                 onCancel={() => back()}/>;
     } else {
-        return <HalItemContent data={initData} navigation={navigation}/>;
+        return <HalItemContent data={initData}/>;
     }
 }
 
-function HalItemContent({data, navigation}: {
-    data: HalResponse,
-    navigation: Navigation<NavigationTarget>
+function HalItemContent({data}: {
+    data: HalResponse
 }): ReactElement {
+    const navigation = useHalExplorerNavigation();
     return (
         <>
             {data._links && <HalLinksUi links={data._links} onClick={link => navigation.navigate(link)}/>}

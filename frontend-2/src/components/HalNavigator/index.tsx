@@ -60,23 +60,17 @@ function isErrorNavigationTargetResponse(response: unknown): response is Navigat
 
 
 function renderContent(
-    item: NavigationTargetResponse<unknown>,
-    navigation: Navigation<NavigationTarget>,
-    fieldsFactory?: HalFormFieldFactory
+    item: NavigationTargetResponse<unknown>
 ): ReactElement {
-    if (item.navigationTarget !== navigation.current) {
-        console.warn('Difference between navigation target and navigation current... ')
-        item = {...item, navigationTarget: navigation.current}
-    }
 
     if (isItemNavigationTargetResponse(item)) {
         const initData: HalResponse =
             !item || !item.body || isErrorNavigationTargetResponse(item) ? {_embedded: []} : (item.body as HalResponse)
         return (
-            <HalEditableItemContent initData={initData} navigation={navigation} fieldsFactory={fieldsFactory}/>
+            <HalEditableItemContent initData={initData}/>
         )
     } else if (isCollectionNavigationTargetResponse(item)) {
-        return <HalCollectionContent data={item.body || {_embedded: [], page: {}}} navigation={navigation}/>
+        return <HalCollectionContent/>
     } else if (isErrorNavigationTargetResponse(item)) {
         return (
             <Alert severity="error">
@@ -141,12 +135,7 @@ function LoadingOverlay(): ReactElement {
     )
 }
 
-function HalNavigatorContent({
-                                 fieldsFactory
-                             }: {
-    fieldsFactory?: HalFormFieldFactory
-}): ReactElement {
-    const navigation = useHalExplorerNavigation()
+function HalNavigatorContent(): ReactElement {
     const response = useNavigationTargetResponse()
     if (!response) {
         return (
@@ -165,7 +154,7 @@ function HalNavigatorContent({
                         <JsonPreview label={'Nelze vyrenderovat Hal/HalForms obsah'} data={response.navigationTarget}/>
                     }
                 >
-                    {renderContent(response, navigation, fieldsFactory)}
+                    {renderContent(response)}
                 </ErrorBoundary>
             </div>
             <NavigationTargetSourceDetails/>
@@ -258,8 +247,8 @@ export function HalNavigatorPage({
     }
 
     const contextValue = useMemo(
-        () => ({navigation: navigation}),
-        [navigation]
+        () => ({navigation: navigation, fieldsFactory: fieldsFactory}),
+        [navigation, fieldsFactory]
     )
 
     return (
@@ -272,7 +261,7 @@ export function HalNavigatorPage({
                                            label={'Nejde vyrenderovat HAL Navigator content'}/>}
                     resetKeys={[navigation.current]}
                 >
-                    <HalNavigatorContent fieldsFactory={fieldsFactory}/>
+                    <HalNavigatorContent/>
                 </ErrorBoundary>
             </HalNavigatorContext>
         </div>

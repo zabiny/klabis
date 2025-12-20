@@ -1,5 +1,4 @@
-import type {EntityModel, HalCollectionResponse, HalFormsTemplate, NavigationTarget} from "../../api";
-import type {Navigation} from "../../hooks/useNavigation";
+import type {EntityModel, HalFormsTemplate, NavigationTarget} from "../../api";
 import React, {type ReactElement, type ReactNode} from "react";
 import {toURLPath, useHalExplorerNavigation, useResponseBody} from "./hooks";
 import {Button} from "../UI";
@@ -19,12 +18,10 @@ const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('cs-CZ').format(date);
 };
 
-export function HalCollectionContent({navigation}: {
-    data: HalCollectionResponse,
-    navigation: Navigation<NavigationTarget>
-}): ReactElement {
+export function HalCollectionContent(): ReactElement {
 
-    const data = useResponseBody();
+    const navigation = useHalExplorerNavigation();
+    const responseData = useResponseBody();
 
 
     const resourceUrlPath = toURLPath(navigation.current);
@@ -130,7 +127,8 @@ export function HalCollectionContent({navigation}: {
             </HalNavigatorCollectionContentLayout>;
         default:
             return (<HalNavigatorCollectionContentLayout>
-                {data?._embedded && Object.entries(data._embedded).map(([rel, items]) => <GenericHalCollectionContent
+                {responseData?._embedded && Object.entries(responseData._embedded).map(([rel, items]) =>
+                    <GenericHalCollectionContent
                     label={rel} items={items}/>) || "Zadne polozky"}
             </HalNavigatorCollectionContentLayout>);
     }
