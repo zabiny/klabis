@@ -138,26 +138,34 @@ const useHalFormsController = (
     const [actualTemplate, setActualTemplate] = useState<HalFormsTemplate>();
 
     useEffect(() => {
+        let cancelled = false;
+
         const fetchData = async () => {
             setIsLoading(true);
             setError(undefined);
 
             try {
                 const data = await fetchHalFormsData(api);
-                if (isHalFormsResponse(data)) {
-                    setFormData(data);
-                    setActualTemplate(getDefaultTemplate(data));
-                } else {
-                    setError("Returned data doesn't have HAL FORMS format");
-                    console.warn("Returned data doesn't have HAL FORMS format");
-                    console.warn(JSON.stringify(data, null, 2));
+                if (!cancelled) {
+                    if (isHalFormsResponse(data)) {
+                        setFormData(data);
+                        setActualTemplate(getDefaultTemplate(data));
+                    } else {
+                        setError("Returned data doesn't have HAL FORMS format");
+                        console.warn("Returned data doesn't have HAL FORMS format");
+                        console.warn(JSON.stringify(data, null, 2));
+                    }
                 }
             } catch (fetchError) {
-                setError(
-                    fetchError instanceof Error ? fetchError.message : "Error fetching form data"
-                );
+                if (!cancelled) {
+                    setError(
+                        fetchError instanceof Error ? fetchError.message : "Error fetching form data"
+                    );
+                }
             } finally {
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
             }
         };
         if (inputTemplate) {
@@ -166,6 +174,10 @@ const useHalFormsController = (
         } else {
             fetchData();
         }
+
+        return () => {
+            cancelled = true;
+        };
     }, [api, inputTemplate]);
 
     const submit = useCallback(

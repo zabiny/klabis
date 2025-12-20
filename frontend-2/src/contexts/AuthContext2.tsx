@@ -1,4 +1,4 @@
-import React, {createContext, type ReactNode, useContext, useEffect, useState,} from 'react';
+import React, {createContext, type ReactNode, useCallback, useContext, useEffect, useState,} from 'react';
 import {User, UserManager,} from 'oidc-client-ts';
 import {type AuthConfig, createUserManager, normalizeUrl} from "./auth";
 
@@ -111,9 +111,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         userManager?.signoutRedirect();
     };
 
-    const getUser = async (): Promise<AuthUserDetails | null> => {
+    const getUser = useCallback(async (): Promise<AuthUserDetails | null> => {
         return authUserDetails;
-    };
+    }, [authUserDetails]);
 
     return (
         <AuthContext.Provider

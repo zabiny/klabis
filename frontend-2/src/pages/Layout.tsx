@@ -23,7 +23,7 @@ const Layout = () => {
     }
 
     loadUserName()
-  }, [isAuthenticated, getUser])
+  }, [isAuthenticated, getUser]) // Note: getUser is stable due to useCallback, but kept in deps for clarity
 
   const handleLogout = () => {
     logout()

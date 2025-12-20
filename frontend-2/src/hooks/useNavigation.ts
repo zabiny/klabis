@@ -30,7 +30,7 @@ export const useNavigation = <T, >(initial: T): Navigation<T> => {
 
     const current = useMemo(() => navigation && navigation[navigation.length - 1] || initial, [navigation, initial]);
 
-    const isFirst = navigation.length == 1;
+    const isFirst = navigation.length === 1;
     const isLast = true;    // doesn't keep forward (yet)
 
     return {current, navigate, back, isFirst, isLast, reset};

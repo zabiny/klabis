@@ -29,7 +29,7 @@ export const Toast = ({toast, onClose}: ToastProps) => {
         }, toast.duration)
 
         return () => clearTimeout(timer)
-    }, [toast, onClose])
+    }, [toast.id, toast.duration, onClose])
 
     const bgClass = {
         success: 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700',
