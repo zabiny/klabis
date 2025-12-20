@@ -4,6 +4,7 @@ import Layout from './pages/Layout';
 import LoginPage from './pages/LoginPage';
 import {SandplacePage} from "./pages/HalNavigatorPage";
 import {authConfig} from "./api/klabisUserManager.ts";
+import {ThemeProvider} from "./theme/ThemeContext.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -23,6 +24,7 @@ const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
 function App() {
     return (
         <AuthProvider config={authConfig}>
+            <ThemeProvider>
             <Routes>
                 <Route path="/login" element={<LoginPage/>}/>
                 <Route path="/" element={
@@ -35,6 +37,7 @@ function App() {
                     <Route path="*" element={<SandplacePage/>}/>
                 </Route>
             </Routes>
+            </ThemeProvider>
         </AuthProvider>
     );
 }
