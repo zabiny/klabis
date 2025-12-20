@@ -1222,12 +1222,20 @@ li {
     height: 100vh
 }
 
+.max-h-32 {
+    max-height: 8rem
+}
+
 .min-h-screen {
     min-height: 100vh
 }
 
 .w-11 {
     width: 2.75rem
+}
+
+.w-16 {
+    width: 4rem
 }
 
 .w-4 {
@@ -1898,6 +1906,11 @@ li {
     color: rgb(55 65 81 / var(--tw-text-opacity, 1))
 }
 
+.text-gray-800 {
+    --tw-text-opacity: 1;
+    color: rgb(31 41 55 / var(--tw-text-opacity, 1))
+}
+
 .text-gray-900 {
     --tw-text-opacity: 1;
     color: rgb(17 24 39 / var(--tw-text-opacity, 1))
@@ -2446,6 +2459,11 @@ li {
 .dark\:hover\:text-gray-300:hover:is(.dark *) {
     --tw-text-opacity: 1;
     color: rgb(209 213 219 / var(--tw-text-opacity, 1))
+}
+
+.dark\:hover\:text-white:hover:is(.dark *) {
+    --tw-text-opacity: 1;
+    color: rgb(255 255 255 / var(--tw-text-opacity, 1))
 }
 
 .dark\:focus\:ring-offset-0:focus:is(.dark *) {
