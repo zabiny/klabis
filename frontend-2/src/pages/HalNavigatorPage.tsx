@@ -1,7 +1,6 @@
 import React, {type ReactElement, useState} from "react";
 import {HalFormsForm} from "../components/HalFormsForm";
 import {type HalFormsTemplate} from "../api";
-import {Box, Grid, Tab, Tabs, Typography} from "@mui/material";
 import {ErrorBoundary} from 'react-error-boundary';
 import {HalNavigatorPage} from "../components/HalNavigator";
 import {klabisFieldsFactory} from "../components/KlabisFieldsFactory";
@@ -100,17 +99,17 @@ function ExampleAutoHalForm(): ReactElement {
     const [submitted, setSubmitted] = useState<Record<string, unknown>>();
 
     return (
-        <Grid container spacing={2}>
-            <Grid xs={6} padding={2}>
+        <div className="grid grid-cols-12 gap-2">
+            <div className="col-span-6 p-2">
                 <HalFormsForm
                     key={`exampleForm`} data={resource} template={resource?._templates.default}
                     onSubmit={async (data) => setSubmitted(data)}/>
                 {submitted && <JsonPreview data={submitted} label={"Submitted"}/>}
-            </Grid>
-            <Grid xs={4} padding={2}>
+            </div>
+            <div className="col-span-4 p-2">
                 <JsonPreview data={resource} label={"Zdrojova data HAL+FORMS"}/>
-            </Grid>
-        </Grid>
+            </div>
+        </div>
     );
 }
 
@@ -120,35 +119,35 @@ function ExampleCustomHalForm(): ReactElement {
     const [submitted, setSubmitted] = useState<Record<string, unknown>>();
 
     return (
-        <Grid container spacing={2}>
-            <Grid xs={6} padding={2}>
+        <div className="grid grid-cols-12 gap-2">
+            <div className="col-span-6 p-2">
                 <HalFormsForm
                     key={`exampleForm`} data={resource} template={resource?._templates.default}
                     onSubmit={async (data) => setSubmitted(data)}>
-                    <Grid>
-                        <Typography>Vyplnte udaje noveho uzivatele:</Typography>
-                        <Grid container>
-                            <Box>
-                                <Box><HalFormsFormField fieldName={"firstName"}/></Box>
-                                <Box><HalFormsFormField fieldName={"bio"}/></Box>
-                            </Box>
-                            <Box>
-                                <Box><HalFormsFormField fieldName={'hobbies'}/></Box>
-                                <Box><HalFormsFormField fieldName={'neznamy'}/></Box>
-                            </Box>
-                        </Grid>
-                        <Box>
+                    <div>
+                        <h2 className="text-lg font-semibold mb-4">Vyplnte udaje noveho uzivatele:</h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <div><HalFormsFormField fieldName={"firstName"}/></div>
+                                <div><HalFormsFormField fieldName={"bio"}/></div>
+                            </div>
+                            <div className="space-y-2">
+                                <div><HalFormsFormField fieldName={'hobbies'}/></div>
+                                <div><HalFormsFormField fieldName={'neznamy'}/></div>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 mt-4">
                             <HalFormsFormField fieldName={'submit'}/>
                             <HalFormsFormField fieldName={'cancel'}/>
-                        </Box>
-                    </Grid>
+                        </div>
+                    </div>
                 </HalFormsForm>
                 {submitted && <JsonPreview data={submitted} label={"Submitted"}/>}
-            </Grid>
-            <Grid xs={4} padding={2}>
+            </div>
+            <div className="col-span-4 p-2">
                 <JsonPreview data={resource} label={"Zdrojova data HAL+FORMS"}/>
-            </Grid>
-        </Grid>
+            </div>
+        </div>
     );
 }
 
@@ -170,7 +169,7 @@ function CustomTabPanel(props: TabPanelProps) {
             aria-labelledby={`simple-tab-${index}`}
             {...other}
         >
-            {value === index && <Box sx={{p: 3}}>{children}</Box>}
+            {value === index && <div className="p-3">{children}</div>}
         </div>
     );
 }
@@ -186,7 +185,7 @@ function a11yProps(index: number) {
 function SandplacePage(): ReactElement {
     const [tabValue, setTabValue] = useState(0);
 
-    const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
+    const handleChange = (newValue: number) => {
         setTabValue(newValue);
     };
 
@@ -194,27 +193,43 @@ function SandplacePage(): ReactElement {
 
     console.log(JSON.stringify(import.meta.env, null, 2))
 
+    const tabs = [
+        {
+            label: "HAL Explorer",
+            component: <HalNavigatorPage startUrl={halRootPage} fieldsFactory={klabisFieldsFactory}/>
+        },
+        {label: "Example Automatic HAL Form", component: <ExampleAutoHalForm/>},
+        {label: "Example Customized HAL Form", component: <ExampleCustomHalForm/>}
+    ];
+
     return (
-        <Box sx={{width: '100%'}}>
-            <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-                <Tabs value={tabValue} onChange={handleChange} aria-label="basic tabs example">
-                    <Tab label="HAL Explorer" {...a11yProps(0)} />
-                    <Tab label="Example Automatic HAL Form" {...a11yProps(1)} />
-                    <Tab label="Example Customized HAL Form" {...a11yProps(2)} />
-                </Tabs>
-            </Box>
+        <div className="w-full">
+            <div className="border-b border-gray-300 dark:border-gray-600">
+                <div className="flex gap-0">
+                    {tabs.map((tab, index) => (
+                        <button
+                            key={index}
+                            onClick={() => handleChange(index)}
+                            {...a11yProps(index)}
+                            className={`px-4 py-2 font-medium transition-colors ${
+                                tabValue === index
+                                    ? 'border-b-2 border-red-600 text-red-600 dark:text-red-400'
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
             <ErrorBoundary fallback={"Neco se pokazilo"} resetKeys={[tabValue]}>
-                <CustomTabPanel value={tabValue} index={0}>
-                    <HalNavigatorPage startUrl={halRootPage} fieldsFactory={klabisFieldsFactory}/>
-                </CustomTabPanel>
-                <CustomTabPanel index={1} value={tabValue}>
-                    <ExampleAutoHalForm/>
-                </CustomTabPanel>
-                <CustomTabPanel index={2} value={tabValue}>
-                    <ExampleCustomHalForm/>
-                </CustomTabPanel>
+                {tabs.map((tab, index) => (
+                    <CustomTabPanel key={index} value={tabValue} index={index}>
+                        {tab.component}
+                    </CustomTabPanel>
+                ))}
             </ErrorBoundary>
-        </Box>
+        </div>
     )
 }
 

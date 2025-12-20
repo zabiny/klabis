@@ -1,6 +1,6 @@
 import type {HalFormsTemplate, Link, NavigationTarget} from "../../api";
 import {type ReactElement} from "react";
-import {Button, Link as MuiLink, Stack} from "@mui/material";
+import {Button} from "../UI";
 
 const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
 
@@ -13,18 +13,24 @@ export function HalLinksUi({links, onClick, showPagingNavigation = true}: {
         return (l.title || l.name || rel) as string;
     };
     return (
-        <Stack direction={"row"} spacing={2}>
+        <div className="flex flex-wrap gap-2 mb-4">
             {Object.entries(links)
                 .filter(([rel, _link]) => !COLLECTION_LINK_RELS.includes(rel) || showPagingNavigation)
                 .map(([rel, link]) => {
                     if (rel === "self") return null;
                     const singleLink = Array.isArray(link) ? link[0] : link;
                     return (
-                        <MuiLink key={rel} onClick={() => onClick(singleLink)}
-                                 aria-label={`Přejít na ${getLabel(rel, singleLink)}`}>{getLabel(rel, singleLink)}</MuiLink>
+                        <button
+                            key={rel}
+                            onClick={() => onClick(singleLink)}
+                            aria-label={`Přejít na ${getLabel(rel, singleLink)}`}
+                            className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
+                        >
+                            {getLabel(rel, singleLink)}
+                        </button>
                     );
                 })}
-        </Stack>
+        </div>
     );
 }
 
@@ -37,7 +43,7 @@ export function HalActionsUi({links, onClick}: {
         return obj?.title || obj?.name || rel;
     };
     return (
-        <Stack direction={"row"} spacing={2}>
+        <div className="flex flex-wrap gap-2 mb-4">
             {Object.entries(links).map(([rel, link]) => {
                 if (rel === "self") return null;
                 const singleLink = Array.isArray(link) ? link[0] : link;
@@ -51,6 +57,6 @@ export function HalActionsUi({links, onClick}: {
                     </Button>
                 );
             })}
-        </Stack>
+        </div>
     );
 }

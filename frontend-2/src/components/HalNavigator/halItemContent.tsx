@@ -6,13 +6,13 @@ import {
     type TemplateTarget
 } from "../../api";
 import type {Navigation} from "../../hooks/useNavigation";
-import {type ReactElement, useCallback, useState, useEffect} from "react";
+import {type ReactElement, useCallback, useEffect, useState} from "react";
 import {HalActionsUi, HalLinksUi} from "./halActionComponents";
 import {type HalFormFieldFactory, HalFormsForm} from "../HalFormsForm";
 import {isHalFormsTemplate} from "../HalFormsForm/utils";
 import {toHref} from "./hooks";
 import {isFormValidationError, submitHalFormsData} from "../../api/hateoas";
-import {Alert, Snackbar, CircularProgress, Box} from "@mui/material";
+import {Alert, Spinner} from "../UI";
 import {JsonPreview} from "../JsonPreview";
 
 
@@ -124,57 +124,42 @@ function HalFormsContent({
 
     return (<>
         {/* Success message */}
-        <Snackbar
-            open={submitSuccess && !isNavigating}
-            autoHideDuration={6000}
-            onClose={() => setSubmitSuccess(false)}
-            aria-label="Zpráva o úspěšném uložení"
-        >
+        {submitSuccess && !isNavigating && (
             <Alert
                 severity="success"
-                sx={{width: '100%'}}
-                role="status"
-                aria-live="polite"
-                aria-label="Změny byly úspěšně uloženy"
+                className="mb-4"
             >
                 Úspěšně uloženo
             </Alert>
-        </Snackbar>
+        )}
 
         {/* Navigation feedback */}
         {isNavigating && (
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    py: 2,
-                    color: 'info.main'
-                }}
+            <div
+                className="flex items-center gap-2 py-2 text-blue-600 dark:text-blue-400 mb-4"
                 role="status"
                 aria-live="polite"
                 aria-label="Probíhá přesměrování na další stránku"
             >
-                <CircularProgress size={20} aria-hidden="true"/>
+                <Spinner size="sm" aria-hidden="true"/>
                 <span>Přesměrovávám...</span>
-            </Box>
+            </div>
         )}
 
         {/* Validation errors consolidated at top */}
         {hasValidationErrors && (
             <Alert
                 severity="error"
-                sx={{mb: 2}}
-                role="alert"
-                aria-live="assertive"
-                aria-label="Formulář obsahuje chyby, prosím opravte jednotlivá pole"
+                className="mb-4"
             >
-                <strong>Formulář obsahuje chyby:</strong>
-                <ul style={{margin: '0.5rem 0', paddingLeft: '1.5rem'}}>
-                    {Object.entries(validationErrors).map(([field, message]) => (
-                        <li key={field}>{field}: {String(message)}</li>
-                    ))}
-                </ul>
+                <div>
+                    <strong>Formulář obsahuje chyby:</strong>
+                    <ul className="my-2 ml-6 list-disc">
+                        {Object.entries(validationErrors).map(([field, message]) => (
+                            <li key={field}>{field}: {String(message)}</li>
+                        ))}
+                    </ul>
+                </div>
             </Alert>
         )}
 
@@ -182,20 +167,19 @@ function HalFormsContent({
         {genericError && (
             <Alert
                 severity="error"
-                sx={{mb: 2}}
-                role="alert"
-                aria-live="assertive"
-                aria-label="Chyba při ukládání"
+                className="mb-4"
             >
-                <strong>Nepodařilo se uložit změny. Zkuste to prosím znovu.</strong>
-                <div style={{fontSize: '0.875rem', marginTop: '0.5rem'}}>
-                    {error?.message}
+                <div>
+                    <strong>Nepodařilo se uložit změny. Zkuste to prosím znovu.</strong>
+                    <div className="text-sm mt-1">
+                        {error?.message}
+                    </div>
                 </div>
             </Alert>
         )}
 
         {/* Form */}
-        <Box sx={{opacity: isNavigating ? 0.5 : 1, pointerEvents: isNavigating ? 'none' : 'auto'}}>
+        <div className={isNavigating ? 'opacity-50 pointer-events-none' : ''}>
             <HalFormsForm
                 data={initData}
                 template={activeTemplate}
@@ -204,7 +188,7 @@ function HalFormsContent({
                 onCancel={!isSubmitting && !isNavigating ? onCancel : undefined}
                 isSubmitting={isSubmitting}
             />
-        </Box>
+        </div>
 
         {/* Debug info */}
         {isFormValidationError(error) && <JsonPreview data={error.formData} label={"Odeslana data"}/>}
