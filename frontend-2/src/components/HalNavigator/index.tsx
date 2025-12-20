@@ -1,6 +1,6 @@
 import type {HalCollectionResponse, HalResponse, Link, NavigationTarget} from '../../api'
 import type {ReactElement} from 'react'
-import {useEffect, useState} from 'react'
+import {useEffect, useMemo, useState} from 'react'
 import {Alert, Button, Skeleton, Spinner} from '../UI'
 import {ErrorBoundary} from 'react-error-boundary'
 import type {HalFormFieldFactory} from '../HalFormsForm'
@@ -257,11 +257,16 @@ export function HalNavigatorPage({
         )
     }
 
+    const contextValue = useMemo(
+        () => ({navigation: navigation}),
+        [navigation]
+    )
+
     return (
         <div className="p-4 space-y-4">
             {renderNavigation()}
 
-            <HalNavigatorContext value={{navigation: navigation}}>
+            <HalNavigatorContext value={contextValue}>
                 <ErrorBoundary
                     fallback={<JsonPreview data={navigation.current}
                                            label={'Nejde vyrenderovat HAL Navigator content'}/>}

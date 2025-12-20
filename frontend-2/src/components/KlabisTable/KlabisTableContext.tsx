@@ -5,6 +5,7 @@ import React, {
     type ReactNode,
     useContext,
     useEffect,
+    useMemo,
     useState
 } from 'react'
 import type {
@@ -198,14 +199,22 @@ export const KlabisTableProvider: React.FC<KlabisTableProviderProps<unknown>> = 
         }
     }, [fetchData, page, sort, initialData])
 
-    const contextValue: KlabisTableContextType<unknown> = {
-        tableModel,
-        rows: tableRows?.data || [],
-        paging: tableRows?.page ? {...tableRows.page, size: page.rowsPerPage} : undefined,
-        sort: sort,
-        handleRequestSort,
-        handlePagingChange
-    }
+    const paging = useMemo(
+        () => tableRows?.page ? {...tableRows.page, size: page.rowsPerPage} : undefined,
+        [tableRows?.page, page.rowsPerPage]
+    )
+
+    const contextValue: KlabisTableContextType<unknown> = useMemo(
+        () => ({
+            tableModel,
+            rows: tableRows?.data || [],
+            paging,
+            sort: sort,
+            handleRequestSort,
+            handlePagingChange
+        }),
+        [tableModel, tableRows?.data, paging, sort, handleRequestSort, handlePagingChange]
+    )
 
     return (
         <KlabisTableContext.Provider value={contextValue}>

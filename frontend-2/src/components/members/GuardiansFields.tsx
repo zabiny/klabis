@@ -1,4 +1,5 @@
 import type React from 'react'
+import {useCallback} from 'react'
 import {Button} from '../UI'
 import {TextField} from '../FormFields/TextField'
 import ContactFields from './ContactFields'
@@ -95,9 +96,16 @@ const GuardiansFields: React.FC<GuardiansFieldsProps> = ({value, onChange, disab
         ])
     }
 
-    const handleRemoveGuardian = (idx: number) => {
+    const handleRemoveGuardian = useCallback((idx: number) => {
         onChange(value.filter((_, i) => i !== idx))
-    }
+    }, [value, onChange])
+
+    const handleGuardianChange = useCallback(
+        (idx: number, updatedG: Guardian) => {
+            onChange(value.map((current, i) => (i === idx ? updatedG : current)))
+        },
+        [value, onChange]
+    )
 
     return (
         <div>
@@ -107,9 +115,7 @@ const GuardiansFields: React.FC<GuardiansFieldsProps> = ({value, onChange, disab
                     <GuardianField
                         key={idx}
                         value={g}
-                        onChange={(updatedG) =>
-                            onChange(value.map((current, i) => (i === idx ? updatedG : current)))
-                        }
+                        onChange={(updatedG) => handleGuardianChange(idx, updatedG)}
                         onRemove={() => handleRemoveGuardian(idx)}
                         disabled={disabled}
                     />

@@ -1,10 +1,10 @@
 import type {HalFormsTemplate, Link, NavigationTarget} from "../../api";
-import {type ReactElement} from "react";
+import React, {type ReactElement, useCallback} from "react";
 import {Button} from "../UI";
 
 const COLLECTION_LINK_RELS = ["prev", "next", "last", "first"];
 
-export function HalLinksUi({links, onClick, showPagingNavigation = true}: {
+function HalLinksUiComponent({links, onClick, showPagingNavigation = true}: {
     links: Record<string, Link | Link[]>,
     onClick: (link: NavigationTarget) => void,
     showPagingNavigation?: boolean
@@ -12,6 +12,14 @@ export function HalLinksUi({links, onClick, showPagingNavigation = true}: {
     const getLabel = (rel: string, l: Link): string => {
         return (l.title || l.name || rel) as string;
     };
+
+    const handleLinkClick = useCallback(
+        (link: NavigationTarget) => {
+            onClick(link);
+        },
+        [onClick]
+    );
+
     return (
         <div className="flex flex-wrap gap-2 mb-4">
             {Object.entries(links)
@@ -22,7 +30,7 @@ export function HalLinksUi({links, onClick, showPagingNavigation = true}: {
                     return (
                         <button
                             key={rel}
-                            onClick={() => onClick(singleLink)}
+                            onClick={() => handleLinkClick(singleLink)}
                             aria-label={`Přejít na ${getLabel(rel, singleLink)}`}
                             className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors"
                         >
@@ -34,7 +42,9 @@ export function HalLinksUi({links, onClick, showPagingNavigation = true}: {
     );
 }
 
-export function HalActionsUi({links, onClick}: {
+export const HalLinksUi = React.memo(HalLinksUiComponent);
+
+function HalActionsUiComponent({links, onClick}: {
     links: Record<string, HalFormsTemplate | NavigationTarget>,
     onClick: (link: NavigationTarget | HalFormsTemplate) => void
 }): ReactElement {
@@ -42,6 +52,14 @@ export function HalActionsUi({links, onClick}: {
         const obj = l as unknown as { title?: string; name?: string };
         return obj?.title || obj?.name || rel;
     };
+
+    const handleActionClick = useCallback(
+        (link: NavigationTarget | HalFormsTemplate) => {
+            onClick(link);
+        },
+        [onClick]
+    );
+
     return (
         <div className="flex flex-wrap gap-2 mb-4">
             {Object.entries(links).map(([rel, link]) => {
@@ -50,7 +68,7 @@ export function HalActionsUi({links, onClick}: {
                 return (
                     <Button
                         key={rel}
-                        onClick={() => onClick(singleLink)}
+                        onClick={() => handleActionClick(singleLink)}
                         aria-label={`${getLabel(rel, singleLink)} - akce`}
                     >
                         {getLabel(rel, singleLink)}
@@ -60,3 +78,5 @@ export function HalActionsUi({links, onClick}: {
         </div>
     );
 }
+
+export const HalActionsUi = React.memo(HalActionsUiComponent);

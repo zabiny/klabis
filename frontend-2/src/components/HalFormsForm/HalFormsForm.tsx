@@ -1,6 +1,6 @@
 import * as Yup from "yup";
 import {Form, Formik} from "formik";
-import React, {type ReactElement, type ReactNode, useCallback, useContext, useEffect, useState} from "react";
+import React, {type ReactElement, type ReactNode, useCallback, useContext, useEffect, useMemo, useState} from "react";
 import {
     type HalFormsProperty,
     type HalFormsResponse,
@@ -316,10 +316,13 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
 
                 let formContent: ReactElement;
                 if (children) {
-                    const context: HalFormsFormContextType = {
-                        renderField: createRenderFieldCallback()
-                    };
-                    formContent = <HalFormsFormContext value={context}>
+                    const contextValue: HalFormsFormContextType = useMemo(
+                        () => ({
+                            renderField: createRenderFieldCallback()
+                        }),
+                        [template, errors, touched, fieldsFactory]
+                    );
+                    formContent = <HalFormsFormContext value={contextValue}>
                         {children}
                     </HalFormsFormContext>;
                 } else if (renderForm) {
