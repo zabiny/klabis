@@ -1,38 +1,37 @@
-import React from 'react';
-import {TableCell as MuiTableCell, TableSortLabel} from '@mui/material';
-import {useKlabisTableContext} from "./KlabisTableContext";
-import {type TableCellProps} from "./types";
+import React from 'react'
+import {useKlabisTableContext} from './KlabisTableContext'
+import {TableHeaderCell} from './TableHeaderCell'
+import type {TableCellProps} from './types'
 
-interface SortLabelProps {
-    column: string,
-    children: React.ReactNode
-}
-
-const SortLabel = ({column, children}: SortLabelProps) => {
-    const {sort, handleRequestSort} = useKlabisTableContext();
-
-    const handleSort = () => {
-        handleRequestSort(column);
-    };
-
-    return (<TableSortLabel
-        active={sort?.by === column}
-        direction={sort?.direction}
-        onClick={handleSort}
-        sx={{cursor: 'pointer'}}
-    >
-        {children}
-    </TableSortLabel>);
-}
-
-export const TableCell: React.FC<TableCellProps> = ({column, children, hidden = false, sortable = false}) => {
+/**
+ * TableCell - Column definition component
+ * Used declaratively to define table columns
+ * Renders as a TableHeaderCell in the table header
+ */
+export const TableCell: React.FC<TableCellProps> = ({
+                                                        column,
+                                                        children,
+                                                        hidden = false,
+                                                        sortable = false
+                                                    }) => {
+    const {sort, handleRequestSort} = useKlabisTableContext()
 
     if (hidden) {
-        return <></>;
+        return <></>
     }
 
-    return <MuiTableCell>
-        {sortable ? <SortLabel column={column}>{children}</SortLabel> : children}
-    </MuiTableCell>;
-};
+    const isSorted = sort?.by === column
+    const sortDirection = sort?.direction
+
+    return (
+        <TableHeaderCell
+            sortable={sortable}
+            isSorted={isSorted}
+            sortDirection={sortDirection}
+            onSort={() => handleRequestSort(column)}
+        >
+            {children}
+        </TableHeaderCell>
+    )
+}
 
