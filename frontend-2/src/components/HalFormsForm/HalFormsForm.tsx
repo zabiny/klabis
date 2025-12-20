@@ -1,7 +1,6 @@
 import * as Yup from "yup";
-import {Alert, Box, Button, CircularProgress} from "@mui/material";
 import {Form, Formik} from "formik";
-import React, {type ReactElement, type ReactNode, useCallback, useContext, useEffect, useState} from "react";
+import React, {type ReactElement, type ReactNode, useCallback, useContext, useEffect, useMemo, useState} from "react";
 import {
     type HalFormsProperty,
     type HalFormsResponse,
@@ -12,7 +11,9 @@ import {
 import {fetchHalFormsData, isFormValidationError, submitHalFormsData} from "../../api/hateoas";
 import {getDefaultTemplate, isHalFormsResponse} from "./utils";
 import {type HalFormFieldFactory, type HalFormsInputProps, type SubElementConfiguration} from "./types";
-import {muiHalFormsFieldsFactory} from "./MuiHalFormsFieldsFactory";
+import {halFormsFieldsFactory} from "./HalFormsFieldFactory";
+import {Alert, Button, Spinner} from "../UI";
+import {Box} from "../Layout";
 
 type FormData = Record<string, any>;
 
@@ -112,10 +113,9 @@ function renderField(
         return result;
     }
 
-    return (<Box sx={errorText ? {border: '1px solid red'} : {}}>
-            <Alert severity={"warning"}>{prop.prompt || prop.name}: neznamy typ HAL+FORMS property:
-                '{prop.type}'</Alert>
-            {errorText && <Alert severity={"error"}>{errorText}</Alert>}
+    return (<Box className={errorText ? 'border-2 border-red-500 rounded p-4' : ''}>
+            <Alert severity="warning">{prop.prompt || prop.name}: neznamy typ HAL+FORMS property: '{prop.type}'</Alert>
+            {errorText && <Alert severity="error" className="mt-2">{errorText}</Alert>}
         </Box>
     );
 }
@@ -138,26 +138,34 @@ const useHalFormsController = (
     const [actualTemplate, setActualTemplate] = useState<HalFormsTemplate>();
 
     useEffect(() => {
+        let cancelled = false;
+
         const fetchData = async () => {
             setIsLoading(true);
             setError(undefined);
 
             try {
                 const data = await fetchHalFormsData(api);
-                if (isHalFormsResponse(data)) {
-                    setFormData(data);
-                    setActualTemplate(getDefaultTemplate(data));
-                } else {
-                    setError("Returned data doesn't have HAL FORMS format");
-                    console.warn("Returned data doesn't have HAL FORMS format");
-                    console.warn(JSON.stringify(data, null, 2));
+                if (!cancelled) {
+                    if (isHalFormsResponse(data)) {
+                        setFormData(data);
+                        setActualTemplate(getDefaultTemplate(data));
+                    } else {
+                        setError("Returned data doesn't have HAL FORMS format");
+                        console.warn("Returned data doesn't have HAL FORMS format");
+                        console.warn(JSON.stringify(data, null, 2));
+                    }
                 }
             } catch (fetchError) {
-                setError(
-                    fetchError instanceof Error ? fetchError.message : "Error fetching form data"
-                );
+                if (!cancelled) {
+                    setError(
+                        fetchError instanceof Error ? fetchError.message : "Error fetching form data"
+                    );
+                }
             } finally {
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
             }
         };
         if (inputTemplate) {
@@ -166,6 +174,10 @@ const useHalFormsController = (
         } else {
             fetchData();
         }
+
+        return () => {
+            cancelled = true;
+        };
     }, [api, inputTemplate]);
 
     const submit = useCallback(
@@ -199,16 +211,16 @@ const HalFormsFormController = ({api, inputTemplate}: {
     }
 
     if (error) {
-        return <Alert severity={"error"}>{error}</Alert>;
+        return <Alert severity="error">{error}</Alert>;
     } else if (!template) {
-        return <Alert severity={"error"}>Response doesn't contain form template, can't render HalForms form</Alert>
+        return <Alert severity="error">Response doesn't contain form template, can't render HalForms form</Alert>
     }
 
-    return <div>
+    return <div className="space-y-4">
         <HalFormsForm data={formData || {}} template={template} onSubmit={submit}/>
-        {submitError && <Alert severity={"error"}>{submitError.message}</Alert>}
+        {submitError && <Alert severity="error">{submitError.message}</Alert>}
         {isFormValidationError(submitError) && Object.entries(submitError.validationErrors).map((entry) =>
-            <Alert severity={"error"}>{entry[0]}:&nbsp;{entry[1]}</Alert>)}
+            <Alert key={entry[0]} severity="error">{entry[0]}:&nbsp;{entry[1]}</Alert>)}
     </div>;
 }
 
@@ -239,7 +251,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                                                                 template,
                                                                                 onSubmit,
                                                                                 onCancel,
-                                                                                fieldsFactory = muiHalFormsFieldsFactory,
+                                                                                fieldsFactory = halFormsFieldsFactory,
                                                                                 submitButtonLabel = "Odeslat",
                                                                                 isSubmitting: externalIsSubmitting = false,
                                                                                 renderForm,
@@ -273,10 +285,10 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                             return <Button
                                 type="submit"
                                 disabled={isFormProcessing}
-                                variant="contained"
-                                color="primary"
-                                sx={{minWidth: 120}}
-                                startIcon={isFormProcessing ? <CircularProgress size={20}/> : undefined}
+                                variant="primary"
+                                size="md"
+                                loading={isFormProcessing}
+                                startIcon={isFormProcessing ? <Spinner size="sm"/> : undefined}
                             >
                                 {isFormProcessing ? "Odesílám..." : submitButtonLabel}
                             </Button>;
@@ -286,8 +298,8 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                             return <Button
                                 type="button"
                                 disabled={isFormProcessing || !onCancel}
-                                variant={"contained"}
-                                color="secondary"
+                                variant="secondary"
+                                size="md"
                                 onClick={() => onCancel && onCancel()}
                             >
                                 Zpět
@@ -304,34 +316,37 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
 
                 let formContent: ReactElement;
                 if (children) {
-                    const context: HalFormsFormContextType = {
-                        renderField: createRenderFieldCallback()
-                    };
-                    formContent = <HalFormsFormContext value={context}>
+                    const contextValue: HalFormsFormContextType = useMemo(
+                        () => ({
+                            renderField: createRenderFieldCallback()
+                        }),
+                        [template, errors, touched, fieldsFactory]
+                    );
+                    formContent = <HalFormsFormContext value={contextValue}>
                         {children}
                     </HalFormsFormContext>;
                 } else if (renderForm) {
                     formContent = renderForm(createRenderFieldCallback());
                 } else {
                     formContent = <>
-                        {(template.title ? <h2>{template.title}</h2> : <></>)}
+                        {(template.title ? <h2 className="mb-6">{template.title}</h2> : <></>)}
 
                         {template.properties.map((prop) => (
-                            <div key={prop.name} style={{
-                                opacity: isFormProcessing ? 0.6 : 1,
-                                pointerEvents: isFormProcessing ? 'none' : 'auto'
-                            }}>
+                            <div key={prop.name}
+                                 className={`transition-all duration-200 ${isFormProcessing ? 'opacity-60 pointer-events-none' : ''}`}>
                                 {renderField(prop, errors, touched, fieldsFactory)}
                             </div>
                         ))}
 
-                        {createRenderFieldCallback()('submit')}
-                        {onCancel && createRenderFieldCallback()('cancel')}
+                        <div className="flex gap-3 mt-6">
+                            {createRenderFieldCallback()('submit')}
+                            {onCancel && createRenderFieldCallback()('cancel')}
+                        </div>
                     </>;
                 }
 
                 return (
-                    <Form style={{display: "grid", gap: "1rem"}}>
+                    <Form className="space-y-4">
                         {formContent}
                     </Form>
                 );

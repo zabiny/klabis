@@ -1,13 +1,11 @@
-import type {EntityModel, HalCollectionResponse, HalFormsTemplate, NavigationTarget} from "../../api";
-import type {Navigation} from "../../hooks/useNavigation";
+import type {EntityModel, HalFormsTemplate, NavigationTarget} from "../../api";
 import React, {type ReactElement, type ReactNode} from "react";
 import {toURLPath, useHalExplorerNavigation, useResponseBody} from "./hooks";
-import {Box, Button, Link as MuiLink, Typography} from "@mui/material";
+import {Button} from "../UI";
 import {HalActionsUi, HalLinksUi} from "./halActionComponents";
 import {HalNavigatorTable} from "./halNavigatorTable";
 import {TableCell} from "../KlabisTable";
 import EventType from "../events/EventType";
-import {Public} from "@mui/icons-material";
 import MemberName from "../members/MemberName";
 
 function dropMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_links'> {
@@ -20,12 +18,10 @@ const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('cs-CZ').format(date);
 };
 
-export function HalCollectionContent({navigation}: {
-    data: HalCollectionResponse,
-    navigation: Navigation<NavigationTarget>
-}): ReactElement {
+export function HalCollectionContent(): ReactElement {
 
-    const data = useResponseBody();
+    const navigation = useHalExplorerNavigation();
+    const responseData = useResponseBody();
 
 
     const resourceUrlPath = toURLPath(navigation.current);
@@ -86,8 +82,20 @@ export function HalCollectionContent({navigation}: {
                     <TableCell column={"type"}
                                dataRender={({value}) => <EventType eventType={value as any}/>}>Typ</TableCell>
                     <TableCell column={"web"}
-                               dataRender={({value}) => <MuiLink hidden={!value as any}
-                                                                 href={typeof value === 'string' ? value : undefined}><Public/></MuiLink>}>Web</TableCell>
+                               dataRender={({value}) => !value ? null : (
+                                   <a href={typeof value === 'string' ? value : undefined}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                                      aria-label="External link">
+                                       <svg className="w-5 h-5 inline" fill="currentColor" viewBox="0 0 20 20">
+                                           <path
+                                               d="M11 3a1 1 0 100 2h3.586L9.293 9.293a1 1 0 101.414 1.414L16 6.414V10a1 1 0 102 0V4a1 1 0 00-1-1h-6z"/>
+                                           <path
+                                               d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
+                                       </svg>
+                                   </a>
+                               )}>Web</TableCell>
                     <TableCell sortable column={"registrationDeadline"}
                                dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>Uzávěrka
                         přihlášek</TableCell>
@@ -119,7 +127,8 @@ export function HalCollectionContent({navigation}: {
             </HalNavigatorCollectionContentLayout>;
         default:
             return (<HalNavigatorCollectionContentLayout>
-                {data?._embedded && Object.entries(data._embedded).map(([rel, items]) => <GenericHalCollectionContent
+                {responseData?._embedded && Object.entries(responseData._embedded).map(([rel, items]) =>
+                    <GenericHalCollectionContent
                     label={rel} items={items}/>) || "Zadne polozky"}
             </HalNavigatorCollectionContentLayout>);
     }
@@ -138,8 +147,8 @@ const HalNavigatorCollectionContentLayout = ({
     const data = useResponseBody();
     const navigation = useHalExplorerNavigation();
 
-    return (<Box>
-        {label && <Typography variant="h4" component="h1" gutterBottom>{label}</Typography>}
+    return (<div>
+        {label && <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{label}</h1>}
 
         <HalLinksUi links={data?._links || {}} onClick={navigation.navigate}
                     showPagingNavigation={includePageNavigation}/>
@@ -149,7 +158,7 @@ const HalNavigatorCollectionContentLayout = ({
         <HalActionsUi links={(data?._templates || {}) as Record<string, HalFormsTemplate>}
                       onClick={link => navigation.navigate(link)}/>
 
-    </Box>);
+    </div>);
 
 }
 
@@ -167,7 +176,9 @@ const GenericHalCollectionContent = ({label, items}: {
                         {JSON.stringify(dropMetadataAttributes(item))}
                         {item._links?.self && (
                             <Button
-                                className="ml-2 px-2 py-0.5 text-sm bg-gray-300 rounded"
+                                variant="secondary"
+                                size="sm"
+                                className="ml-2"
                                 onClick={() => navigation.navigate(item._links.self)}
                             >
                                 Open

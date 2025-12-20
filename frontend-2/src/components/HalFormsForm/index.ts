@@ -1,4 +1,4 @@
-export {HalFormsForm} from './HalFormsForm';
+export {HalFormsForm, HalFormsFormController, HalFormsFormField} from './HalFormsForm';
 
 export {type HalFormsInputProps, type HalFormFieldFactory} from './types';
-export {expandMuiFieldsFactory} from "./MuiHalFormsFieldsFactory";
+export {halFormsFieldsFactory, expandHalFormsFieldFactory} from "./HalFormsFieldFactory";

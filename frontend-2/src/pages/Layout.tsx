@@ -1,94 +1,77 @@
-import {useEffect, useState} from 'react';
-import {Outlet, useNavigate} from 'react-router-dom';
-import {styled} from '@mui/material/styles';
-import {AppBar, Box, Button, Toolbar, Typography,} from '@mui/material';
-import {Logout as LogoutIcon,} from '@mui/icons-material';
-import {type AuthUserDetails, useAuth} from '../contexts/AuthContext2';
-
-const drawerWidth = 0;
-
-const Main = styled('main', {shouldForwardProp: (prop) => prop !== 'open'})<{
-    open?: boolean;
-}>(({theme, open}) => ({
-    flexGrow: 1,
-    padding: theme.spacing(3),
-    transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-    }),
-    marginLeft: 0,
-    ...(open && {
-        transition: theme.transitions.create('margin', {
-            easing: theme.transitions.easing.easeOut,
-            duration: theme.transitions.duration.enteringScreen,
-        }),
-        marginLeft: `${drawerWidth}px`,
-    }),
-}));
+import {useEffect, useState} from 'react'
+import {Outlet, useNavigate} from 'react-router-dom'
+import {Button} from '../components/UI'
+import {LogoutIcon} from '../components/Icons'
+import type {AuthUserDetails} from '../contexts/AuthContext2'
+import {useAuth} from '../contexts/AuthContext2'
 
 const Layout = () => {
-    const navigate = useNavigate();
-    const {logout, getUser, isAuthenticated} = useAuth();
-    const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
-    useEffect(() => {
-        const loadUserName = async () => {
-            if (isAuthenticated) {
-                try {
-                    const user = await getUser();
-                    setUserDetails(user)
-                } catch (error) {
-                    console.error('Error loading user name:', error);
-                }
-            }
-        };
+  const navigate = useNavigate()
+  const {logout, getUser, isAuthenticated} = useAuth()
+  const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
 
-        loadUserName();
-    }, [isAuthenticated, getUser]);
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
-    const handleUserNameClick = () => {
-        if (userDetails) {
-            navigate(`members/${userDetails.id}`);
+  useEffect(() => {
+    const loadUserName = async () => {
+      if (isAuthenticated) {
+        try {
+          const user = await getUser()
+          setUserDetails(user)
+        } catch (error) {
+          console.error('Error loading user name:', error)
         }
-    };
+      }
+    }
 
-    return (
-        <Box sx={{display: 'flex'}}>
-            <AppBar position="fixed" sx={{zIndex: (theme) => theme.zIndex.drawer + 1}}>
-                <Toolbar>
-                    <Typography variant="h6" noWrap component="div" sx={{flexGrow: 1}}>
-                        Klabis - Členská sekce
-                    </Typography>
-                    {userDetails && (
-                        <Button
-                            color="inherit"
-                            onClick={handleUserNameClick}
-                            sx={{
-                                mr: 2,
-                                textTransform: 'none',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                                }
-                            }}
-                        >
-                            {userDetails.firstName} {userDetails.lastName} [{userDetails.registrationNumber}]
-                        </Button>
-                    )}
-                    <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon/>}>
-                        Odhlásit
-                    </Button>
-                </Toolbar>
-            </AppBar>
-            <Main>
-                <Toolbar/>
-                <Outlet/>
-            </Main>
-        </Box>
-    );
-};
+    loadUserName()
+  }, [isAuthenticated, getUser]) // Note: getUser is stable due to useCallback, but kept in deps for clarity
 
-export default Layout;
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  const handleUserNameClick = () => {
+    if (userDetails) {
+      navigate(`members/${userDetails.id}`)
+    }
+  }
+
+  return (
+      <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
+        {/* Header */}
+        <header className="fixed top-0 left-0 right-0 bg-gray-800 dark:bg-gray-900 text-white shadow-md z-40">
+          <div className="flex items-center justify-between h-16 px-6">
+            {/* Logo/Title */}
+            <h1 className="text-lg font-semibold">Klabis - Členská sekce</h1>
+
+            {/* Right side: User info and logout */}
+            <div className="flex items-center gap-4">
+              {userDetails && (
+                  <button
+                      onClick={handleUserNameClick}
+                      className="px-3 py-2 text-sm hover:bg-gray-700 dark:hover:bg-gray-800 rounded transition-colors"
+                  >
+                    {userDetails.firstName} {userDetails.lastName} [{userDetails.registrationNumber}]
+                  </button>
+              )}
+              <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  endIcon={<LogoutIcon size={20}/>}
+              >
+                Odhlásit
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Main content */}
+        <main className="flex-1 pt-16 px-6 py-6 overflow-auto">
+          <Outlet/>
+        </main>
+      </div>
+  )
+}
+
+export default Layout

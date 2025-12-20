@@ -1,60 +1,57 @@
-import React from "react";
-import {Grid, TextField} from "@mui/material";
+import type React from 'react'
+import {TextField} from '../FormFields/TextField'
 
 type Contact = {
-    email: string;
-    phone: string;
-    note: string;
-};
+    email: string
+    phone: string
+    note: string
+}
 
 type ContactFieldsProps = {
-    value: Contact;
-    onChange: (val: Contact) => void;
-    showNote?: boolean;
-};
+    value: Contact
+    onChange: (val: Contact) => void
+    showNote?: boolean
+}
 
 export const ContactFields: React.FC<ContactFieldsProps> = ({
                                                                 value,
                                                                 onChange,
-                                                                showNote = true,
+                                                                showNote = true
                                                             }) => {
     const handleFieldChange = (field: keyof Contact) => (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
-        onChange({...value, [field]: e.target.value});
-    };
+        onChange({...value, [field]: e.target.value})
+    }
 
     return (
-        <>
-            <Grid item xs={12} md={5}>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="col-span-1 md:col-span-5">
                 <TextField
                     label="E-mail"
                     value={value.email}
-                    onChange={handleFieldChange("email")}
-                    fullWidth
+                    onChange={handleFieldChange('email')}
                     type="email"
                 />
-            </Grid>
-            <Grid item xs={12} md={4}>
+            </div>
+            <div className="col-span-1 md:col-span-4">
                 <TextField
                     label="Telefon"
                     value={value.phone}
-                    onChange={handleFieldChange("phone")}
-                    fullWidth
+                    onChange={handleFieldChange('phone')}
                 />
-            </Grid>
+            </div>
             {showNote && (
-                <Grid item xs={12} md={3}>
+                <div className="col-span-1 md:col-span-3">
                     <TextField
                         label="Poznámka"
                         value={value.note}
-                        onChange={handleFieldChange("note")}
-                        fullWidth
+                        onChange={handleFieldChange('note')}
                     />
-                </Grid>
+                </div>
             )}
-        </>
-    );
-};
+        </div>
+    )
+}
 
-export default ContactFields;
+export default ContactFields

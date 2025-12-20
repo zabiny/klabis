@@ -1,6 +1,7 @@
 import type {Navigation} from "../../hooks/useNavigation";
 import type {HalResponse, NavigationTarget} from "../../api";
 import {isTemplateTarget} from "../../api";
+import type {HalFormFieldFactory} from "../HalFormsForm";
 import {isLink} from "../../api/klabisJsonUtils";
 import {isString} from "formik";
 import {createContext, useContext} from "react";
@@ -78,6 +79,7 @@ export function toURLPath(item: NavigationTarget): string {
 
 interface HalNavigatorContextData {
     navigation: Navigation<NavigationTarget>
+    fieldsFactory?: HalFormFieldFactory
 }
 
 export const HalNavigatorContext = createContext<HalNavigatorContextData | null>(null);
@@ -88,6 +90,14 @@ export const useHalExplorerNavigation = (): Navigation<NavigationTarget> => {
         throw new Error("HalNavigatorContext not provided");
     }
     return ctx.navigation;
+}
+
+export const useHalNavigator = (): HalNavigatorContextData => {
+    const ctx = useContext(HalNavigatorContext);
+    if (!ctx) {
+        throw new Error("HalNavigatorContext not provided");
+    }
+    return ctx;
 }
 
 export type NavigationTargetResponse<T> = {

@@ -1,6 +1,6 @@
 import {useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Box, Container, Typography} from '@mui/material';
+import {Button} from '../components/UI';
 import {useAuth} from '../contexts/AuthContext2';
 
 const LoginPage = () => {
@@ -23,13 +23,16 @@ const LoginPage = () => {
 
     if (!isAuthenticated && !isLoading) {
         return (
-            <Container maxWidth="sm">
-                <Box sx={{mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                    <Typography variant="h5">
-                        <button onClick={() => login()}>Login back</button>
-                    </Typography>
-                </Box>
-            </Container>
+            <div className="max-w-sm mx-auto px-4">
+                <div className="mt-8 flex flex-col items-center">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                        Přihlášení
+                    </h2>
+                    <Button onClick={() => login()}>
+                        Přihlásit se
+                    </Button>
+                </div>
+            </div>
         );
     }
 

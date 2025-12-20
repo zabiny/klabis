@@ -10,11 +10,11 @@ const translate = (name: EventT): ReactNode => {
     if (!name) {
         return "";
     }
-    if (name == "TRAINING") {
+    if (name === "TRAINING") {
         return "Trénink";
     }
 
-    if (name == "COMPETITION") {
+    if (name === "COMPETITION") {
         return "Závod";
     }
 
