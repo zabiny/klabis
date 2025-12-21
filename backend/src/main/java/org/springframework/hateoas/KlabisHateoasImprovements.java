@@ -1,6 +1,8 @@
 package org.springframework.hateoas;
 
 import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
+import org.springframework.hateoas.server.core.DummyInvocationUtils;
+import org.springframework.hateoas.server.core.LastInvocationAware;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
@@ -30,6 +32,12 @@ public class KlabisHateoasImprovements {
     };
 
     public static Affordance affordImproved(Object invocationValue, Consumer<? super ImprovedHalFormsAffordanceModel> postprocess) {
+        Assert.isInstanceOf(LastInvocationAware.class, invocationValue);
+
+        LastInvocationAware invocation = DummyInvocationUtils.getLastInvocationAware(invocationValue);
+        if (!isAuthorizedToCall(invocation)) {
+            return null;
+        }
 
         Affordance affordance = afford(invocationValue);
 
@@ -44,6 +52,14 @@ public class KlabisHateoasImprovements {
         models.put(MediaTypes.HAL_FORMS_JSON, improvedModel);
 
         return new Affordance(models);
+    }
+
+    public static boolean isAuthorizedToCall(LastInvocationAware invocation) {
+        if (invocation == null || invocation.getLastInvocation() == null) {
+            return false;
+        }
+
+        return SecurityUtils.isAuthorizedToCall(invocation.getLastInvocation());
     }
 
 }
