@@ -49,7 +49,7 @@ class EventListeners {
                     eventItem.reschedule(toZonedDateTime(aggregate.getDate()), toZonedDateTime(aggregate.getDate()));
                     return eventItem;
                 })
-                .orElseGet(() -> EventCalendarItem.registrationsDeadlineItem(aggregate));
+                .orElseGet(() -> EventCalendarItem.eventDayItem(aggregate));
         calendarRepository.save(item);
     }
 
