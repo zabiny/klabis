@@ -25,8 +25,6 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.Objects;
-import java.util.stream.Stream;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -213,13 +211,9 @@ class HalFormsTestController {
         EntityModel<DataModel> result = EntityModel.of(new DataModel(1, "name", "surname", Sex.FEMALE))
                 .add(WebMvcLinkBuilder.linkTo(methodOn(this.getClass()).getFormData())
                         .withSelfRel()
-                        .andAffordance(affordBetter(methodOn(getClass()).putFormData(null)))
-                        .andAffordances(Stream.ofNullable(affordBetter(methodOn(getClass()).deleteFormData(1))).filter(
-                                Objects::nonNull).toList())
-                        .andAffordances(Stream.ofNullable(affordBetter(methodOn(getClass()).deleteFormDataGrant(1)))
-                                .filter(
-                                        Objects::nonNull)
-                                .toList())
+                        .andAffordances(affordBetter(methodOn(getClass()).putFormData(null)))
+                        .andAffordances(affordBetter(methodOn(getClass()).deleteFormData(1)))
+                        .andAffordances(affordBetter(methodOn(getClass()).deleteFormDataGrant(1)))
                         .withRel("update"));
 
         return result;

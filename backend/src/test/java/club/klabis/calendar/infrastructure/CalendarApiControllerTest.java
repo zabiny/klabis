@@ -57,6 +57,7 @@ class CalendarApiControllerTest {
 
         @DisplayName("it should have 'createCalendarItem' affordance in HAL+FORMS response")
         @Test
+        @WithMockUser(authorities = "CALENDAR_MANAGE")
         void itShouldAddExpectedLinkToRootNavigation() {
             mockMvcTester.perform(get("/calendar-items").accept(MediaTypes.HAL_FORMS_JSON))
                     .assertThat()
@@ -110,6 +111,7 @@ class CalendarApiControllerTest {
 
         @DisplayName("it should call service method with expected arguments")
         @Test
+        @WithMockUser(authorities = "CALENDAR_MANAGE")
         void itShouldPassCorrectParametersToService() {
             mockMvcTester.perform(post("/calendar-items")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -125,6 +127,7 @@ class CalendarApiControllerTest {
 
         @DisplayName("it should return expected HTTP 201 response data for success")
         @Test
+        @WithMockUser(authorities = "CALENDAR_MANAGE")
         void itShouldReturnExpectedData() {
             CalendarItem item = CalendarItem.calendarItem(
                             Globals.createZonedDateTime(2020, 12, 1),

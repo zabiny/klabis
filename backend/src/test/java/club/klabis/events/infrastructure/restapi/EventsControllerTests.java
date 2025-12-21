@@ -7,7 +7,6 @@ import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisId;
 import club.klabis.oris.application.OrisEventsImporter;
 import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
-import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,12 +57,9 @@ public class EventsControllerTests {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(authorities = "SYSTEM_ADMIN")
     @DisplayName("it should add synchronize affordance to event with OrisId for user with SystemAdmin grant")
     void itShouldAddLinkToEventWithOrisId() throws Exception {
-        // TODO: replace with MockUser authorities
-        when(klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)).thenReturn(true);
-
         final Event event = createEventWithOrisId(new OrisId(3));
         final Event.Id eventId = event.getId();
 
@@ -81,9 +77,6 @@ public class EventsControllerTests {
     @WithMockUser
     @DisplayName("it should NOT add synchronize affordance to event with OrisId for user WITHOUT SystemAdmin grant")
     void itShouldNotAddLinkToUnauthorizedUser() throws Exception {
-        // TODO: replace with MockUser authorities
-        when(klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)).thenReturn(false);
-
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
                 Optional.of(createEventWithOrisId(new OrisId(3))));
 
