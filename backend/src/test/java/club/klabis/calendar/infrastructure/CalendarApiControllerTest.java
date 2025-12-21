@@ -1,10 +1,12 @@
 package club.klabis.calendar.infrastructure;
 
 import club.klabis.adapters.api.ApiTestConfiguration;
+import club.klabis.adapters.api.WithKlabisUserMocked;
 import club.klabis.calendar.CalendarItem;
 import club.klabis.calendar.CreateCalendarItemCommand;
 import club.klabis.shared.config.Globals;
 import club.klabis.shared.config.hateoas.RootController;
+import club.klabis.shared.config.security.ApplicationGrant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,7 +19,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
@@ -32,7 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 @DisplayName("Calendar API tests")
 @ApiTestConfiguration(controllers = {CalendarApiController.class, RootController.class})
-@WithMockUser
+@WithKlabisUserMocked
 @Import(CalendarRootPostprocessor.class)
 class CalendarApiControllerTest {
 
@@ -57,7 +58,7 @@ class CalendarApiControllerTest {
 
         @DisplayName("it should have 'createCalendarItem' affordance in HAL+FORMS response")
         @Test
-        @WithMockUser(authorities = "CALENDAR_MANAGE")
+        @WithKlabisUserMocked(applicationGrants = ApplicationGrant.CALENDAR_MANAGE)
         void itShouldAddExpectedLinkToRootNavigation() {
             mockMvcTester.perform(get("/calendar-items").accept(MediaTypes.HAL_FORMS_JSON))
                     .assertThat()
@@ -111,7 +112,7 @@ class CalendarApiControllerTest {
 
         @DisplayName("it should call service method with expected arguments")
         @Test
-        @WithMockUser(authorities = "CALENDAR_MANAGE")
+        @WithKlabisUserMocked(applicationGrants = ApplicationGrant.CALENDAR_MANAGE)
         void itShouldPassCorrectParametersToService() {
             mockMvcTester.perform(post("/calendar-items")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -127,7 +128,7 @@ class CalendarApiControllerTest {
 
         @DisplayName("it should return expected HTTP 201 response data for success")
         @Test
-        @WithMockUser(authorities = "CALENDAR_MANAGE")
+        @WithKlabisUserMocked(applicationGrants = ApplicationGrant.CALENDAR_MANAGE)
         void itShouldReturnExpectedData() {
             CalendarItem item = CalendarItem.calendarItem(
                             Globals.createZonedDateTime(2020, 12, 1),

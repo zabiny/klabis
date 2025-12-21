@@ -1,6 +1,7 @@
 package club.klabis.users.infrastructure.restapi;
 
 import club.klabis.adapters.api.ApiTestConfiguration;
+import club.klabis.adapters.api.WithKlabisUserMocked;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.application.UserGrantsUpdateUseCase;
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -50,7 +50,7 @@ class UserPermissionsApiControllerTest {
         record ExpectedOptionJsonStructure(String value, String prompt) {
         }
 
-        @WithMockUser
+        @WithKlabisUserMocked
         @DisplayName("it should return data in correct format")
         @Test
         void itShouldReturnDataInCorrectFormat() {
@@ -66,7 +66,7 @@ class UserPermissionsApiControllerTest {
                             "Může spravovat oprávnění v aplikaci")));
         }
 
-        @WithMockUser
+        @WithKlabisUserMocked
         @DisplayName("it should return all application global grants")
         @Test
         void itShouldReturnAllApplicationGrants() {

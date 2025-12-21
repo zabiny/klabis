@@ -16,12 +16,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MockedKlabisUserSecurityContextFactory implements WithSecurityContextFactory<WithMockedKlabisUser> {
+public class KlabisUserMockedSecurityContextFactory implements WithSecurityContextFactory<WithKlabisUserMocked> {
     private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
             .getContextHolderStrategy();
 
     @Override
-    public SecurityContext createSecurityContext(WithMockedKlabisUser annotation) {
+    public SecurityContext createSecurityContext(WithKlabisUserMocked annotation) {
 
         List<SimpleGrantedAuthority> authorities = Arrays.stream(annotation.applicationGrants())
                 .map(ApplicationGrant::name)

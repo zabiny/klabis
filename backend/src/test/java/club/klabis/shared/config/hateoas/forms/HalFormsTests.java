@@ -1,7 +1,7 @@
 package club.klabis.shared.config.hateoas.forms;
 
 import club.klabis.adapters.api.ApiTestConfiguration;
-import club.klabis.adapters.api.WithMockedKlabisUser;
+import club.klabis.adapters.api.WithKlabisUserMocked;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.HalFormsOptionItem;
 import club.klabis.shared.config.restapi.ApiController;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @DisplayName("HAL+FORMS tests")
-@WithMockedKlabisUser
+@WithKlabisUserMocked
 @ApiTestConfiguration(controllers = HalFormsTestController.class)
 public class HalFormsTests {
 
@@ -180,7 +180,7 @@ public class HalFormsTests {
         @DisplayName("HasGrant affordance authorization")
         class HasGrantTests {
             @Test
-            @WithMockedKlabisUser(applicationGrants = ApplicationGrant.DEPOSIT_FINANCE)
+            @WithKlabisUserMocked(applicationGrants = ApplicationGrant.DEPOSIT_FINANCE)
             @DisplayName("it should add affordance if user is authorized to use referenced controller method")
             void itShouldAddAffordanceForAuthorizedMethodUsingHasGrant() {
                 assertThat(getFormsTestApi())
@@ -209,7 +209,7 @@ public class HalFormsTests {
 
             @Test
             @DisplayName("it should add affordance if user is authorized to see data returned by afforded method (user is same user as affroded one)")
-            @WithMockedKlabisUser(memberId = 1)
+            @WithKlabisUserMocked(memberId = 1)
             void itShouldAddAffordanceForAuthorizedMethodUsingHasGrant() {
                 assertThat(getFormsTestApi())
                         .hasStatusOk()

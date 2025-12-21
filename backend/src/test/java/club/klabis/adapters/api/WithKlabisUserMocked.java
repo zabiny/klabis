@@ -9,8 +9,8 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Inherited
 @Documented
-@WithSecurityContext(factory = MockedKlabisUserSecurityContextFactory.class)
-public @interface WithMockedKlabisUser {
+@WithSecurityContext(factory = KlabisUserMockedSecurityContextFactory.class)
+public @interface WithKlabisUserMocked {
     int memberId() default -1;
 
     int applicationUserId() default -1;

@@ -1,12 +1,14 @@
 package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.adapters.api.ApiTestConfiguration;
+import club.klabis.adapters.api.WithKlabisUserMocked;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisId;
 import club.klabis.oris.application.OrisEventsImporter;
 import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
+import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -57,7 +58,7 @@ public class EventsControllerTests {
     }
 
     @Test
-    @WithMockUser(authorities = "SYSTEM_ADMIN")
+    @WithKlabisUserMocked(applicationGrants = ApplicationGrant.SYSTEM_ADMIN)
     @DisplayName("it should add synchronize affordance to event with OrisId for user with SystemAdmin grant")
     void itShouldAddLinkToEventWithOrisId() throws Exception {
         final Event event = createEventWithOrisId(new OrisId(3));
@@ -74,7 +75,7 @@ public class EventsControllerTests {
 
 
     @Test
-    @WithMockUser
+    @WithKlabisUserMocked
     @DisplayName("it should NOT add synchronize affordance to event with OrisId for user WITHOUT SystemAdmin grant")
     void itShouldNotAddLinkToUnauthorizedUser() throws Exception {
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
