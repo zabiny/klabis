@@ -3,8 +3,10 @@ package org.springframework.hateoas;
 import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
 import org.springframework.hateoas.server.core.DummyInvocationUtils;
 import org.springframework.hateoas.server.core.LastInvocationAware;
+import org.springframework.hateoas.server.core.MethodInvocation;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.MediaType;
+import org.springframework.security.util.SimpleMethodInvocation;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
@@ -60,7 +62,13 @@ public class KlabisHateoasImprovements {
             return false;
         }
 
-        return SecurityUtils.isAuthorizedToCall(invocation.getLastInvocation());
+        MethodInvocation lastInvokedMethod = invocation.getLastInvocation();
+
+        SimpleMethodInvocation s = new SimpleMethodInvocation(null,
+                lastInvokedMethod.getMethod(),
+                lastInvokedMethod.getArguments());
+
+        return SecurityUtils.isAuthorizedToCall(s);
     }
 
 }

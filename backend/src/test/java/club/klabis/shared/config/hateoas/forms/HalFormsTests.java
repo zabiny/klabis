@@ -1,10 +1,13 @@
 package club.klabis.shared.config.hateoas.forms;
 
 import club.klabis.adapters.api.ApiTestConfiguration;
+import club.klabis.adapters.api.WithMockedKlabisUser;
+import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.HalFormsOptionItem;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
+import club.klabis.shared.config.security.HasMemberGrant;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Disabled;
@@ -31,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @DisplayName("HAL+FORMS tests")
-@WithMockUser
+@WithMockedKlabisUser
 @ApiTestConfiguration(controllers = HalFormsTestController.class)
 public class HalFormsTests {
 
@@ -158,7 +161,7 @@ public class HalFormsTests {
                 assertThat(getFormsTestApi())
                         .hasStatusOk()
                         .bodyJson()
-                        .extractingPath("$._templates.deleteFormData.target")
+                        .extractingPath("$._templates.deleteFormDataPreAuthorize.target")
                         .isEqualTo("http://localhost/formsTest/preauthorize/1");
             }
 
@@ -168,7 +171,7 @@ public class HalFormsTests {
                 assertThat(getFormsTestApi())
                         .hasStatusOk()
                         .bodyJson()
-                        .doesNotHavePath("$._templates.deleteFormData");
+                        .doesNotHavePath("$._templates.deleteFormDataPreAuthorize");
             }
 
         }
@@ -177,7 +180,7 @@ public class HalFormsTests {
         @DisplayName("HasGrant affordance authorization")
         class HasGrantTests {
             @Test
-            @WithMockUser(authorities = "DEPOSIT_FINANCE")
+            @WithMockedKlabisUser(applicationGrants = ApplicationGrant.DEPOSIT_FINANCE)
             @DisplayName("it should add affordance if user is authorized to use referenced controller method")
             void itShouldAddAffordanceForAuthorizedMethodUsingHasGrant() {
                 assertThat(getFormsTestApi())
@@ -198,6 +201,34 @@ public class HalFormsTests {
 
         }
 
+        @Nested
+        @DisplayName("HasMemberGrant affordance authorization")
+        class HasMemberGrantTests {
+            private HasMemberGrantTests() {
+            }
+
+            @Test
+            @DisplayName("it should add affordance if user is authorized to see data returned by afforded method (user is same user as affroded one)")
+            @WithMockedKlabisUser(memberId = 1)
+            void itShouldAddAffordanceForAuthorizedMethodUsingHasGrant() {
+                assertThat(getFormsTestApi())
+                        .hasStatusOk()
+                        .bodyJson()
+                        .extractingPath("$._templates.deleteFormDataMemberGrant.target")
+                        .isEqualTo("http://localhost/formsTest/hasmembergrant/1");
+            }
+
+            @Test
+            @DisplayName("it should NOT add affordance if user is NOT authorized to use referenced controller method")
+            void itShouldNotAddAffordanceForNotAuthorizedMethod() {
+                assertThat(getFormsTestApi())
+                        .hasStatusOk()
+                        .bodyJson()
+                        .doesNotHavePath("$._templates.deleteFormDataMemberGrant");
+            }
+
+        }
+
     }
 
 }
@@ -212,8 +243,9 @@ class HalFormsTestController {
                 .add(WebMvcLinkBuilder.linkTo(methodOn(this.getClass()).getFormData())
                         .withSelfRel()
                         .andAffordances(affordBetter(methodOn(getClass()).putFormData(null)))
-                        .andAffordances(affordBetter(methodOn(getClass()).deleteFormData(1)))
+                        .andAffordances(affordBetter(methodOn(getClass()).deleteFormDataPreAuthorize(1)))
                         .andAffordances(affordBetter(methodOn(getClass()).deleteFormDataGrant(1)))
+                        .andAffordances(affordBetter(methodOn(getClass()).deleteFormDataMemberGrant(new MemberId(1))))
                         .withRel("update"));
 
         return result;
@@ -227,7 +259,7 @@ class HalFormsTestController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/preauthorize/{id}")
-    ResponseEntity<Void> deleteFormData(@PathVariable int id) {
+    ResponseEntity<Void> deleteFormDataPreAuthorize(@PathVariable int id) {
         return ResponseEntity.noContent().build();
     }
 
@@ -237,6 +269,11 @@ class HalFormsTestController {
         return ResponseEntity.noContent().build();
     }
 
+    @HasMemberGrant(memberId = "#memberId")
+    @DeleteMapping("/hasmembergrant/{memberId}")
+    ResponseEntity<Void> deleteFormDataMemberGrant(@PathVariable MemberId memberId) {
+        return ResponseEntity.noContent().build();
+    }
 
     enum Sex {MALE, FEMALE;}
 

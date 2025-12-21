@@ -2,7 +2,6 @@ package club.klabis.members.application;
 
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.restapi.KlabisPrincipal;
-import club.klabis.shared.config.restapi.KlabisUserAuthentication;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.users.domain.ApplicationUser;
@@ -17,22 +16,27 @@ import java.util.Optional;
 @Component(KlabisSecurityService.BEAN_NAME)
 public class KlabisSecurityServiceImpl implements KlabisSecurityService {
 
-    private final Logger LOG = LoggerFactory.getLogger(KlabisSecurityServiceImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KlabisSecurityServiceImpl.class);
 
     private Optional<Authentication> getAuthentication() {
         return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication());
     }
 
     public Optional<KlabisPrincipal> getPrincipal() {
-        return getAuthentication().flatMap(authentication -> {
-            if (authentication instanceof KlabisUserAuthentication typedAuth) {
-                return Optional.of(typedAuth).map(KlabisUserAuthentication::getPrincipal);
-                // TODO: doesn't work when logged in "locally" - it gets Google's OAuth2 authentication instead of klabis user...
-            } else {
-                LOG.warn("Unexpected authentication type: {}", authentication.getClass());
-                return Optional.empty();
-            }
-        });
+        return getAuthentication()
+                .flatMap(KlabisSecurityServiceImpl::getPrincipal);
+    }
+
+    private static Optional<KlabisPrincipal> getPrincipal(Authentication authentication) {
+        if (authentication == null) return Optional.empty();
+
+        if (authentication.getPrincipal() instanceof KlabisPrincipal typedPrincipal) {
+            return Optional.of(typedPrincipal);
+        } else {
+            LOG.warn("KlabisPrincipal was found in authentication context {}", authentication);
+        }
+
+        return Optional.empty();
     }
 
     private Optional<MemberId> getPrincipalMemberId() {
