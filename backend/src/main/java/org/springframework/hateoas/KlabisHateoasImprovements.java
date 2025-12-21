@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -24,19 +25,19 @@ public class KlabisHateoasImprovements {
      * @param invocationValue
      * @return
      */
-    public static Affordance affordImproved(Object invocationValue) {
+    public static List<Affordance> affordImproved(Object invocationValue) {
         return affordImproved(invocationValue, NO_ACTION);
     }
 
     private static final Consumer<Object> NO_ACTION = a -> {
     };
 
-    public static Affordance affordImproved(Object invocationValue, Consumer<? super ImprovedHalFormsAffordanceModel> postprocess) {
+    public static List<Affordance> affordImproved(Object invocationValue, Consumer<? super ImprovedHalFormsAffordanceModel> postprocess) {
         Assert.isInstanceOf(LastInvocationAware.class, invocationValue);
 
         LastInvocationAware invocation = DummyInvocationUtils.getLastInvocationAware(invocationValue);
         if (!isAuthorizedToCall(invocation)) {
-            return null;
+            return List.of();
         }
 
         Affordance affordance = afford(invocationValue);
@@ -51,7 +52,7 @@ public class KlabisHateoasImprovements {
         postprocess.accept(improvedModel);
         models.put(MediaTypes.HAL_FORMS_JSON, improvedModel);
 
-        return new Affordance(models);
+        return List.of(new Affordance(models));
     }
 
     public static boolean isAuthorizedToCall(LastInvocationAware invocation) {

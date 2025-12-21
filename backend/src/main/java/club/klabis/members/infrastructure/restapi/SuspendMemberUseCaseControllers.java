@@ -17,7 +17,6 @@ import club.klabis.shared.RFC7807ErrorResponseApiDto;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
-import club.klabis.shared.config.security.KlabisSecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -139,29 +138,19 @@ public class SuspendMemberUseCaseControllers {
 @Component
 class SuspendMemberResourceProcessor implements RepresentationModelProcessor<EntityModel<MembersApiResponse>> {
 
-    private final KlabisSecurityService securityService;
-
-    SuspendMemberResourceProcessor(KlabisSecurityService securityService) {
-        this.securityService = securityService;
-    }
-
     @Override
     public EntityModel<MembersApiResponse> process(EntityModel<MembersApiResponse> model) {
         Member entity = model.getContent().member();
 
         if (entity.isSuspended()) {
-            if (securityService.hasGrant(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP)) {
-                model.mapLink(IanaLinkRelations.SELF,
-                        link -> link.andAffordance(affordBetter(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(
-                                entity.getId()))));
-            }
+            model.mapLink(IanaLinkRelations.SELF,
+                    link -> link.andAffordances(affordBetter(methodOn(SuspendMemberUseCaseControllers.class).resumeMembership(
+                            entity.getId()))));
         } else {
-            if (securityService.hasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
-                model.mapLink(IanaLinkRelations.SELF,
-                        link -> link.andAffordance(affordBetter(methodOn(SuspendMemberUseCaseControllers.class,
-                                entity.getId()).membersMemberIdSuspendMembershipFormPut(
-                                entity.getId(), null))));
-            }
+            model.mapLink(IanaLinkRelations.SELF,
+                    link -> link.andAffordances(affordBetter(methodOn(SuspendMemberUseCaseControllers.class,
+                            entity.getId()).membersMemberIdSuspendMembershipFormPut(
+                            entity.getId(), null))));
         }
 
         return model;

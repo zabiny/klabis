@@ -193,12 +193,12 @@ abstract class RegistrationDtoAssembler implements ModelPreparator<EventAndMembe
                 eventId)).withSelfRel();
 
         if (eventAndMember.event().areRegistrationsOpen()) {
-            selfLink = selfLink.andAffordance(affordBetter(methodOn(RegistrationsController.class).saveRegistration(
+            selfLink = selfLink.andAffordances(affordBetter(methodOn(RegistrationsController.class).saveRegistration(
                     memberId,
                     eventId,
                     null)));
             if (event.isMemberRegistered(memberId)) {
-                selfLink = selfLink.andAffordance(affordBetter(methodOn(RegistrationsController.class).cancelRegistration(
+                selfLink = selfLink.andAffordances(affordBetter(methodOn(RegistrationsController.class).cancelRegistration(
                         memberId,
                         eventId)));
             }

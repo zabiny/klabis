@@ -9,6 +9,8 @@ import club.klabis.shared.config.Globals;
 import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.hateoas.RootModel;
 import club.klabis.shared.config.restapi.ApiController;
+import club.klabis.shared.config.security.ApplicationGrant;
+import club.klabis.shared.config.security.HasGrant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.jackson.JacksonComponent;
@@ -94,6 +96,7 @@ public class CalendarApiController {
         return modelAssembler.toEntityResponse(result);
     }
 
+    @HasGrant(ApplicationGrant.CALENDAR_MANAGE)
     @PostMapping
     public ResponseEntity<Void> createCalendarItem(@RequestBody CreateCalendarItemCommand command) {
         CalendarItem item = calendarService.createCalendarItem(command);
@@ -135,7 +138,7 @@ class CalendarItemListPostprocessor implements RepresentationModelProcessor<Coll
         // TODO: add missing parameter values from current request to have proper "self" link
         model.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(null, null)).withSelfRel()
                 .expand("", "")
-                .andAffordance(affordBetter(methodOn(CalendarApiController.class).createCalendarItem(null))));
+                .andAffordances(affordBetter(methodOn(CalendarApiController.class).createCalendarItem(null))));
 
         model.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(Calendar.CalendarType.DAY,
                 null)).withRel("calendar-day").expand(""));

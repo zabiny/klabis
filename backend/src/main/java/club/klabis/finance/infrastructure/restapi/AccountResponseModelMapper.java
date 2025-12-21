@@ -3,7 +3,6 @@ package club.klabis.finance.infrastructure.restapi;
 import club.klabis.finance.domain.Account;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
-import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -33,11 +32,9 @@ public abstract class AccountResponseModelMapper implements ModelPreparator<Acco
         resource.add(linkTo(methodOn(FinanceAccountsController.class).getTransactions(resource.getContent()
                 .ownerId())).withRel("transactions"));
 
-        if (klabisSecurityService.hasGrant(ApplicationGrant.DEPOSIT_FINANCE)) {
-            resource.mapLink(IanaLinkRelations.SELF,
-                    link -> link.andAffordance(affordBetter(methodOn(FinanceAccountsController.class).deposit(account.getOwner(),
-                            null))));
-        }
+        resource.mapLink(IanaLinkRelations.SELF,
+                link -> link.andAffordances(affordBetter(methodOn(FinanceAccountsController.class).deposit(account.getOwner(),
+                        null))));
     }
 
 }

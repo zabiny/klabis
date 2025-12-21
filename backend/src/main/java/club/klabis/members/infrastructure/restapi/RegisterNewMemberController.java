@@ -13,6 +13,8 @@ import club.klabis.members.infrastructure.restapi.dto.MembersMemberIdEditMemberI
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
 import club.klabis.shared.config.restapi.ApiController;
+import club.klabis.shared.config.security.ApplicationGrant;
+import club.klabis.shared.config.security.HasGrant;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -70,6 +72,7 @@ public class RegisterNewMemberController {
             }
     )
     @PostMapping
+    @HasGrant(ApplicationGrant.MEMBERS_REGISTER)
     ResponseEntity<Void> memberRegistrationsPost(
             @Parameter(name = "MemberRegistrationFormApiDto", description = "", required = true) @Valid @RequestBody club.klabis.members.infrastructure.restapi.dto.MemberRegistrationFormApiDto memberRegistrationFormApiDto
     ) {

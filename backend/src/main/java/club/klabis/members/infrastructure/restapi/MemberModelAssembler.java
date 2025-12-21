@@ -4,8 +4,6 @@ import club.klabis.members.domain.Member;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.config.hateoas.ModelPreparator;
-import club.klabis.shared.config.security.ApplicationGrant;
-import club.klabis.shared.config.security.KlabisSecurityService;
 import org.springframework.hateoas.Affordance;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -23,12 +21,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class MemberModelAssembler implements ModelPreparator<Member, MembersApiResponse> {
 
     private final ConversionService conversionService;
-    private final KlabisSecurityService securityService;
     private final EntityLinks entityLinks;
 
-    public MemberModelAssembler(ConversionService conversionService, KlabisSecurityService securityService, EntityLinks entityLinks) {
+    public MemberModelAssembler(ConversionService conversionService, EntityLinks entityLinks) {
         this.conversionService = conversionService;
-        this.securityService = securityService;
         this.entityLinks = entityLinks;
     }
 
@@ -49,11 +45,9 @@ public class MemberModelAssembler implements ModelPreparator<Member, MembersApiR
 
     @Override
     public void addLinks(CollectionModel<EntityModel<MembersApiResponse>> model) {
-        if (securityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
-            model.mapLink(LinkRelation.of("self"),
-                    link -> link.andAffordance(affordBetter(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(
-                            null))));
-        }
+        model.mapLink(LinkRelation.of("self"),
+                link -> link.andAffordances(affordBetter(methodOn(RegisterNewMemberController.class).memberRegistrationsPost(
+                        null))));
     }
 
     @Override

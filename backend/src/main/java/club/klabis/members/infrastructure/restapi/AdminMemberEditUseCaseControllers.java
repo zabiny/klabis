@@ -15,6 +15,7 @@ import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
+import club.klabis.shared.config.security.HasGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -120,6 +121,7 @@ public class AdminMemberEditUseCaseControllers {
             }
     )
     @PutMapping
+    @HasGrant(ApplicationGrant.MEMBERS_EDIT)
     ResponseEntity<Void> putMemberEditByAdminForm(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId,
             @Parameter(name = "EditAnotherMemberDetailsFormApiDto", description = "", required = true) @Valid @RequestBody EditAnotherMemberDetailsFormApiDto editAnotherMemberDetailsFormApiDto
@@ -143,9 +145,9 @@ class AdminEditMemberResourceProcessor implements RepresentationModelProcessor<E
     public EntityModel<MembersApiResponse> process(EntityModel<MembersApiResponse> model) {
         Member entity = model.getContent().member();
 
-        if (!entity.isSuspended() && securityService.hasGrant(ApplicationGrant.MEMBERS_EDIT)) {
+        if (!entity.isSuspended()) {
             model.mapLink(IanaLinkRelations.SELF,
-                    link -> link.andAffordance(affordBetter(methodOn(AdminMemberEditUseCaseControllers.class).putMemberEditByAdminForm(
+                    link -> link.andAffordances(affordBetter(methodOn(AdminMemberEditUseCaseControllers.class).putMemberEditByAdminForm(
                             entity.getId(), null))));
         }
 

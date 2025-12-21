@@ -147,7 +147,7 @@ class EditOwnMemberInfoResourceProcessor implements RepresentationModelProcessor
 
         if (!entity.isSuspended() && securityService.canEditMemberData(entity.getId())) {
             model.mapLink(IanaLinkRelations.SELF,
-                    link -> link.andAffordance(affordBetter(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormPut(
+                    link -> link.andAffordances(affordBetter(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormPut(
                             entity.getId(), null))));
         }
 

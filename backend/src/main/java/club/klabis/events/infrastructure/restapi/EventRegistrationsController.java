@@ -107,7 +107,7 @@ class EventRegistrationModelPreparator implements ModelPreparator<RegistrationDa
         Link selfLink = linkTo(methodOn(EventRegistrationsController.class).getEventRegistrationForm(registrationData.eventId(),
                 registrationData.memberId())).withSelfRel();
 
-        selfLink = selfLink.andAffordance(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
+        selfLink = selfLink.andAffordances(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
                 registrationData.eventId(),
                 registrationData.memberId(),
                 null), affordance -> this.addOptions(affordance, registrationData)));

@@ -6,7 +6,6 @@ import club.klabis.shared.config.hateoas.HalFormsOptionItem;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
-import club.klabis.shared.config.security.KlabisSecurityService;
 import club.klabis.users.application.ApplicationUserNotFound;
 import club.klabis.users.application.ApplicationUsersRepository;
 import club.klabis.users.application.UserGrantsUpdateUseCase;
@@ -113,31 +112,23 @@ public class UserPermissionsApiController {
 @Component
 class MemberGrantLinksPostprocessor implements RepresentationModelProcessor<EntityModel<MembersApiResponse>> {
 
-    private final KlabisSecurityService securityService;
-
-    MemberGrantLinksPostprocessor(KlabisSecurityService securityService) {
-        this.securityService = securityService;
-    }
-
     private HalFormsOptions getGrantsOptions() {
         return HalFormsOptions.remote(linkTo(methodOn(UserPermissionsApiController.class).getAllGrantsOptions()).withSelfRel());
     }
 
-    private Affordance createChangeGrantsAffordance(ApplicationUser.Id appUserId) {
+    private List<Affordance> createChangeGrantsAffordance(ApplicationUser.Id appUserId) {
         return affordBetter(methodOn(UserPermissionsApiController.class).updateMemberGrants(appUserId, null),
                 a -> a.defineOptions("grants", getGrantsOptions()));
     }
 
     @Override
     public EntityModel<MembersApiResponse> process(EntityModel<MembersApiResponse> model) {
-        if (securityService.hasGrant(ApplicationGrant.APPUSERS_PERMISSIONS)) {
-            Member member = model.getContent().member();
+        Member member = model.getContent().member();
 
-            if (!member.isSuspended()) {
-                member.getAppUserId()
-                        .ifPresent(appUserId -> model.mapLink(IanaLinkRelations.SELF,
-                                link -> link.andAffordance(createChangeGrantsAffordance(appUserId))));
-            }
+        if (!member.isSuspended()) {
+            member.getAppUserId()
+                    .ifPresent(appUserId -> model.mapLink(IanaLinkRelations.SELF,
+                            link -> link.andAffordances(createChangeGrantsAffordance(appUserId))));
         }
 
         return model;

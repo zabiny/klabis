@@ -12,6 +12,7 @@ public enum ApplicationGrant {
     MEMBERS_RESUMEMEMBERSHIP("Může obnovit členství v klubu", true, false, false, "members:resumeMembership"),
 
     EVENTS_MANAGE("Může spravovat události", true, false, false, "events:manage"),
+    CALENDAR_MANAGE("Může spravovat kalendář", true, false, false, "calendar:manage"),
 
     SYSTEM_ADMIN("Spravuje systemove veci", true, false, false, "system:admin"),
 

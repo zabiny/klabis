@@ -7,7 +7,6 @@ import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.mapstruct.DomainToDtoMapperConfiguration;
-import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
@@ -72,24 +71,22 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
 
         List<Affordance> selfAffordances = new ArrayList<>();
 
-        if (klabisSecurityService.hasGrant(ApplicationGrant.EVENTS_MANAGE)) {
-            selfAffordances.add(affordBetter(methodOn(EventsController.class).updateEventById(event.getId(), null)));
-        }
+        selfAffordances.addAll(affordBetter(methodOn(EventsController.class).updateEventById(event.getId(), null)));
 
         klabisSecurityService.getAuthenticatedMemberId()
                 .ifPresentOrElse(memberId -> {
                     if (event.areRegistrationsOpen()) {
                         if (event.isMemberRegistered(memberId)) {
                             // update registration
-                            selfAffordances.add(affordBetter(methodOn(EventRegistrationsController.class)
+                            selfAffordances.addAll(affordBetter(methodOn(EventRegistrationsController.class)
                                     .submitRegistrationForm(event.getId(), memberId, null), a -> addOptions(a, event)));
 
                             // cancel registration
-                            selfAffordances.add(affordBetter(methodOn(EventRegistrationsController.class)
+                            selfAffordances.addAll(affordBetter(methodOn(EventRegistrationsController.class)
                                     .cancelEventRegistration(event.getId(), memberId)));
                         } else {
                             // create registration
-                            selfAffordances.add(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
+                            selfAffordances.addAll(affordBetter(methodOn(EventRegistrationsController.class).submitRegistrationForm(
                                     event.getId(),
                                     memberId,
                                     null), a -> addOptions(a, event)));
@@ -108,10 +105,8 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
     public void addLinks(CollectionModel<EntityModel<EventResponse>> resources) {
         ModelPreparator.super.addLinks(resources);
 
-        if (klabisSecurityService.hasGrant(ApplicationGrant.EVENTS_MANAGE)) {
-            resources.mapLink(IanaLinkRelations.SELF,
-                    link -> link.andAffordance(affordBetter(methodOn(EventsController.class).createEvent(null))));
-        }
+        resources.mapLink(IanaLinkRelations.SELF,
+                link -> link.andAffordances(affordBetter(methodOn(EventsController.class).createEvent(null))));
     }
 
     private void addOptions(ImprovedHalFormsAffordanceModel affordance, Event event) {
