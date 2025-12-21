@@ -15,7 +15,6 @@ import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.HasMemberGrant;
-import club.klabis.shared.config.security.KlabisSecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -135,17 +134,11 @@ public class EditOwnInfoUseCaseControllers {
 @Component
 class EditOwnMemberInfoResourceProcessor implements RepresentationModelProcessor<EntityModel<MembersApiResponse>> {
 
-    private final KlabisSecurityService securityService;
-
-    EditOwnMemberInfoResourceProcessor(KlabisSecurityService securityService) {
-        this.securityService = securityService;
-    }
-
     @Override
     public EntityModel<MembersApiResponse> process(EntityModel<MembersApiResponse> model) {
         Member entity = model.getContent().member();
 
-        if (!entity.isSuspended() && securityService.canEditMemberData(entity.getId())) {
+        if (!entity.isSuspended()) {
             model.mapLink(IanaLinkRelations.SELF,
                     link -> link.andAffordances(affordBetter(methodOn(EditOwnInfoUseCaseControllers.class).membersMemberIdEditOwnMemberInfoFormPut(
                             entity.getId(), null))));
