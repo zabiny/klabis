@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -135,6 +136,7 @@ public class EventsController {
 }
 
 @Component
+@Order(2)
 class EventsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
     private final LinkRelationProvider linkRelationProvider;
 

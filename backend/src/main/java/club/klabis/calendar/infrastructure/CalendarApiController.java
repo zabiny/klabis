@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.CollectionModel;
@@ -107,6 +108,7 @@ public class CalendarApiController {
 }
 
 @Component
+@Order(4)
 class CalendarRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
     @Override
