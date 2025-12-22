@@ -7,6 +7,7 @@ import {HalLinksSection} from '../components/HalLinksSection';
 import {HalFormsSection} from '../components/HalFormsSection';
 import {useHalActions} from '../hooks/useHalActions';
 import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
+import {isHalResponse} from "../components/HalFormsForm/utils.ts";
 import NotFoundPage from "./NotFoundPage.tsx";
 
 /**
@@ -66,21 +67,21 @@ export const GenericHalPage = (): ReactElement => {
 /**
  * Check if a HAL response is a collection
  */
-function isHalCollection(data: any): data is HalCollectionResponse {
-    return (data?.page !== undefined) || (data?._embedded !== undefined && !isEmptyObject(data._embedded));
+function isHalCollection(data: unknown): data is HalCollectionResponse {
+    return isHalResponse(data) && ((data?.page !== undefined) || (data?._embedded !== undefined && !isEmptyObject(data._embedded)));
 }
 
 /**
  * Check if an object is empty
  */
-function isEmptyObject(obj: any): boolean {
+function isEmptyObject(obj: unknown): boolean {
     return typeof obj === 'object' && Object.keys(obj || {}).length === 0;
 }
 
 /**
  * Strip HAL/HAL+JSON meta attributes from an object
  */
-function stripHalMetadata(obj: any): Record<string, any> {
+function stripHalMetadata(obj: HalResponse): Record<string, any> {
     const {_links, _templates, _embedded, ...cleaned} = obj;
     return cleaned;
 }
@@ -106,7 +107,7 @@ interface GenericCollectionDisplayProps {
 }
 
 const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactElement => {
-    const [selectedItemForJsonView, setSelectedItemForJsonView] = useState<any>(null);
+    const [selectedItemForJsonView, setSelectedItemForJsonView] = useState<Record<string, unknown> | null>(null);
     const {selectedTemplate, setSelectedTemplate, submitError, isSubmitting, handleNavigateToItem, handleFormSubmit} = useHalActions();
     const items = Object.values(data._embedded || {}).flat();
 
@@ -261,7 +262,7 @@ const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
                     <tbody className="divide-y">
                     {Object.entries(data)
                         .filter(([key]) => !key.startsWith('_'))
-                        .map(([key, value]: [string, any]) => (
+                        .map(([key, value]: [string, unknown]) => (
                             <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td className="px-4 py-2 font-mono text-sm text-gray-600 dark:text-gray-400">{key}</td>
                                 <td className="px-4 py-2">

@@ -40,7 +40,6 @@ function App() {
                         }>
                             <Route index path="/" element={<HomePage/>}/>
                             <Route path="/calendar-items" element={<CalendarPage/>}/>
-                            <Route index element={<GenericHalPage/>}/>
                             <Route path="/members/:id" element={<MemberDetailsPage/>}/>
                             <Route path="*" element={<GenericHalPage/>}/>
                         </Route>
