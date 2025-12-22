@@ -9,6 +9,7 @@ import ErrorFallback from './components/ErrorFallback';
 import {GenericHalPage} from "./pages/GenericHalPage.tsx";
 import {MemberDetailsPage} from "./pages/MemberDetailsPage.tsx";
 import HomePage from "./pages/HomePage.tsx";
+import CalendarPage from "./pages/CalendarPage.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -38,6 +39,7 @@ function App() {
                             </ProtectedRoute>
                         }>
                             <Route index path="/" element={<HomePage/>}/>
+                            <Route path="/calendar-items" element={<CalendarPage/>}/>
                             <Route index element={<GenericHalPage/>}/>
                             <Route path="/members/:id" element={<MemberDetailsPage/>}/>
                             <Route path="*" element={<GenericHalPage/>}/>
