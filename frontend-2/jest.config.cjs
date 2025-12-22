@@ -5,6 +5,15 @@ module.exports = {
     moduleNameMapper: {
         '^~/(.*)$': '<rootDir>/src/$1',
     },
-    // Spustí se před každým testem a načte rozšíření jest‑dom
+    transform: {
+        '^.+\\.tsx?$': ['ts-jest', {
+            tsconfig: {
+                jsx: 'react-jsx',
+                esModuleInterop: true,
+                allowSyntheticDefaultImports: true,
+                allowImportingTsExtensions: true,
+            },
+        }],
+    },
     setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
 };
