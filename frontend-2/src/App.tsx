@@ -3,10 +3,10 @@ import {ErrorBoundary} from 'react-error-boundary';
 import {AuthProvider, useAuth} from './contexts/AuthContext2';
 import Layout from './pages/Layout';
 import LoginPage from './pages/LoginPage';
-import {SandplacePage} from "./pages/HalNavigatorPage";
 import {authConfig} from "./api/klabisUserManager.ts";
 import {ThemeProvider} from "./theme/ThemeContext.tsx";
 import ErrorFallback from './components/ErrorFallback';
+import {GenericHalPage} from "./pages/GenericHalPage.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -35,9 +35,8 @@ function App() {
                                 <Layout/>
                             </ProtectedRoute>
                         }>
-                            <Route index element={<SandplacePage/>}/>
-                            <Route path="sandplace" element={<SandplacePage/>}/>
-                            <Route path="*" element={<SandplacePage/>}/>
+                            <Route index element={<GenericHalPage/>}/>
+                            <Route path="*" element={<GenericHalPage/>}/>
                         </Route>
                     </Routes>
                 </ThemeProvider>

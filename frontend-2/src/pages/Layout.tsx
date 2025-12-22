@@ -4,12 +4,14 @@ import {Button} from '../components/UI'
 import {LogoutIcon} from '../components/Icons'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'
+import {useRootNavigation} from '../hooks/useRootNavigation'
 
 const Layout = () => {
   const navigate = useNavigate()
   const {logout, getUser, isAuthenticated} = useAuth()
   const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const {data: menuItems = [], isLoading: menuLoading} = useRootNavigation()
 
   useEffect(() => {
     const loadUserName = async () => {
@@ -93,20 +95,22 @@ const Layout = () => {
             }`}
         >
           <nav className="flex flex-col p-6 gap-4">
-            <Link
-                to="/members"
-                onClick={() => setSidebarOpen(false)}
-                className="px-4 py-2 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            >
-              Adresář
-            </Link>
-            <Link
-                to="/events"
-                onClick={() => setSidebarOpen(false)}
-                className="px-4 py-2 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            >
-              Závody
-            </Link>
+            {menuLoading ? (
+                <div className="text-gray-500 dark:text-gray-400 text-sm">Loading menu...</div>
+            ) : menuItems.length > 0 ? (
+                menuItems.map((item) => (
+                    <Link
+                        key={item.rel}
+                        to={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className="px-4 py-2 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                ))
+            ) : (
+                <div className="text-gray-500 dark:text-gray-400 text-sm">No menu items available</div>
+            )}
           </nav>
         </aside>
 
