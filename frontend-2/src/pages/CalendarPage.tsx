@@ -195,13 +195,6 @@ const CalendarPage = () => {
                 </div>
             </div>
 
-            {/* Legend */}
-            <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                    <span className="font-semibold">Celkem akcí:</span> {calendarItems.length}
-                </p>
-            </div>
-
             {/* Links/Actions section */}
             {resourceData?._links && Object.keys(resourceData._links).length > 0 ? (
                 <div className="mt-4 p-4 border rounded bg-blue-50 dark:bg-blue-900">
