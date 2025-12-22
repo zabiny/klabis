@@ -960,10 +960,6 @@ li {
     visibility: visible
 }
 
-.invisible {
-    visibility: hidden
-}
-
 .static {
     position: static
 }
@@ -990,10 +986,6 @@ li {
 
 .bottom-4 {
     bottom: 1rem
-}
-
-.bottom-full {
-    bottom: 100%
 }
 
 .left-0 {
@@ -1298,6 +1290,11 @@ li {
     width: 2rem
 }
 
+.w-fit {
+    width: -moz-fit-content;
+    width: fit-content
+}
+
 .w-full {
     width: 100%
 }
@@ -1598,10 +1595,6 @@ li {
     white-space: nowrap
 }
 
-.whitespace-nowrap {
-    white-space: nowrap
-}
-
 .rounded {
     border-radius: .25rem
 }
@@ -1755,11 +1748,6 @@ li {
 .bg-gray-800 {
     --tw-bg-opacity: 1;
     background-color: rgb(31 41 55 / var(--tw-bg-opacity, 1))
-}
-
-.bg-gray-900 {
-    --tw-bg-opacity: 1;
-    background-color: rgb(17 24 39 / var(--tw-bg-opacity, 1))
 }
 
 .bg-green-100 {
@@ -2398,10 +2386,6 @@ li {
 
 .disabled\:opacity-50:disabled {
     opacity: .5
-}
-
-.group:hover .group-hover\:visible {
-    visibility: visible
 }
 
 .group:hover .group-hover\:text-gray-900 {
