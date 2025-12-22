@@ -22,7 +22,6 @@
     "formik": "^2.4.6",
     "formik-mui": "^5.0.0-alpha.1",
     "formik-mui-x-date-pickers": "^2.0.0-alpha.0",
-    "ketting": "^8.0.1",
     "oidc-client-ts": "^3.3.0",
     "openapi-fetch": "^0.14.0",
     "openapi-react-query": "^0.5.0",
