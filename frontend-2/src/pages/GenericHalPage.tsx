@@ -2,7 +2,7 @@ import {type ReactElement, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useHalRoute} from '../contexts/HalRouteContext';
 import type {HalCollectionResponse, HalFormsTemplate, HalResponse, TemplateTarget} from '../api';
-import {Alert, Button, Spinner} from '../components/UI';
+import {Alert, Button, Modal, Spinner} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {halFormsFieldsFactory, HalFormsForm} from '../components/HalFormsForm';
 import {isFormValidationError, submitHalFormsData} from '../api/hateoas';
@@ -102,6 +102,27 @@ function isEmptyObject(obj: any): boolean {
 }
 
 /**
+ * Strip HAL/HAL+JSON meta attributes from an object
+ */
+function stripHalMetadata(obj: any): Record<string, any> {
+    const {_links, _templates, _embedded, ...cleaned} = obj;
+    return cleaned;
+}
+
+/**
+ * Get truncated JSON preview and check if it was truncated
+ */
+function getTruncatedJsonPreview(obj: any, maxLength: number = 100): { preview: string; isTruncated: boolean } {
+    const cleaned = stripHalMetadata(obj);
+    const fullJson = JSON.stringify(cleaned);
+    const preview = fullJson.substring(0, maxLength);
+    return {
+        preview: preview + (fullJson.length > maxLength ? '...' : ''),
+        isTruncated: fullJson.length > maxLength,
+    };
+}
+
+/**
  * Display a collection of items in a table format
  */
 interface GenericCollectionDisplayProps {
@@ -114,6 +135,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
     const [selectedTemplate, setSelectedTemplate] = useState<HalFormsTemplate | null>(null);
     const [submitError, setSubmitError] = useState<Error | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedItemForJsonView, setSelectedItemForJsonView] = useState<any>(null);
     const items = Object.values(data._embedded || {}).flat();
 
     if (!items || items.length === 0) {
@@ -175,26 +197,59 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                     </tr>
                     </thead>
                     <tbody className="divide-y">
-                    {items.map((item: any, index: number) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-4 py-2">{item?.id || item?._links?.self?.href || index}</td>
-                            <td className="px-4 py-2 max-w-md truncate">
-                                <code className="text-xs text-gray-600 dark:text-gray-400">
-                                    {JSON.stringify(item).substring(0, 100)}...
-                                </code>
-                            </td>
-                            <td className="px-4 py-2">
-                                {item._links?.self?.href && (
-                                    <button
-                                        onClick={() => handleNavigateToItem(item._links.self.href)}
-                                        className="text-blue-600 hover:underline dark:text-blue-400 bg-none border-none cursor-pointer"
-                                    >
-                                        Zobrazit
-                                    </button>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
+                    {items.map((item: any, index: number) => {
+                        const {preview, isTruncated} = getTruncatedJsonPreview(item);
+                        return (
+                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-4 py-2">{item?.id || item?._links?.self?.href || index}</td>
+                                <td className="px-4 py-2 max-w-md">
+                                    <div className="flex items-center gap-2">
+                                        <code className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                            {preview}
+                                        </code>
+                                        {isTruncated && (
+                                            <button
+                                                onClick={() => setSelectedItemForJsonView(item)}
+                                                className="flex-shrink-0 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                                title="View full JSON"
+                                                aria-label="View full JSON"
+                                            >
+                                                <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                                    />
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="px-4 py-2">
+                                    {item._links?.self?.href && (
+                                        <button
+                                            onClick={() => handleNavigateToItem(item._links.self.href)}
+                                            className="text-blue-600 hover:underline dark:text-blue-400 bg-none border-none cursor-pointer"
+                                        >
+                                            Zobrazit
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
                     </tbody>
                 </table>
             </div>
@@ -286,6 +341,23 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                 <summary className="cursor-pointer font-semibold">Zobrazit surový JSON</summary>
                 <JsonPreview data={data} label={`Kompletní odpověď (${items.length} položek)`}/>
             </details>
+
+            {/* Modal for viewing full item JSON */}
+            <Modal
+                isOpen={selectedItemForJsonView !== null}
+                onClose={() => setSelectedItemForJsonView(null)}
+                title="Úplná JSON data položky"
+                size="xl"
+            >
+                {selectedItemForJsonView && (
+                    <div className="max-h-96 overflow-y-auto">
+                        <JsonPreview
+                            data={stripHalMetadata(selectedItemForJsonView)}
+                            label=""
+                        />
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };
