@@ -1,6 +1,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {fetchResource} from '../components/HalNavigator/hooks';
 import type {HalResponse, Link} from '../api';
+import {extractNavigationPath} from '../utils/navigationPath';
 
 /**
  * Represents a navigation menu item derived from HAL links
@@ -9,34 +10,6 @@ export interface NavigationItem {
     href: string;
     label: string;
     rel: string;
-}
-
-/**
- * Extracts the navigation path from a full URL for use with React Router.
- * Removes the /api prefix since HalRouteContext adds it back.
- *
- * @param url Full URL or path from HAL link
- * @returns Relative path for React Router navigation
- */
-function extractNavigationPath(url: string): string {
-    try {
-        const parsedUrl = new URL(url);
-        let path = parsedUrl.pathname;
-
-        // Remove /api prefix if present, since HalRouteContext adds it back
-        if (path.startsWith('/api')) {
-            path = path.substring(4); // Remove '/api'
-        }
-
-        return path;
-    } catch {
-        // If URL parsing fails, assume it's already a path
-        // Remove /api prefix if present
-        if (url.startsWith('/api')) {
-            return url.substring(4);
-        }
-        return url;
-    }
 }
 
 /**

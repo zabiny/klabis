@@ -15,15 +15,15 @@ import {halFormsFieldsFactory} from "./HalFormsFieldFactory";
 import {Alert, Button, Spinner} from "../UI";
 import {Box} from "../Layout";
 
-type FormData = Record<string, any>;
+type FormData = Record<string, unknown>;
 
 // --- Helpers ---
 
 function getInitialValues(
     template: HalFormsTemplate,
     data: FormData
-): Record<string, any> {
-    const initialValues: Record<string, any> = {};
+): Record<string, unknown> {
+    const initialValues: Record<string, unknown> = {};
     template.properties.forEach((prop) => {
         if (prop.multiple) {
             initialValues[prop.name] = Array.isArray(data[prop.name]) ? data[prop.name] : [];
@@ -36,10 +36,10 @@ function getInitialValues(
 }
 
 // TODO: do we want "frontend validation"? There may be validations which can't be done on frontend...
-function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<any> {
-    const shape: Record<string, any> = {};
+function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<unknown> {
+    const shape: Record<string, unknown> = {};
     template.properties.forEach((prop) => {
-        let validator: any = Yup.mixed().nullable();
+        let validator: Yup.AnySchema = Yup.mixed().nullable();
 
         if (prop.type === "number") {
             validator = Yup.number().typeError("Musí být číslo");
@@ -93,8 +93,8 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
 // --- Render funkce pro pole ---
 function renderField(
     prop: HalFormsProperty,
-    errors: Record<string, any>,
-    touched: Record<string, any>,
+    errors: Record<string, unknown>,
+    touched: Record<string, unknown>,
     fieldFactory?: HalFormFieldFactory
 ): ReactNode {
     const errorText = touched[prop.name] && errors[prop.name] ? errors[prop.name] : "";
@@ -181,11 +181,11 @@ const useHalFormsController = (
     }, [api, inputTemplate]);
 
     const submit = useCallback(
-        async (data: Record<string, any>) => {
+        async (data: Record<string, unknown>) => {
             // use target+method from template if is it present
             const submitTarget: TemplateTarget = isFormTarget(actualTemplate) && actualTemplate || api;
             try {
-                await submitHalFormsData(submitTarget, data);
+                await submitHalFormsData(submitTarget, data as Record<string, any>);
             } catch (submitError) {
                 setSubmitError(
                     submitError instanceof Error ? submitError : new Error("Error submitting form data")
@@ -229,9 +229,9 @@ type FieldRenderFunc = (fieldName: string) => ReactNode;
 type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => ReactElement;
 
 interface HalFormsFormProps {
-    data: Record<string, any>,
+    data: Record<string, unknown>,
     template: HalFormsTemplate,
-    onSubmit?: (values: Record<string, any>) => void,
+    onSubmit?: (values: Record<string, unknown>) => void,
     onCancel?: () => void,
     submitButtonLabel?: string,
     fieldsFactory?: HalFormFieldFactory,
@@ -258,8 +258,14 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                                                                 children
                                                                             }) => {
 
-    const initialValues = getInitialValues(template, data);
-    const validationSchema = createValidationSchema(template);
+    const initialValues = useMemo(
+        () => getInitialValues(template, data),
+        [template, data]
+    );
+    const validationSchema = useMemo(
+        () => createValidationSchema(template),
+        [template]
+    );
 
     return (
         <Formik

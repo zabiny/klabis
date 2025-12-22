@@ -6,10 +6,7 @@ import {isLink} from "../../api/klabisJsonUtils";
 import {isString} from "formik";
 import {createContext, useContext} from "react";
 import {useQuery, type UseQueryResult} from "@tanstack/react-query";
-import {UserManager} from "oidc-client-ts";
-import {klabisAuthUserManager} from "../../api/klabisUserManager";
-
-const userManager: UserManager = klabisAuthUserManager;
+import {authorizedFetch} from "../../api/authorizedFetch";
 
 
 class FetchError extends Error {
@@ -28,22 +25,21 @@ class FetchError extends Error {
 
 // Generic HAL fetcher
 export async function fetchResource(url: string | URL) {
-    const user = await userManager.getUser();
-    const res = await fetch(url, {
-        headers: {
-            Accept: "application/prs.hal-forms+json,application/hal+json",
-            "Authorization": `Bearer ${user?.access_token}`
-        },
-    });
-    if (!res.ok) {
-        let bodyText: string | undefined = undefined;
-        if (res.body) {
-            bodyText = await res.text();
-            console.warn(bodyText ? `Response body: ${bodyText}` : 'No response body');
+    try {
+        const res = await authorizedFetch(url, {
+            headers: {
+                Accept: "application/prs.hal-forms+json,application/hal+json",
+            },
+        });
+        return res.json();
+    } catch (error) {
+        if (error instanceof Error) {
+            const statusMatch = error.message.match(/HTTP (\d+)/);
+            const status = statusMatch ? parseInt(statusMatch[1], 10) : 0;
+            throw new FetchError(error.message, status, error.message, error.message);
         }
-        throw new FetchError(`HTTP ${res.status}`, res.status, res.statusText, bodyText);
+        throw error;
     }
-    return res.json();
 }
 
 export function toHref(source: NavigationTarget): string {
@@ -113,13 +109,16 @@ const useQueryNavigationTargetResponse = (target: NavigationTarget): UseQueryRes
 
     return useQuery<NavigationTargetResponse<HalResponse | string>>({
         queryKey: [resourceUrl], queryFn: async (): Promise<NavigationTargetResponse<HalResponse | string>> => {
-            const user = await userManager.getUser();
-            const res = await fetch(resourceUrl, {
-                headers: {
-                    Accept: "application/prs.hal-forms+json,application/hal+json",
-                    "Authorization": `Bearer ${user?.access_token}`
+            const res = await authorizedFetch(
+                resourceUrl,
+                {
+                    headers: {
+                        Accept: "application/prs.hal-forms+json,application/hal+json",
+                    },
                 },
-            });
+                false // Don't throw - handle error responses gracefully
+            );
+
             if (!res.ok) {
                 let bodyText: string | undefined = undefined;
                 if (res.body) {

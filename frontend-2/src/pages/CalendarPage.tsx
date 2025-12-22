@@ -6,6 +6,7 @@ import {JsonPreview} from '../components/JsonPreview';
 import {halFormsFieldsFactory, HalFormsForm} from '../components/HalFormsForm';
 import type {HalFormsTemplate, TemplateTarget} from '../api';
 import {isFormValidationError, submitHalFormsData} from '../api/hateoas';
+import {extractNavigationPath} from '../utils/navigationPath';
 
 interface CalendarItem {
     start: string;
@@ -15,31 +16,6 @@ interface CalendarItem {
         event?: { href: string };
         self: { href: string };
     };
-}
-
-/**
- * Convert a full API URL to a navigation path
- * Removes hostname and strips /api prefix (HalRouteContext will add it back)
- */
-function extractNavigationPath(url: string): string {
-    try {
-        const parsedUrl = new URL(url);
-        let path = parsedUrl.pathname;
-
-        // Remove /api prefix if present, since HalRouteContext adds it back
-        if (path.startsWith('/api')) {
-            path = path.substring(4); // Remove '/api'
-        }
-
-        return path;
-    } catch {
-        // If URL parsing fails, assume it's already a path
-        // Remove /api prefix if present
-        if (url.startsWith('/api')) {
-            return url.substring(4);
-        }
-        return url;
-    }
 }
 
 /**

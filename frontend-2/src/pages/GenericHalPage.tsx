@@ -6,35 +6,7 @@ import {Alert, Button, Modal, Spinner} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {halFormsFieldsFactory, HalFormsForm} from '../components/HalFormsForm';
 import {isFormValidationError, submitHalFormsData} from '../api/hateoas';
-
-/**
- * Convert a full API URL to a navigation path
- * Removes hostname and strips /api prefix (HalRouteContext will add it back)
- * Example: http://localhost:8080/api/members/123 -> /members/123
- *
- * This works with HalRouteContext which automatically prefixes /api
- * when fetching data, so the route path should not include /api.
- */
-function extractNavigationPath(url: string): string {
-    try {
-        const parsedUrl = new URL(url);
-        let path = parsedUrl.pathname;
-
-        // Remove /api prefix if present, since HalRouteContext adds it back
-        if (path.startsWith('/api')) {
-            path = path.substring(4); // Remove '/api'
-        }
-
-        return path;
-    } catch {
-        // If URL parsing fails, assume it's already a path
-        // Remove /api prefix if present
-        if (url.startsWith('/api')) {
-            return url.substring(4);
-        }
-        return url;
-    }
-}
+import {extractNavigationPath} from '../utils/navigationPath';
 
 /**
  * Generic page for displaying HAL resources

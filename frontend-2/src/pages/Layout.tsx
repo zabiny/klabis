@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
-import {Button} from '../components/UI'
+import {Button, Alert} from '../components/UI'
 import {LogoutIcon} from '../components/Icons'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'
@@ -11,7 +11,7 @@ const Layout = () => {
   const {logout, getUser, isAuthenticated} = useAuth()
   const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const {data: menuItems = [], isLoading: menuLoading} = useRootNavigation()
+  const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
 
   useEffect(() => {
     const loadUserName = async () => {
@@ -98,6 +98,10 @@ const Layout = () => {
           <nav className="flex flex-col p-6 gap-4">
             {menuLoading ? (
                 <div className="text-gray-500 dark:text-gray-400 text-sm">Loading menu...</div>
+            ) : menuError ? (
+                <Alert severity="error" className="text-sm">
+                  Failed to load menu: {menuError.message}
+                </Alert>
             ) : menuItems.length > 0 ? (
                 menuItems.map((item) => (
                     <NavLink
