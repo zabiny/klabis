@@ -7,6 +7,7 @@ import {authConfig} from "./api/klabisUserManager.ts";
 import {ThemeProvider} from "./theme/ThemeContext.tsx";
 import ErrorFallback from './components/ErrorFallback';
 import {GenericHalPage} from "./pages/GenericHalPage.tsx";
+import {MemberDetailsPage} from "./pages/MemberDetailsPage.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -36,6 +37,7 @@ function App() {
                             </ProtectedRoute>
                         }>
                             <Route index element={<GenericHalPage/>}/>
+                            <Route path="/members/:id" element={<MemberDetailsPage/>}/>
                             <Route path="*" element={<GenericHalPage/>}/>
                         </Route>
                     </Routes>
