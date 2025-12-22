@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react'
-import {Link, Outlet, useNavigate} from 'react-router-dom'
+import {NavLink, Outlet, useNavigate} from 'react-router-dom'
 import {Button} from '../components/UI'
 import {LogoutIcon} from '../components/Icons'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
@@ -17,15 +17,16 @@ const Layout = () => {
     const loadUserName = async () => {
       if (isAuthenticated) {
         try {
-          const user = await getUser()
-          setUserDetails(user)
+          return await getUser()
         } catch (error) {
-          console.error('Error loading user name:', error)
+          throw new Error("Error loading user name: ", {cause: error})
         }
+      } else {
+        throw new Error("No user is authenticated")
       }
     }
 
-    loadUserName()
+    loadUserName().then(setUserDetails)
   }, [isAuthenticated, getUser]) // Note: getUser is stable due to useCallback, but kept in deps for clarity
 
   const handleLogout = () => {
@@ -55,7 +56,7 @@ const Layout = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
               </button>
-              <h1 className="text-lg font-semibold">Klabis - Členská sekce</h1>
+              <h1 className="text-lg font-semibold"><NavLink to={"/"}>Klabis - Členská sekce</NavLink></h1>
             </div>
 
             {/* Right side: User info and logout */}
@@ -99,14 +100,14 @@ const Layout = () => {
                 <div className="text-gray-500 dark:text-gray-400 text-sm">Loading menu...</div>
             ) : menuItems.length > 0 ? (
                 menuItems.map((item) => (
-                    <Link
+                    <NavLink
                         key={item.rel}
                         to={item.href}
                         onClick={() => setSidebarOpen(false)}
                         className="px-4 py-2 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
                     >
                       {item.label}
-                    </Link>
+                    </NavLink>
                 ))
             ) : (
                 <div className="text-gray-500 dark:text-gray-400 text-sm">No menu items available</div>
