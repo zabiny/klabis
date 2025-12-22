@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Rules
 - use backend-development skill when designing, implementing and performing code review of features on backend. 
+- use style guide from [UI styling guide](docs/frontend/claude_styling_guide.md) when creating new UI components in
+  frontend
 
 # Related sources
 - [Developers guide](./developers.md)
