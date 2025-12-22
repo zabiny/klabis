@@ -1,13 +1,14 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useHalRoute} from '../contexts/HalRouteContext';
-import {Alert, Button} from '../components/UI';
+import {Alert} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
-import {halFormsFieldsFactory, HalFormsForm} from '../components/HalFormsForm';
-import type {HalFormsTemplate, Link, TemplateTarget} from '../api';
+import type {HalFormsTemplate} from '../api';
 import {hasCalendarItems} from '../api';
-import {isFormValidationError, submitHalFormsData} from '../api/hateoas';
 import {extractNavigationPath} from '../utils/navigationPath';
+import {HalLinksSection} from "../components/HalLinksSection.tsx";
+import {HalFormsSection} from "../components/HalFormsSection.tsx";
+import {useHalActions} from "../hooks/useHalActions.ts";
 
 interface CalendarItem {
     start: string;
@@ -24,12 +25,11 @@ interface CalendarItem {
  * Shows all calendar items on their respective dates
  */
 const CalendarPage = () => {
-    const {resourceData, isLoading, error, refetch, pathname} = useHalRoute();
+    const {resourceData, isLoading, error} = useHalRoute();
+    const {handleNavigateToItem, handleFormSubmit, submitError, isSubmitting} = useHalActions();
     const navigate = useNavigate();
     const [currentDate] = useState(new Date());
     const [selectedTemplate, setSelectedTemplate] = useState<HalFormsTemplate | null>(null);
-    const [submitError, setSubmitError] = useState<Error | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Extract calendar items from resource data using type guard
     let calendarItems: CalendarItem[] = [];
@@ -68,36 +68,6 @@ const CalendarPage = () => {
         const href = item._links.event?.href || item._links.self.href;
         const itemPath = extractNavigationPath(href);
         navigate(itemPath);
-    };
-
-    // Helper function to handle action link clicks
-    const handleNavigateToAction = (href: string) => {
-        const path = extractNavigationPath(href);
-        navigate(path);
-    };
-
-    // Helper function to handle form submission
-    const handleFormSubmit = async (formData: Record<string, unknown>) => {
-        if (!selectedTemplate) return;
-
-        setIsSubmitting(true);
-        setSubmitError(null);
-
-        try {
-            const submitTarget: TemplateTarget = {
-                target: '/api' + pathname,
-                method: selectedTemplate.method || 'POST',
-            };
-            await submitHalFormsData(submitTarget, formData);
-            // Refetch data after successful submission
-            await refetch();
-            // Close the form
-            setSelectedTemplate(null);
-        } catch (err) {
-            setSubmitError(err instanceof Error ? err : new Error('Failed to submit form'));
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     // Helper function to check if a calendar item falls on a specific day
@@ -197,84 +167,23 @@ const CalendarPage = () => {
 
             {/* Links/Actions section */}
             {resourceData?._links && Object.keys(resourceData._links).length > 0 ? (
-                <div className="mt-4 p-4 border rounded bg-blue-50 dark:bg-blue-900">
-                    <h3 className="font-semibold mb-2">Dostupné akce</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {Object.entries(resourceData._links as Record<string, Link>)
-                            .filter(([rel]) => rel !== 'self')
-                            .map(([rel, link]: [string, Link]) => {
-                                const links = Array.isArray(link) ? link : [link];
-                                return links.map((l: Link, idx: number) => (
-                                    <button
-                                        key={`${rel}-${idx}`}
-                                        onClick={() => l.href && handleNavigateToAction(l.href)}
-                                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm border-none cursor-pointer"
-                                        title={rel}
-                                    >
-                                        {l.title || rel}
-                                    </button>
-                                ));
-                            })}
-                    </div>
-                </div>
+                <HalLinksSection
+                    links={resourceData._links}
+                    onNavigate={handleNavigateToItem}
+                />
             ) : null}
 
             {/* Templates/Forms section */}
             {resourceData?._templates && Object.keys(resourceData._templates).length > 0 ? (
-                <div className="mt-4 p-4 border rounded bg-green-50 dark:bg-green-900">
-                    <h3 className="font-semibold mb-2">Dostupné formuláře</h3>
-                    {selectedTemplate ? (
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between mb-4">
-                                <h4 className="font-semibold">{selectedTemplate.title || 'Formulář'}</h4>
-                                <Button
-                                    onClick={() => setSelectedTemplate(null)}
-                                    variant="secondary"
-                                    size="sm"
-                                >
-                                    Zavřít
-                                </Button>
-                            </div>
-
-                            {submitError && (
-                                <Alert severity="error">
-                                    <div className="space-y-1">
-                                        <p>{submitError.message}</p>
-                                        {isFormValidationError(submitError) && (
-                                            <ul className="list-disc list-inside text-sm">
-                                                {Object.entries(submitError.validationErrors).map(([field, error]) => (
-                                                    <li key={field}>{field}: {error}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                </Alert>
-                            )}
-
-                            <HalFormsForm
-                                data={resourceData}
-                                template={selectedTemplate}
-                                onSubmit={handleFormSubmit}
-                                onCancel={() => setSelectedTemplate(null)}
-                                isSubmitting={isSubmitting}
-                                fieldsFactory={halFormsFieldsFactory}
-                            />
-                        </div>
-                    ) : (
-                        <div className="flex flex-wrap gap-2">
-                            {Object.entries(resourceData._templates as Record<string, HalFormsTemplate>).map(([templateName, template]: [string, HalFormsTemplate]) => (
-                                <button
-                                    key={templateName}
-                                    onClick={() => setSelectedTemplate(template)}
-                                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm border-none cursor-pointer"
-                                    title={template.title || templateName}
-                                >
-                                    {template.title || templateName}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <HalFormsSection
+                    templates={resourceData._templates}
+                    data={resourceData}
+                    selectedTemplate={selectedTemplate}
+                    onSelectTemplate={setSelectedTemplate}
+                    onSubmit={handleFormSubmit}
+                    submitError={submitError}
+                    isSubmitting={isSubmitting}
+                />
             ) : null}
 
             {/* Full JSON preview */}
