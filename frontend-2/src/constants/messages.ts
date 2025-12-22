@@ -13,9 +13,9 @@ export const VALIDATION_MESSAGES = {
 export const UI_MESSAGES = {
 	FORM: 'Formulář',
 	CLOSE: 'Zavřít',
-	SHOW_RAW_JSON: 'Zobrazit surový JSON',
+	SHOW_RAW_JSON: 'Zobrazit zdrojový JSON',
 	COMPLETE_JSON: 'Úplná JSON data položky',
-	AVAILABLE_ACTIONS: 'Dostupné akce',
+	AVAILABLE_ACTIONS: 'Dostupné odkazy',
 	AVAILABLE_FORMS: 'Dostupné formuláře',
 	COLLECTION_EMPTY: 'Kolekce je prázdná',
 	VIEW_FULL_JSON: 'View full JSON',

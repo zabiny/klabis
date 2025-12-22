@@ -21,12 +21,18 @@ export function HalLinksSection({links, onNavigate}: HalLinksSectionProps): Reac
 		return null;
 	}
 
+	const displayLinks = Object.entries(links)
+		.filter((([rel]) => rel !== HAL_LINK_RELS.SELF));
+
+	if (displayLinks.length === 0) {
+		return <></>;
+	}
+
 	return (
 		<div className="mt-4 p-4 border rounded bg-blue-50 dark:bg-blue-900">
 			<h3 className="font-semibold mb-2">{UI_MESSAGES.AVAILABLE_ACTIONS}</h3>
 			<div className="flex flex-wrap gap-2">
-				{Object.entries(links)
-					.filter(([rel]) => rel !== HAL_LINK_RELS.SELF)
+				{displayLinks
 					.map(([rel, link]: [string, any]) => {
 						const linkArray = Array.isArray(link) ? link : [link];
 						return linkArray.map((l: any, idx: number) => (
