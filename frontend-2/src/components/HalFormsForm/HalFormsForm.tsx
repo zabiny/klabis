@@ -14,6 +14,7 @@ import {type HalFormFieldFactory, type HalFormsInputProps, type SubElementConfig
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory";
 import {Alert, Button, Spinner} from "../UI";
 import {Box} from "../Layout";
+import {VALIDATION_MESSAGES, UI_MESSAGES} from "../../constants/messages";
 
 type FormData = Record<string, unknown>;
 
@@ -42,9 +43,9 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<un
         let validator: Yup.AnySchema = Yup.mixed().nullable();
 
         if (prop.type === "number") {
-            validator = Yup.number().typeError("Musí být číslo");
+            validator = Yup.number().typeError(VALIDATION_MESSAGES.MUST_BE_NUMBER);
         } else if (prop.type === "email") {
-            validator = Yup.string().email("Neplatný email");
+            validator = Yup.string().email(VALIDATION_MESSAGES.INVALID_EMAIL);
         }
 
         if (prop.multiple) {
@@ -52,7 +53,7 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<un
         }
 
         if (prop.required) {
-            validator = validator.required("Povinné pole");
+            validator = validator.required(VALIDATION_MESSAGES.REQUIRED_FIELD);
         }
 
         if (prop.regex) {
@@ -60,7 +61,7 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<un
             if (validator.type === "mixed") {
                 validator = Yup.string();
             }
-            validator = validator.matches(new RegExp(prop.regex), "Nespravny format");
+            validator = validator.matches(new RegExp(prop.regex), VALIDATION_MESSAGES.INVALID_FORMAT);
         }
 
         shape[prop.name] = validator;
@@ -296,7 +297,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                 loading={isFormProcessing}
                                 startIcon={isFormProcessing ? <Spinner size="sm"/> : undefined}
                             >
-                                {isFormProcessing ? "Odesílám..." : submitButtonLabel}
+                                {isFormProcessing ? UI_MESSAGES.SUBMITTING : submitButtonLabel}
                             </Button>;
                         }
 
@@ -308,7 +309,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                 size="md"
                                 onClick={() => onCancel && onCancel()}
                             >
-                                Zpět
+                                {UI_MESSAGES.CLOSE}
                             </Button>;
                         }
 
