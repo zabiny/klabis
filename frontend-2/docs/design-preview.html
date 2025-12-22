@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klabis Design System Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Geist', system-ui, -apple-system, sans-serif;
+            background: #0f0f0f;
+            color: #f5f5f5;
+            line-height: 1.5;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Sohne:wght@400;600;700&family=Fira+Code:wght@400;500;700&display=swap');
+
+        /* Header */
+        header {
+            background: #242424;
+            border-bottom: 2px solid #2a2a2a;
+            padding: 48px 48px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            font-family: 'Sohne', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #a0a0a0;
+            font-size: 16px;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+
+        nav a {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #3b82f6;
+        }
+
+        nav a:hover {
+            background: #60a5fa;
+            transform: translateY(-1px);
+        }
+
+        nav a.active {
+            background: #1e40af;
+        }
+
+        /* Main content */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 48px;
+        }
+
+        section {
+            margin-bottom: 64px;
+        }
+
+        section h2 {
+            font-family: 'Sohne', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #2a2a2a;
+        }
+
+        section h3 {
+            font-family: 'Sohne', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin: 24px 0 16px 0;
+        }
+
+        .subsection {
+            margin-bottom: 32px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        /* Color Grid */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .color-swatch {
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            overflow: hidden;
+            transition: transform 200ms;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-preview {
+            width: 100%;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            font-size: 12px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .color-info {
+            padding: 12px;
+            background: #242424;
+            font-size: 12px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .color-name {
+            font-weight: 600;
+            color: #f5f5f5;
+            margin-bottom: 4px;
+        }
+
+        .color-value {
+            color: #a0a0a0;
+        }
+
+        /* Typography */
+        .typography-example {
+            margin: 16px 0;
+            padding: 16px;
+            background: #242424;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+        }
+
+        .typography-example h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .typography-example.display {
+            font-family: 'Sohne', sans-serif;
+            font-weight: 700;
+            font-size: 32px;
+        }
+
+        .typography-example.body {
+            font-family: 'Geist', sans-serif;
+            font-weight: 400;
+            font-size: 16px;
+        }
+
+        .typography-example.small {
+            font-size: 14px;
+        }
+
+        /* Spacing demo */
+        .spacing-demo {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            margin: 24px 0;
+        }
+
+        .spacing-box {
+            background: #3b82f6;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Button styles */
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        button, .button {
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-family: 'Geist', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        /* Button variants */
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:hover {
+            background: #60a5fa;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid #2a2a2a;
+            color: #f5f5f5;
+        }
+
+        .btn-secondary:hover {
+            border-color: #3a3a3a;
+            background: #242424;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: #f5f5f5;
+        }
+
+        .btn-ghost:hover {
+            background: #242424;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Cards */
+        .card {
+            background: #242424;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 24px;
+            transition: all 200ms;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-color: #3a3a3a;
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .card p {
+            color: #a0a0a0;
+            margin: 12px 0;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 16px;
+            border-radius: 6px;
+            border-left: 4px solid;
+            margin: 16px 0;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .alert-success {
+            background: #064e3b;
+            border-left-color: #10b981;
+            color: #d1fae5;
+        }
+
+        .alert-warning {
+            background: #78350f;
+            border-left-color: #f59e0b;
+            color: #fef3c7;
+        }
+
+        .alert-error {
+            background: #7f1d1d;
+            border-left-color: #ef4444;
+            color: #fee2e2;
+        }
+
+        .alert-info {
+            background: #164e63;
+            border-left-color: #06b6d4;
+            color: #cffafe;
+        }
+
+        .alert-icon {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin: 16px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #a0a0a0;
+            margin-bottom: 8px;
+        }
+
+        input, select, textarea {
+            padding: 10px 16px;
+            background: #161616;
+            border: 1px solid #2a2a2a;
+            color: #f5f5f5;
+            border-radius: 6px;
+            font-family: 'Geist', sans-serif;
+            font-size: 14px;
+            transition: all 200ms;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #707070;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Grid layout for component showcase */
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            border-top: 1px solid #2a2a2a;
+            padding: 32px 48px;
+            text-align: center;
+            color: #707070;
+            font-size: 14px;
+            margin-top: 64px;
+        }
+
+        /* Code blocks */
+        code {
+            background: #161616;
+            border: 1px solid #2a2a2a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #60a5fa;
+        }
+
+        pre {
+            background: #161616;
+            border: 1px solid #2a2a2a;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #60a5fa;
+        }
+
+        /* Animations demo */
+        .animation-demo {
+            padding: 32px;
+            background: #242424;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            text-align: center;
+            margin: 24px 0;
+        }
+
+        .animation-box {
+            width: 60px;
+            height: 60px;
+            background: #3b82f6;
+            border-radius: 6px;
+            margin: 24px auto;
+            animation: fadeInScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .hover-lift {
+            cursor: pointer;
+            transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 16px 24px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .hover-lift:active {
+            transform: scale(0.95);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header, main {
+                padding: 24px;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            nav {
+                flex-direction: column;
+            }
+
+            nav a {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* Utility classes */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-24 {
+            margin-top: 24px;
+        }
+
+        .mb-16 {
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>🎨 Klabis Design System</h1>
+    <p>Modern Minimal Intentionality - Design tokens, components, and patterns</p>
+    <nav>
+        <a href="#colors">Colors</a>
+        <a href="#typography">Typography</a>
+        <a href="#spacing">Spacing</a>
+        <a href="#buttons">Buttons</a>
+        <a href="#cards">Cards</a>
+        <a href="#forms">Forms</a>
+        <a href="#alerts">Alerts</a>
+        <a href="#animations">Animations</a>
+    </nav>
+</header>
+
+<main>
+    <!-- COLORS SECTION -->
+    <section id="colors">
+        <h2>Color Palette</h2>
+
+        <h3>Base Neutrals</h3>
+        <div class="subsection">
+            <p>Core dark theme colors for backgrounds and text.</p>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #0f0f0f;">Primary BG</div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Background</div>
+                        <div class="color-value">#0f0f0f</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #1a1a1a;">Secondary BG</div>
+                    <div class="color-info">
+                        <div class="color-name">Secondary Background</div>
+                        <div class="color-value">#1a1a1a</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #242424;">Surface</div>
+                    <div class="color-info">
+                        <div class="color-name">Surface / Cards</div>
+                        <div class="color-value">#242424</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #2a2a2a;">Border</div>
+                    <div class="color-info">
+                        <div class="color-name">Border Default</div>
+                        <div class="color-value">#2a2a2a</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Text Colors</h3>
+        <div class="subsection">
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #f5f5f5; color: #0f0f0f;">Primary Text</div>
+                    <div class="color-info">
+                        <div class="color-name">Text Primary</div>
+                        <div class="color-value">#f5f5f5</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #a0a0a0;">Secondary Text</div>
+                    <div class="color-info">
+                        <div class="color-name">Text Secondary</div>
+                        <div class="color-value">#a0a0a0</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #707070;">Tertiary Text</div>
+                    <div class="color-info">
+                        <div class="color-name">Text Tertiary</div>
+                        <div class="color-value">#707070</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Primary Action Color</h3>
+        <div class="subsection">
+            <p>Used for primary buttons, links, focus states, and interactive elements.</p>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #1e40af;">Primary Dark</div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Dark</div>
+                        <div class="color-value">#1e40af</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #3b82f6;">Primary</div>
+                    <div class="color-info">
+                        <div class="color-name">Primary (Blue)</div>
+                        <div class="color-value">#3b82f6</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #60a5fa;">Primary Light</div>
+                    <div class="color-info">
+                        <div class="color-name">Primary Light</div>
+                        <div class="color-value">#60a5fa</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Semantic Feedback Colors</h3>
+        <div class="subsection">
+            <p>Used only for semantic feedback - success, warnings, errors, and info states.</p>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #10b981;">Success</div>
+                    <div class="color-info">
+                        <div class="color-name">Success</div>
+                        <div class="color-value">#10b981</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #f59e0b;">Warning</div>
+                    <div class="color-info">
+                        <div class="color-name">Warning</div>
+                        <div class="color-value">#f59e0b</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #ef4444;">Error</div>
+                    <div class="color-info">
+                        <div class="color-name">Error</div>
+                        <div class="color-value">#ef4444</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #06b6d4;">Info</div>
+                    <div class="color-info">
+                        <div class="color-name">Info</div>
+                        <div class="color-value">#06b6d4</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-preview" style="background: #8b5cf6;">Accent</div>
+                    <div class="color-info">
+                        <div class="color-name">Accent (Focus)</div>
+                        <div class="color-value">#8b5cf6</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TYPOGRAPHY SECTION -->
+    <section id="typography">
+        <h2>Typography</h2>
+
+        <div class="subsection">
+            <h3>Font Stack</h3>
+            <p><strong>Display:</strong> <code>Sohne</code> - Bold, distinctive headings</p>
+            <p><strong>Body:</strong> <code>Geist</code> - Readable, modern body text</p>
+            <p><strong>Code:</strong> <code>Fira Code</code> - Monospace for code blocks</p>
+        </div>
+
+        <h3>Heading Styles</h3>
+        <div class="subsection">
+            <div class="typography-example display" style="font-size: 30px;">
+                <h4>H1 - Page Title</h4>
+                This is a large heading for page titles
+            </div>
+            <div class="typography-example display" style="font-size: 24px;">
+                <h4>H2 - Section Title</h4>
+                This is a section heading
+            </div>
+            <div class="typography-example display" style="font-size: 20px;">
+                <h4>H3 - Subsection</h4>
+                This is a subsection heading
+            </div>
+            <div class="typography-example" style="font-size: 18px; font-weight: 600;">
+                <h4>H4 - Component Title</h4>
+                This is a component heading
+            </div>
+            <div class="typography-example" style="font-size: 14px; font-weight: 600; text-transform: uppercase;">
+                <h4>H6 - Label / Caption</h4>
+                This is a small label or caption
+            </div>
+        </div>
+
+        <h3>Body Text Styles</h3>
+        <div class="subsection">
+            <div class="typography-example body" style="font-size: 16px;">
+                <h4>Body - Default</h4>
+                This is body text at the default size. Geist font provides excellent readability for content blocks and
+                descriptions.
+            </div>
+            <div class="typography-example" style="font-size: 14px;">
+                <h4>Body - Secondary</h4>
+                This is secondary body text. Used for descriptions and supporting information.
+            </div>
+            <div class="typography-example" style="font-size: 12px;">
+                <h4>Helper Text</h4>
+                This is helper text. Used for form labels, hints, and small metadata.
+            </div>
+        </div>
+    </section>
+
+    <!-- SPACING SECTION -->
+    <section id="spacing">
+        <h2>Spacing Scale</h2>
+
+        <div class="subsection">
+            <p>All spacing uses a consistent 4px base unit for harmony and predictability.</p>
+            <div class="spacing-demo">
+                <div class="spacing-box" style="width: 20px; height: 20px; font-size: 10px;">2px</div>
+                <div class="spacing-box" style="width: 28px; height: 28px;">4px</div>
+                <div class="spacing-box" style="width: 40px; height: 40px;">8px</div>
+                <div class="spacing-box" style="width: 52px; height: 52px;">12px</div>
+                <div class="spacing-box" style="width: 64px; height: 64px;">16px</div>
+                <div class="spacing-box" style="width: 88px; height: 88px;">24px</div>
+                <div class="spacing-box" style="width: 112px; height: 112px;">32px</div>
+                <div class="spacing-box" style="width: 160px; height: 160px;">48px</div>
+            </div>
+        </div>
+
+        <h3>Common Usage Patterns</h3>
+        <div class="subsection">
+                <pre>Button Padding:         px-4 py-2.5 (16px × 10px)
+Card Padding:           p-6 (24px all sides)
+Form Field Padding:     px-4 py-2.5 (16px × 10px)
+Modal Padding:          p-6 (24px)
+Table Cell Padding:     px-4 py-3 (16px × 12px)
+Section Gap:            gap-4 (16px spacing)
+Section Margin:         mb-8 (32px)
+Component Margin:       mb-6 (24px)</pre>
+        </div>
+    </section>
+
+    <!-- BUTTONS SECTION -->
+    <section id="buttons">
+        <h2>Buttons</h2>
+
+        <h3>Button Variants</h3>
+        <div class="subsection">
+            <div class="button-grid">
+                <button class="btn-primary">Primary Button</button>
+                <button class="btn-secondary">Secondary Button</button>
+                <button class="btn-ghost">Ghost Button</button>
+                <button class="btn-danger">Danger Button</button>
+                <button class="btn-primary" disabled>Disabled Button</button>
+            </div>
+        </div>
+
+        <h3>Button States</h3>
+        <div class="subsection">
+            <p><strong>Default:</strong> Base styling, ready for interaction</p>
+            <p><strong>Hover:</strong> Lift effect (-1px translateY), shadow elevation</p>
+            <p><strong>Active:</strong> Scale down (0.95), instant visual feedback</p>
+            <p><strong>Focus:</strong> Purple ring-accent, 3px focus outline</p>
+            <p><strong>Disabled:</strong> 50% opacity, no hover/active effects</p>
+        </div>
+
+        <h3>Button Sizes</h3>
+        <div class="subsection">
+            <div class="button-grid">
+                <button class="btn-primary" style="padding: 6px 12px; font-size: 12px;">Small</button>
+                <button class="btn-primary">Medium (Default)</button>
+                <button class="btn-primary" style="padding: 12px 24px; font-size: 16px;">Large</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CARDS SECTION -->
+    <section id="cards">
+        <h2>Cards</h2>
+
+        <div class="component-grid">
+            <div class="card">
+                <h3>Default Card</h3>
+                <p>Subtle border with soft shadow on hover. Perfect for content grouping.</p>
+                <button class="btn-secondary" style="margin-top: 16px;">View More</button>
+            </div>
+
+            <div class="card">
+                <h3>Card with Content</h3>
+                <p>Cards provide consistent spacing and visual hierarchy. Use them to group related information.</p>
+                <button class="btn-primary" style="margin-top: 16px;">Action</button>
+            </div>
+
+            <div class="card">
+                <h3>Interactive Card</h3>
+                <p style="margin-bottom: 16px;">Hover over any card to see the subtle elevation effect.</p>
+                <p style="font-size: 12px; color: #707070;">Created with consistent spacing and colors</p>
+            </div>
+        </div>
+
+        <h3>Card Styling Details</h3>
+        <div class="subsection">
+                <pre>Background:     #242424 (surface-raised)
+Border:         1px solid #2a2a2a
+Padding:        24px (p-6)
+Border Radius:  8px (rounded-md)
+Box Shadow:     0 2px 4px rgba(0,0,0,0.1) default
+                0 4px 12px rgba(0,0,0,0.2) on hover
+Transition:     all 200ms cubic-bezier(0.4, 0, 0.2, 1)</pre>
+        </div>
+    </section>
+
+    <!-- FORMS SECTION -->
+    <section id="forms">
+        <h2>Form Elements</h2>
+
+        <div class="subsection">
+            <h3>Text Input</h3>
+            <div class="form-group">
+                <label for="input-example">Email Address</label>
+                <input type="email" id="input-example" placeholder="you@example.com">
+            </div>
+            <p style="font-size: 12px; color: #707070; margin-top: 8px;">Helper text appears below the field</p>
+        </div>
+
+        <div class="subsection">
+            <h3>Select Dropdown</h3>
+            <div class="form-group">
+                <label for="select-example">Choose an Option</label>
+                <select id="select-example">
+                    <option>Option 1</option>
+                    <option>Option 2</option>
+                    <option>Option 3</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="subsection">
+            <h3>Textarea</h3>
+            <div class="form-group">
+                <label for="textarea-example">Message</label>
+                <textarea id="textarea-example" rows="4" placeholder="Enter your message here..."></textarea>
+            </div>
+        </div>
+
+        <h3>Form Field States</h3>
+        <div class="subsection">
+            <p><strong>Default:</strong> Clear visual distinction from page background</p>
+            <p><strong>Focus:</strong> Blue border, subtle ring shadow (ring-opacity-20)</p>
+            <p><strong>Error:</strong> Red border, red ring, red error message below</p>
+            <p><strong>Disabled:</strong> Reduced opacity, cursor-not-allowed</p>
+        </div>
+    </section>
+
+    <!-- ALERTS SECTION -->
+    <section id="alerts">
+        <h2>Alerts & Notifications</h2>
+
+        <div class="subsection">
+            <div class="alert alert-success">
+                <div class="alert-icon">✓</div>
+                <div>Success! Your changes have been saved successfully.</div>
+            </div>
+
+            <div class="alert alert-warning">
+                <div class="alert-icon">⚠</div>
+                <div>Warning: Please review your information before proceeding.</div>
+            </div>
+
+            <div class="alert alert-error">
+                <div class="alert-icon">✕</div>
+                <div>Error: Something went wrong. Please try again or contact support.</div>
+            </div>
+
+            <div class="alert alert-info">
+                <div class="alert-icon">ℹ</div>
+                <div>Info: This is helpful information about your current action.</div>
+            </div>
+        </div>
+
+        <h3>Alert Styling</h3>
+        <div class="subsection">
+            <p>All alerts use a <strong>left border accent (4px)</strong> with semantic background colors and text.</p>
+            <pre>Success Alert:
+  Background: #064e3b
+  Border: 4px solid #10b981
+  Text: #d1fae5
+
+Warning Alert:
+  Background: #78350f
+  Border: 4px solid #f59e0b
+  Text: #fef3c7
+
+Error Alert:
+  Background: #7f1d1d
+  Border: 4px solid #ef4444
+  Text: #fee2e2
+
+Info Alert:
+  Background: #164e63
+  Border: 4px solid #06b6d4
+  Text: #cffafe</pre>
+        </div>
+    </section>
+
+    <!-- ANIMATIONS SECTION -->
+    <section id="animations">
+        <h2>Animations & Micro-Interactions</h2>
+
+        <h3>Animation Timings</h3>
+        <div class="subsection">
+            <p><code>Fast (150ms)</code> - Button clicks, quick state changes</p>
+            <p><code>Standard (200ms)</code> - Color transitions, form focus</p>
+            <p><code>Slow (300ms)</code> - Modal opens, page transitions</p>
+            <p><strong>Easing:</strong> <code>cubic-bezier(0.4, 0, 0.2, 1)</code></p>
+        </div>
+
+        <h3>Button Interactions</h3>
+        <div class="subsection">
+            <div class="animation-demo">
+                <p>Hover or click the button below to see the lift effect</p>
+                <button class="hover-lift">Try hovering here</button>
+            </div>
+            <pre>Button Hover Effect:
+  transform: translateY(-1px)
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1)
+  box-shadow elevation
+
+Button Active Effect:
+  transform: scale(0.95)
+  transition: immediate
+  feedback: tangible press sensation</pre>
+        </div>
+
+        <h3>Scale-In Animation</h3>
+        <div class="subsection">
+            <div class="animation-demo">
+                <p>Scale-in animation (used for modals)</p>
+                <div class="animation-box"></div>
+            </div>
+            <pre>@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+Animation Duration: 300ms cubic-bezier(0.4, 0, 0.2, 1)</pre>
+        </div>
+
+        <h3>Interaction Guidelines</h3>
+        <div class="subsection">
+            <ul style="margin-left: 20px; color: #a0a0a0;">
+                <li style="margin-bottom: 8px;">Keep animations under 300ms for immediate feedback</li>
+                <li style="margin-bottom: 8px;">Use consistent easing across all animations</li>
+                <li style="margin-bottom: 8px;">Apply transitions to state changes (hover, focus, active)</li>
+                <li style="margin-bottom: 8px;">Don't animate multiple elements simultaneously</li>
+                <li style="margin-bottom: 8px;">Avoid animations on every interaction - be selective</li>
+                <li style="margin-bottom: 8px;">Test animations for performance on lower-end devices</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- BEST PRACTICES SECTION -->
+    <section>
+        <h2>Best Practices for New Components</h2>
+
+        <div class="subsection">
+            <h3>✅ DO</h3>
+            <ul style="margin-left: 20px; color: #a0a0a0;">
+                <li style="margin-bottom: 8px;">Use semantic color names (primary, surface-base, border)</li>
+                <li style="margin-bottom: 8px;">Maintain spacing using the 4px scale (2, 4, 8, 12, 16, 24, 32, 48px)
+                </li>
+                <li style="margin-bottom: 8px;">Apply transitions to all state changes</li>
+                <li style="margin-bottom: 8px;">Test keyboard navigation for all interactive elements</li>
+                <li style="margin-bottom: 8px;">Use Tailwind utility classes, avoid custom CSS</li>
+                <li style="margin-bottom: 8px;">Include focus rings (ring-accent) on all interactive elements</li>
+                <li style="margin-bottom: 8px;">Follow existing component patterns</li>
+                <li style="margin-bottom: 8px;">Test in both dark mode and light mode</li>
+            </ul>
+        </div>
+
+        <div class="subsection">
+            <h3>❌ DON'T</h3>
+            <ul style="margin-left: 20px; color: #a0a0a0;">
+                <li style="margin-bottom: 8px;">Use hardcoded hex values (#f44336, etc.)</li>
+                <li style="margin-bottom: 8px;">Mix Tailwind utilities with inline styles</li>
+                <li style="margin-bottom: 8px;">Create custom animations without adding to theme</li>
+                <li style="margin-bottom: 8px;">Remove or hide focus states</li>
+                <li style="margin-bottom: 8px;">Use color alone to convey meaning</li>
+                <li style="margin-bottom: 8px;">Animate too many things at once</li>
+                <li style="margin-bottom: 8px;">Break the spacing scale with arbitrary values</li>
+                <li style="margin-bottom: 8px;">Use generic font stack (always use Sohne/Geist/Fira Code)</li>
+            </ul>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p><strong>Klabis Design System v1.0</strong></p>
+    <p>Modern Minimal Intentionality Design • December 2025</p>
+    <p>Built for professional, intentional UI design with consistency and quality.</p>
+</footer>
+</body>
+</html>
