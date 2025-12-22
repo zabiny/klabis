@@ -6,7 +6,8 @@ import {JsonPreview} from '../components/JsonPreview';
 import {HalLinksSection} from '../components/HalLinksSection';
 import {HalFormsSection} from '../components/HalFormsSection';
 import {useHalActions} from '../hooks/useHalActions';
-import {UI_MESSAGES, TABLE_HEADERS} from '../constants/messages';
+import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
+import NotFoundPage from "./NotFoundPage.tsx";
 
 /**
  * Generic page for displaying HAL resources
@@ -27,6 +28,9 @@ export const GenericHalPage = (): ReactElement => {
     }
 
     if (error) {
+        if (error.message.includes("HTTP 404")) {
+            return <NotFoundPage/>
+        }
         return (
             <Alert severity="error">
                 <div className="space-y-2">
