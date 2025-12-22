@@ -129,7 +129,7 @@ export function HalCollectionContent(): ReactElement {
             return (<HalNavigatorCollectionContentLayout>
                 {responseData?._embedded && Object.entries(responseData._embedded).map(([rel, items]) =>
                     <GenericHalCollectionContent
-                    label={rel} items={items}/>) || "Zadne polozky"}
+                        label={rel} items={items as Record<string, unknown>}/>) || "Zadne polozky"}
             </HalNavigatorCollectionContentLayout>);
     }
 

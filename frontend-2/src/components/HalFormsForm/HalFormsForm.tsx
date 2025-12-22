@@ -14,7 +14,7 @@ import {type HalFormFieldFactory, type HalFormsInputProps, type SubElementConfig
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory";
 import {Alert, Button, Spinner} from "../UI";
 import {Box} from "../Layout";
-import {VALIDATION_MESSAGES, UI_MESSAGES} from "../../constants/messages";
+import {UI_MESSAGES, VALIDATION_MESSAGES} from "../../constants/messages";
 
 type FormData = Record<string, unknown>;
 
@@ -36,9 +36,12 @@ function getInitialValues(
     return initialValues;
 }
 
+// Type helper for Yup schemas
+type YupSchemaMap = Record<string, Yup.AnySchema>;
+
 // TODO: do we want "frontend validation"? There may be validations which can't be done on frontend...
-function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<unknown> {
-    const shape: Record<string, unknown> = {};
+function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<Record<string, any>> {
+    const shape: YupSchemaMap = {};
     template.properties.forEach((prop) => {
         let validator: Yup.AnySchema = Yup.mixed().nullable();
 
@@ -57,16 +60,24 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<un
         }
 
         if (prop.regex) {
-            console.log(validator);
-            if (validator.type === "mixed") {
-                validator = Yup.string();
+            // Properly narrow type before calling .matches()
+            if (validator.type === "string") {
+                validator = (validator as Yup.StringSchema).matches(
+                    new RegExp(prop.regex),
+                    VALIDATION_MESSAGES.INVALID_FORMAT
+                );
+            } else if (validator.type === "mixed") {
+                // For non-string types, convert to string first
+                validator = Yup.string().matches(
+                    new RegExp(prop.regex),
+                    VALIDATION_MESSAGES.INVALID_FORMAT
+                );
             }
-            validator = validator.matches(new RegExp(prop.regex), VALIDATION_MESSAGES.INVALID_FORMAT);
         }
 
         shape[prop.name] = validator;
     });
-    return Yup.object().shape(shape);
+    return Yup.object().shape(shape) as Yup.ObjectSchema<Record<string, unknown>>;
 }
 
 function subElementInputProps(attrName: string, parentProps: HalFormsInputProps, conf?: SubElementConfiguration): HalFormsInputProps {
@@ -98,11 +109,13 @@ function renderField(
     touched: Record<string, unknown>,
     fieldFactory?: HalFormFieldFactory
 ): ReactNode {
-    const errorText = touched[prop.name] && errors[prop.name] ? errors[prop.name] : "";
+    // Properly narrow error type to string
+    const error = touched[prop.name] && errors[prop.name];
+    const errorText: string = typeof error === 'string' ? error : '';
 
     const fieldProps: HalFormsInputProps = {
         prop: prop,
-        errorText,
+        errorText: errorText || undefined,
         subElementProps: (attrName, conf) => {
             return subElementInputProps(attrName, fieldProps, conf);
         }
@@ -240,8 +253,6 @@ interface HalFormsFormProps {
     renderForm?: RenderFormCallback
 }
 
-// TODO: zjednodusit - udelat kontext ktery bude drzet template a udelat hook ktery bude z toho kontextu tahat definici policka pro konkretni nazev
-// TODO: udelat hook/kompomentu (ala Formik Field) ktera zkombinuje HalForms context s Formik a s pomoci Fields factory z jedineho parametru - field name udela kompletni ReactElement daneho fieldu. Takovy hook pak bude mozne pouzit pro libovolny layout formulare stejne jako to umi Formik.
 // TODO: upravit HAL+FORMS: zobrazit "item" vzdy jako read only. Pokud je defalt template pro aktivni metodu, tak zobrazit tlacitko EDIT ktere prepne do editacniho rezimu. Pokud je default template pro GET metodu, tak jen pouzit policka s readonly pro lepsi zobrazeni. Na backendu pridat "default" affordanci pokud pro selflink zadna neexistuje (pouze pro ITEM).
 
 const HalFormsFormContext = React.createContext<HalFormsFormContextType>({renderField: (name) => `${name}`});

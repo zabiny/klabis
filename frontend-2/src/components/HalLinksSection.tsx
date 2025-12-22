@@ -4,7 +4,6 @@
  */
 
 import {type ReactElement} from 'react';
-import {Button} from './UI';
 import {HAL_LINK_RELS} from '../constants/hal';
 import {UI_MESSAGES} from '../constants/messages';
 

@@ -65,7 +65,7 @@ function renderContent(
 
     if (isItemNavigationTargetResponse(item)) {
         const initData: HalResponse =
-            !item || !item.body || isErrorNavigationTargetResponse(item) ? {_embedded: []} : (item.body as HalResponse)
+            !item || !item.body || isErrorNavigationTargetResponse(item) ? {_embedded: {}} : (item.body as HalResponse)
         return (
             <HalEditableItemContent initData={initData}/>
         )

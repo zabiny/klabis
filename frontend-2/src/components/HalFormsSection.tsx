@@ -14,7 +14,7 @@ interface HalFormsSectionProps {
 	templates?: Record<string, HalFormsTemplate>;
 	data: Record<string, unknown>;
 	selectedTemplate: HalFormsTemplate | null;
-	onSelectTemplate: (template: HalFormsTemplate) => void;
+	onSelectTemplate: (template: HalFormsTemplate | null) => void;
 	onSubmit: (formData: Record<string, unknown>) => Promise<void>;
 	submitError: Error | null;
 	isSubmitting: boolean;

@@ -4,7 +4,8 @@ import {useHalRoute} from '../contexts/HalRouteContext';
 import {Alert, Button} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {halFormsFieldsFactory, HalFormsForm} from '../components/HalFormsForm';
-import type {HalFormsTemplate, TemplateTarget} from '../api';
+import type {HalFormsTemplate, Link, TemplateTarget} from '../api';
+import {hasCalendarItems} from '../api';
 import {isFormValidationError, submitHalFormsData} from '../api/hateoas';
 import {extractNavigationPath} from '../utils/navigationPath';
 
@@ -30,8 +31,11 @@ const CalendarPage = () => {
     const [submitError, setSubmitError] = useState<Error | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Extract calendar items from resource data
-    const calendarItems: CalendarItem[] = resourceData?._embedded?.calendarItems || [];
+    // Extract calendar items from resource data using type guard
+    let calendarItems: CalendarItem[] = [];
+    if (resourceData && hasCalendarItems(resourceData)) {
+        calendarItems = resourceData._embedded.calendarItems || [];
+    }
 
     // Calculate month properties
     const year = currentDate.getFullYear();
@@ -73,7 +77,7 @@ const CalendarPage = () => {
     };
 
     // Helper function to handle form submission
-    const handleFormSubmit = async (formData: Record<string, any>) => {
+    const handleFormSubmit = async (formData: Record<string, unknown>) => {
         if (!selectedTemplate) return;
 
         setIsSubmitting(true);
@@ -203,14 +207,14 @@ const CalendarPage = () => {
                 <div className="mt-4 p-4 border rounded bg-blue-50 dark:bg-blue-900">
                     <h3 className="font-semibold mb-2">Dostupné akce</h3>
                     <div className="flex flex-wrap gap-2">
-                        {Object.entries(resourceData._links as Record<string, any>)
+                        {Object.entries(resourceData._links as Record<string, Link>)
                             .filter(([rel]) => rel !== 'self')
-                            .map(([rel, link]: [string, any]) => {
+                            .map(([rel, link]: [string, Link]) => {
                                 const links = Array.isArray(link) ? link : [link];
-                                return links.map((l: any, idx: number) => (
+                                return links.map((l: Link, idx: number) => (
                                     <button
                                         key={`${rel}-${idx}`}
-                                        onClick={() => handleNavigateToAction(l.href)}
+                                        onClick={() => l.href && handleNavigateToAction(l.href)}
                                         className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm border-none cursor-pointer"
                                         title={rel}
                                     >
@@ -265,7 +269,7 @@ const CalendarPage = () => {
                         </div>
                     ) : (
                         <div className="flex flex-wrap gap-2">
-                            {Object.entries(resourceData._templates as Record<string, any>).map(([templateName, template]: [string, any]) => (
+                            {Object.entries(resourceData._templates as Record<string, HalFormsTemplate>).map(([templateName, template]: [string, HalFormsTemplate]) => (
                                 <button
                                     key={templateName}
                                     onClick={() => setSelectedTemplate(template)}

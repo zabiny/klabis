@@ -34,11 +34,19 @@ export interface KlabisHateoasObject {
     _actions?: KlabisActions
 }
 
+// Specific embedded resource type - allows typed access to known embedded structures
+export interface HalEmbeddedResources {
+    [key: string]: unknown | unknown[];
+}
+
 export interface HalResponse {
     _links?: {
         [rel: string]: Link | Array<Link>;
     }
-    _embedded?: object,
+    _embedded?: HalEmbeddedResources;
+    _templates?: {
+        [name: string]: HalFormsTemplate;
+    };
 
     // allow arbitrary additional properties
     [key: string]: unknown;
@@ -117,4 +125,32 @@ export type EntityModel<T> = T & { _links: { [rel: string]: Link | Link[] } };
 
 export type PagedModel<T> = { content: EntityModel<T>[], _links: { [rel: string]: Link | Link[] }, page: PageMetadata }
 
+// Type guards for HAL responses with specific structures
 
+// Check if response has templates
+export function isHalResponseWithTemplates(item: unknown): item is HalResponse & {
+    _templates: Record<string, HalFormsTemplate>
+} {
+    return typeof item === 'object' && item !== null && '_templates' in item &&
+        typeof (item as any)._templates === 'object';
+}
+
+// Calendar item specific embedded resource type
+export interface CalendarItemEmbedded extends HalEmbeddedResources {
+    calendarItems?: Array<{
+        start: string;
+        end: string;
+        note: string;
+        _links: {
+            event?: { href: string };
+            self: { href: string };
+        };
+    }>;
+}
+
+// Type guard for calendar items structure (fixes CalendarPage error)
+export function hasCalendarItems(data: unknown): data is HalResponse & { _embedded: CalendarItemEmbedded } {
+    return typeof data === 'object' && data !== null &&
+        '_embedded' in data && typeof (data as any)._embedded === 'object' &&
+        'calendarItems' in (data as any)._embedded;
+}
