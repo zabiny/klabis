@@ -128,9 +128,8 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                     <table className="w-full text-sm">
                         <thead className="bg-gray-100 dark:bg-gray-800">
                         <tr>
-                            <th className="px-4 py-2 text-left font-semibold">{TABLE_HEADERS.ID}</th>
                             <th className="px-4 py-2 text-left font-semibold">{TABLE_HEADERS.DATA}</th>
-                            <th className="px-4 py-2 text-left font-semibold">{TABLE_HEADERS.ACTIONS}</th>
+                            <th className="px-4 py-2 text-left font-semibold w-fit">{TABLE_HEADERS.ACTIONS}</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -138,8 +137,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                             const {preview, isTruncated} = getTruncatedJsonPreview(item);
                             return (
                                 <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <td className="px-4 py-2">{item?.id || item?._links?.self?.href || index}</td>
-                                    <td className="px-4 py-2 max-w-md">
+                                    <td className="px-4 py-2">
                                         <div className="flex items-center gap-2">
                                             <code className="text-xs text-gray-600 dark:text-gray-400 truncate">
                                                 {preview}
@@ -174,7 +172,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-2">
+                                    <td className="px-4 py-2 w-fit">
                                         {item._links?.self?.href && (
                                             <button
                                                 onClick={() => handleNavigateToItem(item._links.self.href)}
