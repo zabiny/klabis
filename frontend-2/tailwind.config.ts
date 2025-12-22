@@ -10,50 +10,87 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                primary: {
-                    DEFAULT: '#f44336',
-                    dark: '#d32f2f',
-                    light: '#ef5350',
-                },
-                secondary: {
-                    DEFAULT: '#424242',
-                    dark: '#212121',
-                    light: '#616161',
-                },
-                background: {
-                    DEFAULT: '#121212',
-                    paper: '#1e1e1e',
-                },
+                // Neutral base colors
+                black: '#0f0f0f',
+                dark: '#1a1a1a',
                 surface: {
-                    DEFAULT: '#ffffff',
-                    dark: '#1e1e1e',
+                    DEFAULT: '#242424',
+                    base: '#1a1a1a',
+                    raised: '#242424',
                 },
-                text: {
-                    primary: '#ffffff',
-                    secondary: 'rgba(255, 255, 255, 0.7)',
+                // Primary action color (blue)
+                primary: {
+                    DEFAULT: '#3b82f6',
+                    light: '#60a5fa',
+                    dark: '#1e40af',
                 },
+                // Secondary action color
+                secondary: {
+                    DEFAULT: '#6366f1',
+                    light: '#818cf8',
+                    dark: '#4f46e5',
+                },
+                // Semantic colors
                 feedback: {
-                    success: '#4caf50',
-                    warning: '#ff9800',
-                    info: '#2196f3',
-                    error: '#f44336',
+                    success: '#10b981',
+                    warning: '#f59e0b',
+                    error: '#ef4444',
+                    info: '#06b6d4',
+                },
+                // Focus/highlight accent
+                accent: {
+                    DEFAULT: '#8b5cf6',
+                    light: '#a78bfa',
+                    dark: '#7c3aed',
+                },
+                // Text colors
+                text: {
+                    primary: '#f5f5f5',
+                    secondary: '#a0a0a0',
+                    tertiary: '#707070',
+                },
+                // Border colors
+                border: {
+                    DEFAULT: '#2a2a2a',
+                    light: '#3a3a3a',
+                    dark: '#1a1a1a',
+                },
+                // Alert backgrounds (for dark mode)
+                alert: {
+                    success: '#064e3b',
+                    warning: '#78350f',
+                    error: '#7f1d1d',
+                    info: '#164e63',
+                },
+                // Alert text colors
+                'alert-text': {
+                    success: '#d1fae5',
+                    warning: '#fef3c7',
+                    error: '#fee2e2',
+                    info: '#cffafe',
                 },
             },
             fontFamily: {
-                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                sans: ['Geist', 'Sohne', ...defaultTheme.fontFamily.sans],
+                display: ['Sohne', ...defaultTheme.fontFamily.sans],
                 mono: ['Fira Code', ...defaultTheme.fontFamily.mono],
             },
             spacing: {
-                '4px': '0.25rem',
-                '8px': '0.5rem',
-                '12px': '0.75rem',
-                '16px': '1rem',
+                'xs': '0.125rem', // 2px
+                'sm': '0.25rem',  // 4px
+                'md': '0.5rem',   // 8px
+                'lg': '0.75rem',  // 12px
+                'xl': '1rem',     // 16px
+                '2xl': '1.5rem',  // 24px
+                '3xl': '2rem',    // 32px
+                '4xl': '3rem',    // 48px
             },
             borderRadius: {
-                'sm': '4px',
+                'sm': '6px',
                 'base': '8px',
-                'md': '12px',
-                'lg': '16px',
+                'md': '8px',
+                'lg': '12px',
+                'pill': '999px',
             },
             boxShadow: {
                 'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
@@ -68,6 +105,51 @@ const config: Config = {
                 'fast': '150ms',
                 'base': '200ms',
                 'slow': '300ms',
+            },
+            keyframes: {
+                'fade-in': {
+                    '0%': {opacity: '0'},
+                    '100%': {opacity: '1'},
+                },
+                'slide-up': {
+                    '0%': {transform: 'translateY(1rem)', opacity: '0'},
+                    '100%': {transform: 'translateY(0)', opacity: '1'},
+                },
+                'slide-down': {
+                    '0%': {transform: 'translateY(-1rem)', opacity: '0'},
+                    '100%': {transform: 'translateY(0)', opacity: '1'},
+                },
+                'scale-in': {
+                    '0%': {transform: 'scale(0.95)', opacity: '0'},
+                    '100%': {transform: 'scale(1)', opacity: '1'},
+                },
+                'bounce-gentle': {
+                    '0%, 100%': {transform: 'translateY(0)'},
+                    '50%': {transform: 'translateY(-4px)'},
+                },
+                'shake': {
+                    '0%, 100%': {transform: 'translateX(0)'},
+                    '25%': {transform: 'translateX(-3px)'},
+                    '75%': {transform: 'translateX(3px)'},
+                },
+                'shimmer': {
+                    '0%': {backgroundPosition: '-1000px 0'},
+                    '100%': {backgroundPosition: '1000px 0'},
+                },
+                'spin-slow': {
+                    '0%': {transform: 'rotate(0deg)'},
+                    '100%': {transform: 'rotate(360deg)'},
+                },
+            },
+            animation: {
+                'fade-in': 'fade-in 200ms ease-out',
+                'slide-up': 'slide-up 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                'slide-down': 'slide-down 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                'scale-in': 'scale-in 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                'bounce-gentle': 'bounce-gentle 400ms ease-in-out',
+                'shake': 'shake 300ms ease-in-out',
+                'shimmer': 'shimmer 2s infinite',
+                'spin-slow': 'spin-slow 2s linear infinite',
             },
         },
     },

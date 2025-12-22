@@ -29,8 +29,8 @@ export const TableHeaderCell = ({
         right: 'text-right'
     }[align]
 
-    const cursorClass = sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700' : ''
-    const fontWeightClass = isSorted ? 'font-semibold' : 'font-medium'
+    const cursorClass = sortable ? 'cursor-pointer hover:bg-surface-raised' : ''
+    const fontWeightClass = isSorted ? 'font-semibold text-primary' : 'font-semibold text-text-primary'
 
     const handleClick = () => {
         if (sortable && onSort) {
@@ -54,18 +54,18 @@ export const TableHeaderCell = ({
             aria-sort={
                 !sortable ? undefined : isSorted ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'
             }
-            className={`px-6 py-3 bg-gray-50 dark:bg-gray-800 text-sm ${fontWeightClass} text-gray-700 dark:text-gray-200 ${alignClass} ${cursorClass} transition-colors ${className}`}
+            className={`px-4 py-3 bg-surface-base text-sm ${fontWeightClass} ${alignClass} ${cursorClass} transition-colors duration-fast uppercase tracking-wider ${className}`}
         >
             <div className="flex items-center gap-2">
                 {children}
                 {sortable && (
                     <span className="inline-block" aria-hidden="true">
             {isSorted && (
-                <span className="text-primary">
+                <span className="text-primary font-semibold">
                 {sortDirection === 'asc' ? '↑' : '↓'}
               </span>
             )}
-                        {!isSorted && <span className="text-gray-400 dark:text-gray-500">⋮</span>}
+                        {!isSorted && <span className="text-text-tertiary">⋮</span>}
           </span>
                 )}
             </div>

@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react'
+import clsx from 'clsx'
 
 interface CardProps {
     children: ReactNode
@@ -9,13 +10,13 @@ interface CardProps {
 
 /**
  * Card - Container component for grouping related content
- * Replaces MUI Paper with Tailwind styling
+ * Refined design with subtle border and hover effects
  */
 export const Card = ({
                          children,
                          className = '',
                          hoverable = false,
-                         shadow = 'md'
+                         shadow = 'sm'
                      }: CardProps) => {
     const shadowClass = {
         none: '',
@@ -24,12 +25,19 @@ export const Card = ({
         lg: 'shadow-lg'
     }[shadow]
 
-    const hoverClass = hoverable ? 'hover:shadow-lg transition-shadow cursor-pointer' : ''
+    const hoverClass = hoverable ? 'hover:shadow-md hover:border-border-light cursor-pointer' : ''
+    const transitionClass = hoverable ? 'transition-all duration-base' : ''
+
+    const classes = clsx(
+        'bg-surface-raised rounded-md border border-border',
+        shadowClass,
+        hoverClass,
+        transitionClass,
+        className
+    )
 
     return (
-        <div
-            className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${shadowClass} ${hoverClass} ${className}`}
-        >
+        <div className={classes}>
             {children}
         </div>
     )

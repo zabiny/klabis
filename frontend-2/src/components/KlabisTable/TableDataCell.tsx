@@ -26,7 +26,7 @@ export const TableDataCell = ({
     return (
         <td
             colSpan={colSpan}
-            className={`px-6 py-4 text-sm text-gray-900 dark:text-gray-100 ${alignClass} ${className}`}
+            className={`px-4 py-3 text-sm text-text-primary ${alignClass} ${className}`}
         >
             {children}
         </td>

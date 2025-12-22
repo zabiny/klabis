@@ -12,10 +12,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses = {
-    primary: 'bg-primary hover:bg-primary-dark text-white disabled:bg-gray-400',
-    secondary: 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white disabled:bg-gray-300 dark:disabled:bg-gray-600',
-    danger: 'bg-red-500 hover:bg-red-600 text-white disabled:bg-red-300',
-    ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-white disabled:bg-transparent disabled:opacity-50',
+    primary: 'bg-primary hover:bg-primary-light text-white shadow-sm hover:shadow-md active:shadow-none disabled:opacity-50 disabled:shadow-none',
+    secondary: 'bg-surface text-text-primary border border-border hover:border-border-light hover:bg-surface-raised active:bg-surface disabled:opacity-50',
+    danger: 'bg-feedback-error hover:bg-red-500 text-white shadow-sm hover:shadow-md active:shadow-none disabled:opacity-50 disabled:shadow-none',
+    ghost: 'bg-transparent hover:bg-surface-base text-text-primary active:bg-surface-raised disabled:opacity-50',
 }
 
 const sizeClasses = {
@@ -41,11 +41,12 @@ export const Button = ({
                            ...props
                        }: ButtonProps) => {
     const classes = clsx(
-        'inline-flex items-center justify-center font-medium rounded-lg',
-        'transition-all duration-200',
-        'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0',
-        'dark:focus:ring-offset-0',
-        'disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center font-medium rounded-md',
+        'transition-all duration-fast',
+        'focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-0',
+        'hover:-translate-y-0.5',
+        'active:scale-95 active:translate-y-0',
+        'disabled:cursor-not-allowed',
         variantClasses[variant],
         sizeClasses[size],
         fullWidth && 'w-full',

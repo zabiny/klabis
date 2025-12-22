@@ -38,7 +38,7 @@ export const Modal = ({
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-40 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
+                className="fixed inset-0 z-40 bg-black bg-opacity-60 transition-opacity duration-base"
                 onClick={onClose}
                 aria-hidden="true"
             />
@@ -51,20 +51,21 @@ export const Modal = ({
                 aria-labelledby={title ? 'modal-title' : undefined}
             >
                 {/* Modal Content */}
-                <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full ${sizeClass} ${className}`}>
+                <div
+                    className={`bg-surface-raised rounded-md shadow-lg w-full ${sizeClass} animate-scale-in ${className}`}>
                     {/* Header */}
                     {(title || closeButton) && (
                         <div
-                            className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                            className="flex items-center justify-between border-b border-border px-6 py-4 bg-surface-base rounded-t-md">
                             {title && (
-                                <h2 id="modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h2 id="modal-title" className="text-lg font-semibold text-text-primary font-display">
                                     {title}
                                 </h2>
                             )}
                             {closeButton && (
                                 <button
                                     onClick={onClose}
-                                    className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    className="ml-auto text-text-secondary hover:text-text-primary transition-colors duration-base"
                                     aria-label="Close modal"
                                 >
                                     <svg
@@ -86,11 +87,11 @@ export const Modal = ({
                     )}
 
                     {/* Body */}
-                    <div className="px-6 py-4">{children}</div>
+                    <div className="px-6 py-4 text-text-primary">{children}</div>
 
                     {/* Footer */}
                     {footer && (
-                        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-end gap-3">
+                        <div className="border-t border-border px-6 py-4 flex justify-end gap-3">
                             {footer}
                         </div>
                     )}

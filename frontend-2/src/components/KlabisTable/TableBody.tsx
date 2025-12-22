@@ -11,7 +11,7 @@ interface TableBodyProps {
  */
 export const TableBody = ({children, className = ''}: TableBodyProps) => {
     return (
-        <tbody className={`divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900 ${className}`}>
+        <tbody className={`divide-y divide-border bg-dark ${className}`}>
         {children}
         </tbody>
     )

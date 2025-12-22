@@ -25,10 +25,10 @@ export const TableRow = ({
                              'aria-label': ariaLabel,
                              className = ''
                          }: TableRowProps) => {
-    const hoverClass = hover ? 'hover:bg-gray-50 dark:hover:bg-gray-800' : ''
+    const hoverClass = hover ? 'hover:bg-surface-base border-l-4 border-l-primary' : ''
     const cursorClass = onClick ? 'cursor-pointer' : 'cursor-default'
-    const focusClass = tabIndex >= 0 ? 'focus:outline-none focus:ring-2 focus:ring-primary' : ''
-    const transitionClass = 'transition-colors'
+    const focusClass = tabIndex >= 0 ? 'focus:outline-none focus:ring-2 focus:ring-accent' : ''
+    const transitionClass = 'transition-all duration-fast'
 
     return (
         <tr
@@ -37,7 +37,7 @@ export const TableRow = ({
             tabIndex={tabIndex}
             role={role}
             aria-label={ariaLabel}
-            className={`${hoverClass} ${cursorClass} ${focusClass} ${transitionClass} ${className}`}
+            className={`border-l-4 border-l-transparent ${hoverClass} ${cursorClass} ${focusClass} ${transitionClass} ${className}`}
         >
             {children}
         </tr>

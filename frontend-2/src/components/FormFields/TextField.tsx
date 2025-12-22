@@ -4,18 +4,18 @@ import {FieldWrapper} from './FieldWrapper'
 import type {TextAreaFieldProps, TextFieldProps} from './types'
 
 const baseInputClasses = clsx(
-    'w-full px-4 py-2.5 border rounded-lg font-normal',
-    'text-gray-900 dark:text-white',
-    'bg-white dark:bg-gray-700',
-    'border-gray-300 dark:border-gray-600',
-    'placeholder-gray-400 dark:placeholder-gray-500',
-    'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0',
-    'dark:focus:ring-offset-0',
+    'w-full px-4 py-2.5 border rounded-md font-normal',
+    'text-text-primary',
+    'bg-surface-base',
+    'border-border',
+    'placeholder-text-tertiary',
+    'focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-20',
+    'focus:scale-y-105',
     'disabled:opacity-50 disabled:cursor-not-allowed',
-    'transition-colors duration-200'
+    'transition-all duration-base'
 )
 
-const errorInputClasses = 'border-red-500 dark:border-red-400 focus:ring-red-500'
+const errorInputClasses = 'border-feedback-error focus:ring-feedback-error focus:ring-opacity-20 focus:border-feedback-error'
 
 /**
  * TextField component for text input fields

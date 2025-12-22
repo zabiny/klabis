@@ -28,9 +28,9 @@ export const FieldWrapper = ({
     return (
         <div className={clsx('w-full', className)}>
             {label && (
-                <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                <label className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wider">
                     {label}
-                    {required && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
+                    {required && <span className="text-feedback-error ml-1">*</span>}
                 </label>
             )}
 
@@ -41,14 +41,14 @@ export const FieldWrapper = ({
 
             {/* Error message */}
             {error && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400 font-medium">
+                <p className="mt-1 text-sm text-feedback-error font-medium animate-fade-in">
                     {error}
                 </p>
             )}
 
             {/* Help text (only shown if no error) */}
             {helpText && !error && (
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-sm text-text-tertiary">
                     {helpText}
                 </p>
             )}

@@ -100,7 +100,7 @@ export const KlabisTable = <T extends Record<string, unknown>>(props: KlabisTabl
           } : undefined}
           defaultRowsPerPage={defaultRowsPerPage}
     >
-        <div className="shadow-md rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="shadow-md rounded-md overflow-hidden border border-border bg-surface-raised">
           <TableContainer>
             <table className="w-full" aria-label="Tabulka dat">
               <KlabisTableHeaders/>

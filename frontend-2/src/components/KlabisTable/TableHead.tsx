@@ -11,7 +11,7 @@ interface TableHeadProps {
  */
 export const TableHead = ({children, className = ''}: TableHeadProps) => {
     return (
-        <thead className={`bg-gray-50 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-700 ${className}`}>
+        <thead className={`bg-surface-base border-b-2 border-border ${className}`}>
         {children}
         </thead>
     )

@@ -43,17 +43,17 @@ export const Pagination = ({
 
     return (
         <div
-            className={`flex items-center justify-between gap-4 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 ${className}`}>
+            className={`flex items-center justify-between gap-4 px-6 py-4 border-t border-border bg-surface-base ${className}`}>
             {/* Rows per page selector */}
             <div className="flex items-center gap-2">
-                <label htmlFor="rows-per-page" className="text-sm text-gray-700 dark:text-gray-300">
+                <label htmlFor="rows-per-page" className="text-sm text-text-secondary">
                     {labelRowsPerPage}
                 </label>
                 <select
                     id="rows-per-page"
                     value={rowsPerPage}
                     onChange={handleRowsPerPageChange}
-                    className="form-input py-1 px-2 text-sm h-9 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
+                    className="form-input py-1 px-2 text-sm h-9 bg-surface-base border border-border rounded-md text-text-primary"
                 >
                     {rowsPerPageOptions.map((option) => (
                         <option key={option} value={option}>
@@ -64,7 +64,7 @@ export const Pagination = ({
             </div>
 
             {/* Displayed rows info */}
-            <div className="text-sm text-gray-700 dark:text-gray-300">
+            <div className="text-sm text-text-secondary">
                 {displayedRows}
             </div>
 
@@ -79,7 +79,7 @@ export const Pagination = ({
                 >
                     ← Previous
                 </Button>
-                <span className="text-sm text-gray-700 dark:text-gray-300 px-2">
+                <span className="text-sm text-text-secondary px-2">
           Page {page + 1} of {totalPages}
         </span>
                 <Button
