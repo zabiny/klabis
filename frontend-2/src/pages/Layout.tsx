@@ -123,7 +123,7 @@ const Layout = () => {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 pt-16 px-6 py-6 overflow-auto">
+        <main className="flex-1 pt-20 px-6 py-6 overflow-auto">
           <Outlet/>
         </main>
       </div>
