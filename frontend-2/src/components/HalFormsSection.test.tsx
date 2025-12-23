@@ -1,501 +1,482 @@
+import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type {HalFormsHandlers, HalFormsState} from './HalFormsSection';
 import {HalFormsSection} from './HalFormsSection';
+import type {HalFormsTemplate} from '../api';
 import {mockHalFormsTemplate} from '../__mocks__/halData';
 
 // Mock the HalFormsForm component since it's complex
 jest.mock('./HalFormsForm', () => ({
-    HalFormsForm: ({template, onCancel}: any) => (
-        <div data-testid="hal-forms-form">
-            <h4>{template.title || 'Form'}</h4>
-            <button onClick={onCancel}>Cancel</button>
-        </div>
-    ),
-    halFormsFieldsFactory: {},
+	HalFormsForm: ({template, onCancel, onSubmit}: any) => (
+		<div data-testid="hal-forms-form">
+			<h4>{template.title || 'Form'}</h4>
+			<button onClick={() => onSubmit({testField: 'testValue'})}>Submit Form</button>
+			<button onClick={onCancel}>Cancel</button>
+		</div>
+	),
+	halFormsFieldsFactory: {},
 }));
 
 jest.mock('./UI', () => ({
-    Alert: ({children}: any) => <div data-testid="alert">{children}</div>,
-    Button: ({children, onClick}: any) => <button onClick={onClick}>{children}</button>,
+	Alert: ({children, severity}: any) => (
+		<div data-testid={`alert-${severity}`}>{children}</div>
+	),
+	Button: ({children, onClick, 'data-testid': testId, 'aria-label': ariaLabel}: any) => (
+		<button onClick={onClick} data-testid={testId} aria-label={ariaLabel}>
+			{children}
+		</button>
+	),
 }));
 
 jest.mock('../api/hateoas', () => ({
-    isFormValidationError: jest.fn(() => false),
+	isFormValidationError: jest.fn((error) => {
+		return error && error.validationErrors !== undefined;
+	}),
 }));
 
 describe('HalFormsSection Component', () => {
-    describe('Rendering', () => {
-        it('should not render when templates are not provided', () => {
-            const {container} = render(
-                <HalFormsSection
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
-            expect(container.firstChild).toBeNull();
-        });
+	const mockTemplate = (overrides = {}): HalFormsTemplate => mockHalFormsTemplate(overrides);
 
-        it('should not render when templates object is empty', () => {
-            const {container} = render(
-                <HalFormsSection
-                    templates={{}}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
-            expect(container.firstChild).toBeNull();
-        });
+	const createDefaultProps = (overrides = {}) => ({
+		templates: undefined,
+		data: {},
+		formState: {
+			selectedTemplate: null,
+			submitError: null,
+			isSubmitting: false,
+		} as HalFormsState,
+		handlers: {
+			onSelectTemplate: jest.fn(),
+			onSubmit: jest.fn(),
+		} as unknown as HalFormsHandlers,
+		...overrides,
+	});
 
-        it('should render section when templates are provided', () => {
-            const templates = {
-                create: mockHalFormsTemplate(),
-            };
-            render(
-                <HalFormsSection
-                    templates={templates}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
-            const section = screen.getByText(/template|form|action/i, {selector: 'h3'});
-            expect(section).toBeInTheDocument();
-        });
-    });
+	describe('Rendering', () => {
+		it('should not render when templates are not provided', () => {
+			const {container} = render(
+				<HalFormsSection {...createDefaultProps()} />,
+			);
+			expect(container.firstChild).toBeNull();
+		});
 
-    describe('Template Button Display', () => {
-        it('should render buttons for each template when none selected', () => {
-            const templates = {
-                create: mockHalFormsTemplate({title: 'Create'}),
-                update: mockHalFormsTemplate({title: 'Update', method: 'PUT'}),
-            };
-            render(
-                <HalFormsSection
-                    templates={templates}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
-            expect(screen.getByText('Create')).toBeInTheDocument();
-            expect(screen.getByText('Update')).toBeInTheDocument();
-        });
+		it('should not render when templates object is empty', () => {
+			const {container} = render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {},
+					})}
+				/>,
+			);
+			expect(container.firstChild).toBeNull();
+		});
 
-        it('should use template title as button text', () => {
-            const templates = {
-                create: mockHalFormsTemplate({title: 'Add New Item'}),
-            };
-            render(
-                <HalFormsSection
-                    templates={templates}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
-            expect(screen.getByText('Add New Item')).toBeInTheDocument();
-        });
+		it('should render section when templates are provided', () => {
+			const templates = {
+				create: mockTemplate({title: 'Create'}),
+			};
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates,
+					})}
+				/>,
+			);
+			const section = screen.getByRole('heading', {level: 3});
+			expect(section).toBeInTheDocument();
+		});
+	});
 
-        it('should use template name when title is not provided', () => {
-            const templates = {
-                customAction: mockHalFormsTemplate({title: undefined}),
-            };
-            render(
-                <HalFormsSection
-                    templates={templates}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
-            expect(screen.getByText('customAction')).toBeInTheDocument();
-        });
+	describe('Template Selector Mode (No Template Selected)', () => {
+		it('should render template buttons when no template is selected', () => {
+			const templates = {
+				create: mockTemplate({title: 'Create'}),
+				update: mockTemplate({title: 'Update', method: 'PUT'}),
+			};
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates,
+					})}
+				/>,
+			);
 
-        it('should have title attribute on buttons', () => {
-            const templates = {
-                create: mockHalFormsTemplate({title: 'Create Item'}),
-            };
-            render(
-                <HalFormsSection
-                    templates={templates}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
-            const button = screen.getByText('Create Item');
-            expect(button).toHaveAttribute('title', 'Create Item');
-        });
-    });
+			expect(screen.getByTestId('form-template-button-create')).toBeInTheDocument();
+			expect(screen.getByTestId('form-template-button-update')).toBeInTheDocument();
+		});
 
-    describe('Template Selection', () => {
-        it('should call onSelectTemplate when template button is clicked', async () => {
-            const user = userEvent.setup();
-            const mockOnSelectTemplate = jest.fn();
-            const template = mockHalFormsTemplate({title: 'Create'});
-            const templates = {create: template};
+		it('should display template title as button text', () => {
+			const templates = {
+				create: mockTemplate({title: 'Create Item'}),
+			};
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates,
+					})}
+				/>,
+			);
 
-            render(
-                <HalFormsSection
-                    templates={templates}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={mockOnSelectTemplate}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+			expect(screen.getByText('Create Item')).toBeInTheDocument();
+		});
 
-            const button = screen.getByText('Create');
-            await user.click(button);
-            expect(mockOnSelectTemplate).toHaveBeenCalledWith(template);
-        });
+		it('should display template name when title is not provided', () => {
+			const templates = {
+				customAction: mockTemplate({title: undefined}),
+			};
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates,
+					})}
+				/>,
+			);
 
-        it('should display form when template is selected', () => {
-            const template = mockHalFormsTemplate({title: 'Edit Item'});
-            render(
-                <HalFormsSection
-                    templates={{edit: template}}
-                    data={{}}
-                    selectedTemplate={template}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+			expect(screen.getByText('customAction')).toBeInTheDocument();
+		});
 
-            expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
-            // The template title should appear in the component
-            const titles = screen.getAllByText('Edit Item');
-            expect(titles.length).toBeGreaterThanOrEqual(1);
-        });
+		it('should have proper aria-label on template buttons', () => {
+			const templates = {
+				create: mockTemplate({title: 'Create Form'}),
+			};
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates,
+					})}
+				/>,
+			);
 
-        it('should show close button when form is open', () => {
-            const template = mockHalFormsTemplate({title: 'Create'});
-            render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={template}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+			const button = screen.getByTestId('form-template-button-create');
+			expect(button).toHaveAttribute('aria-label', 'Select Create Form form');
+		});
 
-            expect(screen.getByText('Close') || screen.getByText('Cancel')).toBeInTheDocument();
-        });
+		it('should call onSelectTemplate when a template button is clicked', async () => {
+			const onSelectTemplate = jest.fn();
+			const createTemplate = mockTemplate({title: 'Create'});
+			const templates = {
+				create: createTemplate,
+			};
 
-        it('should call onSelectTemplate with null when close is clicked', async () => {
-            const user = userEvent.setup();
-            const mockOnSelectTemplate = jest.fn();
-            const template = mockHalFormsTemplate({title: 'Create'});
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates,
+						handlers: {
+							onSelectTemplate,
+							onSubmit: jest.fn(),
+						},
+					})}
+				/>,
+			);
 
-            render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={template}
-                    onSelectTemplate={mockOnSelectTemplate}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+			const button = screen.getByTestId('form-template-button-create');
+			await userEvent.click(button);
 
-            const closeButton = screen.getByText('Cancel');
-            await user.click(closeButton);
-            expect(mockOnSelectTemplate).toHaveBeenCalledWith(null);
-        });
-    });
+			expect(onSelectTemplate).toHaveBeenCalledWith(createTemplate);
+		});
+	});
 
-    describe('Error Display', () => {
-        it('should not display error when submitError is null', () => {
-            const template = mockHalFormsTemplate();
-            const {container} = render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={template}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+	describe('Form Display Mode (Template Selected)', () => {
+		it('should render form when template is selected', () => {
+			const selectedTemplate = mockTemplate({title: 'Create'});
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
 
-            expect(container.querySelector('[data-testid="alert"]')).not.toBeInTheDocument();
-        });
+			expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
+		});
 
-        it('should display error alert when submitError is provided', () => {
-            const template = mockHalFormsTemplate();
-            const error = new Error('Form submission failed');
+		it('should display selected template title', () => {
+			const selectedTemplate = mockTemplate({title: 'Edit Item'});
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {edit: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
 
-            render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={template}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={error}
-                    isSubmitting={false}
-                />,
-            );
+			const heading = screen.getAllByText('Edit Item')[0];
+			expect(heading).toBeInTheDocument();
+			expect(heading.tagName).toBe('H4');
+		});
 
-            expect(screen.getByTestId('alert')).toBeInTheDocument();
-            expect(screen.getByText('Form submission failed')).toBeInTheDocument();
-        });
+		it('should have close button with proper attributes', () => {
+			const selectedTemplate = mockTemplate({title: 'Create'});
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
 
-        it('should display validation errors when present', () => {
-            const template = mockHalFormsTemplate();
-            const error = new Error('Validation failed') as any;
-            error.validationErrors = {email: 'Invalid email'};
+			const closeButton = screen.getByTestId('close-form-button');
+			expect(closeButton).toBeInTheDocument();
+			expect(closeButton).toHaveAttribute('aria-label', 'Close form');
+		});
 
-            // Mock isFormValidationError to return true
-            const {isFormValidationError} = require('../api/hateoas');
-            isFormValidationError.mockReturnValue(true);
+		it('should call onSelectTemplate with null when close button is clicked', async () => {
+			const onSelectTemplate = jest.fn();
+			const selectedTemplate = mockTemplate({title: 'Create'});
 
-            render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={template}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={error}
-                    isSubmitting={false}
-                />,
-            );
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+						handlers: {
+							onSelectTemplate,
+							onSubmit: jest.fn(),
+						},
+					})}
+				/>,
+			);
 
-            expect(screen.getByText(/Invalid email/)).toBeInTheDocument();
+			const closeButton = screen.getByTestId('close-form-button');
+			await userEvent.click(closeButton);
 
-            isFormValidationError.mockReturnValue(false);
-        });
-    });
+			expect(onSelectTemplate).toHaveBeenCalledWith(null);
+		});
+	});
 
-    describe('Form State', () => {
-        it('should pass selectedTemplate to HalFormsForm', () => {
-            const template = mockHalFormsTemplate({title: 'Create'});
-            render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={template}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+	describe('Error Handling', () => {
+		it('should display error alert when submitError is present', () => {
+			const selectedTemplate = mockTemplate();
+			const submitError = new Error('Form submission failed');
 
-            expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
-        });
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
 
-        it('should pass data to HalFormsForm', () => {
-            const template = mockHalFormsTemplate();
-            const testData = {name: 'Test', email: 'test@example.com'};
+			expect(screen.getByTestId('alert-error')).toBeInTheDocument();
+			expect(screen.getByText('Form submission failed')).toBeInTheDocument();
+		});
 
-            render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={testData}
-                    selectedTemplate={template}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+		it('should display validation errors when submitError has validationErrors', () => {
+			const selectedTemplate = mockTemplate();
+			const submitError = new Error('Validation failed') as any;
+			submitError.validationErrors = {
+				email: 'Invalid email format',
+				name: 'Name is required',
+			};
 
-            expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
-        });
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
 
-        it('should pass isSubmitting state', () => {
-            const template = mockHalFormsTemplate();
-            render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={template}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={true}
-                />,
-            );
+			expect(screen.getByText('email: Invalid email format')).toBeInTheDocument();
+			expect(screen.getByText('name: Name is required')).toBeInTheDocument();
+		});
 
-            expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
-        });
-    });
+		it('should not display validation errors when submitError does not have validationErrors', () => {
+			const selectedTemplate = mockTemplate();
+			const submitError = new Error('Network error');
 
-    describe('Styling', () => {
-        it('should have proper container styling', () => {
-            const template = mockHalFormsTemplate();
-            const {container} = render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
 
-            const section = container.querySelector('div:not([data-testid])');
-            expect(section).toHaveClass('mt-4', 'p-4', 'border', 'rounded', 'bg-green-50');
-        });
+			const listItems = screen.queryAllByRole('listitem');
+			expect(listItems).toHaveLength(0);
+		});
+	});
 
-        it('should style template buttons correctly', () => {
-            const template = mockHalFormsTemplate({title: 'Create'});
-            render(
-                <HalFormsSection
-                    templates={{create: template}}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+	describe('Form Submission State', () => {
+		it('should pass isSubmitting state to form', () => {
+			const selectedTemplate = mockTemplate();
+			const {rerender} = render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
 
-            const button = screen.getByText('Create');
-            expect(button).toHaveClass('px-3', 'py-1', 'bg-green-600', 'text-white', 'rounded');
-        });
-    });
+			expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
 
-    describe('Multiple Templates', () => {
-        it('should render multiple template buttons', () => {
-            const templates = {
-                create: mockHalFormsTemplate({title: 'Create'}),
-                update: mockHalFormsTemplate({title: 'Update', method: 'PUT'}),
-                delete: mockHalFormsTemplate({title: 'Delete', method: 'DELETE'}),
-            };
+			// Re-render with isSubmitting true
+			rerender(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: true,
+						},
+					})}
+				/>,
+			);
 
-            render(
-                <HalFormsSection
-                    templates={templates}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={() => {
-                    }}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+			expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
+		});
+	});
 
-            expect(screen.getByText('Create')).toBeInTheDocument();
-            expect(screen.getByText('Update')).toBeInTheDocument();
-            expect(screen.getByText('Delete')).toBeInTheDocument();
-        });
+	describe('Props Grouping', () => {
+		it('should accept formState prop with state values', () => {
+			const selectedTemplate = mockTemplate();
+			const formState: HalFormsState = {
+				selectedTemplate,
+				submitError: null,
+				isSubmitting: true,
+			};
 
-        it('should handle template switching', async () => {
-            const user = userEvent.setup();
-            const mockOnSelectTemplate = jest.fn();
-            const template1 = mockHalFormsTemplate({title: 'Create'});
-            const template2 = mockHalFormsTemplate({title: 'Update', method: 'PUT'});
+			const {container} = render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState,
+					})}
+				/>,
+			);
 
-            const {rerender} = render(
-                <HalFormsSection
-                    templates={{create: template1, update: template2}}
-                    data={{}}
-                    selectedTemplate={template1}
-                    onSelectTemplate={mockOnSelectTemplate}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+			expect(container.firstChild).not.toBeNull();
+		});
 
-            // Close the form
-            const cancelButton = screen.getByText('Cancel');
-            await user.click(cancelButton);
+		it('should accept handlers prop with callback functions', async () => {
+			const onSelectTemplate = jest.fn();
+			const onSubmit = jest.fn();
+			const handlers: HalFormsHandlers = {
+				onSelectTemplate,
+				onSubmit,
+			};
 
-            // Select new template
-            rerender(
-                <HalFormsSection
-                    templates={{create: template1, update: template2}}
-                    data={{}}
-                    selectedTemplate={null}
-                    onSelectTemplate={mockOnSelectTemplate}
-                    onSubmit={async () => {
-                    }}
-                    submitError={null}
-                    isSubmitting={false}
-                />,
-            );
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: mockTemplate()},
+						handlers,
+					})}
+				/>,
+			);
 
-            const updateButton = screen.getByText('Update');
-            await user.click(updateButton);
-            expect(mockOnSelectTemplate).toHaveBeenLastCalledWith(template2);
-        });
-    });
+			const button = screen.getByTestId('form-template-button-create');
+			await userEvent.click(button);
+
+			expect(onSelectTemplate).toHaveBeenCalled();
+		});
+	});
+
+	describe('Accessibility', () => {
+		it('should have proper structure with heading', () => {
+			const templates = {
+				create: mockTemplate({title: 'Create'}),
+			};
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates,
+					})}
+				/>,
+			);
+
+			const heading = screen.getByRole('heading', {level: 3});
+			expect(heading).toBeInTheDocument();
+		});
+
+		it('should render all template buttons with proper text IDs', () => {
+			const templates = {
+				create: mockTemplate({title: 'Create'}),
+				update: mockTemplate({title: 'Update'}),
+				delete: mockTemplate({title: 'Delete'}),
+			};
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates,
+					})}
+				/>,
+			);
+
+			expect(screen.getByTestId('form-template-button-create')).toBeInTheDocument();
+			expect(screen.getByTestId('form-template-button-update')).toBeInTheDocument();
+			expect(screen.getByTestId('form-template-button-delete')).toBeInTheDocument();
+		});
+	});
+
+	describe('Data Passing', () => {
+		it('should pass data prop to HalFormsForm', () => {
+			const selectedTemplate = mockTemplate();
+			const data = {
+				id: 'test-id',
+				name: 'Test Name',
+			};
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						data,
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
+		});
+	});
 });

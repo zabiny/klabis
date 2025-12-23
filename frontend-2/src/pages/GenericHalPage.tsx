@@ -203,11 +203,8 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
             <HalFormsSection
                 templates={data._templates}
                 data={data}
-                selectedTemplate={selectedTemplate}
-                onSelectTemplate={setSelectedTemplate}
-                onSubmit={handleFormSubmit}
-                submitError={submitError}
-                isSubmitting={isSubmitting}
+                formState={{selectedTemplate, submitError, isSubmitting}}
+                handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
             />
 
             {/* Full JSON preview for advanced users */}
@@ -288,11 +285,8 @@ const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
             <HalFormsSection
                 templates={data._templates}
                 data={data}
-                selectedTemplate={selectedTemplate}
-                onSelectTemplate={setSelectedTemplate}
-                onSubmit={handleFormSubmit}
-                submitError={submitError}
-                isSubmitting={isSubmitting}
+                formState={{selectedTemplate, submitError, isSubmitting}}
+                handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
             />
 
             {/* Full JSON preview */}

@@ -178,11 +178,8 @@ const CalendarPage = () => {
                 <HalFormsSection
                     templates={resourceData._templates}
                     data={resourceData}
-                    selectedTemplate={selectedTemplate}
-                    onSelectTemplate={setSelectedTemplate}
-                    onSubmit={handleFormSubmit}
-                    submitError={submitError}
-                    isSubmitting={isSubmitting}
+                    formState={{selectedTemplate, submitError, isSubmitting}}
+                    handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
                 />
             ) : null}
 

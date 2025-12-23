@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {GenericHalPage} from './GenericHalPage';
@@ -227,8 +228,9 @@ describe('GenericHalPage Component', () => {
 
             render(<GenericHalPage/>);
             // The component should render properties, verify structure exists
-            const container = screen.getByText(/Test Item|test/i, {selector: 'body'}).closest('.p-4');
-            expect(container).toBeInTheDocument();
+
+            const row = screen.getByText(/Test Item.*A test item/i);
+            expect(row).toBeInTheDocument();
         });
 
         it('should render HAL sections for single item', () => {
@@ -317,8 +319,7 @@ describe('GenericHalPage Component', () => {
             });
 
             render(<GenericHalPage/>);
-            expect(screen.getByText(/15/)).toBeInTheDocument();
-            expect(screen.getByText(/1 z 5/)).toBeInTheDocument();
+            expect(screen.getByText("Celkem: 15 položek (1 z 5 stran)")).toBeInTheDocument();
         });
 
         it('should display empty collection message', () => {
@@ -334,7 +335,7 @@ describe('GenericHalPage Component', () => {
 
             render(<GenericHalPage/>);
             // Empty message should be displayed
-            expect(screen.getByText(/items|položek|prázdné|empty/i, {selector: 'body'})).toBeInTheDocument();
+            expect(screen.getByText(/Kolekce je prázdná/)).toBeInTheDocument();
         });
 
         it('should render HAL sections for collections', () => {
