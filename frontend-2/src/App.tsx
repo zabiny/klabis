@@ -10,6 +10,7 @@ import {GenericHalPage} from "./pages/GenericHalPage.tsx";
 import {MemberDetailsPage} from "./pages/MemberDetailsPage.tsx";
 import HomePage from "./pages/HomePage.tsx";
 import CalendarPage from "./pages/CalendarPage.tsx";
+import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -39,6 +40,7 @@ function App() {
                             </ProtectedRoute>
                         }>
                             <Route index path="/" element={<HomePage/>}/>
+                            <Route path="/sandplace" element={<SandplacePage/>}/>
                             <Route path="/calendar-items" element={<CalendarPage/>}/>
                             <Route path="/members/:id" element={<MemberDetailsPage/>}/>
                             <Route path="*" element={<GenericHalPage/>}/>
