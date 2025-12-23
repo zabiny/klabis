@@ -5,6 +5,9 @@ import {Alert, Button, Spinner} from '../components/UI';
 import {MemberDetailsCard} from '../components/members/MemberDetailsCard';
 import {MemberDetailsField} from '../components/members/MemberDetailsField';
 import {extractNavigationPath} from '../utils/navigationPath';
+import {HalLinksSection} from "../components/HalLinksSection.tsx";
+import {HalFormsSection} from "../components/HalFormsSection.tsx";
+import {useHalActions} from "../hooks/useHalActions.ts";
 
 /**
  * Format date string to readable format
@@ -23,6 +26,14 @@ function formatDate(dateString: string | undefined): string {
  */
 export const MemberDetailsPage = (): ReactElement => {
     const {resourceData, isLoading, error, pathname} = useHalRoute();
+    const {
+        handleNavigateToItem,
+        handleFormSubmit,
+        selectedTemplate,
+        setSelectedTemplate,
+        submitError,
+        isSubmitting
+    } = useHalActions();
     const navigate = useNavigate();
 
     if (isLoading) {
@@ -264,26 +275,24 @@ export const MemberDetailsPage = (): ReactElement => {
                 </MemberDetailsCard>
             )}
 
-            {/* Actions Section */}
-            {member._links && (
-                <div className="flex flex-wrap gap-2">
-                    {Object.entries(member._links as Record<string, any>)
-                        .filter(([rel]) => !['self', 'editOwnMemberInfoForm', 'editByAdminForm'].includes(rel))
-                        .map(([rel, link]: [string, any]) => {
-                            const links = Array.isArray(link) ? link : [link];
-                            return links.map((l: any, idx: number) => (
-                                <Button
-                                    key={`${rel}-${idx}`}
-                                    onClick={() => handleNavigateToLink(l.href)}
-                                    variant="secondary"
-                                    title={rel}
-                                >
-                                    {l.title || rel}
-                                </Button>
-                            ));
-                        })}
-                </div>
-            )}
+            {/* Links/Actions section */}
+            {resourceData?._links && Object.keys(resourceData._links).length > 0 ? (
+                <HalLinksSection
+                    links={resourceData._links}
+                    onNavigate={handleNavigateToItem}
+                />
+            ) : null}
+
+            {/* Templates/Forms section */}
+            {resourceData?._templates && Object.keys(resourceData._templates).length > 0 ? (
+                <HalFormsSection
+                    templates={resourceData._templates}
+                    data={resourceData}
+                    formState={{selectedTemplate, submitError, isSubmitting}}
+                    handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
+                />
+            ) : null}
+
         </div>
     );
 };
