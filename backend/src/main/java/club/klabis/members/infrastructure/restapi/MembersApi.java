@@ -5,6 +5,7 @@
  */
 package club.klabis.members.infrastructure.restapi;
 
+import club.klabis.finance.infrastructure.restapi.AccountReponse;
 import club.klabis.members.MemberId;
 import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
@@ -13,6 +14,7 @@ import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.hateoas.ModelPreparator;
+import club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.JsonViewMapping;
 import club.klabis.shared.config.restapi.JsonViewParameter;
@@ -33,6 +35,8 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -126,4 +130,21 @@ public class MembersApi {
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
+}
+
+@Component
+class FinanceAccountRepresentationPostprocessor implements RepresentationModelProcessor<EntityModel<AccountReponse>> {
+
+    @Override
+    public EntityModel<AccountReponse> process(EntityModel<AccountReponse> model) {
+
+        MemberId ownerId = model.getContent().ownerId();
+
+        KlabisHateoasImprovements.linkIfAuthorized(methodOn(MembersApi.class).membersMemberIdGet(ownerId))
+                .map(link -> link.withRel("owner"))
+                .ifPresent(model::add);
+
+        return model;
+
+    }
 }
