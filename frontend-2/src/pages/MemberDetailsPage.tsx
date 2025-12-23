@@ -97,8 +97,10 @@ export const MemberDetailsPage = (): ReactElement => {
                 </div>
             </div>
 
-            {/* Basic Info Section */}
-            <MemberDetailsCard title="Základní informace">
+            {/* Multi-column grid layout for information sections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Basic Info Section */}
+                <MemberDetailsCard title="Základní informace">
                 <div className="space-y-0">
                     <MemberDetailsField label="ID člena" value={member.id?.value}/>
                     <MemberDetailsField label="Registrační číslo" value={member.registrationNumber}/>
@@ -274,6 +276,8 @@ export const MemberDetailsPage = (): ReactElement => {
                     </div>
                 </MemberDetailsCard>
             )}
+
+            </div>
 
             {/* Links/Actions section */}
             {resourceData?._links && Object.keys(resourceData._links).length > 0 ? (
