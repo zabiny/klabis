@@ -7,7 +7,6 @@ import club.klabis.shared.config.hateoas.RootModel;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
-import club.klabis.shared.config.security.KlabisSecurityService;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -17,7 +16,7 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.linkIfAuthorized;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ApiController(openApiTagName = "System", path = "eventSourcing")
@@ -55,18 +54,11 @@ class BaseEventPreparator implements ModelPreparator<BaseEvent, EventDto> {
 @Component
 class EventSourcingRootProcessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
-    private final KlabisSecurityService klabisSecurityService;
-
-    EventSourcingRootProcessor(KlabisSecurityService klabisSecurityService) {
-        this.klabisSecurityService = klabisSecurityService;
-    }
-
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        if (klabisSecurityService.hasGrant(ApplicationGrant.SYSTEM_ADMIN)) {
-            model.add(linkTo(methodOn(EventSourcingController.class).getEvents(Pageable.ofSize(10))).withRel(
-                    "sourceEvents").withName("Application events"));
-        }
+        linkIfAuthorized(methodOn(EventSourcingController.class).getEvents(Pageable.ofSize(10)))
+                .map(linkBuilder -> linkBuilder.withRel("sourceEvents").withTitle("Application events"))
+                .ifPresent(model::add);
 
         return model;
     }

@@ -12,6 +12,7 @@ import org.springframework.util.Assert;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
@@ -33,6 +34,16 @@ public class KlabisHateoasImprovements {
 
     private static final Consumer<Object> NO_ACTION = a -> {
     };
+
+    public static Optional<Object> invocationIfAuthorized(Object invocation) {
+        Assert.isInstanceOf(LastInvocationAware.class, invocation);
+
+        return Optional.of(invocation)
+                .filter(i -> {
+                    LastInvocationAware invocationAware = DummyInvocationUtils.getLastInvocationAware(i);
+                    return isAuthorizedToCall(invocationAware);
+                });
+    }
 
     public static List<Affordance> affordImproved(Object invocationValue, Consumer<? super ImprovedHalFormsAffordanceModel> postprocess) {
         Assert.isInstanceOf(LastInvocationAware.class, invocationValue);
