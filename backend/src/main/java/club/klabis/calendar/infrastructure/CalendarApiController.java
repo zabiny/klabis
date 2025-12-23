@@ -12,9 +12,9 @@ import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.jackson.JacksonComponent;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -39,7 +39,10 @@ import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.ValueSerializer;
 
 import java.time.LocalDate;
+import java.time.Period;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
+import java.util.Collection;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -47,7 +50,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ApiController(openApiTagName = "calendar", path = "/calendar-items")
 @ExposesResourceFor(CalendarItem.class)
-@Import(CalendarItemListPostprocessor.class)
 public class CalendarApiController {
 
     private final CalendarService calendarService;
@@ -59,6 +61,35 @@ public class CalendarApiController {
         this.modelAssembler = ModelAssembler.mappingAssembler(this::toDto, CalendarApiController::toSelfLink,
                 pagedResourcesAssembler);
         this.entityLinks = entityLinks;
+    }
+
+
+    private Collection<Link> createCalendarLinks(Calendar.CalendarType calendarType, @NonNull LocalDate referenceDate) {
+        Collection<Link> links = new ArrayList<>();
+
+        links.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(calendarType,
+                referenceDate)).withSelfRel()
+                .andAffordances(affordBetter(methodOn(CalendarApiController.class).createCalendarItem(null))));
+
+        links.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(Calendar.CalendarType.DAY,
+                null)).withRel("calendar-day").expand(referenceDate));
+        links.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(Calendar.CalendarType.YEAR,
+                null)).withRel("calendar-year").expand(referenceDate));
+        links.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(Calendar.CalendarType.MONTH,
+                null)).withRel("calendar-month").expand(referenceDate));
+
+        TemporalAmount amount = switch (calendarType) {
+            case DAY -> Period.ofDays(1);
+            case YEAR -> Period.ofYears(1);
+            case MONTH -> Period.ofMonths(1);
+        };
+
+        links.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(calendarType,
+                null)).withRel("prev").expand(referenceDate.minus(amount)));
+        links.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(calendarType,
+                null)).withRel("next").expand(referenceDate.plus(amount)));
+
+        return links;
     }
 
     @Relation(collectionRelation = "calendarItems")
@@ -84,9 +115,13 @@ public class CalendarApiController {
     // TODO: Rework this endpoint to return Calendar instance with information about period, start date, end date, etc..  It will help with couple of things (displaying some stats in calendar, navigating calendar - as it is weird to have there links like prev/next on collection of items which may be empty... )
     @GetMapping
     public ResponseEntity<CollectionModel<EntityModel<CalendarItemDto>>> getCalendarItems(@RequestParam(required = false, defaultValue = "MONTH") Calendar.CalendarType calendarType, @RequestParam(required = false) LocalDate referenceDate) {
+        if (referenceDate == null) {
+            referenceDate = LocalDate.now();
+        }
+
         return ResponseEntity.ok(modelAssembler.toCollectionModel(new ArrayList<>(calendarService.getCalendarItems(
                 calendarType,
-                referenceDate))));
+                referenceDate))).add(createCalendarLinks(calendarType, referenceDate)));
     }
 
     @GetMapping("/{id}")
@@ -128,26 +163,6 @@ class CalendarItemPostprocessor implements RepresentationModelProcessor<EntityMo
         if (model.getContent().relatedItem() != null) {
             model.add(model.getContent().relatedItem());
         }
-
-        return model;
-    }
-}
-
-@Component
-class CalendarItemListPostprocessor implements RepresentationModelProcessor<CollectionModel<EntityModel<CalendarApiController.CalendarItemDto>>> {
-    @Override
-    public CollectionModel<EntityModel<CalendarApiController.CalendarItemDto>> process(CollectionModel<EntityModel<CalendarApiController.CalendarItemDto>> model) {
-        // TODO: add missing parameter values from current request to have proper "self" link
-        model.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(null, null)).withSelfRel()
-                .expand("", "")
-                .andAffordances(affordBetter(methodOn(CalendarApiController.class).createCalendarItem(null))));
-
-        model.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(Calendar.CalendarType.DAY,
-                null)).withRel("calendar-day").expand(""));
-        model.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(Calendar.CalendarType.YEAR,
-                null)).withRel("calendar-year").expand(""));
-        model.add(linkTo(methodOn(CalendarApiController.class).getCalendarItems(Calendar.CalendarType.MONTH,
-                null)).withRel("calendar-month").expand(""));
 
         return model;
     }
