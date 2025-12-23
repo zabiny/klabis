@@ -1,10 +1,7 @@
 package club.klabis.oris.application;
 
 import club.klabis.events.domain.OrisId;
-import club.klabis.oris.application.dto.EventDetails;
-import club.klabis.oris.application.dto.EventSummary;
-import club.klabis.oris.application.dto.OrisEventListFilter;
-import club.klabis.oris.application.dto.OrisUserInfo;
+import club.klabis.oris.application.dto.*;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.util.Collection;
@@ -19,4 +16,5 @@ public interface OrisDataProvider {
 
     Optional<EventDetails> getEventDetails(OrisId eventId);
 
+    Collection<EventEntry> getZbmEventEntries(int eventId);
 }

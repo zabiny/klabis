@@ -2,10 +2,7 @@ package club.klabis.oris.infrastructure.apiclient;
 
 import club.klabis.events.domain.OrisId;
 import club.klabis.oris.application.OrisDataProvider;
-import club.klabis.oris.application.dto.EventDetails;
-import club.klabis.oris.application.dto.EventSummary;
-import club.klabis.oris.application.dto.OrisEventListFilter;
-import club.klabis.oris.application.dto.OrisUserInfo;
+import club.klabis.oris.application.dto.*;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -43,5 +40,10 @@ class OrisApiDataProvider implements OrisDataProvider {
         } catch (HttpClientErrorException.NotFound exception) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public Collection<EventEntry> getZbmEventEntries(int eventId) {
+        return apiClient.getEventEntries(eventId, OrisApiClient.CLUB_ID_ZBM).data().values();
     }
 }

@@ -233,4 +233,75 @@ class OrisApiClientTest {
         }
     }
 
+
+    @DisplayName("getEventEntries API tests")
+    @Nested
+    class GetEventEntriesApiTests {
+        @Test
+        @DisplayName("it should return parsed data from response")
+        void itShouldReturnExpectedData() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.anything())
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventEntriesResponse.json"));
+
+            var actualResponse = testedClient.getEventEntries(2077, 205);
+
+            Map<String, EventEntry> expected = Map.of(
+                    "Entry_14000",
+                    EventEntryBuilder.builder()
+                            .id(14000)
+                            .classId(39529)
+                            .classDesc("H20C")
+                            .regNo("AOV9401")
+                            .firstName("Marek")
+                            .lastName("Rohel")
+                            .si(1625050)
+                            .userId(14263)
+                            .clubId(7)
+                            .note("")
+                            .fee(70)
+                            .createdByUserId(14263)
+                            .updatedByUserId(2553)
+                            .build(),
+                    "Entry_17952",
+                    EventEntryBuilder.builder()
+                            .id(17952)
+                            .classId(39533)
+                            .classDesc("H55C")
+                            .regNo("OOP5001")
+                            .firstName("Břetislav")
+                            .lastName("Ševčík")
+                            .si(49301)
+                            .userId(3418)
+                            .clubId(104)
+                            .note("")
+                            .fee(70)
+                            .createdByUserId(3418)
+                            .updatedByUserId(3418)
+                            .build()
+            );
+
+            assertThat(actualResponse).isNotNull();
+            assertThat(actualResponse.status()).isEqualTo("OK");
+            assertThat(actualResponse.format()).isEqualTo("json");
+            assertThat(actualResponse.method()).isEqualTo("getEventEntries");
+            assertThat(actualResponse.data()).isNotNull();
+            assertThat(actualResponse.data())
+                    .usingRecursiveComparison()
+                    .ignoringExpectedNullFields()
+                    .isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("it should call expected API with parameters")
+        void itShouldCallExpectedApi() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.requestTo(
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventEntries&eventid=2077&clubid=205"))
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventEntriesResponse.json"));
+
+            testedClient.getEventEntries(2077, 205);
+
+            restServiceServer.verify();
+        }
+    }
+
 }
