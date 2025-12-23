@@ -1,11 +1,12 @@
 import {
-  HalFormsBoolean,
-  HalFormsCheckbox,
-  HalFormsCheckboxGroup,
-  HalFormsInput,
-  HalFormsRadio,
-  HalFormsSelect,
-  HalFormsTextArea,
+    HalFormsBoolean,
+    HalFormsCheckbox,
+    HalFormsCheckboxGroup,
+    HalFormsDateTime,
+    HalFormsInput,
+    HalFormsRadio,
+    HalFormsSelect,
+    HalFormsTextArea,
 } from './fields'
 import {type HalFormFieldFactory, type HalFormsInputProps} from './types'
 import {type ReactElement} from 'react'
@@ -33,6 +34,8 @@ export const halFormsFieldsFactory = (
             return <HalFormsBoolean {...conf} />
         case 'textarea':
             return <HalFormsTextArea {...conf} />
+        case 'datetime':
+            return <HalFormsDateTime {...conf} />
         case 'text':
         case 'email':
         case 'number':

@@ -57,6 +57,7 @@ export const TextField = forwardRef<
                     ref={ref}
                     type={type}
                     disabled={disabled}
+                    required={required}
                     className={inputClasses}
                     {...inputProps}
                 />
@@ -99,6 +100,7 @@ export const TextAreaField = forwardRef<
         <textarea
             ref={ref}
             disabled={disabled}
+            required={required}
             rows={rows}
             className={textareaClasses}
             {...textareaProps}

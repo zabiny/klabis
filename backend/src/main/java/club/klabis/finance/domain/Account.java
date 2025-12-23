@@ -22,9 +22,6 @@ public class Account extends SingleEventsSource {
         this.owner = owner;
         this.balance = initialBalance;
         this.andEvent(new AccountCreatedEvent(owner, initialBalance));
-        if (!balance.isZero()) {
-            this.andEvent(new DepositedAmountEvent(owner, balance));
-        }
     }
 
     public void deposit(MoneyAmount amount) {

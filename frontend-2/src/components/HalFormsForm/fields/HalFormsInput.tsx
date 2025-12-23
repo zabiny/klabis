@@ -23,7 +23,7 @@ export const HalFormsInput = ({
                     <TextField
                         {...fieldProps.field}
                         value={fieldValue}
-                        type={(prop.type as 'text' | 'email' | 'password' | 'number' | 'date' | 'url' | 'tel') || 'text'}
+                        type={(prop.type as 'text' | 'email' | 'password' | 'number' | 'date' | 'datetime-local' | 'url' | 'tel') || 'text'}
                         label={prop.prompt || prop.name}
                         disabled={prop.readOnly || false}
                         required={prop.required}

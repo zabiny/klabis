@@ -56,10 +56,10 @@ public record EventManagementForm(@NotBlank String name, String location,
     public <T extends Event> T apply(T event) {
         event.setName(name);
         event.setLocation(location);
-        event.setRegistrationDeadline(registrationDeadline);
         event.setOrganizer(organizer);
         event.setCoordinator(coordinator);
         event.setEventDate(date);
+        event.setRegistrationDeadline(registrationDeadline);
         if (cost != null) {
             event.updateCost(MoneyAmount.of(cost));
         }

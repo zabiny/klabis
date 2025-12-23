@@ -16,7 +16,7 @@ export interface FieldWrapperProps {
  * Props for text-based input fields
  */
 export interface TextFieldProps extends FieldWrapperProps, Omit<InputHTMLAttributes<HTMLInputElement>, 'className' | 'disabled'> {
-    type?: 'text' | 'email' | 'password' | 'number' | 'date' | 'url' | 'tel'
+    type?: 'text' | 'email' | 'password' | 'number' | 'date' | 'datetime-local' | 'url' | 'tel'
     placeholder?: string
 }
 
