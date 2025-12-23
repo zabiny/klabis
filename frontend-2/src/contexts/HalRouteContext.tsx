@@ -48,9 +48,9 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children}) =>
     // React Query hook for fetching HAL data
     // Cache key is the API URL so each pathname has its own cached data
     const {data, isLoading, error, refetch, status} = useQuery({
-        queryKey: ['/api' + location.pathname],
+        queryKey: [location.pathname, location.search],
         queryFn: async () => {
-            return fetchResource('/api' + location.pathname);
+            return fetchResource('/api' + location.pathname + location.search);
         },
         enabled: shouldFetch,
         staleTime: 5 * 60 * 1000, // 5 minutes
