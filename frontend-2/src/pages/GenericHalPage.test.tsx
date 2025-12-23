@@ -467,7 +467,6 @@ describe('GenericHalPage Component', () => {
         });
 
         it('should display modal for viewing full JSON', async () => {
-            const user = userEvent.setup();
             const collectionData = mockHalCollectionResponse(2);
             useHalRoute.mockReturnValue({
                 resourceData: collectionData,

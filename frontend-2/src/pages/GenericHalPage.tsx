@@ -6,6 +6,7 @@ import {JsonPreview} from '../components/JsonPreview';
 import {HalLinksSection} from '../components/HalLinksSection';
 import {HalFormsSection} from '../components/HalFormsSection';
 import {useHalActions} from '../hooks/useHalActions';
+import {useIsAdmin} from '../hooks/useIsAdmin';
 import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
 import {isHalResponse} from "../components/HalFormsForm/utils.ts";
 import NotFoundPage from "./NotFoundPage.tsx";
@@ -109,6 +110,7 @@ interface GenericCollectionDisplayProps {
 const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactElement => {
     const [selectedItemForJsonView, setSelectedItemForJsonView] = useState<Record<string, unknown> | null>(null);
     const {selectedTemplate, setSelectedTemplate, submitError, isSubmitting, handleNavigateToItem, handleFormSubmit} = useHalActions();
+    const {isAdmin} = useIsAdmin();
     const items = Object.values(data._embedded || {}).flat();
 
     return (
@@ -207,11 +209,13 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                 handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
             />
 
-            {/* Full JSON preview for advanced users */}
-            <details className="mt-4 p-2 border rounded bg-gray-50 dark:bg-gray-900">
-                <summary className="cursor-pointer font-semibold">{UI_MESSAGES.SHOW_RAW_JSON}</summary>
-                <JsonPreview data={data} label={`Kompletní odpověď (${items.length} položek)`}/>
-            </details>
+            {/* Full JSON preview for advanced users - admin only */}
+            {isAdmin && (
+                <details className="mt-4 p-2 border rounded bg-gray-50 dark:bg-gray-900">
+                    <summary className="cursor-pointer font-semibold">{UI_MESSAGES.SHOW_RAW_JSON}</summary>
+                    <JsonPreview data={data} label={`Kompletní odpověď (${items.length} položek)`}/>
+                </details>
+            )}
 
             {/* Modal for viewing full item JSON */}
             <Modal
@@ -242,6 +246,7 @@ interface GenericItemDisplayProps {
 
 const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
     const {selectedTemplate, setSelectedTemplate, submitError, isSubmitting, handleNavigateToItem, handleFormSubmit} = useHalActions();
+    const {isAdmin} = useIsAdmin();
 
     return (
         <div className="space-y-4">
@@ -289,11 +294,13 @@ const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
                 handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
             />
 
-            {/* Full JSON preview */}
-            <details className="mt-4 p-2 border rounded bg-gray-50 dark:bg-gray-900">
-                <summary className="cursor-pointer font-semibold">{UI_MESSAGES.SHOW_RAW_JSON}</summary>
-                <JsonPreview data={data} label="Kompletní odpověď"/>
-            </details>
+            {/* Full JSON preview - admin only */}
+            {isAdmin && (
+                <details className="mt-4 p-2 border rounded bg-gray-50 dark:bg-gray-900">
+                    <summary className="cursor-pointer font-semibold">{UI_MESSAGES.SHOW_RAW_JSON}</summary>
+                    <JsonPreview data={data} label="Kompletní odpověď"/>
+                </details>
+            )}
         </div>
     );
 };
