@@ -8,22 +8,20 @@
  * @returns Relative path for React Router navigation
  */
 export function extractNavigationPath(url: string): string {
-	try {
-		const parsedUrl = new URL(url);
-		let path = parsedUrl.pathname;
-
-		// Remove /api prefix if present, since HalRouteContext adds it back
-		if (path.startsWith('/api')) {
-			path = path.substring(4); // Remove '/api'
-		}
-
-		return path;
-	} catch {
-		// If URL parsing fails, assume it's already a path
-		// Remove /api prefix if present
-		if (url.startsWith('/api')) {
-			return url.substring(4);
-		}
+	// it's already path when starts with '/', remove /api prefix if present
+	if (url.startsWith('/api')) {
+		return url.substring(4);
+	} else if (url.startsWith("/")) {
 		return url;
 	}
+
+	const parsedUrl = new URL(url);
+	let path = parsedUrl.pathname;
+
+	// Remove /api prefix if present, since HalRouteContext adds it back
+	if (path.startsWith('/api')) {
+		path = path.substring(4); // Remove '/api'
+	}
+
+	return path;
 }

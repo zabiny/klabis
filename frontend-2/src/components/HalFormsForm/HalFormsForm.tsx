@@ -245,7 +245,7 @@ type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => 
 interface HalFormsFormProps {
     data: Record<string, unknown>,
     template: HalFormsTemplate,
-    onSubmit?: (values: Record<string, unknown>) => void,
+    onSubmit?: (values: Record<string, unknown>) => Promise<void>,
     onCancel?: () => void,
     submitButtonLabel?: string,
     fieldsFactory?: HalFormFieldFactory,
@@ -285,10 +285,10 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
             validationSchema={validationSchema}
             validateOnChange={false}
             validateOnBlur={true}
-            onSubmit={(values, {setSubmitting}) => {
+            onSubmit={async (values, {setSubmitting}) => {
                 try {
                     if (onSubmit) {
-                        onSubmit(values);
+                        await onSubmit(values);
                     }
                 } finally {
                     setSubmitting(false)

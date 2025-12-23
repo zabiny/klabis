@@ -37,17 +37,20 @@ export function useHalActions(): UseHalActionsReturn {
 	};
 
 	const handleFormSubmit = async (formData: Record<string, unknown>) => {
-		if (!selectedTemplate) return;
+		if (!selectedTemplate) {
+			throw new Error("Can't submit form - template is missing!")
+		}
 
 		setIsSubmitting(true);
 		setSubmitError(null);
-
+		console.log("Submitting form data " + JSON.stringify(formData));
 		try {
 			const submitTarget: TemplateTarget = {
-				target: '/api' + pathname,
-				method: selectedTemplate.method || 'POST',
-			};
-			await submitHalFormsData(submitTarget, formData as Record<string, any>);
+				target: selectedTemplate.target || '/api' + pathname,
+				method: selectedTemplate.method || 'POST'
+			}
+
+			await submitHalFormsData(submitTarget, formData);
 			// Refetch data after successful submission
 			await refetch();
 			// Close the form
