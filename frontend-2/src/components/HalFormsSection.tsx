@@ -5,10 +5,11 @@
 
 import {type ReactElement} from 'react';
 import {Alert, Button} from './UI';
-import {halFormsFieldsFactory, HalFormsForm} from './HalFormsForm';
+import {HalFormsForm} from './HalFormsForm';
 import {isFormValidationError} from '../api/hateoas';
 import type {HalFormsTemplate} from '../api';
 import {UI_MESSAGES} from '../constants/messages';
+import {klabisFieldsFactory} from "./KlabisFieldsFactory.tsx";
 
 /**
  * Form state - tracks which template is selected and submission status
@@ -123,7 +124,7 @@ const HalFormsDisplay = ({
 				onSubmit={onSubmit}
 				onCancel={() => onSelectTemplate(null)}
 				isSubmitting={isSubmitting}
-				fieldsFactory={halFormsFieldsFactory}
+				fieldsFactory={klabisFieldsFactory}
 			/>
 		</div>
 	);
