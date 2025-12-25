@@ -5,8 +5,11 @@ import club.klabis.shared.config.restapi.ApisConfiguration;
 import club.klabis.shared.config.restapi.KlabisPrincipalSource;
 import club.klabis.tests.common.MapperTestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -21,6 +24,14 @@ import java.lang.annotation.Target;
 @WebMvcTest
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
+// Not sure why enabled HATEOAS doesn't include it's repremodelprocessors ...
+@ComponentScan(
+        useDefaultFilters = false,
+        includeFilters = @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = {RepresentationModelProcessor.class}
+        )
+)
 public @interface ApiTestConfiguration {
     @AliasFor(annotation = WebMvcTest.class)
     Class<?>[] controllers();
