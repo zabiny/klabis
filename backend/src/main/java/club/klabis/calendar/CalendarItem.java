@@ -1,7 +1,8 @@
 package club.klabis.calendar;
 
-import org.jmolecules.ddd.annotation.Entity;
+import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
+import org.springframework.data.domain.AbstractAggregateRoot;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -9,8 +10,8 @@ import java.util.Objects;
 
 import static club.klabis.shared.config.Globals.toZonedDateTime;
 
-@Entity
-public class CalendarItem {
+@AggregateRoot
+public class CalendarItem extends AbstractAggregateRoot<CalendarItem> {
     @Identity
     private Id id;
     private ZonedDateTime start;

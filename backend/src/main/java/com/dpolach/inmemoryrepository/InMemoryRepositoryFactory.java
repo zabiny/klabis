@@ -24,16 +24,18 @@ class InMemoryRepositoryFactory extends RepositoryFactorySupport {
     private ObjectProvider<InMemoryEntityStores> entityStoreProvider;
 
     @Override
-    public <T, ID> InMemoryEntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
-        return new InMemoryEntityInformation<>(domainClass);
+    public InMemoryEntityInformation<?, ?> getEntityInformation(RepositoryMetadata metadata) {
+        return InMemoryEntityInformation.createEntityInformation(metadata);
     }
 
     @NonNull
     @Override
     protected Object getTargetRepository(RepositoryInformation information) {
-        Class<Object> domainClass = (Class<Object>) information.getDomainType();
-        InMemoryEntityInformation<Object, ?> entityInformation = getEntityInformation(domainClass);
+        InMemoryEntityInformation<?, ?> entityInformation = getEntityInformation(information);
+        return createInMemoryRepositoryInstance(information, entityInformation);
+    }
 
+    private @NonNull InMemoryRepository<Object, Object> createInMemoryRepositoryInstance(RepositoryInformation information, InMemoryEntityInformation<?, ?> entityInformation) {
         log.debug("Creating repository for {} with entity information {}",
                 information.getDomainType(),
                 entityInformation.getIdType());
@@ -46,7 +48,6 @@ class InMemoryRepositoryFactory extends RepositoryFactorySupport {
                         (EntityInformation<Object, Object>) entityInformation,
                         entityStore);
 
-        // Registrujeme entityInformation, abychom ji mohli později použít
         entityStore.register((InMemoryEntityInformation<Object, Object>) entityInformation);
 
         return repository;

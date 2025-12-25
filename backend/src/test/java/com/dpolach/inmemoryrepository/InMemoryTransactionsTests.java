@@ -13,6 +13,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(properties = "klabis.preset-data=false")
 @ContextConfiguration(classes = KlabisApplication.class)
 @EnableInMemoryRepositories(basePackageClasses = TestRepository.class)
+@TestPropertySource(properties = "logging.level.org.springframework.data.repository.core.support.RepositoryFactorySupport=DEBUG")
 class InMemoryTransactionsTests {
 
     @Autowired
