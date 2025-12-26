@@ -27,6 +27,8 @@ public class Calendar {
     public record CalendarPeriod(LocalDate periodStart, LocalDate periodEnd) {
 
         public CalendarPeriod {
+            Assert.notNull(periodStart, "Period start date must not be null");
+            Assert.notNull(periodEnd, "Period end date must not be null");
             Assert.isTrue(!periodStart.isAfter(periodEnd), "Start date must not be after end date");
         }
 

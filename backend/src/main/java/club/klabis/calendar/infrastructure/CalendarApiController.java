@@ -12,6 +12,7 @@ import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.jackson.JacksonComponent;
@@ -93,7 +94,8 @@ public class CalendarApiController {
     }
 
     @Relation(collectionRelation = "calendarItems")
-    public record CalendarItemDto(LocalDate start, LocalDate end, String note, @JsonIgnore Link relatedItem) {
+    public record CalendarItemDto(@NotNull LocalDate start, @NotNull LocalDate end, String note,
+                                  @JsonIgnore Link relatedItem) {
     }
 
     private CalendarItemDto toDto(CalendarItem item) {
