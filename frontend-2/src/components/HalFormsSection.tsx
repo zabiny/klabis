@@ -37,7 +37,7 @@ export function HalFormsSection({
 					<HalFormButton
 						key={templateName}
 						name={templateName}
-						modal={true}
+						modal={false}
 					/>
 				))}
 			</div>

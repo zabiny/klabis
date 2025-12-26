@@ -8,6 +8,7 @@ import {extractNavigationPath} from '../utils/navigationPath';
 import {HalLinksSection} from "../components/HalLinksSection";
 import {HalFormsSection} from "../components/HalFormsSection";
 import {useHalActions} from "../hooks/useHalActions";
+import {HalFormsPageLayout} from "../components/HalFormsPageLayout.tsx";
 
 /**
  * Format date string to readable format
@@ -64,6 +65,7 @@ export const MemberDetailsPage = (): ReactElement => {
     };
 
     return (
+        <HalFormsPageLayout>
         <div className="space-y-6">
             {/* Header Section */}
             <div className="flex items-center justify-between">
@@ -286,5 +288,6 @@ export const MemberDetailsPage = (): ReactElement => {
             ) : null}
 
         </div>
+        </HalFormsPageLayout>
     );
 };

@@ -5,6 +5,7 @@ import {Alert, Modal, Spinner} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {HalLinksSection} from '../components/HalLinksSection';
 import {HalFormsSection} from '../components/HalFormsSection';
+import {HalFormsPageLayout} from '../components/HalFormsPageLayout';
 import {useHalActions} from '../hooks/useHalActions';
 import {useIsAdmin} from '../hooks/useIsAdmin';
 import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
@@ -16,6 +17,8 @@ import NotFoundPage from "./NotFoundPage.tsx";
  * Automatically detects whether the resource is a collection or item
  * and renders the appropriate display component
  *
+ * Supports inline form display via query parameter (e.g., /resource?form=templateName)
+ * Inline form display is automatically handled by HalFormsPageLayout wrapper
  * Used as a fallback for routes that don't have specialized pages
  */
 export const GenericHalPage = (): ReactElement => {
@@ -55,13 +58,15 @@ export const GenericHalPage = (): ReactElement => {
     const isCollection = isHalCollection(resourceData);
 
     return (
-        <div className="p-4">
-            {isCollection ? (
-                <GenericCollectionDisplay data={resourceData as HalCollectionResponse}/>
-            ) : (
-                <GenericItemDisplay data={resourceData}/>
-            )}
-        </div>
+        <HalFormsPageLayout>
+            <div className="p-4">
+                {isCollection ? (
+                    <GenericCollectionDisplay data={resourceData as HalCollectionResponse}/>
+                ) : (
+                    <GenericItemDisplay data={resourceData}/>
+                )}
+            </div>
+        </HalFormsPageLayout>
     );
 };
 

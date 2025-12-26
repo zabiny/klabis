@@ -1,6 +1,8 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {MemoryRouter} from 'react-router-dom';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import React from 'react';
 import {GenericHalPage} from './GenericHalPage';
 import {
     mockEmptyHalCollectionResponse,
@@ -53,24 +55,33 @@ jest.mock('../components/HalLinksSection', () => ({
 }));
 
 jest.mock('../components/HalFormsSection', () => ({
-    HalFormsSection: ({templates, selectedTemplate, onSelectTemplate}: any) =>
+    HalFormsSection: ({templates}: any) =>
         templates ? (
             <div data-testid="hal-forms">
                 {templates &&
                     Object.entries(templates).map(([key, template]: any) => (
-                        <button key={key} onClick={() => onSelectTemplate(template)}>
+                        <button key={key} data-testid={`form-button-${key}`}>
                             {template.title || key}
                         </button>
                     ))}
-                {selectedTemplate && (
-                    <button onClick={() => onSelectTemplate(null)}>Close Form</button>
-                )}
             </div>
         ) : null,
 }));
 
+jest.mock('../components/HalFormsPageLayout', () => ({
+    HalFormsPageLayout: ({children}: any) => (
+        <div data-testid="hal-forms-page-layout">
+            {children}
+        </div>
+    ),
+}));
+
 jest.mock('../hooks/useHalActions', () => ({
     useHalActions: jest.fn(),
+}));
+
+jest.mock('../hooks/useIsAdmin', () => ({
+    useIsAdmin: jest.fn(() => ({isAdmin: true})),
 }));
 
 jest.mock('./NotFoundPage', () => {
@@ -85,8 +96,15 @@ const {useHalActions} = require('../hooks/useHalActions');
 
 describe('GenericHalPage Component', () => {
     let mockHalActions: any;
+    let queryClient: QueryClient;
 
     beforeEach(() => {
+        queryClient = new QueryClient({
+            defaultOptions: {
+                queries: {retry: false, gcTime: 0},
+            },
+        });
+
         mockHalActions = {
             selectedTemplate: null,
             setSelectedTemplate: jest.fn(),
@@ -100,6 +118,17 @@ describe('GenericHalPage Component', () => {
         jest.clearAllMocks();
     });
 
+    // Wrapper for tests that need router context (added because GenericHalPage uses useLocation)
+    const renderWithRouter = (ui: React.ReactElement) => {
+        return render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter>
+                    {ui}
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+    };
+
     describe('Loading State', () => {
         it('should display spinner when loading', () => {
             useHalRoute.mockReturnValue({
@@ -111,7 +140,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'pending',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('spinner')).toBeInTheDocument();
         });
 
@@ -125,7 +154,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'pending',
             });
 
-            const {container} = render(<GenericHalPage/>);
+            const {container} = renderWithRouter(<GenericHalPage/>);
             const spinnerContainer = container.querySelector('.flex');
             expect(spinnerContainer).toHaveClass('items-center', 'justify-center', 'py-12');
         });
@@ -142,7 +171,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'error',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('not-found-page')).toBeInTheDocument();
         });
 
@@ -157,7 +186,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'error',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('alert-error')).toBeInTheDocument();
             expect(screen.getByText('Nepodařilo se načíst data z /api/items')).toBeInTheDocument();
             expect(screen.getByText(error.message)).toBeInTheDocument();
@@ -173,7 +202,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'error',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByText(/\/api\/custom\/path/)).toBeInTheDocument();
         });
     });
@@ -189,7 +218,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('alert-warning')).toBeInTheDocument();
             expect(screen.getByText('Žádná data dostupná')).toBeInTheDocument();
         });
@@ -207,7 +236,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            const {container} = render(<GenericHalPage/>);
+            const {container} = renderWithRouter(<GenericHalPage/>);
             expect(container.querySelector('.p-4')).toBeInTheDocument();
         });
 
@@ -226,7 +255,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             // The component should render properties, verify structure exists
 
             const row = screen.getByText(/Test Item.*A test item/i);
@@ -244,7 +273,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('hal-links')).toBeInTheDocument();
             expect(screen.getByTestId('hal-forms')).toBeInTheDocument();
         });
@@ -260,7 +289,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('json-preview')).toBeInTheDocument();
         });
     });
@@ -277,7 +306,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            const {container} = render(<GenericHalPage/>);
+            const {container} = renderWithRouter(<GenericHalPage/>);
             // Check for collection-specific elements
             expect(container.querySelectorAll('table')).toBeTruthy();
         });
@@ -293,7 +322,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             // Verify table structure
             const tables = screen.getAllByRole('table');
             expect(tables.length).toBeGreaterThan(0);
@@ -318,7 +347,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByText("Celkem: 15 položek (1 z 5 stran)")).toBeInTheDocument();
         });
 
@@ -333,7 +362,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             // Empty message should be displayed
             expect(screen.getByText(/Kolekce je prázdná/)).toBeInTheDocument();
         });
@@ -349,7 +378,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('hal-links')).toBeInTheDocument();
             expect(screen.getByTestId('hal-forms')).toBeInTheDocument();
         });
@@ -365,7 +394,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('json-preview')).toBeInTheDocument();
         });
     });
@@ -385,7 +414,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            const {container} = render(<GenericHalPage/>);
+            const {container} = renderWithRouter(<GenericHalPage/>);
             // Should render as single item (not collection)
             expect(container.querySelector('.p-4')).toBeInTheDocument();
         });
@@ -406,7 +435,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            const {container} = render(<GenericHalPage/>);
+            const {container} = renderWithRouter(<GenericHalPage/>);
             // Should render as collection
             expect(container.querySelectorAll('table').length).toBeGreaterThan(0);
         });
@@ -422,7 +451,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            const {container} = render(<GenericHalPage/>);
+            const {container} = renderWithRouter(<GenericHalPage/>);
             // Should render as collection
             expect(container.querySelectorAll('table').length).toBeGreaterThan(0);
         });
@@ -440,32 +469,12 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('hal-links')).toBeInTheDocument();
         });
     });
 
     describe('Form Handling', () => {
-        it('should handle template selection', async () => {
-            const user = userEvent.setup();
-            const itemData = mockHalResponseWithForms();
-            useHalRoute.mockReturnValue({
-                resourceData: itemData,
-                isLoading: false,
-                error: null,
-                pathname: '/api/items/1',
-                refetch: jest.fn(),
-                queryState: 'success',
-            });
-
-            render(<GenericHalPage/>);
-
-            const createButton = screen.getByText('Create');
-            await user.click(createButton);
-
-            expect(mockHalActions.setSelectedTemplate).toHaveBeenCalled();
-        });
-
         it('should display modal for viewing full JSON', async () => {
             const collectionData = mockHalCollectionResponse(2);
             useHalRoute.mockReturnValue({
@@ -477,7 +486,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             // The modal testing is complex and depends on internal state
             // This is a smoke test to ensure the component renders
             expect(screen.getByTestId('hal-links')).toBeInTheDocument();
@@ -495,7 +504,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
 
             expect(useHalRoute).toHaveBeenCalled();
         });
@@ -510,7 +519,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
 
             expect(useHalActions).toHaveBeenCalled();
         });
@@ -526,7 +535,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             expect(screen.getByTestId('hal-forms')).toBeInTheDocument();
         });
     });
@@ -548,7 +557,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             // Should still render as collection view
             expect(screen.getByTestId('hal-links')).toBeInTheDocument();
         });
@@ -568,7 +577,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             // Should render item view
             expect(screen.getByTestId('json-preview')).toBeInTheDocument();
         });
@@ -585,7 +594,7 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            render(<GenericHalPage/>);
+            renderWithRouter(<GenericHalPage/>);
             // Should still render without errors
             expect(screen.getByTestId('json-preview')).toBeInTheDocument();
         });
@@ -603,9 +612,10 @@ describe('GenericHalPage Component', () => {
                 queryState: 'success',
             });
 
-            const {container} = render(<GenericHalPage/>);
+            const {container} = renderWithRouter(<GenericHalPage/>);
             const mainContainer = container.querySelector('.p-4');
             expect(mainContainer).toHaveClass('p-4');
         });
     });
+
 });

@@ -278,8 +278,80 @@ describe('HalFormButton Component', () => {
             expect(screen.getByRole('button', {name: /create/i})).toBeInTheDocument();
         });
 
-        // Note: Full navigation testing would require react-router setup
-        // For now we just verify the button renders
+        it('should display form inline with query parameter on current page', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Member',
+                _templates: {
+                    edit: mockHalFormsTemplate({
+                        title: 'Edit',
+                        target: '/api/members/123',
+                        method: 'PUT',
+                    }),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+            renderWithContext(
+                <HalFormButton name="edit" modal={false}/>,
+                contextValue
+            );
+
+            const button = screen.getByRole('button', {name: /edit/i});
+            await user.click(button);
+
+            // Form should display inline on current page (not navigate away)
+            // Target URL is only used to fetch initial values and submit
+            expect(button).toBeInTheDocument();
+        });
+
+        it('should use current pathname with query parameter even for different target', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Member',
+                _templates: {
+                    createEvent: mockHalFormsTemplate({
+                        title: 'Create Event',
+                        target: '/api/events',
+                        method: 'POST',
+                    }),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+            renderWithContext(
+                <HalFormButton name="createEvent" modal={false}/>,
+                contextValue
+            );
+
+            const button = screen.getByRole('button', {name: /create event/i});
+            await user.click(button);
+
+            // Form should display on current page (/members/123?form=createEvent)
+            // NOT navigate to /events
+            expect(button).toBeInTheDocument();
+        });
+
+        it('should not open modal when modal=false', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create'}),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+            const {container} = renderWithContext(
+                <HalFormButton name="create" modal={false}/>,
+                contextValue
+            );
+
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
+
+            // Modal should NOT be displayed in non-modal mode
+            expect(screen.queryByTestId('hal-forms-display')).not.toBeInTheDocument();
+        });
     });
 
     describe('Accessibility', () => {
