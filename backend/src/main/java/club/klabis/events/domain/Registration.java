@@ -72,4 +72,12 @@ public final class Registration {
         this.siNumber = siNumber;
         this.updatedAt = ZonedDateTime.now();
     }
+
+    public ZonedDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public ZonedDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 }
