@@ -1,0 +1,748 @@
+# HalNavigator2 - Komponenty pro customizované stránky
+
+Tento dokument popisuje komponenty z `HalNavigator2` adresáře, které jsou určeny pro frontend vývojáře, kteří
+implementují **customizované stránky bez GenericHalPage**.
+
+## Obsah
+
+1. [Úvod](#úvod)
+2. [useHalRoute hook](#usehalroute-hook)
+3. [Komponenty pro formuláře](#komponenty-pro-formuláře)
+4. [Komponenty pro navigaci](#komponenty-pro-navigaci)
+5. [Praktické příklady](#praktické-příklady)
+6. [Best practices](#best-practices)
+
+---
+
+## Úvod
+
+HalNavigator2 poskytuje **nízkoúrovňové komponenty** pro práci s HAL (Hypertext Application Language) formuláři a linky
+na **customizovaných stránkách**.
+
+Na rozdíl od `GenericHalPage`, která automaticky generuje stránku z HAL metadat, customizované stránky mají svůj vlastní
+layout a potřebují vybraným komponentám říci, která data zobrazit.
+
+### Klíčová architektura
+
+```
+HalRouteProvider (v App.tsx)
+  ↓
+useHalRoute() - poskytuje resourceData
+  ↓
+HalFormButton, HalFormsSection, HalLinksSection - komponenty
+```
+
+---
+
+## useHalRoute hook
+
+Hook, který poskytuje aktuální HAL resource data a související metadata.
+
+### Signatura
+
+```typescript
+const useHalRoute = (): HalRouteContextValue => { ...
+}
+```
+
+### HalRouteContextValue interface
+
+```typescript
+interface HalRouteContextValue {
+    /** Fetched HAL resource data from /api + pathname */
+    resourceData: HalResponse | null;
+
+    /** Loading state while fetching from API */
+    isLoading: boolean;
+
+    /** Error state if fetch failed */
+    error: Error | null;
+
+    /** Manual refetch function for updating data after form submissions */
+    refetch: () => Promise<void>;
+
+    /** Current pathname being displayed */
+    pathname: string;
+
+    /** React Query query state */
+    queryState: 'idle' | 'pending' | 'success' | 'error';
+}
+```
+
+### Použití
+
+```typescript
+import {useHalRoute} from '../contexts/HalRouteContext';
+
+export const MyPage = () => {
+    const {resourceData, isLoading, error, pathname, refetch} = useHalRoute();
+
+    if (isLoading) return <Spinner / >;
+    if (error) return <Alert severity = "error" > {error.message} < /Alert>;
+
+    return (
+        <div>
+            {/* Tvůj obsah */}
+        < /div>
+    );
+};
+```
+
+### Kdy volat `refetch()`
+
+`refetch()` se automaticky volá v `HalFormDisplay` po úspěšném odeslání formuláře. **Ruční volání je potřeba, když:**
+
+- Chceš načíst data z API po nějaké akcí (např. po kliknutí na tlačítko mimo formulář)
+- Aktualizuješ data v rámci customizované logiky
+
+```typescript
+const handleManualRefresh = async () => {
+    await refetch();
+    // resourceData jsou nyní aktualizovaná
+};
+```
+
+---
+
+## Komponenty pro formuláře
+
+### 1. HalFormButton
+
+Tlačítko, které zobrazuje formulář konkrétního HAL Forms šablony.
+
+#### Props
+
+```typescript
+interface HalFormButtonProps {
+    /** Název HAL Forms šablony (musí existovat v resourceData._templates) */
+    name: string;
+
+    /** Pokud true, otevře formulář v modálním okně. Pokud false, zobrazí formulář inline */
+    modal: boolean;
+}
+```
+
+#### Chování
+
+- Automaticky zkontroluje, zda šablona existuje v `resourceData._templates[name]`
+- Pokud neexistuje, komponenta vrátí `null` (tlačítko se nezobrazí)
+- **Modal mode:** Otevře formulář v overlay modálním okně
+- **Non-modal mode:** Přidá query parameter `?form=name` a zobrazí formulář inline
+
+#### Příklad
+
+```typescript
+import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
+
+export const MemberDetailsPage = () => {
+    const {resourceData} = useHalRoute();
+
+    return (
+        <div>
+            <h1>Detail
+    člena < /h1>
+
+    {/* Tlačítko se zobrazí POUZE pokud v _templates existuje "editMember" */
+    }
+    <HalFormButton name = "editMember"
+    modal = {true}
+    />
+
+    {/* Formulář se zobrazí inline s query param ?form=updateAddress */
+    }
+    <HalFormButton name = "updateAddress"
+    modal = {false}
+    />
+    < /div>
+)
+    ;
+};
+```
+
+#### Jak funguje inline režim?
+
+Když je `modal={false}` a uživatel klikne na tlačítko:
+
+1. Komponenta přidá query parameter: `/members/123?form=editMember`
+2. URL se změní, ale stránka se nezavírá
+3. Formulář se musí zpracovat v `HalFormsPageLayout` nebo manuální logikou
+
+Viz [HalFormsPageLayout](#halformspageLayout) pro automatické zpracování.
+
+---
+
+### 2. HalFormsSection
+
+Komponenta, která zobrazuje **všechny dostupné formuláře** jako tlačítka.
+
+#### Props
+
+```typescript
+interface HalFormsSectionProps {
+    /** Objekt šablon z HAL resource data */
+    templates?: Record<string, HalFormsTemplate>;
+
+    /** Zda otevřít formuláře v modálním okně (default: true) */
+    modal?: boolean;
+}
+```
+
+#### Příklad
+
+```typescript
+import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
+
+export const CalendarPage = () => {
+    const {resourceData} = useHalRoute();
+
+    return (
+        <div>
+            <h1>Kalendář < /h1>
+    {/* Automaticky zobrazí všechna dostupná tlačítka */
+    }
+    <HalFormsSection templates = {resourceData?._templates
+}
+    modal = {true}
+    />
+    < /div>
+)
+    ;
+};
+```
+
+#### Jak pracuje
+
+- Filtruje `_templates` objekt a pro každou šablonu vytvoří `HalFormButton`
+- Vrátí `null`, pokud nejsou žádné šablony k dispozici
+- Ideální pro stránky, kde chceš zobrazit "všechny dostupné akce"
+
+---
+
+### 3. HalFormsPageLayout
+
+Wrapper komponenta pro stránky, které chcou **automaticky zobrazit formulář inline** na základě query parametru.
+
+#### Props
+
+```typescript
+interface HalFormsPageLayoutProps {
+    children: ReactNode;
+}
+```
+
+#### Chování
+
+- Automaticky zjistí query parametr `?form=templateName`
+- Pokud parametr existuje a šablona je dostupná → zobrazí `HalFormDisplay`
+- Pokud parametr neexistuje → zobrazí `children`
+- Po úspěšném odeslání formuláře → smaže query parametr a zobrazí `children` znovu
+
+#### Příklad
+
+```typescript
+import {HalFormsPageLayout} from '../components/HalNavigator2/HalFormsPageLayout';
+import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
+
+export const EventDetailsPage = () => {
+    const {resourceData} = useHalRoute();
+
+    return (
+        <HalFormsPageLayout>
+            <div>
+                <h1>Detail
+    akce < /h1>
+    < p > Název
+:
+    {
+        resourceData?.name
+    }
+    </p>
+
+    {/* Tlačítko v non-modal režimu */
+    }
+    <HalFormButton name = "editEvent"
+    modal = {false}
+    />
+    < /div>
+    < /HalFormsPageLayout>
+)
+    ;
+};
+```
+
+#### Co se stane?
+
+1. Uživatel vidi detail event s tlačítkem "Upravit"
+2. Klikne na `HalFormButton` s `modal={false}`
+3. URL se změní na `/events/123?form=editEvent`
+4. `HalFormsPageLayout` zjistí query parametr
+5. Místo `children` se zobrazí `HalFormDisplay` s formulářem
+6. Po odeslání → query parametr se smaže → zobrazí se `children` znovu
+
+---
+
+### 4. HalFormDisplay
+
+Komponenta, která **skutečně vykresluje HAL Forms formulář**.
+
+#### Props
+
+```typescript
+interface HalFormDisplayProps {
+    /** HAL Forms šablona k zobrazení */
+    template: HalFormsTemplate;
+
+    /** Název šablony (fallback pro title) */
+    templateName: string;
+
+    /** Aktuální resource data */
+    resourceData: Record<string, unknown>;
+
+    /** Aktuální pathname */
+    pathname: string;
+
+    /** Callback když se má formulář zavřít */
+    onClose: () => void;
+
+    /** Optional callback po úspěšném odeslání */
+    onSubmitSuccess?: () => void;
+
+    /** Zobrazit tlačítko zavření (default: true) */
+    showCloseButton?: boolean;
+}
+```
+
+#### Chování
+
+- Načítá form data z `template.target` URL (pokud existuje)
+- Zobrazuje loading state během načítání
+- Zobrazuje chyby, pokud se nepodaří načíst data
+- Po odeslání automaticky volá `refetch()` aby se aktualizovala `resourceData`
+- Volá `onClose()` po úspěšném odeslání
+
+#### Kdy ji používat
+
+Obvykle ji **nemusíš používat přímo** - je používaná v `HalFormButton` a `HalFormsPageLayout`.
+
+Ale můžeš ji použít, pokud potřebuješ **zcela customizovaný formulářový workflow**:
+
+```typescript
+import {HalFormDisplay} from '../components/HalNavigator2/HalFormDisplay';
+
+export const CustomFormWorkflow = () => {
+    const {resourceData, pathname, refetch} = useHalRoute();
+    const [showForm, setShowForm] = useState(false);
+
+    if (!resourceData || !resourceData._templates?.customForm) {
+        return null;
+    }
+
+    return (
+        <>
+            <button onClick = {()
+=>
+    setShowForm(true)
+}>
+    Zobrazit
+    custom
+    formulář
+    < /button>
+
+    {
+        showForm && (
+            <HalFormDisplay
+                template = {resourceData._templates.customForm}
+        templateName = "customForm"
+        resourceData = {resourceData}
+        pathname = {pathname}
+        onClose = {()
+    =>
+        setShowForm(false)
+    }
+        onSubmitSuccess = {()
+    =>
+        {
+            setShowForm(false);
+            // Další custom logika
+        }
+    }
+        showCloseButton = {true}
+        />
+    )
+    }
+    </>
+)
+    ;
+};
+```
+
+---
+
+### 5. HalFormTemplateButton
+
+Čistě presentační komponenta - **tlačítko pro šablonu**.
+
+#### Kdy ji používat
+
+Téměř nikdy přímo. Je používaná interně v `HalFormButton` a `HalFormsSection`.
+
+Tuto komponentu používej, pokud máš vlastní workflow a chceš:
+
+```typescript
+import {HalFormTemplateButton} from '../components/HalNavigator2/HalFormTemplateButton';
+
+export const CustomFormsUI = () => {
+    const {resourceData} = useHalRoute();
+
+    return (
+        <div className = "custom-layout" >
+            {resourceData?._templates &&
+            Object.entries(resourceData._templates).map(([name, template]) => (
+                <HalFormTemplateButton
+                    key = {name}
+    template = {template}
+    templateName = {name}
+    onClick = {()
+=>
+    handleFormClick(name)
+}
+    className = "my-custom-class"
+        / >
+))
+}
+    </div>
+)
+    ;
+};
+```
+
+---
+
+## Komponenty pro navigaci
+
+### 1. HalLinksSection
+
+Komponenta, která zobrazuje **dostupné HAL linky** (akce, přechody).
+
+#### Props
+
+```typescript
+interface HalLinksSectionProps {
+    /** Objekt linků z HAL resource data (_links) */
+    links?: Record<string, any>;
+
+    /** Callback při kliknutí na link */
+    onNavigate: (href: string) => void;
+}
+```
+
+#### Chování
+
+- Filtruje `self` linky (nezobrazuje je)
+- Pro každý link vytvoří tlačítko
+- Pokud je link pole, vytvoří tlačítko pro každý prvek
+- Volá `onNavigate` s `href` když uživatel klikne
+
+#### Příklad
+
+```typescript
+import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection';
+import {useNavigate} from 'react-router-dom';
+import {extractNavigationPath} from '../utils/navigationPath';
+
+export const MemberDetailsPage = () => {
+    const {resourceData} = useHalRoute();
+    const navigate = useNavigate();
+
+    const handleNavigateLink = (href: string) => {
+        const path = extractNavigationPath(href);
+        navigate(path);
+    };
+
+    return (
+        <div>
+            <h1>Detail
+    člena < /h1>
+    {/* Zobrazí všechny dostupné akce */
+    }
+    <HalLinksSection
+        links = {resourceData?._links
+}
+    onNavigate = {handleNavigateLink}
+    />
+    < /div>
+)
+    ;
+};
+```
+
+#### Co se zobrazí?
+
+Pokud má resource tyto linky:
+
+```json
+{
+  "_links": {
+    "edit": {
+      "href": "/members/123/edit",
+      "title": "Edit Member"
+    },
+    "delete": {
+      "href": "/members/123/delete"
+    },
+    "self": {
+      "href": "/members/123"
+    }
+  }
+}
+```
+
+`HalLinksSection` vytvoří dvě tlačítka:
+
+- "Edit Member" (z `title`)
+- "delete" (název linku)
+
+---
+
+## Praktické příklady
+
+### Příklad 1: Customizovaná stránka s detail view + formuláře
+
+```typescript
+import {useHalRoute} from '../contexts/HalRouteContext';
+import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
+import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection';
+import {useNavigate} from 'react-router-dom';
+import {extractNavigationPath} from '../utils/navigationPath';
+
+export const CalendarEventPage = () => {
+    const {resourceData, isLoading, error} = useHalRoute();
+    const navigate = useNavigate();
+
+    if (isLoading) return <Spinner / >;
+    if (error) return <Alert severity = "error" > {error.message} < /Alert>;
+    if (!resourceData) return <Alert severity = "warning" > Žádná
+    data < /Alert>;
+
+    const event = resourceData as any;
+
+    return (
+        <div className = "space-y-6" >
+            {/* Hlavní obsah */}
+            < div >
+            <h1>{event.title} < /h1>
+            < p > Datum
+:
+    {
+        event.startDate
+    }
+    </p>
+    < p > Popis
+:
+    {
+        event.description
+    }
+    </p>
+    < /div>
+
+    {/* Formuláře */
+    }
+    <HalFormsSection templates = {resourceData._templates}
+    modal = {true}
+    />
+
+    {/* Navigační linky */
+    }
+    <HalLinksSection
+        links = {resourceData._links}
+    onNavigate = {(href)
+=>
+    navigate(extractNavigationPath(href))
+}
+    />
+    < /div>
+)
+    ;
+};
+```
+
+---
+
+### Příklad 2: Inline formulář v customize stránce
+
+```typescript
+import {HalFormsPageLayout} from '../components/HalNavigator2/HalFormsPageLayout';
+import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
+import {useHalRoute} from '../contexts/HalRouteContext';
+
+export const EventEditablePage = () => {
+    const {resourceData} = useHalRoute();
+    const event = resourceData as any;
+
+    return (
+        <HalFormsPageLayout>
+            <div className = "space-y-4" >
+            <div>
+                <h1>{event.title} < /h1>
+            < p > {event.description} < /p>
+            < /div>
+
+    {/* Inline formulář - Query param se přidá sem */
+    }
+    <HalFormButton name = "updateEvent"
+    modal = {false}
+    />
+    < /div>
+    < /HalFormsPageLayout>
+)
+    ;
+};
+```
+
+Co se stane:
+
+1. Uživatel vidí detail + tlačítko "Upravit"
+2. Klikne na tlačítko
+3. URL se změní na `?form=updateEvent`
+4. `HalFormsPageLayout` zobrazí formulář místo `children`
+5. Po odeslání → formulář zmizí → vrátí se k detail view
+
+---
+
+### Příklad 3: Kombinace - Inline + Modal formuláře
+
+```typescript
+import {HalFormsPageLayout} from '../components/HalNavigator2/HalFormsPageLayout';
+import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
+import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
+import {useHalRoute} from '../contexts/HalRouteContext';
+
+export const MemberDetailPage = () => {
+    const {resourceData} = useHalRoute();
+
+    return (
+        <HalFormsPageLayout>
+            <div className = "space-y-6" >
+            <div>
+                <h1>{resourceData?.firstName
+}
+    {
+        resourceData?.lastName
+    }
+    </h1>
+    < p > ID
+:
+    {
+        resourceData?.id
+    }
+    </p>
+    < /div>
+
+    {/* Jen "Edit" v inline režimu */
+    }
+    <HalFormButton name = "editProfile"
+    modal = {false}
+    />
+
+    {/* Ostatní formuláře v modálech */
+    }
+    <HalFormsSection
+        templates = {resourceData?._templates
+}
+    modal = {true}
+    />
+    < /div>
+    < /HalFormsPageLayout>
+)
+    ;
+};
+```
+
+---
+
+## Best practices
+
+### ✅ DO - Dělej takhle
+
+1. **Vždy zkontroluj `isLoading` a `error`**
+   ```typescript
+   const { resourceData, isLoading, error } = useHalRoute();
+
+   if (isLoading) return <Spinner />;
+   if (error) return <Alert severity="error">{error.message}</Alert>;
+   ```
+
+2. **Používej `HalFormsPageLayout` pro inline formuláře**
+    - Automaticky zpracovává query parametry
+    - Clean UI transitions
+
+3. **Kombinuj `HalFormsSection` + `HalLinksSection` pro komplexní stránky**
+   ```typescript
+   <HalFormsSection templates={_templates} modal={true} />
+   <HalLinksSection links={_links} onNavigate={handleNav} />
+   ```
+
+4. **Volej `refetch()` když potřebuješ ručně aktualizovat data**
+   ```typescript
+   await refetch();
+   ```
+
+5. **Používej `useNavigate` + `extractNavigationPath` pro HAL linky**
+   ```typescript
+   const navigate = useNavigate();
+   const handleLink = (href: string) => {
+     navigate(extractNavigationPath(href));
+   };
+   ```
+
+---
+
+### ❌ DON'T - Nedělej takhle
+
+1. **Nepoužívaj `HalFormDisplay` přímo** - pokud to není nutné
+    - Použij `HalFormButton` nebo `HalFormsPageLayout`
+
+2. **Nezapomeň na `HalRouteProvider` v App.tsx**
+    - Bez něj `useHalRoute()` vrátí error!
+
+3. **Neobjevuj query parametry ručně**
+    - Nech `HalFormsPageLayout` aby je řídil
+
+4. **Nepreskakuj error handling**
+   ```typescript
+   // ❌ BAD
+   const { resourceData } = useHalRoute();
+   return <div>{resourceData.field}</div>; // Crash!
+
+   // ✅ GOOD
+   const { resourceData, isLoading, error } = useHalRoute();
+   if (isLoading) return <Spinner />;
+   if (error) return <Alert />;
+   return <div>{resourceData?.field}</div>;
+   ```
+
+5. **Nepoužívaj hardcoded HAL linky**
+    - Vždy jdi přes `resourceData._links`
+
+---
+
+## Shrnutí komponent
+
+| Komponenta           | Kdy ju používat              | Modal?         | Inline?  |
+|----------------------|------------------------------|----------------|----------|
+| `useHalRoute`        | Vždy - pro přístup k datům   | -              | -        |
+| `HalFormButton`      | Specifický formulář          | ✅              | ✅        |
+| `HalFormsSection`    | Všechny formuláře najednou   | ✅ customizable | ❌        |
+| `HalFormsPageLayout` | Wrapper pro inline formuláře | ❌              | ✅        |
+| `HalFormDisplay`     | Custom workflow (vzácně)     | ✅ custom       | ✅ custom |
+| `HalLinksSection`    | Zobrazit dostupné akce       | -              | -        |
+
+---
+
+## Viz také
+
+- [HAL specification](https://tools.ietf.org/html/draft-kelly-json-hal)
+- [HAL Forms specification](http://mamund.com/hal-forms/)
+- `/frontend-2/src/contexts/HalRouteContext.tsx` - Context setup
+- `/frontend-2/src/pages/MemberDetailsPage.tsx` - Real-world example
+- `/frontend-2/src/pages/CalendarPage.tsx` - Real-world example
