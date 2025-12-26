@@ -488,4 +488,131 @@ describe('HalFormButton Component', () => {
             expect(mockRefetch).not.toHaveBeenCalled(); // Not called until form is submitted
         });
     });
+
+    describe('API Without GET Endpoint (HTTP 404/405)', () => {
+        const {fetchResource} = require('../components/HalNavigator/hooks');
+
+        beforeEach(() => {
+            // Clear query cache before each test
+            queryClient.clear();
+            // Reset all mocks
+            fetchResource.mockReset();
+        });
+
+        it('should display form with empty data when target returns HTTP 404', async () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+                _templates: {
+                    create: mockHalFormsTemplate({
+                        title: 'Create Event',
+                        target: '/api/events/404test',
+                        method: 'POST',
+                    }),
+                },
+            };
+
+            const contextValue = createMockContext(resourceData);
+
+            // Simulate HTTP 404 error from target endpoint
+            const fetchError = {
+                message: 'HTTP 404',
+                responseStatus: 404,
+                responseStatusText: 'Not Found',
+            };
+            fetchResource.mockRejectedValueOnce(fetchError);
+
+            renderWithContext(
+                <HalFormButton name="create" modal={true}/>,
+                contextValue
+            );
+
+            // Click button to open modal
+            const button = screen.getByTestId('form-template-button-create');
+            await userEvent.click(button);
+
+            // Wait for form to be displayed (should not show error)
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+                expect(screen.queryByText(/Nepodařilo se načíst data/i)).not.toBeInTheDocument();
+            });
+        });
+
+        it('should display form with empty data when target returns HTTP 405', async () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+                _templates: {
+                    create: mockHalFormsTemplate({
+                        title: 'Create Event',
+                        target: '/api/events/405test',
+                        method: 'POST',
+                    }),
+                },
+            };
+
+            const contextValue = createMockContext(resourceData);
+
+            // Simulate HTTP 405 error from target endpoint
+            const fetchError = {
+                message: 'HTTP 405',
+                responseStatus: 405,
+                responseStatusText: 'Method Not Allowed',
+            };
+            fetchResource.mockRejectedValueOnce(fetchError);
+
+            renderWithContext(
+                <HalFormButton name="create" modal={true}/>,
+                contextValue
+            );
+
+            // Click button to open modal
+            const button = screen.getByTestId('form-template-button-create');
+            await userEvent.click(button);
+
+            // Wait for form to be displayed (should not show error)
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+                expect(screen.queryByText(/Nepodařilo se načíst data/i)).not.toBeInTheDocument();
+            });
+        });
+
+        it('should still show error for other HTTP errors (e.g., 500)', async () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+                _templates: {
+                    create: mockHalFormsTemplate({
+                        title: 'Create Event',
+                        target: '/api/events/500test',
+                        method: 'POST',
+                    }),
+                },
+            };
+
+            const contextValue = createMockContext(resourceData);
+
+            // Simulate HTTP 500 error from target endpoint
+            const fetchError = {
+                message: 'HTTP 500',
+                responseStatus: 500,
+                responseStatusText: 'Internal Server Error',
+            };
+            fetchResource.mockRejectedValueOnce(fetchError);
+
+            renderWithContext(
+                <HalFormButton name="create" modal={true}/>,
+                contextValue
+            );
+
+            // Click button to open modal
+            const button = screen.getByTestId('form-template-button-create');
+            await userEvent.click(button);
+
+            // Wait for error to be displayed
+            await waitFor(() => {
+                expect(screen.getByText(/Nepodařilo se načíst data/i)).toBeInTheDocument();
+            });
+        });
+    });
 });

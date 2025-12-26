@@ -303,6 +303,66 @@ describe('useHalFormData Hook', () => {
                 expect(result.current.targetFetchError?.message).toBe('Specific error message');
             });
         });
+
+        it('should return empty data when API returns HTTP 404', async () => {
+            const template = mockHalFormsTemplate({target: '/events/456'});
+            const fetchError = {
+                message: 'HTTP 404',
+                responseStatus: 404,
+                responseStatusText: 'Not Found',
+            };
+            fetchResource.mockRejectedValueOnce(fetchError);
+
+            const {result} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            await waitFor(() => {
+                expect(result.current.formData).toEqual({});
+                expect(result.current.targetFetchError).toBeNull();
+            });
+        });
+
+        it('should return empty data when API returns HTTP 405', async () => {
+            const template = mockHalFormsTemplate({target: '/events/456'});
+            const fetchError = {
+                message: 'HTTP 405',
+                responseStatus: 405,
+                responseStatusText: 'Method Not Allowed',
+            };
+            fetchResource.mockRejectedValueOnce(fetchError);
+
+            const {result} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            await waitFor(() => {
+                expect(result.current.formData).toEqual({});
+                expect(result.current.targetFetchError).toBeNull();
+            });
+        });
+
+        it('should still show error for non-404/405 HTTP errors', async () => {
+            const template = mockHalFormsTemplate({target: '/events/456'});
+            const fetchError = {
+                message: 'HTTP 500',
+                responseStatus: 500,
+                responseStatusText: 'Internal Server Error',
+            };
+            fetchResource.mockRejectedValueOnce(fetchError);
+
+            const {result} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            await waitFor(() => {
+                expect(result.current.targetFetchError).toBeTruthy();
+                expect(result.current.formData).toBeNull();
+            });
+        });
     });
 
     describe('Refetch Functionality', () => {

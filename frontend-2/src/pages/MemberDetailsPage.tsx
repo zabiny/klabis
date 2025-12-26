@@ -8,7 +8,6 @@ import {extractNavigationPath} from '../utils/navigationPath';
 import {HalLinksSection} from "../components/HalLinksSection";
 import {HalFormsSection} from "../components/HalFormsSection";
 import {useHalActions} from "../hooks/useHalActions";
-import {HalFormButton} from "../components/HalFormButton";
 
 /**
  * Format date string to readable format
@@ -280,9 +279,6 @@ export const MemberDetailsPage = (): ReactElement => {
                     onNavigate={handleNavigateToItem}
                 />
             ) : null}
-
-            <HalFormButton name="updateMemberGrants" modal={false}/>
-            <HalFormButton name={"membersMemberIdEditOwnMemberInfoFormPut"} modal={false}/>
 
             {/* Templates/Forms section */}
             {resourceData?._templates && Object.keys(resourceData._templates).length > 0 ? (

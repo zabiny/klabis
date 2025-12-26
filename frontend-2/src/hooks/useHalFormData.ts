@@ -9,6 +9,17 @@ import type {HalFormsTemplate} from '../api';
 import {fetchResource} from '../components/HalNavigator/hooks';
 import {normalizeApiPath, shouldFetchTargetData} from '../utils/halFormsUtils';
 
+/**
+ * Check if error is a fetch error with specific HTTP status
+ */
+function isFetchErrorWithStatus(error: unknown, statuses: number[]): boolean {
+    if (error && typeof error === 'object' && 'responseStatus' in error) {
+        const status = (error as { responseStatus: number }).responseStatus;
+        return statuses.includes(status);
+    }
+    return false;
+}
+
 export interface UseHalFormDataReturn {
     formData: Record<string, unknown> | null;
     isLoadingTargetData: boolean;
@@ -57,7 +68,19 @@ export function useHalFormData(
         refetch,
     } = useQuery({
         queryKey: ['hal-form-data', targetUrl],
-        queryFn: () => fetchResource(targetUrl!),
+        queryFn: async () => {
+            try {
+                return await fetchResource(targetUrl!);
+            } catch (err) {
+                // If API doesn't define GET endpoint (HTTP 404 or 405), return empty data
+                // This allows form to display with empty initial values
+                if (isFetchErrorWithStatus(err, [404, 405])) {
+                    return {};
+                }
+                // Re-throw other errors
+                throw err;
+            }
+        },
         enabled: !!targetUrl,
         staleTime: 0, // Always fetch fresh data
         gcTime: 60000, // Clean up cache after 1 minute
