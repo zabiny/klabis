@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.Comparator;
 import java.util.List;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.affordBetter;
@@ -87,7 +88,10 @@ public class UserPermissionsApiController {
         ApplicationUser appUser = applicationUsersRepository.findById(userId)
                 .orElseThrow(() -> ApplicationUserNotFound.forUserId(userId));
 
-        return ResponseEntity.ok(new MemberGrantsFormApiDto(appUser.getGlobalGrants()));
+        return ResponseEntity.ok(new MemberGrantsFormApiDto(appUser.getGlobalGrants()
+                .stream()
+                .sorted(Comparator.comparing(ApplicationGrant::getDescription))
+                .toList()));
     }
 
     @Operation(
