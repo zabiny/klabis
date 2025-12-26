@@ -3,12 +3,11 @@ import {useNavigate} from 'react-router-dom';
 import {useHalRoute} from '../contexts/HalRouteContext';
 import {Alert} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
-import type {HalFormsTemplate} from '../api';
 import {hasCalendarItems} from '../api';
 import {extractNavigationPath} from '../utils/navigationPath';
-import {HalLinksSection} from "../components/HalLinksSection.tsx";
-import {HalFormsSection} from "../components/HalFormsSection.tsx";
-import {useHalActions} from "../hooks/useHalActions.ts";
+import {HalLinksSection} from "../components/HalLinksSection";
+import {HalFormsSection} from "../components/HalFormsSection";
+import {useHalActions} from "../hooks/useHalActions";
 
 interface CalendarItem {
     start: string;
@@ -26,10 +25,9 @@ interface CalendarItem {
  */
 const CalendarPage = () => {
     const {resourceData, isLoading, error} = useHalRoute();
-    const {handleNavigateToItem, handleFormSubmit, submitError, isSubmitting} = useHalActions();
+    const {handleNavigateToItem} = useHalActions();
     const navigate = useNavigate();
     const [currentDate] = useState(new Date());
-    const [selectedTemplate, setSelectedTemplate] = useState<HalFormsTemplate | null>(null);
 
     // Extract calendar items from resource data using type guard
     let calendarItems: CalendarItem[] = [];
@@ -175,12 +173,7 @@ const CalendarPage = () => {
 
             {/* Templates/Forms section */}
             {resourceData?._templates && Object.keys(resourceData._templates).length > 0 ? (
-                <HalFormsSection
-                    templates={resourceData._templates}
-                    data={resourceData}
-                    formState={{selectedTemplate, submitError, isSubmitting}}
-                    handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
-                />
+                <HalFormsSection templates={resourceData._templates}/>
             ) : null}
 
             {/* Full JSON preview */}

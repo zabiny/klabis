@@ -109,7 +109,7 @@ interface GenericCollectionDisplayProps {
 
 const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactElement => {
     const [selectedItemForJsonView, setSelectedItemForJsonView] = useState<Record<string, unknown> | null>(null);
-    const {selectedTemplate, setSelectedTemplate, submitError, isSubmitting, handleNavigateToItem, handleFormSubmit} = useHalActions();
+    const {handleNavigateToItem} = useHalActions();
     const {isAdmin} = useIsAdmin();
     const items = Object.values(data._embedded || {}).flat();
 
@@ -202,12 +202,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                 onNavigate={handleNavigateToItem}
             />
 
-            <HalFormsSection
-                templates={data._templates}
-                data={data}
-                formState={{selectedTemplate, submitError, isSubmitting}}
-                handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
-            />
+            <HalFormsSection templates={data._templates}/>
 
             {/* Full JSON preview for advanced users - admin only */}
             {isAdmin && (
@@ -245,7 +240,7 @@ interface GenericItemDisplayProps {
 }
 
 const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
-    const {selectedTemplate, setSelectedTemplate, submitError, isSubmitting, handleNavigateToItem, handleFormSubmit} = useHalActions();
+    const {handleNavigateToItem} = useHalActions();
     const {isAdmin} = useIsAdmin();
 
     return (
@@ -287,12 +282,7 @@ const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
                 onNavigate={handleNavigateToItem}
             />
 
-            <HalFormsSection
-                templates={data._templates}
-                data={data}
-                formState={{selectedTemplate, submitError, isSubmitting}}
-                handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
-            />
+            <HalFormsSection templates={data._templates}/>
 
             {/* Full JSON preview - admin only */}
             {isAdmin && (

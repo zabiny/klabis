@@ -5,9 +5,10 @@ import {Alert, Button, Spinner} from '../components/UI';
 import {MemberDetailsCard} from '../components/members/MemberDetailsCard';
 import {MemberDetailsField} from '../components/members/MemberDetailsField';
 import {extractNavigationPath} from '../utils/navigationPath';
-import {HalLinksSection} from "../components/HalLinksSection.tsx";
-import {HalFormsSection} from "../components/HalFormsSection.tsx";
-import {useHalActions} from "../hooks/useHalActions.ts";
+import {HalLinksSection} from "../components/HalLinksSection";
+import {HalFormsSection} from "../components/HalFormsSection";
+import {useHalActions} from "../hooks/useHalActions";
+import {HalFormButton} from "../components/HalFormButton";
 
 /**
  * Format date string to readable format
@@ -26,14 +27,7 @@ function formatDate(dateString: string | undefined): string {
  */
 export const MemberDetailsPage = (): ReactElement => {
     const {resourceData, isLoading, error, pathname} = useHalRoute();
-    const {
-        handleNavigateToItem,
-        handleFormSubmit,
-        selectedTemplate,
-        setSelectedTemplate,
-        submitError,
-        isSubmitting
-    } = useHalActions();
+    const {handleNavigateToItem} = useHalActions();
     const navigate = useNavigate();
 
     if (isLoading) {
@@ -287,14 +281,12 @@ export const MemberDetailsPage = (): ReactElement => {
                 />
             ) : null}
 
+            <HalFormButton name="updateMemberGrants" modal={false}/>
+            <HalFormButton name={"membersMemberIdEditOwnMemberInfoFormPut"} modal={false}/>
+
             {/* Templates/Forms section */}
             {resourceData?._templates && Object.keys(resourceData._templates).length > 0 ? (
-                <HalFormsSection
-                    templates={resourceData._templates}
-                    data={resourceData}
-                    formState={{selectedTemplate, submitError, isSubmitting}}
-                    handlers={{onSelectTemplate: setSelectedTemplate, onSubmit: handleFormSubmit}}
-                />
+                <HalFormsSection templates={resourceData._templates}/>
             ) : null}
 
         </div>
