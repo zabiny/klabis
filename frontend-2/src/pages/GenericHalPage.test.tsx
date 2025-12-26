@@ -45,7 +45,7 @@ jest.mock('../components/JsonPreview', () => ({
     ),
 }));
 
-jest.mock('../components/HalLinksSection', () => ({
+jest.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
     HalLinksSection: ({links, onNavigate}: any) =>
         links ? (
             <div data-testid="hal-links">
@@ -54,7 +54,7 @@ jest.mock('../components/HalLinksSection', () => ({
         ) : null,
 }));
 
-jest.mock('../components/HalFormsSection', () => ({
+jest.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
     HalFormsSection: ({templates}: any) =>
         templates ? (
             <div data-testid="hal-forms">
@@ -68,7 +68,7 @@ jest.mock('../components/HalFormsSection', () => ({
         ) : null,
 }));
 
-jest.mock('../components/HalFormsPageLayout', () => ({
+jest.mock('../components/HalNavigator2/HalFormsPageLayout.tsx', () => ({
     HalFormsPageLayout: ({children}: any) => (
         <div data-testid="hal-forms-page-layout">
             {children}

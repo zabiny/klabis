@@ -4,14 +4,14 @@
  */
 
 import {type ReactElement, useState} from 'react';
-import type {HalFormsTemplate, TemplateTarget} from '../api';
-import {useHalRoute} from '../contexts/HalRouteContext';
-import {Alert, Spinner} from './UI';
-import {HalFormsForm} from './HalFormsForm';
-import {isFormValidationError, submitHalFormsData} from '../api/hateoas';
-import {UI_MESSAGES} from '../constants/messages';
-import {klabisFieldsFactory} from './KlabisFieldsFactory';
-import {useHalFormData} from '../hooks/useHalFormData';
+import type {HalFormsTemplate, TemplateTarget} from '../../api';
+import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
+import {Alert, Spinner} from '../UI';
+import {HalFormsForm} from '../HalFormsForm';
+import {isFormValidationError, submitHalFormsData} from '../../api/hateoas.ts';
+import {UI_MESSAGES} from '../../constants/messages.ts';
+import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
+import {useHalFormData} from '../../hooks/useHalFormData.ts';
 
 /**
  * Props for HalFormDisplay component

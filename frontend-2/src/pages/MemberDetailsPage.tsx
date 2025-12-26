@@ -5,8 +5,8 @@ import {Alert, Button, Spinner} from '../components/UI';
 import {MemberDetailsCard} from '../components/members/MemberDetailsCard';
 import {MemberDetailsField} from '../components/members/MemberDetailsField';
 import {extractNavigationPath} from '../utils/navigationPath';
-import {HalLinksSection} from "../components/HalLinksSection";
-import {HalFormsSection} from "../components/HalFormsSection";
+import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
+import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
 import {useHalActions} from "../hooks/useHalActions";
 
 /**

@@ -2,18 +2,18 @@ import '@testing-library/jest-dom';
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {HalFormDisplay} from './HalFormDisplay';
-import {HalRouteContext, type HalRouteContextValue} from '../contexts/HalRouteContext';
-import {mockHalFormsTemplate} from '../__mocks__/halData';
-import type {HalResponse} from '../api';
+import {HalFormDisplay} from './HalFormDisplay.tsx';
+import {HalRouteContext, type HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
+import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
+import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // Mock dependencies
-jest.mock('../components/HalNavigator/hooks', () => ({
+jest.mock('../HalNavigator/hooks.ts', () => ({
     fetchResource: jest.fn(),
 }));
 
-jest.mock('../api/hateoas', () => ({
+jest.mock('../../api/hateoas.ts', () => ({
     ...jest.requireActual('../api/hateoas'),
     submitHalFormsData: jest.fn(),
 }));
@@ -127,8 +127,8 @@ describe('HalFormDisplay Component', () => {
     });
 
     describe('Form Submission', () => {
-        const {submitHalFormsData} = require('../api/hateoas');
-        const {fetchResource} = require('../components/HalNavigator/hooks');
+        const {submitHalFormsData} = require('../../api/hateoas.ts');
+        const {fetchResource} = require('../HalNavigator/hooks.ts');
 
         beforeEach(() => {
             submitHalFormsData.mockClear();
@@ -153,8 +153,8 @@ describe('HalFormDisplay Component', () => {
         });
 
         it('should display error when submission fails', async () => {
-            const {submitHalFormsData} = require('../api/hateoas');
-            const {fetchResource} = require('../components/HalNavigator/hooks');
+            const {submitHalFormsData} = require('../../api/hateoas.ts');
+            const {fetchResource} = require('../HalNavigator/hooks.ts');
 
             const template = mockHalFormsTemplate({
                 title: 'Create',
@@ -174,7 +174,7 @@ describe('HalFormDisplay Component', () => {
     });
 
     describe('Target Data Fetching', () => {
-        const {fetchResource} = require('../components/HalNavigator/hooks');
+        const {fetchResource} = require('../HalNavigator/hooks.ts');
 
         beforeEach(() => {
             queryClient.clear();
@@ -258,7 +258,7 @@ describe('HalFormDisplay Component', () => {
         });
 
         it('should have proper structure for error alerts', async () => {
-            const {fetchResource} = require('../components/HalNavigator/hooks');
+            const {fetchResource} = require('../HalNavigator/hooks.ts');
 
             const template = mockHalFormsTemplate({
                 title: 'Create Event',

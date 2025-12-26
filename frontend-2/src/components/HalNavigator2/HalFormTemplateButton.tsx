@@ -4,8 +4,8 @@
  */
 
 import type {ReactElement} from 'react';
-import type {HalFormsTemplate} from '../api';
-import {Button} from './UI';
+import type {HalFormsTemplate} from '../../api';
+import {Button} from '../UI';
 
 export interface HalFormTemplateButtonProps {
     /** The HAL Forms template */

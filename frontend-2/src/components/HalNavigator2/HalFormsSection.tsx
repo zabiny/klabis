@@ -4,9 +4,9 @@
  */
 
 import {type ReactElement} from 'react';
-import type {HalFormsTemplate} from '../api';
-import {UI_MESSAGES} from '../constants/messages';
-import {HalFormButton} from './HalFormButton';
+import type {HalFormsTemplate} from '../../api';
+import {UI_MESSAGES} from '../../constants/messages.ts';
+import {HalFormButton} from './HalFormButton.tsx';
 
 /**
  * Props for HalFormsSection component

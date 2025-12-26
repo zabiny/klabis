@@ -4,8 +4,8 @@
  */
 
 import {type ReactElement} from 'react';
-import {HAL_LINK_RELS} from '../constants/hal';
-import {UI_MESSAGES} from '../constants/messages';
+import {HAL_LINK_RELS} from '../../constants/hal.ts';
+import {UI_MESSAGES} from '../../constants/messages.ts';
 
 interface HalLinksSectionProps {
 	links?: Record<string, any>;

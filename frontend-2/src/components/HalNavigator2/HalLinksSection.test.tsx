@@ -1,6 +1,6 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {HalLinksSection} from './HalLinksSection';
+import {HalLinksSection} from './HalLinksSection.tsx';
 
 describe('HalLinksSection Component', () => {
     describe('Rendering', () => {

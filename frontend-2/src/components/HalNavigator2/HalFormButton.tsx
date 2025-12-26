@@ -5,9 +5,9 @@
 
 import {type ReactElement, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {useHalRoute} from '../contexts/HalRouteContext';
-import {HalFormDisplay} from './HalFormDisplay';
-import {HalFormTemplateButton} from './HalFormTemplateButton';
+import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
+import {HalFormDisplay} from './HalFormDisplay.tsx';
+import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
 
 /**
  * Props for HalFormButton component

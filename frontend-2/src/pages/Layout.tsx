@@ -5,7 +5,7 @@ import {LogoutIcon} from '../components/Icons'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'
 import {useRootNavigation} from '../hooks/useRootNavigation'
-import {HalFormsPageLayout} from "../components/HalFormsPageLayout.tsx";
+import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx";
 
 const Layout = () => {
   const navigate = useNavigate()

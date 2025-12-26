@@ -11,8 +11,8 @@
 
 import {type ReactElement, type ReactNode} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {useHalRoute} from '../contexts/HalRouteContext';
-import {HalFormDisplay} from './HalFormDisplay';
+import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
+import {HalFormDisplay} from './HalFormDisplay.tsx';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;

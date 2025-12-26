@@ -1,12 +1,12 @@
-import {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useMemo} from 'react';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {useHalRoute} from '../contexts/HalRouteContext';
 import {Alert} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {hasCalendarItems} from '../api';
 import {extractNavigationPath} from '../utils/navigationPath';
-import {HalLinksSection} from "../components/HalLinksSection";
-import {HalFormsSection} from "../components/HalFormsSection";
+import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
+import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
 import {useHalActions} from "../hooks/useHalActions";
 
 interface CalendarItem {
@@ -27,7 +27,33 @@ const CalendarPage = () => {
     const {resourceData, isLoading, error} = useHalRoute();
     const {handleNavigateToItem} = useHalActions();
     const navigate = useNavigate();
-    const [currentDate] = useState(new Date());
+    const [searchParams] = useSearchParams();
+
+    // Parse referenceDate from query params, fall back to current date
+    const currentDate = useMemo(() => {
+        const referenceDate = searchParams.get('referenceDate');
+        if (referenceDate) {
+            // Parse yyyy-mm-dd format manually to avoid timezone issues
+            const parts = referenceDate.split('-');
+            if (parts.length === 3) {
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                const day = parseInt(parts[2], 10);
+
+                // Validate parsed values
+                if (!isNaN(year) && !isNaN(month) && !isNaN(day) &&
+                    month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    // Create date in local timezone (month is 0-indexed in Date constructor)
+                    const parsed = new Date(year, month - 1, day);
+                    // Double-check the date is valid by verifying the month matches
+                    if (parsed.getMonth() === month - 1) {
+                        return parsed;
+                    }
+                }
+            }
+        }
+        return new Date();
+    }, [searchParams]);
 
     // Extract calendar items from resource data using type guard
     let calendarItems: CalendarItem[] = [];

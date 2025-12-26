@@ -2,12 +2,12 @@ import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {HalFormsPageLayout} from './HalFormsPageLayout';
-import type {HalRouteContextValue} from '../contexts/HalRouteContext';
-import {HalRouteContext} from '../contexts/HalRouteContext';
-import {mockHalResponseWithForms} from '../__mocks__/halData';
+import {HalFormsPageLayout} from './HalFormsPageLayout.tsx';
+import type {HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
+import {HalRouteContext} from '../../contexts/HalRouteContext.tsx';
+import {mockHalResponseWithForms} from '../../__mocks__/halData.ts';
 
-jest.mock('../components/HalFormDisplay', () => ({
+jest.mock('./HalFormDisplay.tsx', () => ({
     HalFormDisplay: ({template, templateName, onClose}: any) => (
         <div data-testid="hal-form-display">
             <h3>{template.title || templateName}</h3>

@@ -3,18 +3,18 @@ import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {BrowserRouter} from 'react-router-dom';
-import {HalFormButton} from './HalFormButton';
-import {HalRouteContext, type HalRouteContextValue} from '../contexts/HalRouteContext';
-import {mockHalFormsTemplate} from '../__mocks__/halData';
-import type {HalResponse} from '../api';
+import {HalFormButton} from './HalFormButton.tsx';
+import {HalRouteContext, type HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
+import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
+import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // Mock dependencies
-jest.mock('../components/HalNavigator/hooks', () => ({
+jest.mock('../HalNavigator/hooks.ts', () => ({
     fetchResource: jest.fn(),
 }));
 
-jest.mock('../api/hateoas', () => ({
+jest.mock('../../api/hateoas.ts', () => ({
     ...jest.requireActual('../api/hateoas'),
     submitHalFormsData: jest.fn(),
 }));
@@ -388,8 +388,8 @@ describe('HalFormButton Component', () => {
     });
 
     describe('Form Submission', () => {
-        const {submitHalFormsData} = require('../api/hateoas');
-        const {fetchResource} = require('../components/HalNavigator/hooks');
+        const {submitHalFormsData} = require('../../api/hateoas.ts');
+        const {fetchResource} = require('../HalNavigator/hooks.ts');
 
         beforeEach(() => {
             submitHalFormsData.mockClear();
@@ -562,7 +562,7 @@ describe('HalFormButton Component', () => {
     });
 
     describe('API Without GET Endpoint (HTTP 404/405)', () => {
-        const {fetchResource} = require('../components/HalNavigator/hooks');
+        const {fetchResource} = require('../HalNavigator/hooks.ts');
 
         beforeEach(() => {
             // Clear query cache before each test

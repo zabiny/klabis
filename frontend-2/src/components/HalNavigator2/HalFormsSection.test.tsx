@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
-import {HalFormsSection} from './HalFormsSection';
-import type {HalFormsTemplate} from '../api';
-import {mockHalFormsTemplate} from '../__mocks__/halData';
+import {HalFormsSection} from './HalFormsSection.tsx';
+import type {HalFormsTemplate} from '../../api';
+import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 
 // Mock the HalFormButton component since we're testing HalFormsSection in isolation
-jest.mock('./HalFormButton', () => ({
+jest.mock('./HalFormButton.tsx', () => ({
 	HalFormButton: ({name}: { name: string; modal: boolean }) => (
 		<button data-testid={`hal-form-button-${name}`}>
 			{name}
