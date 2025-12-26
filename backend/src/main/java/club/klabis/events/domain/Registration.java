@@ -38,7 +38,7 @@ public final class Registration {
         this.siNumber = siNumber;
         this.category = new Competition.Category(category);
         this.createdAt = ZonedDateTime.now();
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = createdAt;
     }
 
     public Competition.Category getCategory() {
