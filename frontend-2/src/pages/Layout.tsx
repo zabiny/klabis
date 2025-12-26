@@ -5,6 +5,7 @@ import {LogoutIcon} from '../components/Icons'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'
 import {useRootNavigation} from '../hooks/useRootNavigation'
+import {HalFormsPageLayout} from "../components/HalFormsPageLayout.tsx";
 
 const Layout = () => {
   const navigate = useNavigate()
@@ -124,7 +125,9 @@ const Layout = () => {
 
         {/* Main content */}
         <main className="flex-1 pt-20 px-6 py-6 overflow-auto">
+          <HalFormsPageLayout>
           <Outlet/>
+          </HalFormsPageLayout>
         </main>
       </div>
   )

@@ -5,7 +5,6 @@ import {Alert, Modal, Spinner} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {HalLinksSection} from '../components/HalLinksSection';
 import {HalFormsSection} from '../components/HalFormsSection';
-import {HalFormsPageLayout} from '../components/HalFormsPageLayout';
 import {useHalActions} from '../hooks/useHalActions';
 import {useIsAdmin} from '../hooks/useIsAdmin';
 import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
@@ -58,15 +57,13 @@ export const GenericHalPage = (): ReactElement => {
     const isCollection = isHalCollection(resourceData);
 
     return (
-        <HalFormsPageLayout>
-            <div className="p-4">
-                {isCollection ? (
-                    <GenericCollectionDisplay data={resourceData as HalCollectionResponse}/>
-                ) : (
-                    <GenericItemDisplay data={resourceData}/>
-                )}
-            </div>
-        </HalFormsPageLayout>
+        <div className="p-4">
+            {isCollection ? (
+                <GenericCollectionDisplay data={resourceData as HalCollectionResponse}/>
+            ) : (
+                <GenericItemDisplay data={resourceData}/>
+            )}
+        </div>
     );
 };
 

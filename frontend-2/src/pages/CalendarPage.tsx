@@ -8,7 +8,6 @@ import {extractNavigationPath} from '../utils/navigationPath';
 import {HalLinksSection} from "../components/HalLinksSection";
 import {HalFormsSection} from "../components/HalFormsSection";
 import {useHalActions} from "../hooks/useHalActions";
-import {HalFormsPageLayout} from "../components/HalFormsPageLayout.tsx";
 
 interface CalendarItem {
     start: string;
@@ -96,7 +95,6 @@ const CalendarPage = () => {
     }
 
     return (
-        <HalFormsPageLayout>
         <div className="space-y-6">
             {/* Header */}
             <div>
@@ -184,7 +182,6 @@ const CalendarPage = () => {
                 <JsonPreview data={resourceData} label="Kompletní odpověď"/>
             </details>
         </div>
-        </HalFormsPageLayout>
     );
 };
 
