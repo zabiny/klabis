@@ -46,9 +46,11 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<Re
         let validator: Yup.AnySchema = Yup.mixed().nullable();
 
         if (prop.type === "number") {
-            validator = Yup.number().typeError(VALIDATION_MESSAGES.MUST_BE_NUMBER);
+            validator = Yup.number().typeError(VALIDATION_MESSAGES.MUST_BE_NUMBER).nullable();
         } else if (prop.type === "email") {
-            validator = Yup.string().email(VALIDATION_MESSAGES.INVALID_EMAIL);
+            validator = Yup.string().email(VALIDATION_MESSAGES.INVALID_EMAIL).nullable();
+        } else if (prop.type === "text") {
+            validator = Yup.string().nullable();
         }
 
         if (prop.multiple) {
