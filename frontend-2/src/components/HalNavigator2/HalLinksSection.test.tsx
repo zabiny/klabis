@@ -1,19 +1,67 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {BrowserRouter} from 'react-router-dom';
 import {HalLinksSection} from './HalLinksSection.tsx';
+import * as HalRouteContext from '../../contexts/HalRouteContext';
+
+const TestWrapper = ({children}: { children: React.ReactNode }) => (
+    <BrowserRouter>
+        {children}
+    </BrowserRouter>
+);
+
+const renderWithRouter = (component: React.ReactElement) => {
+    return render(component, {wrapper: TestWrapper});
+};
 
 describe('HalLinksSection Component', () => {
+    beforeEach(() => {
+        jest.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+            resourceData: null,
+            isLoading: false,
+            error: null,
+            refetch: async () => {
+            },
+            pathname: '/test',
+            queryState: 'success',
+        });
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
     describe('Rendering', () => {
-        it('should not render when links are not provided', () => {
-            const {container} = render(
-                <HalLinksSection onNavigate={() => {
-                }}/>
+        it('should not render when links are not provided (no resourceData._links)', () => {
+            const {container} = renderWithRouter(
+                <HalLinksSection/>
             );
             expect(container.firstChild).toBeNull();
         });
 
+        it('should render when resourceData._links is provided automatically', () => {
+            jest.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+                resourceData: {
+                    _links: {
+                        next: {href: '/api/items?page=1'},
+                    },
+                } as any,
+                isLoading: false,
+                error: null,
+                refetch: async () => {
+                },
+                pathname: '/test',
+                queryState: 'success',
+            });
+
+            const {container} = renderWithRouter(
+                <HalLinksSection/>
+            );
+            expect(container.querySelector('div')).toBeInTheDocument();
+        });
+
         it('should not render when links object is empty', () => {
-            const {container} = render(
+            const {container} = renderWithRouter(
                 <HalLinksSection links={{}} onNavigate={() => {
                 }}/>
             );
@@ -25,7 +73,7 @@ describe('HalLinksSection Component', () => {
                 first: {href: '/api/items?page=0'},
                 next: {href: '/api/items?page=1'},
             };
-            const {container} = render(
+            const {container} = renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -34,7 +82,7 @@ describe('HalLinksSection Component', () => {
 
         it('should render heading with available actions text', () => {
             const links = {next: {href: '/api/items?page=1'}};
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -50,7 +98,7 @@ describe('HalLinksSection Component', () => {
                 self: {href: '/api/items/1'},
                 next: {href: '/api/items?page=1'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -67,7 +115,7 @@ describe('HalLinksSection Component', () => {
                 prev: {href: '/api/items?page=0', title: 'Previous'},
                 next: {href: '/api/items?page=1', title: 'Next'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -79,7 +127,7 @@ describe('HalLinksSection Component', () => {
             const links = {
                 self: {href: '/api/items/1'},
             };
-            const {container} = render(
+            const {container} = renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -94,7 +142,7 @@ describe('HalLinksSection Component', () => {
                 first: {href: '/api/items?page=0'},
                 last: {href: '/api/items?page=10'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -106,7 +154,7 @@ describe('HalLinksSection Component', () => {
             const links = {
                 next: {href: '/api/items?page=1', title: 'Go to Next'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -117,7 +165,7 @@ describe('HalLinksSection Component', () => {
             const links = {
                 next: {href: '/api/items?page=1'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -131,7 +179,7 @@ describe('HalLinksSection Component', () => {
                     {href: '/api/items/2', title: 'Item 2'},
                 ],
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -147,7 +195,7 @@ describe('HalLinksSection Component', () => {
             const links = {
                 next: {href: '/api/items?page=1', title: 'Next'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={mockOnNavigate}/>
             );
             const button = screen.getByText('Next');
@@ -164,7 +212,7 @@ describe('HalLinksSection Component', () => {
                     {href: '/api/items/2', title: 'Item 2'},
                 ],
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={mockOnNavigate}/>
             );
             const button2 = screen.getByText('Item 2');
@@ -179,7 +227,7 @@ describe('HalLinksSection Component', () => {
                 first: {href: '/api/items?page=0'},
                 last: {href: '/api/items?page=10'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={mockOnNavigate}/>
             );
             const buttons = screen.getAllByRole('button');
@@ -197,7 +245,7 @@ describe('HalLinksSection Component', () => {
                 next: {href: '/api/items?page=1'},
                 prev: {href: '/api/items?page=0'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -211,7 +259,7 @@ describe('HalLinksSection Component', () => {
             const links = {
                 next: {href: '/api/items?page=1'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -225,7 +273,7 @@ describe('HalLinksSection Component', () => {
             const links = {
                 next: {href: '/api/items?page=1'},
             };
-            const {container} = render(
+            const {container} = renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -237,7 +285,7 @@ describe('HalLinksSection Component', () => {
             const links = {
                 next: {href: '/api/items?page=1'},
             };
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
@@ -252,7 +300,7 @@ describe('HalLinksSection Component', () => {
                 broken: {title: 'Broken Link'} as any,
             };
             const mockOnNavigate = jest.fn();
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={mockOnNavigate}/>
             );
             expect(screen.getByText('Broken Link')).toBeInTheDocument();
@@ -267,7 +315,7 @@ describe('HalLinksSection Component', () => {
                 },
             };
             const mockOnNavigate = jest.fn();
-            render(
+            renderWithRouter(
                 <HalLinksSection links={links} onNavigate={mockOnNavigate}/>
             );
             const button = screen.getByText('Next');

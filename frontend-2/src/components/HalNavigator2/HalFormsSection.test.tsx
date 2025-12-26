@@ -3,6 +3,7 @@ import {render, screen} from '@testing-library/react';
 import {HalFormsSection} from './HalFormsSection.tsx';
 import type {HalFormsTemplate} from '../../api';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
+import * as HalRouteContext from '../../contexts/HalRouteContext';
 
 // Mock the HalFormButton component since we're testing HalFormsSection in isolation
 jest.mock('./HalFormButton.tsx', () => ({
@@ -16,10 +17,47 @@ jest.mock('./HalFormButton.tsx', () => ({
 describe('HalFormsSection Component', () => {
 	const mockTemplate = (overrides = {}): HalFormsTemplate => mockHalFormsTemplate(overrides);
 
+	beforeEach(() => {
+		jest.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+			resourceData: null,
+			isLoading: false,
+			error: null,
+			refetch: async () => {
+			},
+			pathname: '/test',
+			queryState: 'success',
+		});
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+	});
+
 	describe('Rendering', () => {
-		it('should not render when templates are not provided', () => {
+		it('should not render when templates are not provided (no resourceData._templates)', () => {
 			const {container} = render(<HalFormsSection/>);
 			expect(container.firstChild).toBeNull();
+		});
+
+		it('should render when resourceData._templates is provided automatically', () => {
+			jest.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+				resourceData: {
+					_templates: {
+						create: mockTemplate({title: 'Create'}),
+					},
+				} as any,
+				isLoading: false,
+				error: null,
+				refetch: async () => {
+				},
+				pathname: '/test',
+				queryState: 'success',
+			});
+
+			render(<HalFormsSection/>);
+
+			const heading = screen.getByRole('heading', {level: 3});
+			expect(heading).toBeInTheDocument();
 		});
 
 		it('should not render when templates object is empty', () => {

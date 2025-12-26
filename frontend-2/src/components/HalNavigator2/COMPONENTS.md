@@ -9,8 +9,9 @@ implementují **customizované stránky bez GenericHalPage**.
 2. [useHalRoute hook](#usehalroute-hook)
 3. [Komponenty pro formuláře](#komponenty-pro-formuláře)
 4. [Komponenty pro navigaci](#komponenty-pro-navigaci)
-5. [Praktické příklady](#praktické-příklady)
-6. [Best practices](#best-practices)
+5. [Komponenty pro tabulky](#komponenty-pro-tabulky)
+6. [Praktické příklady](#praktické-příklady)
+7. [Best practices](#best-practices)
 
 ---
 
@@ -174,47 +175,65 @@ Viz [HalFormsPageLayout](#halformspageLayout) pro automatické zpracování.
 ### 2. HalFormsSection
 
 Komponenta, která zobrazuje **všechny dostupné formuláře** jako tlačítka.
+Automaticky čte z `resourceData._templates` když se `templates` neposkytnou.
 
 #### Props
 
 ```typescript
 interface HalFormsSectionProps {
-    /** Objekt šablon z HAL resource data */
+    /** Objekt šablon z HAL resource data. Pokud se neposkytne, použije se resourceData._templates */
     templates?: Record<string, HalFormsTemplate>;
 
-    /** Zda otevřít formuláře v modálním okně (default: true) */
+    /** Zda otevřít formuláře v modálním okně (default: true) nebo inline */
     modal?: boolean;
 }
 ```
 
-#### Příklad
+#### Chování
 
-```typescript
-import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
-
-export const CalendarPage = () => {
-    const {resourceData} = useHalRoute();
-
-    return (
-        <div>
-            <h1>Kalendář < /h1>
-    {/* Automaticky zobrazí všechna dostupná tlačítka */
-    }
-    <HalFormsSection templates = {resourceData?._templates
-}
-    modal = {true}
-    />
-    < /div>
-)
-    ;
-};
-```
-
-#### Jak pracuje
-
+- Automaticky používá `resourceData._templates` pokud se `templates` neposkytnou
 - Filtruje `_templates` objekt a pro každou šablonu vytvoří `HalFormButton`
 - Vrátí `null`, pokud nejsou žádné šablony k dispozici
 - Ideální pro stránky, kde chceš zobrazit "všechny dostupné akce"
+
+#### Příklady
+
+**Příklad 1: Automatické - bez props (doporučeno)**
+
+```typescript
+import { HalFormsSection } from '../components/HalNavigator2/HalFormsSection';
+
+export const CalendarPage = () => {
+  return (
+    <div>
+      <h1>Kalendář</h1>
+      {/* Automaticky čte z resourceData._templates a otevře v modálech */}
+      <HalFormsSection />
+    </div>
+  );
+};
+```
+
+**Příklad 2: Manuální - s custom šablonami a inline režimem**
+
+```typescript
+import { HalFormsSection } from '../components/HalNavigator2/HalFormsSection';
+
+export const CustomPage = () => {
+  const customTemplates = {
+    create: { /* HAL Forms template */ },
+    edit: { /* HAL Forms template */ },
+  };
+
+  return (
+    <div>
+      <h1>Custom formuláře</h1>
+      {/* Zobrazí inline - bez modálů */}
+      <HalFormsSection templates={customTemplates} modal={false} />
+    </div>
+  );
+};
+```
 
 ---
 
@@ -423,16 +442,18 @@ export const CustomFormsUI = () => {
 ### 1. HalLinksSection
 
 Komponenta, která zobrazuje **dostupné HAL linky** (akce, přechody).
+Automaticky čte z `resourceData._links` když se `links` neposkytnou.
+Automaticky naviguje přes React Router když se `onNavigate` neposkytne.
 
 #### Props
 
 ```typescript
 interface HalLinksSectionProps {
-    /** Objekt linků z HAL resource data (_links) */
+    /** Objekt linků z HAL resource data. Pokud se neposkytne, použije se resourceData._links */
     links?: Record<string, any>;
 
-    /** Callback při kliknutí na link */
-    onNavigate: (href: string) => void;
+    /** Callback při kliknutí na link. Pokud se neposkytne, použije se useNavigate() */
+    onNavigate?: (href: string) => void;
 }
 ```
 
@@ -441,38 +462,62 @@ interface HalLinksSectionProps {
 - Filtruje `self` linky (nezobrazuje je)
 - Pro každý link vytvoří tlačítko
 - Pokud je link pole, vytvoří tlačítko pro každý prvek
-- Volá `onNavigate` s `href` když uživatel klikne
+- Automaticky používá `resourceData._links` pokud se `links` neposkytnou
+- Automaticky naviguje přes React Router pokud se `onNavigate` neposkytne
+- Manuálně volá `onNavigate` s `href` když se poskytne a uživatel klikne
 
-#### Příklad
+#### Příklady
+
+**Příklad 1: Automatické - bez props (doporučeno)**
 
 ```typescript
 import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection';
-import {useNavigate} from 'react-router-dom';
-import {extractNavigationPath} from '../utils/navigationPath';
 
 export const MemberDetailsPage = () => {
-    const {resourceData} = useHalRoute();
-    const navigate = useNavigate();
-
-    const handleNavigateLink = (href: string) => {
-        const path = extractNavigationPath(href);
-        navigate(path);
-    };
-
-    return (
-        <div>
-            <h1>Detail
-    člena < /h1>
-    {/* Zobrazí všechny dostupné akce */
-    }
-    <HalLinksSection
-        links = {resourceData?._links
-}
-    onNavigate = {handleNavigateLink}
-    />
-    < /div>
+   return (
+           <div>
+                   <h1>Detail
+   člena < /h1>
+   {/* Automaticky čte z resourceData._links a naviguje přes React Router */
+   }
+   <HalLinksSection / >
+   </div>
 )
-    ;
+   ;
+};
+```
+
+**Příklad 2: Manuální - s custom linky a handlerem**
+
+```typescript
+import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection';
+import {extractNavigationPath} from '../utils/navigationPath';
+import {useNavigate} from 'react-router-dom';
+
+export const CustomPage = () => {
+   const navigate = useNavigate();
+
+   const customLinks = {
+      edit: {href: '/edit', title: 'Upravit'},
+      delete: {href: '/delete'},
+   };
+
+   const handleNavigate = (href: string) => {
+      const path = extractNavigationPath(href);
+      navigate(path);
+   };
+
+   return (
+           <div>
+                   <h1>Custom
+   stránka < /h1>
+   < HalLinksSection
+   links = {customLinks}
+   onNavigate = {handleNavigate}
+   />
+   < /div>
+)
+   ;
 };
 ```
 
@@ -501,6 +546,116 @@ Pokud má resource tyto linky:
 
 - "Edit Member" (z `title`)
 - "delete" (název linku)
+
+---
+
+## Komponenty pro tabulky
+
+### 1. HalEmbeddedTable
+
+Komponenta pro zobrazení HAL `_embedded` kolekce v tabulkovém formátu s automatickou paginací a řazením.
+
+#### Props
+
+```typescript
+interface HalEmbeddedTableProps<T = any> {
+  /** Jméno kolekce v _embedded objektu */
+  collectionName: string;
+
+  /** Callback když uživatel klikne na řádek */
+  onRowClick?: (item: T) => void;
+
+  /** Sloupec pro default řazení */
+  defaultOrderBy?: string;
+
+  /** Směr řazení (asc/desc) */
+  defaultOrderDirection?: SortDirection;
+
+  /** Počet řádků na stránku (default: 10) */
+  defaultRowsPerPage?: number;
+
+  /** Zpráva když nejsou data */
+  emptyMessage?: string;
+
+  /** Definice sloupců (TableCell komponenty) */
+  children: React.ReactNode;
+}
+```
+
+#### Chování
+
+- Automaticky načítá data z `resourceData._embedded[collectionName]`
+- Zobrazuje páginaci pokud existuje `resourceData.page`
+- Podporuje řazení sloupců (prostřednictvím `defaultOrderBy`)
+- Volá `onRowClick` callback když uživatel klikne na řádek
+- Zobrazuje custom zprávu když nejsou data
+
+#### Příklad
+
+```typescript
+import {HalEmbeddedTable} from '../components/HalNavigator2/HalEmbeddedTable';
+import {TableCell} from '../components/KlabisTable';
+import {useNavigate} from 'react-router-dom';
+
+interface Member {
+   id: number;
+   firstName: string;
+   lastName: string;
+   registrationNumber: string;
+   _links: Record<string, any>;
+}
+
+export const MembersPage = () => {
+   const navigate = useNavigate();
+
+   const handleRowClick = (member: Member) => {
+      navigate(`/members/${member.id}`);
+   };
+
+   return (
+           <div>
+                   <h1>Adresář
+   členů < /h1>
+
+   < HalEmbeddedTable<Member>
+   collectionName = "membersApiResponseList"
+   defaultOrderBy = "lastName"
+   defaultOrderDirection = "asc"
+   onRowClick = {handleRowClick}
+   >
+   <TableCell column = "firstName"
+   sortable > Jméno < /TableCell>
+   < TableCell
+   column = "lastName"
+   sortable > Příjmení < /TableCell>
+   < TableCell
+   column = "registrationNumber" > Reg.číslo < /TableCell>
+           < /HalEmbeddedTable>
+           < /div>
+)
+   ;
+};
+```
+
+#### Jak funguje
+
+1. Hook `useHalRoute()` si vezme aktuální `resourceData`
+2. Extrahuje data z `resourceData._embedded[collectionName]`
+3. Předá data do `KlabisTable` se sloupci definovanými jako `children`
+4. `KlabisTable` si vezme starosti o páginaci, řazení, a renderování
+
+#### Kdy ji používat
+
+- Potřebuješ zobrazit libovolnou `_embedded` kolekci
+- Chceš páginaci a řazení
+- Máš custom layout (ne `GenericHalPage`)
+
+Příklady:
+
+- `membersApiResponseList` → seznam členů
+- `calendarItems` → seznam kalendářních položek
+- `eventList` → seznam akcí
+- `anyOtherCollection` → jakákoli jiná kolekce
 
 ---
 
@@ -728,14 +883,15 @@ export const MemberDetailPage = () => {
 
 ## Shrnutí komponent
 
-| Komponenta           | Kdy ju používat              | Modal?         | Inline?  |
-|----------------------|------------------------------|----------------|----------|
-| `useHalRoute`        | Vždy - pro přístup k datům   | -              | -        |
-| `HalFormButton`      | Specifický formulář          | ✅              | ✅        |
-| `HalFormsSection`    | Všechny formuláře najednou   | ✅ customizable | ❌        |
-| `HalFormsPageLayout` | Wrapper pro inline formuláře | ❌              | ✅        |
-| `HalFormDisplay`     | Custom workflow (vzácně)     | ✅ custom       | ✅ custom |
-| `HalLinksSection`    | Zobrazit dostupné akce       | -              | -        |
+| Komponenta           | Účel                            | Použití                  |
+|----------------------|---------------------------------|--------------------------|
+| `useHalRoute`        | Přístup k HAL datům a metadata  | Vždy v komponentách      |
+| `HalFormButton`      | Tlačítko pro konkrétní formulář | Modal nebo inline        |
+| `HalFormsSection`    | Všechny dostupné formuláře      | Modal (všechny najednou) |
+| `HalFormsPageLayout` | Wrapper pro inline formuláře    | Query param handling     |
+| `HalFormDisplay`     | Renderování formuláře           | Custom workflow (vzácně) |
+| `HalLinksSection`    | Zobrazení dostupných akcí       | HAL linky                |
+| `HalEmbeddedTable`   | Tabulka z `_embedded` kolekce   | Páginace + řazení        |
 
 ---
 
