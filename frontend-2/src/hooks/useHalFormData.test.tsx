@@ -594,7 +594,8 @@ describe('useHalFormData Hook', () => {
 
         it('should handle template.target change during fetch', async () => {
             const template1 = mockHalFormsTemplate({target: '/events/456'});
-            let resolveFirstFetch: (value: unknown) => void;
+            let resolveFirstFetch: (value: unknown) => void = () => {
+            };
             const firstFetchPromise = new Promise((resolve) => {
                 resolveFirstFetch = resolve;
             });

@@ -341,7 +341,7 @@ describe('HalFormButton Component', () => {
                 },
             };
             const contextValue = createMockContext(resourceData);
-            const {container} = renderWithContext(
+            renderWithContext(
                 <HalFormButton name="create" modal={false}/>,
                 contextValue
             );
