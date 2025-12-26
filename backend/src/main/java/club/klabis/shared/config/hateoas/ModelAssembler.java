@@ -16,7 +16,7 @@ public interface ModelAssembler<DOMAIN, DTO> {
 
     EntityModel<DTO> toEntityResponse(DOMAIN events);
 
-    CollectionModel<EntityModel<DTO>> toCollectionModel(Iterable<? extends DOMAIN> events);
+    CollectionModel<EntityModel<DTO>> toCollectionModel(Iterable<? extends DOMAIN> events, Class<DTO> dtoType);
 
     // can be used to translate attribute names (sort) from DTO to Domain
     Pageable toDomainPageable(Pageable dtoPageable);

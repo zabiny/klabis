@@ -121,7 +121,7 @@ public class CalendarApiController {
 
         return ResponseEntity.ok(modelAssembler.toCollectionModel(new ArrayList<>(calendarService.getCalendarItems(
                 calendarType,
-                referenceDate))).add(createCalendarLinks(calendarType, referenceDate)));
+                referenceDate)), CalendarItemDto.class).add(createCalendarLinks(calendarType, referenceDate)));
     }
 
     @GetMapping("/{id}")
