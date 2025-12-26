@@ -85,7 +85,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EventManagementForm"
+                "$ref": "#/components/schemas/EventManagementCommand"
               }
             }
           },
@@ -319,7 +319,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EventRegistrationForm"
+                "$ref": "#/components/schemas/EventRegistrationCommand"
               }
             }
           },
@@ -478,7 +478,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EventManagementForm"
+                "$ref": "#/components/schemas/EventManagementCommand"
               }
             }
           },
@@ -595,7 +595,7 @@
           }
         }
       },
-      "EventManagementForm": {
+      "EventManagementCommand": {
         "type": "object",
         "properties": {
           "name": {
@@ -645,7 +645,7 @@
           }
         }
       },
-      "EventRegistrationForm": {
+      "EventRegistrationCommand": {
         "type": "object",
         "properties": {
           "siNumber": {

@@ -761,7 +761,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EventManagementForm"
+                "$ref": "#/components/schemas/EventManagementCommand"
               }
             }
           },
@@ -995,7 +995,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EventRegistrationForm"
+                "$ref": "#/components/schemas/EventRegistrationCommand"
               }
             }
           },
@@ -1266,7 +1266,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EventManagementForm"
+                "$ref": "#/components/schemas/EventManagementCommand"
               }
             }
           },
@@ -2097,8 +2097,6 @@
               "enum": [
                 "MEMBERS_REGISTER",
                 "MEMBERS_EDIT",
-                "MEMBERS_SUSPENDMEMBERSHIP",
-                "MEMBERS_RESUMEMEMBERSHIP",
                 "EVENTS_MANAGE",
                 "CALENDAR_MANAGE",
                 "SYSTEM_ADMIN",
@@ -2479,7 +2477,7 @@
           }
         }
       },
-      "EventManagementForm": {
+      "EventManagementCommand": {
         "type": "object",
         "properties": {
           "name": {
@@ -2529,7 +2527,7 @@
           }
         }
       },
-      "EventRegistrationForm": {
+      "EventRegistrationCommand": {
         "type": "object",
         "properties": {
           "siNumber": {
@@ -2661,19 +2659,6 @@
           "sex"
         ]
       },
-      "CalendarPeriod": {
-        "type": "object",
-        "properties": {
-          "periodStart": {
-            "type": "string",
-            "format": "date"
-          },
-          "periodEnd": {
-            "type": "string",
-            "format": "date"
-          }
-        }
-      },
       "CreateCalendarItemCommand": {
         "type": "object",
         "properties": {
@@ -2687,11 +2672,12 @@
           },
           "note": {
             "type": "string"
-          },
-          "period": {
-            "$ref": "#/components/schemas/CalendarPeriod"
           }
-        }
+        },
+        "required": [
+          "end",
+          "start"
+        ]
       },
       "RegistrationNumberGet200ResponseApiDto": {
         "type": "object",
@@ -3079,8 +3065,6 @@
             "enum": [
               "MEMBERS_REGISTER",
               "MEMBERS_EDIT",
-              "MEMBERS_SUSPENDMEMBERSHIP",
-              "MEMBERS_RESUMEMEMBERSHIP",
               "EVENTS_MANAGE",
               "CALENDAR_MANAGE",
               "SYSTEM_ADMIN",
@@ -3397,7 +3381,11 @@
           "_links": {
             "$ref": "#/components/schemas/Links"
           }
-        }
+        },
+        "required": [
+          "end",
+          "start"
+        ]
       },
       "EntityModelRootModel": {
         "type": "object",

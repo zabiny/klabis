@@ -166,8 +166,6 @@
               "enum": [
                 "MEMBERS_REGISTER",
                 "MEMBERS_EDIT",
-                "MEMBERS_SUSPENDMEMBERSHIP",
-                "MEMBERS_RESUMEMEMBERSHIP",
                 "EVENTS_MANAGE",
                 "CALENDAR_MANAGE",
                 "SYSTEM_ADMIN",
@@ -186,8 +184,6 @@
             "enum": [
               "MEMBERS_REGISTER",
               "MEMBERS_EDIT",
-              "MEMBERS_SUSPENDMEMBERSHIP",
-              "MEMBERS_RESUMEMEMBERSHIP",
               "EVENTS_MANAGE",
               "CALENDAR_MANAGE",
               "SYSTEM_ADMIN",
