@@ -5,13 +5,13 @@ import club.klabis.events.oris.OrisEventDataSource;
 import club.klabis.events.oris.dto.OrisData;
 import club.klabis.events.oris.dto.OrisDataBuilder;
 import club.klabis.events.oris.dto.OrisEventListFilter;
-import club.klabis.oris.application.dto.EventClass;
-import club.klabis.oris.application.dto.EventDetails;
-import club.klabis.oris.application.dto.Organizer;
+import club.klabis.oris.application.dto.*;
+import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
+import club.klabis.shared.application.OrisIntegrationComponent;
+import jakarta.validation.constraints.NotNull;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -19,15 +19,29 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Component
 @SecondaryAdapter
+@OrisIntegrationComponent
 class DefaultOrisEventsDataSource implements OrisEventDataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultOrisEventsDataSource.class);
-    private final OrisDataProvider orisDataProvider;
+    private final OrisApiClient orisApiClient;
 
-    DefaultOrisEventsDataSource(OrisDataProvider orisDataProvider) {
-        this.orisDataProvider = orisDataProvider;
+    // For example Relay has different format of EventEntries (= 1 EventEntry contains one relay with multiple runners - that is something what we can't process now).
+    private List<Integer> SUPPORTED_ORIS_DISCIPLINES = Arrays.asList(OrisApiClient.DISCIPLINE_ID_LONG_DISTANCE,
+            OrisApiClient.DISCIPLINE_ID_SHORT_DISTANCE,
+            OrisApiClient.DISCIPLINE_ID_SPRINT,
+            OrisApiClient.DISCIPLINE_ID_ULTRALONG_DISTANCE);
+
+    DefaultOrisEventsDataSource(OrisApiClient orisApiClient) {
+        this.orisApiClient = orisApiClient;
+    }
+
+    private boolean isSupported(EventSummary event) {
+        return SUPPORTED_ORIS_DISCIPLINES.contains(event.discipline().id());
+    }
+
+    private boolean isSupported(EventDetails event) {
+        return SUPPORTED_ORIS_DISCIPLINES.contains(event.discipline().id());
     }
 
     private OrisData from(EventDetails eventDetails) {
@@ -42,7 +56,21 @@ class DefaultOrisEventsDataSource implements OrisEventDataSource {
                         eventDetails.entryDate2(),
                         eventDetails.entryDate3()).orElse(eventDetails.date().atStartOfDay(ZoneId.of("Europe/Prague"))))
                 .website(new OrisId(eventDetails.id()).createEventUrl())
+                .registrations(eventRegistrations(eventDetails))
                 .build();
+    }
+
+    private @NotNull Collection<OrisData.MemberRegistration> eventRegistrations(EventDetails event) {
+        return orisApiClient.getEventEntries(event.id(), OrisApiClient.CLUB_ID_ZBM).payload()
+                .map(data -> data.values().stream().map(this::from).collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
+    }
+
+    private OrisData.MemberRegistration from(EventEntry eventEntry) {
+        return new OrisData.MemberRegistration(eventEntry.regNo(),
+                eventEntry.classDesc(),
+                eventEntry.si(),
+                eventEntry.fee());
     }
 
     private Collection<String> toCategories(EventDetails eventDetails) {
@@ -73,13 +101,26 @@ class DefaultOrisEventsDataSource implements OrisEventDataSource {
 
     @Override
     public Optional<OrisData> getOrisEventData(OrisId orisEventId) {
-        return orisDataProvider.getEventDetails(orisEventId).map(this::from);
+        return orisApiClient.getEventDetails(orisEventId.value()).payload().filter(this::isSupported).map(this::from);
+    }
+
+    private EventDetails toDetails(EventSummary event) {
+        // throwing if not found because when we have summary, there should be also detail information available
+        return orisApiClient.getEventDetails(event.id()).payload().orElseThrow();
     }
 
     @Override
     public Stream<OrisData> streamOrisEvents(OrisEventListFilter filter) {
-        return orisDataProvider.getEventList(filter).stream()
-                .flatMap(eventSummary -> orisDataProvider.getEventDetails(new OrisId(eventSummary.id())).stream())
-                .map(this::from);
+        OrisApiClient.OrisResponse<Map<String, EventSummary>> response = orisApiClient.getEventList(filter);
+        if (response.data() != null) {
+            return response.data()
+                    .values()
+                    .stream()
+                    .filter(this::isSupported)
+                    .map(this::toDetails)
+                    .map(this::from);
+        } else {
+            return Stream.empty();
+        }
     }
 }

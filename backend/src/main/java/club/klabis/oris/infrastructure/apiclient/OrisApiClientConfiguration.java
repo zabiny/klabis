@@ -1,6 +1,7 @@
 package club.klabis.oris.infrastructure.apiclient;
 
 import club.klabis.events.oris.dto.OrisEventListFilter;
+import club.klabis.shared.application.OrisIntegrationComponent;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+@OrisIntegrationComponent
 @Configuration
 class OrisApiClientConfiguration implements ClientHttpRequestInterceptor {
 
@@ -60,14 +62,16 @@ class OrisApiClientConfiguration implements ClientHttpRequestInterceptor {
         JacksonJsonHttpMessageConverter messageConverter = new JacksonJsonHttpMessageConverter(objectMapperBuilder);
         messageConverter.setSupportedMediaTypes(List.of(MediaType.valueOf("application/javascript")));
 
-        HttpMessageConverter<Object> orisApiQuirksMessageConverter = new OrisApiQuirksHandlingMessageConverter(
-                messageConverter);
+//        HttpMessageConverter<Object> orisApiQuirksMessageConverter = new OrisApiQuirksHandlingMessageConverter(
+//                messageConverter);
+        HttpMessageConverter<Object> orisApiQuirksMessageConverter = messageConverter;
 
         RestClient restClient = restClientBuilder.baseUrl("https://oris.orientacnisporty.cz")
-                .configureMessageConverters(c -> {
-                    c.addCustomConverter(orisApiQuirksMessageConverter);
-                    c.withJsonConverter(new JacksonJsonHttpMessageConverter(objectMapperBuilder));
-                })
+                .configureMessageConverters(c -> c.addCustomConverter(messageConverter))
+//                .configureMessageConverters(c -> {
+//                    c.addCustomConverter(orisApiQuirksMessageConverter);
+//                    c.withJsonConverter(new JacksonJsonHttpMessageConverter(objectMapperBuilder));
+//                })
                 .requestInterceptor(this)
                 .build();
         RestClientAdapter adapter = RestClientAdapter.create(restClient);

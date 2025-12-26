@@ -11,6 +11,7 @@ import club.klabis.events.oris.dto.OrisData;
 import club.klabis.events.oris.dto.OrisEventListFilter;
 import club.klabis.members.MemberId;
 import club.klabis.members.domain.RegistrationNumber;
+import club.klabis.shared.application.OrisIntegrationComponent;
 import club.klabis.shared.config.ddd.UseCase;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.springframework.util.Assert;
 import java.util.Collection;
 import java.util.Optional;
 
+@OrisIntegrationComponent
 @UseCase
 public class OrisSynchronizationUseCase implements OrisEventSynchronizationUseCase {
 
@@ -93,14 +95,14 @@ public class OrisSynchronizationUseCase implements OrisEventSynchronizationUseCa
                         },
                         () -> LOG.info(
                                 "Can't synchronize registration for event {} and member {} -> member preferences doesn't exist",
-                                targetEvent.getOrisId(),
+                                targetEvent.getOrisId().map(OrisId::value).orElse(null),
                                 registration.memberRegistration()));
 
     }
 
     private void synchronizeRegistration(Event targetEvent, MemberId memberId, OrisData.MemberRegistration registration) {
         EventRegistrationForm form = EventRegistrationFormBuilder.builder().category(registration.category()).siNumber(
-                registration.siCard()).build();
+                Integer.toString(registration.siCard())).build();
         if (targetEvent.isMemberRegistered(memberId)) {
             targetEvent.changeRegistration(memberId, form);
         } else {

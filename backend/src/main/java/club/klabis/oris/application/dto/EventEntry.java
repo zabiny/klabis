@@ -9,6 +9,7 @@ import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.exc.InvalidFormatException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @RecordBuilder
@@ -30,15 +31,14 @@ public record EventEntry(
         @JsonProperty("ClubID") Integer clubId,
         @JsonProperty("Note") String note,
         @JsonProperty("Nationality") String nationality,
-        @JsonProperty("Fee") Integer fee,
-        @JsonDeserialize(using = BooleanFromIntDeserializer.class)
-        @JsonProperty("EntryStop") Boolean entryStop,
+        @JsonProperty("Fee") BigDecimal fee,
+        @JsonProperty("EntryStop") int entryStop,
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         @JsonProperty("CreatedDateTime") LocalDateTime createdDateTime,
         @JsonProperty("CreatedByUserID") int createdByUserId,
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
         @JsonProperty("UpdatedDateTime") LocalDateTime updatedDateTime,
-        @JsonProperty("UpdatedByUserID") int updatedByUserId
+        @JsonProperty("UpdatedByUserID") Integer updatedByUserId
 ) {
 
     static class BooleanFromIntDeserializer extends ValueDeserializer<Boolean> {

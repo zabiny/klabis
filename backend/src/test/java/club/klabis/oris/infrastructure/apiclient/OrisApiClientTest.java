@@ -2,6 +2,7 @@ package club.klabis.oris.infrastructure.apiclient;
 
 import club.klabis.events.oris.dto.OrisEventListFilter;
 import club.klabis.oris.application.dto.*;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,12 +11,13 @@ import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.DefaultResponseCreator;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,10 +25,10 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 @RestClientTest(OrisApiClientConfiguration.class)
+@ActiveProfiles("oris")
 class OrisApiClientTest {
 
     @Autowired
@@ -50,16 +52,22 @@ class OrisApiClientTest {
     @Nested
     class GetUserApiTests {
         @Test
-        @DisplayName("it returns expected response when member is not found")
+        @DisplayName("it returns expected response when ORIS API returns empty 'data' attribute")
         void checkMemberNotFoundHandling() throws IOException {
             // ORIS returns HTTP 200 with [] in Data when member is not found.
             // That means it's wrong type (causes parsing error).
             // This test makes sure that "workaround" what is in place for that case in configured API client works properly and throws NotFound exception instead of behaving like successs and returning bad data
             restServiceServer.expect(MockRestRequestMatchers.anything())
-                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getUserNotFoundResponse.json"));
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEmptyDataResponse.json"));
 
-            assertThatThrownBy(() -> testedClient.getUserInfo("32323"))
-                    .isInstanceOf(HttpClientErrorException.NotFound.class);
+            OrisApiClient.OrisResponse<OrisUserInfo> expectedData = new OrisApiClient.OrisResponse<>(null,
+                    "json",
+                    "OK",
+                    LocalDateTime.of(2024, 8, 29, 17, 43, 36),
+                    "getUser");
+
+            Assertions.assertThat(testedClient.getUserInfo("32323"))
+                    .isEqualTo(expectedData);
         }
 
         @Test
@@ -259,7 +267,7 @@ class OrisApiClientTest {
                             .userId(14263)
                             .clubId(7)
                             .note("")
-                            .fee(70)
+                            .fee(BigDecimal.valueOf(70))
                             .createdByUserId(14263)
                             .updatedByUserId(2553)
                             .build(),
@@ -275,7 +283,7 @@ class OrisApiClientTest {
                             .userId(3418)
                             .clubId(104)
                             .note("")
-                            .fee(70)
+                            .fee(BigDecimal.valueOf(70))
                             .createdByUserId(3418)
                             .updatedByUserId(3418)
                             .build()

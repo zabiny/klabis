@@ -27,7 +27,7 @@ public record OrisData(OrisId orisId, @NotBlank String name, @NotNull LocalDate 
         }
     }
 
-    public record MemberRegistration(String memberRegistration, String category, String siCard, BigDecimal fee) {
+    public record MemberRegistration(String memberRegistration, String category, int siCard, BigDecimal fee) {
 
     }
 
