@@ -7,16 +7,12 @@ import {HalNavigatorTable} from "./halNavigatorTable";
 import {TableCell} from "../KlabisTable";
 import EventType from "../events/EventType";
 import MemberName from "../members/MemberName";
+import {formatDate} from "../../utils/dateUtils.ts";
 
 function dropMetadataAttributes<T extends { _links?: any }>(obj: T): Omit<T, '_links'> {
     const {_links, ...rest} = obj;
     return rest;
 }
-
-const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('cs-CZ').format(date);
-};
 
 export function HalCollectionContent(): ReactElement {
 
