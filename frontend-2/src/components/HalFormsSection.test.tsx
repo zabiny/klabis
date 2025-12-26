@@ -27,6 +27,7 @@ jest.mock('./UI', () => ({
 			{children}
 		</button>
 	),
+	Spinner: () => <div data-testid="spinner">Loading...</div>,
 }));
 
 jest.mock('../api/hateoas', () => ({
@@ -35,8 +36,39 @@ jest.mock('../api/hateoas', () => ({
 	}),
 }));
 
+jest.mock('../hooks/useHalFormData', () => ({
+	useHalFormData: jest.fn(),
+}));
+
+jest.mock('../contexts/HalRouteContext', () => ({
+	useHalRoute: jest.fn(),
+}));
+
+jest.mock('./KlabisFieldsFactory.tsx', () => ({
+	klabisFieldsFactory: {},
+}));
+
+const {useHalFormData} = require('../hooks/useHalFormData');
+const {useHalRoute} = require('../contexts/HalRouteContext');
+
 describe('HalFormsSection Component', () => {
 	const mockTemplate = (overrides = {}): HalFormsTemplate => mockHalFormsTemplate(overrides);
+
+	beforeEach(() => {
+		// Default mock implementations
+		useHalRoute.mockReturnValue({
+			pathname: '/members/123',
+		});
+
+		useHalFormData.mockReturnValue({
+			formData: {},
+			isLoadingTargetData: false,
+			targetFetchError: null,
+			refetchTargetData: jest.fn(),
+		});
+
+		jest.clearAllMocks();
+	});
 
 	const createDefaultProps = (overrides = {}) => ({
 		templates: undefined,
@@ -477,6 +509,283 @@ describe('HalFormsSection Component', () => {
 			);
 
 			expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
+		});
+	});
+
+	describe('Target Data Fetching', () => {
+		it('should show loading indicator when fetching target data', () => {
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			useHalFormData.mockReturnValue({
+				formData: null,
+				isLoadingTargetData: true,
+				targetFetchError: null,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.getByTestId('spinner')).toBeInTheDocument();
+		});
+
+		it('should hide form while loading target data', () => {
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			useHalFormData.mockReturnValue({
+				formData: null,
+				isLoadingTargetData: true,
+				targetFetchError: null,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.queryByTestId('hal-forms-form')).not.toBeInTheDocument();
+		});
+
+		it('should show error alert when target fetch fails', () => {
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			const fetchError = new Error('Failed to load data');
+			useHalFormData.mockReturnValue({
+				formData: null,
+				isLoadingTargetData: false,
+				targetFetchError: fetchError,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.getByTestId('alert-error')).toBeInTheDocument();
+			expect(screen.getByText('Failed to load data')).toBeInTheDocument();
+		});
+
+		it('should hide form when target fetch fails', () => {
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			const fetchError = new Error('Failed to load data');
+			useHalFormData.mockReturnValue({
+				formData: null,
+				isLoadingTargetData: false,
+				targetFetchError: fetchError,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.queryByTestId('hal-forms-form')).not.toBeInTheDocument();
+		});
+
+		it('should show retry button on fetch error', () => {
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			const fetchError = new Error('Network error');
+			useHalFormData.mockReturnValue({
+				formData: null,
+				isLoadingTargetData: false,
+				targetFetchError: fetchError,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.getByText('Zkusit znovu')).toBeInTheDocument();
+		});
+
+		it('should call refetchTargetData when retry button is clicked', async () => {
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			const fetchError = new Error('Network error');
+			const mockRefetch = jest.fn();
+			useHalFormData.mockReturnValue({
+				formData: null,
+				isLoadingTargetData: false,
+				targetFetchError: fetchError,
+				refetchTargetData: mockRefetch,
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			const retryButton = screen.getByText('Zkusit znovu');
+			await userEvent.click(retryButton);
+
+			expect(mockRefetch).toHaveBeenCalled();
+		});
+
+		it('should show cancel button on fetch error', () => {
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			const fetchError = new Error('Network error');
+			useHalFormData.mockReturnValue({
+				formData: null,
+				isLoadingTargetData: false,
+				targetFetchError: fetchError,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.getByText('Zrušit')).toBeInTheDocument();
+		});
+
+		it('should call onSelectTemplate with null when cancel button is clicked on error', async () => {
+			const onSelectTemplate = jest.fn();
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			const fetchError = new Error('Network error');
+			useHalFormData.mockReturnValue({
+				formData: null,
+				isLoadingTargetData: false,
+				targetFetchError: fetchError,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+						handlers: {
+							onSelectTemplate,
+							onSubmit: jest.fn(),
+						},
+					})}
+				/>,
+			);
+
+			const cancelButton = screen.getByText('Zrušit');
+			await userEvent.click(cancelButton);
+
+			expect(onSelectTemplate).toHaveBeenCalledWith(null);
+		});
+
+		it('should display form with target data when fetch succeeds', () => {
+			const selectedTemplate = mockTemplate({target: '/events/456'});
+			const targetData = {id: 2, name: 'Target Event'};
+			useHalFormData.mockReturnValue({
+				formData: targetData,
+				isLoadingTargetData: false,
+				targetFetchError: null,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
+			expect(screen.queryByTestId('spinner')).not.toBeInTheDocument();
+			expect(screen.queryByTestId('alert-error')).not.toBeInTheDocument();
+		});
+
+		it('should use current resource data when target equals current path', () => {
+			const selectedTemplate = mockTemplate({target: '/members/123'});
+			const currentData = {id: 1, name: 'Current Member'};
+			useHalFormData.mockReturnValue({
+				formData: currentData,
+				isLoadingTargetData: false,
+				targetFetchError: null,
+				refetchTargetData: jest.fn(),
+			});
+
+			render(
+				<HalFormsSection
+					{...createDefaultProps({
+						templates: {create: selectedTemplate},
+						data: currentData,
+						formState: {
+							selectedTemplate,
+							submitError: null,
+							isSubmitting: false,
+						},
+					})}
+				/>,
+			);
+
+			expect(screen.getByTestId('hal-forms-form')).toBeInTheDocument();
+			expect(screen.queryByTestId('spinner')).not.toBeInTheDocument();
 		});
 	});
 });

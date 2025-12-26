@@ -25,6 +25,10 @@ export const UI_MESSAGES = {
 	NO_MENU_ITEMS: 'No menu items available',
 	FAILED_LOAD_MENU: 'Failed to load menu',
 	FORM_VALIDATION_ERRORS: 'Form validation errors',
+	LOADING_FORM_DATA: 'Načítání dat formuláře...',
+	FORM_DATA_LOAD_ERROR: 'Nepodařilo se načíst data formuláře',
+	RETRY: 'Zkusit znovu',
+	CANCEL: 'Zrušit',
 } as const;
 
 export const TABLE_HEADERS = {

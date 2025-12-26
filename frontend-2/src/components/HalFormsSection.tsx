@@ -4,12 +4,14 @@
  */
 
 import {type ReactElement} from 'react';
-import {Alert, Button} from './UI';
+import {Alert, Button, Spinner} from './UI';
 import {HalFormsForm} from './HalFormsForm';
 import {isFormValidationError} from '../api/hateoas';
 import type {HalFormsTemplate} from '../api';
 import {UI_MESSAGES} from '../constants/messages';
 import {klabisFieldsFactory} from "./KlabisFieldsFactory.tsx";
+import {useHalFormData} from '../hooks/useHalFormData';
+import {useHalRoute} from '../contexts/HalRouteContext';
 
 /**
  * Form state - tracks which template is selected and submission status
@@ -57,7 +59,7 @@ const HalFormsTemplateSelector = ({
 				<button
 					key={templateName}
 					onClick={() => onSelectTemplate(template)}
-					className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm border-none cursor-pointer"
+					className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light text-sm border-none cursor-pointer"
 					title={template.title || templateName}
 					aria-label={`Select ${template.title || templateName} form`}
 					data-testid={`form-template-button-${templateName}`}
@@ -87,6 +89,12 @@ const HalFormsDisplay = ({
 						 }: HalFormsDisplayProps): ReactElement => {
 	const {submitError, isSubmitting} = formState;
 	const {onSelectTemplate, onSubmit} = handlers;
+	const {pathname} = useHalRoute();
+	const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
+		selectedTemplate,
+		data,
+		pathname
+	);
 
 	return (
 		<div className="space-y-4">
@@ -103,6 +111,38 @@ const HalFormsDisplay = ({
 				</Button>
 			</div>
 
+			{/* Loading state while fetching target data */}
+			{isLoadingTargetData && (
+				<div className="flex items-center gap-2 p-4 bg-surface-raised rounded">
+					<Spinner size="sm"/>
+					<span>{UI_MESSAGES.LOADING_FORM_DATA}</span>
+				</div>
+			)}
+
+			{/* Error state when target fetch fails */}
+			{targetFetchError && (
+				<Alert severity="error">
+					<div className="space-y-2">
+						<p>{UI_MESSAGES.FORM_DATA_LOAD_ERROR}</p>
+						{selectedTemplate.target && (
+							<p className="text-sm text-text-secondary">
+								Endpoint: {selectedTemplate.target}
+							</p>
+						)}
+						<p className="text-sm text-text-secondary">{targetFetchError.message}</p>
+						<div className="flex gap-2">
+							<Button size="sm" onClick={refetchTargetData}>
+								{UI_MESSAGES.RETRY}
+							</Button>
+							<Button size="sm" variant="secondary" onClick={() => onSelectTemplate(null)}>
+								{UI_MESSAGES.CANCEL}
+							</Button>
+						</div>
+					</div>
+				</Alert>
+			)}
+
+			{/* Form submission error (different from target fetch error) */}
 			{submitError && (
 				<Alert severity="error">
 					<div className="space-y-1">
@@ -118,14 +158,17 @@ const HalFormsDisplay = ({
 				</Alert>
 			)}
 
-			<HalFormsForm
-				data={data}
-				template={selectedTemplate}
-				onSubmit={onSubmit}
-				onCancel={() => onSelectTemplate(null)}
-				isSubmitting={isSubmitting}
-				fieldsFactory={klabisFieldsFactory}
-			/>
+			{/* Only show form when data is ready and no target fetch error */}
+			{!isLoadingTargetData && !targetFetchError && formData && (
+				<HalFormsForm
+					data={formData}
+					template={selectedTemplate}
+					onSubmit={onSubmit}
+					onCancel={() => onSelectTemplate(null)}
+					isSubmitting={isSubmitting}
+					fieldsFactory={klabisFieldsFactory}
+				/>
+			)}
 		</div>
 	);
 };
@@ -155,7 +198,7 @@ export function HalFormsSection({
 	const {selectedTemplate} = formState;
 
 	return (
-		<div className="mt-4 p-4 border rounded bg-green-50 dark:bg-green-900">
+		<div className="mt-4 p-4 border border-border rounded bg-surface-raised">
 			<h3 className="font-semibold mb-2">{UI_MESSAGES.AVAILABLE_FORMS}</h3>
 			{selectedTemplate ? (
 				<HalFormsDisplay
