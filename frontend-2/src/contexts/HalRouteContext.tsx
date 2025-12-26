@@ -28,7 +28,7 @@ export interface HalRouteContextValue {
     queryState: 'idle' | 'pending' | 'success' | 'error';
 }
 
-const HalRouteContext = React.createContext<HalRouteContextValue | null>(null);
+export const HalRouteContext = React.createContext<HalRouteContextValue | null>(null);
 
 interface HalRouteProviderProps {
     children: React.ReactNode;

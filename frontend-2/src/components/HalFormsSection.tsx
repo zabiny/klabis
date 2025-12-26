@@ -12,6 +12,7 @@ import {UI_MESSAGES} from '../constants/messages';
 import {klabisFieldsFactory} from "./KlabisFieldsFactory.tsx";
 import {useHalFormData} from '../hooks/useHalFormData';
 import {useHalRoute} from '../contexts/HalRouteContext';
+import {HalFormTemplateButton} from './HalFormTemplateButton';
 
 /**
  * Form state - tracks which template is selected and submission status
@@ -56,16 +57,12 @@ const HalFormsTemplateSelector = ({
 	return (
 		<div className="flex flex-wrap gap-2">
 			{Object.entries(templates).map(([templateName, template]) => (
-				<button
+				<HalFormTemplateButton
 					key={templateName}
+					template={template}
+					templateName={templateName}
 					onClick={() => onSelectTemplate(template)}
-					className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-light text-sm border-none cursor-pointer"
-					title={template.title || templateName}
-					aria-label={`Select ${template.title || templateName} form`}
-					data-testid={`form-template-button-${templateName}`}
-				>
-					{template.title || templateName}
-				</button>
+				/>
 			))}
 		</div>
 	);
