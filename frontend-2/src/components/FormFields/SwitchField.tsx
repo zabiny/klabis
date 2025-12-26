@@ -17,8 +17,8 @@ export const SwitchField = ({
                                 checked,
                                 onChange,
                             }: SwitchFieldProps) => {
-    const handleChange = () => {
-        onChange?.(!checked)
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        onChange?.(e.target.checked)
     }
 
     return (
@@ -44,7 +44,6 @@ export const SwitchField = ({
                     aria-checked={checked}
                     aria-label={label || name}
                     aria-disabled={disabled}
-                    onClick={!disabled ? handleChange : undefined}
                 >
                     <input
                         type="checkbox"
@@ -52,7 +51,7 @@ export const SwitchField = ({
                         checked={checked}
                         onChange={handleChange}
                         disabled={disabled}
-                        className="hidden"
+                        className="sr-only"
                     />
                     {/* Toggle knob */}
                     <div

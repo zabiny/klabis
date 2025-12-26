@@ -1,30 +1,24 @@
 import type {ReactElement} from 'react'
-import type {FieldProps} from 'formik'
-import {Field} from 'formik'
+import {useField} from 'formik'
 import {SwitchField} from '../../FormFields'
 import type {HalFormsInputProps} from '../types'
 
 /**
  * HalFormsBoolean component - switch/toggle for HAL+Forms boolean values
- * Uses Formik Field and FormFields SwitchField abstraction
+ * Uses Formik useField hook and FormFields SwitchField abstraction
  */
 export const HalFormsBoolean = ({prop, errorText}: HalFormsInputProps): ReactElement => {
+    const [field, , helpers] = useField(prop.name);
+
     return (
-        <Field
+        <SwitchField
             name={prop.name}
-            type="checkbox"
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => (
-                <SwitchField
-                    name={prop.name}
-                    label={prop.prompt || prop.name}
-                    required={prop.required}
-                    disabled={prop.readOnly || false}
-                    error={errorText}
-                    checked={Boolean(fieldProps.field.value)}
-                    onChange={(checked: boolean) => fieldProps.form.setFieldValue(prop.name, checked)}
-                />
-            )}
+            label={prop.prompt || prop.name}
+            required={prop.required}
+            disabled={prop.readOnly || false}
+            error={errorText}
+            checked={Boolean(field.value)}
+            onChange={(checked: boolean) => helpers.setValue(checked)}
         />
     )
 }
