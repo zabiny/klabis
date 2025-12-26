@@ -32,6 +32,13 @@ public class Competition extends Event {
         return result;
     }
 
+    @Override
+    public Competition apply(EventManagementCommand command) {
+        super.apply(command);
+        setCategories(command.categories());
+        return this;
+    }
+
     public Set<Category> getCategories() {
         return Collections.unmodifiableSet(categories);
     }

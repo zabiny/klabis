@@ -1,6 +1,7 @@
 package club.klabis.events.application;
 
 import club.klabis.events.domain.Event;
+import club.klabis.events.domain.EventManagementCommand;
 import club.klabis.shared.config.ddd.UseCase;
 import jakarta.validation.Valid;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +15,7 @@ public class EventCreationUseCase {
         this.repository = repository;
     }
 
-    public Event createNewEvent(@Valid EventManagementForm form) {
+    public Event createNewEvent(@Valid EventManagementCommand form) {
         return repository.save(form.createNew());
     }
 

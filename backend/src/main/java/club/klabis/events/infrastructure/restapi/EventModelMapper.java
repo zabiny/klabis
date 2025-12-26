@@ -1,8 +1,8 @@
 package club.klabis.events.infrastructure.restapi;
 
-import club.klabis.events.application.EventManagementForm;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
+import club.klabis.events.domain.EventManagementCommand;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.shared.config.hateoas.ModelPreparator;
@@ -47,8 +47,8 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
     @Override
     public abstract EventResponse toResponseDto(Event event);
 
-    EventManagementForm toForm(Event event) {
-        return EventManagementForm.fromEvent(event);
+    EventManagementCommand toForm(Event event) {
+        return EventManagementCommand.fromEvent(event);
     }
 
     String map(Competition.Category category) {

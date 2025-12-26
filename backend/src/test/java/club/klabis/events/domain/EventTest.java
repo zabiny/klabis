@@ -1,6 +1,5 @@
 package club.klabis.events.domain;
 
-import club.klabis.events.application.EventManagementForm;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +27,7 @@ class EventTest {
     ZoneId ZONE_PRAGUE = ZoneId.of("Europe/Prague");
 
     @Nested
-    @DisplayName("edit method tests")
+    @DisplayName("EventManagementCommand tests")
     class EditMethodTest {
 
         @Test
@@ -39,7 +38,7 @@ class EventTest {
             LocalDate testDate = LocalDate.of(2025, 7, 25);
             ZonedDateTime registrationDeadline = LocalDate.of(2025, 7, 22).atStartOfDay(ZONE_PRAGUE);
             MemberId coordinator = new MemberId(1);
-            EventManagementForm form = new EventManagementForm(
+            EventManagementCommand command = new EventManagementCommand(
                     "Updated Event Name",
                     "Updated Location",
                     testDate,
@@ -49,7 +48,7 @@ class EventTest {
             );
 
             // Act
-            form.apply(event);
+            event.apply(command);
 
             // Assert
             assertThat(event.getName()).isEqualTo("Updated Event Name");

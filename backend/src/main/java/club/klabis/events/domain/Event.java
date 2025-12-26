@@ -123,6 +123,21 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         andEvent(new EventDateChangedEvent(this));
     }
 
+    public Event apply(EventManagementCommand command) {
+        setName(command.name());
+        setLocation(command.location());
+        setOrganizer(command.organizer());
+        setCoordinator(command.coordinator());
+        setEventDate(command.date());
+        closeRegistrationsAt(command.registrationDeadline());
+        if (command.cost() != null) {
+            updateCost(MoneyAmount.of(command.cost()));
+        } else {
+            updateCost(null);
+        }
+        return this;
+    }
+
     public void setName(String name) {
         this.name = name;
     }
