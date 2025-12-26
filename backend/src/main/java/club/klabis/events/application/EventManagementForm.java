@@ -32,7 +32,7 @@ public record EventManagementForm(@NotBlank String name, String location,
         result.setLocation(location);
         result.setOrganizer(organizer);
         result.setCoordinator(coordinator);
-        result.setRegistrationDeadline(registrationDeadline);
+        result.closeRegistrationsAt(registrationDeadline);
         return result;
     }
 
@@ -59,7 +59,7 @@ public record EventManagementForm(@NotBlank String name, String location,
         event.setOrganizer(organizer);
         event.setCoordinator(coordinator);
         event.setEventDate(date);
-        event.setRegistrationDeadline(registrationDeadline);
+        event.closeRegistrationsAt(registrationDeadline);
         if (cost != null) {
             event.updateCost(MoneyAmount.of(cost));
         }

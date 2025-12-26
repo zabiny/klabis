@@ -22,7 +22,6 @@ import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
 import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.LinkRelationProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +37,6 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
     private KlabisSecurityService klabisSecurityService;
 
     private EntityLinks entityLinks;
-
-    private LinkRelationProvider linkRelationProvider;
 
 
     @Mapping(target = "type", ignore = true)
@@ -74,7 +71,7 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
         selfAffordances.addAll(affordBetter(methodOn(EventsController.class).updateEventById(event.getId(), null)));
 
         klabisSecurityService.getAuthenticatedMemberId()
-                .ifPresentOrElse(memberId -> {
+                .ifPresent(memberId -> {
                     if (event.areRegistrationsOpen()) {
                         if (event.isMemberRegistered(memberId)) {
                             // update registration
@@ -92,8 +89,6 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
                                     null), a -> addOptions(a, event)));
                         }
                     }
-                }, () -> {
-                    LOG.warn("No authenticated KLabis member available!");
                 });
 
         resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value())
@@ -127,8 +122,4 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
         this.entityLinks = entityLinks;
     }
 
-    @Autowired
-    public void setLinkRelationProvider(LinkRelationProvider linkRelationProvider) {
-        this.linkRelationProvider = linkRelationProvider;
-    }
 }

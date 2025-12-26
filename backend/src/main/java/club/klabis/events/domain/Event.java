@@ -3,14 +3,16 @@ package club.klabis.events.domain;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.finance.domain.MoneyAmount;
 import club.klabis.members.MemberId;
+import club.klabis.shared.config.Globals;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.AbstractAggregateRoot;
+import org.springframework.util.Assert;
 
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -23,21 +25,24 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         id = Id.newId();
     }
 
-    public Event(String name, LocalDate eventDate) {
+    public Event(@NonNull String name, @NonNull LocalDate eventDate) {
+        Assert.hasLength(name, "Name must not be empty");
+        Assert.notNull(eventDate, "Name must not be empty");
+
         id = Id.newId();
         this.setName(name);
         this.setEventDate(eventDate);
     }
 
     public Collection<Registration> getEventRegistrations() {
-        return new HashSet<>(registrations);
+        return Collections.unmodifiableCollection(registrations);
     }
 
     public record Id(int value) {
 
         private static Id LAST_ID = new Id(0);
 
-        private static Id newId() {
+        private static synchronized Id newId() {
             LAST_ID = new Id(LAST_ID.value() + 1);
             return LAST_ID;
         }
@@ -49,7 +54,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
 
     @Identity
     private final Id id;
-    private ZonedDateTime eventStart;
+    private LocalDate eventStart;
     private String name;
     private String location;
     private String organizer;
@@ -70,7 +75,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
     }
 
     public LocalDate getDate() {
-        return eventStart.toLocalDate();
+        return eventStart;
     }
 
     public Id getId() {
@@ -106,25 +111,16 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         return orisId != null;
     }
 
-    public void setEventDate(LocalDate newDate) {
-        this.eventStart = toZonedDateTime(newDate);
+    public void setEventDate(@NonNull LocalDate newDate) {
+        Assert.notNull(newDate, "Event date must not be null");
+        this.eventStart = newDate;
 
         if (this.registrationDeadline == null) {
-            this.setRegistrationDeadline(toZonedDateTime(newDate));
-        } else if (this.registrationDeadline.isAfter(eventStart)) {
-            this.setRegistrationDeadline(eventStart.truncatedTo(ChronoUnit.DAYS));
+            this.closeRegistrationsAt(toZonedDateTime(newDate));
+        } else if (eventStart.isBefore(Globals.toLocalDate(this.registrationDeadline))) {
+            this.closeRegistrationsAt(Globals.toZonedDateTime(eventStart));
         }
         andEvent(new EventDateChangedEvent(this));
-    }
-
-    public void setRegistrationDeadline(ZonedDateTime registrationDeadline) {
-        if (registrationDeadline.isAfter(this.eventStart)) {
-            throw new EventException(getId(),
-                    "Cannot set registration deadline after event start",
-                    EventException.Type.UNSPECIFIED);
-        }
-        this.registrationDeadline = registrationDeadline;
-        andEvent(new EventRegistrationsDeadlineChangedEvent(this));
     }
 
     public void setName(String name) {
@@ -143,8 +139,14 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         this.coordinator = coordinator;
     }
 
-    public void closeRegistrations(ZonedDateTime registrationDeadline) {
+    public void closeRegistrationsAt(ZonedDateTime registrationDeadline) {
+        if (registrationDeadline.isAfter(Globals.toZonedDateTime(this.eventStart))) {
+            throw new EventException(getId(),
+                    "Cannot set registration deadline after event start",
+                    EventException.Type.UNSPECIFIED);
+        }
         this.registrationDeadline = registrationDeadline;
+        andEvent(new EventRegistrationsDeadlineChangedEvent(this));
     }
 
     public Event linkWithOris(OrisId orisId) {

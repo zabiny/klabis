@@ -1,10 +1,12 @@
 package club.klabis.events.application;
 
 import club.klabis.events.domain.Event;
+import club.klabis.shared.config.ddd.UseCase;
 import jakarta.validation.Valid;
-import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@UseCase
+@Transactional
 public class EventCreationUseCase {
     private final EventsRepository repository;
 

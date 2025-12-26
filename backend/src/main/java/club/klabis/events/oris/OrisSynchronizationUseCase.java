@@ -73,7 +73,7 @@ public class OrisSynchronizationUseCase implements OrisEventSynchronizationUseCa
         event.setLocation(orisData.location());
         event.setOrganizer(orisData.organizer());
         event.setEventDate(orisData.eventDate());
-        event.setRegistrationDeadline(orisData.registrationsDeadline());
+        event.closeRegistrationsAt(orisData.registrationsDeadline());
         event.withWebsite(orisData.website());
 
         orisData.registrations().forEach(reg -> this.synchronizeRegistration(event, reg));

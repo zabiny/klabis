@@ -142,7 +142,7 @@ class EventTest {
             MemberId memberId = new MemberId(1);
             EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
             event.registerMember(memberId, form);
-            event.closeRegistrations(LocalDate.now().minusDays(1).atStartOfDay(ZONE_PRAGUE));
+            event.closeRegistrationsAt(LocalDate.now().minusDays(1).atStartOfDay(ZONE_PRAGUE));
 
             // Act / Assert
             assertThatThrownBy(() -> event.cancelMemberRegistration(memberId))
