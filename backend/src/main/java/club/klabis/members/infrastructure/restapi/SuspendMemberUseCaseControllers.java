@@ -118,7 +118,7 @@ public class SuspendMemberUseCaseControllers {
             }
     )
     @PutMapping("/suspendMembershipForm")
-    @HasGrant(ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)
+    @HasGrant(ApplicationGrant.MEMBERS_REGISTER)
     public ResponseEntity<Void> membersMemberIdSuspendMembershipFormPut(
             @Parameter(name = "memberId", description = "ID of member", required = true, in = ParameterIn.PATH) @PathVariable("memberId") MemberId memberId,
             @Parameter(name = "force", description = "Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension") @Valid @RequestBody MembershipSuspensionInfoRequestDto form) {
@@ -128,7 +128,7 @@ public class SuspendMemberUseCaseControllers {
 
 
     @PutMapping(path = "/resumeMembershipForm")
-    @HasGrant(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP)
+    @HasGrant(ApplicationGrant.MEMBERS_REGISTER)
     ResponseEntity<Void> resumeMembership(@PathVariable("memberId") MemberId memberId) {
         useCase.resumeMembership(memberId);
         return ResponseEntity.ok(null);

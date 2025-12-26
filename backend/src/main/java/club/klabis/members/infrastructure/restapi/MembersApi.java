@@ -36,10 +36,12 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -87,11 +89,14 @@ public class MembersApi {
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
+        if (suspended && !klabisSecurityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Displaying suspended members requires MEMBERS_REGISTER grant");
+        }
         Page<Member> result = membersRepository.findAllBySuspended(suspended,
                 memberModelAssembler.toDomainPageable(pageable));
         var resultModel = memberModelAssembler.toPagedResponse(result);
-        if (klabisSecurityService.hasGrant(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP) || klabisSecurityService.hasGrant(
-                ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
+        if (klabisSecurityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
             resultModel.add(linkTo(methodOn(getClass()).membersGet(!suspended,
                     pageable.first())).withRel(suspended ? "activeMembers" : "suspendedMembers"));
         }

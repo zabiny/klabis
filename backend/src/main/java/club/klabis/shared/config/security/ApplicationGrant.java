@@ -6,10 +6,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public enum ApplicationGrant {
-    MEMBERS_REGISTER("Může registrovat nové členy klubu", true, false, false, "members:register"),
+    MEMBERS_REGISTER("Může registrovat nové členy klubu, pozastavovat a obnovovat clenstvi",
+            true,
+            false,
+            false,
+            "members:register"),
     MEMBERS_EDIT("Může editovat jiné členy klubu", true, false, false, "members:edit"),
-    MEMBERS_SUSPENDMEMBERSHIP("Může suspendovat členství v klubu", true, false, false, "members:suspendMembership"),
-    MEMBERS_RESUMEMEMBERSHIP("Může obnovit členství v klubu", true, false, false, "members:resumeMembership"),
 
     EVENTS_MANAGE("Může spravovat události", true, false, false, "events:manage"),
     CALENDAR_MANAGE("Může spravovat kalendář", true, false, false, "calendar:manage"),
