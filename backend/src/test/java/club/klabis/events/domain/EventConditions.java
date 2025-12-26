@@ -69,10 +69,10 @@ class EventConditions {
     }
 
     static Condition<Event> hasOrisId(int expectedOrisIdValue) {
-        return hasOrisId(new OrisId(expectedOrisIdValue));
+        return hasOrisId(new OrisEventId(expectedOrisIdValue));
     }
 
-    static Condition<Event> hasOrisId(OrisId expectedOrisId) {
+    static Condition<Event> hasOrisId(OrisEventId expectedOrisId) {
         return new Condition<>((Event event) -> event.getOrisId().isPresent()
                                                 && event.getOrisId().get().equals(expectedOrisId),
                 "has ORIS ID %s", expectedOrisId.value());

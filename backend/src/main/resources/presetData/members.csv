@@ -1,4 +1,4 @@
-firstName,lastName,registrationNumber,sex,dateOfBirth,birthCertificateNumber,nationality,street,city,postalCode,country,email,phone,siCard,bankAccount,orisId,googleId,disabled,admin
+firstName,lastName,registrationNumber,sex,dateOfBirth,birthCertificateNumber,nationality,street,city,postalCode,country,email,phone,siCard,bankAccount,orisEventId,googleId,disabled,admin
 David,Polách,ZBM8003,MALE,1980-04-26,123456/7890,CZ,Nekde 12,Brno,63000,CZ,test@test.com,999999999,,,,110875617296914468258,false,true
 Otakar,Hirš,ZBM9801,MALE,1998-01-01,123456/7890,CZ,Jinde 1,Brno,63600,CZ,ota@ota.cz,999999999,,,,103575135673576139314,false,false
 Luděk,Finstrle,ZBM7902,MALE,1979-01-01,123456/7890,CZ,,,,,luf@email.cz,999999999,,,,,false,false

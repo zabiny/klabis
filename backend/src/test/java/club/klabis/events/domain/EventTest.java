@@ -341,7 +341,7 @@ class EventTest {
         void shouldLinkOrisIdWhenNotPreviouslyLinked() {
             // Arrange
             Competition competition = createOpenCompetition();
-            OrisId orisId = DEFAULT_ORIS_ID;
+            OrisEventId orisId = DEFAULT_ORIS_ID;
 
             // Act
             Event result = competition.linkWithOris(orisId);
@@ -356,7 +356,7 @@ class EventTest {
         void shouldBeIdempotentWhenLinkingWithSameOrisId() {
             // Arrange
             Competition competition = createOpenCompetition();
-            OrisId orisId = DEFAULT_ORIS_ID;
+            OrisEventId orisId = DEFAULT_ORIS_ID;
             competition.linkWithOris(orisId);
 
             // Act & Assert - Should not throw
@@ -370,12 +370,12 @@ class EventTest {
         void shouldThrowExceptionWhenRelinkingWithDifferentOrisId() {
             // Arrange
             Competition competition = createOpenCompetition();
-            OrisId firstOrisId = new OrisId(111);
-            OrisId secondOrisId = new OrisId(222);
-            competition.linkWithOris(firstOrisId);
+            OrisEventId firstOrisEventId = new OrisEventId(111);
+            OrisEventId secondOrisEventId = new OrisEventId(222);
+            competition.linkWithOris(firstOrisEventId);
 
             // Act & Assert
-            assertThatThrownBy(() -> competition.linkWithOris(secondOrisId))
+            assertThatThrownBy(() -> competition.linkWithOris(secondOrisEventId))
                     .isInstanceOf(EventException.class)
                     .hasMessageContaining("Attempt to link event")
                     .hasMessageContaining("already assigned orisId");

@@ -4,7 +4,7 @@ import club.klabis.events.application.EventsRepository;
 import club.klabis.events.application.PreferencesRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.OrisId;
+import club.klabis.events.domain.OrisEventId;
 import club.klabis.events.domain.commands.EventRegistrationCommand;
 import club.klabis.events.domain.commands.EventRegistrationCommandBuilder;
 import club.klabis.events.oris.dto.OrisData;
@@ -37,7 +37,7 @@ public class OrisSynchronizationUseCase implements OrisEventSynchronizationUseCa
         this.eventsPreferencesRepository = eventsPreferencesRepository;
     }
 
-    public Collection<OrisId> getOrisIds(Collection<Event.Id> eventIds) {
+    public Collection<OrisEventId> getOrisIds(Collection<Event.Id> eventIds) {
         return eventIds.stream()
                 .map(eventsRepository::findById)
                 .flatMap(Optional::stream)
@@ -48,7 +48,7 @@ public class OrisSynchronizationUseCase implements OrisEventSynchronizationUseCa
     }
 
     public void synchronizeOrisEvent(@Valid OrisData orisData) {
-        Event updatedEvent = eventsRepository.findByOrisId(orisData.orisId())
+        Event updatedEvent = eventsRepository.findByOrisId(orisData.orisEventId())
                 .map(event -> this.updateEvent(orisData, event))
                 .orElse(this.createNewEvent(orisData));
 
@@ -57,16 +57,16 @@ public class OrisSynchronizationUseCase implements OrisEventSynchronizationUseCa
 
     private Competition createNewEvent(OrisData orisData) {
         Competition result = new Competition(orisData.name(), orisData.eventDate());
-        result.linkWithOris(orisData.orisId());
+        result.linkWithOris(orisData.orisEventId());
         updateEvent(orisData, result);
         return result;
     }
 
 
     private Event updateEvent(OrisData orisData, Event event) {
-        Assert.isTrue(orisData.orisId().equals(event.getOrisId().orElse(null)),
+        Assert.isTrue(orisData.orisEventId().equals(event.getOrisId().orElse(null)),
                 "Attempt to synchronize OrisData into unexpected event - importing oris event with id %s into klabis event with orisId %s".formatted(
-                        orisData.orisId(),
+                        orisData.orisEventId(),
                         event.getOrisId().orElse(null)));
 
         event.setName(orisData.name());
@@ -95,7 +95,7 @@ public class OrisSynchronizationUseCase implements OrisEventSynchronizationUseCa
                         },
                         () -> LOG.info(
                                 "Can't synchronize registration for event {} and member {} -> member preferences doesn't exist",
-                                targetEvent.getOrisId().map(OrisId::value).orElse(null),
+                                targetEvent.getOrisId().map(OrisEventId::value).orElse(null),
                                 registration.memberRegistration()));
 
     }

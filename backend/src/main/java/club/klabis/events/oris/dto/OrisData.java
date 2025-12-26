@@ -1,6 +1,6 @@
 package club.klabis.events.oris.dto;
 
-import club.klabis.events.domain.OrisId;
+import club.klabis.events.domain.OrisEventId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 @RecordBuilder
-public record OrisData(OrisId orisId, @NotBlank String name, @NotNull LocalDate eventDate,
+public record OrisData(OrisEventId orisEventId, @NotBlank String name, @NotNull LocalDate eventDate,
                        @NotNull ZonedDateTime registrationsDeadline,
                        String location, String organizer, @NotNull Collection<String> categories, URL website,
                        @NotNull Collection<MemberRegistration> registrations) {

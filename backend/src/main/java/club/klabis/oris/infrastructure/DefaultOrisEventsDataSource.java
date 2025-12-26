@@ -1,6 +1,6 @@
 package club.klabis.oris.infrastructure;
 
-import club.klabis.events.domain.OrisId;
+import club.klabis.events.domain.OrisEventId;
 import club.klabis.events.oris.OrisEventDataSource;
 import club.klabis.events.oris.dto.OrisData;
 import club.klabis.events.oris.dto.OrisDataBuilder;
@@ -47,7 +47,7 @@ class DefaultOrisEventsDataSource implements OrisEventDataSource {
     private OrisData from(EventDetails eventDetails) {
         return OrisDataBuilder.builder()
                 .name(eventDetails.name())
-                .orisId(new OrisId(eventDetails.id()))
+                .orisEventId(new OrisEventId(eventDetails.id()))
                 .categories(toCategories(eventDetails))
                 .location(eventDetails.place())
                 .organizer(formatOrganizer(eventDetails.org1(), eventDetails.org2()))
@@ -55,7 +55,7 @@ class DefaultOrisEventsDataSource implements OrisEventDataSource {
                 .registrationsDeadline((ZonedDateTime) maximal(eventDetails.entryDate1(),
                         eventDetails.entryDate2(),
                         eventDetails.entryDate3()).orElse(eventDetails.date().atStartOfDay(ZoneId.of("Europe/Prague"))))
-                .website(new OrisId(eventDetails.id()).createEventUrl())
+                .website(new OrisEventId(eventDetails.id()).createEventUrl())
                 .registrations(eventRegistrations(eventDetails))
                 .build();
     }
@@ -100,7 +100,7 @@ class DefaultOrisEventsDataSource implements OrisEventDataSource {
     }
 
     @Override
-    public Optional<OrisData> getOrisEventData(OrisId orisEventId) {
+    public Optional<OrisData> getOrisEventData(OrisEventId orisEventId) {
         return orisApiClient.getEventDetails(orisEventId.value()).payload().filter(this::isSupported).map(this::from);
     }
 

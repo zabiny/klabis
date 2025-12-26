@@ -5,7 +5,7 @@ import club.klabis.adapters.api.WithKlabisUserMocked;
 import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.OrisId;
+import club.klabis.events.domain.OrisEventId;
 import club.klabis.events.oris.OrisEventSynchronizationUseCase;
 import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
 import club.klabis.shared.config.security.ApplicationGrant;
@@ -49,7 +49,7 @@ public class EventsControllerTests {
     @MockitoBean
     KlabisSecurityService klabisSecurityService;
 
-    static Event createEventWithOrisId(OrisId orisId) {
+    static Event createEventWithOrisId(OrisEventId orisId) {
         Competition result = Competition.newEvent("Test", LocalDate.now(), Set.of());
         result.linkWithOris(orisId);
         return result;
@@ -59,7 +59,7 @@ public class EventsControllerTests {
     @WithKlabisUserMocked(applicationGrants = ApplicationGrant.SYSTEM_ADMIN)
     @DisplayName("it should add synchronize affordance to event with OrisId for user with SystemAdmin grant")
     void itShouldAddLinkToEventWithOrisId() throws Exception {
-        final Event event = createEventWithOrisId(new OrisId(3));
+        final Event event = createEventWithOrisId(new OrisEventId(3));
         final Event.Id eventId = event.getId();
 
         when(eventsRepositoryMock.findById(eventId)).thenReturn(Optional.of(event));
@@ -77,7 +77,7 @@ public class EventsControllerTests {
     @DisplayName("it should NOT add synchronize affordance to event with OrisId for user WITHOUT SystemAdmin grant")
     void itShouldNotAddLinkToUnauthorizedUser() throws Exception {
         when(eventsRepositoryMock.findById(new Event.Id(1))).thenReturn(
-                Optional.of(createEventWithOrisId(new OrisId(3))));
+                Optional.of(createEventWithOrisId(new OrisEventId(3))));
 
         mockMvc.perform(get("/events/{eventId}", 1).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())

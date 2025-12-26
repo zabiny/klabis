@@ -9,7 +9,7 @@ import java.net.URL;
 import static org.assertj.core.api.Assertions.*;
 
 @DisplayName("Tests for OrisId value object")
-class OrisIdTest {
+class OrisEventIdTest {
 
     @Nested
     @DisplayName("Constructor validation tests")
@@ -19,7 +19,7 @@ class OrisIdTest {
         @DisplayName("Should successfully create OrisId with positive value")
         void shouldCreateOrisIdWithPositiveValue() {
             // Act
-            OrisId orisId = new OrisId(12345);
+            OrisEventId orisId = new OrisEventId(12345);
 
             // Assert
             assertThat(orisId).isNotNull();
@@ -30,7 +30,7 @@ class OrisIdTest {
         @DisplayName("Should throw exception when value is zero")
         void shouldThrowExceptionWhenValueIsZero() {
             // Act & Assert
-            assertThatThrownBy(() -> new OrisId(0))
+            assertThatThrownBy(() -> new OrisEventId(0))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Invalid orisId: 0")
                     .hasMessageContaining("must be higher than 0");
@@ -40,7 +40,7 @@ class OrisIdTest {
         @DisplayName("Should throw exception when value is negative")
         void shouldThrowExceptionWhenValueIsNegative() {
             // Act & Assert
-            assertThatThrownBy(() -> new OrisId(-1))
+            assertThatThrownBy(() -> new OrisEventId(-1))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Invalid orisId: -1")
                     .hasMessageContaining("must be higher than 0");
@@ -53,7 +53,7 @@ class OrisIdTest {
             int expectedValue = 54321;
 
             // Act
-            OrisId orisId = new OrisId(expectedValue);
+            OrisEventId orisId = new OrisEventId(expectedValue);
 
             // Assert
             assertThat(orisId.value()).isEqualTo(expectedValue);
@@ -68,7 +68,7 @@ class OrisIdTest {
         @DisplayName("Should create correct ORIS event URL")
         void shouldCreateCorrectOrisEventUrl() {
             // Arrange
-            OrisId orisId = new OrisId(12345);
+            OrisEventId orisId = new OrisEventId(12345);
 
             // Act
             URL url = orisId.createEventUrl();
@@ -82,7 +82,7 @@ class OrisIdTest {
         @DisplayName("Should include ORIS ID in URL")
         void shouldIncludeOrisIdInUrl() {
             // Arrange
-            OrisId orisId = new OrisId(99999);
+            OrisEventId orisId = new OrisEventId(99999);
 
             // Act
             URL url = orisId.createEventUrl();
@@ -95,7 +95,7 @@ class OrisIdTest {
         @DisplayName("Should use HTTPS protocol")
         void shouldUseHttpsProtocol() {
             // Arrange
-            OrisId orisId = new OrisId(12345);
+            OrisEventId orisId = new OrisEventId(12345);
 
             // Act
             URL url = orisId.createEventUrl();
@@ -108,7 +108,7 @@ class OrisIdTest {
         @DisplayName("Should point to correct ORIS domain")
         void shouldPointToCorrectOrisDomain() {
             // Arrange
-            OrisId orisId = new OrisId(12345);
+            OrisEventId orisId = new OrisEventId(12345);
 
             // Act
             URL url = orisId.createEventUrl();
@@ -121,17 +121,17 @@ class OrisIdTest {
         @DisplayName("Should handle URL creation for various ORIS IDs")
         void shouldHandleUrlCreationForVariousIds() {
             // Arrange & Act & Assert
-            assertThatCode(() -> new OrisId(1).createEventUrl()).doesNotThrowAnyException();
-            assertThatCode(() -> new OrisId(100).createEventUrl()).doesNotThrowAnyException();
-            assertThatCode(() -> new OrisId(99999).createEventUrl()).doesNotThrowAnyException();
-            assertThatCode(() -> new OrisId(Integer.MAX_VALUE).createEventUrl()).doesNotThrowAnyException();
+            assertThatCode(() -> new OrisEventId(1).createEventUrl()).doesNotThrowAnyException();
+            assertThatCode(() -> new OrisEventId(100).createEventUrl()).doesNotThrowAnyException();
+            assertThatCode(() -> new OrisEventId(99999).createEventUrl()).doesNotThrowAnyException();
+            assertThatCode(() -> new OrisEventId(Integer.MAX_VALUE).createEventUrl()).doesNotThrowAnyException();
         }
 
         @Test
         @DisplayName("Should return valid URL object")
         void shouldReturnValidURL() {
             // Arrange
-            OrisId orisId = new OrisId(12345);
+            OrisEventId orisId = new OrisEventId(12345);
 
             // Act
             URL url = orisId.createEventUrl();
@@ -151,13 +151,13 @@ class OrisIdTest {
         @DisplayName("Should implement value object equality (same value = equal)")
         void shouldImplementValueObjectEquality() {
             // Arrange
-            OrisId orisId1 = new OrisId(12345);
-            OrisId orisId2 = new OrisId(12345);
-            OrisId orisId3 = new OrisId(54321);
+            OrisEventId orisEventId1 = new OrisEventId(12345);
+            OrisEventId orisEventId2 = new OrisEventId(12345);
+            OrisEventId orisEventId3 = new OrisEventId(54321);
 
             // Assert
-            assertThat(orisId1).isEqualTo(orisId2);
-            assertThat(orisId1).isNotEqualTo(orisId3);
+            assertThat(orisEventId1).isEqualTo(orisEventId2);
+            assertThat(orisEventId1).isNotEqualTo(orisEventId3);
         }
     }
 }

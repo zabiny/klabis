@@ -62,7 +62,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
     private String organizer;
     private ZonedDateTime registrationDeadline;
     private MemberId coordinator;
-    private OrisId orisId;
+    private OrisEventId orisId;
     private URL website;
     private MoneyAmount cost = MoneyAmount.ZERO;
 
@@ -72,7 +72,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         return Optional.ofNullable(coordinator);
     }
 
-    public Optional<OrisId> getOrisId() {
+    public Optional<OrisEventId> getOrisId() {
         return Optional.ofNullable(orisId);
     }
 
@@ -166,15 +166,15 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         andEvent(new EventRegistrationsDeadlineChangedEvent(this));
     }
 
-    public Event linkWithOris(OrisId orisId) {
+    public Event linkWithOris(OrisEventId orisEventId) {
         if (this.orisId != null) {
-            if (!this.orisId.equals(orisId)) {
+            if (!this.orisId.equals(orisEventId)) {
                 throw new EventException(id,
                         "Attempt to link event %s with already assigned orisId %s to another orisId %s".formatted(
-                                getId(), this.orisId, orisId), EventException.Type.UNSPECIFIED);
+                                getId(), this.orisId, orisEventId), EventException.Type.UNSPECIFIED);
             }
         } else {
-            this.orisId = orisId;
+            this.orisId = orisEventId;
         }
         return this;
     }

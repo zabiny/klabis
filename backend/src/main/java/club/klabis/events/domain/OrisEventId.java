@@ -6,8 +6,8 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 
-public record OrisId(int value) {
-    public OrisId(int value) {
+public record OrisEventId(int value) {
+    public OrisEventId(int value) {
         Assert.isTrue(value > 0, "Invalid orisId: %d (must be higher than 0)".formatted(value));
         this.value = value;
     }

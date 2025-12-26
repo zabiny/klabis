@@ -48,7 +48,7 @@ class EventTestFixtures {
 
     // ==================== Other Constants ====================
 
-    static final OrisId DEFAULT_ORIS_ID = new OrisId(12345);
+    static final OrisEventId DEFAULT_ORIS_ID = new OrisEventId(12345);
     static final MoneyAmount DEFAULT_COST = MoneyAmount.of(new BigDecimal("150.00"));
 
     // ==================== Competition Factory Methods ====================

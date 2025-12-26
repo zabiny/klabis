@@ -306,9 +306,9 @@ public class InMemoryEventRepository implements EventsRepository {
     }
     
     @Override
-    public Optional<Event> findByOrisId(int orisId) {
+    public Optional<Event> findByOrisId(int orisEventId) {
         return events.values().stream()
-            .filter(event -> event.getOrisId() == orisId)
+                .filter(event -> event.getOrisId() == orisEventId)
             .findFirst();
     }
 
