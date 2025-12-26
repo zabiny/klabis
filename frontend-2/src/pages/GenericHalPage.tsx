@@ -90,19 +90,6 @@ function stripHalMetadata(obj: HalResponse): Record<string, any> {
 }
 
 /**
- * Get truncated JSON preview and check if it was truncated
- */
-function getTruncatedJsonPreview(obj: any, maxLength: number = 100): { preview: string; isTruncated: boolean } {
-    const cleaned = stripHalMetadata(obj);
-    const fullJson = JSON.stringify(cleaned);
-    const preview = fullJson.substring(0, maxLength);
-    return {
-        preview: preview + (fullJson.length > maxLength ? '...' : ''),
-        isTruncated: fullJson.length > maxLength,
-    };
-}
-
-/**
  * Extract attribute names from collection items (excluding HAL metadata)
  */
 function getCollectionAttributes(items: any[], maxAttributes: number = 6): string[] {
