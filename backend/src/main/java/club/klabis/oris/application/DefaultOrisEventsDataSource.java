@@ -1,56 +1,33 @@
 package club.klabis.oris.application;
 
-import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisId;
-import club.klabis.oris.application.dto.*;
-import club.klabis.oris.domain.OrisData;
-import club.klabis.oris.domain.OrisDataBuilder;
+import club.klabis.events.oris.OrisEventDataSource;
+import club.klabis.events.oris.dto.OrisData;
+import club.klabis.events.oris.dto.OrisDataBuilder;
+import club.klabis.events.oris.dto.OrisEventListFilter;
+import club.klabis.oris.application.dto.EventClass;
+import club.klabis.oris.application.dto.EventDetails;
+import club.klabis.oris.application.dto.Organizer;
+import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-@Service
-@OrisIntegrationComponent
-class DefaultOrisEventsImporter implements OrisEventsImporter {
+@Component
+@SecondaryAdapter
+class DefaultOrisEventsDataSource implements OrisEventDataSource {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultOrisEventsImporter.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultOrisEventsDataSource.class);
     private final OrisDataProvider orisDataProvider;
-    private final OrisSynchronizationUseCase useCase;
 
-    DefaultOrisEventsImporter(OrisDataProvider orisDataProvider, OrisSynchronizationUseCase useCase) {
+    DefaultOrisEventsDataSource(OrisDataProvider orisDataProvider) {
         this.orisDataProvider = orisDataProvider;
-        this.useCase = useCase;
-    }
-
-    @Override
-    @Async
-    public void loadOrisEvents(OrisEventListFilter filter) {
-        orisDataProvider.getEventList(filter).forEach(this::synchronizeEvent);
-    }
-
-    @Override
-    public void synchronizeEvents(Collection<Event.Id> eventIds) {
-        useCase.getOrisIds(eventIds)
-                .stream().map(orisDataProvider::getEventDetails)
-                .flatMap(Optional::stream)
-                .map(this::from)
-                .forEach(useCase::importEvent);
-    }
-
-    private void synchronizeEvent(EventSummary eventSummary) {
-        orisDataProvider.getEventDetails(new OrisId(eventSummary.id()))
-                .ifPresent(this::synchronizeEvent);
-    }
-
-    private void synchronizeEvent(EventDetails eventDetails) {
-        OrisData orisData = this.from(eventDetails);
-        useCase.importEvent(orisData);
     }
 
     private OrisData from(EventDetails eventDetails) {
@@ -63,8 +40,7 @@ class DefaultOrisEventsImporter implements OrisEventsImporter {
                 .eventDate(eventDetails.date())
                 .registrationsDeadline((ZonedDateTime) maximal(eventDetails.entryDate1(),
                         eventDetails.entryDate2(),
-                        eventDetails.entryDate3()).orElse(eventDetails.date().atStartOfDay(
-                        ZoneId.of("Europe/Prague"))))
+                        eventDetails.entryDate3()).orElse(eventDetails.date().atStartOfDay(ZoneId.of("Europe/Prague"))))
                 .website(new OrisId(eventDetails.id()).createEventUrl())
                 .build();
     }
@@ -93,5 +69,17 @@ class DefaultOrisEventsImporter implements OrisEventsImporter {
                 .filter(Objects::nonNull)
                 .map(Organizer::abbreviation)
                 .collect(Collectors.joining(" + "));
+    }
+
+    @Override
+    public Optional<OrisData> getOrisEventData(OrisId orisEventId) {
+        return orisDataProvider.getEventDetails(orisEventId).map(this::from);
+    }
+
+    @Override
+    public Stream<OrisData> streamOrisEvents(OrisEventListFilter filter) {
+        return orisDataProvider.getEventList(filter).stream()
+                .flatMap(eventSummary -> orisDataProvider.getEventDetails(new OrisId(eventSummary.id())).stream())
+                .map(this::from);
     }
 }

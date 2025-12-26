@@ -1,5 +1,6 @@
 package club.klabis.oris.infrastructure.apiclient;
 
+import club.klabis.events.oris.dto.OrisEventListFilter;
 import club.klabis.oris.application.dto.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -147,7 +148,7 @@ class OrisApiClientTest {
         @DisplayName("it should call expected API with defined parameters")
         void itShouldCallExpectedApiWithParams() throws IOException {
             restServiceServer.expect(MockRestRequestMatchers.requestTo(
-                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205&datefrom=2020-10-01&dateto=2023-04-10&rg=JM"))
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205&datefrom=2020-10-01&dateto=2023-04-10&rg=JM&all=0"))
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
 
             testedClient.getEventList(OrisEventListFilter.EMPTY.withRegion(OrisApiClient.REGION_JIHOMORAVSKA)

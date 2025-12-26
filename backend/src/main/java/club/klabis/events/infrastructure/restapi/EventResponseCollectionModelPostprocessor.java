@@ -1,7 +1,7 @@
-package club.klabis.oris.infrastructure.restapi;
+package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
-import club.klabis.oris.application.OrisIntegrationComponent;
+import club.klabis.shared.application.OrisIntegrationComponent;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -16,7 +16,7 @@ class EventResponseCollectionModelPostprocessor implements RepresentationModelPr
     @Override
     public CollectionModel<EntityModel<EventResponse>> process(CollectionModel<EntityModel<EventResponse>> model) {
         model.mapLink(IanaLinkRelations.SELF,
-                selfLink -> selfLink.andAffordances(affordBetter(methodOn(OrisProxyController.class).synchronizeAllEventsWithOris())));
+                selfLink -> selfLink.andAffordances(affordBetter(methodOn(OrisEventsController.class).synchronizeAllEventsWithOris())));
 
         return model;
     }

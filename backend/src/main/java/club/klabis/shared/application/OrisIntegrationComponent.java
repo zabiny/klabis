@@ -1,4 +1,4 @@
-package club.klabis.oris.application;
+package club.klabis.shared.application;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;

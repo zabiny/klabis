@@ -1,6 +1,6 @@
 package club.klabis.oris.infrastructure.apiclient;
 
-import club.klabis.oris.application.dto.OrisEventListFilter;
+import club.klabis.events.oris.dto.OrisEventListFilter;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,6 +170,8 @@ class OrisEventListArgumentResolver implements HttpServiceArgumentResolver {
                 if (typedArgument.region() != null) {
                     requestValues.addRequestParameter("rg", typedArgument.region().toString());
                 }
+
+                requestValues.addRequestParameter("all", typedArgument.officialOnly() ? "0" : "1");
             }
             return true;
         }

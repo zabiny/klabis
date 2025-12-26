@@ -1,7 +1,11 @@
 package club.klabis.oris.infrastructure.apiclient;
 
 
-import club.klabis.oris.application.dto.*;
+import club.klabis.events.oris.dto.OrisEventListFilter;
+import club.klabis.oris.application.dto.EventDetails;
+import club.klabis.oris.application.dto.EventEntry;
+import club.klabis.oris.application.dto.EventSummary;
+import club.klabis.oris.application.dto.OrisUserInfo;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;

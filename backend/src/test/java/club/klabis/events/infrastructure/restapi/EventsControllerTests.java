@@ -6,14 +6,13 @@ import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisId;
-import club.klabis.oris.application.OrisEventsImporter;
+import club.klabis.events.oris.OrisEventSynchronizationUseCase;
 import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.KlabisSecurityService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.ActiveProfiles;
@@ -31,9 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@ApiTestConfiguration(controllers = EventsController.class)
+@ApiTestConfiguration(controllers = {EventsController.class})
 @Import({EventModelMapperImpl.class})
-@ComponentScan("club.klabis.oris.infrastructure.restapi")
 @ActiveProfiles("oris")
 public class EventsControllerTests {
     @MockitoBean
@@ -43,7 +41,7 @@ public class EventsControllerTests {
     OrisApiClient orisApiClientMock;
 
     @MockitoBean
-    OrisEventsImporter orisEventsImporter;
+    OrisEventSynchronizationUseCase orisEventSynchronizationUseCase;
 
     @Autowired
     MockMvc mockMvc;

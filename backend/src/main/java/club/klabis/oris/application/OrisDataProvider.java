@@ -1,7 +1,11 @@
 package club.klabis.oris.application;
 
 import club.klabis.events.domain.OrisId;
-import club.klabis.oris.application.dto.*;
+import club.klabis.events.oris.dto.OrisEventListFilter;
+import club.klabis.oris.application.dto.EventDetails;
+import club.klabis.oris.application.dto.EventEntry;
+import club.klabis.oris.application.dto.EventSummary;
+import club.klabis.oris.application.dto.OrisUserInfo;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.util.Collection;
