@@ -394,7 +394,7 @@ class UnsafeInstantiationWarningFactory implements TypeAdapterFactory {
                 LOG.error(
                         "InMemory repository cloning will damage aggregate root's domain events (attempt to using them will throw NPE as list of events will not be properly deserialized into collection instance) for type {} : declare no-args constructor for that type (can be private) so GSON is able to construct instace properly",
                         typeToken.getRawType().getSimpleName());
-            } else {
+            } else if (!typeToken.getRawType().isRecord() && !typeToken.getRawType().isEnum()) {
                 LOG.warn(
                         "InMemory repository cloning type {} without no-args constructor - cloned instance may be incomplete (GSON will use unsafe operations to instantiate it when deserializing clone). For example some attributes may have missing value, etc..). Add no-args constructor if there will be such issues.",
                         typeToken.getRawType());
