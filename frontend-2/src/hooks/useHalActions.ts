@@ -38,7 +38,8 @@ export function useHalActions(): UseHalActionsReturn {
 
 	const handleFormSubmit = async (formData: Record<string, unknown>) => {
 		if (!selectedTemplate) {
-			throw new Error("Can't submit form - template is missing!")
+			setSubmitError(new Error("Can't submit form - template is missing!"));
+			return;
 		}
 
 		setIsSubmitting(true);

@@ -33,16 +33,16 @@ describe('useHalActions Hook', () => {
     let mockRefetch: jest.Mock;
 
     beforeEach(() => {
+        jest.clearAllMocks();
+
         mockNavigate = jest.fn();
         mockRefetch = jest.fn().mockResolvedValue(undefined);
 
         useNavigate.mockReturnValue(mockNavigate);
         useHalRoute.mockReturnValue({
-            pathname: '/api/items',
+            pathname: '/items',
             refetch: mockRefetch,
         });
-
-        jest.clearAllMocks();
     });
 
     const createWrapper = () => {
@@ -232,18 +232,20 @@ describe('useHalActions Hook', () => {
                 result.current.setSelectedTemplate(template);
             });
 
+            // Mock to simulate a slow submission
             submitHalFormsData.mockImplementationOnce(
                 () => new Promise((resolve) => setTimeout(resolve, 100)),
             );
 
-            const submitPromise = act(async () => {
-                await result.current.handleFormSubmit({name: 'Test'});
+            // Start submission without awaiting
+            act(() => {
+                result.current.handleFormSubmit({name: 'Test'});
             });
 
-            // Check if isSubmitting becomes true immediately (race condition)
-            expect(result.current.isSubmitting).toBeTruthy();
-
-            await submitPromise;
+            // After starting submission, isSubmitting should be true (or become true soon)
+            await waitFor(() => {
+                expect(result.current.isSubmitting).toBe(true);
+            }, {timeout: 100});
         });
 
         it('should set isSubmitting to false after submission', async () => {

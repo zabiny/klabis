@@ -54,7 +54,6 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children}) =>
         },
         enabled: shouldFetch,
         staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: 1,
     });
 
     // Convert React Query status to context queryState
