@@ -1,9 +1,6 @@
-package club.klabis.events.application;
+package club.klabis.events.domain;
 
-import club.klabis.events.domain.Competition;
-import club.klabis.events.domain.Event;
-import club.klabis.events.domain.EventException;
-import club.klabis.events.domain.Registration;
+import club.klabis.events.application.EventManagementForm;
 import club.klabis.events.domain.forms.EventRegistrationForm;
 import club.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
