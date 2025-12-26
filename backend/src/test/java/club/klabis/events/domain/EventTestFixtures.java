@@ -1,6 +1,6 @@
 package club.klabis.events.domain;
 
-import club.klabis.events.domain.forms.EventRegistrationForm;
+import club.klabis.events.domain.commands.EventRegistrationCommand;
 import club.klabis.finance.domain.MoneyAmount;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.Globals;
@@ -88,7 +88,7 @@ class EventTestFixtures {
         clearDomainEvents(competition);
 
         for (MemberId memberId : members) {
-            EventRegistrationForm form = defaultRegistrationForm();
+            EventRegistrationCommand form = defaultRegistrationForm();
             competition.registerMember(memberId, form);
         }
 
@@ -119,21 +119,21 @@ class EventTestFixtures {
     /**
      * Creates a default EventRegistrationForm
      */
-    static EventRegistrationForm defaultRegistrationForm() {
+    static EventRegistrationCommand defaultRegistrationForm() {
         return createRegistrationForm(CATEGORY_D12.name(), "123456");
     }
 
     /**
      * Creates a custom EventRegistrationForm
      */
-    static EventRegistrationForm createRegistrationForm(String category, String siNumber) {
-        return new EventRegistrationForm(siNumber, category);
+    static EventRegistrationCommand createRegistrationForm(String category, String siNumber) {
+        return new EventRegistrationCommand(siNumber, category);
     }
 
     /**
      * Creates a registration form for a specific category
      */
-    static EventRegistrationForm formForCategory(Competition.Category category) {
+    static EventRegistrationCommand formForCategory(Competition.Category category) {
         return createRegistrationForm(category.name(), "123456");
     }
 

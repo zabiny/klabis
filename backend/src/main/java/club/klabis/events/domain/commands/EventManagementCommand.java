@@ -1,5 +1,7 @@
-package club.klabis.events.domain;
+package club.klabis.events.domain.commands;
 
+import club.klabis.events.domain.Competition;
+import club.klabis.events.domain.Event;
 import club.klabis.finance.domain.MoneyAmount;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.KlabisInputTypes;

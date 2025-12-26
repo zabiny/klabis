@@ -1,7 +1,7 @@
 package club.klabis.events.application;
 
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.EventManagementCommand;
+import club.klabis.events.domain.commands.EventManagementCommand;
 import club.klabis.shared.config.ddd.UseCase;
 import jakarta.validation.Valid;
 import org.springframework.transaction.annotation.Transactional;

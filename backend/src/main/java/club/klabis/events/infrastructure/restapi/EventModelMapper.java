@@ -2,7 +2,7 @@ package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.EventManagementCommand;
+import club.klabis.events.domain.commands.EventManagementCommand;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.shared.config.hateoas.ModelPreparator;

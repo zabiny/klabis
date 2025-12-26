@@ -1,5 +1,7 @@
 package club.klabis.events.domain;
 
+import club.klabis.events.domain.commands.EventManagementCommand;
+
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;

@@ -1,5 +1,6 @@
 package club.klabis.events.domain;
 
+import club.klabis.events.domain.events.*;
 import club.klabis.members.MemberId;
 import org.assertj.core.api.Condition;
 

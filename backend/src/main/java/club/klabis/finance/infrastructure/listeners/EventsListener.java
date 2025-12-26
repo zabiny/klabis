@@ -1,9 +1,9 @@
 package club.klabis.finance.infrastructure.listeners;
 
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.EventCostChangedEvent;
-import club.klabis.events.domain.MemberEventRegistrationCreated;
-import club.klabis.events.domain.MemberEventRegistrationRemoved;
+import club.klabis.events.domain.events.EventCostChangedEvent;
+import club.klabis.events.domain.events.MemberEventRegistrationCreated;
+import club.klabis.events.domain.events.MemberEventRegistrationRemoved;
 import club.klabis.finance.domain.Account;
 import club.klabis.finance.domain.AccountProjector;
 import club.klabis.finance.domain.MoneyAmount;

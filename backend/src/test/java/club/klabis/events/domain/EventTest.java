@@ -1,6 +1,10 @@
 package club.klabis.events.domain;
 
-import club.klabis.events.domain.forms.EventRegistrationForm;
+import club.klabis.events.domain.commands.EventManagementCommand;
+import club.klabis.events.domain.commands.EventRegistrationCommand;
+import club.klabis.events.domain.events.EventCostChangedEvent;
+import club.klabis.events.domain.events.EventDateChangedEvent;
+import club.klabis.events.domain.events.EventRegistrationsDeadlineChangedEvent;
 import club.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -73,7 +77,7 @@ class EventTest {
             Event event = Competition.newEvent("Event Name",
                     LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345", "D12");
+            EventRegistrationCommand form = new EventRegistrationCommand("SI12345", "D12");
 
             // Act
             event.registerMember(memberId, form);
@@ -89,7 +93,7 @@ class EventTest {
             Event event = Competition.newEvent("Event Name",
                     LocalDate.now().minusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
+            EventRegistrationCommand form = new EventRegistrationCommand("SI12345", "P");
 
             // Act / Assert
             assertThatThrownBy(() -> event.registerMember(memberId, form))
@@ -104,7 +108,7 @@ class EventTest {
             Event event = Competition.newEvent("Event Name",
                     LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
+            EventRegistrationCommand form = new EventRegistrationCommand("SI12345", "P");
 
             // Act
             event.registerMember(memberId, form);
@@ -127,7 +131,7 @@ class EventTest {
             Event event = Competition.newEvent("Event Name",
                     LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345", "H21");
+            EventRegistrationCommand form = new EventRegistrationCommand("SI12345", "H21");
             event.registerMember(memberId, form);
 
             // Act
@@ -144,7 +148,7 @@ class EventTest {
             Event event = Competition.newEvent("Event Name",
                     LocalDate.now().plusDays(1), Competition.Category.categories("D12"));
             MemberId memberId = new MemberId(1);
-            EventRegistrationForm form = new EventRegistrationForm("SI12345", "P");
+            EventRegistrationCommand form = new EventRegistrationCommand("SI12345", "P");
             event.registerMember(memberId, form);
             event.closeRegistrationsAt(LocalDate.now().minusDays(1).atStartOfDay(ZONE_PRAGUE));
 
@@ -469,7 +473,7 @@ class EventTest {
             // Arrange
             Competition competition = createOpenCompetition();
             competition.registerMember(MEMBER_1, formForCategory(CATEGORY_D12));
-            EventRegistrationForm newForm = createRegistrationForm(CATEGORY_H21.name(), "999999");
+            EventRegistrationCommand newForm = createRegistrationForm(CATEGORY_H21.name(), "999999");
 
             // Act
             competition.changeRegistration(MEMBER_1, newForm);
@@ -487,7 +491,7 @@ class EventTest {
         void shouldThrowExceptionWhenRegistrationsClosed() {
             // Arrange
             Competition competition = createClosedCompetition();
-            EventRegistrationForm newForm = defaultRegistrationForm();
+            EventRegistrationCommand newForm = defaultRegistrationForm();
 
             // Act & Assert
             assertThatThrownBy(() -> competition.changeRegistration(MEMBER_1, newForm))
@@ -500,7 +504,7 @@ class EventTest {
         void shouldThrowExceptionWhenMemberNotRegistered() {
             // Arrange
             Competition competition = createOpenCompetition();
-            EventRegistrationForm newForm = defaultRegistrationForm();
+            EventRegistrationCommand newForm = defaultRegistrationForm();
 
             // Act & Assert
             assertThatThrownBy(() -> competition.changeRegistration(MEMBER_1, newForm))

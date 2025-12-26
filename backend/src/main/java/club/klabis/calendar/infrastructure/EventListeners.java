@@ -4,8 +4,8 @@ import club.klabis.calendar.CalendarItem;
 import club.klabis.calendar.CalendarRepository;
 import club.klabis.calendar.EventCalendarItem;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.EventDateChangedEvent;
-import club.klabis.events.domain.EventRegistrationsDeadlineChangedEvent;
+import club.klabis.events.domain.events.EventDateChangedEvent;
+import club.klabis.events.domain.events.EventRegistrationsDeadlineChangedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 

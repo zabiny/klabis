@@ -3,8 +3,8 @@ package club.klabis.events.application;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
 import club.klabis.events.domain.Registration;
-import club.klabis.events.domain.forms.EventRegistrationForm;
-import club.klabis.events.domain.forms.EventRegistrationFormBuilder;
+import club.klabis.events.domain.commands.EventRegistrationCommand;
+import club.klabis.events.domain.commands.EventRegistrationCommandBuilder;
 import club.klabis.members.MemberId;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
@@ -22,7 +22,7 @@ public class EventRegistrationUseCase {
         this.memberSiCardProvider = memberSiCardProvider;
     }
 
-    public record EventRegistrationFormData(@JsonUnwrapped EventRegistrationForm eventRegistrationForm,
+    public record EventRegistrationFormData(@JsonUnwrapped EventRegistrationCommand eventRegistrationCommand,
                                             @JsonProperty(access = JsonProperty.Access.READ_ONLY) String eventName) {
     }
 
@@ -33,30 +33,30 @@ public class EventRegistrationUseCase {
         return event.getRegistrationForMember(memberId)
                 .map(registration -> toForm(event, toForm(registration)))
                 .orElseGet(() -> toForm(event,
-                        new EventRegistrationForm(memberSiCardProvider.getSiCardForMember(memberId).orElse(null),
+                        new EventRegistrationCommand(memberSiCardProvider.getSiCardForMember(memberId).orElse(null),
                                 null)));
     }
 
-    private EventRegistrationFormData toForm(Event event, EventRegistrationForm registrationForm) {
+    private EventRegistrationFormData toForm(Event event, EventRegistrationCommand registrationForm) {
         return new EventRegistrationFormData(registrationForm, event.getName());
     }
 
-    private EventRegistrationForm toForm(Registration registration) {
-        return EventRegistrationFormBuilder.builder()
+    private EventRegistrationCommand toForm(Registration registration) {
+        return EventRegistrationCommandBuilder.builder()
                 .category(registration.getCategory().name())
                 .siNumber(registration.getSiNumber())
                 .build();
     }
 
     @Transactional
-    public void registerForEvent(Event.Id eventId, MemberId memberId, EventRegistrationForm eventRegistrationForm) {
+    public void registerForEvent(Event.Id eventId, MemberId memberId, EventRegistrationCommand eventRegistrationCommand) {
         Event event = eventsRepository.findById(eventId)
                 .orElseThrow(() -> EventException.createEventNotFoundException(eventId));
 
         if (event.isMemberRegistered(memberId)) {
-            event.changeRegistration(memberId, eventRegistrationForm);
+            event.changeRegistration(memberId, eventRegistrationCommand);
         } else {
-            event.registerMember(memberId, eventRegistrationForm);
+            event.registerMember(memberId, eventRegistrationCommand);
         }
 
         eventsRepository.save(event);

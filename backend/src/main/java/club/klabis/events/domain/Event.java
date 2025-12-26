@@ -1,6 +1,8 @@
 package club.klabis.events.domain;
 
-import club.klabis.events.domain.forms.EventRegistrationForm;
+import club.klabis.events.domain.commands.EventManagementCommand;
+import club.klabis.events.domain.commands.EventRegistrationCommand;
+import club.klabis.events.domain.events.*;
 import club.klabis.finance.domain.MoneyAmount;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.Globals;
@@ -199,7 +201,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         this.andEvent(new EventCostChangedEvent(this));
     }
 
-    public void registerMember(MemberId memberId, EventRegistrationForm form) {
+    public void registerMember(MemberId memberId, EventRegistrationCommand form) {
         if (!this.areRegistrationsOpen()) {
             throw new EventException(this.id,
                     "Cannot add new registration to event, registrations are already closed",
@@ -214,7 +216,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         this.andEvent(new MemberEventRegistrationCreated(this, memberId));
     }
 
-    public void changeRegistration(MemberId memberId, EventRegistrationForm form) {
+    public void changeRegistration(MemberId memberId, EventRegistrationCommand form) {
         if (!this.areRegistrationsOpen()) {
             throw new EventException(this.id,
                     "Cannot change registration for event, registrations are already closed",

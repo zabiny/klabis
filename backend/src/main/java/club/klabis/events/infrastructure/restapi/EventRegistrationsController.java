@@ -2,7 +2,7 @@ package club.klabis.events.infrastructure.restapi;
 
 import club.klabis.events.application.EventRegistrationUseCase;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.forms.EventRegistrationForm;
+import club.klabis.events.domain.commands.EventRegistrationCommand;
 import club.klabis.members.MemberId;
 import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
@@ -76,7 +76,7 @@ class EventRegistrationsController {
             }
     )
     @PutMapping
-    ResponseEntity<Void> submitRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") MemberId memberId, @RequestBody EventRegistrationForm form) {
+    ResponseEntity<Void> submitRegistrationForm(@PathVariable(name = "eventId") Event.Id event, @PathVariable(name = "memberId") MemberId memberId, @RequestBody EventRegistrationCommand form) {
         useCase.registerForEvent(event, memberId, form);
         return ResponseEntity.created(linkTo(methodOn(this.getClass())
                 .getEventRegistrationForm(event, memberId)).toUri()).build();

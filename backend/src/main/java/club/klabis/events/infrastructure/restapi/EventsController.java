@@ -9,7 +9,7 @@ import club.klabis.events.application.EventsRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.EventException;
-import club.klabis.events.domain.EventManagementCommand;
+import club.klabis.events.domain.commands.EventManagementCommand;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;

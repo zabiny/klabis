@@ -5,8 +5,8 @@ import club.klabis.events.application.PreferencesRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisId;
-import club.klabis.events.domain.forms.EventRegistrationForm;
-import club.klabis.events.domain.forms.EventRegistrationFormBuilder;
+import club.klabis.events.domain.commands.EventRegistrationCommand;
+import club.klabis.events.domain.commands.EventRegistrationCommandBuilder;
 import club.klabis.events.oris.dto.OrisData;
 import club.klabis.events.oris.dto.OrisEventListFilter;
 import club.klabis.members.MemberId;
@@ -101,7 +101,9 @@ public class OrisSynchronizationUseCase implements OrisEventSynchronizationUseCa
     }
 
     private void synchronizeRegistration(Event targetEvent, MemberId memberId, OrisData.MemberRegistration registration) {
-        EventRegistrationForm form = EventRegistrationFormBuilder.builder().category(registration.category()).siNumber(
+        EventRegistrationCommand form = EventRegistrationCommandBuilder.builder()
+                .category(registration.category())
+                .siNumber(
                 Integer.toString(registration.siCard())).build();
         if (targetEvent.isMemberRegistered(memberId)) {
             targetEvent.changeRegistration(memberId, form);

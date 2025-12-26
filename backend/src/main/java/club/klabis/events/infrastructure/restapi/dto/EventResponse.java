@@ -2,7 +2,7 @@ package club.klabis.events.infrastructure.restapi.dto;
 
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.EventManagementCommand;
+import club.klabis.events.domain.commands.EventManagementCommand;
 import club.klabis.shared.config.restapi.ResponseViews;
 import com.fasterxml.jackson.annotation.*;
 import io.soabase.recordbuilder.core.RecordBuilder;

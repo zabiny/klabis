@@ -1,7 +1,7 @@
 package club.klabis.events.application;
 
 import club.klabis.PresetDataLoader;
-import club.klabis.events.domain.EventManagementCommand;
+import club.klabis.events.domain.commands.EventManagementCommand;
 import club.klabis.shared.config.faker.Events;
 import club.klabis.shared.config.faker.KlabisFaker;
 import club.klabis.shared.config.faker.KlabisFakerImpl;
