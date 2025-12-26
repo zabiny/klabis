@@ -268,6 +268,7 @@ class OrisApiClientTest {
                             .clubId(7)
                             .note("")
                             .fee(BigDecimal.valueOf(70))
+                            .entryStop(1)
                             .createdByUserId(14263)
                             .updatedByUserId(2553)
                             .build(),
@@ -284,6 +285,7 @@ class OrisApiClientTest {
                             .clubId(104)
                             .note("")
                             .fee(BigDecimal.valueOf(70))
+                            .entryStop(1)
                             .createdByUserId(3418)
                             .updatedByUserId(3418)
                             .build()

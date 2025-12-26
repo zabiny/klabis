@@ -1,4 +1,4 @@
-package club.klabis.oris.application;
+package club.klabis.oris.infrastructure;
 
 import club.klabis.events.domain.OrisId;
 import club.klabis.events.oris.OrisEventDataSource;
