@@ -17,39 +17,39 @@ import java.util.Set;
  * Test fixtures and builders for Event domain testing.
  * Provides reusable test data and factory methods.
  */
-class EventTestFixtures {
+public class EventTestFixtures {
 
     // ==================== Date Constants ====================
 
-    static final LocalDate DEFAULT_EVENT_DATE = LocalDate.now().plusDays(7);
-    static final LocalDate PAST_EVENT_DATE = LocalDate.now().minusDays(7);
-    static final LocalDate FUTURE_EVENT_DATE = LocalDate.now().plusDays(14);
+    public static final LocalDate DEFAULT_EVENT_DATE = LocalDate.now().plusDays(7);
+    public static final LocalDate PAST_EVENT_DATE = LocalDate.now().minusDays(7);
+    public static final LocalDate FUTURE_EVENT_DATE = LocalDate.now().plusDays(14);
 
-    static final ZonedDateTime DEFAULT_DEADLINE = Globals.toZonedDateTime(DEFAULT_EVENT_DATE.minusDays(2));
-    static final ZonedDateTime PAST_DEADLINE = Globals.toZonedDateTime(PAST_EVENT_DATE);
-    static final ZonedDateTime FUTURE_DEADLINE = Globals.toZonedDateTime(FUTURE_EVENT_DATE.minusDays(2));
+    public static final ZonedDateTime DEFAULT_DEADLINE = Globals.toZonedDateTime(DEFAULT_EVENT_DATE.minusDays(2));
+    public static final ZonedDateTime PAST_DEADLINE = Globals.toZonedDateTime(PAST_EVENT_DATE);
+    public static final ZonedDateTime FUTURE_DEADLINE = Globals.toZonedDateTime(FUTURE_EVENT_DATE.minusDays(2));
 
     // ==================== Member Constants ====================
 
-    static final MemberId MEMBER_1 = new MemberId(1);
-    static final MemberId MEMBER_2 = new MemberId(2);
-    static final MemberId MEMBER_3 = new MemberId(3);
-    static final MemberId COORDINATOR = new MemberId(100);
+    public static final MemberId MEMBER_1 = new MemberId(1);
+    public static final MemberId MEMBER_2 = new MemberId(2);
+    public static final MemberId MEMBER_3 = new MemberId(3);
+    public static final MemberId COORDINATOR = new MemberId(100);
 
     // ==================== Competition Category Constants ====================
 
-    static final Competition.Category CATEGORY_D12 = new Competition.Category("D12");
-    static final Competition.Category CATEGORY_H12 = new Competition.Category("H12");
-    static final Competition.Category CATEGORY_D21 = new Competition.Category("D21");
-    static final Competition.Category CATEGORY_H21 = new Competition.Category("H21");
-    static final Competition.Category CATEGORY_D35 = new Competition.Category("D35");
+    public static final Competition.Category CATEGORY_D12 = new Competition.Category("D12");
+    public static final Competition.Category CATEGORY_H12 = new Competition.Category("H12");
+    public static final Competition.Category CATEGORY_D21 = new Competition.Category("D21");
+    public static final Competition.Category CATEGORY_H21 = new Competition.Category("H21");
+    public static final Competition.Category CATEGORY_D35 = new Competition.Category("D35");
 
-    static final Set<Competition.Category> DEFAULT_CATEGORIES = Set.of(CATEGORY_D12, CATEGORY_H21, CATEGORY_D21);
+    public static final Set<Competition.Category> DEFAULT_CATEGORIES = Set.of(CATEGORY_D12, CATEGORY_H21, CATEGORY_D21);
 
     // ==================== Other Constants ====================
 
-    static final OrisEventId DEFAULT_ORIS_ID = new OrisEventId(12345);
-    static final MoneyAmount DEFAULT_COST = MoneyAmount.of(new BigDecimal("150.00"));
+    public static final OrisEventId DEFAULT_ORIS_ID = new OrisEventId(12345);
+    public static final MoneyAmount DEFAULT_COST = MoneyAmount.of(new BigDecimal("150.00"));
 
     // ==================== Competition Factory Methods ====================
 

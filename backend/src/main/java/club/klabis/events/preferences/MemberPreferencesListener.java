@@ -1,6 +1,5 @@
-package club.klabis.events.application;
+package club.klabis.events.preferences;
 
-import club.klabis.events.domain.Preferences;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.events.MemberCreatedEvent;
 import org.springframework.context.event.EventListener;

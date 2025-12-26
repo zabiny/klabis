@@ -1,4 +1,4 @@
-package club.klabis.events.domain;
+package club.klabis.events.preferences;
 
 import club.klabis.members.MemberId;
 import club.klabis.members.domain.RegistrationNumber;

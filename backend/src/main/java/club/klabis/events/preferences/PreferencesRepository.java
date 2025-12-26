@@ -1,6 +1,5 @@
-package club.klabis.events.application;
+package club.klabis.events.preferences;
 
-import club.klabis.events.domain.Preferences;
 import club.klabis.members.MemberId;
 import club.klabis.members.domain.RegistrationNumber;
 import club.klabis.shared.application.DataRepository;

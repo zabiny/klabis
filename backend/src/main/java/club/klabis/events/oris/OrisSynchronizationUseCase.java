@@ -1,7 +1,6 @@
 package club.klabis.events.oris;
 
 import club.klabis.events.application.EventsRepository;
-import club.klabis.events.application.PreferencesRepository;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
 import club.klabis.events.domain.OrisEventId;
@@ -9,6 +8,7 @@ import club.klabis.events.domain.commands.EventRegistrationCommand;
 import club.klabis.events.domain.commands.EventRegistrationCommandBuilder;
 import club.klabis.events.oris.dto.OrisData;
 import club.klabis.events.oris.dto.OrisEventListFilter;
+import club.klabis.events.preferences.PreferencesRepository;
 import club.klabis.members.MemberId;
 import club.klabis.members.domain.RegistrationNumber;
 import club.klabis.shared.application.OrisIntegrationComponent;

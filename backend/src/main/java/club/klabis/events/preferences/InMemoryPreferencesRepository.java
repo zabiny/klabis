@@ -1,7 +1,5 @@
-package club.klabis.events.infrastructure.inmemoryrepo;
+package club.klabis.events.preferences;
 
-import club.klabis.events.application.PreferencesRepository;
-import club.klabis.events.domain.Preferences;
 import club.klabis.members.MemberId;
 import com.dpolach.inmemoryrepository.InMemoryRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
