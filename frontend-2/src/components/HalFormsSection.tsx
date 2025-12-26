@@ -13,6 +13,7 @@ import {HalFormButton} from './HalFormButton';
  */
 interface HalFormsSectionProps {
 	templates?: Record<string, HalFormsTemplate>;
+	modal?: boolean
 }
 
 /**
@@ -23,7 +24,7 @@ interface HalFormsSectionProps {
  * <HalFormsSection templates={data._templates} />
  */
 export function HalFormsSection({
-									templates,
+									templates, modal = true
 								}: HalFormsSectionProps): ReactElement | null {
 	if (!templates || Object.keys(templates).length === 0) {
 		return null;
@@ -37,7 +38,7 @@ export function HalFormsSection({
 					<HalFormButton
 						key={templateName}
 						name={templateName}
-						modal={false}
+						modal={modal}
 					/>
 				))}
 			</div>
