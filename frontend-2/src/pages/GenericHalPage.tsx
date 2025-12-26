@@ -103,6 +103,35 @@ function getTruncatedJsonPreview(obj: any, maxLength: number = 100): { preview: 
 }
 
 /**
+ * Extract attribute names from collection items (excluding HAL metadata)
+ */
+function getCollectionAttributes(items: any[], maxAttributes: number = 6): string[] {
+    const attributes = new Set<string>();
+
+    items.forEach(item => {
+        Object.keys(item).forEach(key => {
+            if (!key.startsWith('_')) {
+                attributes.add(key);
+            }
+        });
+    });
+
+    return Array.from(attributes).slice(0, maxAttributes);
+}
+
+/**
+ * Format attribute value for display in table cell
+ */
+function formatAttributeValue(value: unknown, maxLength: number = 50): string {
+    if (typeof value === 'object') {
+        const json = JSON.stringify(value);
+        return json.length > maxLength ? json.substring(0, maxLength) + '...' : json;
+    }
+    const str = String(value);
+    return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+}
+
+/**
  * Display a collection of items in a table format
  */
 interface GenericCollectionDisplayProps {
@@ -114,6 +143,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
     const {handleNavigateToItem} = useHalActions();
     const {isAdmin} = useIsAdmin();
     const items = Object.values(data._embedded || {}).flat();
+    const attributes = items.length > 0 ? getCollectionAttributes(items) : [];
 
     return (
         <div className="space-y-4">
@@ -133,63 +163,62 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                     <table className="w-full text-sm">
                         <thead className="bg-gray-100 dark:bg-gray-800">
                         <tr>
-                            <th className="px-4 py-2 text-left font-semibold">{TABLE_HEADERS.DATA}</th>
+                            {attributes.map(attr => (
+                                <th key={attr} className="px-4 py-2 text-left font-semibold">
+                                    {attr}
+                                </th>
+                            ))}
                             <th className="px-4 py-2 text-left font-semibold w-fit">{TABLE_HEADERS.ACTIONS}</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y">
-                        {items.map((item: any, index: number) => {
-                            const {preview, isTruncated} = getTruncatedJsonPreview(item);
-                            return (
-                                <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <td className="px-4 py-2">
-                                        <div className="flex items-center gap-2">
-                                            <code className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                                {preview}
-                                            </code>
-                                            {isTruncated && (
-                                                <button
-                                                    onClick={() => setSelectedItemForJsonView(item)}
-                                                    className="flex-shrink-0 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                                                    title="View full JSON"
-                                                    aria-label="View full JSON"
-                                                >
-                                                    <svg
-                                                        className="w-4 h-4"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth={2}
-                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                                        />
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth={2}
-                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            )}
-                                        </div>
+                        {items.map((item: any, index: number) => (
+                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                {attributes.map(attr => (
+                                    <td key={attr} className="px-4 py-2">
+                                        <code className="text-xs text-gray-600 dark:text-gray-400">
+                                            {formatAttributeValue(item[attr])}
+                                        </code>
                                     </td>
-                                    <td className="px-4 py-2 w-fit">
-                                        {item._links?.self?.href && (
-                                            <button
-                                                onClick={() => handleNavigateToItem(item._links.self.href)}
-                                                className="text-blue-600 hover:underline dark:text-blue-400 bg-none border-none cursor-pointer"
-                                            >
-                                                Zobrazit
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                                ))}
+                                <td className="px-4 py-2 w-fit">
+                                    <button
+                                        onClick={() => setSelectedItemForJsonView(item)}
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors mr-3"
+                                        title="View full JSON"
+                                        aria-label="View full JSON"
+                                    >
+                                        <svg
+                                            className="w-4 h-4 inline"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                            />
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                            />
+                                        </svg>
+                                    </button>
+                                    {item._links?.self?.href && (
+                                        <button
+                                            onClick={() => handleNavigateToItem(item._links.self.href)}
+                                            className="text-blue-600 hover:underline dark:text-blue-400 bg-none border-none cursor-pointer"
+                                        >
+                                            Zobrazit
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
                         </tbody>
                     </table>
                 </div>
