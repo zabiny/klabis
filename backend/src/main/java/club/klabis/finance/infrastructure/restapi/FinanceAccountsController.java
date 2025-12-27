@@ -15,10 +15,9 @@ import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
 import club.klabis.shared.config.security.HasMemberGrant;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +28,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import static club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements.linkIfAuthorized;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @ExposesResourceFor(Account.class)
@@ -58,9 +58,10 @@ public class FinanceAccountsController {
     @GetMapping(path = "/transactions")
     @HasMemberGrant(memberId = "#memberId")
     @PageableAsQueryParam
-    public PagedModel<EntityModel<TransactionItemResponse>> getTransactions(@PathVariable("memberId") MemberId memberId) {
-        return transactionItemResponseMapper.toPagedResponse(new PageImpl<>(accountsService.getTransactionHistory(
-                memberId)));
+    public CollectionModel<EntityModel<TransactionItemResponse>> getTransactions(@PathVariable("memberId") MemberId memberId) {
+        return transactionItemResponseMapper.toCollectionModel(accountsService.getTransactionHistory(
+                        memberId), TransactionItemResponse.class)
+                .add(linkTo(methodOn(FinanceAccountsController.class).getTransactions(memberId)).withSelfRel());
     }
 
     @PutMapping(path = "/deposit")
