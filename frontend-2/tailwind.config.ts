@@ -10,64 +10,64 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                // Neutral base colors
-                black: '#0f0f0f',
-                dark: '#1a1a1a',
+                // Neutral base colors (using CSS variables for theme support)
+                black: 'var(--color-black)',
+                dark: 'var(--color-dark)',
                 surface: {
-                    DEFAULT: '#242424',
-                    base: '#1a1a1a',
-                    raised: '#242424',
+                    DEFAULT: 'var(--color-surface-raised)',
+                    base: 'var(--color-surface-base)',
+                    raised: 'var(--color-surface-raised)',
                 },
                 // Primary action color (blue)
                 primary: {
-                    DEFAULT: '#3b82f6',
-                    light: '#60a5fa',
-                    dark: '#1e40af',
+                    DEFAULT: 'var(--color-primary)',
+                    light: 'var(--color-primary-light)',
+                    dark: 'var(--color-primary-dark)',
                 },
                 // Secondary action color
                 secondary: {
-                    DEFAULT: '#6366f1',
-                    light: '#818cf8',
-                    dark: '#4f46e5',
+                    DEFAULT: 'var(--color-secondary)',
+                    light: 'var(--color-secondary-light)',
+                    dark: 'var(--color-secondary-dark)',
                 },
                 // Semantic colors
                 feedback: {
-                    success: '#10b981',
-                    warning: '#f59e0b',
-                    error: '#ef4444',
-                    info: '#06b6d4',
+                    success: 'var(--color-feedback-success)',
+                    warning: 'var(--color-feedback-warning)',
+                    error: 'var(--color-feedback-error)',
+                    info: 'var(--color-feedback-info)',
                 },
                 // Focus/highlight accent
                 accent: {
-                    DEFAULT: '#8b5cf6',
-                    light: '#a78bfa',
-                    dark: '#7c3aed',
+                    DEFAULT: 'var(--color-accent)',
+                    light: 'var(--color-accent-light)',
+                    dark: 'var(--color-accent-dark)',
                 },
                 // Text colors
                 text: {
-                    primary: '#f5f5f5',
-                    secondary: '#a0a0a0',
-                    tertiary: '#707070',
+                    primary: 'var(--color-text-primary)',
+                    secondary: 'var(--color-text-secondary)',
+                    tertiary: 'var(--color-text-tertiary)',
                 },
                 // Border colors
                 border: {
-                    DEFAULT: '#2a2a2a',
-                    light: '#3a3a3a',
-                    dark: '#1a1a1a',
+                    DEFAULT: 'var(--color-border)',
+                    light: 'var(--color-border-light)',
+                    dark: 'var(--color-border-dark)',
                 },
-                // Alert backgrounds (for dark mode)
+                // Alert backgrounds (theme-aware via CSS variables)
                 alert: {
-                    success: '#064e3b',
-                    warning: '#78350f',
-                    error: '#7f1d1d',
-                    info: '#164e63',
+                    success: 'var(--color-alert-success)',
+                    warning: 'var(--color-alert-warning)',
+                    error: 'var(--color-alert-error)',
+                    info: 'var(--color-alert-info)',
                 },
                 // Alert text colors
                 'alert-text': {
-                    success: '#d1fae5',
-                    warning: '#fef3c7',
-                    error: '#fee2e2',
-                    info: '#cffafe',
+                    success: 'var(--color-alert-text-success)',
+                    warning: 'var(--color-alert-text-warning)',
+                    error: 'var(--color-alert-text-error)',
+                    info: 'var(--color-alert-text-info)',
                 },
             },
             fontFamily: {

@@ -43,9 +43,8 @@ export const CheckboxField = forwardRef<HTMLInputElement, CheckboxFieldProps>(
                         disabled={disabled}
                         className={clsx(
                             'w-4 h-4 rounded',
-                            'border-2 border-gray-300 dark:border-gray-600',
+                            'border-2 border-border',
                             'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0',
-                            'dark:focus:ring-offset-0',
                             'disabled:opacity-50 disabled:cursor-not-allowed',
                             'cursor-pointer',
                             'accent-primary',
@@ -113,9 +112,8 @@ export const CheckboxGroup = ({
                             disabled={disabled || option.disabled}
                             className={clsx(
                                 'w-4 h-4 rounded',
-                                'border-2 border-gray-300 dark:border-gray-600',
+                                'border-2 border-border',
                                 'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0',
-                                'dark:focus:ring-offset-0',
                                 'disabled:opacity-50 disabled:cursor-not-allowed',
                                 'cursor-pointer',
                                 'accent-primary',
@@ -124,7 +122,7 @@ export const CheckboxGroup = ({
                             aria-label={option.label}
                         />
                         <span
-                            className="ml-3 text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                            className="ml-3 text-sm text-text-secondary group-hover:text-text-primary">
               {option.label}
             </span>
                     </label>

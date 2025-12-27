@@ -5,18 +5,17 @@ import type {SelectFieldProps} from './types'
 
 const selectBaseClasses = clsx(
     'w-full px-4 py-2.5 border rounded-lg font-normal',
-    'text-gray-900 dark:text-white',
-    'bg-white dark:bg-gray-700',
-    'border-gray-300 dark:border-gray-600',
-    'placeholder-gray-400 dark:placeholder-gray-500',
+    'text-text-primary',
+    'bg-surface-base',
+    'border-border',
+    'placeholder-text-tertiary',
     'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0',
-    'dark:focus:ring-offset-0',
     'disabled:opacity-50 disabled:cursor-not-allowed',
     'appearance-none',
     'transition-colors duration-200'
 )
 
-const errorSelectClasses = 'border-red-500 dark:border-red-400 focus:ring-red-500'
+const errorSelectClasses = 'border-feedback-error focus:ring-feedback-error'
 
 /**
  * SelectField component for dropdown selections
@@ -93,7 +92,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
                     {/* Custom arrow for non-disabled state */}
                     {!disabled && (
                         <div
-                            className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400 dark:text-gray-500">
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-text-tertiary">
                             <svg
                                 className="w-5 h-5"
                                 fill="none"

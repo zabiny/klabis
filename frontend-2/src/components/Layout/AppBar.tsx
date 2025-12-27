@@ -25,7 +25,7 @@ const positionMap = {
 }
 
 const colorMap = {
-    'default': 'bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700',
+    'default': 'bg-surface-raised border-b border-border',
     'primary': 'bg-primary text-white shadow-md',
 }
 

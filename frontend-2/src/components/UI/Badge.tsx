@@ -18,12 +18,12 @@ export const Badge = ({
                           className = ''
                       }: BadgeProps) => {
     const variantClass = {
-        default: 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100',
-        primary: 'bg-primary-100 dark:bg-primary-900 text-primary-900 dark:text-primary-100',
-        success: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100',
-        warning: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100',
-        error: 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100',
-        info: 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
+        default: 'bg-surface-raised text-text-primary border border-border',
+        primary: 'bg-primary/20 text-primary-light',
+        success: 'bg-feedback-success/20 text-feedback-success',
+        warning: 'bg-feedback-warning/20 text-feedback-warning',
+        error: 'bg-feedback-error/20 text-feedback-error',
+        info: 'bg-feedback-info/20 text-feedback-info'
     }[variant]
 
     const sizeClass = {

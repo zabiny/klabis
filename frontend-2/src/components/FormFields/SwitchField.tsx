@@ -37,8 +37,8 @@ export const SwitchField = ({
                         'focus-within:outline focus-within:outline-2 focus-within:outline-primary focus-within:outline-offset-2',
                         disabled && 'opacity-50 cursor-not-allowed',
                         checked
-                            ? 'bg-primary dark:bg-primary-dark'
-                            : 'bg-gray-300 dark:bg-gray-600'
+                            ? 'bg-primary'
+                            : 'bg-border'
                     )}
                     role="switch"
                     aria-checked={checked}
@@ -56,7 +56,7 @@ export const SwitchField = ({
                     {/* Toggle knob */}
                     <div
                         className={clsx(
-                            'inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-200',
+                            'inline-block h-4 w-4 transform rounded-full bg-surface-raised',
                             'transition-transform duration-300',
                             checked ? 'translate-x-6' : 'translate-x-1',
                             'shadow-md'

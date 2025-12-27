@@ -13,7 +13,17 @@ const Layout = () => {
   const {logout, getUser, isAuthenticated} = useAuth()
   const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024)
   const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
+
+  // Track screen size changes for responsive sidebar
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     const loadUserName = async () => {
@@ -44,21 +54,24 @@ const Layout = () => {
 
 
   return (
-      <div className="flex flex-col h-screen bg-black dark:bg-black">
+      <div className="flex flex-col h-screen bg-black">
         {/* Header */}
         <header
             className="fixed top-0 left-0 right-0 bg-surface-raised border-b border-border text-text-primary shadow-md z-40">
           <div className="flex items-center justify-between h-16 px-6">
             {/* Logo/Title */}
             <div className="flex items-center gap-4">
-              <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="text-text-primary hover:bg-surface-base p-2 rounded-md transition-colors duration-base"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-              </button>
+              {/* Toggle button - hide on lg screens */}
+              {!isLargeScreen && (
+                  <button
+                      onClick={() => setSidebarOpen(!sidebarOpen)}
+                      className="text-text-primary hover:bg-surface-base p-2 rounded-md transition-colors duration-base"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                  </button>
+              )}
               <h1 className="text-lg font-semibold font-display"><NavLink to={"/"}
                                                                           className="text-text-primary hover:text-primary transition-colors">Klabis
                 - Členská sekce</NavLink></h1>
@@ -87,18 +100,19 @@ const Layout = () => {
           </div>
         </header>
 
-        {/* Sidebar overlay */}
-        {sidebarOpen && (
+        {/* Sidebar overlay - only show on small screens */}
+        {sidebarOpen && !isLargeScreen && (
             <div
                 className="fixed inset-0 bg-black bg-opacity-60 z-20 transition-opacity duration-base"
                 onClick={() => setSidebarOpen(false)}
+                data-testid="sidebar-overlay"
             />
         )}
 
-        {/* Sidebar */}
+        {/* Sidebar - always visible on lg screens, drawer on small screens */}
         <aside
             className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-surface-base border-r border-border shadow-lg transform transition-transform duration-300 ease-in-out z-30 ${
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                isLargeScreen ? 'translate-x-0' : (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
             }`}
         >
           <nav className="flex flex-col p-4 gap-2">
@@ -113,7 +127,12 @@ const Layout = () => {
                     <NavLink
                         key={item.rel}
                         to={item.href}
-                        onClick={() => setSidebarOpen(false)}
+                        onClick={() => {
+                          // Only close sidebar on small screens when item is clicked
+                          if (!isLargeScreen) {
+                            setSidebarOpen(false)
+                          }
+                        }}
                         className={({isActive}) => `px-4 py-2 text-text-secondary font-medium hover:text-text-primary hover:bg-surface-raised rounded-md transition-all duration-base border-l-4 ${isActive ? 'border-l-primary bg-surface-raised text-primary' : 'border-l-transparent'}`}
                     >
                       {item.label}
@@ -125,8 +144,8 @@ const Layout = () => {
           </nav>
         </aside>
 
-        {/* Main content */}
-        <main className="flex-1 pt-20 px-6 py-6 overflow-auto">
+        {/* Main content - add left padding on lg screens for sidebar with extra spacing */}
+        <main className="flex-1 pt-20 px-6 py-6 overflow-auto lg:pl-72">
           <HalFormsPageLayout>
           <Outlet/>
           </HalFormsPageLayout>
