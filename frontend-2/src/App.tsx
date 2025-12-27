@@ -13,6 +13,7 @@ import CalendarPage from "./pages/CalendarPage.tsx";
 import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 import {MembersPage} from "./pages/MembersPage.tsx";
 import {EventsPage} from "./pages/EventsPage.tsx";
+import {MemberFinancePage} from "./pages/FinancesPage.tsx";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -45,7 +46,8 @@ function App() {
                             <Route path="/sandplace" element={<SandplacePage/>}/>
                             <Route path="/calendar-items" element={<CalendarPage/>}/>
                             <Route path="/members" element={<MembersPage/>}/>
-                            <Route path="/members/:id" element={<MemberDetailsPage/>}/>
+                            <Route path="/members/:memberId" element={<MemberDetailsPage/>}/>
+                            <Route path="/member/:memberId/finance-account" element={<MemberFinancePage/>}/>
                             <Route path="/events" element={<EventsPage/>}/>
                             <Route path="*" element={<GenericHalPage/>}/>
                         </Route>
