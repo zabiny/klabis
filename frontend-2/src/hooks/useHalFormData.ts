@@ -1,6 +1,13 @@
 /**
  * Custom hook for fetching HAL Forms data from target endpoints
- * Automatically fetches data from the template's target if it differs from the current resource
+ *
+ * Automatically fetches data from the template's target if it differs from the current resource.
+ * Uses React Query for caching and request deduplication. Returns a custom interface for
+ * convenient form-specific state management.
+ *
+ * Query Key Convention: ['hal-form-data', targetUrl]
+ * Cache Time: 1 minute (forms often have related data that changes together)
+ * Stale Time: 0 (always fetch fresh form data on mount)
  */
 
 import {useMemo} from 'react';
@@ -11,6 +18,7 @@ import {normalizeApiPath, shouldFetchTargetData} from '../utils/halFormsUtils';
 
 /**
  * Check if error is a fetch error with specific HTTP status
+ * @internal
  */
 function isFetchErrorWithStatus(error: unknown, statuses: number[]): boolean {
     if (error && typeof error === 'object' && 'responseStatus' in error) {
@@ -20,20 +28,61 @@ function isFetchErrorWithStatus(error: unknown, statuses: number[]): boolean {
     return false;
 }
 
+/**
+ * Result object returned by useHalFormData hook
+ */
 export interface UseHalFormDataReturn {
+    /**
+     * Form data to pre-fill form fields. Null while loading or if fetch disabled.
+     * Returns current resource data if not fetching from target.
+     */
     formData: Record<string, unknown> | null;
+
+    /**
+     * True while fetching target form data (only if shouldFetch is true)
+     */
     isLoadingTargetData: boolean;
+
+    /**
+     * Error from target fetch, if applicable (only if shouldFetch is true)
+     */
     targetFetchError: Error | null;
+
+    /**
+     * Manual refetch function for target data
+     */
     refetchTargetData: () => void;
 }
 
 /**
  * Hook to manage form data fetching from target endpoints
  *
- * @param selectedTemplate - The currently selected HAL Forms template
- * @param currentResourceData - The current resource data
- * @param currentPathname - The current resource pathname
- * @returns Form data, loading state, error state, and refetch function
+ * When a form template's target differs from the current resource, this hook will fetch
+ * data from that target using React Query. If the target is the same as the current resource,
+ * it returns the current resource data immediately.
+ *
+ * Handles common HTTP errors (404, 405) by returning empty data, allowing forms to display
+ * with blank fields. Other errors are propagated through the error state.
+ *
+ * @param selectedTemplate - The currently selected HAL Forms template (null if no template selected)
+ * @param currentResourceData - The current resource data to use as fallback
+ * @param currentPathname - The current resource pathname to compare with template target
+ * @returns Form state with data, loading flag, error, and refetch function
+ *
+ * @example
+ * // When form template target differs from current resource
+ * const { formData, isLoadingTargetData, targetFetchError } = useHalFormData(
+ *     template,
+ *     resourceData,
+ *     '/api/members/123'
+ * );
+ *
+ * if (isLoadingTargetData) return <Spinner />;
+ * if (targetFetchError) return <Alert variant="error">{targetFetchError.message}</Alert>;
+ *
+ * return <Form initialValues={formData} />;
+ *
+ * @throws Does not throw. Errors are returned in targetFetchError field.
  */
 export function useHalFormData(
     selectedTemplate: HalFormsTemplate | null,
@@ -61,6 +110,10 @@ export function useHalFormData(
     }, [selectedTemplate, shouldFetch]);
 
     // Fetch data from target using React Query
+    // Query Key Convention: [domain, ...identifiers]
+    // Stale Time: 0 - Always fetch fresh form data on mount
+    // Cache Time (gcTime): 1 minute - Forms often have related data that changes together
+    // Retry: false - Don't auto-retry; let the form display with empty values on 404/405
     const {
         data: targetData,
         isLoading,
@@ -73,18 +126,18 @@ export function useHalFormData(
                 return await fetchResource(targetUrl!);
             } catch (err) {
                 // If API doesn't define GET endpoint (HTTP 404 or 405), return empty data
-                // This allows form to display with empty initial values
+                // This allows form to display with empty initial values on endpoint not found
                 if (isFetchErrorWithStatus(err, [404, 405])) {
                     return {};
                 }
-                // Re-throw other errors
+                // Re-throw other errors to be handled in error state
                 throw err;
             }
         },
         enabled: !!targetUrl,
-        staleTime: 0, // Always fetch fresh data
-        gcTime: 60000, // Clean up cache after 1 minute
-        retry: false, // Don't auto-retry on error
+        staleTime: 0,
+        gcTime: 60000,
+        retry: false,
     });
 
     // Determine which data to return
