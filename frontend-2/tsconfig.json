@@ -1,4 +1,8 @@
 {
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "ES2022"
+  },
   "files": [],
   "references": [
     {

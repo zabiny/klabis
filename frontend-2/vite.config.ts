@@ -5,6 +5,10 @@ import devtoolsJson from 'vite-plugin-devtools-json';
 
 // https://vite.dev/config/
 export default defineConfig({
+    define: {
+        // Make __DEV__ available at runtime for API base URL detection
+        'globalThis.__DEV__': JSON.stringify(process.env.NODE_ENV !== 'production'),
+    },
     plugins: [
         react(),
         devtoolsJson()
