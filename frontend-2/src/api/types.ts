@@ -39,9 +39,11 @@ export interface HalEmbeddedResources {
     [key: string]: unknown | unknown[];
 }
 
+export type HalResourceLinks = Link | Array<Link>;
+
 export interface HalResponse {
     _links?: {
-        [rel: string]: Link | Array<Link>;
+        [rel: string]: HalResourceLinks;
     }
     _embedded?: HalEmbeddedResources;
     _templates?: {

@@ -1,5 +1,5 @@
 import type {Navigation} from "../../hooks/useNavigation";
-import type {HalResponse, NavigationTarget} from "../../api";
+import type {HalResourceLinks, HalResponse, NavigationTarget} from "../../api";
 import {isTemplateTarget} from "../../api";
 import type {HalFormFieldFactory} from "../HalFormsForm";
 import {isLink} from "../../api/klabisJsonUtils";
@@ -42,8 +42,10 @@ export async function fetchResource(url: string | URL) {
     }
 }
 
-export function toHref(source: NavigationTarget): string {
-    if (isTemplateTarget(source)) {
+export function toHref(source: NavigationTarget | HalResourceLinks): string {
+    if (Array.isArray(source)) {
+        return toHref(source[0])
+    } else if (isTemplateTarget(source)) {
         if (!source.target) {
             throw new Error("Chybi hodnota target attributu v TemplateTarget instanci (" + JSON.stringify(source) + ")")
         }
@@ -60,7 +62,7 @@ export function toHref(source: NavigationTarget): string {
     }
 }
 
-export function toURLPath(item: NavigationTarget): string {
+export function toURLPath(item: NavigationTarget | HalResourceLinks): string {
     const itemHref = toHref(item);
     if (itemHref.startsWith("/")) {
         return itemHref;
