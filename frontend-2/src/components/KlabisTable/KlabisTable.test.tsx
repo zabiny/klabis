@@ -314,5 +314,39 @@ describe('KlabisTable', () => {
             const emailElements = screen.getAllByText(/example.com/)
             expect(emailElements.some((el) => el.tagName === 'STRONG')).toBe(true)
         })
+
+        it('handles errors in custom dataRender gracefully', () => {
+            const consoleError = jest.spyOn(console, 'error').mockImplementation()
+
+            render(
+                <KlabisTable data={mockStaticData} page={mockPageData}>
+                    <TableCell column="name">Name</TableCell>
+                    <TableCell
+                        column="email"
+                        dataRender={() => {
+                            throw new Error('Render failed')
+                        }}
+                    >
+                        Email
+                    </TableCell>
+                </KlabisTable>
+            )
+
+            // Should render error state instead of crashing
+            const errorElements = screen.getAllByText('Error')
+            expect(errorElements.length).toBeGreaterThanOrEqual(2) // one per row
+
+            // Verify error was logged
+            expect(consoleError).toHaveBeenCalledWith(
+                expect.stringContaining('Error rendering cell for column "email"'),
+                expect.any(Error)
+            )
+
+            // Verify table is still rendered (not crashed)
+            expect(screen.getByText('Alice')).toBeInTheDocument()
+            expect(screen.getByText('Bob')).toBeInTheDocument()
+
+            consoleError.mockRestore()
+        })
     })
 })

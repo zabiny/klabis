@@ -3,10 +3,11 @@
  * Uses KlabisTable to render data with automatic column definitions
  */
 
-import {type ReactElement, useMemo} from 'react'
+import {type ReactElement} from 'react'
 import {useHalRoute} from '../../contexts/HalRouteContext'
-import {KlabisTable} from '../KlabisTable'
+import {type FetchTableDataCallback, KlabisTable} from '../KlabisTable'
 import {type SortDirection} from '../../api'
+import {fetchResource} from "../HalNavigator/hooks.ts";
 
 /**
  * Props for HalEmbeddedTable component
@@ -60,21 +61,34 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
     const {resourceData} = useHalRoute()
 
-    // Extract collection data and page info from HAL response
-    const collectionData = useMemo(
-        () => (resourceData?._embedded?.[collectionName] || []) as T[],
-        [resourceData, collectionName]
-    )
+    const fetchTableData: FetchTableDataCallback<T> = async (apiParams) => {
+        const selfLink = resourceData?._links?.self
+        if (!selfLink) {
+            throw new Error('Self link not found in resource data - cannot fetch table data')
+        }
 
-    const pageData = useMemo(
-        () => resourceData?.page as any,
-        [resourceData]
-    )
+        const href = Array.isArray(selfLink) ? selfLink[0]?.href : selfLink?.href
+        if (!href) {
+            throw new Error('Self link href is empty')
+        }
+
+        const targetUrl = new URL(href)
+        targetUrl.searchParams.set('page', `${apiParams.page}`)
+        targetUrl.searchParams.set('size', `${apiParams.size}`)
+        targetUrl.searchParams.delete('sort');
+        apiParams.sort.forEach((str) => targetUrl.searchParams.append('sort', str))
+
+        const response = await fetchResource(targetUrl)
+        return {
+            // get data from given embedded relation name (should be same as initial data were)
+            data: (response?._embedded?.[collectionName] as T[]) || [],
+            page: response.page,
+        }
+    }
 
     return (
         <KlabisTable<T>
-            data={collectionData}
-            page={pageData}
+            fetchData={fetchTableData}
             onRowClick={onRowClick}
             defaultOrderBy={defaultOrderBy}
             defaultOrderDirection={defaultOrderDirection}
