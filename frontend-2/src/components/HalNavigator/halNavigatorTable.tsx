@@ -1,31 +1,36 @@
-import {type FetchTableDataCallback, KlabisTable, type KlabisTableProps} from "../KlabisTable";
-import {type ReactNode} from "react";
-import {fetchResource, toHref, useHalExplorerNavigation} from "./hooks";
+import {type FetchTableDataCallback, KlabisTable} from '../KlabisTable'
+import {type ReactNode} from 'react'
+import {fetchResource, toHref, useHalExplorerNavigation} from './hooks'
+
+interface HalNavigatorTableProps<T extends Record<string, unknown>> {
+    embeddedName: string
+    children: React.ReactNode
+    onRowClick?: (item: T) => void
+    defaultOrderBy?: string
+    defaultOrderDirection?: 'asc' | 'desc'
+    emptyMessage?: string
+    defaultRowsPerPage?: number
+}
 
 export const HalNavigatorTable = <T extends Record<string, unknown>>({
                                                                          embeddedName,
                                                                          ...tableProps
-                                                                     }: Omit<KlabisTableProps<T> & {
-    embeddedName: string
-}, "fetchData">): ReactNode => {
+                                                                     }: HalNavigatorTableProps<T>): ReactNode => {
+    const navigation = useHalExplorerNavigation()
 
-    const navigation = useHalExplorerNavigation();
+    const fetchTableData: FetchTableDataCallback<T> = async (apiParams) => {
+        const targetUrl = new URL(toHref(navigation.current))
+        targetUrl.searchParams.append('page', `${apiParams.page}`)
+        targetUrl.searchParams.append('size', `${apiParams.size}`)
+        apiParams.sort.forEach((str) => targetUrl.searchParams.append('sort', str))
 
-    function tableDataFetcherFactory<T>(relName: string): FetchTableDataCallback<T> {
-        return async (apiParams) => {
-            const targetUrl = new URL(toHref(navigation.current));
-            targetUrl.searchParams.append('page', `${apiParams.page}`)
-            targetUrl.searchParams.append('size', `${apiParams.size}`)
-            apiParams.sort.forEach(str => targetUrl.searchParams.append('sort', str));
-
-            const response = await fetchResource(targetUrl);
-            return {
-                // get data from given embedded relation name (should be same as initial data were)
-                data: response?._embedded?.[relName] as T[] || [],
-                page: response.page
-            };
+        const response = await fetchResource(targetUrl)
+        return {
+            // get data from given embedded relation name (should be same as initial data were)
+            data: (response?._embedded?.[embeddedName] as T[]) || [],
+            page: response.page,
         }
     }
 
-    return <KlabisTable fetchData={tableDataFetcherFactory(embeddedName)} {...tableProps}/>
+    return <KlabisTable fetchData={fetchTableData} {...tableProps} />
 }

@@ -3,35 +3,32 @@
  * Uses KlabisTable to render data with automatic column definitions
  */
 
-import {type ReactElement, useMemo} from 'react';
-import {useHalRoute} from '../../contexts/HalRouteContext';
-import {KlabisTable, type TableData} from '../KlabisTable';
-import {type SortDirection} from '../../api';
+import {type ReactElement, useMemo} from 'react'
+import {useHalRoute} from '../../contexts/HalRouteContext'
+import {KlabisTable} from '../KlabisTable'
+import {type SortDirection} from '../../api'
 
 /**
  * Props for HalEmbeddedTable component
  */
 export interface HalEmbeddedTableProps<T = any> {
     /** Name of the collection in _embedded object */
-    collectionName: string;
+    collectionName: string
 
     /** Callback when a row is clicked */
-    onRowClick?: (item: T) => void;
+    onRowClick?: (item: T) => void
 
     /** Default column to sort by */
-    defaultOrderBy?: string;
+    defaultOrderBy?: string
 
     /** Default sort direction (asc or desc) */
-    defaultOrderDirection?: SortDirection;
-
-    /** Number of rows per page (default: 10) */
-    defaultRowsPerPage?: number;
+    defaultOrderDirection?: SortDirection
 
     /** Message to display when no data is available */
-    emptyMessage?: string;
+    emptyMessage?: string
 
     /** Column definitions (TableCell components) */
-    children: React.ReactNode;
+    children: React.ReactNode
 }
 
 /**
@@ -58,34 +55,32 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
                                                                               onRowClick,
                                                                               defaultOrderBy,
                                                                               defaultOrderDirection = 'asc',
-                                                                              defaultRowsPerPage = 10,
                                                                               emptyMessage = 'Žádná data',
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
-    const {resourceData} = useHalRoute();
+    const {resourceData} = useHalRoute()
 
-    // Memoize table data to prevent unnecessary re-renders
-    const tableData: TableData<T> = useMemo(() => {
-        const collectionData = resourceData?._embedded?.[collectionName];
-        return {
-            data: (collectionData || []) as T[],
-            page: resourceData?.page as any,
-        };
-    }, [resourceData, collectionName]);
+    // Extract collection data and page info from HAL response
+    const collectionData = useMemo(
+        () => (resourceData?._embedded?.[collectionName] || []) as T[],
+        [resourceData, collectionName]
+    )
 
-    // Fetch function that returns the memoized data
-    const handleFetchData = async () => tableData;
+    const pageData = useMemo(
+        () => resourceData?.page as any,
+        [resourceData]
+    )
 
     return (
         <KlabisTable<T>
-            fetchData={handleFetchData}
+            data={collectionData}
+            page={pageData}
             onRowClick={onRowClick}
             defaultOrderBy={defaultOrderBy}
             defaultOrderDirection={defaultOrderDirection}
-            defaultRowsPerPage={defaultRowsPerPage}
             emptyMessage={emptyMessage}
         >
             {children}
         </KlabisTable>
-    );
+    )
 }

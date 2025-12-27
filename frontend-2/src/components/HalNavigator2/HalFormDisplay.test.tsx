@@ -14,7 +14,7 @@ jest.mock('../HalNavigator/hooks.ts', () => ({
 }));
 
 jest.mock('../../api/hateoas.ts', () => ({
-    ...jest.requireActual('../api/hateoas'),
+    ...jest.requireActual('../../api/hateoas'),
     submitHalFormsData: jest.fn(),
 }));
 
