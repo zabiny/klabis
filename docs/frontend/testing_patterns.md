@@ -265,21 +265,20 @@ approach:
 import {render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import React from 'react';
 import {MemberFinancePage} from './FinancesPage';
+import {HalRouteProvider} from '../contexts/HalRouteContext';
 
-// 1. Mock ONLY the API boundary
-jest.mock('../components/HalNavigator/hooks', () => ({
-    fetchResource: jest.fn(),
-}));
-
-// 2. Mock context hook for controlling data flow
-jest.mock('../contexts/HalRouteContext', () => ({
-    ...jest.requireActual('../contexts/HalRouteContext'),
-    useHalRoute: jest.fn(),
-}));
+// 1. Mock ONLY the API boundary - preserve other hook exports
+jest.mock('../components/HalNavigator/hooks', () => {
+    const actualModule = jest.requireActual('../components/HalNavigator/hooks');
+    return {
+        ...actualModule,  // Preserve toHref, toURLPath, etc.
+        fetchResource: jest.fn(),  // Only mock the API call
+    };
+});
 
 const {fetchResource} = require('../components/HalNavigator/hooks');
-const {useHalRoute} = require('../contexts/HalRouteContext');
 
 describe('MemberFinancePage', () => {
     let queryClient: QueryClient;
@@ -293,386 +292,403 @@ describe('MemberFinancePage', () => {
         jest.clearAllMocks();
     });
 
-    const renderPage = (ui: React.ReactElement) => {
+    // For integration tests with real HalRouteProvider (primary pattern)
+    const renderPage = (ui: React.ReactElement, initialRoute = '/finances/123') => {
         return render(
             <QueryClientProvider client = {queryClient} >
-                <MemoryRouter>{ui} < /MemoryRouter>
+            <MemoryRouter initialEntries = {[initialRoute]} >
+                <HalRouteProvider>
+                    {ui}
+                < /HalRouteProvider>
+                < /MemoryRouter>
                 < /QueryClientProvider>
         );
     };
 });
 ```
 
-**Key difference from unit tests**:
+**Key differences from unit tests**:
 
 - Do NOT mock `HalEmbeddedTable`, `HalFormButton`, or other child components
 - Let real child components render so you test integration with them
+- Use real `HalRouteProvider` wrapped in `MemoryRouter` for integration tests
 - Mocking only the API boundary (`fetchResource`) keeps tests fast and isolated
+- **Important**: When mocking modules with multiple exports, preserve other exports using `...actualModule` to avoid
+  breaking dependencies
 
 ### Testing Data Loading Flow
 
 Test that the page correctly fetches and displays data using real child components:
 
 ```typescript
-describe('Data Loading', () => {
-    it('should display loading skeleton while fetching data', () => {
-        useHalRoute.mockReturnValue({
-            resourceData: null,
-            isLoading: true,
-            error: null,
-            navigateToResource: jest.fn(),
-        });
-
-        renderPage(<MemberFinancePage / >);
-        // Skeleton comes from real UI component behavior
-        expect(screen.getByTestId('skeleton')).toBeInTheDocument();
-    });
-
-    it('should fetch finance data and display it with real child components', async () => {
-        const mockFinanceData = {
+describe('Data Loading and Display', () => {
+    beforeEach(() => {
+        // Mock API to return finance data when HalRouteProvider fetches
+        fetchResource.mockResolvedValue({
             balance: 1500,
             _links: {
                 self: {href: '/api/finances/123'},
                 owner: {href: '/api/members/456'},
                 transactions: {href: '/api/finances/123/transactions'},
             },
-        };
-
-        // Mock API call that HalRouteProvider would make
-        const {fetchResource} = require('../components/HalNavigator/hooks');
-        fetchResource.mockResolvedValueOnce(mockFinanceData);
-
-        useHalRoute.mockReturnValue({
-            resourceData: mockFinanceData,
-            isLoading: false,
-            error: null,
-            navigateToResource: jest.fn(),
+            _templates: {
+                // Include HAL Forms templates for form buttons
+                deposit: {
+                    title: 'Deposit',
+                    method: 'POST',
+                    contentType: 'application/x-www-form-urlencoded',
+                    properties: [{name: 'amount', prompt: 'Amount', required: true}],
+                    target: '/api/finances/123/deposit',
+                },
+            },
         });
+    });
 
+    it('should render page heading and content when data loads', async () => {
         renderPage(<MemberFinancePage / >);
 
-        // Verify page content is rendered (tests integration with real children)
-        expect(screen.getByText('Finance')).toBeInTheDocument();
-        expect(screen.getByText(/1500/)).toBeInTheDocument();
-        // Real child components are rendered and tested
-        expect(screen.getByRole('table')).toBeInTheDocument(); // From real HalEmbeddedTable
+        // Use semantic queries instead of data-testid - tests real component behavior
+        await waitFor(() => {
+            expect(screen.getByRole('heading', {name: /Finance/i})).toBeInTheDocument();
+            expect(screen.getByText(/1500/)).toBeInTheDocument();
+        });
+    });
+
+    it('should render real child components with fetched data', async () => {
+        renderPage(<MemberFinancePage / >);
+
+        // Wait for async data loading from real HalRouteProvider
+        await waitFor(() => {
+            // Real HalEmbeddedTable renders with semantic role
+            expect(screen.getByRole('table')).toBeInTheDocument();
+            // Real HalFormButton renders with semantic role
+            expect(screen.getByRole('button', {name: /deposit/i})).toBeInTheDocument();
+        });
     });
 });
 ```
 
+**Important practical details**:
+
+- **Mock data must be complete**: Include `_templates` for HAL Forms if the page renders form buttons
+- **Use async/await**: Real `HalRouteProvider` fetches asynchronously, so use `await waitFor()`
+- **Use semantic queries**: Queries like `getByRole()` and `getByText()` work with real components
+- **Set up mocks in beforeEach**: Simpler than mocking useHalRoute for each test
+- **Don't mock useHalRoute for integration tests**: Let the real provider manage data flow
+
 ### Testing Subresource Loading
 
-When pages use `HalSubresourceProvider` for nested data, test with real subresource components:
+When pages use `HalSubresourceProvider` for nested data, test with real subresource providers and components:
 
 ```typescript
-describe('Subresource Loading', () => {
-    it('should load related member data alongside finance data', async () => {
-        const mockFinanceData = {
-            balance: 1500,
-            _links: {
-                self: {href: '/api/finances/123'},
-                owner: {href: '/api/members/456'},
-                transactions: {href: '/api/finances/123/transactions'},
-            },
-        };
-
-        // Mock fetchResource for parent and subresources
-        const {fetchResource} = require('../components/HalNavigator/hooks');
+describe('Subresource Integration', () => {
+    it('should load and display finance data through real child components', async () => {
+        // Mock fetchResource for all data loads (parent + subresources)
         fetchResource
-            .mockResolvedValueOnce(mockFinanceData)     // Parent finance resource
-            .mockResolvedValueOnce({                     // Owner subresource
+            .mockResolvedValueOnce({
+                // Parent finance resource
+                balance: 1500,
+                _links: {
+                    self: {href: '/api/finances/123'},
+                    owner: {href: '/api/members/456'},
+                    transactions: {href: '/api/finances/123/transactions'},
+                },
+                _templates: {
+                    deposit: {
+                        title: 'Deposit',
+                        method: 'POST',
+                        contentType: 'application/x-www-form-urlencoded',
+                        properties: [{name: 'amount', prompt: 'Amount', required: true}],
+                        target: '/api/finances/123/deposit',
+                    },
+                },
+            })
+            .mockResolvedValueOnce({
+                // Owner subresource - fetched by HalSubresourceProvider
                 firstName: 'Jan',
                 lastName: 'Novák',
             })
-            .mockResolvedValueOnce({                     // Transactions subresource
+            .mockResolvedValueOnce({
+                // Transactions subresource - fetched by HalSubresourceProvider
                 _embedded: {
                     transactionItemResponseList: [
-                        {id: 1, date: '2025-12-01', amount: 100},
+                        {id: 1, date: '2025-12-01', amount: 100, _links: {self: {href: '/api/transactions/1'}}},
                     ],
                 },
             });
 
-        useHalRoute.mockReturnValue({
-            resourceData: mockFinanceData,
-            isLoading: false,
-            error: null,
-            navigateToResource: jest.fn(),
-        });
-
         renderPage(<MemberFinancePage / >);
 
-        // Verify parent data rendered
-        expect(screen.getByText('Finance')).toBeInTheDocument();
-
-        // Verify subresource data is displayed through real child components
+        // Wait for all async subresource loads via real HalSubresourceProvider
         await waitFor(() => {
-            expect(screen.getByText('Jan Novák')).toBeInTheDocument(); // From real MemberName component
-            expect(screen.getByRole('table')).toBeInTheDocument();      // From real HalEmbeddedTable
+            // Parent data displays
+            expect(screen.getByText('Finance')).toBeInTheDocument();
+            expect(screen.getByText(/1500/)).toBeInTheDocument();
+
+            // Subresource data displays through real child components
+            expect(screen.getByText('Jan Novák')).toBeInTheDocument(); // Real MemberName component
+            expect(screen.getByRole('table')).toBeInTheDocument();      // Real HalEmbeddedTable component
+            expect(screen.getByRole('button', {name: /deposit/i})).toBeInTheDocument();
         });
     });
 });
 ```
+
+**Key points for subresource testing**:
+
+- Use real `HalSubresourceProvider` (it's imported in your component)
+- Mock `fetchResource` to return data in the order subresources are fetched
+- Include necessary data structures (`_embedded` for lists, `_links` for navigation)
+- Include `_templates` for HAL Forms rendered in child components
+- All data loads happen asynchronously, so use `await waitFor()`
 
 ### Testing Error States
 
-Test how pages handle API failures:
+Test how pages handle API failures by mocking fetchResource to reject:
 
 ```typescript
 describe('Error Handling', () => {
-    it('should show error message when API call fails', () => {
-        const error = new Error('HTTP 500: Internal Server Error');
-        useHalRoute.mockReturnValue({
-            resourceData: null,
-            isLoading: false,
-            error: error,
-            navigateToResource: jest.fn(),
-        });
+    it('should handle API fetch errors gracefully', async () => {
+        // Mock fetchResource to reject (simulates API failure)
+        fetchResource.mockRejectedValueOnce(new Error('HTTP 500: Internal Server Error'));
 
         renderPage(<MemberFinancePage / >);
-        expect(screen.getByTestId('alert-error')).toBeInTheDocument();
-        expect(screen.getByText(/Internal Server Error/)).toBeInTheDocument();
+
+        // Page should render without crashing even if API fails
+        await waitFor(() => {
+            expect(screen.getByText('Finance')).toBeInTheDocument();
+            // Default/safe content renders when API fails
+        });
     });
 
-    it('should show NotFound when resource does not exist', () => {
-        const error = new Error('HTTP 404: Not Found');
-        useHalRoute.mockReturnValue({
-            resourceData: null,
-            isLoading: false,
-            error: error,
-            pathname: '/api/finances/999',
-        });
+    it('should display null safety defaults when resource is null', () => {
+        // Mock fetchResource to return null (resource not found)
+        fetchResource.mockResolvedValueOnce(null);
 
         renderPage(<MemberFinancePage / >);
-        expect(screen.getByTestId('not-found-page')).toBeInTheDocument();
+
+        // Page displays with safe defaults
+        expect(screen.getByText('Finance')).toBeInTheDocument();
+        expect(screen.getByText('- Kč')).toBeInTheDocument(); // Default balance display
     });
 });
 ```
+
+**Error handling notes**:
+
+- Real `HalRouteProvider` catches fetch errors automatically
+- No need to mock useHalRoute for error testing with real providers
+- Test that the page gracefully displays default content on errors
+- Verify the component doesn't crash when API fails
 
 ### Testing Navigation and User Interactions
 
 Test that page components correctly handle user actions through real child components:
 
 ```typescript
-describe('Navigation', () => {
-    it('should navigate when table row is clicked on real table', async () => {
-        const mockNavigateToResource = jest.fn();
-        const mockFinanceData = {
+describe('Navigation Callbacks', () => {
+    beforeEach(() => {
+        // Mock finance data with transactions
+        fetchResource.mockResolvedValue({
             balance: 1500,
             _links: {
                 self: {href: '/api/finances/123'},
                 transactions: {href: '/api/finances/123/transactions'},
             },
-        };
-
-        const mockTransactionData = {
-            _embedded: {
-                transactionItemResponseList: [
-                    {
-                        id: 1,
-                        date: '2025-12-01',
-                        amount: 100,
-                        _links: {
-                            self: {href: '/api/transactions/1'},
-                        },
-                    },
-                ],
+            _templates: {
+                deposit: {
+                    title: 'Deposit',
+                    method: 'POST',
+                    contentType: 'application/x-www-form-urlencoded',
+                    properties: [{name: 'amount', prompt: 'Amount', required: true}],
+                    target: '/api/finances/123/deposit',
+                },
             },
-        };
-
-        const {fetchResource} = require('../components/HalNavigator/hooks');
-        fetchResource.mockResolvedValueOnce(mockTransactionData);
-
-        useHalRoute.mockReturnValue({
-            resourceData: mockFinanceData,
-            isLoading: false,
-            error: null,
-            navigateToResource: mockNavigateToResource,
         });
+    });
 
-        const {user} = renderPage(<MemberFinancePage / >);
+    it('should render real table with navigation support', async () => {
+        renderPage(<MemberFinancePage / >);
 
-        // Real table renders transaction row
+        // Real HalEmbeddedTable renders with semantic role
         await waitFor(() => {
             expect(screen.getByRole('table')).toBeInTheDocument();
         });
-
-        // User clicks real table row
-        const row = screen.getByRole('row', {name: /2025-12-01/});
-        await user.click(row);
-
-        // Verify navigation was called with real transaction data
-        expect(mockNavigateToResource).toHaveBeenCalledWith(
-            expect.objectContaining({id: 1})
-        );
     });
 
-    it('should pass context correctly to real child components', async () => {
-        const mockFinanceData = {
-            balance: 1500,
-            _links: {
-                self: {href: '/api/finances/123'},
-                transactions: {href: '/api/finances/123/transactions'},
-            },
-        };
-
-        useHalRoute.mockReturnValue({
-            resourceData: mockFinanceData,
-            isLoading: false,
-            error: null,
-            navigateToResource: jest.fn(),
-        });
-
+    it('should render real form buttons for HAL Forms actions', async () => {
         renderPage(<MemberFinancePage / >);
 
-        // Verify real child component is rendered
-        expect(screen.getByRole('table')).toBeInTheDocument();
+        // HAL Forms buttons render through real HalFormButton component
+        await waitFor(() => {
+            expect(screen.getByRole('button', {name: /deposit/i})).toBeInTheDocument();
+        });
     });
 });
 ```
 
+**Navigation testing notes**:
+
+- Real `HalEmbeddedTable` provides navigation through row click handlers
+- Don't mock navigation function for integration tests—test that UI renders correctly
+- HAL Forms buttons (like "deposit") render only when `_templates` are present in mock data
+- User interactions happen through real child components with semantic roles
+
 ### Testing Null Safety
 
-Pages must handle null data gracefully:
+Pages must handle null data gracefully with real providers:
 
 ```typescript
 describe('Null Safety', () => {
-    it('should not crash when parent resource is null', () => {
-        useHalRoute.mockReturnValue({
-            resourceData: null,
-            isLoading: false,
-            error: null,
-            navigateToResource: jest.fn(),
-        });
+    it('should render with safe defaults when resource is null', () => {
+        // Mock fetchResource to return null (resource not found)
+        fetchResource.mockResolvedValueOnce(null);
 
-        expect(() => {
-            renderPage(<MemberFinancePage / >);
-        }).not.toThrow();
+        renderPage(<MemberFinancePage / >);
 
-        // Page should still render with safe defaults
+        // Page should still render with safe defaults, not crash
         expect(screen.getByText('Finance')).toBeInTheDocument();
         expect(screen.getByText('- Kč')).toBeInTheDocument(); // Default for missing balance
     });
 
-    it('should handle missing optional properties', () => {
-        useHalRoute.mockReturnValue({
-            resourceData: {}, // Empty object
-            isLoading: false,
-            error: null,
-            navigateToResource: jest.fn(),
+    it('should handle missing optional properties gracefully', () => {
+        // Mock with minimal data
+        fetchResource.mockResolvedValueOnce({
+            _links: {
+                self: {href: '/api/finances/123'},
+            },
         });
 
         expect(() => {
             renderPage(<MemberFinancePage / >);
         }).not.toThrow();
+
+        // Page renders with safe defaults
+        expect(screen.getByText('Finance')).toBeInTheDocument();
+    });
+
+    it('should not crash when subresources fail to load', () => {
+        // Parent loads successfully
+        fetchResource.mockResolvedValueOnce({
+            balance: 1500,
+            _links: {
+                self: {href: '/api/finances/123'},
+                owner: {href: '/api/members/456'},
+                transactions: {href: '/api/finances/123/transactions'},
+            },
+        });
+
+        // Subresource fetch fails
+        fetchResource.mockRejectedValueOnce(new Error('Subresource not found'));
+
+        expect(() => {
+            renderPage(<MemberFinancePage / >);
+        }).not.toThrow();
+
+        // Parent data still displays
+        expect(screen.getByText('Finance')).toBeInTheDocument();
     });
 });
 ```
 
+**Null safety testing notes**:
+
+- Use real `HalRouteProvider`—it handles errors and null data automatically
+- No need to mock useHalRoute for null/error scenarios
+- Test that pages display gracefully with safe defaults
+- Verify components don't crash when data is missing
+
 ### Real-World Example: MemberFinancePage
 
-Full test example from `FinancesPage.test.tsx` using real child components:
+Full test example from `FinancesPage.test.tsx` using real child components and `HalRouteProvider`:
 
 ```typescript
-const mockFinanceData = mockFinanceResource({
-    balance: 1500,
-    _links: {
-        self: {href: '/api/finances/123'},
-        owner: {href: '/api/members/456'},
-        transactions: {href: '/api/finances/123/transactions'},
-    },
-});
-
 describe('MemberFinancePage', () => {
-    // No mocking of child components - test with real HalSubresourceProvider and child components
+    let queryClient: QueryClient;
 
-    it('should load and display owner data through real subresource provider', async () => {
-        const mockOwnerData = mockMemberResource({
-            firstName: 'Jan',
-            lastName: 'Novák',
+    beforeEach(() => {
+        queryClient = new QueryClient({
+            defaultOptions: {
+                queries: {retry: false, gcTime: 0},
+            },
         });
-
-        // Mock fetchResource for both parent and subresource
-        const {fetchResource} = require('../components/HalNavigator/hooks');
-        fetchResource
-            .mockResolvedValueOnce(mockFinanceData)
-            .mockResolvedValueOnce(mockOwnerData);
-
-        useHalRoute.mockReturnValue({
-            resourceData: mockFinanceData,
-            isLoading: false,
-            error: null,
-            navigateToResource: jest.fn(),
-        });
-
-        renderWithRouter(<MemberFinancePage / >);
-
-        // Verify data is displayed through real MemberName child component
-        await waitFor(() => {
-            expect(screen.getByText('Jan Novák')).toBeInTheDocument();
-        });
-
-        // Verify correct API call was made for subresource
-        expect(fetchResource).toHaveBeenCalledWith('/api/members/456');
+        jest.clearAllMocks();
     });
 
-    it('should handle null parent resource gracefully with real children', () => {
-        useHalRoute.mockReturnValue({
-            resourceData: null,
-            isLoading: false,
-            error: null,
-            navigateToResource: jest.fn(),
+    // Use real HalRouteProvider for integration testing
+    const renderPage = (ui: React.ReactElement) => {
+        return render(
+            <QueryClientProvider client = {queryClient} >
+            <MemoryRouter initialEntries = {['/finances/123']} >
+                <HalRouteProvider>
+                    {ui}
+                < /HalRouteProvider>
+                < /MemoryRouter>
+                < /QueryClientProvider>
+        );
+    };
+
+    it('should load and display finance data through real child components', async () => {
+        fetchResource.mockResolvedValue({
+            balance: 1500,
+            _links: {
+                self: {href: '/api/finances/123'},
+                owner: {href: '/api/members/456'},
+                transactions: {href: '/api/finances/123/transactions'},
+            },
+            _templates: {
+                deposit: {
+                    title: 'Deposit',
+                    method: 'POST',
+                    contentType: 'application/x-www-form-urlencoded',
+                    properties: [{name: 'amount', prompt: 'Amount', required: true}],
+                    target: '/api/finances/123/deposit',
+                },
+            },
         });
 
-        renderWithRouter(<MemberFinancePage / >);
+        renderPage(<MemberFinancePage / >);
 
-        // Page renders with safe defaults (real child components handle null gracefully)
+        // Real child components render with fetched data
+        await waitFor(() => {
+            expect(screen.getByRole('heading', {name: /Finance/i})).toBeInTheDocument();
+            expect(screen.getByText(/1500/)).toBeInTheDocument();
+            expect(screen.getByRole('table')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /deposit/i})).toBeInTheDocument();
+        });
+    });
+
+    it('should handle null resource gracefully with real children', () => {
+        fetchResource.mockResolvedValueOnce(null);
+
+        renderPage(<MemberFinancePage / >);
+
+        // Page renders with safe defaults
         expect(screen.getByText('Finance')).toBeInTheDocument();
         expect(screen.getByText('- Kč')).toBeInTheDocument();
     });
 
-    it('should render real transaction table when data loads', async () => {
-        const mockTransactionsData = {
-            _embedded: {
-                transactionItemResponseList: [
-                    {
-                        id: 1,
-                        date: '2025-12-01',
-                        amount: 500,
-                        _links: {self: {href: '/api/transactions/1'}},
-                    },
-                ],
-            },
-        };
+    it('should handle API errors gracefully', () => {
+        fetchResource.mockRejectedValueOnce(new Error('API Error'));
 
-        const {fetchResource} = require('../components/HalNavigator/hooks');
-        fetchResource.mockResolvedValueOnce(mockTransactionsData);
+        expect(() => {
+            renderPage(<MemberFinancePage / >);
+        }).not.toThrow();
 
-        useHalRoute.mockReturnValue({
-            resourceData: mockFinanceData,
-            isLoading: false,
-            error: null,
-            navigateToResource: jest.fn(),
-        });
-
-        renderWithRouter(<MemberFinancePage / >);
-
-        // Real table component renders with actual data
-        await waitFor(() => {
-            expect(screen.getByRole('table')).toBeInTheDocument();
-            expect(screen.getByText(/2025-12-01/)).toBeInTheDocument();
-            expect(screen.getByText(/500/)).toBeInTheDocument();
-        });
+        // Page still displays with safe defaults
+        expect(screen.getByText('Finance')).toBeInTheDocument();
     });
 });
 ```
 
 **Key differences from unit test approach:**
 
-- No mocking of HalSubresourceProvider - uses real provider
-- No mocking of MemberName, HalEmbeddedTable - uses real components
-- Tests real component integration and data flow
-- Uses semantic queries (`getByRole('table')`) instead of `data-testid`
-- Verifies actual rendered UI with real child components
+- No mocking of HalEmbeddedTable, HalFormButton, or other child components
+- Uses real `HalRouteProvider` with real providers (not mocking useHalRoute)
+- Tests real component integration and data flow end-to-end
+- Uses semantic queries (`getByRole()`, `getByText()`) instead of `data-testid`
+- Mock data includes complete structures: `_links`, `_templates`, `_embedded`
+- All data loads are async—uses `await waitFor()`
 
 ### Key Principles for Page Component Testing
 
