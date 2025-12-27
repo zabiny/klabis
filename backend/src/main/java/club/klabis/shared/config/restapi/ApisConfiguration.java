@@ -23,6 +23,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.RequestCacheConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -36,7 +37,7 @@ import java.util.Arrays;
 @EnableMethodSecurity
 @EnableSpringDataWebSupport
 // conversion of ID -> domain (e.g., integer -> Event). It should work once the in-memory repository is completed as a full SpringRest repository. It must be removed if Spring Data REST is added (it conflicts with it as it creates duplicate pageable mapping)
-@Configuration(proxyBeanMethods = false)
+@Configuration
 @Import(ApiExceptionHandlers.class)
 public class ApisConfiguration {
 
@@ -48,7 +49,7 @@ public class ApisConfiguration {
 
     @Bean
     @Order(AuthorizationServerConfiguration.AFTER_LOGIN_PAGE)
-    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http, UserDetailsService userDetailsService) throws Exception {
         return http
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS)
@@ -69,7 +70,6 @@ public class ApisConfiguration {
     static AnnotationTemplateExpressionDefaults prePostTemplateDefaults() {
         return new AnnotationTemplateExpressionDefaults();
     }
-
 
     @Bean
     public AbstractRequestLoggingFilter logFilter() {

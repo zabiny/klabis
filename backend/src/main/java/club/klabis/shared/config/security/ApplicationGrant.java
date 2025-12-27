@@ -17,6 +17,7 @@ public enum ApplicationGrant {
     CALENDAR_MANAGE("Může spravovat kalendář", true, false, false, "calendar:manage"),
 
     SYSTEM_ADMIN("Spravuje systemove veci", true, false, false, "system:admin"),
+    IMPERSONATE_USERS("Muze zmenit svou identitu na jineho uzivatele", true, false, false, "system:impersonate"),
 
     APPUSERS_PERMISSIONS("Může spravovat oprávnění v aplikaci", true, false, false, "members:permissions"),
     DEPOSIT_FINANCE("Může připosovat vklady", true, false, false, "finance:deposit");
