@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
 import {Alert, Button} from '../components/UI'
 import {LogoutIcon} from '../components/Icons'
+import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'
 import {useRootNavigation} from '../hooks/useRootNavigation'
@@ -73,6 +74,7 @@ const Layout = () => {
                     {userDetails.firstName} {userDetails.lastName} [{userDetails.registrationNumber}]
                   </button>
               )}
+              <ThemeToggle/>
               <Button
                   variant="ghost"
                   size="sm"
