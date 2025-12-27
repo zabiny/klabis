@@ -62,6 +62,12 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
     const {resourceData} = useHalRoute()
 
     const fetchTableData: FetchTableDataCallback<T> = async (apiParams) => {
+        if (!resourceData) {
+            return {
+                data: []
+            };
+        }
+
         const selfLink = resourceData?._links?.self
         if (!selfLink) {
             throw new Error('Self link not found in resource data - cannot fetch table data')

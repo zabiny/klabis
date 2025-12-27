@@ -21,12 +21,15 @@ export interface NavigationItem {
  * @returns {Object} with items array, loading state, and error state
  */
 export function useRootNavigation() {
-    return useQuery({
-        queryKey: ['/api'],
+    // Use a versioned query key to avoid cache collision
+    const queryKey = ['/api', 'v1'];
+
+    const query = useQuery<NavigationItem[]>({
+        queryKey: queryKey,
         queryFn: async (): Promise<NavigationItem[]> => {
             const response = (await fetchResource('/api')) as HalResponse;
 
-            if (!response._links) {
+            if (!response || !response._links) {
                 return [];
             }
 
@@ -65,4 +68,6 @@ export function useRootNavigation() {
         staleTime: 5 * 60 * 1000, // 5 minutes
         retry: 1,
     });
+
+    return query;
 }
