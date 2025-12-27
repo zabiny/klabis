@@ -17,7 +17,7 @@ export interface HalFormButtonProps {
     name: string;
 
     /** If true, opens form in modal overlay. If false, displays form inline on current page */
-    modal: boolean;
+    modal?: boolean;
 }
 
 /**
@@ -39,7 +39,7 @@ export interface HalFormButtonProps {
  * // Non-modal mode (displays form inline on current page with query param)
  * <HalFormButton name="edit" modal={false} />
  */
-export function HalFormButton({name, modal}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true}: HalFormButtonProps): ReactElement | null {
     const {resourceData, pathname} = useHalRoute();
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
