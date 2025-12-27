@@ -105,3 +105,75 @@ export const mockEmptyHalCollectionResponse = (): HalCollectionResponse => ({
         number: 0,
     },
 });
+
+/**
+ * Finance-specific mock data factories
+ */
+
+export const mockFinanceResource = (overrides?: Partial<HalResponse>): HalResponse => ({
+    balance: 1500,
+    _links: {
+        self: mockLink('/api/finances/123'),
+        owner: mockLink('/api/members/456'),
+        transactions: mockLink('/api/finances/123/transactions'),
+        deposit: mockLink('/api/finances/123/deposit'),
+        withdraw: mockLink('/api/finances/123/withdraw'),
+    },
+    ...overrides,
+});
+
+export const mockMemberResource = (overrides?: Partial<HalResponse>): HalResponse => ({
+    firstName: 'Jan',
+    lastName: 'Novák',
+    email: 'jan.novak@example.com',
+    _links: {
+        self: mockLink('/api/members/456'),
+        finances: mockLink('/api/members/456/finances'),
+    },
+    ...overrides,
+});
+
+export const mockTransactionCollection = (
+    count: number = 3,
+    overrides?: Partial<HalCollectionResponse>,
+): HalCollectionResponse => {
+    const transactions = Array.from({length: count}, (_, i) => ({
+        id: i + 1,
+        date: `2025-01-${String(i + 1).padStart(2, '0')}`,
+        amount: (i + 1) * 100,
+        note: `Transaction ${i + 1}`,
+        type: i % 2 === 0 ? 'deposit' : 'withdraw',
+        _links: {
+            self: mockLink(`/api/transactions/${i + 1}`),
+        },
+    }));
+
+    return {
+        _links: {
+            self: mockLink('/api/finances/123/transactions'),
+        },
+        _embedded: {
+            transactionItemResponseList: transactions,
+        },
+        page: {
+            totalElements: count,
+            totalPages: 1,
+            size: count,
+            number: 0,
+        },
+        ...overrides,
+    };
+};
+
+export const mockTransactionResponse = (overrides?: Partial<HalResponse>): HalResponse => ({
+    id: 1,
+    date: '2025-01-15',
+    amount: 500,
+    note: 'Monthly deposit',
+    type: 'deposit',
+    _links: {
+        self: mockLink('/api/transactions/1'),
+        finance: mockLink('/api/finances/123'),
+    },
+    ...overrides,
+});

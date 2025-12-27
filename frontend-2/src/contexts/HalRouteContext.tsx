@@ -1,9 +1,10 @@
-import React, {useContext} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import React, {type PropsWithChildren, useContext} from 'react';
+import {type Path, useLocation, useNavigate} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
 import {fetchResource, toHref} from '../components/HalNavigator/hooks';
-import type {HalResponse} from '../api';
+import type {HalResourceLinks, HalResponse, Link} from '../api';
 import {extractNavigationPath} from "../utils/navigationPath.ts";
+import {isHalResponse} from "../components/HalFormsForm/utils.ts";
 
 /**
  * Context value provided by HalRouteProvider
@@ -14,7 +15,7 @@ export interface HalRouteContextValue {
     resourceData: HalResponse | null;
 
     /** Can be used to perform navigation to given resource. It will be delegated to react router with 'self' link target extracted from resource **/
-    navigateToResource: (resource: HalResponse) => void;
+    navigateToResource: (resource: HalResponse | Link) => void;
 
     /** Loading state while fetching from API */
     isLoading: boolean;
@@ -36,6 +37,30 @@ export const HalRouteContext = React.createContext<HalRouteContextValue | null>(
 
 interface HalRouteProviderProps {
     children: React.ReactNode;
+    routeLink?: HalResourceLinks;
+}
+
+function useHalRoutePath(routeLink?: HalResourceLinks): Path {
+    const location = useLocation();
+    const routeLinkHref = routeLink && toHref(routeLink);
+    if (!routeLinkHref) {
+        return location;
+    } else {
+        // Check if it's a full URL or just a path
+        if (routeLinkHref.includes('://')) {
+            const url = new URL(routeLinkHref);
+            return {pathname: url.pathname, search: url.search, hash: url.hash};
+        } else {
+            // It's a path, parse it manually
+            const [pathAndQuery, hash] = routeLinkHref.split('#');
+            const [pathname, search] = pathAndQuery.split('?');
+            return {
+                pathname,
+                search: search ? '?' + search : '',
+                hash: hash ? '#' + hash : ''
+            };
+        }
+    }
 }
 
 /**
@@ -43,19 +68,23 @@ interface HalRouteProviderProps {
  * Automatically fetches HAL resource data when route pathname changes
  * Uses React Query for caching, deduplication, and advanced features
  */
-export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children}) => {
-    const location = useLocation();
+export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, routeLink}) => {
     const navigate = useNavigate();
+    const targetUrl = useHalRoutePath(routeLink);
 
     // Skip HAL fetching for login route
-    const shouldFetch = !location.pathname.startsWith('/login');
+    const shouldFetch = !targetUrl.pathname.startsWith('/login');
 
     // React Query hook for fetching HAL data
     // Cache key is the API URL so each pathname has its own cached data
     const {data, isLoading, error, refetch, status} = useQuery({
-        queryKey: [location.pathname, location.search],
+        queryKey: [targetUrl.pathname, targetUrl.search],
         queryFn: async () => {
-            return fetchResource('/api' + location.pathname + location.search);
+            // Ensure the path is prefixed with /api only once
+            const apiPath = targetUrl.pathname.startsWith('/api')
+                ? targetUrl.pathname
+                : '/api' + targetUrl.pathname;
+            return fetchResource(apiPath + targetUrl.search);
         },
         enabled: shouldFetch,
         staleTime: 5 * 60 * 1000, // 5 minutes
@@ -68,13 +97,19 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children}) =>
                 status === 'success' ? 'success' :
                     'idle';
 
-    const navigateToResource = (resource: HalResponse): void => {
-        const selfLink = resource?._links?.self
-        if (!selfLink) {
-            throw new Error('Self link not found in resource data - cannot fetch table data')
+    const navigateToResource = (resource: HalResponse | Link): void => {
+        let targetLink: Link;
+        if (isHalResponse(resource)) {
+            const selfLink = resource?._links?.self;
+            if (!selfLink) {
+                throw new Error('Self link not found in resource data - cannot fetch table data')
+            }
+            targetLink = Array.isArray(selfLink) ? selfLink[0] : selfLink
+        } else {
+            targetLink = resource;
         }
 
-        const href = Array.isArray(selfLink) ? selfLink[0]?.href : selfLink?.href
+        const href = Array.isArray(targetLink) ? targetLink[0]?.href : targetLink?.href
         if (!href) {
             throw new Error('Self link href is empty')
         }
@@ -91,7 +126,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children}) =>
         refetch: async () => {
             await refetch();
         },
-        pathname: location.pathname,
+        pathname: targetUrl.pathname,
         queryState,
     };
 
@@ -101,6 +136,24 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children}) =>
         </HalRouteContext.Provider>
     );
 };
+
+interface HalSubresourceProviderProps {
+    subresourceLinkName: string
+}
+
+export const HalSubresourceProvider: React.FC<PropsWithChildren<HalSubresourceProviderProps>> = ({
+                                                                                                     subresourceLinkName,
+                                                                                                     children
+                                                                                                 }) => {
+    const {resourceData: parentResource} = useHalRoute();
+
+    const subresourceLink = parentResource?._links?.[subresourceLinkName];
+    if (subresourceLink) {
+        return <HalRouteProvider routeLink={subresourceLink}>{children}</HalRouteProvider>;
+    } else {
+        return <div>Subresource {subresourceLinkName} wasn't found</div>;
+    }
+}
 
 /**
  * Hook to access HAL resource data from context
