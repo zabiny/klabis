@@ -83,7 +83,7 @@ describe('MemberFinancePage', () => {
         it('should display balance when data is loaded', async () => {
             renderPage(<MemberFinancePage/>);
             await waitFor(() => {
-                expect(screen.getByText('Zustatek:')).toBeInTheDocument();
+                expect(screen.getByText('Zůstatek')).toBeInTheDocument();
                 expect(screen.getByText(/1500/)).toBeInTheDocument();
             });
         });
@@ -114,7 +114,7 @@ describe('MemberFinancePage', () => {
             // Verify all real child components render with actual data
             await waitFor(() => {
                 expect(screen.getByText('Finance')).toBeInTheDocument();
-                expect(screen.getByText('Zustatek:')).toBeInTheDocument();
+                expect(screen.getByText('Zůstatek')).toBeInTheDocument();
                 expect(screen.getByRole('table')).toBeInTheDocument();
                 expect(screen.getByRole('button', {name: /deposit/i})).toBeInTheDocument();
             });

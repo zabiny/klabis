@@ -17,21 +17,28 @@ interface MemberListData extends EntityModel<{
 export const MembersPage = (): ReactElement => {
     const {navigateToResource} = useHalRoute();
 
-    return <div>
-        <h1>Adresář</h1>
+    return <div className="flex flex-col gap-8">
+        <h1 className="text-3xl font-bold text-text-primary">Adresář</h1>
 
-        <HalEmbeddedTable<MemberListData> collectionName={"membersApiResponseList"} defaultOrderBy={"lastName"}
-                                          onRowClick={navigateToResource}>
-            <TableCell sortable column="firstName">Jméno</TableCell>
-            <TableCell sortable column="lastName">Příjmení</TableCell>
-            <TableCell sortable column="registrationNumber">Registrační číslo</TableCell>
-            <TableCell column="_links"
-                       dataRender={props => (
-                           <HalLinksSection links={props.value as any}/>)}>Akce</TableCell>
-        </HalEmbeddedTable>
+        <div className="flex flex-col gap-4">
+            <h2 className="text-xl font-bold text-text-primary">Členové</h2>
+            <HalEmbeddedTable<MemberListData> collectionName={"membersApiResponseList"} defaultOrderBy={"lastName"}
+                                              onRowClick={navigateToResource}>
+                <TableCell sortable column="firstName">Jméno</TableCell>
+                <TableCell sortable column="lastName">Příjmení</TableCell>
+                <TableCell sortable column="registrationNumber">Registrační číslo</TableCell>
+                <TableCell column="_links"
+                           dataRender={props => (
+                               <HalLinksSection links={props.value as any}/>)}>Akce</TableCell>
+            </HalEmbeddedTable>
+        </div>
 
-        <HalLinksSection/>
-        <HalFormsSection/>
+        <div className="flex flex-col gap-4">
+            <HalLinksSection/>
+        </div>
+        <div className="flex flex-col gap-4">
+            <HalFormsSection/>
+        </div>
     </div>;
 
 }

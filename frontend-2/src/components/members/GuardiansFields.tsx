@@ -38,7 +38,7 @@ const GuardianField: React.FC<GuardianFieldProps> = ({value, onChange, onRemove,
 
     return (
         <div
-            className="relative border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+            className="relative border border-border rounded-md p-4 bg-surface-raised">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="col-span-1 md:col-span-6">
                     <TextField
@@ -109,7 +109,7 @@ const GuardiansFields: React.FC<GuardiansFieldsProps> = ({value, onChange, disab
 
     return (
         <div>
-            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Zákonní zástupci</h2>
+            <h2 className="text-lg font-semibold mb-4 text-text-primary">Zákonní zástupci</h2>
             <div className="space-y-4">
                 {(value || []).map((g, idx) => (
                     <GuardianField

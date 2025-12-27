@@ -53,13 +53,13 @@ export const MemberDetailsPage = (): ReactElement => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
             {/* Header Section */}
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold">
+                <h1 className="text-3xl font-bold text-text-primary">
                     {member.firstName} {member.lastName}
                 </h1>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     {member._links?.editOwnMemberInfoForm && (
                         <Button
                             onClick={() => handleNavigateToLink(member._links.editOwnMemberInfoForm.href)}
@@ -135,7 +135,7 @@ export const MemberDetailsPage = (): ReactElement => {
                                     label="Email"
                                     value={member.contact.email}
                                     render={(val) => <a href={`mailto:${val}`}
-                                                        className="text-blue-600 hover:underline">{val}</a>}
+                                                        className="text-primary hover:text-primary-light transition-colors">{val}</a>}
                                 />
                             )}
                             {member.contact?.phone && (
@@ -143,7 +143,7 @@ export const MemberDetailsPage = (): ReactElement => {
                                     label="Telefon"
                                     value={member.contact.phone}
                                     render={(val) => <a href={`tel:${val}`}
-                                                        className="text-blue-600 hover:underline">{val}</a>}
+                                                        className="text-primary hover:text-primary-light transition-colors">{val}</a>}
                                 />
                             )}
                             {member.contact?.note && (
@@ -232,7 +232,7 @@ export const MemberDetailsPage = (): ReactElement => {
                         <div className="space-y-6">
                             {member.legalGuardians.map((guardian: any, idx: number) => (
                                 <div key={idx}
-                                     className="border-t border-gray-200 dark:border-gray-700 pt-4 first:border-0 first:pt-0">
+                                     className="border-t border-border pt-4 first:border-0 first:pt-0">
                                     <h4 className="font-semibold mb-3">{guardian.firstName} {guardian.lastName}</h4>
                                     <div className="space-y-0 ml-4">
                                         {guardian.contact?.email && (
@@ -240,7 +240,7 @@ export const MemberDetailsPage = (): ReactElement => {
                                                 label="Email"
                                                 value={guardian.contact.email}
                                                 render={(val) => <a href={`mailto:${val}`}
-                                                                    className="text-blue-600 hover:underline">{val}</a>}
+                                                                    className="text-primary hover:text-primary-light transition-colors">{val}</a>}
                                             />
                                         )}
                                         {guardian.contact?.phone && (
@@ -248,7 +248,7 @@ export const MemberDetailsPage = (): ReactElement => {
                                                 label="Telefon"
                                                 value={guardian.contact.phone}
                                                 render={(val) => <a href={`tel:${val}`}
-                                                                    className="text-blue-600 hover:underline">{val}</a>}
+                                                                    className="text-primary hover:text-primary-light transition-colors">{val}</a>}
                                             />
                                         )}
                                         {guardian.note && (

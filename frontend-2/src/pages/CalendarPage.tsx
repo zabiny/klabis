@@ -113,7 +113,7 @@ const CalendarPage = () => {
     );
 
     if (isLoading) {
-        return <div className="flex justify-center items-center h-96">Načítání...</div>;
+        return <div className="flex justify-center items-center h-96 text-text-secondary">Načítání...</div>;
     }
 
     if (error) {
@@ -121,25 +121,25 @@ const CalendarPage = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-8">
             {/* Header */}
             <div>
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 capitalize">
+                <h1 className="text-4xl font-bold text-text-primary mb-2 capitalize">
                     {monthName}
                 </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
+                <p className="text-lg text-text-secondary">
                     Kalendář akcí a důležitých dat
                 </p>
             </div>
 
             {/* Calendar */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <div className="bg-surface-raised rounded-md border border-border shadow-sm p-6">
                 {/* Weekday Headers */}
                 <div className="grid grid-cols-7 gap-2 mb-4">
                     {weekdayHeaders.map((day) => (
                         <div
                             key={day}
-                            className="text-center font-semibold text-gray-700 dark:text-gray-300 py-2 border-b border-gray-300 dark:border-gray-600"
+                            className="text-center font-semibold text-text-primary py-2 border-b border-border"
                         >
                             {day}
                         </div>
@@ -152,10 +152,10 @@ const CalendarPage = () => {
                         <div
                             key={index}
                             className={`
-                                min-h-24 p-2 rounded-lg border
-                                ${day === null ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700' : ''}
-                                ${day !== null ? 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600' : ''}
-                                ${day === today ? 'ring-2 ring-blue-500 ring-opacity-50 border-blue-400 dark:border-blue-500' : ''}
+                                min-h-24 p-2 rounded-md border
+                                ${day === null ? 'bg-surface-base border-border' : ''}
+                                ${day !== null ? 'bg-surface-raised border-border' : ''}
+                                ${day === today ? 'ring-2 ring-primary ring-opacity-50 border-primary' : ''}
                             `}
                         >
                             {day && (
@@ -163,7 +163,7 @@ const CalendarPage = () => {
                                     <div
                                         className={`
                                             font-semibold mb-1 inline-block px-2 py-1 rounded
-                                            ${day === today ? 'bg-blue-500 text-white' : 'text-gray-900 dark:text-white'}
+                                            ${day === today ? 'bg-primary text-white' : 'text-text-primary'}
                                         `}
                                     >
                                         {day}
@@ -175,7 +175,7 @@ const CalendarPage = () => {
                                             <div
                                                 key={itemIndex}
                                                 onClick={() => handleItemClick(item)}
-                                                className="text-xs bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 p-1 rounded truncate cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors"
+                                                className="text-xs bg-accent/15 text-accent p-1 rounded truncate cursor-pointer hover:bg-accent/25 transition-colors"
                                                 title={item.note}
                                             >
                                                 {item.note}
@@ -191,20 +191,24 @@ const CalendarPage = () => {
 
             {/* Links/Actions section */}
             {resourceData?._links && Object.keys(resourceData._links).length > 0 ? (
-                <HalLinksSection
-                    links={resourceData._links}
-                    onNavigate={handleNavigateToItem}
-                />
+                <div className="flex flex-col gap-4">
+                    <HalLinksSection
+                        links={resourceData._links}
+                        onNavigate={handleNavigateToItem}
+                    />
+                </div>
             ) : null}
 
             {/* Templates/Forms section */}
             {resourceData?._templates && Object.keys(resourceData._templates).length > 0 ? (
-                <HalFormsSection templates={resourceData._templates}/>
+                <div className="flex flex-col gap-4">
+                    <HalFormsSection templates={resourceData._templates}/>
+                </div>
             ) : null}
 
             {/* Full JSON preview */}
-            <details className="mt-4 p-2 border rounded bg-gray-50 dark:bg-gray-900">
-                <summary className="cursor-pointer font-semibold">Zobrazit surový JSON</summary>
+            <details className="p-3 border border-border rounded-md bg-surface-base">
+                <summary className="cursor-pointer font-semibold text-text-primary">Zobrazit surový JSON</summary>
                 <JsonPreview data={resourceData} label="Kompletní odpověď"/>
             </details>
         </div>

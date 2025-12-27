@@ -36,9 +36,9 @@ export const MemberDetailsField = ({
 
     return (
         <div
-            className="grid grid-cols-3 gap-4 items-start py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
-            <dt className="font-medium text-gray-700 dark:text-gray-300">{label}</dt>
-            <dd className="col-span-2 text-gray-900 dark:text-gray-100">{displayValue || '—'}</dd>
+            className="grid grid-cols-3 gap-4 items-start py-3 border-b border-border last:border-0">
+            <dt className="font-medium text-text-secondary">{label}</dt>
+            <dd className="col-span-2 text-text-primary">{displayValue || '—'}</dd>
         </div>
     );
 };
