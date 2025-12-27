@@ -4,6 +4,7 @@ import {TableCell} from "../components/KlabisTable";
 import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
 import {HalEmbeddedTable} from "../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
+import {useHalRoute} from "../contexts/HalRouteContext.tsx";
 
 interface MemberListData extends EntityModel<{
     id: number,
@@ -14,10 +15,13 @@ interface MemberListData extends EntityModel<{
 };
 
 export const MembersPage = (): ReactElement => {
+    const {navigateToResource} = useHalRoute();
+
     return <div>
         <h1>Adresář</h1>
 
-        <HalEmbeddedTable<MemberListData> collectionName={"membersApiResponseList"} defaultOrderBy={"lastName"}>
+        <HalEmbeddedTable<MemberListData> collectionName={"membersApiResponseList"} defaultOrderBy={"lastName"}
+                                          onRowClick={navigateToResource}>
             <TableCell sortable column="firstName">Jméno</TableCell>
             <TableCell sortable column="lastName">Příjmení</TableCell>
             <TableCell sortable column="registrationNumber">Registrační číslo</TableCell>

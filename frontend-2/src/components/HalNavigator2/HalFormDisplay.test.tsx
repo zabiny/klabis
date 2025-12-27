@@ -37,6 +37,7 @@ describe('HalFormDisplay Component', () => {
         refetch: jest.fn(),
         pathname: '/test/123',
         queryState: 'success',
+        navigateToResource: jest.fn(),
     });
 
     const createWrapper = (contextValue: HalRouteContextValue) => {

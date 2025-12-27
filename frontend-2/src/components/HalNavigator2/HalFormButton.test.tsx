@@ -48,6 +48,7 @@ describe('HalFormButton Component', () => {
         refetch: jest.fn(),
         pathname: '/members/123',
         queryState: 'success',
+        navigateToResource: jest.fn(),
     });
 
     const renderWithContext = (

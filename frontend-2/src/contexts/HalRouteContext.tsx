@@ -1,8 +1,9 @@
 import React, {useContext} from 'react';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
-import {fetchResource} from '../components/HalNavigator/hooks';
+import {fetchResource, toHref} from '../components/HalNavigator/hooks';
 import type {HalResponse} from '../api';
+import {extractNavigationPath} from "../utils/navigationPath.ts";
 
 /**
  * Context value provided by HalRouteProvider
@@ -11,6 +12,9 @@ import type {HalResponse} from '../api';
 export interface HalRouteContextValue {
     /** Fetched HAL resource data from /api + pathname */
     resourceData: HalResponse | null;
+
+    /** Can be used to perform navigation to given resource. It will be delegated to react router with 'self' link target extracted from resource **/
+    navigateToResource: (resource: HalResponse) => void;
 
     /** Loading state while fetching from API */
     isLoading: boolean;
@@ -41,6 +45,7 @@ interface HalRouteProviderProps {
  */
 export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children}) => {
     const location = useLocation();
+    const navigate = useNavigate();
 
     // Skip HAL fetching for login route
     const shouldFetch = !location.pathname.startsWith('/login');
@@ -63,8 +68,24 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children}) =>
                 status === 'success' ? 'success' :
                     'idle';
 
+    const navigateToResource = (resource: HalResponse): void => {
+        const selfLink = resource?._links?.self
+        if (!selfLink) {
+            throw new Error('Self link not found in resource data - cannot fetch table data')
+        }
+
+        const href = Array.isArray(selfLink) ? selfLink[0]?.href : selfLink?.href
+        if (!href) {
+            throw new Error('Self link href is empty')
+        }
+
+        const targetPath = extractNavigationPath(toHref(href));
+        navigate(targetPath);
+    }
+
     const contextValue: HalRouteContextValue = {
         resourceData: data ?? null,
+        navigateToResource,
         isLoading,
         error: error instanceof Error ? error : null,
         refetch: async () => {

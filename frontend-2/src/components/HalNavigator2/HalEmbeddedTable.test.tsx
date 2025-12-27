@@ -55,6 +55,7 @@ describe('HalEmbeddedTable', () => {
         },
         pathname: '/test',
         queryState: 'success',
+        navigateToResource: jest.fn(),
     };
 
     beforeEach(() => {

@@ -53,6 +53,7 @@ describe('HalFormsPageLayout', () => {
             refetch: jest.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
+            navigateToResource: jest.fn(),
         };
 
         renderWithContext(contextValue);
@@ -69,6 +70,7 @@ describe('HalFormsPageLayout', () => {
             refetch: jest.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
+            navigateToResource: jest.fn(),
         };
 
         renderWithContext(contextValue, ['/api/test?form=create']);
@@ -85,6 +87,7 @@ describe('HalFormsPageLayout', () => {
             refetch: jest.fn(),
             pathname: '/api/test?form=nonsense',
             queryState: 'success' as const,
+            navigateToResource: jest.fn(),
         };
 
         renderWithContext(contextValue);
@@ -101,6 +104,7 @@ describe('HalFormsPageLayout', () => {
             refetch: jest.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
+            navigateToResource: jest.fn(),
         };
 
         renderWithContext(contextValue, ['/api/test?form=create']);
@@ -117,6 +121,7 @@ describe('HalFormsPageLayout', () => {
             refetch: jest.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
+            navigateToResource: jest.fn(),
         };
 
         renderWithContext(contextValue);
@@ -133,6 +138,7 @@ describe('HalFormsPageLayout', () => {
             refetch: jest.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
+            navigateToResource: jest.fn(),
         };
 
         renderWithContext(contextValue);

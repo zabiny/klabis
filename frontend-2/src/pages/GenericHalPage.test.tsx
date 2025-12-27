@@ -138,6 +138,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'pending',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -152,6 +153,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'pending',
+                navigateToResource: jest.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -169,6 +171,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'error',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -184,6 +187,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'error',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -200,6 +204,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/custom/path',
                 refetch: jest.fn(),
                 queryState: 'error',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -216,6 +221,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -234,6 +240,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -253,6 +260,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -271,6 +279,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -287,6 +296,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -304,6 +314,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -320,6 +331,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -345,6 +357,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -360,6 +373,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -376,6 +390,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -392,6 +407,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -412,6 +428,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -433,6 +450,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -449,6 +467,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -467,6 +486,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -484,6 +504,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -502,6 +523,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -517,6 +539,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -533,6 +556,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -555,6 +579,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -575,6 +600,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -592,6 +618,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -610,6 +637,7 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items/1',
                 refetch: jest.fn(),
                 queryState: 'success',
+                navigateToResource: jest.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);

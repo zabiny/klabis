@@ -26,6 +26,7 @@ describe('HalFormsSection Component', () => {
 			},
 			pathname: '/test',
 			queryState: 'success',
+			navigateToResource: jest.fn(),
 		});
 	});
 
@@ -52,6 +53,7 @@ describe('HalFormsSection Component', () => {
 				},
 				pathname: '/test',
 				queryState: 'success',
+				navigateToResource: jest.fn(),
 			});
 
 			render(<HalFormsSection/>);
