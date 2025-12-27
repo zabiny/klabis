@@ -8,18 +8,7 @@ import {extractNavigationPath} from '../utils/navigationPath';
 import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
 import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
 import {useHalActions} from "../hooks/useHalActions";
-
-/**
- * Format date string to readable format
- */
-function formatDate(dateString: string | undefined): string {
-    if (!dateString) return '—';
-    try {
-        return new Date(dateString).toLocaleDateString('cs-CZ');
-    } catch {
-        return dateString;
-    }
-}
+import {formatDate} from "../utils/dateUtils.ts";
 
 /**
  * Page for displaying member details fetched from GET /members/{id} API
