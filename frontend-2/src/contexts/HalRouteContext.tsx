@@ -77,9 +77,12 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
     const shouldFetch = !targetUrl.pathname.startsWith('/login');
 
     // React Query hook for fetching HAL data
-    // Cache key is the API URL so each pathname has its own cached data
+    // Query Key Convention: ['hal-route', pathname, search] - each route has its own cached data
+    // Stale Time: 5 minutes - HAL navigation data rarely changes, but re-validate on mount
+    // Cache Time (gcTime): 5 minutes - keep data cached for tab switches and quick back navigation
+    // Retry: 0 - don't retry; show error immediately for better UX (user can refresh if needed)
     const {data, isLoading, error, refetch, status} = useQuery({
-        queryKey: [targetUrl.pathname, targetUrl.search],
+        queryKey: ['hal-route', targetUrl.pathname, targetUrl.search],
         queryFn: async () => {
             // Ensure the path is prefixed with API base URL only once
             const apiBaseUrl = getApiBaseUrl();
@@ -89,7 +92,9 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
             return fetchResource(apiPath + targetUrl.search);
         },
         enabled: shouldFetch,
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 5 * 60 * 1000,
+        gcTime: 5 * 60 * 1000,
+        retry: 0,
     });
 
     // Convert React Query status to context queryState

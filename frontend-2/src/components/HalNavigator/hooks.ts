@@ -109,8 +109,13 @@ export type NavigationTargetResponse<T> = {
 const useQueryNavigationTargetResponse = (target: NavigationTarget): UseQueryResult<NavigationTargetResponse<HalResponse | string>, Error> => {
     const resourceUrl = toHref(target);
 
+    // Query Key Convention: ['hal-navigation', resourceUrl]
+    // Stale Time: 5 minutes - HAL responses rarely change
+    // Cache Time (gcTime): 5 minutes - keep for quick navigation back
+    // Retry: 0 - don't retry; handle responses (success or error) gracefully without retrying
     return useQuery<NavigationTargetResponse<HalResponse | string>>({
-        queryKey: [resourceUrl], queryFn: async (): Promise<NavigationTargetResponse<HalResponse | string>> => {
+        queryKey: ['hal-navigation', resourceUrl],
+        queryFn: async (): Promise<NavigationTargetResponse<HalResponse | string>> => {
             const res = await authorizedFetch(
                 resourceUrl,
                 {
@@ -141,7 +146,10 @@ const useQueryNavigationTargetResponse = (target: NavigationTarget): UseQueryRes
                 isSuccess: true,
                 navigationTarget: target
             };
-        }
+        },
+        staleTime: 5 * 60 * 1000,
+        gcTime: 5 * 60 * 1000,
+        retry: 0,
     });
 }
 
