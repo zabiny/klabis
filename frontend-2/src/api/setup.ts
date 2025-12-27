@@ -2,12 +2,13 @@ import createFetchClient, {type Middleware} from "openapi-fetch";
 import type {paths} from "./klabisApi";
 import {klabisAuthUserManager} from "./klabisUserManager";
 import createClient from "openapi-react-query";
+import {getApiBaseUrl} from "../utils/getApiBaseUrl";
 
 
 // https://openapi-ts.dev
 
 const fetchClient = createFetchClient<paths>({
-    baseUrl: "/api",
+    baseUrl: getApiBaseUrl() || "/",
     headers: {
         "Accept": "application/klabis+json,application/json,application/problem+json"
     }

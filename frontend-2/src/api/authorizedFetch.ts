@@ -1,4 +1,4 @@
-import { klabisAuthUserManager } from './klabisUserManager';
+import {klabisAuthUserManager} from './klabisUserManager';
 
 /**
  * Performs an authorized fetch request with automatic bearer token injection.
@@ -6,7 +6,10 @@ import { klabisAuthUserManager } from './klabisUserManager';
  * Retrieves the current user's access token and adds it as a Bearer token
  * in the Authorization header. Other headers are merged with provided options.
  *
- * @param url - The URL to fetch
+ * Note: API prefix (/api in dev, empty in prod) is handled by the HAL context
+ * and openapi-fetch setup, so you typically pass relative paths.
+ *
+ * @param url - The URL to fetch (can be relative or absolute)
  * @param options - Fetch options (optional). Headers will be merged with auth headers.
  * @param throwOnError - If true, throws on non-ok responses. Defaults to true.
  * @returns Promise containing the fetch Response
@@ -14,12 +17,12 @@ import { klabisAuthUserManager } from './klabisUserManager';
  *
  * @example
  * // Throws on error (default)
- * const data = await authorizedFetch('/api/members');
+ * const data = await authorizedFetch('/members');
  * const json = await data.json();
  *
  * @example
  * // Returns response regardless of status
- * const res = await authorizedFetch('/api/submit', {}, false);
+ * const res = await authorizedFetch('/submit', {}, false);
  * if (!res.ok) {
  *   // Handle error response
  * }

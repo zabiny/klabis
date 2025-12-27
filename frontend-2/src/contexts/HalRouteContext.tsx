@@ -5,10 +5,11 @@ import {fetchResource, toHref} from '../components/HalNavigator/hooks';
 import type {HalResourceLinks, HalResponse, Link} from '../api';
 import {extractNavigationPath} from "../utils/navigationPath.ts";
 import {isHalResponse} from "../components/HalFormsForm/utils.ts";
+import {getApiBaseUrl} from "../utils/getApiBaseUrl.ts";
 
 /**
  * Context value provided by HalRouteProvider
- * Contains HAL resource data fetched from /api + current location pathname
+ * Contains HAL resource data fetched from API (with environment-aware prefix) + current location pathname
  */
 export interface HalRouteContextValue {
     /** Fetched HAL resource data from /api + pathname */
@@ -80,10 +81,11 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
     const {data, isLoading, error, refetch, status} = useQuery({
         queryKey: [targetUrl.pathname, targetUrl.search],
         queryFn: async () => {
-            // Ensure the path is prefixed with /api only once
-            const apiPath = targetUrl.pathname.startsWith('/api')
+            // Ensure the path is prefixed with API base URL only once
+            const apiBaseUrl = getApiBaseUrl();
+            const apiPath = targetUrl.pathname.startsWith(apiBaseUrl)
                 ? targetUrl.pathname
-                : '/api' + targetUrl.pathname;
+                : apiBaseUrl + targetUrl.pathname;
             return fetchResource(apiPath + targetUrl.search);
         },
         enabled: shouldFetch,
