@@ -35,6 +35,7 @@ export async function authorizedFetch(
 	const user = await klabisAuthUserManager.getUser();
 
 	const headers: HeadersInit = {
+		Accept: "application/prs.hal-forms+json,application/hal+json,application/json",
 		...options?.headers,
 		Authorization: `Bearer ${user?.access_token}`,
 	};
@@ -51,8 +52,22 @@ export async function authorizedFetch(
 		} catch {
 			// Ignore if we can't read the body
 		}
-		throw new Error(`HTTP ${response.status}: ${errorBody || response.statusText}`);
+		throw new FetchError(`HTTP ${response.status} (${response.statusText})`, response.status, response.statusText, errorBody);
+	}
+	return response;
+}
+
+
+export class FetchError extends Error {
+	public responseBody?: string;
+	public responseStatus: number;
+	public responseStatusText: string;
+
+	constructor(message: string, responseStatus: number, responseStatusText: string, responseBody?: string) {
+		super(message);
+		this.responseBody = responseBody;
+		this.responseStatus = responseStatus;
+		this.responseStatusText = responseStatusText;
 	}
 
-	return response;
 }

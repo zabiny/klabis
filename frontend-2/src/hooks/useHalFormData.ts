@@ -11,18 +11,18 @@
  */
 
 import {useMemo} from 'react';
-import {useQuery} from '@tanstack/react-query';
 import type {HalFormsTemplate} from '../api';
-import {fetchResource} from '../components/HalNavigator/hooks';
-import {normalizeApiPath, shouldFetchTargetData} from '../utils/halFormsUtils';
+import {normalizeKlabisApiPath, shouldFetchTargetData} from '../utils/halFormsUtils';
+import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
+import {FetchError} from "../api/authorizedFetch.ts";
 
 /**
  * Check if error is a fetch error with specific HTTP status
  * @internal
  */
 function isFetchErrorWithStatus(error: unknown, statuses: number[]): boolean {
-    if (error && typeof error === 'object' && 'responseStatus' in error) {
-        const status = (error as { responseStatus: number }).responseStatus;
+    if (error && error instanceof FetchError) {
+        const status = (error as FetchError).responseStatus;
         return statuses.includes(status);
     }
     return false;
@@ -100,67 +100,42 @@ export function useHalFormData(
         return shouldFetchTargetData(selectedTemplate.target, currentPathname);
     }, [selectedTemplate, currentPathname]);
 
-    // Prepare the target URL for fetching
-    const targetUrl = useMemo(() => {
-        if (!selectedTemplate?.target || !shouldFetch) return null;
-
-        const normalized = normalizeApiPath(selectedTemplate.target);
-        // Ensure /api prefix
-        return normalized.startsWith('/api') ? normalized : `/api${normalized}`;
-    }, [selectedTemplate, shouldFetch]);
+    const targetUrl = selectedTemplate?.target && normalizeKlabisApiPath(selectedTemplate?.target);
 
     // Fetch data from target using React Query
-    // Query Key Convention: [domain, ...identifiers]
     // Stale Time: 0 - Always fetch fresh form data on mount
     // Cache Time (gcTime): 1 minute - Forms often have related data that changes together
-    // Retry: false - Don't auto-retry; let the form display with empty values on 404/405
+    // Retry: false - Don't auto-retry; let the form display with empty values on 404/405 (or with error on other statuses)
     const {
-        data: targetData,
+        data: fetchedData,
         isLoading,
         error,
-        refetch,
-    } = useQuery({
-        queryKey: ['hal-form-data', targetUrl],
-        queryFn: async () => {
-            try {
-                return await fetchResource(targetUrl!);
-            } catch (err) {
-                // If API doesn't define GET endpoint (HTTP 404 or 405), return empty data
-                // This allows form to display with empty initial values on endpoint not found
-                if (isFetchErrorWithStatus(err, [404, 405])) {
-                    return {};
-                }
-                // Re-throw other errors to be handled in error state
-                throw err;
-            }
-        },
+        refetch
+    } = useAuthorizedQuery<Record<string, unknown>>(targetUrl || '', {
         enabled: !!targetUrl,
         staleTime: 0,
         gcTime: 60000,
-        retry: false,
-    });
+        retry: false
+    })
 
-    // Determine which data to return
-    const formData = useMemo(() => {
-        if (shouldFetch) {
-            // If we're fetching from target, return the target data (or null while loading/on error)
-            return targetData || null;
-        } else {
-            // Use current resource data
-            return currentResourceData;
-        }
-    }, [shouldFetch, targetData, currentResourceData]);
+    const formData = fetchedData ? fetchedData : currentResourceData ?? null;
+
+    const filteredError = isErrorForUndefinedGetMethod(error) ? null : error;
 
     return {
         formData,
-        isLoadingTargetData: shouldFetch && isLoading,
-        targetFetchError: shouldFetch && error
-            ? (error instanceof Error ? error : new Error(String(error)))
-            : null,
-        refetchTargetData: () => {
+        isLoadingTargetData: isLoading,
+        targetFetchError: filteredError,
+        refetchTargetData: async () => {
             if (shouldFetch) {
-                refetch();
+                await refetch();
             }
         },
     };
+}
+
+
+function isErrorForUndefinedGetMethod(error: unknown): boolean {
+    // Hal+Forms POST/PUT/DELETE endpoints doesn't need GET endpoint - if GET endpoint is not defined, form shall be initialized with empty data.
+    return isFetchErrorWithStatus(error, [404, 405]);
 }

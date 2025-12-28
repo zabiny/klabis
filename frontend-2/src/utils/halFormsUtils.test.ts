@@ -1,40 +1,40 @@
-import {normalizeApiPath, shouldFetchTargetData} from './halFormsUtils';
+import {normalizeKlabisApiPath, shouldFetchTargetData} from './halFormsUtils';
 
 describe('normalizeApiPath', () => {
     it('removes /api prefix from path', () => {
-        expect(normalizeApiPath('/api/members/123')).toBe('/members/123');
+        expect(normalizeKlabisApiPath('/api/members/123')).toBe('/members/123');
     });
 
     it('returns path unchanged if no /api prefix', () => {
-        expect(normalizeApiPath('/members/123')).toBe('/members/123');
+        expect(normalizeKlabisApiPath('/members/123')).toBe('/members/123');
     });
 
     it('handles paths without leading slash', () => {
-        expect(normalizeApiPath('members/123')).toBe('/members/123');
+        expect(normalizeKlabisApiPath('members/123')).toBe('/members/123');
     });
 
     it('extracts pathname from full URL', () => {
-        expect(normalizeApiPath('https://example.com/api/members/123')).toBe('/members/123');
+        expect(normalizeKlabisApiPath('https://example.com/api/members/123')).toBe('/members/123');
     });
 
     it('extracts pathname from full URL without /api prefix', () => {
-        expect(normalizeApiPath('https://example.com/members/123')).toBe('/members/123');
+        expect(normalizeKlabisApiPath('https://example.com/members/123')).toBe('/members/123');
     });
 
     it('handles root path', () => {
-        expect(normalizeApiPath('/api')).toBe('');
+        expect(normalizeKlabisApiPath('/api')).toBe('');
     });
 
     it('handles empty string', () => {
-        expect(normalizeApiPath('')).toBe('/');
+        expect(normalizeKlabisApiPath('')).toBe('/');
     });
 
     it('handles URL with query parameters', () => {
-        expect(normalizeApiPath('/api/members/123?view=edit')).toBe('/members/123?view=edit');
+        expect(normalizeKlabisApiPath('/api/members/123?view=edit')).toBe('/members/123?view=edit');
     });
 
     it('handles URL object with query parameters', () => {
-        expect(normalizeApiPath('https://example.com/api/members/123?view=edit')).toBe('/members/123?view=edit');
+        expect(normalizeKlabisApiPath('https://example.com/api/members/123?view=edit')).toBe('/members/123?view=edit');
     });
 });
 

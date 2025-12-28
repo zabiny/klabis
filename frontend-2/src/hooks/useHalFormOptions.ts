@@ -1,8 +1,7 @@
-import {useQuery} from '@tanstack/react-query';
-import {authorizedFetch} from '../api/authorizedFetch';
-import {getApiBaseUrl} from '../utils/getApiBaseUrl';
 import type {SelectOption} from '../components/FormFields';
 import type {HalFormsOption, HalFormsOptionType} from '../api';
+import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
+import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
 
 interface UseHalFormOptionsResult {
     options: SelectOption[];
@@ -32,6 +31,14 @@ interface UseHalFormOptionsResult {
  * });
  */
 export function useHalFormOptions(optionDef: HalFormsOption | undefined): UseHalFormOptionsResult {
+    const optionsHref = (optionDef?.link?.href && normalizeKlabisApiPath(optionDef?.link?.href)) ?? '';
+
+    const linkOptions = useAuthorizedQuery(optionsHref, {
+        enabled: !!optionsHref,
+        staleTime: 5 * 60 * 1000, // 5 minutes - options rarely change
+        select: (data) => data ? convertToSelectOptions(data as HalFormsOptionType[]) : []
+    })
+
     // Handle inline options - no fetching needed
     if (optionDef?.inline) {
         return {
@@ -41,64 +48,10 @@ export function useHalFormOptions(optionDef: HalFormsOption | undefined): UseHal
         };
     }
 
-    // Handle link-based options - use React Query for fetching
-    const linkHref = optionDef?.link?.href;
-    const {data, isLoading, error} = useQuery({
-        queryKey: ['hal-form-options', linkHref],
-        queryFn: async () => {
-            if (!linkHref) {
-                return [];
-            }
-
-            // Normalize the URL for production/development environments
-            // HAL links can be full URLs or paths
-            let urlToFetch = linkHref;
-            const apiBaseUrl = getApiBaseUrl();
-
-            // Extract pathname from full URL if needed
-            if (linkHref.includes('://')) {
-                try {
-                    urlToFetch = new URL(linkHref).pathname;
-                } catch {
-                    // If URL parsing fails, use as-is
-                }
-            }
-
-            // In development: keep /api/ prefix (Vite proxy handles it)
-            // In production: strip /api/ prefix (endpoints don't have it)
-            if (!apiBaseUrl && urlToFetch.startsWith('/api/')) {
-                urlToFetch = urlToFetch.substring(4); // Remove /api prefix
-            }
-
-            try {
-                const response = await authorizedFetch(
-                    urlToFetch,
-                    {
-                        headers: {
-                            'Accept': 'application/hal+forms,application/hal+json,application/json',
-                        },
-                    },
-                    false
-                );
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                return await response.json();
-            } catch (err) {
-                throw err instanceof Error ? err : new Error(String(err));
-            }
-        },
-        enabled: !!linkHref,
-        staleTime: 5 * 60 * 1000, // 5 minutes - options rarely change
-    });
-
-    const options = data ? convertToSelectOptions(data) : [];
-    const finalError = error instanceof Error ? error : null;
-
     return {
-        options,
-        isLoading,
-        error: finalError,
+        options: linkOptions.data ?? [],
+        isLoading: linkOptions.isLoading,
+        error: linkOptions.error
     };
 }
 

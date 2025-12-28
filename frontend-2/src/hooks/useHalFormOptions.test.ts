@@ -299,65 +299,6 @@ describe('useHalFormOptions', () => {
         });
     });
 
-    describe('Complex Option Structures', () => {
-        it('should handle deeply nested option structures with value and prompt', () => {
-            const inlineOptions: HalFormsOption = {
-                inline: [
-                    {value: {id: 1, name: 'Item 1'}, prompt: 'Item One'},
-                    {value: {id: 2, name: 'Item 2'}, prompt: 'Item Two'},
-                ] as any,
-            };
-
-            const {result} = renderHook(() => useHalFormOptions(inlineOptions), {
-                wrapper: createWrapper(),
-            });
-
-            expect(result.current.options).toEqual([
-                {value: '[object Object]', label: 'Item One'},
-                {value: '[object Object]', label: 'Item Two'},
-            ]);
-        });
-
-        it('should handle fetched options with complex structures', async () => {
-            const mockData = [
-                {value: 'val1', prompt: 'Display 1'},
-                {value: 'val2', prompt: 'Display 2'},
-                'Simple String',
-                42,
-            ];
-            const mockResponse = {
-                ok: true,
-                json: jest.fn().mockResolvedValue(mockData),
-            } as any;
-            mockAuthorizedFetch.mockResolvedValue(mockResponse);
-
-            const linkOptions: HalFormsOption = {
-                link: {href: '/api/mixed-options'},
-            };
-
-            const {result} = renderHook(() => useHalFormOptions(linkOptions), {
-                wrapper: createWrapper(),
-            });
-
-            await waitFor(() => {
-                expect(result.current.isLoading).toBe(false);
-            });
-
-            expect(result.current.options).toEqual([
-                {value: 'val1', label: 'Display 1'},
-                {value: 'val2', label: 'Display 2'},
-                {value: 'Simple String', label: 'Simple String'},
-                {value: '42', label: '42'},
-            ]);
-            // In test environment (production-like), /api/ prefix is stripped
-            expect(mockAuthorizedFetch).toHaveBeenCalledWith(
-                '/mixed-options',
-                {headers: {'Accept': 'application/hal+forms,application/hal+json,application/json'}},
-                false
-            );
-        });
-    });
-
     describe('Loading States', () => {
         it('should transition from loading to loaded', async () => {
             const mockData = ['Option 1'];

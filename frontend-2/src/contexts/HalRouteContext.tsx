@@ -1,11 +1,11 @@
 import React, {type PropsWithChildren, useContext} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
-import {useQuery} from '@tanstack/react-query';
-import {fetchResource, toHref} from '../components/HalNavigator/hooks';
+import {toHref} from '../components/HalNavigator/hooks';
 import type {HalResourceLinks, HalResponse, Link} from '../api';
 import {extractNavigationPath} from "../utils/navigationPath.ts";
 import {isHalResponse} from "../components/HalFormsForm/utils.ts";
-import {getApiBaseUrl} from "../utils/getApiBaseUrl.ts";
+import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
+import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
 
 /**
  * Context value provided by HalRouteProvider
@@ -74,23 +74,21 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
     const targetUrl = useHalRoutePath(routeLink);
 
     // Skip HAL fetching for login route
-    const shouldFetch = !targetUrl.pathname.startsWith('/login');
+    const shouldFetch = !targetUrl.pathname.startsWith('/login') && !targetUrl.pathname.startsWith('/auth/callback');
 
     // React Query hook for fetching HAL data
-    // Query Key Convention: ['hal-route', pathname, search] - each route has its own cached data
     // Stale Time: 5 minutes - HAL navigation data rarely changes, but re-validate on mount
     // Cache Time (gcTime): 5 minutes - keep data cached for tab switches and quick back navigation
     // Retry: 0 - don't retry; show error immediately for better UX (user can refresh if needed)
-    const {data, isLoading, error, refetch, status} = useQuery({
-        queryKey: ['hal-route', targetUrl.pathname, targetUrl.search],
-        queryFn: async () => {
-            // Ensure the path is prefixed with API base URL only once
-            const apiBaseUrl = getApiBaseUrl();
-            const apiPath = targetUrl.pathname.startsWith(apiBaseUrl)
-                ? targetUrl.pathname
-                : apiBaseUrl + targetUrl.pathname;
-            return fetchResource(apiPath + targetUrl.search);
-        },
+    const resourceUrl = `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash && `#${targetUrl.hash}`}`;
+
+    const {
+        data,
+        isLoading,
+        error,
+        refetch,
+        status
+    } = useAuthorizedQuery<HalResponse>(normalizeKlabisApiPath(resourceUrl), {
         enabled: shouldFetch,
         staleTime: 5 * 60 * 1000,
         gcTime: 5 * 60 * 1000,

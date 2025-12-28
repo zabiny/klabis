@@ -74,7 +74,7 @@ describe('useAuthorizedQuery', () => {
             const mockResponse = {
                 ok: false,
                 status: 400,
-                statusText: 'Bad Request',
+                statusText: errorText,
                 json: jest.fn().mockRejectedValue(new Error('Not JSON')),
             } as any;
             mockAuthorizedFetch.mockResolvedValue(mockResponse);

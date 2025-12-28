@@ -1,15 +1,7 @@
 import * as Yup from "yup";
 import {Form, Formik} from "formik";
-import React, {type ReactElement, type ReactNode, useCallback, useContext, useEffect, useMemo, useState} from "react";
-import {
-    type HalFormsProperty,
-    type HalFormsResponse,
-    type HalFormsTemplate,
-    isFormTarget,
-    type TemplateTarget
-} from "../../api";
-import {fetchHalFormsData, isFormValidationError, submitHalFormsData} from "../../api/hateoas";
-import {getDefaultTemplate, isHalFormsResponse} from "./utils";
+import React, {type ReactElement, type ReactNode, useContext, useMemo} from "react";
+import {type HalFormsProperty, type HalFormsTemplate} from "../../api";
 import {type HalFormFieldFactory, type HalFormsInputProps, type SubElementConfiguration} from "./types";
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory";
 import {Alert, Button, Spinner} from "../UI";
@@ -134,110 +126,6 @@ function renderField(
             {errorText && <Alert severity="error" className="mt-2">{errorText}</Alert>}
         </Box>
     );
-}
-
-const useHalFormsController = (
-    api: TemplateTarget,
-    inputTemplate?: HalFormsTemplate
-): {
-    isLoading: boolean,
-    submit: (formData: Record<string, unknown>) => Promise<void>,
-    error?: string,
-    submitError?: Error,
-    template?: HalFormsTemplate,
-    formData?: HalFormsResponse,
-} => {
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string>();
-    const [formData, setFormData] = useState<HalFormsResponse>();
-    const [submitError, setSubmitError] = useState<Error>();
-    const [actualTemplate, setActualTemplate] = useState<HalFormsTemplate>();
-
-    useEffect(() => {
-        let cancelled = false;
-
-        const fetchData = async () => {
-            setIsLoading(true);
-            setError(undefined);
-
-            try {
-                const data = await fetchHalFormsData(api);
-                if (!cancelled) {
-                    if (isHalFormsResponse(data)) {
-                        setFormData(data);
-                        setActualTemplate(getDefaultTemplate(data));
-                    } else {
-                        setError("Returned data doesn't have HAL FORMS format");
-                        console.warn("Returned data doesn't have HAL FORMS format");
-                        console.warn(JSON.stringify(data, null, 2));
-                    }
-                }
-            } catch (fetchError) {
-                if (!cancelled) {
-                    setError(
-                        fetchError instanceof Error ? fetchError.message : "Error fetching form data"
-                    );
-                }
-            } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
-            }
-        };
-        if (inputTemplate) {
-            setFormData({_templates: {formTemplate: inputTemplate}});
-            setActualTemplate(inputTemplate);
-        } else {
-            fetchData();
-        }
-
-        return () => {
-            cancelled = true;
-        };
-    }, [api, inputTemplate]);
-
-    const submit = useCallback(
-        async (data: Record<string, unknown>) => {
-            // use target+method from template if is it present
-            const submitTarget: TemplateTarget = isFormTarget(actualTemplate) && actualTemplate || api;
-            try {
-                await submitHalFormsData(submitTarget, data as Record<string, any>);
-            } catch (submitError) {
-                setSubmitError(
-                    submitError instanceof Error ? submitError : new Error("Error submitting form data")
-                )
-                throw submitError; // Re-throw error in case caller needs to handle it
-            }
-        }, [api, actualTemplate])
-
-    return {isLoading, submit, error, formData, template: actualTemplate, submitError};
-}
-
-
-const HalFormsFormController = ({api, inputTemplate}: {
-    api: TemplateTarget,
-    inputTemplate?: HalFormsTemplate
-}): ReactElement => {
-    const {isLoading, submit, error, formData, template, submitError} = useHalFormsController(api, inputTemplate);
-
-    //console.log(`Loading=${isLoading}, error=${error}, formData=${JSON.stringify(formData)}`);
-
-    if (isLoading) {
-        return <span>Loading form data (`${api.target}`)</span>;
-    }
-
-    if (error) {
-        return <Alert severity="error">{error}</Alert>;
-    } else if (!template) {
-        return <Alert severity="error">Response doesn't contain form template, can't render HalForms form</Alert>
-    }
-
-    return <div className="space-y-4">
-        <HalFormsForm data={formData || {}} template={template} onSubmit={submit}/>
-        {submitError && <Alert severity="error">{submitError.message}</Alert>}
-        {isFormValidationError(submitError) && Object.entries(submitError.validationErrors).map((entry) =>
-            <Alert key={entry[0]} severity="error">{entry[0]}:&nbsp;{entry[1]}</Alert>)}
-    </div>;
 }
 
 type FieldRenderFunc = (fieldName: string) => ReactNode;
@@ -384,4 +272,4 @@ interface HalFormsFormContextType {
     renderField: FieldRenderFunc
 }
 
-export {HalFormsForm, HalFormsFormController};
+export {HalFormsForm};

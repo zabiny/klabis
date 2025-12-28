@@ -2,12 +2,14 @@
  * Utility functions for HAL Forms handling
  */
 
+import {getApiBaseUrl} from "./getApiBaseUrl.ts";
+
 /**
- * Normalize an API path by removing the /api prefix and handling URLs
+ * Normalize an API path to "relative path" with `/api` prefix (for DEV) or without `/api` (for other envs) and handling URLs
  * @param path - The path or URL to normalize
- * @returns The normalized path without /api prefix
+ * @returns The normalized path with /api prefix if needed (on DEV)
  */
-export function normalizeApiPath(path: string): string {
+export function normalizeKlabisApiPath(path: string): string {
     if (!path) {
         return '/';
     }
@@ -17,7 +19,7 @@ export function normalizeApiPath(path: string): string {
         const url = new URL(path);
         // Extract pathname and search from URL
         const fullPath = url.pathname + url.search;
-        return normalizeApiPath(fullPath);
+        return normalizeKlabisApiPath(fullPath);
     } catch {
         // Not a valid URL, treat as a path
         let normalized = path;
@@ -27,14 +29,13 @@ export function normalizeApiPath(path: string): string {
             normalized = '/' + normalized;
         }
 
-        // Remove /api prefix if present
-        if (normalized.startsWith('/api/')) {
-            return normalized.substring(4);
-        }
-
-        // Handle exact /api case
-        if (normalized === '/api') {
-            return '';
+        // Add base URL prefix if needed
+        const isDev = !!getApiBaseUrl(); // if apiBaseUrl is nonempty, it's DEV server
+        console.log(`isDev: ${isDev}`)
+        if (!isDev && normalized.startsWith('/api')) {
+            return normalized.substring('/api'.length);
+        } else if (isDev && !normalized.startsWith('/api')) {
+            return `/api${normalized}`;
         }
 
         return normalized;
@@ -56,8 +57,8 @@ export function shouldFetchTargetData(
         return false;
     }
 
-    const normalizedTarget = normalizeApiPath(templateTarget);
-    const normalizedCurrent = normalizeApiPath(currentPathname);
+    const normalizedTarget = normalizeKlabisApiPath(templateTarget);
+    const normalizedCurrent = normalizeKlabisApiPath(currentPathname);
 
     // If normalized paths are the same, no need to fetch
     return normalizedTarget !== normalizedCurrent;

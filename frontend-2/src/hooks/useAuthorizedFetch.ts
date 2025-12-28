@@ -1,6 +1,7 @@
 import type {UseMutationResult, UseQueryResult} from '@tanstack/react-query';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import {authorizedFetch} from '../api/authorizedFetch';
+import type {Path} from "react-router-dom";
 
 /**
  * Options for useAuthorizedQuery hook
@@ -21,10 +22,32 @@ export interface UseAuthorizedQueryOptions<T = unknown> {
      */
     staleTime?: number;
 
+    gcTime?: number,
+
+    retry?: number | boolean,
+
     /**
      * Transform function to process fetched data
      */
     select?: (data: unknown) => T;
+}
+
+const toPath = (url: string): Path => {
+    if (!url) {
+        return {pathname: '', hash: '', search: ''} as Path;
+    }
+    if (url.startsWith('/')) {
+        url = `https://test.com${url}`;
+    }
+    try {
+        const fullUrl = new URL(url);
+        return {
+            search: fullUrl.search, pathname: fullUrl.pathname, hash: fullUrl.hash
+        } as Path;
+    } catch (e) {
+        console.warn('Failed URL:  ' + JSON.stringify(url))
+        throw e;
+    }
 }
 
 /**
@@ -49,27 +72,23 @@ export function useAuthorizedQuery<T = unknown>(
     url: string,
     options?: UseAuthorizedQueryOptions<T>
 ): UseQueryResult<T | undefined> {
+    // TODO: find way how to put there actual type from OpenApi generated schemas. Check useKlabisQuery (url: Path<API> => Result<API>?)
+
+    const urlPath = toPath(url);
+
     return useQuery({
-        queryKey: ['authorized', url],
+        queryKey: ['authorized', urlPath.pathname, urlPath.search || ''],
         queryFn: async () => {
             const response = await authorizedFetch(
                 url,
                 options?.headers ? {headers: options.headers} : {},
                 true
             );
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            try {
-                const data = await response.json();
-                return options?.select ? options.select(data) : data;
-            } catch {
-                // If JSON parsing fails, return null
-                return null;
-            }
+            return await response.json();
         },
+        select: options?.select,
+        gcTime: options?.gcTime,
+        retry: options?.retry,
         enabled: options?.enabled !== false,
         staleTime: options?.staleTime ?? 0,
     });
