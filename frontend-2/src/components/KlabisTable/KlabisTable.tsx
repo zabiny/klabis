@@ -68,6 +68,9 @@ export const KlabisTable = <T extends Record<string, unknown>>({
         by: defaultOrderBy,
         direction: defaultOrderDirection
     } : undefined)
+
+    // TODO: migrate na useQuery - preferably useAuthorizedQuery. (= remove all data / fetchData props, replace by Link referencing table endpoint)
+
     const [tableData, setTableData] = useState<TableData<T>>(
         staticData ? {data: staticData, page: staticPage} : {data: []}
     )

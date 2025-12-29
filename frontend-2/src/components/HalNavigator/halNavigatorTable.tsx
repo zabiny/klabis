@@ -12,6 +12,8 @@ interface HalNavigatorTableProps<T extends Record<string, unknown>> {
     defaultRowsPerPage?: number
 }
 
+// TODO: cleanup these old HalNavigator classes. Only thing what is left to migrate are customized forms
+
 export const HalNavigatorTable = <T extends Record<string, unknown>>({
                                                                          embeddedName,
                                                                          ...tableProps
