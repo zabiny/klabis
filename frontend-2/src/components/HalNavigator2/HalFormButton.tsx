@@ -8,6 +8,7 @@ import {useNavigate} from 'react-router-dom';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
+import {ModalOverlay} from '../UI';
 import type {RenderFormCallback} from '../HalFormsForm';
 
 /**
@@ -77,22 +78,18 @@ export function HalFormButton({name, modal = true, customLayout}: HalFormButtonP
             />
 
             {/* Render modal if in modal mode and open */}
-            {modal && isModalOpen && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-in fade-in duration-300">
-                    <div
-                        className="bg-surface max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-300">
-                        <HalFormDisplay
-                            template={template}
-                            templateName={name}
-                            resourceData={resourceData}
-                            pathname={pathname}
-                            onClose={handleCloseModal}
-                            showCloseButton={true}
-                            customLayout={customLayout}
-                        />
-                    </div>
-                </div>
+            {modal && (
+                <ModalOverlay isOpen={isModalOpen} onClose={handleCloseModal}>
+                    <HalFormDisplay
+                        template={template}
+                        templateName={name}
+                        resourceData={resourceData}
+                        pathname={pathname}
+                        onClose={handleCloseModal}
+                        showCloseButton={true}
+                        customLayout={customLayout}
+                    />
+                </ModalOverlay>
             )}
         </>
     );

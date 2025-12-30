@@ -3,12 +3,12 @@
  * Handles form data fetching, submission, and error handling
  */
 
-import {type ReactElement, type ReactNode, useMemo} from 'react';
+import {type ReactElement, type ReactNode} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
-import {Alert, Spinner} from '../UI';
+import {ErrorDisplay, Spinner} from '../UI';
 import {HalFormsForm, type RenderFormCallback} from '../HalFormsForm';
-import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
+import {toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
@@ -37,20 +37,6 @@ export interface HalFormDisplayProps {
     customLayout?: ReactNode | RenderFormCallback;
 }
 
-/**
- * Builds props for HalFormsForm based on customLayout type
- */
-function getHalFormsFormProps(customLayout?: ReactNode | RenderFormCallback): Record<string, ReactNode | RenderFormCallback> {
-    if (!customLayout) {
-        return {};
-    }
-
-    if (typeof customLayout === 'function') {
-        return {renderForm: customLayout as RenderFormCallback};
-    }
-
-    return {children: customLayout as ReactNode};
-}
 
 /**
  * Displays a HAL Forms form with error handling and submission controls
@@ -68,10 +54,6 @@ export const HalFormDisplay = ({
                                }: HalFormDisplayProps): ReactElement => {
     const {refetch} = useHalRoute();
     const {invalidateAllCaches} = useFormCacheInvalidation();
-    const halFormsFormProps = useMemo(
-        () => getHalFormsFormProps(customLayout),
-        [customLayout]
-    );
 
     const {mutate: submitForm, isPending: isSubmitting, error: rawError} = useAuthorizedMutation({
         method: template.method || 'POST',
@@ -124,49 +106,22 @@ export const HalFormDisplay = ({
 
                 {/* Error state when target fetch fails */}
                 {targetFetchError && (
-                    <Alert severity="error">
-                        <div className="space-y-2">
-                            <p>{UI_MESSAGES.FORM_DATA_LOAD_ERROR}</p>
-                            {template.target && (
-                                <p className="text-sm text-text-secondary">
-                                    Endpoint: {template.target}
-                                </p>
-                            )}
-                            <p className="text-sm text-text-secondary">{targetFetchError.message}</p>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={refetchTargetData}
-                                    className="text-sm px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                                >
-                                    {UI_MESSAGES.RETRY}
-                                </button>
-                                <button
-                                    onClick={onClose}
-                                    className="text-sm px-3 py-1 bg-gray-300 text-gray-900 rounded hover:bg-gray-400"
-                                >
-                                    {UI_MESSAGES.CANCEL}
-                                </button>
-                            </div>
-                        </div>
-                    </Alert>
+                    <ErrorDisplay
+                        error={targetFetchError}
+                        title={UI_MESSAGES.FORM_DATA_LOAD_ERROR}
+                        subtitle={template.target ? `Endpoint: ${template.target}` : undefined}
+                        onRetry={refetchTargetData}
+                        onCancel={onClose}
+                        retryText={UI_MESSAGES.RETRY}
+                        cancelText={UI_MESSAGES.CANCEL}
+                    />
                 )}
 
                 {/* Form submission error (different from target fetch error) */}
                 {submitError && (
-                    <Alert severity="error">
-                        <div className="space-y-1">
-                            <p>{submitError.message}</p>
-                            {isFormValidationError(submitError) && (
-                                <ul className="list-disc list-inside text-sm">
-                                    {Object.entries(submitError.validationErrors).map(([field, error]) => (
-                                        <li key={field}>
-                                            {field}: {error}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </Alert>
+                    <ErrorDisplay
+                        error={submitError}
+                    />
                 )}
 
                 {/* Only show form when data is ready and no target fetch error */}
@@ -178,7 +133,11 @@ export const HalFormDisplay = ({
                         onCancel={onClose}
                         isSubmitting={isSubmitting}
                         fieldsFactory={klabisFieldsFactory}
-                        {...halFormsFormProps}
+                        {...(customLayout
+                            ? (typeof customLayout === 'function'
+                                ? {renderForm: customLayout as RenderFormCallback}
+                                : {children: customLayout as ReactNode})
+                            : {})}
                     />
                 )}
             </div>

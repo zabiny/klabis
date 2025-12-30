@@ -25,6 +25,9 @@ vi.mock('../../api/klabisUserManager', () => ({
 
 vi.mock('../../api/hateoas', () => ({
     submitHalFormsData: vi.fn(),
+    isFormValidationError: vi.fn((error) => {
+        return error && typeof error === 'object' && 'validationErrors' in error;
+    }),
 }));
 
 const mockedHateoas = vi.mocked(HateoasModule);

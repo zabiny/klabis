@@ -4,7 +4,7 @@
  * Automatically uses resourceData._links if links prop is not provided
  */
 
-import {type ReactElement} from 'react';
+import {type ReactElement, useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useHalRoute} from '../../contexts/HalRouteContext';
 import {HAL_LINK_RELS} from '../../constants/hal.ts';
@@ -46,11 +46,14 @@ export function HalLinksSection({
 	// Use provided links or fallback to resourceData._links
 	const links = propsLinks || resourceData?._links;
 
-	// Use provided callback or create a default one using React Router
-	const onNavigate = propsOnNavigate || ((href: string) => {
+	// Memoize default navigation callback to prevent unnecessary re-renders
+	const defaultNavigate = useCallback((href: string) => {
 		const path = extractNavigationPath(href);
 		routerNavigate(path);
-	});
+	}, [routerNavigate]);
+
+	// Use provided callback or the memoized default
+	const onNavigate = propsOnNavigate || defaultNavigate;
 
 	if (!links || Object.keys(links).length === 0) {
 		return null;
@@ -60,7 +63,7 @@ export function HalLinksSection({
 		.filter((([rel]) => rel !== HAL_LINK_RELS.SELF));
 
 	if (displayLinks.length === 0) {
-		return <></>;
+		return null;
 	}
 
 	return (

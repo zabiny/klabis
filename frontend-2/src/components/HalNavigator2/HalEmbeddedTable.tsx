@@ -6,6 +6,7 @@
 import {type ReactElement} from 'react'
 import {useHalRoute} from '../../contexts/HalRouteContext'
 import {KlabisTableWithQuery} from '../KlabisTable'
+import {ErrorDisplay} from '../UI'
 import {type SortDirection} from '../../api'
 
 /**
@@ -65,9 +66,13 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
 
     if (isLoading) {
         return (
-            <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
-                <h3 className="font-semibold">Loading table data</h3>
-            </div>)
+            <div
+                className="rounded-md border border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 p-4 flex items-center gap-2">
+                <div
+                    className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900 dark:border-gray-100"></div>
+                <span className="text-gray-900 dark:text-gray-100">Načítání dat tabulky...</span>
+            </div>
+        )
     }
 
     // Show error state if self link is not available
@@ -75,10 +80,10 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
         const error = new Error('Self link not found in resource data - cannot fetch table data')
         console.error('Failed to fetch table data:', error)
         return (
-            <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
-                <h3 className="font-semibold">Failed to load data</h3>
-                <p className="text-sm">{error.message}</p>
-            </div>
+            <ErrorDisplay
+                error={error}
+                title="Failed to load data"
+            />
         )
     }
 
