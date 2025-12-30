@@ -1,6 +1,7 @@
 package club.klabis.adapters.api;
 
 import club.klabis.shared.config.hateoas.HateoasConfig;
+import club.klabis.shared.config.hateoas.ModelPreparator;
 import club.klabis.shared.config.restapi.ApisConfiguration;
 import club.klabis.shared.config.restapi.KlabisPrincipalSource;
 import club.klabis.tests.common.MapperTestConfiguration;
@@ -29,7 +30,7 @@ import java.lang.annotation.Target;
         useDefaultFilters = false,
         includeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE,
-                classes = {RepresentationModelProcessor.class}
+                classes = {RepresentationModelProcessor.class, ModelPreparator.class}
         )
 )
 public @interface ApiTestConfiguration {

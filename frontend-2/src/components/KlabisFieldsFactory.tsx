@@ -1,6 +1,6 @@
 import {expandHalFormsFieldFactory, type HalFormsInputProps} from "./HalFormsForm";
 import React, {type ReactElement} from "react";
-import {HalFormsInput} from "./HalFormsForm/fields";
+import {HalFormsInput, HalFormsMemberId} from "./HalFormsForm/fields";
 import {FieldArray, type FieldArrayRenderProps, useFormikContext} from "formik";
 import {Button} from "./UI";
 
@@ -74,6 +74,19 @@ const LegalGuardiansField: React.FC<HalFormsInputProps> = ({prop, subElementProp
 
 export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
+        case "MemberId": {
+            // Create a modified prop with remote options for member selection
+            // HalFormsMemberId automatically adds a "clear selection" option
+            const propWithOptions = {
+                ...conf.prop,
+                options: {
+                    link: {
+                        href: "/members/options"
+                    }
+                }
+            };
+            return <HalFormsMemberId {...conf} prop={propWithOptions}/>;
+        }
         case "AddressApiDto":
             return <AddressDtoField {...conf}/>;
         case "ContactApiDto":
