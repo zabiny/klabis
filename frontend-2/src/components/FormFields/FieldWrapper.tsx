@@ -8,6 +8,7 @@ interface FieldWrapperInternalProps {
     helpText?: string
     children: ReactNode
     className?: string
+    id?: string
 }
 
 /**
@@ -24,11 +25,13 @@ export const FieldWrapper = ({
                                  helpText,
                                  children,
                                  className,
+                                 id,
                              }: FieldWrapperInternalProps) => {
     return (
         <div className={clsx('w-full', className)}>
             {label && (
-                <label className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wider">
+                <label htmlFor={id}
+                       className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wider">
                     {label}
                     {required && <span className="text-feedback-error ml-1">*</span>}
                 </label>

@@ -33,6 +33,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
             options,
             placeholder,
             multiple = false,
+            id,
             ...selectProps
         },
         ref
@@ -63,10 +64,12 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
                 error={error}
                 required={required}
                 helpText={helpText}
+                id={id}
             >
                 <div className="relative">
                     <select
                         ref={ref}
+                        id={id}
                         disabled={disabled}
                         multiple={multiple}
                         className={selectClasses}

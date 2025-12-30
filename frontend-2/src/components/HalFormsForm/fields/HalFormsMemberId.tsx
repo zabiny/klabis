@@ -37,6 +37,7 @@ export const HalFormsMemberId = ({prop, errorText}: HalFormsInputProps): ReactEl
                     <div className="relative">
                         <SelectField
                             {...fieldProps.field}
+                            id={`field-${prop.name}`}
                             value={selectValue}
                             label={prop.prompt || prop.name}
                             placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
