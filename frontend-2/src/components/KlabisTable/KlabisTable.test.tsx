@@ -1,10 +1,9 @@
-import {render, screen, waitFor} from '@testing-library/react'
+import {render, screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {KlabisTable} from './KlabisTable'
 import {TableCell} from './TableCell'
-import type {FetchTableDataCallback} from './types'
 
-describe('KlabisTable', () => {
+describe('KlabisTable - Pure UI Component', () => {
     const mockStaticData: { id: number; name: string; email: string }[] = [
         {id: 1, name: 'Alice', email: 'alice@example.com'},
         {id: 2, name: 'Bob', email: 'bob@example.com'},
@@ -17,8 +16,8 @@ describe('KlabisTable', () => {
         number: 0,
     }
 
-    describe('Static Data Mode (data + page props)', () => {
-        it('renders table with static data', () => {
+    describe('Data Rendering', () => {
+        it('renders table with provided data', () => {
             render(
                 <KlabisTable data={mockStaticData} page={mockPageData}>
                     <TableCell column="name">Name</TableCell>
@@ -71,7 +70,35 @@ describe('KlabisTable', () => {
 
             expect(screen.queryByText(/\d+-\d+ z \d+/)).not.toBeInTheDocument()
         })
+    })
 
+    describe('Error States', () => {
+        it('displays error message when error prop is provided', () => {
+            const error = new Error('Network error')
+            render(
+                <KlabisTable data={[]} error={error}>
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTable>
+            )
+
+            expect(screen.getByText(/network error/i)).toBeInTheDocument()
+            expect(screen.getByText(/failed to load data/i)).toBeInTheDocument()
+        })
+
+        it('prioritizes error display over empty state', () => {
+            const error = new Error('Network error')
+            render(
+                <KlabisTable data={[]} error={error} emptyMessage="No data">
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTable>
+            )
+
+            expect(screen.getByText(/network error/i)).toBeInTheDocument()
+            expect(screen.queryByText('No data')).not.toBeInTheDocument()
+        })
+    })
+
+    describe('User Interactions - Row Clicks', () => {
         it('calls onRowClick when row is clicked', async () => {
             const onRowClick = jest.fn()
             const user = userEvent.setup()
@@ -89,15 +116,30 @@ describe('KlabisTable', () => {
             }
         })
 
-        it('calls onStateChange when sort changes', async () => {
-            const onStateChange = jest.fn()
+        it('does not show row click styling when onRowClick is not provided', () => {
+            const {container} = render(
+                <KlabisTable data={mockStaticData} page={mockPageData}>
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTable>
+            )
+
+            const rows = container.querySelectorAll('tbody tr')
+            rows.forEach((row) => {
+                expect(row.className).not.toMatch(/cursor-pointer/)
+            })
+        })
+    })
+
+    describe('User Interactions - Sorting', () => {
+        it('calls onSortChange when sortable column header is clicked', async () => {
+            const onSortChange = jest.fn()
             const user = userEvent.setup()
 
             render(
                 <KlabisTable
                     data={mockStaticData}
                     page={mockPageData}
-                    onStateChange={onStateChange}
+                    onSortChange={onSortChange}
                 >
                     <TableCell column="name" sortable>
                         Name
@@ -108,15 +150,156 @@ describe('KlabisTable', () => {
             const nameHeader = screen.getByText('Name')
             await user.click(nameHeader)
 
-            await waitFor(() => {
-                expect(onStateChange).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        sort: {by: 'name', direction: 'asc'},
-                    })
-                )
-            })
+            expect(onSortChange).toHaveBeenCalledWith('name', 'asc')
         })
 
+        it('toggles sort direction on subsequent clicks', async () => {
+            const onSortChange = jest.fn()
+            const user = userEvent.setup()
+
+            const {rerender} = render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    onSortChange={onSortChange}
+                    currentSort={{by: 'name', direction: 'asc'}}
+                >
+                    <TableCell column="name" sortable>
+                        Name
+                    </TableCell>
+                </KlabisTable>
+            )
+
+            const nameHeader = screen.getByText('Name')
+            await user.click(nameHeader)
+
+            expect(onSortChange).toHaveBeenCalledWith('name', 'desc')
+
+            // Rerender with new sort state
+            rerender(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    onSortChange={onSortChange}
+                    currentSort={{by: 'name', direction: 'desc'}}
+                >
+                    <TableCell column="name" sortable>
+                        Name
+                    </TableCell>
+                </KlabisTable>
+            )
+
+            await user.click(nameHeader)
+
+            expect(onSortChange).toHaveBeenCalledWith('name', 'asc')
+        })
+
+        it('displays sort indicator for current sort column', () => {
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    currentSort={{by: 'name', direction: 'asc'}}
+                >
+                    <TableCell column="name" sortable>
+                        Name
+                    </TableCell>
+                </KlabisTable>
+            )
+
+            const header = screen.getByText('Name')
+            expect(header.textContent).toMatch(/↑/)
+        })
+
+        it('displays descending indicator for desc sort', () => {
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    currentSort={{by: 'name', direction: 'desc'}}
+                >
+                    <TableCell column="name" sortable>
+                        Name
+                    </TableCell>
+                </KlabisTable>
+            )
+
+            const header = screen.getByText('Name')
+            expect(header.textContent).toMatch(/↓/)
+        })
+
+        it('does not make non-sortable columns clickable', async () => {
+            const onSortChange = jest.fn()
+            const user = userEvent.setup()
+
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    onSortChange={onSortChange}
+                >
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTable>
+            )
+
+            const nameHeader = screen.getByText('Name')
+            await user.click(nameHeader)
+
+            expect(onSortChange).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('User Interactions - Pagination', () => {
+        it('calls onPageChange when page changes', async () => {
+            const onPageChange = jest.fn()
+            const multiPageData = {
+                size: 10,
+                totalElements: 50,
+                totalPages: 5,
+                number: 0,
+            }
+            const user = userEvent.setup()
+
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={multiPageData}
+                    onPageChange={onPageChange}
+                    currentPage={0}
+                >
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTable>
+            )
+
+            const nextButton = screen.getByRole('button', {name: /Next/i})
+            await user.click(nextButton)
+
+            expect(onPageChange).toHaveBeenCalledWith(1)
+        })
+
+        it('calls onRowsPerPageChange when rows per page changes', async () => {
+            const onRowsPerPageChange = jest.fn()
+            const user = userEvent.setup()
+
+            render(
+                <KlabisTable
+                    data={mockStaticData}
+                    page={mockPageData}
+                    onRowsPerPageChange={onRowsPerPageChange}
+                    rowsPerPage={10}
+                >
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTable>
+            )
+
+            const select = screen.getByDisplayValue('10')
+            await user.selectOptions(select, '25')
+
+            expect(onRowsPerPageChange).toHaveBeenCalledWith(25)
+        })
+    })
+
+    describe('Column Visibility', () => {
         it('hides hidden columns', () => {
             render(
                 <KlabisTable data={mockStaticData} page={mockPageData}>
@@ -130,170 +313,6 @@ describe('KlabisTable', () => {
             expect(screen.getByText('Name')).toBeInTheDocument()
             expect(screen.queryByText('Email')).not.toBeInTheDocument()
             expect(screen.queryByText('alice@example.com')).not.toBeInTheDocument()
-        })
-    })
-
-    describe('Auto-Fetch Mode (fetchData prop)', () => {
-        it('fetches data when component mounts', async () => {
-            const mockFetchData: FetchTableDataCallback<typeof mockStaticData[0]> = jest.fn(
-                async () => ({
-                    data: mockStaticData,
-                    page: mockPageData,
-                })
-            )
-
-            render(
-                <KlabisTable fetchData={mockFetchData}>
-                    <TableCell column="name">Name</TableCell>
-                </KlabisTable>
-            )
-
-            await waitFor(() => {
-                expect(mockFetchData).toHaveBeenCalled()
-                expect(screen.getByText('Alice')).toBeInTheDocument()
-            })
-        })
-
-        it('calls fetchData with correct API params', async () => {
-            const mockFetchData: FetchTableDataCallback<typeof mockStaticData[0]> = jest.fn(
-                async () => ({
-                    data: mockStaticData,
-                    page: mockPageData,
-                })
-            )
-
-            render(
-                <KlabisTable fetchData={mockFetchData} defaultRowsPerPage={20}>
-                    <TableCell column="name">Name</TableCell>
-                </KlabisTable>
-            )
-
-            await waitFor(() => {
-                expect(mockFetchData).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        page: 0,
-                        size: 20,
-                        sort: [],
-                    })
-                )
-            })
-        })
-
-        it('refetches data when pagination changes', async () => {
-            const multiPageData = {
-                size: 10,
-                totalElements: 50,
-                totalPages: 5,
-                number: 0,
-            }
-
-            const mockFetchData: FetchTableDataCallback<typeof mockStaticData[0]> = jest.fn(
-                async (params) => ({
-                    data: mockStaticData,
-                    page: {...multiPageData, number: params.page},
-                })
-            )
-
-            const user = userEvent.setup()
-
-            render(
-                <KlabisTable fetchData={mockFetchData} page={multiPageData}>
-                    <TableCell column="name">Name</TableCell>
-                </KlabisTable>
-            )
-
-            await waitFor(() => {
-                expect(mockFetchData).toHaveBeenCalled()
-            })
-
-            // Click next page
-            const nextButton = screen.getByRole('button', {name: /Next/i})
-            await user.click(nextButton)
-
-            await waitFor(() => {
-                expect(mockFetchData).toHaveBeenCalledTimes(2)
-            })
-        })
-
-        it('handles fetch errors gracefully', async () => {
-            const mockFetchData: FetchTableDataCallback<typeof mockStaticData[0]> = jest.fn(
-                async () => {
-                    throw new Error('Fetch failed')
-                }
-            )
-
-            const consoleError = jest.spyOn(console, 'error').mockImplementation()
-
-            render(
-                <KlabisTable fetchData={mockFetchData}>
-                    <TableCell column="name">Name</TableCell>
-                </KlabisTable>
-            )
-
-            await waitFor(() => {
-                expect(screen.getByText('Žádná data')).toBeInTheDocument()
-            })
-
-            consoleError.mockRestore()
-        })
-    })
-
-    describe('Pagination Options', () => {
-        it('uses default rows per page options', () => {
-            const largePage = {
-                size: 10,
-                totalElements: 100,
-                totalPages: 10,
-                number: 0,
-            }
-
-            render(
-                <KlabisTable
-                    data={Array.from({length: 10}, (_, i) => ({
-                        id: i,
-                        name: `Item ${i}`,
-                        email: `item${i}@example.com`,
-                    }))}
-                    page={largePage}
-                >
-                    <TableCell column="name">Name</TableCell>
-                </KlabisTable>
-            )
-
-            const select = screen.getByDisplayValue('10')
-            const options = Array.from((select as HTMLSelectElement).options).map(
-                (opt) => opt.value
-            )
-            expect(options).toEqual(['5', '10', '25', '50'])
-        })
-
-        it('adds current page size if not in options list', () => {
-            const largePage = {
-                size: 20,
-                totalElements: 100,
-                totalPages: 5,
-                number: 0,
-            }
-
-            render(
-                <KlabisTable
-                    data={Array.from({length: 20}, (_, i) => ({
-                        id: i,
-                        name: `Item ${i}`,
-                        email: `item${i}@example.com`,
-                    }))}
-                    page={largePage}
-                    rowsPerPageOptions={[5, 10, 25, 50]}
-                >
-                    <TableCell column="name">Name</TableCell>
-                </KlabisTable>
-            )
-
-            const select = screen.getByDisplayValue('20')
-            const options = Array.from((select as HTMLSelectElement).options).map(
-                (opt) => opt.value
-            )
-            expect(options).toEqual(['5', '10', '20', '25', '50'])
         })
     })
 
@@ -347,6 +366,36 @@ describe('KlabisTable', () => {
             expect(screen.getByText('Bob')).toBeInTheDocument()
 
             consoleError.mockRestore()
+        })
+    })
+
+    describe('Pagination Options', () => {
+        it('adds current page size if not in options list', () => {
+            render(
+                <KlabisTable
+                    data={Array.from({length: 20}, (_, i) => ({
+                        id: i,
+                        name: `Item ${i}`,
+                        email: `item${i}@example.com`,
+                    }))}
+                    page={{
+                        size: 20,
+                        totalElements: 100,
+                        totalPages: 5,
+                        number: 0,
+                    }}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    rowsPerPage={20}
+                >
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTable>
+            )
+
+            const select = screen.getByDisplayValue('20')
+            const options = Array.from((select as HTMLSelectElement).options).map(
+                (opt) => opt.value
+            )
+            expect(options).toEqual(['5', '10', '20', '25', '50'])
         })
     })
 })

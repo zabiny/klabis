@@ -571,9 +571,6 @@ interface HalEmbeddedTableProps<T = any> {
   /** Směr řazení (asc/desc) */
   defaultOrderDirection?: SortDirection;
 
-  /** Počet řádků na stránku (default: 10) */
-  defaultRowsPerPage?: number;
-
   /** Zpráva když nejsou data */
   emptyMessage?: string;
 
@@ -584,11 +581,29 @@ interface HalEmbeddedTableProps<T = any> {
 
 #### Chování
 
-- Automaticky načítá data z `resourceData._embedded[collectionName]`
-- Zobrazuje páginaci pokud existuje `resourceData.page`
-- Podporuje řazení sloupců (prostřednictvím `defaultOrderBy`)
+- Automaticky načítá data z self linku aktuálního HAL resource
+- Používá `useAuthorizedQuery` pro data fetching s React Query caching
+- Zobrazuje páginaci s automatickými query parametry (`page`, `size`)
+- Podporuje řazení sloupců (prostřednictvím `sort` query parametru)
 - Volá `onRowClick` callback když uživatel klikne na řádek
 - Zobrazuje custom zprávu když nejsou data
+- Automaticky extrahuje data z `_embedded[collectionName]`
+
+#### Architektura
+
+`HalEmbeddedTable` používá `KlabisTableWithQuery` (data loading wrapper) a `KlabisTable` (pure UI component):
+
+```
+HalEmbeddedTable
+├─ Extrahuje self link z resourceData
+└─ Renderuje KlabisTableWithQuery
+   ├─ Fetch data z API (useAuthorizedQuery)
+   ├─ Manages pagination/sort state
+   └─ Renderuje KlabisTable (pure UI)
+      ├─ Displays table rows
+      ├─ Handles user interactions
+      └─ Shows loading/error states
+```
 
 #### Příklad
 
@@ -602,7 +617,6 @@ interface Member {
    firstName: string;
    lastName: string;
    registrationNumber: string;
-   _links: Record<string, any>;
 }
 
 export const MembersPage = () => {
@@ -640,9 +654,14 @@ export const MembersPage = () => {
 #### Jak funguje
 
 1. Hook `useHalRoute()` si vezme aktuální `resourceData`
-2. Extrahuje data z `resourceData._embedded[collectionName]`
-3. Předá data do `KlabisTable` se sloupci definovanými jako `children`
-4. `KlabisTable` si vezme starosti o páginaci, řazení, a renderování
+2. `HalEmbeddedTable` extrahuje `self` link z `resourceData._links`
+3. Předá link do `KlabisTableWithQuery` s `collectionName`
+4. `KlabisTableWithQuery` si vezme starosti o:
+   - Data fetching z API (useAuthorizedQuery)
+   - Pagination state management
+   - Sort state management
+   - Query parameter building (`page`, `size`, `sort`)
+5. `KlabisTable` (pure UI) renderuje tabulku s daty
 
 #### Kdy ji používat
 
@@ -656,6 +675,23 @@ Příklady:
 - `calendarItems` → seznam kalendářních položek
 - `eventList` → seznam akcí
 - `anyOtherCollection` → jakákoli jiná kolekce
+
+#### Poznámka: Pure UI Component
+
+Pokud potřebuješ tabulku bez automatického data fetchingu, můžeš použít `KlabisTable` přímo:
+
+```typescript
+import {KlabisTable} from '../components/KlabisTable';
+
+// Spravuješ data a state sám
+<KlabisTable
+   data={myData}
+   page={pageInfo}
+   error={error}
+   onSortChange={(col, dir) => handleSort(col, dir)}
+   onPageChange={(newPage) => handlePageChange(newPage)}
+/>
+```
 
 ---
 

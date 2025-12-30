@@ -32,6 +32,12 @@ export interface HalRouteContextValue {
 
     /** React Query query state */
     queryState: 'idle' | 'pending' | 'success' | 'error';
+
+    /**
+     * Returns link with given name from current resource. Only links from main resource are considered (links from subresources are not included)
+     * @param linkName
+     */
+    getResourceLink: (linkName?: string) => Link | null;
 }
 
 export const HalRouteContext = React.createContext<HalRouteContextValue | null>(null);
@@ -123,6 +129,21 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         navigate(targetPath);
     }
 
+    const getLink = (linkName = 'self') => {
+        if (!data?._links?.[linkName]) {
+            return null
+        }
+
+        const link = data?._links?.[linkName]
+        const href = Array.isArray(link) ? link[0]?.href : link?.href
+
+        if (!href) {
+            return null
+        }
+
+        return {href} as Link
+    }
+
     const contextValue: HalRouteContextValue = {
         resourceData: data ?? null,
         navigateToResource,
@@ -133,6 +154,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         },
         pathname: targetUrl.pathname,
         queryState,
+        getResourceLink: getLink
     };
 
     return (

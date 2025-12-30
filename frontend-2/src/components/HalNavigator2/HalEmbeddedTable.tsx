@@ -1,13 +1,12 @@
 /**
  * Component for displaying HAL _embedded collections as a table
- * Uses KlabisTable to render data with automatic column definitions
+ * Uses KlabisTableWithQuery to fetch and render data with pagination and sorting
  */
 
 import {type ReactElement} from 'react'
 import {useHalRoute} from '../../contexts/HalRouteContext'
-import {type FetchTableDataCallback, KlabisTable} from '../KlabisTable'
+import {KlabisTableWithQuery} from '../KlabisTable'
 import {type SortDirection} from '../../api'
-import {fetchResource} from "../HalNavigator/hooks.ts";
 
 /**
  * Props for HalEmbeddedTable component
@@ -36,7 +35,7 @@ export interface HalEmbeddedTableProps<T = any> {
  * Component for displaying HAL _embedded collections in a table format
  *
  * Automatically fetches data from the current resource's _embedded property
- * and displays it using KlabisTable with pagination and sorting support.
+ * and displays it using KlabisTableWithQuery with pagination and sorting support.
  *
  * @example
  * // Display members list from _embedded.membersApiResponseList
@@ -59,48 +58,33 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
                                                                               emptyMessage = 'Žádná data',
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
-    const {resourceData} = useHalRoute()
+    const {getResourceLink} = useHalRoute()
 
-    const fetchTableData: FetchTableDataCallback<T> = async (apiParams) => {
-        if (!resourceData) {
-            return {
-                data: []
-            };
-        }
+    // Extract self link from HAL resource
+    const selfLink = getResourceLink();
 
-        const selfLink = resourceData?._links?.self
-        if (!selfLink) {
-            throw new Error('Self link not found in resource data - cannot fetch table data')
-        }
-
-        const href = Array.isArray(selfLink) ? selfLink[0]?.href : selfLink?.href
-        if (!href) {
-            throw new Error('Self link href is empty')
-        }
-
-        const targetUrl = new URL(href)
-        targetUrl.searchParams.set('page', `${apiParams.page}`)
-        targetUrl.searchParams.set('size', `${apiParams.size}`)
-        targetUrl.searchParams.delete('sort');
-        apiParams.sort.forEach((str) => targetUrl.searchParams.append('sort', str))
-
-        const response = await fetchResource(targetUrl)
-        return {
-            // get data from given embedded relation name (should be same as initial data were)
-            data: (response?._embedded?.[collectionName] as T[]) || [],
-            page: response.page,
-        }
+    // Show error state if self link is not available
+    if (!selfLink) {
+        const error = new Error('Self link not found in resource data - cannot fetch table data')
+        console.error('Failed to fetch table data:', error)
+        return (
+            <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
+                <h3 className="font-semibold">Failed to load data</h3>
+                <p className="text-sm">{error.message}</p>
+            </div>
+        )
     }
 
     return (
-        <KlabisTable<T>
-            fetchData={fetchTableData}
+        <KlabisTableWithQuery<T>
+            link={selfLink}
+            collectionName={collectionName}
             onRowClick={onRowClick}
             defaultOrderBy={defaultOrderBy}
             defaultOrderDirection={defaultOrderDirection}
             emptyMessage={emptyMessage}
         >
             {children}
-        </KlabisTable>
+        </KlabisTableWithQuery>
     )
 }

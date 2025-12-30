@@ -38,6 +38,7 @@ describe('HalFormDisplay Component', () => {
         pathname: '/test/123',
         queryState: 'success',
         navigateToResource: jest.fn(),
+        getResourceLink: jest.fn()
     });
 
     const createWrapper = (contextValue: HalRouteContextValue) => {

@@ -54,6 +54,7 @@ describe('HalFormsPageLayout', () => {
             pathname: '/api/test',
             queryState: 'success' as const,
             navigateToResource: jest.fn(),
+            getResourceLink: jest.fn()
         };
 
         renderWithContext(contextValue);
@@ -71,6 +72,7 @@ describe('HalFormsPageLayout', () => {
             pathname: '/api/test',
             queryState: 'success' as const,
             navigateToResource: jest.fn(),
+            getResourceLink: jest.fn()
         };
 
         renderWithContext(contextValue, ['/api/test?form=create']);
@@ -88,6 +90,7 @@ describe('HalFormsPageLayout', () => {
             pathname: '/api/test?form=nonsense',
             queryState: 'success' as const,
             navigateToResource: jest.fn(),
+            getResourceLink: jest.fn()
         };
 
         renderWithContext(contextValue);
@@ -105,6 +108,7 @@ describe('HalFormsPageLayout', () => {
             pathname: '/api/test',
             queryState: 'success' as const,
             navigateToResource: jest.fn(),
+            getResourceLink: jest.fn()
         };
 
         renderWithContext(contextValue, ['/api/test?form=create']);
@@ -122,6 +126,7 @@ describe('HalFormsPageLayout', () => {
             pathname: '/api/test',
             queryState: 'success' as const,
             navigateToResource: jest.fn(),
+            getResourceLink: jest.fn()
         };
 
         renderWithContext(contextValue);
@@ -139,6 +144,7 @@ describe('HalFormsPageLayout', () => {
             pathname: '/api/test',
             queryState: 'success' as const,
             navigateToResource: jest.fn(),
+            getResourceLink: jest.fn()
         };
 
         renderWithContext(contextValue);

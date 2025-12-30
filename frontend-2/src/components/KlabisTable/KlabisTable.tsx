@@ -1,8 +1,8 @@
 import type {ReactElement, ReactNode} from 'react'
-import React, {isValidElement, useEffect, useMemo, useRef, useState} from 'react'
-import type {KlabisTableProps, TableCellProps, TableCellRenderProps, TableData} from './types'
+import React, {isValidElement, useMemo} from 'react'
+import type {KlabisTableProps, TableCellProps, TableCellRenderProps} from './types'
 import {Pagination} from './Pagination'
-import type {PaginatedApiParams} from '../../api'
+import type {SortDirection} from '../../api'
 
 // Column definition extracted from children
 interface ColumnDef {
@@ -48,118 +48,60 @@ const ensurePageSizeInOptions = (pageSize: number, options: number[]): number[] 
     return [...options, pageSize].sort((a, b) => a - b)
 }
 
+// Error display component
+const ErrorAlert = ({error}: { error: Error }) => (
+    <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
+        <h3 className="font-semibold">Failed to load data</h3>
+        <p className="text-sm">{error.message}</p>
+    </div>
+)
+
+/**
+ * Pure UI table component
+ *
+ * This is a presentation-only component that renders table UI.
+ * All state management (pagination, sorting, data fetching) is handled by parent components.
+ *
+ * @example
+ * // Basic usage with controlled state
+ * function MyTable() {
+ *   const [page, setPage] = useState(0);
+ *   const [sort, setSort] = useState<SortState | undefined>();
+ *
+ *   return (
+ *     <KlabisTable
+ *       data={tableData}
+ *       page={pageInfo}
+ *       currentPage={page}
+ *       onPageChange={setPage}
+ *       onSortChange={(col, dir) => setSort({ by: col, direction: dir })}
+ *       currentSort={sort}
+ *     >
+ *       <TableCell column="name" sortable>Name</TableCell>
+ *       <TableCell column="email">Email</TableCell>
+ *     </KlabisTable>
+ *   );
+ * }
+ */
 export const KlabisTable = <T extends Record<string, unknown>>({
-                                                                   data: staticData,
-                                                                   page: staticPage,
-                                                                   fetchData,
-                                                                   onStateChange,
-    children,
+                                                                   data,
+                                                                   page,
+                                                                   error,
+                                                                   onSortChange,
+                                                                   onPageChange,
+                                                                   onRowsPerPageChange,
                                                                    onRowClick,
+                                                                   children,
     defaultOrderBy,
     defaultOrderDirection = 'asc',
-    defaultRowsPerPage = 10,
                                                                    emptyMessage = 'Žádná data',
-                                                                   rowsPerPageOptions = [5, 10, 25, 50]
+                                                                   rowsPerPageOptions = [5, 10, 25, 50],
+                                                                   rowsPerPage = 10,
+                                                                   currentPage = 0,
+                                                                   currentSort
                                                                }: KlabisTableProps<T>): ReactElement => {
-    // State management
-    const [page, setPage] = useState(0)
-    const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage)
-    const [sort, setSort] = useState(defaultOrderBy ? {
-        by: defaultOrderBy,
-        direction: defaultOrderDirection
-    } : undefined)
-
-    // TODO: migrate na useQuery - preferably useAuthorizedQuery. (= remove all data / fetchData props, replace by Link referencing table endpoint)
-
-    const [tableData, setTableData] = useState<TableData<T>>(
-        staticData ? {data: staticData, page: staticPage} : {data: []}
-    )
-
     // Extract columns from JSX children
     const columns = useMemo(() => extractColumns(children), [children])
-
-    // Sync static data and rowsPerPage with page.size
-    useEffect(() => {
-        if (staticData) {
-            setTableData({data: staticData, page: staticPage})
-            // Sync rowsPerPage immediately when staticPage changes
-            if (staticPage?.size && staticPage.size !== rowsPerPage) {
-                setRowsPerPage(staticPage.size)
-            }
-        }
-    }, [staticData, staticPage, rowsPerPage])
-
-    // Fetch data when state changes (if fetchData provided)
-    useEffect(() => {
-        if (!fetchData) {
-            return
-        }
-
-        let cancelled = false
-
-        const performFetch = async () => {
-            try {
-                const apiParams: PaginatedApiParams = {
-                    page,
-                    size: rowsPerPage,
-                    sort: sort ? [`${sort.by},${sort.direction}`] : []
-                }
-
-                const result = await fetchData(apiParams)
-                if (!cancelled) {
-                    setTableData(result)
-                }
-            } catch (e) {
-                if (!cancelled) {
-                    setTableData({data: []})
-                    console.error('Failed to fetch table data:', e)
-                }
-            }
-        }
-
-        performFetch()
-
-        return () => {
-            cancelled = true
-        }
-    }, [fetchData, page, rowsPerPage, sort])
-
-    // Keep onStateChange in a ref to avoid dependency on its identity
-    const onStateChangeRef = useRef(onStateChange)
-    useEffect(() => {
-        onStateChangeRef.current = onStateChange
-    }, [onStateChange])
-
-    // Notify parent of state changes
-    useEffect(() => {
-        if (onStateChangeRef.current) {
-            onStateChangeRef.current({page, rowsPerPage, sort})
-        }
-    }, [page, rowsPerPage, sort])
-
-    // Handle sort change
-    const handleSort = (column: string) => {
-        setSort((prevSort) => {
-            if (!prevSort || prevSort.by !== column) {
-                return {by: column, direction: 'asc'}
-            } else {
-                return {by: column, direction: prevSort.direction === 'asc' ? 'desc' : 'asc'}
-            }
-        })
-        setPage(0)
-    }
-
-    // Handle pagination change
-    const handlePagingChange = (newPage: number, newRowsPerPage: number) => {
-        setPage(newPage)
-        setRowsPerPage(newRowsPerPage)
-    }
-
-    // Effective rows per page options (ensure current size is in list)
-    const effectiveRowsPerPageOptions = useMemo(
-        () => ensurePageSizeInOptions(rowsPerPage, rowsPerPageOptions),
-        [rowsPerPage, rowsPerPageOptions]
-    )
 
     // Get visible columns
     const visibleColumns = useMemo(
@@ -167,8 +109,41 @@ export const KlabisTable = <T extends Record<string, unknown>>({
         [columns]
     )
 
-    const rows = tableData.data || []
-    const pageData = tableData.page
+    // Effective rows per page options (ensure current size is in list)
+    const effectiveRowsPerPageOptions = useMemo(
+        () => ensurePageSizeInOptions(rowsPerPage, rowsPerPageOptions),
+        [rowsPerPage, rowsPerPageOptions]
+    )
+
+    // Handle sort change
+    const handleSort = (column: string) => {
+        if (!onSortChange) return
+
+        // Determine new sort direction
+        let newDirection: SortDirection = 'asc'
+        if (currentSort?.by === column && currentSort.direction === 'asc') {
+            newDirection = 'desc'
+        }
+
+        onSortChange(column, newDirection)
+    }
+
+    // Handle pagination change
+    const handlePagingChange = (newPage: number, newRowsPerPage: number) => {
+        onPageChange?.(newPage)
+        onRowsPerPageChange?.(newRowsPerPage)
+    }
+
+    // Render error state if present
+    if (error) {
+        return (
+            <div className="rounded-md border border-border bg-surface-raised p-4">
+                <ErrorAlert error={error}/>
+            </div>
+        )
+    }
+
+    const rows = data || []
 
     return (
         <div className="shadow-md rounded-md overflow-hidden border border-border bg-surface-raised">
@@ -187,13 +162,13 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                     <button
                                         className="inline-flex items-center gap-2 cursor-pointer hover:text-text-secondary"
                                         onClick={() => handleSort(col.name)}
-                                        aria-sort={sort?.by === col.name ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-                                        aria-label={`Sort by ${String(col.label)}${sort?.by === col.name ? ` (${sort.direction})` : ''}`}
+                                        aria-sort={currentSort?.by === col.name ? (currentSort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                        aria-label={`Sort by ${String(col.label)}${currentSort?.by === col.name ? ` (${currentSort.direction})` : ''}`}
                                     >
                                         {col.label}
-                                        {sort?.by === col.name && (
+                                        {currentSort?.by === col.name && (
                                             <span className="text-xs" aria-hidden="true">
-                                                    {sort.direction === 'asc' ? '↑' : '↓'}
+                                                    {currentSort.direction === 'asc' ? '↑' : '↓'}
                                                 </span>
                                         )}
                                     </button>
@@ -217,64 +192,66 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                             </td>
                         </tr>
                     ) : (
-                        rows.map((item, rowIndex) => (
-                            <tr
-                                key={item.id ? String(item.id) : `row-${rowIndex}`}
-                                className={`border-b border-border transition-colors ${
-                                    onRowClick
-                                        ? 'hover:bg-surface-base cursor-pointer'
-                                        : ''
-                                }`}
-                                onClick={() => onRowClick?.(item)}
-                                onKeyDown={(e) => {
-                                    if ((e.key === 'Enter' || e.key === ' ') && onRowClick) {
-                                        e.preventDefault()
-                                        onRowClick(item)
-                                    }
-                                }}
-                                tabIndex={onRowClick ? 0 : -1}
-                                role={onRowClick ? 'button' : undefined}
-                                aria-label={`Řádek ${rowIndex + 1}`}
-                            >
-                                {visibleColumns.map((col) => {
-                                    const value = item[col.name]
-                                    const renderFn = col.dataRender || defaultRenderCell
-                                    let cellContent: ReactNode
-                                    try {
-                                        cellContent = renderFn({
-                                            item,
-                                            column: col.name,
-                                            value
-                                        })
-                                    } catch (error) {
-                                        console.error(`Error rendering cell for column "${col.name}":`, error)
-                                        cellContent = <span className="text-red-500 text-xs">Error</span>
-                                    }
+                        <>
+                            {rows.map((item, rowIndex) => (
+                                <tr
+                                    key={item.id ? String(item.id) : `row-${rowIndex}`}
+                                    className={`border-b border-border transition-colors ${
+                                        onRowClick
+                                            ? 'hover:bg-surface-base cursor-pointer'
+                                            : ''
+                                    }`}
+                                    onClick={() => onRowClick?.(item)}
+                                    onKeyDown={(e) => {
+                                        if ((e.key === 'Enter' || e.key === ' ') && onRowClick) {
+                                            e.preventDefault()
+                                            onRowClick(item)
+                                        }
+                                    }}
+                                    tabIndex={onRowClick ? 0 : -1}
+                                    role={onRowClick ? 'button' : undefined}
+                                    aria-label={`Row ${rowIndex + 1}`}
+                                >
+                                    {visibleColumns.map((col) => {
+                                        const value = item[col.name]
+                                        const renderFn = col.dataRender || defaultRenderCell
+                                        let cellContent: ReactNode
+                                        try {
+                                            cellContent = renderFn({
+                                                item,
+                                                column: col.name,
+                                                value
+                                            })
+                                        } catch (error) {
+                                            console.error(`Error rendering cell for column "${col.name}":`, error)
+                                            cellContent = <span className="text-red-500 text-xs">Error</span>
+                                        }
 
-                                    return (
-                                        <td
-                                            key={col.name}
-                                            className="px-4 py-3 text-sm text-text-primary"
-                                        >
-                                            {cellContent}
-                                        </td>
-                                    )
-                                })}
-                            </tr>
-                        ))
+                                        return (
+                                            <td
+                                                key={col.name}
+                                                className="px-4 py-3 text-sm text-text-primary"
+                                            >
+                                                {cellContent}
+                                            </td>
+                                        )
+                                    })}
+                                </tr>
+                            ))}
+                        </>
                     )}
                     </tbody>
                 </table>
             </div>
 
             {/* Pagination */}
-            {pageData && (
+            {page && (
                 <Pagination
-                    count={pageData.totalElements}
-                    page={pageData.number}
+                    count={page.totalElements}
+                    page={currentPage}
                     rowsPerPage={rowsPerPage}
                     onPageChange={(newPage) => handlePagingChange(newPage, rowsPerPage)}
-                    onRowsPerPageChange={(newRowsPerPage) => handlePagingChange(pageData.number, newRowsPerPage)}
+                    onRowsPerPageChange={(newRowsPerPage) => handlePagingChange(currentPage, newRowsPerPage)}
                     rowsPerPageOptions={effectiveRowsPerPageOptions}
                     labelRowsPerPage="Řádků na stránku:"
                     labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}

@@ -378,6 +378,230 @@ function App() {
    queryKey: ['authorized', '/api/custom']
    ```
 
+### 3. Table Data Loading with KlabisTableWithQuery
+
+For displaying paginated, sortable data in tables, use the **KlabisTableWithQuery** component which wraps
+`useAuthorizedQuery()`.
+
+#### Overview
+
+`KlabisTableWithQuery` is a data-loading wrapper around the pure UI component `KlabisTable`. It handles:
+
+- Data fetching with pagination (`page`, `size` query parameters)
+- Sorting (`sort` query parameter)
+- State management (page, rowsPerPage, sort)
+- Error handling
+- All using `useAuthorizedQuery()` internally
+
+#### Implementation - Basic Usage
+
+```typescript
+import {KlabisTableWithQuery} from '../components/KlabisTable';
+import {TableCell} from '../components/KlabisTable';
+
+function MembersTable() {
+   const {resourceData} = useHalRoute();
+   const memberLink = resourceData?._links?.self;
+
+   if (!memberLink) return null;
+
+   return (
+           <KlabisTableWithQuery
+                   link = {memberLink}
+   collectionName = "membersApiResponseList"
+   defaultOrderBy = "lastName"
+   defaultOrderDirection = "asc"
+   onRowClick = {(member)
+=>
+   navigate(`/members/${member.id}`)
+}
+>
+   <TableCell column = "firstName"
+   sortable > First
+   Name < /TableCell>
+   < TableCell
+   column = "lastName"
+   sortable > Last
+   Name < /TableCell>
+   < TableCell
+   column = "email" > Email < /TableCell>
+           < /KlabisTableWithQuery>
+)
+   ;
+}
+```
+
+#### Implementation - With Custom Link
+
+```typescript
+import {KlabisTableWithQuery} from '../components/KlabisTable';
+
+function CustomDataTable() {
+   const link = {href: '/api/v1/items?includeArchived=true'};
+
+   return (
+           <KlabisTableWithQuery
+                   link = {link}
+   defaultOrderBy = "createdDate"
+   defaultOrderDirection = "desc"
+   rowsPerPageOptions = {[5, 10, 20
+]
+}
+>
+   <TableCell column = "name"
+   sortable > Name < /TableCell>
+   < TableCell
+   column = "createdDate"
+   sortable > Created < /TableCell>
+   < /KlabisTableWithQuery>
+)
+   ;
+}
+```
+
+#### How It Works
+
+The wrapper internally:
+
+1. Creates pagination state (`page`, `rowsPerPage`, `sort`)
+2. Builds query URL with parameters: `/api/items?page=0&size=10&sort=name,asc`
+3. Calls `useAuthorizedQuery(url, {staleTime: 30000})`
+4. Passes data and callbacks to `KlabisTable` (pure UI component)
+5. `KlabisTable` renders table, handles user clicks
+6. User interactions trigger state updates → new URL → new query
+
+#### Props
+
+```typescript
+interface KlabisTableWithQueryProps<T = any> {
+   // HAL Link object with href
+   link: Link;
+
+   // Optional: Extract from _embedded[collectionName]
+   collectionName?: string;
+
+   // UI customization
+   onRowClick?: (item: T) => void;
+   defaultOrderBy?: string;
+   defaultOrderDirection?: 'asc' | 'desc';
+   emptyMessage?: string;
+   rowsPerPageOptions?: number[];
+   defaultRowsPerPage?: number;
+
+   // Column definitions
+   children: React.ReactNode;
+}
+```
+
+#### Pure UI Component - KlabisTable
+
+For more control, use `KlabisTable` directly with manual data fetching:
+
+```typescript
+import {KlabisTable} from '../components/KlabisTable';
+import {useAuthorizedQuery} from '../hooks/useAuthorizedFetch';
+
+function CustomTable() {
+   const [page, setPage] = useState(0);
+   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+   const {data, error} = useAuthorizedQuery(
+           `/api/items?page=${page}&size=${rowsPerPage}`,
+           {staleTime: 30000}
+   );
+
+   return (
+           <KlabisTable
+                   data = {data?.items || []
+}
+   page = {data?.page
+}
+   error = {error}
+   currentPage = {page}
+   rowsPerPage = {rowsPerPage}
+   onPageChange = {setPage}
+   onRowsPerPageChange = {setRowsPerPage}
+   >
+   <TableCell column = "name" > Name < /TableCell>
+           < /KlabisTable>
+)
+   ;
+}
+```
+
+#### Query Parameters
+
+`KlabisTableWithQuery` automatically builds these query parameters:
+
+| Parameter | Example       | Purpose                  |
+|-----------|---------------|--------------------------|
+| `page`    | `0`, `1`, `2` | Zero-indexed page number |
+| `size`    | `10`, `25`    | Rows per page            |
+| `sort`    | `name,asc`    | `column,direction`       |
+
+The base URL from the link is preserved:
+
+```
+/api/items?existing=param&page=0&size=10&sort=name,asc
+```
+
+#### Caching Behavior
+
+- **Stale Time**: 30 seconds (automatic revalidation after 30s)
+- **Retry**: 1 attempt (per useAuthorizedQuery defaults)
+- **Cache Key**: Based on full URL including page/sort/size parameters
+- **Deduplication**: Simultaneous requests to same URL are deduplicated
+
+#### Testing
+
+```typescript
+import {render, screen, waitFor} from '@testing-library/react';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {KlabisTableWithQuery} from '../components/KlabisTable';
+import {useAuthorizedQuery} from '../hooks/useAuthorizedFetch';
+
+jest.mock('../hooks/useAuthorizedFetch');
+
+describe('KlabisTableWithQuery', () => {
+   let queryClient: QueryClient;
+
+   beforeEach(() => {
+      queryClient = new QueryClient({
+         defaultOptions: {queries: {retry: false, gcTime: 0}}
+      });
+
+      jest.mocked(useAuthorizedQuery).mockReturnValue({
+         data: {
+            items: [{id: 1, name: 'Item 1'}],
+            page: {size: 10, totalElements: 1, totalPages: 1, number: 0}
+         },
+         isLoading: false,
+         error: null,
+         refetch: jest.fn(),
+      } as any);
+   });
+
+   it('renders table with fetched data', async () => {
+      render(
+              <QueryClientProvider client = {queryClient} >
+              <KlabisTableWithQuery link = {
+      {
+         href: '/api/items'
+      }
+   }>
+      <TableCell column = "name" > Name < /TableCell>
+              < /KlabisTableWithQuery>
+              < /QueryClientProvider>
+   )
+      ;
+
+      await waitFor(() => {
+         expect(screen.getByText('Item 1')).toBeInTheDocument();
+      });
+   });
+});
+```
+
 ### ❌ DON'T
 
 1. **Use direct fetch()** - Always wrap with React Query

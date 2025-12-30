@@ -25,6 +25,7 @@ describe('HalLinksSection Component', () => {
             pathname: '/test',
             queryState: 'success',
             navigateToResource: jest.fn(),
+            getResourceLink: jest.fn()
         });
     });
 
@@ -54,6 +55,7 @@ describe('HalLinksSection Component', () => {
                 pathname: '/test',
                 queryState: 'success',
                 navigateToResource: jest.fn(),
+                getResourceLink: jest.fn()
             });
 
             const {container} = renderWithRouter(
