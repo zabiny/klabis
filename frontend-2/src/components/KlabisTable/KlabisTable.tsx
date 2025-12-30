@@ -92,8 +92,6 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                                                    onRowsPerPageChange,
                                                                    onRowClick,
                                                                    children,
-    defaultOrderBy,
-    defaultOrderDirection = 'asc',
                                                                    emptyMessage = 'Žádná data',
                                                                    rowsPerPageOptions = [5, 10, 25, 50],
                                                                    rowsPerPage = 10,
@@ -129,9 +127,11 @@ export const KlabisTable = <T extends Record<string, unknown>>({
     }
 
     // Handle pagination change
-    const handlePagingChange = (newPage: number, newRowsPerPage: number) => {
-        onPageChange?.(newPage)
+    const handleRowsPerPageChange = (newRowsPerPage: number) => {
         onRowsPerPageChange?.(newRowsPerPage)
+    }
+    const handlePageChange = (newPage: number) => {
+        onPageChange?.(newPage)
     }
 
     // Render error state if present
@@ -250,8 +250,8 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                     count={page.totalElements}
                     page={currentPage}
                     rowsPerPage={rowsPerPage}
-                    onPageChange={(newPage) => handlePagingChange(newPage, rowsPerPage)}
-                    onRowsPerPageChange={(newRowsPerPage) => handlePagingChange(currentPage, newRowsPerPage)}
+                    onPageChange={(newPage) => handlePageChange(newPage)}
+                    onRowsPerPageChange={(newRowsPerPage) => handleRowsPerPageChange(newRowsPerPage)}
                     rowsPerPageOptions={effectiveRowsPerPageOptions}
                     labelRowsPerPage="Řádků na stránku:"
                     labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}
