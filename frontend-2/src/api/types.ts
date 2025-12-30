@@ -1,6 +1,4 @@
 import type {components} from "./klabisApi";
-import {isLink} from "./klabisJsonUtils";
-import {isString} from "formik";
 
 export type Link = components["schemas"]["Link"];
 export type PageMetadata = components["schemas"]["PageMetadata"];
@@ -15,15 +13,6 @@ export interface PaginatedResponse<T> {
     };
     _actions?: string[];
 }
-
-export interface PaginatedApiParams {
-    page: number;
-    size: number;
-    sort: string[];
-
-    [key: string]: any;
-}
-
 export type SortDirection = 'asc' | 'desc';
 
 export type KlabisActionName = string;
@@ -108,35 +97,10 @@ export interface HalFormsTemplate {
     title?: string;
     properties: Array<HalFormsProperty>
 }
-
-export function isTemplateTarget(item: any): item is TemplateTarget {
-    return item && item.target;
-}
-
-export function isFormTarget(item: any): item is TemplateTarget {
-    return isTemplateTarget(item) && !!item.method && ['POST', 'PUT', 'DELETE', 'PATCH'].indexOf(item.method) !== -1;
-}
-
-export type NavigationTarget = Link | TemplateTarget | string;
-
-export function isNavigationTarget(item: unknown): item is NavigationTarget {
-    return isLink(item) || isTemplateTarget(item) || isString(item);
-}
-
 export type EntityModel<T> = T & { _links: { [rel: string]: Link | Link[] } };
-
-export type PagedModel<T> = { content: EntityModel<T>[], _links: { [rel: string]: Link | Link[] }, page: PageMetadata }
-
 // Type guards for HAL responses with specific structures
 
 // Check if response has templates
-export function isHalResponseWithTemplates(item: unknown): item is HalResponse & {
-    _templates: Record<string, HalFormsTemplate>
-} {
-    return typeof item === 'object' && item !== null && '_templates' in item &&
-        typeof (item as any)._templates === 'object';
-}
-
 // Calendar item specific embedded resource type
 export interface CalendarItemEmbedded extends HalEmbeddedResources {
     calendarItems?: Array<{

@@ -1,7 +1,7 @@
 import {HalEmbeddedTable} from './HalEmbeddedTable';
 import {useHalRoute} from '../../contexts/HalRouteContext';
 import {render, screen} from '@testing-library/react';
-import React from 'react';
+import type {KlabisTableWithQueryProps} from "../KlabisTable/KlabisTableWithQuery.tsx";
 
 // Mock the useHalRoute hook
 jest.mock('../../contexts/HalRouteContext', () => ({
@@ -18,7 +18,7 @@ jest.mock('../KlabisTable', () => ({
                                defaultOrderDirection,
                                emptyMessage,
                                children,
-                           }: any) => (
+                           }: KlabisTableWithQueryProps) => (
         <div data-testid="klabis-table-with-query"
              data-link={link.href}
              data-collection={collectionName}

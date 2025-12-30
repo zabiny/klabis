@@ -16,11 +16,12 @@ jest.mock('../api/klabisUserManager', () => ({
     },
 }));
 
-describe('useAuthorizedQuery', () => {
+// Shared setup for hooks
+const createTestHookSetup = () => {
     let queryClient: QueryClient;
     let fetchSpy: jest.Mock;
 
-    beforeEach(() => {
+    const setup = () => {
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {retry: false, gcTime: 0},
@@ -30,16 +31,32 @@ describe('useAuthorizedQuery', () => {
         // Mock global fetch
         fetchSpy = jest.fn() as jest.Mock;
         (globalThis as any).fetch = fetchSpy;
-    });
+    };
 
-    afterEach(() => {
+    const teardown = () => {
         delete (globalThis as any).fetch;
-    });
+    };
 
     const createWrapper = () => {
         return ({children}: { children: ReactNode }) =>
             React.createElement(QueryClientProvider, {client: queryClient}, children);
     };
+
+    return {setup, teardown, createWrapper, getQueryClient: () => queryClient, getFetchSpy: () => fetchSpy};
+};
+
+describe('useAuthorizedQuery', () => {
+    const {setup, teardown, createWrapper, getFetchSpy} = createTestHookSetup();
+    let fetchSpy: jest.Mock;
+
+    beforeEach(() => {
+        setup();
+        fetchSpy = getFetchSpy();
+    });
+
+    afterEach(() => {
+        teardown();
+    });
 
     describe('Basic Query Operations', () => {
         it('should fetch data successfully', async () => {
@@ -103,15 +120,20 @@ describe('useAuthorizedQuery', () => {
             const error = new Error('Request failed');
             fetchSpy.mockRejectedValueOnce(error);
 
-            const {result} = renderHook(() => useAuthorizedQuery('/api/items/999'), {
+            renderHook(() => useAuthorizedQuery('/api/items/999'), {
                 wrapper: createWrapper(),
             });
 
-            // Wait for query to settle (either with data or error)
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Verify fetch was attempted
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalled();
+            });
 
-            // Verify that fetch was called even if the query hasn't fully settled
-            expect(fetchSpy).toHaveBeenCalled();
+            // Verify the error was passed to fetch
+            expect(fetchSpy).toHaveBeenCalledWith(
+                '/api/items/999',
+                expect.any(Object)
+            );
         });
     });
 
@@ -246,29 +268,17 @@ describe('useAuthorizedQuery', () => {
 });
 
 describe('useAuthorizedMutation', () => {
-    let queryClient: QueryClient;
+    const {setup, teardown, createWrapper, getFetchSpy} = createTestHookSetup();
     let fetchSpy: jest.Mock;
 
     beforeEach(() => {
-        queryClient = new QueryClient({
-            defaultOptions: {
-                queries: {retry: false, gcTime: 0},
-            },
-        });
-        jest.clearAllMocks();
-        // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock;
-        (globalThis as any).fetch = fetchSpy;
+        setup();
+        fetchSpy = getFetchSpy();
     });
 
     afterEach(() => {
-        delete (globalThis as any).fetch;
+        teardown();
     });
-
-    const createWrapper = () => {
-        return ({children}: { children: ReactNode }) =>
-            React.createElement(QueryClientProvider, {client: queryClient}, children);
-    };
 
     describe('Basic Mutation Operations', () => {
         it('should execute POST mutation successfully', async () => {
@@ -425,16 +435,19 @@ describe('useAuthorizedMutation', () => {
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/items', data: {}});
+            result.current.mutate({url: '/api/items', data: {name: 'New Item'}});
 
             await waitFor(() => {
                 expect(result.current.isPending).toBe(false);
             });
 
-            // onSuccess is called with (data, variables, context) - context is optional
-            expect(onSuccess).toHaveBeenCalled();
-            const [data] = onSuccess.mock.calls[0];
-            expect(data).toEqual(responseData);
+            // onSuccess is called with (data, variables, context, response)
+            expect(onSuccess).toHaveBeenCalledWith(
+                responseData,
+                expect.objectContaining({url: '/api/items', data: {name: 'New Item'}}),
+                undefined, // context is optional
+                expect.any(Object) // response
+            );
         });
 
         it('should call onError callback after failed mutation', async () => {
@@ -448,19 +461,22 @@ describe('useAuthorizedMutation', () => {
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/items', data: {}});
+            result.current.mutate({url: '/api/items', data: {name: 'Test'}});
 
             await waitFor(() => {
                 expect(result.current.error).toBeDefined();
             });
 
-            // onError is called with (error, variables, context) - context is optional
-            expect(onError).toHaveBeenCalled();
-            const [callError] = onError.mock.calls[0];
-            expect(callError).toEqual(error);
+            // onError is called with (error, variables, context, response)
+            expect(onError).toHaveBeenCalledWith(
+                error,
+                expect.objectContaining({url: '/api/items', data: {name: 'Test'}}),
+                undefined, // context is optional
+                expect.any(Object) // response
+            );
         });
 
-        it('should call both onSettled callbacks', async () => {
+        it('should call onSettled callback after mutation completes', async () => {
             const responseData = {id: 1};
             fetchSpy.mockResolvedValueOnce(createMockResponse(responseData));
 
@@ -470,13 +486,20 @@ describe('useAuthorizedMutation', () => {
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/items', data: {}});
+            result.current.mutate({url: '/api/items', data: {name: 'Test'}});
 
             await waitFor(() => {
                 expect(result.current.isPending).toBe(false);
             });
 
-            expect(onSettled).toHaveBeenCalledTimes(1);
+            // onSettled is called with (data, error, variables, context, response) on successful mutation
+            expect(onSettled).toHaveBeenCalledWith(
+                responseData,
+                null,
+                expect.objectContaining({url: '/api/items', data: {name: 'Test'}}),
+                undefined, // context is optional
+                expect.any(Object) // response
+            );
         });
     });
 

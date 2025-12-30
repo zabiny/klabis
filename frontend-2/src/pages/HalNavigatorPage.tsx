@@ -2,8 +2,6 @@ import React, {type ReactElement, useState} from "react";
 import {HalFormsForm} from "../components/HalFormsForm";
 import {type HalFormsTemplate} from "../api";
 import {ErrorBoundary} from 'react-error-boundary';
-import {HalNavigatorPage} from "../components/HalNavigator";
-import {klabisFieldsFactory} from "../components/KlabisFieldsFactory";
 import {JsonPreview} from "../components/JsonPreview";
 import {HalFormsFormField} from "../components/HalFormsForm/HalFormsForm.tsx";
 
@@ -189,13 +187,7 @@ function SandplacePage(): ReactElement {
         setTabValue(newValue);
     };
 
-    const halRootPage = import.meta.env.VITE_HAL_ROOT_URI || '/default';
-
     const tabs = [
-        {
-            label: "HAL Explorer",
-            component: <HalNavigatorPage startUrl={halRootPage} fieldsFactory={klabisFieldsFactory}/>
-        },
         {label: "Example Automatic HAL Form", component: <ExampleAutoHalForm/>},
         {label: "Example Customized HAL Form", component: <ExampleCustomHalForm/>}
     ];

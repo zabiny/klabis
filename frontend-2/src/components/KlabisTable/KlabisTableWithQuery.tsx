@@ -108,7 +108,7 @@ export function KlabisTableWithQuery<T extends Record<string, unknown> = any>({
     }, [link.href, page, rowsPerPage, sort])
 
     // Fetch data with React Query
-    const {data: response, isLoading, error} = useAuthorizedQuery<any>(queryUrl, {
+    const {data: response, error} = useAuthorizedQuery<any>(queryUrl, {
         staleTime: 30000, // 30 seconds
         gcTime: 1000 * 60 * 5, // 5 minutes (formerly cacheTime)
         retry: 1,
