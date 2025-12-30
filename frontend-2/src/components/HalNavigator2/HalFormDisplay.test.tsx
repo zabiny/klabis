@@ -20,6 +20,14 @@ vi.mock('../../api/klabisUserManager', () => ({
     },
 }));
 
+// Mock useFormCacheInvalidation to track invalidateAllCaches calls
+const mockInvalidateAllCaches = vi.fn();
+vi.mock('../../hooks/useFormCacheInvalidation', () => ({
+    useFormCacheInvalidation: vi.fn(() => ({
+        invalidateAllCaches: mockInvalidateAllCaches,
+    })),
+}));
+
 describe('HalFormDisplay Component', () => {
     let queryClient: QueryClient;
     let fetchSpy: Mock;
@@ -31,6 +39,7 @@ describe('HalFormDisplay Component', () => {
             },
         });
         vi.clearAllMocks();
+        mockInvalidateAllCaches.mockClear();
         // Mock global fetch
         fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
@@ -257,6 +266,209 @@ describe('HalFormDisplay Component', () => {
             renderComponent(template);
 
             expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+        });
+
+        it('should invalidate all cached queries after successful submission', async () => {
+            const onClose = vi.fn();
+            const onSubmitSuccess = vi.fn();
+            const user = userEvent.setup();
+
+            const template = mockHalFormsTemplate({
+                title: 'Create Member',
+                target: '/api/members',
+                method: 'POST',
+                properties: [
+                    {
+                        name: 'name',
+                        prompt: 'Full Name',
+                        type: 'text',
+                        required: true,
+                    },
+                ],
+            });
+
+            const contextValue = createMockContext({id: 1});
+            const mockRefetch = vi.fn();
+            contextValue.refetch = mockRefetch;
+
+            const Wrapper = createWrapper(contextValue);
+
+            // Mock fetch calls:
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing Member'}))
+                .mockResolvedValueOnce(createMockResponse({id: 2, name: 'New Member'}));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="create"
+                        resourceData={{id: 1}}
+                        pathname="/members"
+                        onClose={onClose}
+                        onSubmitSuccess={onSubmitSuccess}
+                    />
+                </Wrapper>
+            );
+
+            // Wait for form to load
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            });
+
+            // Wait for the form fields to appear
+            await waitFor(() => {
+                expect(screen.queryByText(/Nač/)).not.toBeInTheDocument();
+            });
+
+            // Fill in form fields
+            const nameInput = screen.getByDisplayValue('Existing Member') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'John Doe');
+
+            // Submit the form
+            const submitButton = screen.getByRole('button', {name: /odeslat/i});
+            await user.click(submitButton);
+
+            // Verify invalidateAllCaches was called after successful submission
+            await waitFor(() => {
+                expect(mockInvalidateAllCaches).toHaveBeenCalled();
+                expect(onSubmitSuccess).toHaveBeenCalled();
+                expect(onClose).toHaveBeenCalled();
+            });
+        });
+
+        it('should invalidate caches and refetch after successful submission', async () => {
+            const onClose = vi.fn();
+            const user = userEvent.setup();
+
+            const template = mockHalFormsTemplate({
+                title: 'Edit Member',
+                target: '/api/members/123',
+                method: 'PUT',
+                properties: [
+                    {
+                        name: 'name',
+                        prompt: 'Full Name',
+                        type: 'text',
+                        required: true,
+                    },
+                ],
+            });
+
+            const contextValue = createMockContext({id: 123});
+            const mockRefetch = vi.fn();
+            contextValue.refetch = mockRefetch;
+
+            const Wrapper = createWrapper(contextValue);
+
+            // Mock fetch calls:
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({id: 123, name: 'John Doe'}))
+                .mockResolvedValueOnce(createMockResponse({id: 123, name: 'Jane Doe'}));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="edit"
+                        resourceData={{id: 123}}
+                        pathname="/members/123"
+                        onClose={onClose}
+                    />
+                </Wrapper>
+            );
+
+            // Wait for form to load
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            });
+
+            // Wait for the form fields to appear
+            await waitFor(() => {
+                expect(screen.queryByText(/Nač/)).not.toBeInTheDocument();
+            });
+
+            // Fill in form fields
+            const nameInput = screen.getByDisplayValue('John Doe') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'Jane Doe');
+
+            // Submit the form
+            const submitButton = screen.getByRole('button', {name: /odeslat/i});
+            await user.click(submitButton);
+
+            // Verify both cache invalidation and refetch are called
+            await waitFor(() => {
+                expect(mockInvalidateAllCaches).toHaveBeenCalled();
+                expect(mockRefetch).toHaveBeenCalled();
+                expect(onClose).toHaveBeenCalled();
+            });
+        });
+
+        it('should not call invalidateAllCaches when submission fails', async () => {
+            const onClose = vi.fn();
+            const user = userEvent.setup();
+
+            const template = mockHalFormsTemplate({
+                title: 'Create Member',
+                target: '/api/members',
+                method: 'POST',
+                properties: [
+                    {
+                        name: 'name',
+                        prompt: 'Full Name',
+                        type: 'text',
+                        required: true,
+                    },
+                ],
+            });
+
+            const contextValue = createMockContext({id: 1});
+            const Wrapper = createWrapper(contextValue);
+
+            // Mock fetch to return initial data successfully, but fail on submission
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Test'}))
+                .mockResolvedValueOnce(createMockResponse({errors: {name: 'Required'}}, 400));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="create"
+                        resourceData={{id: 1}}
+                        pathname="/members"
+                        onClose={onClose}
+                    />
+                </Wrapper>
+            );
+
+            // Wait for form to load
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            });
+
+            // Wait for form fields
+            await waitFor(() => {
+                expect(screen.queryByText(/Nač/)).not.toBeInTheDocument();
+            });
+
+            // Clear mock to check subsequent calls
+            mockInvalidateAllCaches.mockClear();
+
+            // Submit the form
+            const nameInput = screen.getByDisplayValue('Test') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'New Name');
+
+            const submitButton = screen.getByRole('button', {name: /odeslat/i});
+            await user.click(submitButton);
+
+            // Wait a bit and verify invalidateAllCaches was NOT called on failure
+            await waitFor(() => {
+                expect(mockInvalidateAllCaches).not.toHaveBeenCalled();
+            });
         });
     });
 

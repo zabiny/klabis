@@ -13,6 +13,7 @@ import {UI_MESSAGES} from '../../constants/messages.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
+import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
 
 /**
  * Props for HalFormDisplay component
@@ -48,10 +49,12 @@ export const HalFormDisplay = ({
                                    showCloseButton = true,
                                }: HalFormDisplayProps): ReactElement => {
     const {refetch} = useHalRoute();
+    const {invalidateAllCaches} = useFormCacheInvalidation();
 
     const {mutate: submitForm, isPending: isSubmitting, error: rawError} = useAuthorizedMutation({
         method: template.method || 'POST',
         onSuccess: async () => {
+            await invalidateAllCaches();
             await refetch();
             onSubmitSuccess?.();
             onClose();
