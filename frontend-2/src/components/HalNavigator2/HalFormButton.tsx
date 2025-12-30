@@ -77,6 +77,7 @@ export function HalFormButton({name, modal = true, customLayout}: HalFormButtonP
                 onClick={handleButtonClick}
             />
 
+            {/* TODO: let HalFormButton just tell HalFormsPageLayout to display form as modal instead of displaying it directly  */}
             {/* Render modal if in modal mode and open */}
             {modal && (
                 <ModalOverlay isOpen={isModalOpen} onClose={handleCloseModal}>

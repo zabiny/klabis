@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react'
+import {modalStyles} from '../../theme/designTokens'
 
 interface ModalOverlayProps {
     /** Whether the modal is open */
@@ -48,13 +49,13 @@ export function ModalOverlay({
 
     return (
         <div
-            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-in fade-in duration-300"
+            className={modalStyles.backdrop}
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
         >
             <div
-                className={`bg-surface ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-300`}
+                className={`${modalStyles.content} ${maxWidthClasses[maxWidth]}`}
                 onClick={handleContentClick}
             >
                 {children}

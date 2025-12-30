@@ -7,6 +7,7 @@ import {type ReactElement} from 'react'
 import {useHalRoute} from '../../contexts/HalRouteContext'
 import {KlabisTableWithQuery} from '../KlabisTable'
 import {ErrorDisplay} from '../UI'
+import {containerStyles, spinnerStyles} from '../../theme/designTokens'
 import {type SortDirection} from '../../api'
 
 /**
@@ -66,11 +67,9 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
 
     if (isLoading) {
         return (
-            <div
-                className="rounded-md border border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600 p-4 flex items-center gap-2">
-                <div
-                    className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900 dark:border-gray-100"></div>
-                <span className="text-gray-900 dark:text-gray-100">Načítání dat tabulky...</span>
+            <div className={containerStyles.loadingContainer}>
+                <div className={spinnerStyles.spinner}></div>
+                <span className={spinnerStyles.loadingText}>Načítání dat tabulky...</span>
             </div>
         )
     }

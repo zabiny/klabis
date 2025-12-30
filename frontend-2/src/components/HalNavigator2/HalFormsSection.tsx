@@ -9,6 +9,7 @@ import type {HalFormsTemplate} from '../../api';
 import {useHalRoute} from '../../contexts/HalRouteContext';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {HalFormButton} from './HalFormButton.tsx';
+import {formsSectionStyles} from '../../theme/designTokens';
 import type {RenderFormCallback} from '../HalFormsForm';
 
 /**
@@ -52,9 +53,9 @@ export function HalFormsSection({
 	}
 
 	return (
-		<div className="mt-4 p-4 border border-border rounded bg-surface-raised">
-			<h3 className="font-semibold mb-2">{UI_MESSAGES.AVAILABLE_FORMS}</h3>
-			<div className="flex flex-wrap gap-2">
+		<div className={formsSectionStyles.container}>
+			<h3 className={formsSectionStyles.heading}>{UI_MESSAGES.AVAILABLE_FORMS}</h3>
+			<div className={formsSectionStyles.buttonContainer}>
 				{Object.keys(templates).map((templateName) => (
 					<HalFormButton
 						key={templateName}

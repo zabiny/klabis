@@ -1,6 +1,7 @@
 import type {ReactElement} from 'react'
 import {Alert} from './Alert'
 import {isFormValidationError} from '../../api/hateoas'
+import {buttonStyles, errorStyles, layoutStyles} from '../../theme/designTokens'
 
 /**
  * Props for ErrorDisplay component
@@ -74,20 +75,20 @@ export function ErrorDisplay({
 
     return (
         <Alert severity="error" className={className}>
-            <div className="space-y-2">
+            <div className={layoutStyles.verticalStack}>
                 {title && (
                     <p className="font-semibold">{title}</p>
                 )}
                 <p>{errorMessage}</p>
                 {subtitle && (
-                    <p className="text-sm text-text-secondary">
+                    <p className={errorStyles.validationMessage}>
                         {subtitle}
                     </p>
                 )}
 
                 {/* Display validation field errors if applicable */}
                 {showValidationErrors && (
-                    <ul className="list-disc list-inside text-sm">
+                    <ul className={errorStyles.listItem}>
                         {Object.entries(error.validationErrors).map(([field, fieldError]) => (
                             <li key={field}>
                                 {field}: {fieldError}
@@ -98,11 +99,11 @@ export function ErrorDisplay({
 
                 {/* Display action buttons if callbacks provided */}
                 {(onRetry || onCancel) && (
-                    <div className="flex gap-2 pt-1">
+                    <div className={layoutStyles.formControls}>
                         {onRetry && (
                             <button
                                 onClick={onRetry}
-                                className="text-sm px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors"
+                                className={buttonStyles.primaryButtonWithTransition}
                                 data-testid="error-display-retry-button"
                             >
                                 {retryText}
@@ -111,7 +112,7 @@ export function ErrorDisplay({
                         {onCancel && (
                             <button
                                 onClick={onCancel}
-                                className="text-sm px-3 py-1 bg-gray-300 text-gray-900 rounded hover:bg-gray-400 transition-colors"
+                                className={buttonStyles.secondaryButton}
                                 data-testid="error-display-cancel-button"
                             >
                                 {cancelText}

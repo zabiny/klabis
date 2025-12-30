@@ -10,6 +10,7 @@ import {useHalRoute} from '../../contexts/HalRouteContext';
 import {HAL_LINK_RELS} from '../../constants/hal.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {extractNavigationPath} from '../../utils/navigationPath';
+import {linkSectionStyles} from '../../theme/designTokens';
 
 interface HalLinksSectionProps {
 	/** Links object from HAL resource. If not provided, uses resourceData._links */
@@ -67,9 +68,9 @@ export function HalLinksSection({
 	}
 
 	return (
-		<div className="mt-4 p-4 border rounded bg-blue-50 dark:bg-blue-900">
-			<h3 className="font-semibold mb-2">{UI_MESSAGES.AVAILABLE_ACTIONS}</h3>
-			<div className="flex flex-wrap gap-2">
+		<div className={linkSectionStyles.container}>
+			<h3 className={linkSectionStyles.heading}>{UI_MESSAGES.AVAILABLE_ACTIONS}</h3>
+			<div className={linkSectionStyles.buttonContainer}>
 				{displayLinks
 					.map(([rel, link]: [string, any]) => {
 						const linkArray = Array.isArray(link) ? link : [link];
@@ -77,7 +78,7 @@ export function HalLinksSection({
 							<button
 								key={`${rel}-${idx}`}
 								onClick={() => onNavigate(l.href)}
-								className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm border-none cursor-pointer"
+								className={linkSectionStyles.linkButton}
 								title={rel}
 							>
 								{l.title || rel}

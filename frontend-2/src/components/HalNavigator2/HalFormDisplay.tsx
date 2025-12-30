@@ -14,6 +14,7 @@ import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
+import {buttonStyles, containerStyles, layoutStyles} from '../../theme/designTokens';
 
 /**
  * Props for HalFormDisplay component
@@ -81,13 +82,13 @@ export const HalFormDisplay = ({
 
     return (
         <div data-testid="hal-forms-display">
-            <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
+            <div className={containerStyles.formContainer}>
+                <div className={layoutStyles.headerRow}>
                     <h4 className="font-semibold">{template.title || templateName}</h4>
                     {showCloseButton && (
                         <button
                             onClick={onClose}
-                            className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                            className={buttonStyles.closeButton}
                             data-testid="close-form-button"
                             aria-label="Close form"
                         >
@@ -98,7 +99,7 @@ export const HalFormDisplay = ({
 
                 {/* Loading state while fetching target data */}
                 {isLoadingTargetData && (
-                    <div className="flex items-center gap-2 p-4 bg-surface-raised rounded">
+                    <div className={containerStyles.loadingContainer}>
                         <Spinner size="sm"/>
                         <span>{UI_MESSAGES.LOADING_FORM_DATA}</span>
                     </div>
