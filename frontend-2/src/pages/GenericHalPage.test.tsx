@@ -142,6 +142,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'pending',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -157,6 +158,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'pending',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -175,6 +177,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'error',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -191,6 +194,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'error',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -208,6 +212,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'error',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -225,6 +230,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -244,6 +250,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -264,6 +271,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -283,6 +291,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -300,6 +309,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -318,6 +328,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -335,6 +346,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -361,6 +373,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -377,6 +390,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -394,6 +408,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -411,6 +426,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -432,6 +448,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -454,6 +471,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -471,6 +489,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -490,6 +509,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -508,6 +528,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -527,6 +548,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -543,6 +565,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -560,6 +583,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -583,6 +607,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -604,6 +629,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -622,6 +648,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -641,6 +668,7 @@ describe('GenericHalPage Component', () => {
                 refetch: vi.fn(),
                 queryState: 'success',
                 navigateToResource: vi.fn(),
+                getResourceLink: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);

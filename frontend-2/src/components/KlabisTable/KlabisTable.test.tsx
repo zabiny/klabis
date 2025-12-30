@@ -336,7 +336,8 @@ describe('KlabisTable - Pure UI Component', () => {
         })
 
         it('handles errors in custom dataRender gracefully', () => {
-            const consoleError = vi.spyOn(console, 'error').mockImplementation()
+            const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {
+            })
 
             render(
                 <KlabisTable data={mockStaticData} page={mockPageData}>

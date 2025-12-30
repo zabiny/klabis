@@ -2,6 +2,7 @@ import React from 'react';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {useHalActions} from './useHalActions';
 import {mockHalFormsTemplate} from '../__mocks__/halData';
+import {createMockResponse} from '../__mocks__/mockFetch';
 import * as ReactRouterDom from 'react-router-dom';
 import {BrowserRouter} from 'react-router-dom';
 import {type Mock, vi} from 'vitest';
@@ -47,8 +48,14 @@ describe('useHalActions Hook', () => {
 
         useNavigate.mockReturnValue(mockNavigate);
         useHalRoute.mockReturnValue({
-            pathname: '/items',
+            resourceData: null,
+            navigateToResource: vi.fn(),
+            isLoading: false,
+            error: null,
             refetch: mockRefetch,
+            pathname: '/items',
+            queryState: 'success',
+            getResourceLink: vi.fn(),
         });
     });
 
@@ -266,7 +273,7 @@ describe('useHalActions Hook', () => {
                 result.current.setSelectedTemplate(template);
             });
 
-            submitHalFormsData.mockResolvedValueOnce(undefined);
+            submitHalFormsData.mockResolvedValueOnce(createMockResponse({}));
 
             await act(async () => {
                 await result.current.handleFormSubmit({name: 'Test'});
@@ -288,7 +295,7 @@ describe('useHalActions Hook', () => {
                 result.current.setSelectedTemplate(template);
             });
 
-            submitHalFormsData.mockResolvedValueOnce(undefined);
+            submitHalFormsData.mockResolvedValueOnce(createMockResponse({}));
 
             const formData = {name: 'New Item', description: 'Test'};
 
@@ -316,7 +323,7 @@ describe('useHalActions Hook', () => {
                 result.current.setSelectedTemplate(template);
             });
 
-            submitHalFormsData.mockResolvedValueOnce(undefined);
+            submitHalFormsData.mockResolvedValueOnce(createMockResponse({}));
 
             await act(async () => {
                 await result.current.handleFormSubmit({name: 'Test'});
@@ -342,7 +349,7 @@ describe('useHalActions Hook', () => {
                 result.current.setSubmitError(new Error('Previous error'));
             });
 
-            submitHalFormsData.mockResolvedValueOnce(undefined);
+            submitHalFormsData.mockResolvedValueOnce(createMockResponse({}));
 
             await act(async () => {
                 await result.current.handleFormSubmit({name: 'Test'});
@@ -362,7 +369,7 @@ describe('useHalActions Hook', () => {
                 result.current.setSelectedTemplate(template);
             });
 
-            submitHalFormsData.mockResolvedValueOnce(undefined);
+            submitHalFormsData.mockResolvedValueOnce(createMockResponse({}));
 
             await act(async () => {
                 await result.current.handleFormSubmit({name: 'Test'});
@@ -384,7 +391,7 @@ describe('useHalActions Hook', () => {
                 result.current.setSelectedTemplate(template);
             });
 
-            submitHalFormsData.mockResolvedValueOnce(undefined);
+            submitHalFormsData.mockResolvedValueOnce(createMockResponse({}));
 
             await act(async () => {
                 await result.current.handleFormSubmit({name: 'Test'});
@@ -497,7 +504,7 @@ describe('useHalActions Hook', () => {
                 result.current.setSelectedTemplate(template);
             });
 
-            submitHalFormsData.mockResolvedValue(undefined);
+            submitHalFormsData.mockResolvedValue(createMockResponse({}));
 
             // First submission
             await act(async () => {

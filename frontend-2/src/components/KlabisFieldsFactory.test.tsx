@@ -1,6 +1,5 @@
 import {render, screen} from '@testing-library/react';
 import {vi} from 'vitest';
-import React from 'react';
 import {klabisFieldsFactory} from './KlabisFieldsFactory';
 import type {HalFormsInputProps} from './HalFormsForm';
 
@@ -52,7 +51,10 @@ describe('KlabisFieldsFactory', () => {
 
             // Assert
             expect(result).not.toBeNull();
-            expect(result?.type?.displayName || result?.type?.name).toMatch(/HalFormsMemberId/i);
+            const componentType = result?.type;
+            if (typeof componentType === 'object' && componentType !== null && ('displayName' in componentType || 'name' in componentType)) {
+                expect((componentType as any).displayName || (componentType as any).name).toMatch(/HalFormsMemberId/i);
+            }
         });
 
         it('should configure remote options pointing to /members/options endpoint', () => {
@@ -71,7 +73,7 @@ describe('KlabisFieldsFactory', () => {
 
             // Act
             const fieldElement = klabisFieldsFactory('MemberId', mockConf);
-            const {container} = render(fieldElement!);
+            render(fieldElement!);
 
             // Assert
             const selectMock = screen.getByTestId('hal-forms-memberid-mock');

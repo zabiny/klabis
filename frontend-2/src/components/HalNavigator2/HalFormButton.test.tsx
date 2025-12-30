@@ -425,7 +425,7 @@ describe('HalFormButton Component', () => {
                 refetch: mockRefetch,
             };
 
-            submitHalFormsData.mockResolvedValueOnce({success: true});
+            submitHalFormsData.mockResolvedValueOnce(createMockResponse({}));
 
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,

@@ -34,6 +34,29 @@ vi.mock('../components/Icons', () => ({
 const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
 const useAuth = vi.mocked(AuthContext2Module.useAuth)
 
+// Helper to create a complete UseQueryResult mock
+const createMockQueryResult = (data: any = null, overrides: any = {}) => ({
+    data,
+    isLoading: false,
+    isError: false,
+    isPending: false,
+    error: null,
+    status: 'success' as const,
+    fetchStatus: 'idle' as const,
+    isFetched: true,
+    isStale: false,
+    isFetching: false,
+    isPlaceholderData: false,
+    isRefetching: false,
+    refetch: vi.fn(),
+    failureCount: 0,
+    failureReason: null,
+    errorUpdateCount: 0,
+    errorUpdatedAt: null,
+    dataUpdatedAt: Date.now(),
+    ...overrides,
+} as any);
+
 describe('Layout - Responsive Sidebar', () => {
     let queryClient: QueryClient
 
@@ -45,18 +68,18 @@ describe('Layout - Responsive Sidebar', () => {
         })
 
         // Mock useRootNavigation to return menu items
-        useRootNavigation.mockReturnValue({
-            data: [
+        useRootNavigation.mockReturnValue(
+            createMockQueryResult([
                 {rel: 'members', href: '/members', label: 'Members'},
                 {rel: 'events', href: '/events', label: 'Events'},
-            ],
-            isLoading: false,
-            error: null,
-        })
+            ])
+        )
 
         // Mock useAuth
         useAuth.mockReturnValue({
             isAuthenticated: true,
+            login: vi.fn(),
+            isLoading: false,
             getUser: vi.fn().mockResolvedValue({
                 id: 'user-1',
                 firstName: 'John',
@@ -138,11 +161,9 @@ describe('Layout - Responsive Sidebar', () => {
         })
 
         it('should display loading state when menu is loading', async () => {
-            useRootNavigation.mockReturnValue({
-                data: [],
-                isLoading: true,
-                error: null,
-            })
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([], {isLoading: true, status: 'pending', isPending: true})
+            )
 
             renderLayout()
 
@@ -153,11 +174,9 @@ describe('Layout - Responsive Sidebar', () => {
 
         it('should display error state when menu fails to load', async () => {
             const error = new Error('Failed to load menu')
-            useRootNavigation.mockReturnValue({
-                data: [],
-                isLoading: false,
-                error: error,
-            })
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([], {isLoading: false, error: error, status: 'error', isError: true})
+            )
 
             renderLayout()
 
@@ -167,11 +186,9 @@ describe('Layout - Responsive Sidebar', () => {
         })
 
         it('should display no menu items message when list is empty', async () => {
-            useRootNavigation.mockReturnValue({
-                data: [],
-                isLoading: false,
-                error: null,
-            })
+            useRootNavigation.mockReturnValue(
+                createMockQueryResult([])
+            )
 
             renderLayout()
 
@@ -209,6 +226,8 @@ describe('Layout - Responsive Sidebar', () => {
             const mockLogout = vi.fn()
             useAuth.mockReturnValue({
                 isAuthenticated: true,
+                login: vi.fn(),
+                isLoading: false,
                 getUser: vi.fn().mockResolvedValue({
                     id: 'user-1',
                     firstName: 'John',

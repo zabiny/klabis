@@ -334,7 +334,8 @@ describe('ThemeContext', () => {
     describe('useTheme hook validation', () => {
         it('should throw error when used outside ThemeProvider', () => {
             // Suppress console.error for this test
-            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation()
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+            })
 
             expect(() => {
                 renderHook(() => useTheme())

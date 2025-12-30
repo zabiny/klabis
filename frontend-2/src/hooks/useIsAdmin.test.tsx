@@ -4,7 +4,7 @@ import {type ReactNode} from 'react';
 import {useIsAdmin} from './useIsAdmin';
 import type {NavigationItem} from './useRootNavigation';
 import * as rootNavModule from './useRootNavigation';
-import {vi} from 'vitest';
+import {type MockedFunction, vi} from 'vitest';
 
 // Mock the useRootNavigation hook
 vi.mock('./useRootNavigation');
