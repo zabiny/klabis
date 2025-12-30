@@ -4,11 +4,12 @@ import {type ReactNode} from 'react';
 import {useIsAdmin} from './useIsAdmin';
 import type {NavigationItem} from './useRootNavigation';
 import * as rootNavModule from './useRootNavigation';
+import {vi} from 'vitest';
 
 // Mock the useRootNavigation hook
-jest.mock('./useRootNavigation');
+vi.mock('./useRootNavigation');
 
-const mockUseRootNavigation = rootNavModule.useRootNavigation as jest.MockedFunction<
+const mockUseRootNavigation = rootNavModule.useRootNavigation as MockedFunction<
     typeof rootNavModule.useRootNavigation
 >;
 
@@ -26,7 +27,7 @@ describe('useIsAdmin', () => {
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     const createWrapper = () => {
@@ -55,7 +56,7 @@ describe('useIsAdmin', () => {
             isPlaceholderData: false,
             isPending: false,
             isRefetching: false,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             failureCount: 0,
             failureReason: null,
             errorUpdateCount: 0,
@@ -90,7 +91,7 @@ describe('useIsAdmin', () => {
             isPlaceholderData: false,
             isPending: false,
             isRefetching: false,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             failureCount: 0,
             failureReason: null,
             errorUpdateCount: 0,
@@ -120,7 +121,7 @@ describe('useIsAdmin', () => {
             isPlaceholderData: false,
             isPending: true,
             isRefetching: false,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             failureCount: 0,
             failureReason: null,
             errorUpdateCount: 0,
@@ -149,7 +150,7 @@ describe('useIsAdmin', () => {
             isPlaceholderData: false,
             isPending: false,
             isRefetching: false,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             failureCount: 0,
             failureReason: null,
             errorUpdateCount: 0,

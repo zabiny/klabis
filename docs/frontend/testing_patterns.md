@@ -1,7 +1,14 @@
 # Frontend Testing Patterns
 
 This document describes testing patterns and best practices discovered through test reviews and implementation in the
-klabis project.
+klabis project. Tests use **Vitest** as the test runner with React Testing Library for component testing.
+
+## Running Tests
+
+- `npm test` - Run all tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:ui` - Run tests with interactive UI
 
 ## Table of Contents
 
@@ -24,23 +31,25 @@ behavior, not their implementation details.
 **Good Example** (from GenericHalPage.test.tsx):
 
 ```typescript
-jest.mock('../components/UI', () => ({
+import {vi} from 'vitest';
+
+vi.mock('../components/UI', () => ({
     Alert: ({severity, children}: any) => (
-        <div data - testid = {`alert-${severity}`
+            <div data - testid = {`alert-${severity}`
 }
 role = "alert" >
-    {children}
-    < /div>
+        {children}
+        < /div>
 ),
 Modal: ({isOpen, onClose, title, children}: any) =>
-    isOpen ? (
-        <div data - testid = "modal" role = "dialog" >
-        {title && <h2>{title} < /h2>}
+        isOpen ? (
+                <div data - testid = "modal" role = "dialog" >
+                {title && <h2>{title} < /h2>}
 {
-    children
+  children
 }
 <button onClick = {onClose} > Close < /button>
-    < /div>
+        < /div>
 ) :
 null,
 }))
@@ -59,15 +68,17 @@ Don't mock providers that are central to your component's functionality. Instead
 properly.
 
 ```typescript
+import {vi} from 'vitest';
+
 // BAD: Mocking HalRouteProvider completely
-jest.mock('../contexts/HalRouteContext', () => ({
-    HalRouteProvider: jest.fn(({children}) => children),
+vi.mock('../contexts/HalRouteContext', () => ({
+  HalRouteProvider: vi.fn(({children}) => children),
 }));
 
 // GOOD: Mock useHalRoute hook and set up real provider
-jest.mock('../contexts/HalRouteContext', () => ({
-    ...jest.requireActual('../contexts/HalRouteContext'),
-    useHalRoute: jest.fn(), // Only mock the hook
+vi.mock('../contexts/HalRouteContext', async () => ({
+  ...(await vi.importActual('../contexts/HalRouteContext')),
+  useHalRoute: vi.fn(), // Only mock the hook
 }));
 ```
 
@@ -80,13 +91,15 @@ When testing context hooks with `renderHook`, create a wrapper component that in
 **Example** (from HalRouteContext.test.tsx):
 
 ```typescript
+import {renderHook} from '@testing-library/react';
+
 const createWrapper = () => {
     return ({children}: { children: React.ReactNode }) => (
-        <QueryClientProvider client = {queryClient} >
+            <QueryClientProvider client = {queryClient} >
             <BrowserRouter>
-                <HalRouteProvider>{children} < /HalRouteProvider>
-            < /BrowserRouter>
-            < /QueryClientProvider>
+                    <HalRouteProvider>{children} < /HalRouteProvider>
+                    < /BrowserRouter>
+                    < /QueryClientProvider>
     );
 };
 

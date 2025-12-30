@@ -4,14 +4,17 @@ import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
 import CalendarPage from './CalendarPage';
+import {vi} from 'vitest';
+import * as HalRouteContextModule from '../contexts/HalRouteContext';
+import * as HalActionsModule from '../hooks/useHalActions';
 
 // Mock child components
-jest.mock('../contexts/HalRouteContext', () => ({
-    ...jest.requireActual('../contexts/HalRouteContext'),
-    useHalRoute: jest.fn(),
+vi.mock('../contexts/HalRouteContext', async () => ({
+    ...(await vi.importActual('../contexts/HalRouteContext')),
+    useHalRoute: vi.fn(),
 }));
 
-jest.mock('../components/UI', () => ({
+vi.mock('../components/UI', () => ({
     Alert: ({severity, children}: any) => (
         <div data-testid={`alert-${severity}`} role="alert">
             {children}
@@ -19,7 +22,7 @@ jest.mock('../components/UI', () => ({
     ),
 }));
 
-jest.mock('../components/JsonPreview', () => ({
+vi.mock('../components/JsonPreview', () => ({
     JsonPreview: ({data, label}: any) => (
         <div data-testid="json-preview">
             {label && <h2>{label}</h2>}
@@ -28,7 +31,7 @@ jest.mock('../components/JsonPreview', () => ({
     ),
 }));
 
-jest.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
+vi.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
     HalLinksSection: ({links, onNavigate}: any) =>
         links ? (
             <div data-testid="hal-links">
@@ -37,7 +40,7 @@ jest.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
         ) : null,
 }));
 
-jest.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
+vi.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
     HalFormsSection: ({templates}: any) =>
         templates ? (
             <div data-testid="hal-forms">
@@ -51,12 +54,12 @@ jest.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
         ) : null,
 }));
 
-jest.mock('../hooks/useHalActions', () => ({
-    useHalActions: jest.fn(),
+vi.mock('../hooks/useHalActions', () => ({
+    useHalActions: vi.fn(),
 }));
 
-const {useHalRoute} = require('../contexts/HalRouteContext');
-const {useHalActions} = require('../hooks/useHalActions');
+const useHalRoute = vi.mocked(HalRouteContextModule.useHalRoute);
+const useHalActions = vi.mocked(HalActionsModule.useHalActions);
 
 describe('CalendarPage Component', () => {
     let mockHalActions: any;
@@ -70,11 +73,11 @@ describe('CalendarPage Component', () => {
         });
 
         mockHalActions = {
-            handleNavigateToItem: jest.fn(),
+            handleNavigateToItem: vi.fn(),
         };
 
         useHalActions.mockReturnValue(mockHalActions);
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     // Helper function to render with router and query params

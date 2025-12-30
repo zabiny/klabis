@@ -9,21 +9,24 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import {createMockResponse} from '../../__mocks__/mockFetch';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {type Mock, vi} from 'vitest';
+import * as HateoasModule from '../../api/hateoas';
 
 // Mock dependencies
-jest.mock('../../api/klabisUserManager', () => ({
+vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: jest.fn().mockResolvedValue({
+        getUser: vi.fn().mockResolvedValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
     },
 }));
 
-jest.mock('../../api/hateoas.ts', () => ({
-    ...jest.requireActual('../../api/hateoas'),
-    submitHalFormsData: jest.fn(),
+vi.mock('../../api/hateoas', () => ({
+    submitHalFormsData: vi.fn(),
 }));
+
+const mockedHateoas = vi.mocked(HateoasModule);
 
 describe('HalFormButton Component', () => {
     let queryClient: QueryClient;
@@ -34,7 +37,7 @@ describe('HalFormButton Component', () => {
                 queries: {retry: false, gcTime: 0},
             },
         });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     const createWrapper = () => {
@@ -51,11 +54,11 @@ describe('HalFormButton Component', () => {
         resourceData,
         isLoading: false,
         error: null,
-        refetch: jest.fn(),
+        refetch: vi.fn(),
         pathname: '/members/123',
         queryState: 'success',
-        navigateToResource: jest.fn(),
-        getResourceLink: jest.fn()
+        navigateToResource: vi.fn(),
+        getResourceLink: vi.fn()
     });
 
     const renderWithContext = (
@@ -396,7 +399,7 @@ describe('HalFormButton Component', () => {
     });
 
     describe('Form Modal Setup and Context Integration', () => {
-        const {submitHalFormsData} = require('../../api/hateoas.ts');
+        const submitHalFormsData = mockedHateoas.submitHalFormsData;
 
         beforeEach(() => {
             submitHalFormsData.mockClear();
@@ -416,7 +419,7 @@ describe('HalFormButton Component', () => {
                 },
             };
 
-            const mockRefetch = jest.fn().mockResolvedValue(undefined);
+            const mockRefetch = vi.fn().mockResolvedValue(undefined);
             const contextValue = {
                 ...createMockContext(resourceData),
                 refetch: mockRefetch,
@@ -453,7 +456,7 @@ describe('HalFormButton Component', () => {
                 },
             };
 
-            const mockRefetch = jest.fn().mockResolvedValue(undefined);
+            const mockRefetch = vi.fn().mockResolvedValue(undefined);
             const contextValue = {
                 ...createMockContext(resourceData),
                 refetch: mockRefetch,
@@ -516,7 +519,7 @@ describe('HalFormButton Component', () => {
         });
 
         it('should pass refetch callback to form context', async () => {
-            const mockRefetch = jest.fn().mockResolvedValue(undefined);
+            const mockRefetch = vi.fn().mockResolvedValue(undefined);
             const resourceData: HalResponse = {
                 id: 1,
                 name: 'Test Resource',
@@ -544,7 +547,7 @@ describe('HalFormButton Component', () => {
         });
 
         it('should pass navigateToResource callback to form context', async () => {
-            const mockNavigateToResource = jest.fn();
+            const mockNavigateToResource = vi.fn();
             const resourceData: HalResponse = {
                 id: 1,
                 name: 'Test Resource',
@@ -573,13 +576,13 @@ describe('HalFormButton Component', () => {
     });
 
     describe('API Without GET Endpoint (HTTP 404/405)', () => {
-        let fetchSpy: jest.Mock;
+        let fetchSpy: Mock;
 
         beforeEach(() => {
             // Clear query cache before each test
             queryClient.clear();
             // Mock global fetch
-            fetchSpy = jest.fn() as jest.Mock;
+            fetchSpy = vi.fn() as Mock;
             (globalThis as any).fetch = fetchSpy;
         });
 

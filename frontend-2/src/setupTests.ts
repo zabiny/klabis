@@ -1,19 +1,20 @@
 // Rozšíření matcherů pro DOM od @testing-library/jest-dom
 import '@testing-library/jest-dom';
+import {afterAll, afterEach, beforeAll, beforeEach, vi} from 'vitest';
 
 // Set up globalThis.__DEV__ for getApiBaseUrl()
 // Vite will replace this at build time in production/dev builds,
-// but in Jest tests we default to false (production-like behavior)
+// but in Vitest tests we default to false (production-like behavior)
 (globalThis as any).__DEV__ = false;
 
 // Mock pro případné globální objekty nebo API
-// global.ResizeObserver = jest.fn().mockImplementation(() => ({
-//     observe: jest.fn(),
-//     unobserve: jest.fn(),
-//     disconnect: jest.fn(),
+// global.ResizeObserver = vi.fn().mockImplementation(() => ({
+//     observe: vi.fn(),
+//     unobserve: vi.fn(),
+//     disconnect: vi.fn(),
 // }));
 
-// Jest global setup
+// Vitest global setup
 beforeAll(() => {
     // Globální setup před všemi testy
 });
@@ -24,7 +25,7 @@ afterAll(() => {
 
 beforeEach(() => {
     // Setup před každým testem
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 });
 
 afterEach(() => {

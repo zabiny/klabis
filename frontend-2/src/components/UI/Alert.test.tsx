@@ -1,6 +1,7 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Alert} from './Alert';
+import {vi} from 'vitest';
 
 describe('Alert Component', () => {
     describe('Rendering', () => {
@@ -58,7 +59,7 @@ describe('Alert Component', () => {
 
         it('should call onClose when close button is clicked', async () => {
             const user = userEvent.setup();
-            const mockOnClose = jest.fn();
+            const mockOnClose = vi.fn();
             render(<Alert onClose={mockOnClose}>Test</Alert>);
             const closeButton = screen.getByLabelText('Close alert');
             await user.click(closeButton);

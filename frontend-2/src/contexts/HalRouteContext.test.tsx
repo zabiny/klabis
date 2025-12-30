@@ -5,11 +5,12 @@ import {createDelayedMockResponse, createMockResponse} from '../__mocks__/mockFe
 import {BrowserRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
+import {type Mock, vi} from 'vitest';
 
 // Mock the auth user manager to return a user with access token
-jest.mock('../api/klabisUserManager', () => ({
+vi.mock('../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: jest.fn().mockResolvedValue({
+        getUser: vi.fn().mockResolvedValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
@@ -18,7 +19,7 @@ jest.mock('../api/klabisUserManager', () => ({
 
 describe('useHalRoute Hook', () => {
     let queryClient: QueryClient;
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -26,9 +27,9 @@ describe('useHalRoute Hook', () => {
                 queries: {retry: false, gcTime: 0},
             },
         });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock;
+        fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
     });
 
@@ -70,7 +71,7 @@ describe('useHalRoute Hook', () => {
 
         it('should throw error when used outside HalRouteProvider', () => {
             // Suppress console.error for this test
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation();
 
             expect(() => {
                 renderHook(() => useHalRoute());
@@ -404,7 +405,7 @@ describe('useHalRoute Hook', () => {
 
 describe('HalSubresourceProvider', () => {
     let queryClient: QueryClient;
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -412,9 +413,9 @@ describe('HalSubresourceProvider', () => {
                 queries: {retry: false, gcTime: 0},
             },
         });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock;
+        fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
     });
 

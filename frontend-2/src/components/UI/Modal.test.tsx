@@ -1,6 +1,7 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Modal} from './Modal';
+import {vi} from 'vitest';
 
 describe('Modal Component', () => {
     describe('Visibility', () => {
@@ -96,7 +97,7 @@ describe('Modal Component', () => {
 
         it('should call onClose when close button is clicked', async () => {
             const user = userEvent.setup();
-            const mockOnClose = jest.fn();
+            const mockOnClose = vi.fn();
             render(
                 <Modal isOpen={true} onClose={mockOnClose}>
                     Content
@@ -123,7 +124,7 @@ describe('Modal Component', () => {
 
         it('should call onClose when backdrop is clicked', async () => {
             const user = userEvent.setup();
-            const mockOnClose = jest.fn();
+            const mockOnClose = vi.fn();
             const {container} = render(
                 <Modal isOpen={true} onClose={mockOnClose}>
                     Content

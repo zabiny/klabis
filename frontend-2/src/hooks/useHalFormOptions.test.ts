@@ -5,11 +5,12 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalFormOptions} from './useHalFormOptions';
 import type {HalFormsOption} from '../api';
 import {createMockResponse} from '../__mocks__/mockFetch';
+import {type Mock, vi} from 'vitest';
 
 // Mock dependencies
-jest.mock('../api/klabisUserManager', () => ({
+vi.mock('../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: jest.fn().mockResolvedValue({
+        getUser: vi.fn().mockResolvedValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
@@ -18,7 +19,7 @@ jest.mock('../api/klabisUserManager', () => ({
 
 describe('useHalFormOptions', () => {
     let queryClient: QueryClient;
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -26,9 +27,9 @@ describe('useHalFormOptions', () => {
                 queries: {retry: false, gcTime: 0},
             },
         });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock;
+        fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
     });
 
@@ -307,9 +308,9 @@ describe('useHalFormOptions', () => {
         it('should handle response that is not JSON', async () => {
             const mockResponse = {
                 ok: true,
-                json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
+                json: vi.fn().mockRejectedValue(new Error('Invalid JSON')),
                 clone: () => ({
-                    text: jest.fn().mockResolvedValue('invalid'),
+                    text: vi.fn().mockResolvedValue('invalid'),
                 }),
             } as any;
             fetchSpy.mockResolvedValue(mockResponse);

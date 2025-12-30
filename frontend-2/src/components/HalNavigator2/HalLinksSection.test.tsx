@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import {BrowserRouter} from 'react-router-dom';
 import {HalLinksSection} from './HalLinksSection.tsx';
 import * as HalRouteContext from '../../contexts/HalRouteContext';
+import {vi} from 'vitest';
 
 const TestWrapper = ({children}: { children: React.ReactNode }) => (
     <BrowserRouter>
@@ -16,7 +17,7 @@ const renderWithRouter = (component: React.ReactElement) => {
 
 describe('HalLinksSection Component', () => {
     beforeEach(() => {
-        jest.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+        vi.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
             resourceData: null,
             isLoading: false,
             error: null,
@@ -24,13 +25,13 @@ describe('HalLinksSection Component', () => {
             },
             pathname: '/test',
             queryState: 'success',
-            navigateToResource: jest.fn(),
-            getResourceLink: jest.fn()
+            navigateToResource: vi.fn(),
+            getResourceLink: vi.fn()
         });
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
     });
 
     describe('Rendering', () => {
@@ -42,7 +43,7 @@ describe('HalLinksSection Component', () => {
         });
 
         it('should render when resourceData._links is provided automatically', () => {
-            jest.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+            vi.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
                 resourceData: {
                     _links: {
                         next: {href: '/api/items?page=1'},
@@ -54,8 +55,8 @@ describe('HalLinksSection Component', () => {
                 },
                 pathname: '/test',
                 queryState: 'success',
-                navigateToResource: jest.fn(),
-                getResourceLink: jest.fn()
+                navigateToResource: vi.fn(),
+                getResourceLink: vi.fn()
             });
 
             const {container} = renderWithRouter(
@@ -195,7 +196,7 @@ describe('HalLinksSection Component', () => {
     describe('Navigation', () => {
         it('should call onNavigate with href when link is clicked', async () => {
             const user = userEvent.setup();
-            const mockOnNavigate = jest.fn();
+            const mockOnNavigate = vi.fn();
             const links = {
                 next: {href: '/api/items?page=1', title: 'Next'},
             };
@@ -209,7 +210,7 @@ describe('HalLinksSection Component', () => {
 
         it('should call onNavigate with correct href for array links', async () => {
             const user = userEvent.setup();
-            const mockOnNavigate = jest.fn();
+            const mockOnNavigate = vi.fn();
             const links = {
                 item: [
                     {href: '/api/items/1', title: 'Item 1'},
@@ -226,7 +227,7 @@ describe('HalLinksSection Component', () => {
 
         it('should handle multiple navigations', async () => {
             const user = userEvent.setup();
-            const mockOnNavigate = jest.fn();
+            const mockOnNavigate = vi.fn();
             const links = {
                 first: {href: '/api/items?page=0'},
                 last: {href: '/api/items?page=10'},
@@ -303,7 +304,7 @@ describe('HalLinksSection Component', () => {
             const links = {
                 broken: {title: 'Broken Link'} as any,
             };
-            const mockOnNavigate = jest.fn();
+            const mockOnNavigate = vi.fn();
             renderWithRouter(
                 <HalLinksSection links={links} onNavigate={mockOnNavigate}/>
             );
@@ -318,7 +319,7 @@ describe('HalLinksSection Component', () => {
                     title: 'Next',
                 },
             };
-            const mockOnNavigate = jest.fn();
+            const mockOnNavigate = vi.fn();
             renderWithRouter(
                 <HalLinksSection links={links} onNavigate={mockOnNavigate}/>
             );

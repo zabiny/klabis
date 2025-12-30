@@ -8,11 +8,12 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import {createMockResponse} from '../../__mocks__/mockFetch';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {type Mock, vi} from 'vitest';
 
 // Mock dependencies
-jest.mock('../../api/klabisUserManager', () => ({
+vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: jest.fn().mockResolvedValue({
+        getUser: vi.fn().mockResolvedValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
@@ -21,7 +22,7 @@ jest.mock('../../api/klabisUserManager', () => ({
 
 describe('HalFormDisplay Component', () => {
     let queryClient: QueryClient;
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -29,9 +30,9 @@ describe('HalFormDisplay Component', () => {
                 queries: {retry: false, gcTime: 0},
             },
         });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock;
+        fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
     });
 
@@ -43,11 +44,11 @@ describe('HalFormDisplay Component', () => {
         resourceData: resourceData || {id: 1, name: 'Test Resource'},
         isLoading: false,
         error: null,
-        refetch: jest.fn(),
+        refetch: vi.fn(),
         pathname: '/test/123',
         queryState: 'success',
-        navigateToResource: jest.fn(),
-        getResourceLink: jest.fn()
+        navigateToResource: vi.fn(),
+        getResourceLink: vi.fn()
     });
 
     const createWrapper = (contextValue: HalRouteContextValue) => {
@@ -62,8 +63,8 @@ describe('HalFormDisplay Component', () => {
 
     const renderComponent = (
         template = mockHalFormsTemplate({title: 'Test Form'}),
-        onClose = jest.fn(),
-        onSubmitSuccess = jest.fn(),
+        onClose = vi.fn(),
+        onSubmitSuccess = vi.fn(),
         showCloseButton = true
     ) => {
         const resourceData: HalResponse = {
@@ -107,8 +108,8 @@ describe('HalFormDisplay Component', () => {
         it('should not display close button when showCloseButton=false', () => {
             renderComponent(
                 mockHalFormsTemplate({title: 'Test Form'}),
-                jest.fn(),
-                jest.fn(),
+                vi.fn(),
+                vi.fn(),
                 false
             );
             expect(screen.queryByTestId('close-form-button')).not.toBeInTheDocument();
@@ -117,7 +118,7 @@ describe('HalFormDisplay Component', () => {
 
     describe('Close Functionality', () => {
         it('should call onClose when close button is clicked', async () => {
-            const onClose = jest.fn();
+            const onClose = vi.fn();
             const user = userEvent.setup();
             renderComponent(
                 mockHalFormsTemplate({title: 'Test Form'}),
@@ -139,8 +140,8 @@ describe('HalFormDisplay Component', () => {
 
     describe('Form Submission', () => {
         it('should submit form successfully and trigger callbacks', async () => {
-            const onClose = jest.fn();
-            const onSubmitSuccess = jest.fn();
+            const onClose = vi.fn();
+            const onSubmitSuccess = vi.fn();
             const user = userEvent.setup();
 
             const template = mockHalFormsTemplate({
@@ -163,7 +164,7 @@ describe('HalFormDisplay Component', () => {
             });
 
             const contextValue = createMockContext({id: 1});
-            const mockRefetch = jest.fn();
+            const mockRefetch = vi.fn();
             contextValue.refetch = mockRefetch;
 
             const Wrapper = createWrapper(contextValue);

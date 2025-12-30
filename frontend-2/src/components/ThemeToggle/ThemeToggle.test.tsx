@@ -1,35 +1,36 @@
 import {fireEvent, render, screen} from '@testing-library/react'
 import {ThemeProvider} from '../../theme/ThemeContext'
 import {ThemeToggle} from './ThemeToggle'
+import {vi} from 'vitest';
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation((query) => ({
+    value: vi.fn().mockImplementation((query) => ({
         matches: query === '(prefers-color-scheme: dark)',
         media: query,
         onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
     })),
 })
 
 // Mock localStorage
 const mockLocalStorage = {}
-Storage.prototype.getItem = jest.fn((key) => (mockLocalStorage as any)[key] || null)
-Storage.prototype.setItem = jest.fn((key, value) => {
+Storage.prototype.getItem = vi.fn((key) => (mockLocalStorage as any)[key] || null)
+Storage.prototype.setItem = vi.fn((key, value) => {
     (mockLocalStorage as any)[key] = value
 })
-Storage.prototype.removeItem = jest.fn((key) => {
+Storage.prototype.removeItem = vi.fn((key) => {
     delete (mockLocalStorage as any)[key]
 })
 
 describe('ThemeToggle', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         Object.keys(mockLocalStorage).forEach((key) => delete (mockLocalStorage as any)[key])
     })
 

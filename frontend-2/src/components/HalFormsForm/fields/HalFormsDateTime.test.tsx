@@ -5,6 +5,7 @@ import {Form, Formik} from 'formik';
 import type {HalFormsProperty} from '../../../api';
 import {HalFormsDateTime} from './HalFormsDateTime';
 import type {HalFormsInputProps} from '../types';
+import {vi} from 'vitest';
 
 describe('HalFormsDateTime Component', () => {
     const createHalFormsProperty = (overrides = {}): HalFormsProperty => ({
@@ -24,13 +25,13 @@ describe('HalFormsDateTime Component', () => {
         const fieldProps: HalFormsInputProps = {
             prop,
             errorText: undefined,
-            subElementProps: jest.fn(),
+            subElementProps: vi.fn(),
         };
 
         return render(
             <Formik
                 initialValues={{[prop.name]: initialValue}}
-                onSubmit={jest.fn()}
+                onSubmit={vi.fn()}
             >
                 <Form>
                     <HalFormsDateTime {...fieldProps} />
@@ -175,13 +176,13 @@ describe('HalFormsDateTime Component', () => {
             const fieldProps: HalFormsInputProps = {
                 prop,
                 errorText: 'Invalid datetime format',
-                subElementProps: jest.fn(),
+                subElementProps: vi.fn(),
             };
 
             render(
                 <Formik
                     initialValues={{[prop.name]: ''}}
-                    onSubmit={jest.fn()}
+                    onSubmit={vi.fn()}
                 >
                     <Form>
                         <HalFormsDateTime {...fieldProps} />
@@ -196,11 +197,11 @@ describe('HalFormsDateTime Component', () => {
     describe('Submission Format', () => {
         it('should convert datetime-local value to ISO format with timezone on change', async () => {
             const prop = createHalFormsProperty();
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             const fieldProps: HalFormsInputProps = {
                 prop,
                 errorText: undefined,
-                subElementProps: jest.fn(),
+                subElementProps: vi.fn(),
             };
 
             const user = userEvent.setup();
@@ -234,11 +235,11 @@ describe('HalFormsDateTime Component', () => {
 
         it('should preserve ISO format value if already in correct format', async () => {
             const prop = createHalFormsProperty();
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             const fieldProps: HalFormsInputProps = {
                 prop,
                 errorText: undefined,
-                subElementProps: jest.fn(),
+                subElementProps: vi.fn(),
             };
 
             const isoValue = '2025-12-12T14:30:00+01:00';
@@ -270,11 +271,11 @@ describe('HalFormsDateTime Component', () => {
 
         it('should convert modified value back to ISO format with timezone', async () => {
             const prop = createHalFormsProperty();
-            const onSubmit = jest.fn();
+            const onSubmit = vi.fn();
             const fieldProps: HalFormsInputProps = {
                 prop,
                 errorText: undefined,
-                subElementProps: jest.fn(),
+                subElementProps: vi.fn(),
             };
 
             const initialIsoValue = '2025-12-05T10:00:00+01:00';

@@ -1,6 +1,7 @@
 import {act, renderHook} from '@testing-library/react'
 import {ThemeProvider, useTheme} from './ThemeContext'
 import type {ReactNode} from 'react'
+import {vi} from 'vitest';
 
 describe('ThemeContext', () => {
     let mockLocalStorage: { [key: string]: string } = {}
@@ -8,39 +9,39 @@ describe('ThemeContext', () => {
     beforeEach(() => {
         // Mock localStorage
         mockLocalStorage = {}
-        Storage.prototype.getItem = jest.fn((key) => mockLocalStorage[key] || null)
-        Storage.prototype.setItem = jest.fn((key, value) => {
+        Storage.prototype.getItem = vi.fn((key) => mockLocalStorage[key] || null)
+        Storage.prototype.setItem = vi.fn((key, value) => {
             mockLocalStorage[key] = value
         })
-        Storage.prototype.removeItem = jest.fn((key) => {
+        Storage.prototype.removeItem = vi.fn((key) => {
             delete mockLocalStorage[key]
         })
-        Storage.prototype.clear = jest.fn(() => {
+        Storage.prototype.clear = vi.fn(() => {
             mockLocalStorage = {}
         })
 
         // Mock window.matchMedia
         Object.defineProperty(window, 'matchMedia', {
             writable: true,
-            value: jest.fn().mockImplementation((query) => ({
+            value: vi.fn().mockImplementation((query) => ({
                 matches: query === '(prefers-color-scheme: dark)',
                 media: query,
                 onchange: null,
-                addListener: jest.fn(),
-                removeListener: jest.fn(),
-                addEventListener: jest.fn(),
-                removeEventListener: jest.fn(),
-                dispatchEvent: jest.fn(),
+                addListener: vi.fn(),
+                removeListener: vi.fn(),
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+                dispatchEvent: vi.fn(),
             })),
         })
 
         // Mock document.documentElement classList methods
-        jest.spyOn(document.documentElement.classList, 'add')
-        jest.spyOn(document.documentElement.classList, 'remove')
+        vi.spyOn(document.documentElement.classList, 'add')
+        vi.spyOn(document.documentElement.classList, 'remove')
     })
 
     afterEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
     })
 
     const createWrapper = () => {
@@ -267,15 +268,15 @@ describe('ThemeContext', () => {
             // Mock system preference to light
             Object.defineProperty(window, 'matchMedia', {
                 writable: true,
-                value: jest.fn().mockImplementation((query) => ({
+                value: vi.fn().mockImplementation((query) => ({
                     matches: query !== '(prefers-color-scheme: dark)',
                     media: query,
                     onchange: null,
-                    addListener: jest.fn(),
-                    removeListener: jest.fn(),
-                    addEventListener: jest.fn(),
-                    removeEventListener: jest.fn(),
-                    dispatchEvent: jest.fn(),
+                    addListener: vi.fn(),
+                    removeListener: vi.fn(),
+                    addEventListener: vi.fn(),
+                    removeEventListener: vi.fn(),
+                    dispatchEvent: vi.fn(),
                 })),
             })
 
@@ -333,7 +334,7 @@ describe('ThemeContext', () => {
     describe('useTheme hook validation', () => {
         it('should throw error when used outside ThemeProvider', () => {
             // Suppress console.error for this test
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation()
 
             expect(() => {
                 renderHook(() => useTheme())

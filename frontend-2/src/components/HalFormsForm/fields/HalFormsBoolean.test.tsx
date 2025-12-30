@@ -5,6 +5,7 @@ import {Form, Formik} from 'formik';
 import {HalFormsBoolean} from './HalFormsBoolean';
 import type {HalFormsProperty} from '../../../api';
 import type {HalFormsInputProps} from '../types';
+import {vi} from 'vitest';
 
 describe('HalFormsBoolean', () => {
     const createHalFormsProperty = (overrides = {}): HalFormsProperty => ({
@@ -20,13 +21,13 @@ describe('HalFormsBoolean', () => {
     const renderWithFormik = (
         prop: HalFormsProperty,
         initialValue: boolean = false,
-        onSubmit = jest.fn(),
+        onSubmit = vi.fn(),
         errorText?: string
     ) => {
         const fieldProps: HalFormsInputProps = {
             prop,
             errorText,
-            subElementProps: jest.fn(),
+            subElementProps: vi.fn(),
         };
 
         return render(
@@ -61,7 +62,7 @@ describe('HalFormsBoolean', () => {
 
     it('should toggle value when clicked', async () => {
         const prop = createHalFormsProperty();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithFormik(prop, false, onSubmit);
 
         const switchElement = screen.getByRole('switch');
@@ -88,7 +89,7 @@ describe('HalFormsBoolean', () => {
 
     it('should submit correct value when form is submitted', async () => {
         const prop = createHalFormsProperty();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithFormik(prop, false, onSubmit);
 
         const switchElement = screen.getByRole('switch');
@@ -116,7 +117,7 @@ describe('HalFormsBoolean', () => {
 
     it('should handle multiple rapid clicks correctly', async () => {
         const prop = createHalFormsProperty();
-        const onSubmit = jest.fn();
+        const onSubmit = vi.fn();
         renderWithFormik(prop, false, onSubmit);
 
         const switchElement = screen.getByRole('switch');
@@ -142,7 +143,7 @@ describe('HalFormsBoolean', () => {
 
     it('should display error text when provided', () => {
         const prop = createHalFormsProperty();
-        renderWithFormik(prop, false, jest.fn(), 'This field is required');
+        renderWithFormik(prop, false, vi.fn(), 'This field is required');
 
         expect(screen.getByText('This field is required')).toBeInTheDocument();
     });

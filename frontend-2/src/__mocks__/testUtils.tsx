@@ -2,6 +2,7 @@ import React, {type ReactElement} from 'react';
 import {render, type RenderOptions} from '@testing-library/react';
 import {BrowserRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {vi} from 'vitest';
 
 /**
  * Create a test query client with appropriate settings for testing
@@ -54,7 +55,7 @@ export const waitForAsync = () =>
  * Mock fetch for API calls
  */
 export const mockFetch = (response: any = {}, options?: { status?: number; ok?: boolean }) => {
-    global.fetch = jest.fn(() =>
+    global.fetch = vi.fn(() =>
         Promise.resolve({
             ok: options?.ok ?? true,
             status: options?.status ?? 200,
@@ -65,5 +66,5 @@ export const mockFetch = (response: any = {}, options?: { status?: number; ok?: 
 };
 
 export const resetFetch = () => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 };

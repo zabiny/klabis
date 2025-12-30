@@ -2,6 +2,7 @@ import {render, screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {KlabisTable} from './KlabisTable'
 import {TableCell} from './TableCell'
+import {vi} from 'vitest';
 
 describe('KlabisTable - Pure UI Component', () => {
     const mockStaticData: { id: number; name: string; email: string }[] = [
@@ -100,7 +101,7 @@ describe('KlabisTable - Pure UI Component', () => {
 
     describe('User Interactions - Row Clicks', () => {
         it('calls onRowClick when row is clicked', async () => {
-            const onRowClick = jest.fn()
+            const onRowClick = vi.fn()
             const user = userEvent.setup()
 
             render(
@@ -132,7 +133,7 @@ describe('KlabisTable - Pure UI Component', () => {
 
     describe('User Interactions - Sorting', () => {
         it('calls onSortChange when sortable column header is clicked', async () => {
-            const onSortChange = jest.fn()
+            const onSortChange = vi.fn()
             const user = userEvent.setup()
 
             render(
@@ -154,7 +155,7 @@ describe('KlabisTable - Pure UI Component', () => {
         })
 
         it('toggles sort direction on subsequent clicks', async () => {
-            const onSortChange = jest.fn()
+            const onSortChange = vi.fn()
             const user = userEvent.setup()
 
             const {rerender} = render(
@@ -229,7 +230,7 @@ describe('KlabisTable - Pure UI Component', () => {
         })
 
         it('does not make non-sortable columns clickable', async () => {
-            const onSortChange = jest.fn()
+            const onSortChange = vi.fn()
             const user = userEvent.setup()
 
             render(
@@ -251,7 +252,7 @@ describe('KlabisTable - Pure UI Component', () => {
 
     describe('User Interactions - Pagination', () => {
         it('calls onPageChange when page changes', async () => {
-            const onPageChange = jest.fn()
+            const onPageChange = vi.fn()
             const multiPageData = {
                 size: 10,
                 totalElements: 50,
@@ -278,7 +279,7 @@ describe('KlabisTable - Pure UI Component', () => {
         })
 
         it('calls onRowsPerPageChange when rows per page changes', async () => {
-            const onRowsPerPageChange = jest.fn()
+            const onRowsPerPageChange = vi.fn()
             const user = userEvent.setup()
 
             render(
@@ -335,7 +336,7 @@ describe('KlabisTable - Pure UI Component', () => {
         })
 
         it('handles errors in custom dataRender gracefully', () => {
-            const consoleError = jest.spyOn(console, 'error').mockImplementation()
+            const consoleError = vi.spyOn(console, 'error').mockImplementation()
 
             render(
                 <KlabisTable data={mockStaticData} page={mockPageData}>

@@ -6,8 +6,9 @@ import {HalFormsPageLayout} from './HalFormsPageLayout.tsx';
 import type {HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
 import {HalRouteContext} from '../../contexts/HalRouteContext.tsx';
 import {mockHalResponseWithForms} from '../../__mocks__/halData.ts';
+import {vi} from 'vitest';
 
-jest.mock('./HalFormDisplay.tsx', () => ({
+vi.mock('./HalFormDisplay.tsx', () => ({
     HalFormDisplay: ({template, templateName, onClose}: any) => (
         <div data-testid="hal-form-display">
             <h3>{template.title || templateName}</h3>
@@ -50,11 +51,11 @@ describe('HalFormsPageLayout', () => {
             resourceData: mockHalResponseWithForms(),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
-            navigateToResource: jest.fn(),
-            getResourceLink: jest.fn()
+            navigateToResource: vi.fn(),
+            getResourceLink: vi.fn()
         };
 
         renderWithContext(contextValue);
@@ -68,11 +69,11 @@ describe('HalFormsPageLayout', () => {
             resourceData: mockHalResponseWithForms(),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
-            navigateToResource: jest.fn(),
-            getResourceLink: jest.fn()
+            navigateToResource: vi.fn(),
+            getResourceLink: vi.fn()
         };
 
         renderWithContext(contextValue, ['/api/test?form=create']);
@@ -86,11 +87,11 @@ describe('HalFormsPageLayout', () => {
             resourceData: mockHalResponseWithForms(),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             pathname: '/api/test?form=nonsense',
             queryState: 'success' as const,
-            navigateToResource: jest.fn(),
-            getResourceLink: jest.fn()
+            navigateToResource: vi.fn(),
+            getResourceLink: vi.fn()
         };
 
         renderWithContext(contextValue);
@@ -104,11 +105,11 @@ describe('HalFormsPageLayout', () => {
             resourceData: mockHalResponseWithForms(),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
-            navigateToResource: jest.fn(),
-            getResourceLink: jest.fn()
+            navigateToResource: vi.fn(),
+            getResourceLink: vi.fn()
         };
 
         renderWithContext(contextValue, ['/api/test?form=create']);
@@ -122,11 +123,11 @@ describe('HalFormsPageLayout', () => {
             resourceData: mockHalResponseWithForms(),
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
-            navigateToResource: jest.fn(),
-            getResourceLink: jest.fn()
+            navigateToResource: vi.fn(),
+            getResourceLink: vi.fn()
         };
 
         renderWithContext(contextValue);
@@ -140,11 +141,11 @@ describe('HalFormsPageLayout', () => {
             resourceData: null,
             isLoading: false,
             error: null,
-            refetch: jest.fn(),
+            refetch: vi.fn(),
             pathname: '/api/test',
             queryState: 'success' as const,
-            navigateToResource: jest.fn(),
-            getResourceLink: jest.fn()
+            navigateToResource: vi.fn(),
+            getResourceLink: vi.fn()
         };
 
         renderWithContext(contextValue);

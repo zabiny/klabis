@@ -12,14 +12,17 @@ import {
     mockHalResponseWithForms,
 } from '../__mocks__/halData';
 import type {HalCollectionResponse, HalResponse} from '../api';
+import {vi} from 'vitest';
+import * as HalRouteContextModule from '../contexts/HalRouteContext';
+import * as HalActionsModule from '../hooks/useHalActions';
 
 // Mock child components
-jest.mock('../contexts/HalRouteContext', () => ({
-    ...jest.requireActual('../contexts/HalRouteContext'),
-    useHalRoute: jest.fn(),
+vi.mock('../contexts/HalRouteContext', async () => ({
+    ...(await vi.importActual('../contexts/HalRouteContext')),
+    useHalRoute: vi.fn(),
 }));
 
-jest.mock('../components/UI', () => ({
+vi.mock('../components/UI', () => ({
     Alert: ({severity, children}: any) => (
         <div data-testid={`alert-${severity}`} role="alert">
             {children}
@@ -36,7 +39,7 @@ jest.mock('../components/UI', () => ({
     Spinner: () => <div data-testid="spinner" role="status"/>,
 }));
 
-jest.mock('../components/JsonPreview', () => ({
+vi.mock('../components/JsonPreview', () => ({
     JsonPreview: ({data, label}: any) => (
         <div data-testid="json-preview">
             {label && <h2>{label}</h2>}
@@ -45,7 +48,7 @@ jest.mock('../components/JsonPreview', () => ({
     ),
 }));
 
-jest.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
+vi.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
     HalLinksSection: ({links, onNavigate}: any) =>
         links ? (
             <div data-testid="hal-links">
@@ -54,7 +57,7 @@ jest.mock('../components/HalNavigator2/HalLinksSection.tsx', () => ({
         ) : null,
 }));
 
-jest.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
+vi.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
     HalFormsSection: ({templates}: any) =>
         templates ? (
             <div data-testid="hal-forms">
@@ -68,7 +71,7 @@ jest.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
         ) : null,
 }));
 
-jest.mock('../components/HalNavigator2/HalFormsPageLayout.tsx', () => ({
+vi.mock('../components/HalNavigator2/HalFormsPageLayout.tsx', () => ({
     HalFormsPageLayout: ({children}: any) => (
         <div data-testid="hal-forms-page-layout">
             {children}
@@ -76,23 +79,23 @@ jest.mock('../components/HalNavigator2/HalFormsPageLayout.tsx', () => ({
     ),
 }));
 
-jest.mock('../hooks/useHalActions', () => ({
-    useHalActions: jest.fn(),
+vi.mock('../hooks/useHalActions', () => ({
+    useHalActions: vi.fn(),
 }));
 
-jest.mock('../hooks/useIsAdmin', () => ({
-    useIsAdmin: jest.fn(() => ({isAdmin: true})),
+vi.mock('../hooks/useIsAdmin', () => ({
+    useIsAdmin: vi.fn(() => ({isAdmin: true})),
 }));
 
-jest.mock('./NotFoundPage', () => {
+vi.mock('./NotFoundPage', () => {
     return {
         __esModule: true,
         default: () => <div data-testid="not-found-page">404 Not Found</div>,
     };
 });
 
-const {useHalRoute} = require('../contexts/HalRouteContext');
-const {useHalActions} = require('../hooks/useHalActions');
+const useHalRoute = vi.mocked(HalRouteContextModule.useHalRoute);
+const useHalActions = vi.mocked(HalActionsModule.useHalActions);
 
 describe('GenericHalPage Component', () => {
     let mockHalActions: any;
@@ -107,15 +110,15 @@ describe('GenericHalPage Component', () => {
 
         mockHalActions = {
             selectedTemplate: null,
-            setSelectedTemplate: jest.fn(),
+            setSelectedTemplate: vi.fn(),
             submitError: null,
             isSubmitting: false,
-            handleNavigateToItem: jest.fn(),
-            handleFormSubmit: jest.fn().mockResolvedValue(undefined),
+            handleNavigateToItem: vi.fn(),
+            handleFormSubmit: vi.fn().mockResolvedValue(undefined),
         };
 
         useHalActions.mockReturnValue(mockHalActions);
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     // Wrapper for tests that need router context (added because GenericHalPage uses useLocation)
@@ -136,9 +139,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: true,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'pending',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -151,9 +154,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: true,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'pending',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -169,9 +172,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: new Error('HTTP 404 Not Found'),
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'error',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -185,9 +188,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'error',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -202,9 +205,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: new Error('Fetch failed'),
                 pathname: '/api/custom/path',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'error',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -219,9 +222,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -238,9 +241,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -258,9 +261,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -277,9 +280,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -294,9 +297,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -312,9 +315,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -329,9 +332,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -355,9 +358,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -371,9 +374,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -388,9 +391,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -405,9 +408,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -426,9 +429,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -448,9 +451,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -465,9 +468,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);
@@ -484,9 +487,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -502,9 +505,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -521,9 +524,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -537,9 +540,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -554,9 +557,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -577,9 +580,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -598,9 +601,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -616,9 +619,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
@@ -635,9 +638,9 @@ describe('GenericHalPage Component', () => {
                 isLoading: false,
                 error: null,
                 pathname: '/api/items/1',
-                refetch: jest.fn(),
+                refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: jest.fn(),
+                navigateToResource: vi.fn(),
             });
 
             const {container} = renderWithRouter(<GenericHalPage/>);

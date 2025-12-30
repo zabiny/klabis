@@ -2,14 +2,15 @@ import {HalEmbeddedTable} from './HalEmbeddedTable';
 import {useHalRoute} from '../../contexts/HalRouteContext';
 import {render, screen} from '@testing-library/react';
 import type {KlabisTableWithQueryProps} from "../KlabisTable/KlabisTableWithQuery.tsx";
+import {type Mock, vi} from 'vitest';
 
 // Mock the useHalRoute hook
-jest.mock('../../contexts/HalRouteContext', () => ({
-    useHalRoute: jest.fn(),
+vi.mock('../../contexts/HalRouteContext', () => ({
+    useHalRoute: vi.fn(),
 }));
 
 // Mock KlabisTableWithQuery component to simplify testing
-jest.mock('../KlabisTable', () => ({
+vi.mock('../KlabisTable', () => ({
     KlabisTableWithQuery: ({
                                link,
                                collectionName,
@@ -33,13 +34,13 @@ jest.mock('../KlabisTable', () => ({
 }));
 
 describe('HalEmbeddedTable', () => {
-    const mockGetResourceLink = jest.fn();
+    const mockGetResourceLink = vi.fn();
     const mockTableCell = <div data-testid="table-cell">Test Cell</div>;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockGetResourceLink.mockReturnValue({href: '/api/test/resource'});
-        (useHalRoute as jest.Mock).mockReturnValue({
+        (useHalRoute as Mock).mockReturnValue({
             getResourceLink: mockGetResourceLink,
         });
     });
@@ -84,7 +85,7 @@ describe('HalEmbeddedTable', () => {
     });
 
     it('handles onRowClick callback', () => {
-        const mockOnRowClick = jest.fn();
+        const mockOnRowClick = vi.fn();
 
         render(
             <HalEmbeddedTable

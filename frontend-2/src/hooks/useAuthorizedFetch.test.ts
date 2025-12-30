@@ -5,11 +5,12 @@ import React from 'react';
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 import {createMockResponse} from '../__mocks__/mockFetch';
 import {FetchError} from '../api/authorizedFetch';
+import {type Mock, vi} from 'vitest';
 
 // Mock dependencies
-jest.mock('../api/klabisUserManager', () => ({
+vi.mock('../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: jest.fn().mockResolvedValue({
+        getUser: vi.fn().mockResolvedValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
@@ -19,7 +20,7 @@ jest.mock('../api/klabisUserManager', () => ({
 // Shared setup for hooks
 const createTestHookSetup = () => {
     let queryClient: QueryClient;
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     const setup = () => {
         queryClient = new QueryClient({
@@ -27,9 +28,9 @@ const createTestHookSetup = () => {
                 queries: {retry: false, gcTime: 0},
             },
         });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock;
+        fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
     };
 
@@ -47,7 +48,7 @@ const createTestHookSetup = () => {
 
 describe('useAuthorizedQuery', () => {
     const {setup, teardown, createWrapper, getFetchSpy} = createTestHookSetup();
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
         setup();
@@ -98,9 +99,9 @@ describe('useAuthorizedQuery', () => {
                 ok: false,
                 status: 400,
                 statusText: 'Bad request',
-                json: jest.fn().mockRejectedValue(new Error('Not JSON')),
+                json: vi.fn().mockRejectedValue(new Error('Not JSON')),
                 clone: () => ({
-                    text: jest.fn().mockResolvedValue('Bad request'),
+                    text: vi.fn().mockResolvedValue('Bad request'),
                 }),
             } as any;
             fetchSpy.mockResolvedValueOnce(mockResponse);
@@ -269,7 +270,7 @@ describe('useAuthorizedQuery', () => {
 
 describe('useAuthorizedMutation', () => {
     const {setup, teardown, createWrapper, getFetchSpy} = createTestHookSetup();
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
         setup();
@@ -429,7 +430,7 @@ describe('useAuthorizedMutation', () => {
             const responseData = {id: 1, name: 'New Item'};
             fetchSpy.mockResolvedValueOnce(createMockResponse(responseData));
 
-            const onSuccess = jest.fn();
+            const onSuccess = vi.fn();
             const {result} = renderHook(
                 () => useAuthorizedMutation({method: 'POST', onSuccess}),
                 {wrapper: createWrapper()}
@@ -455,7 +456,7 @@ describe('useAuthorizedMutation', () => {
             const error = new Error(errorMessage);
             fetchSpy.mockRejectedValue(error);
 
-            const onError = jest.fn();
+            const onError = vi.fn();
             const {result} = renderHook(
                 () => useAuthorizedMutation({method: 'POST', onError}),
                 {wrapper: createWrapper()}
@@ -480,7 +481,7 @@ describe('useAuthorizedMutation', () => {
             const responseData = {id: 1};
             fetchSpy.mockResolvedValueOnce(createMockResponse(responseData));
 
-            const onSettled = jest.fn();
+            const onSettled = vi.fn();
             const {result} = renderHook(
                 () => useAuthorizedMutation({method: 'POST', onSettled}),
                 {wrapper: createWrapper()}

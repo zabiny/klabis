@@ -7,11 +7,12 @@ import {MemberFinancePage, MemberName} from './FinancesPage';
 import {mockFinanceResource, mockMemberResource} from '../__mocks__/halData';
 import {createMockResponse} from '../__mocks__/mockFetch';
 import {HalRouteProvider} from '../contexts/HalRouteContext';
+import {type Mock, vi} from 'vitest';
 
 // Mock the auth user manager to return a user with access token
-jest.mock('../api/klabisUserManager', () => ({
+vi.mock('../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: jest.fn().mockResolvedValue({
+        getUser: vi.fn().mockResolvedValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
@@ -20,7 +21,7 @@ jest.mock('../api/klabisUserManager', () => ({
 
 describe('MemberFinancePage', () => {
     let queryClient: QueryClient;
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -28,9 +29,9 @@ describe('MemberFinancePage', () => {
                 queries: {retry: false, gcTime: 0},
             },
         });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock;
+        fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
     });
 
@@ -287,7 +288,7 @@ describe('MemberFinancePage', () => {
 
 describe('MemberName Component', () => {
     let queryClient: QueryClient;
-    let fetchSpy: jest.Mock;
+    let fetchSpy: Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -295,9 +296,9 @@ describe('MemberName Component', () => {
                 queries: {retry: false, gcTime: 0},
             },
         });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock;
+        fetchSpy = vi.fn() as Mock;
         (globalThis as any).fetch = fetchSpy;
     });
 

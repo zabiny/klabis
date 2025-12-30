@@ -4,11 +4,12 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
 import {KlabisTableWithQuery} from './KlabisTableWithQuery'
 import {TableCell} from './TableCell'
 import {createMockResponse} from '../../__mocks__/mockFetch'
+import {type Mock, vi} from 'vitest';
 
 // Mock auth manager
-jest.mock('../../api/klabisUserManager', () => ({
+vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: jest.fn().mockResolvedValue({
+        getUser: vi.fn().mockResolvedValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
@@ -17,7 +18,7 @@ jest.mock('../../api/klabisUserManager', () => ({
 
 describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
     let queryClient: QueryClient
-    let fetchSpy: jest.Mock
+    let fetchSpy: Mock
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -25,9 +26,9 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
                 queries: {retry: false, gcTime: 0}
             }
         })
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         // Mock global fetch
-        fetchSpy = jest.fn() as jest.Mock
+        fetchSpy = vi.fn() as Mock
         ;(globalThis as any).fetch = fetchSpy
     })
 
@@ -281,7 +282,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
         it('passes UI props through to KlabisTable', async () => {
             fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
 
-            const onRowClick = jest.fn()
+            const onRowClick = vi.fn()
 
             renderWithQuery(
                 <KlabisTableWithQuery

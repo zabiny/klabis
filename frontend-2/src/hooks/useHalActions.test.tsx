@@ -2,41 +2,48 @@ import React from 'react';
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {useHalActions} from './useHalActions';
 import {mockHalFormsTemplate} from '../__mocks__/halData';
+import * as ReactRouterDom from 'react-router-dom';
 import {BrowserRouter} from 'react-router-dom';
+import {type Mock, vi} from 'vitest';
+import * as HalRouteContextModule from '../contexts/HalRouteContext';
+import * as HateoasModule from '../api/hateoas';
+import * as NavigationPathModule from '../utils/navigationPath';
 
 // Mock dependencies
-jest.mock('react-router-dom', () => ({
-    ...jest.requireActual('react-router-dom'),
-    useNavigate: jest.fn(),
+vi.mock('react-router-dom', async () => ({
+    ...(await vi.importActual('react-router-dom')),
+    useNavigate: vi.fn(),
 }));
 
-jest.mock('../contexts/HalRouteContext', () => ({
-    ...jest.requireActual('../contexts/HalRouteContext'),
-    useHalRoute: jest.fn(),
+vi.mock('../contexts/HalRouteContext', async () => ({
+    ...(await vi.importActual('../contexts/HalRouteContext')),
+    useHalRoute: vi.fn(),
 }));
 
-jest.mock('../api/hateoas', () => ({
-    submitHalFormsData: jest.fn(),
+vi.mock('../api/hateoas', async () => ({
+    ...(await vi.importActual('../api/hateoas')),
+    submitHalFormsData: vi.fn(),
 }));
 
-jest.mock('../utils/navigationPath', () => ({
-    extractNavigationPath: jest.fn((href) => href),
+vi.mock('../utils/navigationPath', async () => ({
+    ...(await vi.importActual('../utils/navigationPath')),
+    extractNavigationPath: vi.fn((href) => href),
 }));
 
-const {useNavigate} = require('react-router-dom');
-const {useHalRoute} = require('../contexts/HalRouteContext');
-const {submitHalFormsData} = require('../api/hateoas');
-const {extractNavigationPath} = require('../utils/navigationPath');
+const useNavigate = vi.mocked(ReactRouterDom.useNavigate);
+const useHalRoute = vi.mocked(HalRouteContextModule.useHalRoute);
+const submitHalFormsData = vi.mocked(HateoasModule.submitHalFormsData);
+const extractNavigationPath = vi.mocked(NavigationPathModule.extractNavigationPath);
 
 describe('useHalActions Hook', () => {
-    let mockNavigate: jest.Mock;
-    let mockRefetch: jest.Mock;
+    let mockNavigate: Mock;
+    let mockRefetch: Mock;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
 
-        mockNavigate = jest.fn();
-        mockRefetch = jest.fn().mockResolvedValue(undefined);
+        mockNavigate = vi.fn();
+        mockRefetch = vi.fn().mockResolvedValue(undefined);
 
         useNavigate.mockReturnValue(mockNavigate);
         useHalRoute.mockReturnValue({

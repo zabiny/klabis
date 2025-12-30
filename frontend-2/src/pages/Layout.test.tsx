@@ -3,33 +3,36 @@ import {MemoryRouter} from 'react-router-dom'
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
 import Layout from './Layout'
 import {HalRouteProvider} from '../contexts/HalRouteContext'
+import {vi} from 'vitest';
+import * as RootNavigationModule from '../hooks/useRootNavigation'
+import * as AuthContext2Module from '../contexts/AuthContext2'
 
 // Mock useRootNavigation hook to avoid API calls
-jest.mock('../hooks/useRootNavigation', () => ({
-    useRootNavigation: jest.fn(),
+vi.mock('../hooks/useRootNavigation', () => ({
+    useRootNavigation: vi.fn(),
 }))
 
 // Mock useAuth hook
-jest.mock('../contexts/AuthContext2', () => {
-    const actual = jest.requireActual('../contexts/AuthContext2')
+vi.mock('../contexts/AuthContext2', async () => {
+    const actual = await vi.importActual('../contexts/AuthContext2')
     return {
         ...actual,
-        useAuth: jest.fn(),
+        useAuth: vi.fn(),
     }
 })
 
 // Mock ThemeToggle component
-jest.mock('../components/ThemeToggle/ThemeToggle', () => ({
+vi.mock('../components/ThemeToggle/ThemeToggle', () => ({
     ThemeToggle: () => <div data-testid="theme-toggle">Theme Toggle</div>,
 }))
 
 // Mock LogoutIcon component
-jest.mock('../components/Icons', () => ({
+vi.mock('../components/Icons', () => ({
     LogoutIcon: () => <div data-testid="logout-icon">Logout Icon</div>,
 }))
 
-const {useRootNavigation} = require('../hooks/useRootNavigation')
-const {useAuth} = require('../contexts/AuthContext2')
+const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
+const useAuth = vi.mocked(AuthContext2Module.useAuth)
 
 describe('Layout - Responsive Sidebar', () => {
     let queryClient: QueryClient
@@ -54,16 +57,16 @@ describe('Layout - Responsive Sidebar', () => {
         // Mock useAuth
         useAuth.mockReturnValue({
             isAuthenticated: true,
-            getUser: jest.fn().mockResolvedValue({
+            getUser: vi.fn().mockResolvedValue({
                 id: 'user-1',
                 firstName: 'John',
                 lastName: 'Doe',
                 registrationNumber: '12345',
             }),
-            logout: jest.fn(),
+            logout: vi.fn(),
         })
 
-        jest.clearAllMocks()
+        vi.clearAllMocks()
     })
 
     const renderLayout = () => {
@@ -203,10 +206,10 @@ describe('Layout - Responsive Sidebar', () => {
         })
 
         it('should call logout when logout button is clicked', async () => {
-            const mockLogout = jest.fn()
+            const mockLogout = vi.fn()
             useAuth.mockReturnValue({
                 isAuthenticated: true,
-                getUser: jest.fn().mockResolvedValue({
+                getUser: vi.fn().mockResolvedValue({
                     id: 'user-1',
                     firstName: 'John',
                     lastName: 'Doe',

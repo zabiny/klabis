@@ -4,9 +4,10 @@ import {HalFormsSection} from './HalFormsSection.tsx';
 import type {HalFormsTemplate} from '../../api';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import * as HalRouteContext from '../../contexts/HalRouteContext';
+import {vi} from 'vitest';
 
 // Mock the HalFormButton component since we're testing HalFormsSection in isolation
-jest.mock('./HalFormButton.tsx', () => ({
+vi.mock('./HalFormButton.tsx', () => ({
 	HalFormButton: ({name}: { name: string; modal: boolean }) => (
 		<button data-testid={`hal-form-button-${name}`}>
 			{name}
@@ -18,7 +19,7 @@ describe('HalFormsSection Component', () => {
 	const mockTemplate = (overrides = {}): HalFormsTemplate => mockHalFormsTemplate(overrides);
 
 	beforeEach(() => {
-		jest.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+		vi.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
 			resourceData: null,
 			isLoading: false,
 			error: null,
@@ -26,13 +27,13 @@ describe('HalFormsSection Component', () => {
 			},
 			pathname: '/test',
 			queryState: 'success',
-			navigateToResource: jest.fn(),
-			getResourceLink: jest.fn()
+			navigateToResource: vi.fn(),
+			getResourceLink: vi.fn()
 		});
 	});
 
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	describe('Rendering', () => {
@@ -42,7 +43,7 @@ describe('HalFormsSection Component', () => {
 		});
 
 		it('should render when resourceData._templates is provided automatically', () => {
-			jest.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+			vi.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
 				resourceData: {
 					_templates: {
 						create: mockTemplate({title: 'Create'}),
@@ -54,8 +55,8 @@ describe('HalFormsSection Component', () => {
 				},
 				pathname: '/test',
 				queryState: 'success',
-				navigateToResource: jest.fn(),
-				getResourceLink: jest.fn()
+				navigateToResource: vi.fn(),
+				getResourceLink: vi.fn()
 			});
 
 			render(<HalFormsSection/>);
