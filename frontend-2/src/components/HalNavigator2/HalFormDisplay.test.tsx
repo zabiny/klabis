@@ -5,12 +5,18 @@ import userEvent from '@testing-library/user-event';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalRouteContext, type HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
+import {createMockResponse} from '../../__mocks__/mockFetch';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // Mock dependencies
-jest.mock('../HalNavigator/hooks.ts', () => ({
-    fetchResource: jest.fn(),
+jest.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: jest.fn().mockResolvedValue({
+            access_token: 'test-token',
+            token_type: 'Bearer',
+        }),
+    },
 }));
 
 jest.mock('../../api/hateoas.ts', () => ({
@@ -20,6 +26,7 @@ jest.mock('../../api/hateoas.ts', () => ({
 
 describe('HalFormDisplay Component', () => {
     let queryClient: QueryClient;
+    let fetchSpy: jest.Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -28,6 +35,13 @@ describe('HalFormDisplay Component', () => {
             },
         });
         jest.clearAllMocks();
+        // Mock global fetch
+        fetchSpy = jest.fn() as jest.Mock;
+        (globalThis as any).fetch = fetchSpy;
+    });
+
+    afterEach(() => {
+        delete (globalThis as any).fetch;
     });
 
     const createMockContext = (resourceData: HalResponse | null = null): HalRouteContextValue => ({
@@ -130,11 +144,9 @@ describe('HalFormDisplay Component', () => {
 
     describe('Form Submission', () => {
         const {submitHalFormsData} = require('../../api/hateoas.ts');
-        const {fetchResource} = require('../HalNavigator/hooks.ts');
 
         beforeEach(() => {
             submitHalFormsData.mockClear();
-            fetchResource.mockClear();
         });
 
         it('should handle successful submission with callback', async () => {
@@ -146,7 +158,6 @@ describe('HalFormDisplay Component', () => {
             });
 
             submitHalFormsData.mockResolvedValueOnce({success: true});
-            fetchResource.mockResolvedValueOnce({id: 1, name: 'Test'});
 
             renderComponent(template, jest.fn(), onSubmitSuccess);
 
@@ -156,7 +167,6 @@ describe('HalFormDisplay Component', () => {
 
         it('should display error when submission fails', async () => {
             const {submitHalFormsData} = require('../../api/hateoas.ts');
-            const {fetchResource} = require('../HalNavigator/hooks.ts');
 
             const template = mockHalFormsTemplate({
                 title: 'Create',
@@ -166,7 +176,6 @@ describe('HalFormDisplay Component', () => {
 
             const submitError = new Error('Submission failed');
             submitHalFormsData.mockRejectedValueOnce(submitError);
-            fetchResource.mockResolvedValueOnce({id: 1, name: 'Test'});
 
             renderComponent(template);
 
@@ -176,11 +185,8 @@ describe('HalFormDisplay Component', () => {
     });
 
     describe('Target Data Fetching', () => {
-        const {fetchResource} = require('../HalNavigator/hooks.ts');
-
         beforeEach(() => {
             queryClient.clear();
-            fetchResource.mockReset();
         });
 
         it('should display form with empty data when target returns HTTP 404', async () => {
@@ -190,12 +196,8 @@ describe('HalFormDisplay Component', () => {
                 method: 'POST',
             });
 
-            const fetchError = {
-                message: 'HTTP 404',
-                responseStatus: 404,
-                responseStatusText: 'Not Found',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            // Mock HTTP 404 response
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 404));
 
             renderComponent(template);
 
@@ -213,12 +215,8 @@ describe('HalFormDisplay Component', () => {
                 method: 'POST',
             });
 
-            const fetchError = {
-                message: 'HTTP 405',
-                responseStatus: 405,
-                responseStatusText: 'Method Not Allowed',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            // Mock HTTP 405 response
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 405));
 
             renderComponent(template);
 
@@ -236,12 +234,8 @@ describe('HalFormDisplay Component', () => {
                 method: 'POST',
             });
 
-            const fetchError = {
-                message: 'HTTP 500',
-                responseStatus: 500,
-                responseStatusText: 'Internal Server Error',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            // Mock HTTP 500 response
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 500));
 
             renderComponent(template);
 
@@ -259,26 +253,21 @@ describe('HalFormDisplay Component', () => {
             expect(screen.getByText('Create Member')).toBeInTheDocument();
         });
 
-        it('should have proper structure for error alerts', async () => {
-            const {fetchResource} = require('../HalNavigator/hooks.ts');
-
+        it('should display error alert when form data fetch fails with HTTP 500', async () => {
             const template = mockHalFormsTemplate({
                 title: 'Create Event',
                 target: '/api/events',
                 method: 'POST',
             });
 
-            const fetchError = {
-                message: 'HTTP 500',
-                responseStatus: 500,
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            // Mock HTTP 500 response to trigger error
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 500));
 
             renderComponent(template);
 
+            // Verify error alert is displayed
             await waitFor(() => {
-                const alert = screen.getByRole('alert');
-                expect(alert).toBeInTheDocument();
+                expect(screen.getByText(/Nepodařilo se načíst data/i)).toBeInTheDocument();
             });
         });
     });

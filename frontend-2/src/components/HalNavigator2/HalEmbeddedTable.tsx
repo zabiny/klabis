@@ -58,10 +58,17 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
                                                                               emptyMessage = 'Žádná data',
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
-    const {getResourceLink} = useHalRoute()
+    const {getResourceLink, isLoading} = useHalRoute()
 
     // Extract self link from HAL resource
     const selfLink = getResourceLink();
+
+    if (isLoading) {
+        return (
+            <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
+                <h3 className="font-semibold">Loading table data</h3>
+            </div>)
+    }
 
     // Show error state if self link is not available
     if (!selfLink) {

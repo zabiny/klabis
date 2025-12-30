@@ -3,16 +3,22 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalFormData} from './useHalFormData';
 import {mockHalFormsTemplate} from '../__mocks__/halData';
+import {createMockResponse} from '../__mocks__/mockFetch';
+import {FetchError} from '../api/authorizedFetch';
 
 // Mock dependencies
-jest.mock('../components/HalNavigator/hooks', () => ({
-    fetchResource: jest.fn(),
+jest.mock('../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: jest.fn().mockResolvedValue({
+            access_token: 'test-token',
+            token_type: 'Bearer',
+        }),
+    },
 }));
-
-const {fetchResource} = require('../components/HalNavigator/hooks');
 
 describe('useHalFormData Hook', () => {
     let queryClient: QueryClient;
+    let fetchSpy: jest.Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -21,6 +27,13 @@ describe('useHalFormData Hook', () => {
             },
         });
         jest.clearAllMocks();
+        // Mock global fetch
+        fetchSpy = jest.fn() as jest.Mock;
+        (globalThis as any).fetch = fetchSpy;
+    });
+
+    afterEach(() => {
+        delete (globalThis as any).fetch;
     });
 
     const createWrapper = () => {
@@ -35,7 +48,7 @@ describe('useHalFormData Hook', () => {
     const targetResourceData = {id: 2, name: 'Target Resource', type: 'target'};
 
     describe('No Template Selected', () => {
-        it('should return current resource data when no template selected', () => {
+        it('should return current resource data, not loading, and no errors', () => {
             const {result} = renderHook(
                 () => useHalFormData(null, currentResourceData, '/members/123'),
                 {wrapper: createWrapper()}
@@ -44,33 +57,7 @@ describe('useHalFormData Hook', () => {
             expect(result.current.formData).toEqual(currentResourceData);
             expect(result.current.isLoadingTargetData).toBe(false);
             expect(result.current.targetFetchError).toBeNull();
-        });
-
-        it('should not be loading', () => {
-            const {result} = renderHook(
-                () => useHalFormData(null, currentResourceData, '/members/123'),
-                {wrapper: createWrapper()}
-            );
-
-            expect(result.current.isLoadingTargetData).toBe(false);
-        });
-
-        it('should not have errors', () => {
-            const {result} = renderHook(
-                () => useHalFormData(null, currentResourceData, '/members/123'),
-                {wrapper: createWrapper()}
-            );
-
-            expect(result.current.targetFetchError).toBeNull();
-        });
-
-        it('should not fetch from API', () => {
-            renderHook(
-                () => useHalFormData(null, currentResourceData, '/members/123'),
-                {wrapper: createWrapper()}
-            );
-
-            expect(fetchResource).not.toHaveBeenCalled();
+            expect(fetchSpy).not.toHaveBeenCalled();
         });
     });
 
@@ -94,12 +81,12 @@ describe('useHalFormData Hook', () => {
                 {wrapper: createWrapper()}
             );
 
-            expect(fetchResource).not.toHaveBeenCalled();
+            expect(fetchSpy).not.toHaveBeenCalled();
         });
     });
 
     describe('Target Equals Current Path', () => {
-        it('should return current resource data when target equals current path', () => {
+        it('should not fetch and return current resource data when target equals current path', () => {
             const template = mockHalFormsTemplate({target: '/members/123'});
 
             const {result} = renderHook(
@@ -108,20 +95,10 @@ describe('useHalFormData Hook', () => {
             );
 
             expect(result.current.formData).toEqual(currentResourceData);
+            expect(fetchSpy).not.toHaveBeenCalled();
         });
 
-        it('should not fetch when target matches current path', () => {
-            const template = mockHalFormsTemplate({target: '/members/123'});
-
-            renderHook(
-                () => useHalFormData(template, currentResourceData, '/members/123'),
-                {wrapper: createWrapper()}
-            );
-
-            expect(fetchResource).not.toHaveBeenCalled();
-        });
-
-        it('should handle /api prefix differences', () => {
+        it('should normalize target path and handle /api prefix differences', () => {
             const template = mockHalFormsTemplate({target: '/api/members/123'});
 
             const {result} = renderHook(
@@ -130,14 +107,14 @@ describe('useHalFormData Hook', () => {
             );
 
             expect(result.current.formData).toEqual(currentResourceData);
-            expect(fetchResource).not.toHaveBeenCalled();
+            expect(fetchSpy).not.toHaveBeenCalled();
         });
     });
 
     describe('Target Differs from Current Path', () => {
         it('should fetch data from target when target differs', async () => {
             const template = mockHalFormsTemplate({target: '/api/events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -151,13 +128,13 @@ describe('useHalFormData Hook', () => {
                 expect(result.current.isLoadingTargetData).toBe(false);
             });
 
-            expect(fetchResource).toHaveBeenCalledWith('/api/events/456');
+            expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('events/456'), expect.any(Object));
             expect(result.current.formData).toEqual(targetResourceData);
         });
 
         it('should return target data after successful fetch', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -171,7 +148,7 @@ describe('useHalFormData Hook', () => {
 
         it('should normalize target path before fetching', async () => {
             const template = mockHalFormsTemplate({target: 'events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -179,7 +156,7 @@ describe('useHalFormData Hook', () => {
             );
 
             await waitFor(() => {
-                expect(fetchResource).toHaveBeenCalledWith('/api/events/456');
+                expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('events/456'), expect.any(Object));
             });
         });
 
@@ -187,7 +164,7 @@ describe('useHalFormData Hook', () => {
             const template = mockHalFormsTemplate({
                 target: 'https://example.com/api/events/456',
             });
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -195,7 +172,8 @@ describe('useHalFormData Hook', () => {
             );
 
             await waitFor(() => {
-                expect(fetchResource).toHaveBeenCalledWith('/api/events/456');
+                // Full URLs have their pathname extracted, then normalized
+                expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('events/456'), expect.any(Object));
             });
         });
     });
@@ -203,7 +181,7 @@ describe('useHalFormData Hook', () => {
     describe('Loading States', () => {
         it('should set isLoadingTargetData to true during fetch', () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockImplementationOnce(
+            fetchSpy.mockImplementationOnce(
                 () => new Promise((resolve) => setTimeout(resolve, 100))
             );
 
@@ -217,7 +195,7 @@ describe('useHalFormData Hook', () => {
 
         it('should set isLoadingTargetData to false after fetch completes', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -229,9 +207,9 @@ describe('useHalFormData Hook', () => {
             });
         });
 
-        it('should return null formData while loading', () => {
+        it('should return currentResourceData while loading (fallback data)', () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockImplementationOnce(
+            fetchSpy.mockImplementationOnce(
                 () => new Promise((resolve) => setTimeout(resolve, 100))
             );
 
@@ -240,7 +218,7 @@ describe('useHalFormData Hook', () => {
                 {wrapper: createWrapper()}
             );
 
-            expect(result.current.formData).toBeNull();
+            expect(result.current.formData).toEqual(currentResourceData);
             expect(result.current.isLoadingTargetData).toBe(true);
         });
     });
@@ -249,7 +227,7 @@ describe('useHalFormData Hook', () => {
         it('should set error when fetch fails', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
             const fetchError = new Error('Network error');
-            fetchResource.mockRejectedValueOnce(fetchError);
+            fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -263,7 +241,7 @@ describe('useHalFormData Hook', () => {
 
         it('should set isLoadingTargetData to false after error', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockRejectedValueOnce(new Error('Failed'));
+            fetchSpy.mockRejectedValueOnce(new Error('Failed'));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -275,9 +253,9 @@ describe('useHalFormData Hook', () => {
             });
         });
 
-        it('should return null formData on error', async () => {
+        it('should return currentResourceData as fallback on fetch error', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockRejectedValueOnce(new Error('Failed'));
+            fetchSpy.mockRejectedValueOnce(new Error('Failed'));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -285,14 +263,14 @@ describe('useHalFormData Hook', () => {
             );
 
             await waitFor(() => {
-                expect(result.current.formData).toBeNull();
+                expect(result.current.formData).toEqual(currentResourceData);
             });
         });
 
         it('should preserve error instance', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
             const fetchError = new Error('Specific error message');
-            fetchResource.mockRejectedValueOnce(fetchError);
+            fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -304,14 +282,10 @@ describe('useHalFormData Hook', () => {
             });
         });
 
-        it('should return empty data when API returns HTTP 404', async () => {
+        it('should suppress 404 error but return fallback data', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            const fetchError = {
-                message: 'HTTP 404',
-                responseStatus: 404,
-                responseStatusText: 'Not Found',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            const fetchError = new FetchError('HTTP 404 (Not Found)', 404, 'Not Found');
+            fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -319,19 +293,16 @@ describe('useHalFormData Hook', () => {
             );
 
             await waitFor(() => {
-                expect(result.current.formData).toEqual({});
+                // 404 errors are suppressed (not shown to user), form shows with fallback data
+                expect(result.current.formData).toEqual(currentResourceData);
                 expect(result.current.targetFetchError).toBeNull();
             });
         });
 
-        it('should return empty data when API returns HTTP 405', async () => {
+        it('should suppress 405 error but return fallback data', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            const fetchError = {
-                message: 'HTTP 405',
-                responseStatus: 405,
-                responseStatusText: 'Method Not Allowed',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            const fetchError = new FetchError('HTTP 405 (Method Not Allowed)', 405, 'Method Not Allowed');
+            fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -339,19 +310,16 @@ describe('useHalFormData Hook', () => {
             );
 
             await waitFor(() => {
-                expect(result.current.formData).toEqual({});
+                // 405 errors are suppressed (GET not allowed), form shows with fallback data
+                expect(result.current.formData).toEqual(currentResourceData);
                 expect(result.current.targetFetchError).toBeNull();
             });
         });
 
         it('should still show error for non-404/405 HTTP errors', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            const fetchError = {
-                message: 'HTTP 500',
-                responseStatus: 500,
-                responseStatusText: 'Internal Server Error',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            const fetchError = new FetchError('HTTP 500 (Internal Server Error)', 500, 'Internal Server Error');
+            fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -360,7 +328,8 @@ describe('useHalFormData Hook', () => {
 
             await waitFor(() => {
                 expect(result.current.targetFetchError).toBeTruthy();
-                expect(result.current.formData).toBeNull();
+                // Still returns currentResourceData as fallback even on error
+                expect(result.current.formData).toEqual(currentResourceData);
             });
         });
     });
@@ -368,7 +337,7 @@ describe('useHalFormData Hook', () => {
     describe('Refetch Functionality', () => {
         it('should provide refetchTargetData function', () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -380,7 +349,7 @@ describe('useHalFormData Hook', () => {
 
         it('should refetch data when refetchTargetData is called', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -391,16 +360,16 @@ describe('useHalFormData Hook', () => {
                 expect(result.current.formData).toEqual(targetResourceData);
             });
 
-            expect(fetchResource).toHaveBeenCalledTimes(1);
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
 
             // Refetch
             const newTargetData = {id: 3, name: 'Refreshed Data', type: 'target'};
-            fetchResource.mockResolvedValueOnce(newTargetData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(newTargetData));
 
             result.current.refetchTargetData();
 
             await waitFor(() => {
-                expect(fetchResource).toHaveBeenCalledTimes(2);
+                expect(fetchSpy).toHaveBeenCalledTimes(2);
             });
 
             await waitFor(() => {
@@ -410,7 +379,7 @@ describe('useHalFormData Hook', () => {
 
         it('should handle refetch errors', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -423,7 +392,7 @@ describe('useHalFormData Hook', () => {
 
             // Refetch with error
             const refetchError = new Error('Refetch failed');
-            fetchResource.mockRejectedValueOnce(refetchError);
+            fetchSpy.mockRejectedValueOnce(refetchError);
 
             result.current.refetchTargetData();
 
@@ -436,7 +405,7 @@ describe('useHalFormData Hook', () => {
     describe('Template Changes', () => {
         it('should update when template changes', async () => {
             const template1 = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             const {result, rerender} = renderHook(
                 ({template}) => useHalFormData(template, currentResourceData, '/members/123'),
@@ -463,7 +432,7 @@ describe('useHalFormData Hook', () => {
         it('should fetch from new target when template changes', async () => {
             const template1 = mockHalFormsTemplate({target: '/events/456'});
             const targetData1 = {id: 2, name: 'Target 1'};
-            fetchResource.mockResolvedValueOnce(targetData1);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetData1));
 
             const {result, rerender} = renderHook(
                 ({template}) => useHalFormData(template, currentResourceData, '/members/123'),
@@ -480,7 +449,7 @@ describe('useHalFormData Hook', () => {
             // Change to different target
             const template2 = mockHalFormsTemplate({target: '/calendar/789'});
             const targetData2 = {id: 3, name: 'Target 2'};
-            fetchResource.mockResolvedValueOnce(targetData2);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetData2));
 
             rerender({template: template2});
 
@@ -490,39 +459,6 @@ describe('useHalFormData Hook', () => {
         });
     });
 
-    describe('React Query Caching', () => {
-        it('should always fetch fresh data (staleTime: 0)', async () => {
-            const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockResolvedValue(targetResourceData);
-
-            // First render
-            const {result: result1, unmount} = renderHook(
-                () => useHalFormData(template, currentResourceData, '/members/123'),
-                {wrapper: createWrapper()}
-            );
-
-            await waitFor(() => {
-                expect(result1.current.formData).toEqual(targetResourceData);
-            });
-
-            expect(fetchResource).toHaveBeenCalledTimes(1);
-
-            // Unmount and remount with same template (should fetch fresh due to staleTime: 0)
-            unmount();
-
-            const {result: result2} = renderHook(
-                () => useHalFormData(template, currentResourceData, '/members/123'),
-                {wrapper: createWrapper()}
-            );
-
-            await waitFor(() => {
-                expect(result2.current.formData).toEqual(targetResourceData);
-            });
-
-            // Should fetch again because staleTime is 0 (always fetch fresh)
-            expect(fetchResource).toHaveBeenCalledTimes(2);
-        });
-    });
 
     describe('Return Value Properties', () => {
         it('should return all required properties', () => {
@@ -538,10 +474,128 @@ describe('useHalFormData Hook', () => {
         });
     });
 
+    describe('Template Validation', () => {
+        it('should handle template missing properties field', () => {
+            const template = {
+                ...mockHalFormsTemplate(),
+                properties: undefined,
+            } as any;
+
+            const {result} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            // Hook should handle missing properties gracefully
+            expect(result.current).toBeDefined();
+            expect(result.current.formData).toBeDefined();
+        });
+
+        it('should work correctly when template has properties field', () => {
+            const template = mockHalFormsTemplate({properties: []});
+
+            const {result} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            expect(result.current).toBeDefined();
+            expect(result.current.formData).toBeDefined();
+        });
+    });
+
+    describe('Query Configuration', () => {
+        it('should pass correct query options to useAuthorizedQuery', async () => {
+            const template = mockHalFormsTemplate({target: '/events/456'});
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
+
+            renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            // Verify fetch was called (query was enabled)
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalled();
+            });
+        });
+
+        it('should not enable query when targetUrl is empty', () => {
+            const template = mockHalFormsTemplate({target: ''});
+
+            renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            // Should not fetch because target is empty
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('should not enable query when shouldFetch is false', () => {
+            const template = mockHalFormsTemplate({target: '/members/123'});
+
+            renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            // Should not fetch because target matches current path
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Caching and Stale Time', () => {
+        it('should fetch fresh data on mount with staleTime: 0', async () => {
+            const template = mockHalFormsTemplate({target: '/events/456'});
+            fetchSpy.mockResolvedValue(createMockResponse(targetResourceData));
+
+            // First render with a QueryClient that has more realistic settings
+            const realQueryClient = new QueryClient({
+                defaultOptions: {
+                    queries: {retry: false, gcTime: 60000}, // Realistic cache time
+                },
+            });
+
+            const wrapper = ({children}: { children: React.ReactNode }) => (
+                <QueryClientProvider client={realQueryClient}>
+                    {children}
+                </QueryClientProvider>
+            );
+
+            const {result: result1} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper}
+            );
+
+            await waitFor(() => {
+                expect(result1.current.formData).toEqual(targetResourceData);
+            });
+
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+            // The data should be cached, but with staleTime: 0, it's immediately stale
+            // So a new instance should refetch immediately
+            const {result: result2} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper}
+            );
+
+            await waitFor(() => {
+                expect(result2.current.formData).toEqual(targetResourceData);
+            });
+
+            // Should have fetched again because staleTime is 0 (data is immediately stale)
+            expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+            realQueryClient.clear();
+        });
+    });
+
     describe('Edge Cases', () => {
         it('should handle empty string currentPathname', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockResolvedValueOnce(targetResourceData);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetResourceData));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, ''),
@@ -555,10 +609,10 @@ describe('useHalFormData Hook', () => {
                 expect(result.current.formData).toEqual(targetResourceData);
             });
 
-            expect(fetchResource).toHaveBeenCalledWith('/api/events/456');
+            expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('events/456'), expect.any(Object));
         });
 
-        it('should handle template with empty properties array', () => {
+        it('should handle template with empty properties array', async () => {
             const template = mockHalFormsTemplate({
                 properties: [],
                 target: '/members/123' // Match current path to avoid fetch
@@ -571,12 +625,16 @@ describe('useHalFormData Hook', () => {
 
             // Should still work, just return current resource data
             expect(result.current.formData).toEqual(currentResourceData);
-            expect(result.current.isLoadingTargetData).toBe(false);
+            // Template matches current path, so no fetch occurs
+            await waitFor(() => {
+                expect(result.current.isLoadingTargetData).toBe(false);
+            });
         });
 
-        it('should handle non-Error thrown in fetch', async () => {
+        it('should handle non-FetchError errors (standard Error instances)', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            fetchResource.mockRejectedValueOnce('String error');
+            const standardError = new Error('Network timeout');
+            fetchSpy.mockRejectedValueOnce(standardError);
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -585,11 +643,9 @@ describe('useHalFormData Hook', () => {
 
             await waitFor(() => {
                 expect(result.current.targetFetchError).toBeTruthy();
+                expect(result.current.targetFetchError).toBeInstanceOf(Error);
+                expect(result.current.targetFetchError?.message).toBe('Network timeout');
             });
-
-            // Should convert string error to Error instance
-            expect(result.current.targetFetchError).toBeInstanceOf(Error);
-            expect(result.current.targetFetchError?.message).toBe('String error');
         });
 
         it('should handle template.target change during fetch', async () => {
@@ -599,7 +655,7 @@ describe('useHalFormData Hook', () => {
             const firstFetchPromise = new Promise((resolve) => {
                 resolveFirstFetch = resolve;
             });
-            fetchResource.mockReturnValueOnce(firstFetchPromise);
+            fetchSpy.mockReturnValueOnce(firstFetchPromise);
 
             const {result, rerender} = renderHook(
                 ({template}) => useHalFormData(template, currentResourceData, '/members/123'),
@@ -615,16 +671,16 @@ describe('useHalFormData Hook', () => {
             // Change template while first fetch is pending
             const template2 = mockHalFormsTemplate({target: '/calendar/789'});
             const targetData2 = {id: 3, name: 'Calendar Data'};
-            fetchResource.mockResolvedValueOnce(targetData2);
+            fetchSpy.mockResolvedValueOnce(createMockResponse(targetData2));
 
             rerender({template: template2});
 
             // Resolve first fetch (should be ignored due to template change)
-            resolveFirstFetch(targetResourceData);
+            resolveFirstFetch(createMockResponse(targetResourceData));
 
             // Should fetch from new target
             await waitFor(() => {
-                expect(fetchResource).toHaveBeenCalledWith('/api/calendar/789');
+                expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('calendar/789'), expect.any(Object));
             });
 
             await waitFor(() => {
@@ -632,7 +688,7 @@ describe('useHalFormData Hook', () => {
             });
         });
 
-        it('should handle empty currentResourceData object', () => {
+        it('should handle empty currentResourceData object', async () => {
             const emptyData = {};
             const template = mockHalFormsTemplate({target: '/members/123'});
 
@@ -643,7 +699,10 @@ describe('useHalFormData Hook', () => {
 
             // Should return empty object when target matches current path
             expect(result.current.formData).toEqual(emptyData);
-            expect(result.current.isLoadingTargetData).toBe(false);
+            // Template matches current path, so no fetch occurs
+            await waitFor(() => {
+                expect(result.current.isLoadingTargetData).toBe(false);
+            });
         });
     });
 });

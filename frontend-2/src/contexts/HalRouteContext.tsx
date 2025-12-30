@@ -130,6 +130,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
     }
 
     const getLink = (linkName = 'self') => {
+        console.log(JSON.stringify(data?._links));
         if (!data?._links?.[linkName]) {
             return null
         }

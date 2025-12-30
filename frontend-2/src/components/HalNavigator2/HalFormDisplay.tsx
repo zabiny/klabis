@@ -59,7 +59,6 @@ export const HalFormDisplay = ({
     const handleSubmit = async (data: Record<string, unknown>) => {
         setIsSubmitting(true);
         setSubmitError(null);
-        console.log('Submitting form data:', JSON.stringify(data));
 
         try {
             const submitTarget: TemplateTarget = {

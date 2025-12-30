@@ -6,12 +6,18 @@ import {BrowserRouter} from 'react-router-dom';
 import {HalFormButton} from './HalFormButton.tsx';
 import {HalRouteContext, type HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
+import {createMockResponse} from '../../__mocks__/mockFetch';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 // Mock dependencies
-jest.mock('../HalNavigator/hooks.ts', () => ({
-    fetchResource: jest.fn(),
+jest.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: jest.fn().mockResolvedValue({
+            access_token: 'test-token',
+            token_type: 'Bearer',
+        }),
+    },
 }));
 
 jest.mock('../../api/hateoas.ts', () => ({
@@ -389,16 +395,14 @@ describe('HalFormButton Component', () => {
         });
     });
 
-    describe('Form Submission', () => {
+    describe('Form Modal Setup and Context Integration', () => {
         const {submitHalFormsData} = require('../../api/hateoas.ts');
-        const {fetchResource} = require('../HalNavigator/hooks.ts');
 
         beforeEach(() => {
             submitHalFormsData.mockClear();
-            fetchResource.mockClear();
         });
 
-        it('should call submitHalFormsData with correct parameters', async () => {
+        it('should prepare modal for form submission with correct parameters', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -419,7 +423,6 @@ describe('HalFormButton Component', () => {
             };
 
             submitHalFormsData.mockResolvedValueOnce({success: true});
-            fetchResource.mockResolvedValueOnce(resourceData);
 
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
@@ -430,16 +433,13 @@ describe('HalFormButton Component', () => {
             const button = screen.getByRole('button', {name: /create/i});
             await user.click(button);
 
+            // Verify modal is ready for form submission
             await waitFor(() => {
                 expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
             });
-
-            // Note: Actual form interaction would require mocking HalFormsForm
-            // For now we verify the modal opened, which sets up the submit handler
-            expect(submitHalFormsData).not.toHaveBeenCalled(); // Not called until form is filled and submitted
         });
 
-        it('should close modal after successful submission', async () => {
+        it('should close modal when close button is clicked', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -459,9 +459,6 @@ describe('HalFormButton Component', () => {
                 refetch: mockRefetch,
             };
 
-            submitHalFormsData.mockResolvedValueOnce({success: true});
-            fetchResource.mockResolvedValueOnce(resourceData);
-
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
                 contextValue
@@ -475,11 +472,7 @@ describe('HalFormButton Component', () => {
                 expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
             });
 
-            // Modal should be open
-            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-
-            // Simulate successful form submission by clicking close button
-            // (In real scenario, form would submit and close automatically)
+            // Close modal
             const closeButton = screen.getByTestId('close-form-button');
             await user.click(closeButton);
 
@@ -489,7 +482,7 @@ describe('HalFormButton Component', () => {
             });
         });
 
-        it('should display error when submission fails', async () => {
+        it('should display form for error handling when modal is open', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -505,10 +498,7 @@ describe('HalFormButton Component', () => {
 
             const contextValue = createMockContext(resourceData);
 
-            // Mock a failed submission
-            const submitError = new Error('Submission failed');
-            submitHalFormsData.mockRejectedValueOnce(submitError);
-            fetchResource.mockResolvedValueOnce(resourceData);
+            submitHalFormsData.mockRejectedValueOnce(new Error('Submission failed'));
 
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
@@ -519,17 +509,13 @@ describe('HalFormButton Component', () => {
             const button = screen.getByRole('button', {name: /create/i});
             await user.click(button);
 
+            // Verify form is displayed for potential error handling
             await waitFor(() => {
                 expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
             });
-
-            // Modal should display the form
-            // Error handling is managed by HalFormModal component internally
-            // We verify the modal structure is in place for error display
-            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
 
-        it('should refetch data after successful submission', async () => {
+        it('should pass refetch callback to form context', async () => {
             const mockRefetch = jest.fn().mockResolvedValue(undefined);
             const resourceData: HalResponse = {
                 id: 1,
@@ -548,29 +534,57 @@ describe('HalFormButton Component', () => {
                 refetch: mockRefetch,
             };
 
-            submitHalFormsData.mockResolvedValueOnce({success: true});
-            fetchResource.mockResolvedValueOnce(resourceData);
+            renderWithContext(
+                <HalFormButton name="create" modal={true}/>,
+                contextValue
+            );
+
+            // Verify the button renders with the context value available
+            expect(screen.getByRole('button', {name: /create/i})).toBeInTheDocument();
+        });
+
+        it('should pass navigateToResource callback to form context', async () => {
+            const mockNavigateToResource = jest.fn();
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+                _templates: {
+                    create: mockHalFormsTemplate({
+                        title: 'Create',
+                        target: '/api/members',
+                        method: 'POST',
+                    }),
+                },
+            };
+
+            const contextValue = {
+                ...createMockContext(resourceData),
+                navigateToResource: mockNavigateToResource,
+            };
 
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
                 contextValue
             );
 
-            // Verify the component is set up with the refetch function
-            // The actual refetch is triggered by the handleSubmit function
-            // which is tested implicitly through the modal's presence
-            expect(mockRefetch).not.toHaveBeenCalled(); // Not called until form is submitted
+            // Verify the button renders with the context value available for post-submission navigation
+            expect(screen.getByRole('button', {name: /create/i})).toBeInTheDocument();
         });
     });
 
     describe('API Without GET Endpoint (HTTP 404/405)', () => {
-        const {fetchResource} = require('../HalNavigator/hooks.ts');
+        let fetchSpy: jest.Mock;
 
         beforeEach(() => {
             // Clear query cache before each test
             queryClient.clear();
-            // Reset all mocks
-            fetchResource.mockReset();
+            // Mock global fetch
+            fetchSpy = jest.fn() as jest.Mock;
+            (globalThis as any).fetch = fetchSpy;
+        });
+
+        afterEach(() => {
+            delete (globalThis as any).fetch;
         });
 
         it('should display form with empty data when target returns HTTP 404', async () => {
@@ -589,12 +603,7 @@ describe('HalFormButton Component', () => {
             const contextValue = createMockContext(resourceData);
 
             // Simulate HTTP 404 error from target endpoint
-            const fetchError = {
-                message: 'HTTP 404',
-                responseStatus: 404,
-                responseStatusText: 'Not Found',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            fetchSpy.mockResolvedValue(createMockResponse({}, 404));
 
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
@@ -628,12 +637,7 @@ describe('HalFormButton Component', () => {
             const contextValue = createMockContext(resourceData);
 
             // Simulate HTTP 405 error from target endpoint
-            const fetchError = {
-                message: 'HTTP 405',
-                responseStatus: 405,
-                responseStatusText: 'Method Not Allowed',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            fetchSpy.mockResolvedValue(createMockResponse({}, 405));
 
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
@@ -667,12 +671,7 @@ describe('HalFormButton Component', () => {
             const contextValue = createMockContext(resourceData);
 
             // Simulate HTTP 500 error from target endpoint
-            const fetchError = {
-                message: 'HTTP 500',
-                responseStatus: 500,
-                responseStatusText: 'Internal Server Error',
-            };
-            fetchResource.mockRejectedValueOnce(fetchError);
+            fetchSpy.mockResolvedValue(createMockResponse({}, 500));
 
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,

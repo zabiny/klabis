@@ -191,8 +191,6 @@ function SandplacePage(): ReactElement {
 
     const halRootPage = import.meta.env.VITE_HAL_ROOT_URI || '/default';
 
-    console.log(JSON.stringify(import.meta.env, null, 2))
-
     const tabs = [
         {
             label: "HAL Explorer",

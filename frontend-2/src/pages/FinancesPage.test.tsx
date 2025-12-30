@@ -5,21 +5,22 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
 import {MemberFinancePage, MemberName} from './FinancesPage';
 import {mockFinanceResource, mockMemberResource} from '../__mocks__/halData';
+import {createMockResponse} from '../__mocks__/mockFetch';
 import {HalRouteProvider} from '../contexts/HalRouteContext';
 
-// Mock only the API boundary
-jest.mock('../components/HalNavigator/hooks', () => {
-    const actualModule = jest.requireActual('../components/HalNavigator/hooks');
-    return {
-        ...actualModule,
-        fetchResource: jest.fn(),
-    };
-});
-
-const {fetchResource} = require('../components/HalNavigator/hooks');
+// Mock the auth user manager to return a user with access token
+jest.mock('../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: jest.fn().mockResolvedValue({
+            access_token: 'test-token',
+            token_type: 'Bearer',
+        }),
+    },
+}));
 
 describe('MemberFinancePage', () => {
     let queryClient: QueryClient;
+    let fetchSpy: jest.Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -28,6 +29,13 @@ describe('MemberFinancePage', () => {
             },
         });
         jest.clearAllMocks();
+        // Mock global fetch
+        fetchSpy = jest.fn() as jest.Mock;
+        (globalThis as any).fetch = fetchSpy;
+    });
+
+    afterEach(() => {
+        delete (globalThis as any).fetch;
     });
 
     // For integration tests with real HalRouteProvider and mocked API
@@ -43,12 +51,48 @@ describe('MemberFinancePage', () => {
         );
     };
 
+    const mockTransactionData = {
+        _embedded: {
+            transactionItemResponseList: [
+                {
+                    id: 1,
+                    date: '2025-01-15',
+                    amount: 500,
+                    note: 'Monthly deposit',
+                    type: 'deposit',
+                    _links: {
+                        self: {href: 'https://test.com/api/transactions/1'},
+                    },
+                },
+                {
+                    id: 2,
+                    date: '2025-01-10',
+                    amount: 100,
+                    note: 'Withdrawal',
+                    type: 'withdraw',
+                    _links: {
+                        self: {href: 'https://test.com/api/transactions/2'},
+                    },
+                },
+            ],
+        },
+        page: {
+            totalElements: 2,
+            totalPages: 1,
+            size: 10,
+            number: 0,
+        },
+        _links: {
+            self: {href: 'https://test.com/api/finances/123/transactions'},
+        },
+    };
+
     const mockFinanceData = mockFinanceResource({
         balance: 1500,
         _links: {
-            self: {href: '/api/finances/123'},
-            owner: {href: '/api/members/456'},
-            transactions: {href: '/api/finances/123/transactions'},
+            self: {href: 'https://test.com/api/finances/123'},
+            owner: {href: 'https://test.com/api/members/456'},
+            transactions: {href: 'https://test.com/api/finances/123/transactions'},
         },
         _templates: {
             deposit: {
@@ -63,14 +107,25 @@ describe('MemberFinancePage', () => {
                         type: 'number',
                     },
                 ],
-                target: '/api/finances/123/deposit',
+                target: 'https://test.com/api/finances/123/deposit',
             },
         },
     });
 
     describe('Data Loading and Display', () => {
         beforeEach(() => {
-            fetchResource.mockResolvedValue(mockFinanceData);
+            // Mock implementation to handle multiple endpoints and query parameters
+            fetchSpy.mockImplementation((url: string) => {
+                // Remove query parameters for endpoint matching
+                const baseUrl = url.split('?')[0];
+
+                if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
+                    return Promise.resolve(createMockResponse(mockTransactionData));
+                }
+
+                // Default response for finance data
+                return Promise.resolve(createMockResponse(mockFinanceData));
+            });
         });
 
         it('should render page heading "Finance"', async () => {
@@ -105,7 +160,18 @@ describe('MemberFinancePage', () => {
 
     describe('Subresource Integration', () => {
         beforeEach(() => {
-            fetchResource.mockResolvedValue(mockFinanceData);
+            // Mock implementation to handle multiple endpoints and query parameters
+            fetchSpy.mockImplementation((url: string) => {
+                // Remove query parameters for endpoint matching
+                const baseUrl = url.split('?')[0];
+
+                if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
+                    return Promise.resolve(createMockResponse(mockTransactionData));
+                }
+
+                // Default response for finance data
+                return Promise.resolve(createMockResponse(mockFinanceData));
+            });
         });
 
         it('should load and display finance data through real child components', async () => {
@@ -120,10 +186,108 @@ describe('MemberFinancePage', () => {
             });
         });
     });
+
+    describe('Error Handling', () => {
+        it('should display page heading when API fetch fails with HTTP 500', async () => {
+            fetchSpy.mockRejectedValueOnce(new Error('HTTP 500: Internal Server Error'));
+
+            renderPage(<MemberFinancePage/>);
+
+            // Page should still render heading and gracefully handle error
+            await waitFor(() => {
+                expect(screen.getByRole('heading', {name: /Finance/i})).toBeInTheDocument();
+            });
+        });
+
+        it('should display page heading when API fetch fails with network error', async () => {
+            fetchSpy.mockRejectedValueOnce(new Error('Network error'));
+
+            renderPage(<MemberFinancePage/>);
+
+            // Page should still render and not crash
+            await waitFor(() => {
+                expect(screen.getByRole('heading', {name: /Finance/i})).toBeInTheDocument();
+            });
+        });
+
+        it('should render page structure while data is loading', async () => {
+            fetchSpy.mockImplementationOnce(() => new Promise(resolve => {
+                // Simulate a slow response
+                setTimeout(() => resolve(createMockResponse(mockFinanceData)), 100);
+            }));
+
+            const {container} = renderPage(<MemberFinancePage/>);
+
+            // Page should render and show loading state without crashing
+            expect(container).toBeInTheDocument();
+
+            // Eventually loads the Finance heading
+            await waitFor(() => {
+                expect(screen.getByRole('heading', {name: /Finance/i})).toBeInTheDocument();
+            }, {timeout: 1000});
+        });
+    });
+
+    describe('Null Safety and Missing Data', () => {
+        it('should render page with default values when balance is missing', async () => {
+            const financeDataWithoutBalance = mockFinanceResource({
+                balance: undefined,
+                _links: {
+                    self: {href: 'https://test.com/api/finances/123'},
+                    transactions: {href: 'https://test.com/api/finances/123/transactions'},
+                },
+            });
+
+            fetchSpy.mockImplementation((url: string) => {
+                const baseUrl = url.split('?')[0];
+                if (baseUrl.endsWith('/transactions') || baseUrl.includes('/transactions/')) {
+                    return Promise.resolve(createMockResponse(mockTransactionData));
+                }
+                return Promise.resolve(createMockResponse(financeDataWithoutBalance));
+            });
+
+            renderPage(<MemberFinancePage/>);
+
+            // Page should render heading and handle missing balance gracefully
+            await waitFor(() => {
+                expect(screen.getByText('Finance')).toBeInTheDocument();
+            });
+        });
+
+        it('should render page when transactions link is missing', async () => {
+            const financeDataWithoutTransactionsLink = mockFinanceResource({
+                balance: 1500,
+                _links: {
+                    self: {href: 'https://test.com/api/finances/123'},
+                },
+            });
+
+            fetchSpy.mockResolvedValueOnce(createMockResponse(financeDataWithoutTransactionsLink));
+
+            renderPage(<MemberFinancePage/>);
+
+            // Page should render without crashing even if transactions link is missing
+            await waitFor(() => {
+                expect(screen.getByText('Finance')).toBeInTheDocument();
+            });
+        });
+
+        it('should render page when resource returns HTTP 404', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 404));
+
+            renderPage(<MemberFinancePage/>);
+
+            // Page should render heading and handle 404 gracefully
+            await waitFor(() => {
+                expect(screen.getByRole('heading', {name: /Finance/i})).toBeInTheDocument();
+            });
+        });
+    });
 });
 
 describe('MemberName Component', () => {
     let queryClient: QueryClient;
+    let fetchSpy: jest.Mock;
 
     beforeEach(() => {
         queryClient = new QueryClient({
@@ -132,6 +296,13 @@ describe('MemberName Component', () => {
             },
         });
         jest.clearAllMocks();
+        // Mock global fetch
+        fetchSpy = jest.fn() as jest.Mock;
+        (globalThis as any).fetch = fetchSpy;
+    });
+
+    afterEach(() => {
+        delete (globalThis as any).fetch;
     });
 
     // MemberName uses useHalRoute internally, so it needs HalRouteProvider
