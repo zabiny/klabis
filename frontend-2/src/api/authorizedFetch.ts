@@ -52,7 +52,7 @@ export async function authorizedFetch(
 		} catch {
 			// Ignore if we can't read the body
 		}
-		throw new FetchError(`HTTP ${response.status} (${response.statusText})`, response.status, response.statusText, errorBody);
+		throw new FetchError(`HTTP ${response.status} (${response.statusText})`, response.status, response.statusText, response.headers, errorBody);
 	}
 	return response;
 }
@@ -62,12 +62,14 @@ export class FetchError extends Error {
 	public responseBody?: string;
 	public responseStatus: number;
 	public responseStatusText: string;
+	public responseHeaders: Headers;
 
-	constructor(message: string, responseStatus: number, responseStatusText: string, responseBody?: string) {
+	constructor(message: string, responseStatus: number, responseStatusText: string, responseHeaders: Headers, responseBody?: string) {
 		super(message);
 		this.responseBody = responseBody;
 		this.responseStatus = responseStatus;
 		this.responseStatusText = responseStatusText;
+		this.responseHeaders = responseHeaders;
 	}
 
 }

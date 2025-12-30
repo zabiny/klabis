@@ -3,15 +3,16 @@
  * Handles form data fetching, submission, and error handling
  */
 
-import {type ReactElement, useState} from 'react';
-import type {HalFormsTemplate, TemplateTarget} from '../../api';
+import {type ReactElement} from 'react';
+import type {HalFormsTemplate} from '../../api';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {Alert, Spinner} from '../UI';
 import {HalFormsForm} from '../HalFormsForm';
-import {isFormValidationError, submitHalFormsData} from '../../api/hateoas.ts';
+import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
+import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 
 /**
  * Props for HalFormDisplay component
@@ -46,9 +47,19 @@ export const HalFormDisplay = ({
                                    onSubmitSuccess,
                                    showCloseButton = true,
                                }: HalFormDisplayProps): ReactElement => {
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState<Error | null>(null);
     const {refetch} = useHalRoute();
+
+    const {mutate: submitForm, isPending: isSubmitting, error: rawError} = useAuthorizedMutation({
+        method: template.method || 'POST',
+        onSuccess: async () => {
+            await refetch();
+            onSubmitSuccess?.();
+            onClose();
+        },
+    });
+
+    // Convert FetchError to FormValidationError if applicable
+    const submitError = rawError ? toFormValidationError(rawError) : null;
 
     const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
         template,
@@ -57,30 +68,8 @@ export const HalFormDisplay = ({
     );
 
     const handleSubmit = async (data: Record<string, unknown>) => {
-        setIsSubmitting(true);
-        setSubmitError(null);
-
-        try {
-            const submitTarget: TemplateTarget = {
-                target: template.target || '/api' + pathname,
-                method: template.method || 'POST'
-            };
-
-            await submitHalFormsData(submitTarget, data);
-
-            // Refetch data after successful submission
-            await refetch();
-
-            // Call optional success callback
-            onSubmitSuccess?.();
-
-            // Close the form
-            onClose();
-        } catch (error) {
-            setSubmitError(error instanceof Error ? error : new Error(String(error)));
-        } finally {
-            setIsSubmitting(false);
-        }
+        const url = template.target || '/api' + pathname;
+        submitForm({url, data});
     };
 
     return (

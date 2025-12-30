@@ -44,7 +44,6 @@ export function useHalActions(): UseHalActionsReturn {
 
 		setIsSubmitting(true);
 		setSubmitError(null);
-		console.log("Submitting form data " + JSON.stringify(formData));
 		try {
 			const submitTarget: TemplateTarget = {
 				target: selectedTemplate.target || '/api' + pathname,

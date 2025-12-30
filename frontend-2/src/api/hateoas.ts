@@ -1,5 +1,5 @@
 import {type HalFormsResponse, type TemplateTarget} from "./index";
-import {authorizedFetch} from "./authorizedFetch";
+import {authorizedFetch, FetchError} from "./authorizedFetch";
 
 interface FormValidationError extends Error {
     validationErrors: Record<string, string>,
@@ -60,4 +60,41 @@ async function submitHalFormsData(link: TemplateTarget, formData: Record<string,
     return res;
 }
 
-export {fetchHalFormsData, submitHalFormsData, type TemplateTarget, type FormValidationError, isFormValidationError};
+/**
+ * Checks if a FetchError represents a HAL Forms validation error
+ * and converts it to a FormValidationError if so.
+ */
+function toFormValidationError(error: unknown): Error {
+    if (!(error instanceof FetchError)) {
+        return error instanceof Error ? error : new Error(String(error));
+    }
+
+    // Check for 400 + application/problem+json
+    if (
+        error.responseStatus === 400 &&
+        error.responseHeaders.get('Content-Type') === 'application/problem+json'
+    ) {
+        try {
+            const problemJson = JSON.parse(error.responseBody || '{}');
+            return {
+                message: 'Form validation errors',
+                validationErrors: problemJson.errors || {},
+                formData: {}  // We don't have formData in this context
+            } as FormValidationError;
+        } catch {
+            // If parsing fails, return original error
+            return error;
+        }
+    }
+
+    return error;
+}
+
+export {
+    fetchHalFormsData,
+    submitHalFormsData,
+    toFormValidationError,
+    type TemplateTarget,
+    type FormValidationError,
+    isFormValidationError
+};

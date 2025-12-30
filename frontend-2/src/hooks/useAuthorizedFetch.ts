@@ -181,10 +181,6 @@ export function useAuthorizedMutation(
 
             const response = await authorizedFetch(url, fetchOptions, true);
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
             try {
                 return await response.json();
             } catch {

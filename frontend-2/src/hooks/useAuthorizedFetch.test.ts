@@ -4,6 +4,7 @@ import type {ReactNode} from 'react';
 import React from 'react';
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 import {createMockResponse} from '../__mocks__/mockFetch';
+import {FetchError} from '../api/authorizedFetch';
 
 // Mock dependencies
 jest.mock('../api/klabisUserManager', () => ({
@@ -381,6 +382,35 @@ describe('useAuthorizedMutation', () => {
             });
 
             expect(result.current.error).toEqual(networkError);
+        });
+
+        it('should include response headers in FetchError', async () => {
+            const mockResponse = {
+                ok: false,
+                status: 400,
+                statusText: 'Bad Request',
+                headers: new Headers({'Content-Type': 'application/json'}),
+                text: async () => 'Bad Request',
+            } as Response;
+
+            fetchSpy.mockResolvedValueOnce(mockResponse);
+
+            const {result} = renderHook(
+                () => useAuthorizedMutation({method: 'POST'}),
+                {wrapper: createWrapper()}
+            );
+
+            result.current.mutate({url: '/api/items', data: {}});
+
+            await waitFor(() => {
+                expect(result.current.error).toBeDefined();
+            });
+
+            const error = result.current.error as FetchError;
+            expect(error).toBeInstanceOf(FetchError);
+            expect(error.responseHeaders).toBeDefined();
+            expect(error.responseHeaders).toBeInstanceOf(Headers);
+            expect(error.responseHeaders.get('Content-Type')).toBe('application/json');
         });
     });
 

@@ -284,7 +284,7 @@ describe('useHalFormData Hook', () => {
 
         it('should suppress 404 error but return fallback data', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            const fetchError = new FetchError('HTTP 404 (Not Found)', 404, 'Not Found');
+            const fetchError = new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers());
             fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(
@@ -301,7 +301,7 @@ describe('useHalFormData Hook', () => {
 
         it('should suppress 405 error but return fallback data', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            const fetchError = new FetchError('HTTP 405 (Method Not Allowed)', 405, 'Method Not Allowed');
+            const fetchError = new FetchError('HTTP 405 (Method Not Allowed)', 405, 'Method Not Allowed', new Headers());
             fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(
@@ -318,7 +318,7 @@ describe('useHalFormData Hook', () => {
 
         it('should still show error for non-404/405 HTTP errors', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            const fetchError = new FetchError('HTTP 500 (Internal Server Error)', 500, 'Internal Server Error');
+            const fetchError = new FetchError('HTTP 500 (Internal Server Error)', 500, 'Internal Server Error', new Headers());
             fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(

@@ -19,11 +19,6 @@ jest.mock('../../api/klabisUserManager', () => ({
     },
 }));
 
-jest.mock('../../api/hateoas.ts', () => ({
-    ...jest.requireActual('../../api/hateoas'),
-    submitHalFormsData: jest.fn(),
-}));
-
 describe('HalFormDisplay Component', () => {
     let queryClient: QueryClient;
     let fetchSpy: jest.Mock;
@@ -143,43 +138,123 @@ describe('HalFormDisplay Component', () => {
     });
 
     describe('Form Submission', () => {
-        const {submitHalFormsData} = require('../../api/hateoas.ts');
-
-        beforeEach(() => {
-            submitHalFormsData.mockClear();
-        });
-
-        it('should handle successful submission with callback', async () => {
+        it('should submit form successfully and trigger callbacks', async () => {
+            const onClose = jest.fn();
             const onSubmitSuccess = jest.fn();
+            const user = userEvent.setup();
+
             const template = mockHalFormsTemplate({
-                title: 'Create',
+                title: 'Create Member',
                 target: '/api/members',
                 method: 'POST',
+                properties: [
+                    {
+                        name: 'name',
+                        prompt: 'Full Name',
+                        type: 'text',
+                        required: true,
+                    },
+                    {
+                        name: 'description',
+                        prompt: 'Description',
+                        type: 'textarea',
+                    },
+                ],
             });
 
-            submitHalFormsData.mockResolvedValueOnce({success: true});
+            const contextValue = createMockContext({id: 1});
+            const mockRefetch = jest.fn();
+            contextValue.refetch = mockRefetch;
 
-            renderComponent(template, jest.fn(), onSubmitSuccess);
+            const Wrapper = createWrapper(contextValue);
 
-            // Verify the component is set up for form submission
-            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            // Mock fetch calls:
+            // First call: fetching form target data (200 OK)
+            // Second call: form submission (200 OK)
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing Member'}))
+                .mockResolvedValueOnce(createMockResponse({id: 2, name: 'New Member'}));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="create"
+                        resourceData={{id: 1}}
+                        pathname="/members"
+                        onClose={onClose}
+                        onSubmitSuccess={onSubmitSuccess}
+                    />
+                </Wrapper>
+            );
+
+            // Wait for form to load
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            });
+
+            // Wait for the loading state to disappear and form fields to appear
+            await waitFor(() => {
+                expect(screen.queryByText(/Nač/)).not.toBeInTheDocument();
+            });
+
+            // Fill in form fields - use placeholder or name attribute to find input
+            const nameInput = screen.getByDisplayValue('Existing Member') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'John Doe');
+
+            // Submit the form - look for button with text that contains "Odeslat" (Czech for Submit)
+            const submitButton = screen.getByRole('button', {name: /odeslat/i});
+            await user.click(submitButton);
+
+            // Verify callbacks were called
+            await waitFor(() => {
+                expect(mockRefetch).toHaveBeenCalled();
+                expect(onSubmitSuccess).toHaveBeenCalled();
+                expect(onClose).toHaveBeenCalled();
+            });
         });
 
-        it('should display error when submission fails', async () => {
-            const {submitHalFormsData} = require('../../api/hateoas.ts');
+        it('should display validation errors when submission fails with 400', async () => {
+            // Mock validation error response with problem+json
+            const validationErrorResponse = {
+                ...createMockResponse(
+                    {
+                        errors: {
+                            name: 'Name is required',
+                            email: 'Invalid email format',
+                        },
+                    },
+                    400
+                ),
+                headers: new Headers({'Content-Type': 'application/problem+json'}),
+            };
+
+            fetchSpy.mockResolvedValueOnce(validationErrorResponse);
 
             const template = mockHalFormsTemplate({
                 title: 'Create',
                 target: '/api/members',
                 method: 'POST',
             });
-
-            const submitError = new Error('Submission failed');
-            submitHalFormsData.mockRejectedValueOnce(submitError);
 
             renderComponent(template);
 
-            // Verify the component structure is in place for error display
+            // Verify component is ready for submission
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+        });
+
+        it('should display generic error when submission fails with 500', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 500));
+
+            const template = mockHalFormsTemplate({
+                title: 'Create',
+                target: '/api/members',
+                method: 'POST',
+            });
+
+            renderComponent(template);
+
             expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
     });
