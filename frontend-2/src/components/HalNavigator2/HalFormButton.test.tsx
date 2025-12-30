@@ -11,6 +11,7 @@ import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {type Mock, vi} from 'vitest';
 import * as HateoasModule from '../../api/hateoas';
+import type {RenderFormCallback} from '../HalFormsForm';
 
 // Mock dependencies
 vi.mock('../../api/klabisUserManager', () => ({
@@ -689,6 +690,197 @@ describe('HalFormButton Component', () => {
             await waitFor(() => {
                 expect(screen.getByText(/Nepodařilo se načíst data/i)).toBeInTheDocument();
             });
+        });
+    });
+
+    describe('Custom Layout Support', () => {
+        let fetchSpy: Mock;
+
+        beforeEach(() => {
+            queryClient.clear();
+            fetchSpy = vi.fn() as Mock;
+            (globalThis as any).fetch = fetchSpy;
+        });
+
+        afterEach(() => {
+            delete (globalThis as any).fetch;
+        });
+
+        it('should pass custom layout to modal form', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+                _templates: {
+                    create: mockHalFormsTemplate({
+                        title: 'Create',
+                        target: '/api/members',
+                        method: 'POST',
+                        properties: [
+                            {
+                                name: 'name',
+                                prompt: 'Name',
+                                type: 'text',
+                                required: true,
+                            },
+                        ],
+                    }),
+                },
+            };
+
+            const contextValue = createMockContext(resourceData);
+
+            // Mock fetch for form target data
+            fetchSpy.mockResolvedValue(createMockResponse({name: 'John'}));
+
+            const customLayout = (
+                <div data-testid="custom-modal-layout">
+                    <div>Custom Layout</div>
+                </div>
+            );
+
+            renderWithContext(
+                <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
+                contextValue
+            );
+
+            // Open modal
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
+
+            // Verify custom layout is applied
+            await waitFor(() => {
+                expect(screen.getByTestId('custom-modal-layout')).toBeInTheDocument();
+                expect(screen.getByText('Custom Layout')).toBeInTheDocument();
+            });
+        });
+
+        it('should pass callback-based custom layout to modal form', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+                _templates: {
+                    create: mockHalFormsTemplate({
+                        title: 'Create',
+                        target: '/api/members',
+                        method: 'POST',
+                        properties: [
+                            {
+                                name: 'name',
+                                prompt: 'Name',
+                                type: 'text',
+                                required: true,
+                            },
+                        ],
+                    }),
+                },
+            };
+
+            const contextValue = createMockContext(resourceData);
+
+            // Mock fetch for form target data
+            fetchSpy.mockResolvedValue(createMockResponse({name: 'Jane'}));
+
+            const customLayout: RenderFormCallback = (renderField) => (
+                <div data-testid="custom-callback-modal-layout">
+                    <div>Callback Layout: {renderField('name')}</div>
+                </div>
+            );
+
+            renderWithContext(
+                <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
+                contextValue
+            );
+
+            // Open modal
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
+
+            // Verify custom callback layout is applied
+            await waitFor(() => {
+                expect(screen.getByTestId('custom-callback-modal-layout')).toBeInTheDocument();
+                expect(screen.getByText(/Callback Layout:/)).toBeInTheDocument();
+            });
+        });
+
+        it('should work without custom layout (backward compatibility)', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+                _templates: {
+                    create: mockHalFormsTemplate({
+                        title: 'Create',
+                        target: '/api/members',
+                        method: 'POST',
+                        properties: [
+                            {
+                                name: 'name',
+                                prompt: 'Name',
+                                type: 'text',
+                                required: true,
+                            },
+                        ],
+                    }),
+                },
+            };
+
+            const contextValue = createMockContext(resourceData);
+
+            // Mock fetch for form target data
+            fetchSpy.mockResolvedValue(createMockResponse({name: 'Bob'}));
+
+            renderWithContext(
+                <HalFormButton name="create" modal={true}/>,
+                contextValue
+            );
+
+            // Open modal
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
+
+            // Form should display with automatic layout
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+                expect(screen.getByDisplayValue('Bob')).toBeInTheDocument();
+            });
+        });
+
+        it('should work with inline form (customLayout used via HalFormsPageLayout)', async () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+                _templates: {
+                    edit: mockHalFormsTemplate({
+                        title: 'Edit',
+                        target: '/api/members/1',
+                        method: 'PUT',
+                        properties: [
+                            {
+                                name: 'name',
+                                prompt: 'Name',
+                                type: 'text',
+                                required: true,
+                            },
+                        ],
+                    }),
+                },
+            };
+
+            const contextValue = createMockContext(resourceData);
+
+            // Note: customLayout is optional for inline forms since they use HalFormsPageLayout's customLayouts prop
+            // HalFormButton passes customLayout to HalFormDisplay which is used when modal=true
+            // For inline forms, use HalFormsPageLayout with customLayouts prop instead
+            renderWithContext(
+                <HalFormButton name="edit" modal={false}/>,
+                contextValue
+            );
+
+            // Verify button is rendered - customLayout handling for inline forms is done via HalFormsPageLayout
+            const button = screen.getByRole('button', {name: /edit/i});
+            expect(button).toBeInTheDocument();
         });
     });
 });

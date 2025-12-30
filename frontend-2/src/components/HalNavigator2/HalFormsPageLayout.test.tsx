@@ -7,9 +7,10 @@ import type {HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
 import {HalRouteContext} from '../../contexts/HalRouteContext.tsx';
 import {mockHalResponseWithForms} from '../../__mocks__/halData.ts';
 import {vi} from 'vitest';
+import type {HalFormDisplayProps} from './HalFormDisplay.tsx';
 
 vi.mock('./HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, onClose}: any) => (
+    HalFormDisplay: ({template, templateName, onClose}: HalFormDisplayProps) => (
         <div data-testid="hal-form-display">
             <h3>{template.title || templateName}</h3>
             <button onClick={onClose} data-testid="form-close-button">Close Form</button>

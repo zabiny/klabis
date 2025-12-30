@@ -13,9 +13,12 @@ import {type ReactElement, type ReactNode} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
+import type {RenderFormCallback} from '../HalFormsForm';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;
+    /** Optional custom layouts per template name */
+    customLayouts?: Record<string, ReactNode | RenderFormCallback>;
 }
 
 /**
@@ -26,7 +29,7 @@ interface HalFormsPageLayoutProps {
  * 2. Inline form display when a form is selected or display children when form is NOT selected
  *
  */
-export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactElement {
+export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayoutProps): ReactElement {
     const {resourceData, pathname} = useHalRoute();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -46,6 +49,7 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
                         pathname={pathname}
                         onClose={() => setSearchParams({})}
                         onSubmitSuccess={() => setSearchParams({})}
+                        customLayout={customLayouts?.[templateName!]}
                     />
                 </div>
             ) : children}

@@ -9,6 +9,7 @@ import {createMockResponse} from '../../__mocks__/mockFetch';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {type Mock, vi} from 'vitest';
+import {HalFormsFormField, type RenderFormCallback} from '../HalFormsForm/HalFormsForm';
 
 // Mock dependencies
 vi.mock('../../api/klabisUserManager', () => ({
@@ -556,6 +557,223 @@ describe('HalFormDisplay Component', () => {
             // Verify error alert is displayed
             await waitFor(() => {
                 expect(screen.getByText(/Nepodařilo se načíst data/i)).toBeInTheDocument();
+            });
+        });
+    });
+
+    describe('Custom Layout Support', () => {
+        it('should render with automatic layout by default (backward compatibility)', async () => {
+            const template = mockHalFormsTemplate({
+                title: 'Create Member',
+                target: '/api/members',
+                method: 'POST',
+                properties: [
+                    {
+                        name: 'name',
+                        prompt: 'Full Name',
+                        type: 'text',
+                        required: true,
+                    },
+                ],
+            });
+
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+            };
+            const contextValue = createMockContext(resourceData);
+            const Wrapper = createWrapper(contextValue);
+
+            // Mock fetch for target data
+            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing Member'}));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="create"
+                        resourceData={resourceData}
+                        pathname="/members"
+                        onClose={vi.fn()}
+                    />
+                </Wrapper>
+            );
+
+            // Wait for form to load with automatic layout
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+                // Automatic layout shows form fields
+                expect(screen.getByDisplayValue('Existing Member')).toBeInTheDocument();
+            });
+        });
+
+        it('should render with children-based custom layout', async () => {
+            const template = mockHalFormsTemplate({
+                title: 'Create Member',
+                target: '/api/members',
+                method: 'POST',
+                properties: [
+                    {
+                        name: 'firstName',
+                        prompt: 'First Name',
+                        type: 'text',
+                        required: true,
+                    },
+                    {
+                        name: 'lastName',
+                        prompt: 'Last Name',
+                        type: 'text',
+                        required: true,
+                    },
+                ],
+            });
+
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+            };
+            const contextValue = createMockContext(resourceData);
+            const Wrapper = createWrapper(contextValue);
+
+            // Mock fetch for target data
+            fetchSpy.mockResolvedValueOnce(createMockResponse({
+                firstName: 'John',
+                lastName: 'Doe',
+            }));
+
+            const customLayout = (
+                <div data-testid="custom-children-layout">
+                    <div>
+                        <label>First and Last Name</label>
+                        <HalFormsFormField fieldName="firstName"/>
+                        <HalFormsFormField fieldName="lastName"/>
+                    </div>
+                    <div>
+                        <HalFormsFormField fieldName="submit"/>
+                    </div>
+                </div>
+            );
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="create"
+                        resourceData={resourceData}
+                        pathname="/members"
+                        onClose={vi.fn()}
+                        customLayout={customLayout}
+                    />
+                </Wrapper>
+            );
+
+            // Wait for form to load with custom layout
+            await waitFor(() => {
+                expect(screen.getByTestId('custom-children-layout')).toBeInTheDocument();
+                expect(screen.getByText('First and Last Name')).toBeInTheDocument();
+            });
+        });
+
+        it('should render with callback-based custom layout', async () => {
+            const template = mockHalFormsTemplate({
+                title: 'Create Member',
+                target: '/api/members',
+                method: 'POST',
+                properties: [
+                    {
+                        name: 'name',
+                        prompt: 'Full Name',
+                        type: 'text',
+                        required: true,
+                    },
+                ],
+            });
+
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+            };
+            const contextValue = createMockContext(resourceData);
+            const Wrapper = createWrapper(contextValue);
+
+            // Mock fetch for target data
+            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'John Doe'}));
+
+            const customLayout: RenderFormCallback = (renderField) => (
+                <div data-testid="custom-callback-layout">
+                    <div>
+                        <label>Callback Custom Layout</label>
+                        {renderField('name')}
+                    </div>
+                    <div>
+                        {renderField('submit')}
+                    </div>
+                </div>
+            );
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="create"
+                        resourceData={resourceData}
+                        pathname="/members"
+                        onClose={vi.fn()}
+                        customLayout={customLayout}
+                    />
+                </Wrapper>
+            );
+
+            // Wait for form to load with custom layout
+            await waitFor(() => {
+                expect(screen.getByTestId('custom-callback-layout')).toBeInTheDocument();
+                expect(screen.getByText('Callback Custom Layout')).toBeInTheDocument();
+                expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
+            });
+        });
+
+        it('should maintain backward compatibility when no customLayout provided', async () => {
+            const template = mockHalFormsTemplate({
+                title: 'Create Member',
+                target: '/api/members',
+                method: 'POST',
+                properties: [
+                    {
+                        name: 'name',
+                        prompt: 'Full Name',
+                        type: 'text',
+                        required: true,
+                    },
+                ],
+            });
+
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Resource',
+            };
+            const contextValue = createMockContext(resourceData);
+            const Wrapper = createWrapper(contextValue);
+
+            // Mock fetch for target data
+            fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'Jane Smith'}));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="create"
+                        resourceData={resourceData}
+                        pathname="/members"
+                        onClose={vi.fn()}
+                        // No customLayout prop
+                    />
+                </Wrapper>
+            );
+
+            // Form should render with automatic layout
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+                expect(screen.getByDisplayValue('Jane Smith')).toBeInTheDocument();
             });
         });
     });

@@ -3,11 +3,11 @@
  * Handles form data fetching, submission, and error handling
  */
 
-import {type ReactElement} from 'react';
+import {type ReactElement, type ReactNode, useMemo} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {Alert, Spinner} from '../UI';
-import {HalFormsForm} from '../HalFormsForm';
+import {HalFormsForm, type RenderFormCallback} from '../HalFormsForm';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
@@ -33,6 +33,23 @@ export interface HalFormDisplayProps {
     onSubmitSuccess?: () => void;
     /** Whether to show close button (default: true) */
     showCloseButton?: boolean;
+    /** Optional custom form layout - children or render callback */
+    customLayout?: ReactNode | RenderFormCallback;
+}
+
+/**
+ * Builds props for HalFormsForm based on customLayout type
+ */
+function getHalFormsFormProps(customLayout?: ReactNode | RenderFormCallback): Record<string, ReactNode | RenderFormCallback> {
+    if (!customLayout) {
+        return {};
+    }
+
+    if (typeof customLayout === 'function') {
+        return {renderForm: customLayout as RenderFormCallback};
+    }
+
+    return {children: customLayout as ReactNode};
 }
 
 /**
@@ -47,9 +64,14 @@ export const HalFormDisplay = ({
                                    onClose,
                                    onSubmitSuccess,
                                    showCloseButton = true,
+                                   customLayout,
                                }: HalFormDisplayProps): ReactElement => {
     const {refetch} = useHalRoute();
     const {invalidateAllCaches} = useFormCacheInvalidation();
+    const halFormsFormProps = useMemo(
+        () => getHalFormsFormProps(customLayout),
+        [customLayout]
+    );
 
     const {mutate: submitForm, isPending: isSubmitting, error: rawError} = useAuthorizedMutation({
         method: template.method || 'POST',
@@ -156,6 +178,7 @@ export const HalFormDisplay = ({
                         onCancel={onClose}
                         isSubmitting={isSubmitting}
                         fieldsFactory={klabisFieldsFactory}
+                        {...halFormsFormProps}
                     />
                 )}
             </div>

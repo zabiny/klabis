@@ -130,7 +130,7 @@ function renderField(
 
 type FieldRenderFunc = (fieldName: string) => ReactNode;
 
-type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => ReactElement;
+export type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => ReactElement;
 
 interface HalFormsFormProps {
     data: Record<string, unknown>,

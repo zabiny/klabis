@@ -3,11 +3,12 @@
  * Shows a button that opens a form either in modal or navigates to a new page
  */
 
-import {type ReactElement, useState} from 'react';
+import {type ReactElement, type ReactNode, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
+import type {RenderFormCallback} from '../HalFormsForm';
 
 /**
  * Props for HalFormButton component
@@ -18,6 +19,9 @@ export interface HalFormButtonProps {
 
     /** If true, opens form in modal overlay. If false, displays form inline on current page */
     modal?: boolean;
+
+    /** Optional custom form layout - children or render callback */
+    customLayout?: ReactNode | RenderFormCallback;
 }
 
 /**
@@ -39,7 +43,7 @@ export interface HalFormButtonProps {
  * // Non-modal mode (displays form inline on current page with query param)
  * <HalFormButton name="edit" modal={false} />
  */
-export function HalFormButton({name, modal = true}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, customLayout}: HalFormButtonProps): ReactElement | null {
     const {resourceData, pathname} = useHalRoute();
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,6 +89,7 @@ export function HalFormButton({name, modal = true}: HalFormButtonProps): ReactEl
                             pathname={pathname}
                             onClose={handleCloseModal}
                             showCloseButton={true}
+                            customLayout={customLayout}
                         />
                     </div>
                 </div>

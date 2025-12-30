@@ -119,8 +119,13 @@ interface HalFormButtonProps {
     name: string;
 
     /** Pokud true, otevře formulář v modálním okně. Pokud false, zobrazí formulář inline */
-    modal: boolean;
+    modal?: boolean;
+
+   /** Volitelné vlastní rozložení formuláře - ReactNode nebo callback */
+   customLayout?: ReactNode | RenderFormCallback;
 }
+
+type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => ReactElement;
 ```
 
 #### Chování
@@ -170,6 +175,102 @@ Když je `modal={false}` a uživatel klikne na tlačítko:
 
 Viz [HalFormsPageLayout](#halformspageLayout) pro automatické zpracování.
 
+#### Vlastní rozložení formuláře (Custom Layout)
+
+Pokud chceš přizpůsobit rozložení formuláře, můžeš předat `customLayout` prop (pouze v modal režimu - `modal={true}`).
+Existují dva způsoby:
+
+##### 1. Children Pattern - struktura s `<HalFormsFormField>`
+
+```tsx
+import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
+import {HalFormsFormField} from '../components/HalFormsForm/HalFormsForm';
+
+export const MemberDetailsPage = () => {
+   return (
+           <div>
+              {/* Vlastní rozložení s strukturou */}
+              <HalFormButton
+                      name="editMember"
+                      modal={true}
+                      customLayout={
+                         <div className="grid grid-cols-2 gap-4">
+                            <div>
+                               <h3>Osobní údaje</h3>
+                               <HalFormsFormField fieldName="firstName"/>
+                               <HalFormsFormField fieldName="lastName"/>
+                            </div>
+                            <div>
+                               <h3>Kontakt</h3>
+                               <HalFormsFormField fieldName="email"/>
+                               <HalFormsFormField fieldName="phone"/>
+                            </div>
+                            <div className="col-span-2 flex gap-2 mt-4">
+                               <HalFormsFormField fieldName="submit"/>
+                               <HalFormsFormField fieldName="cancel"/>
+                            </div>
+                         </div>
+                      }
+              />
+           </div>
+   );
+};
+```
+
+##### 2. Callback Pattern - s `renderField` funkcí
+
+```tsx
+<HalFormButton
+        name="editMember"
+        modal={true}
+        customLayout={(renderField) => (
+                <div className="space-y-4">
+                   <section>
+                      <h3 className="font-semibold mb-2">Osobní údaje</h3>
+                      {renderField('firstName')}
+                      {renderField('lastName')}
+                   </section>
+                   <section>
+                      <h3 className="font-semibold mb-2">Kontakt</h3>
+                      {renderField('email')}
+                      {renderField('phone')}
+                   </section>
+                   <div className="flex gap-2 mt-6">
+                      {renderField('submit')}
+                      {renderField('cancel')}
+                   </div>
+                </div>
+        )}
+/>
+```
+
+**Poznámka:** Vlastní rozložení na `HalFormButton` fungují pouze v modal režimu (`modal={true}`). Pro inline formuláře (
+`modal={false}`) použij místo toho `HalFormsPageLayout` s `customLayouts` prop (viz
+sekce [HalFormsPageLayout](#halformspageLayout)).
+
+**Performance tip:** Pokud předáváš `customLayout` jako inline funkci nebo JSX, může to způsobit zbytečné re-rendery
+kvůli
+změně reference. Pro optimální výkon definuj layout mimo render funkci:
+
+```tsx
+// ❌ Může způsobit zbytečné re-rendery
+<HalFormButton
+        name="edit"
+        customLayout={(renderField) => <div>{renderField('name')}</div>}
+/>
+
+// ✅ Lepší - stabilní reference
+const customLayout = (renderField) => <div>{renderField('name')}</div>;
+<HalFormButton name="edit" customLayout={customLayout}/>
+
+// ✅ Nebo použij useMemo pro složitější layouty
+const customLayout = useMemo(
+        () => (renderField) => <div>{renderField('name')}</div>,
+        []
+);
+<HalFormButton name="edit" customLayout={customLayout}/>
+```
+
 ---
 
 ### 2. HalFormsSection
@@ -186,6 +287,9 @@ interface HalFormsSectionProps {
 
     /** Zda otevřít formuláře v modálním okně (default: true) nebo inline */
     modal?: boolean;
+
+   /** Volitelná vlastní rozložení pro jednotlivé šablony */
+   customLayouts?: Record<string, ReactNode | RenderFormCallback>;
 }
 ```
 
