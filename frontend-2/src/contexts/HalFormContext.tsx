@@ -1,4 +1,5 @@
-import {createContext, type ReactElement, type ReactNode, useContext, useState} from 'react';
+import {createContext, type ReactElement, type ReactNode, useContext, useEffect, useState} from 'react';
+import {useSearchParams as useSearchParamsRouter} from 'react-router-dom';
 import type {RenderFormCallback} from '../components/HalFormsForm';
 
 /**
@@ -36,11 +37,46 @@ interface HalFormContextValue {
 const HalFormContext = createContext<HalFormContextValue | undefined>(undefined);
 
 /**
+ * Safe hook to use useSearchParams that gracefully handles being outside Router context
+ */
+function useSafeSearchParams() {
+    try {
+        return useSearchParamsRouter();
+    } catch {
+        // Not in a Router context, return empty URLSearchParams
+        return [new URLSearchParams(), () => {
+        }] as const;
+    }
+}
+
+/**
  * Provider component for HalFormContext
  * Must wrap components that use useHalForm hook
+ *
+ * Automatically detects and handles:
+ * - Modal form requests via requestForm()
+ * - Inline form requests via URL query parameter (?form=templateName)
  */
 export function HalFormProvider({children}: { children: ReactNode }): ReactElement {
     const [currentFormRequest, setCurrentFormRequest] = useState<HalFormRequest | null>(null);
+    const [searchParams] = useSafeSearchParams();
+
+    // Detect inline form requests from URL query parameter
+    useEffect(() => {
+        const inlineTemplateName = searchParams.get('form');
+        if (inlineTemplateName) {
+            setCurrentFormRequest({
+                templateName: inlineTemplateName,
+                modal: false,
+            });
+        } else {
+            // Only clear form if it was set by URL (modal: false)
+            // Preserve modal forms set via requestForm()
+            setCurrentFormRequest(prev =>
+                prev?.modal === false ? null : prev
+            );
+        }
+    }, [searchParams]);
 
     const requestForm = (request: HalFormRequest) => {
         setCurrentFormRequest(request);
