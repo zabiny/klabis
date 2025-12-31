@@ -10,7 +10,7 @@ import {useHalRoute} from '../../contexts/HalRouteContext';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {HalFormButton} from './HalFormButton.tsx';
 import {formsSectionStyles} from '../../theme/designTokens';
-import type {RenderFormCallback} from '../HalFormsForm';
+import type {RenderFormCallback} from './halforms';
 
 /**
  * Props for HalFormsSection component

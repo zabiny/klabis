@@ -8,7 +8,7 @@ import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection.tsx';
 import {useHalActions} from '../hooks/useHalActions';
 import {useIsAdmin} from '../hooks/useIsAdmin';
 import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
-import {isHalResponse} from "../components/HalFormsForm/utils.ts";
+import {isHalResponse} from "../components/HalNavigator2/halforms/utils.ts";
 import NotFoundPage from "./NotFoundPage.tsx";
 
 /**

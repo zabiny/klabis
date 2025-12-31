@@ -1,4 +1,4 @@
-import type {SelectOption} from '../components/FormFields';
+import type {SelectOption} from '../components/UI/forms';
 import type {HalFormsOption, HalFormsOptionType} from '../api';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
 import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";

@@ -9,7 +9,7 @@ import {createMockResponse} from '../../__mocks__/mockFetch';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {type Mock, vi} from 'vitest';
-import {HalFormsFormField, type RenderFormCallback} from '../HalFormsForm/HalFormsForm';
+import {HalFormsFormField, type RenderFormCallback} from './halforms/HalFormsForm.tsx';
 
 // Mock dependencies
 vi.mock('../../api/klabisUserManager', () => ({

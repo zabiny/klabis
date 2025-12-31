@@ -3,7 +3,7 @@ import {BrowserRouter, MemoryRouter} from 'react-router-dom';
 import {HalFormProvider, type HalFormRequest, useHalForm} from './HalFormContext';
 import {describe, expect, it, vi} from 'vitest';
 import type {ReactNode} from 'react';
-import type {RenderFormCallback} from '../components/HalFormsForm';
+import type {RenderFormCallback} from '../components/HalNavigator2/halforms';
 
 // Helper to wrap provider with required Router context
 const createWrapper = () => ({children}: { children: ReactNode }) => (

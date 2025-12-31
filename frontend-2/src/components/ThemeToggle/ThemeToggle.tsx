@@ -1,5 +1,5 @@
 import {useTheme} from '../../theme/ThemeContext'
-import {ComputerDesktopIcon, MoonIcon, SunIcon} from '../Icons'
+import {ComputerDesktopIcon, MoonIcon, SunIcon} from '../UI/icons'
 
 interface ThemeToggleProps {
     className?: string

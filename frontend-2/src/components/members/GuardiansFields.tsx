@@ -1,7 +1,7 @@
 import type React from 'react'
 import {useCallback} from 'react'
 import {Button} from '../UI'
-import {TextField} from '../FormFields/TextField'
+import {TextField} from '../UI/forms/TextField.tsx'
 import ContactFields from './ContactFields'
 import type {MemberRegistrationForm} from '../../api'
 

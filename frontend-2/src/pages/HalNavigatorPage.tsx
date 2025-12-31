@@ -1,9 +1,9 @@
 import React, {type ReactElement, useState} from "react";
-import {HalFormsForm} from "../components/HalFormsForm";
+import {HalFormsForm} from "../components/HalNavigator2/halforms";
 import {type HalFormsTemplate} from "../api";
 import {ErrorBoundary} from 'react-error-boundary';
 import {JsonPreview} from "../components/JsonPreview";
-import {HalFormsFormField} from "../components/HalFormsForm/HalFormsForm.tsx";
+import {HalFormsFormField} from "../components/HalNavigator2/halforms/HalFormsForm.tsx";
 
 const demoTemplate: HalFormsTemplate = {
     title: "Ukazkovy formular",

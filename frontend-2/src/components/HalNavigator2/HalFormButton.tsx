@@ -13,7 +13,7 @@ import {useNavigate} from 'react-router-dom';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
-import type {RenderFormCallback} from '../HalFormsForm';
+import type {RenderFormCallback} from './halforms';
 
 /**
  * Props for HalFormButton component

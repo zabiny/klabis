@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
 import {Alert, Button} from '../components/UI'
-import {LogoutIcon} from '../components/Icons'
+import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'

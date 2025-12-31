@@ -2,7 +2,7 @@ import React, {type PropsWithChildren, useContext} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
 import type {HalResourceLinks, HalResponse, Link} from '../api';
 import {extractNavigationPath} from "../utils/navigationPath.ts";
-import {isHalResponse} from "../components/HalFormsForm/utils.ts";
+import {isHalResponse} from "../components/HalNavigator2/halforms/utils.ts";
 import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
 

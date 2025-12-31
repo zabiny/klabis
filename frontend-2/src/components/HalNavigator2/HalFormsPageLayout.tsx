@@ -19,7 +19,7 @@ import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {ModalOverlay} from '../UI';
-import type {RenderFormCallback} from '../HalFormsForm';
+import type {RenderFormCallback} from './halforms';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;

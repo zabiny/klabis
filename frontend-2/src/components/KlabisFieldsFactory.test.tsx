@@ -1,7 +1,7 @@
 import {render, screen} from '@testing-library/react';
 import {vi} from 'vitest';
 import {klabisFieldsFactory} from './KlabisFieldsFactory';
-import type {HalFormsInputProps} from './HalFormsForm';
+import type {HalFormsInputProps} from './HalNavigator2/halforms';
 
 /**
  * Tests for KlabisFieldsFactory custom field types

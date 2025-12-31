@@ -1,6 +1,6 @@
-import {expandHalFormsFieldFactory, type HalFormsInputProps} from "./HalFormsForm";
+import {expandHalFormsFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
 import React, {type ReactElement} from "react";
-import {HalFormsInput, HalFormsMemberId} from "./HalFormsForm/fields";
+import {HalFormsInput, HalFormsMemberId} from "./HalNavigator2/halforms/fields";
 import {FieldArray, type FieldArrayRenderProps, useFormikContext} from "formik";
 import {Button} from "./UI";
 

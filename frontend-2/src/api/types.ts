@@ -2,17 +2,6 @@ import type {components} from "./klabisApi";
 
 export type Link = components["schemas"]["Link"];
 export type PageMetadata = components["schemas"]["PageMetadata"];
-
-export interface PaginatedResponse<T> {
-    content: T[];
-    page: {
-        totalElements: number;
-        totalPages: number;
-        size: number;
-        number: number;
-    };
-    _actions?: string[];
-}
 export type SortDirection = 'asc' | 'desc';
 
 export type KlabisActionName = string;

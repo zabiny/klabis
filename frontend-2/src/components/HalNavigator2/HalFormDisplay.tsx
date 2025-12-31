@@ -7,7 +7,7 @@ import {type ReactElement, type ReactNode} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
 import {ErrorDisplay, Spinner} from '../UI';
-import {HalFormsForm, type RenderFormCallback} from '../HalFormsForm';
+import {HalFormsForm, type RenderFormCallback} from './halforms';
 import {toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';

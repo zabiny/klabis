@@ -1,6 +1,6 @@
 import {createContext, type ReactElement, type ReactNode, useContext, useEffect, useState} from 'react';
 import {useSearchParams as useSearchParamsRouter} from 'react-router-dom';
-import type {RenderFormCallback} from '../components/HalFormsForm';
+import type {RenderFormCallback} from '../components/HalNavigator2/halforms';
 
 /**
  * Represents a request to display a form
