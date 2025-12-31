@@ -3,30 +3,30 @@ import {vi} from 'vitest';
 import {klabisFieldsFactory} from './KlabisFieldsFactory';
 import type {HalFormsInputProps} from './HalNavigator2/halforms';
 
+// Mock HalFormsMemberId to verify it receives correct props at module level
+vi.mock('./HalNavigator2/halforms/fields', async () => {
+    const actual = await vi.importActual('./HalNavigator2/halforms/fields');
+    return {
+        ...(actual as object),
+        HalFormsMemberId: ({prop, errorText}: HalFormsInputProps) => (
+            <div data-testid="hal-forms-memberid-mock">
+                <span data-testid="select-name">{prop.name}</span>
+                <span data-testid="select-prompt">{prop.prompt}</span>
+                {prop.options?.link?.href && (
+                    <span data-testid="select-href">{prop.options.link.href}</span>
+                )}
+                {errorText && <span data-testid="select-error">{errorText}</span>}
+            </div>
+        ),
+    };
+});
+
 /**
  * Tests for KlabisFieldsFactory custom field types
  *
  * Verifies that custom field types are correctly registered and rendered
  */
 describe('KlabisFieldsFactory', () => {
-
-    // Mock HalFormsMemberId to verify it receives correct props
-    vi.mock('./HalFormsForm/fields', async () => {
-        const actual = await vi.importActual('./HalFormsForm/fields');
-        return {
-            ...(actual as object),
-            HalFormsMemberId: ({prop, errorText}: HalFormsInputProps) => (
-                <div data-testid="hal-forms-memberid-mock">
-                    <span data-testid="select-name">{prop.name}</span>
-                    <span data-testid="select-prompt">{prop.prompt}</span>
-                    {prop.options?.link?.href && (
-                        <span data-testid="select-href">{prop.options.link.href}</span>
-                    )}
-                    {errorText && <span data-testid="select-error">{errorText}</span>}
-                </div>
-            ),
-        };
-    });
 
     describe('MemberId field type', () => {
 
