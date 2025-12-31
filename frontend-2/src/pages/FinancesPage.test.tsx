@@ -8,6 +8,7 @@ import {mockFinanceResource, mockMemberResource} from '../__mocks__/halData';
 import {createMockResponse} from '../__mocks__/mockFetch';
 import {HalRouteProvider} from '../contexts/HalRouteContext';
 import {type Mock, vi} from 'vitest';
+import {HalFormProvider} from "../contexts/HalFormContext.tsx";
 
 // Mock the auth user manager to return a user with access token
 vi.mock('../api/klabisUserManager', () => ({
@@ -43,11 +44,13 @@ describe('MemberFinancePage', () => {
     const renderPage = (ui: React.ReactElement, initialRoute = '/finances/123') => {
         return render(
             <QueryClientProvider client={queryClient}>
-                <MemoryRouter initialEntries={[initialRoute]}>
-                    <HalRouteProvider>
-                        {ui}
-                    </HalRouteProvider>
-                </MemoryRouter>
+                <HalFormProvider>
+                    <MemoryRouter initialEntries={[initialRoute]}>
+                        <HalRouteProvider>
+                            {ui}
+                        </HalRouteProvider>
+                    </MemoryRouter>
+                </HalFormProvider>
             </QueryClientProvider>
         );
     };

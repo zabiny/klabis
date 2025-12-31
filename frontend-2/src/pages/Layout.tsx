@@ -7,6 +7,7 @@ import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'
 import {useRootNavigation} from '../hooks/useRootNavigation'
 import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx";
+import {HalFormProvider} from '../contexts/HalFormContext.tsx';
 
 const Layout = () => {
   const navigate = useNavigate()
@@ -146,9 +147,11 @@ const Layout = () => {
 
         {/* Main content - add left padding on lg screens for sidebar with extra spacing */}
         <main className="flex-1 pt-20 px-6 py-6 overflow-auto lg:pl-72">
-          <HalFormsPageLayout>
-          <Outlet/>
-          </HalFormsPageLayout>
+          <HalFormProvider>
+            <HalFormsPageLayout>
+              <Outlet/>
+            </HalFormsPageLayout>
+          </HalFormProvider>
         </main>
       </div>
   )

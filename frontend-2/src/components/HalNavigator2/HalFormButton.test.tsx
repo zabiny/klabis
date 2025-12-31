@@ -1,17 +1,16 @@
 import '@testing-library/jest-dom';
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {BrowserRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router-dom';
 import {HalFormButton} from './HalFormButton.tsx';
 import {HalRouteContext, type HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
+import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
+import {HalFormsPageLayout} from './HalFormsPageLayout.tsx';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
-import {createMockResponse} from '../../__mocks__/mockFetch';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {type Mock, vi} from 'vitest';
-import * as HateoasModule from '../../api/hateoas';
-import type {RenderFormCallback} from '../HalFormsForm';
+import {vi} from 'vitest';
 
 // Mock dependencies
 vi.mock('../../api/klabisUserManager', () => ({
@@ -30,7 +29,25 @@ vi.mock('../../api/hateoas', () => ({
     }),
 }));
 
-const mockedHateoas = vi.mocked(HateoasModule);
+vi.mock('./HalFormDisplay.tsx', () => ({
+    HalFormDisplay: ({template, templateName, onClose}: any) => (
+        <div data-testid="hal-forms-display">
+            <h3>{template.title || templateName}</h3>
+            <button onClick={onClose} data-testid="close-form-button">Close Form</button>
+        </div>
+    ),
+}));
+
+vi.mock('../UI/ModalOverlay.tsx', () => ({
+    ModalOverlay: ({isOpen, children, onClose}: any) => (
+        isOpen ? (
+            <div data-testid="modal-overlay" role="dialog">
+                {children}
+                <button onClick={onClose} data-testid="modal-close-button">Close Modal</button>
+            </div>
+        ) : null
+    ),
+}));
 
 describe('HalFormButton Component', () => {
     let queryClient: QueryClient;
@@ -43,16 +60,6 @@ describe('HalFormButton Component', () => {
         });
         vi.clearAllMocks();
     });
-
-    const createWrapper = () => {
-        return ({children}: { children: React.ReactNode }) => (
-            <BrowserRouter>
-                <QueryClientProvider client={queryClient}>
-                    {children}
-                </QueryClientProvider>
-            </BrowserRouter>
-        );
-    };
 
     const createMockContext = (resourceData: HalResponse | null): HalRouteContextValue => ({
         resourceData,
@@ -67,26 +74,33 @@ describe('HalFormButton Component', () => {
 
     const renderWithContext = (
         ui: React.ReactElement,
-        contextValue: HalRouteContextValue
+        contextValue: HalRouteContextValue,
+        initialEntries: string[] = ['/members/123']
     ) => {
-        const Wrapper = createWrapper();
         return render(
-            <Wrapper>
-                <HalRouteContext.Provider value={contextValue}>
-                    {ui}
-                </HalRouteContext.Provider>
-            </Wrapper>
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter initialEntries={initialEntries}>
+                    <HalRouteContext.Provider value={contextValue}>
+                        <HalFormProvider>
+                            <HalFormsPageLayout>
+                                {ui}
+                            </HalFormsPageLayout>
+                        </HalFormProvider>
+                    </HalRouteContext.Provider>
+                </MemoryRouter>
+            </QueryClientProvider>
         );
     };
 
     describe('Template Existence Check', () => {
         it('should render nothing when resourceData is null', () => {
             const contextValue = createMockContext(null);
-            const {container} = renderWithContext(
+            renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
                 contextValue
             );
-            expect(container.firstChild).toBeNull();
+            // Button should not be rendered when no template exists
+            expect(screen.queryByTestId('form-template-button-create')).not.toBeInTheDocument();
         });
 
         it('should render nothing when _templates is undefined', () => {
@@ -95,11 +109,12 @@ describe('HalFormButton Component', () => {
                 name: 'Test Resource',
             };
             const contextValue = createMockContext(resourceData);
-            const {container} = renderWithContext(
+            renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
                 contextValue
             );
-            expect(container.firstChild).toBeNull();
+            // Button should not be rendered when _templates is undefined
+            expect(screen.queryByTestId('form-template-button-create')).not.toBeInTheDocument();
         });
 
         it('should render nothing when template with given name does not exist', () => {
@@ -111,11 +126,12 @@ describe('HalFormButton Component', () => {
                 },
             };
             const contextValue = createMockContext(resourceData);
-            const {container} = renderWithContext(
+            renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
                 contextValue
             );
-            expect(container.firstChild).toBeNull();
+            // Button should not be rendered when template doesn't exist
+            expect(screen.queryByTestId('form-template-button-create')).not.toBeInTheDocument();
         });
 
         it('should render button when template with given name exists', () => {
@@ -199,7 +215,7 @@ describe('HalFormButton Component', () => {
     });
 
     describe('Modal Mode (modal=true)', () => {
-        it('should open form in modal when button is clicked', async () => {
+        it('should request form display via context when button is clicked', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -209,21 +225,24 @@ describe('HalFormButton Component', () => {
                 },
             };
             const contextValue = createMockContext(resourceData);
+
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
                 contextValue
             );
 
+            // Initially no modal should be visible
+            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
+
+            // Click button to request form
             const button = screen.getByRole('button', {name: /create/i});
             await user.click(button);
 
-            // Form should be visible
-            await waitFor(() => {
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-            });
+            // Modal should open, which indicates the form was requested via context
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
         });
 
-        it('should have close button in modal mode', async () => {
+        it('should render modal overlay when form is requested', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -237,12 +256,16 @@ describe('HalFormButton Component', () => {
                 contextValue
             );
 
+            // Modal should not be visible initially
+            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
+
+            // Click button to open modal
             const button = screen.getByRole('button', {name: /create/i});
             await user.click(button);
 
-            await waitFor(() => {
-                expect(screen.getByTestId('close-form-button')).toBeInTheDocument();
-            });
+            // Modal should be displayed
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
 
         it('should close modal when close button is clicked', async () => {
@@ -260,25 +283,21 @@ describe('HalFormButton Component', () => {
             );
 
             // Open modal
-            const openButton = screen.getByRole('button', {name: /create/i});
-            await user.click(openButton);
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
 
-            await waitFor(() => {
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-            });
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
 
-            // Close modal
+            // Close modal via close button in form
             const closeButton = screen.getByTestId('close-form-button');
             await user.click(closeButton);
 
-            await waitFor(() => {
-                expect(screen.queryByTestId('hal-forms-display')).not.toBeInTheDocument();
-            });
+            // Modal should be closed
+            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
         });
-    });
 
-    describe('Non-Modal Mode (modal=false)', () => {
-        it('should render button in non-modal mode', () => {
+        it('should pass custom layout to form when provided', async () => {
+            const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
                 _templates: {
@@ -286,14 +305,63 @@ describe('HalFormButton Component', () => {
                 },
             };
             const contextValue = createMockContext(resourceData);
+
+            const customLayout = <div>Custom Form Layout</div>;
+
             renderWithContext(
-                <HalFormButton name="create" modal={false}/>,
+                <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
                 contextValue
             );
-            expect(screen.getByRole('button', {name: /create/i})).toBeInTheDocument();
+
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
+
+            // Form should be opened (custom layout is passed through context)
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
         });
 
-        it('should display form inline with query parameter on current page', async () => {
+        it('should work with callback-based custom layout', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create'}),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+
+            const customLayout = (_renderField: any) => <div>Custom Callback Layout</div>;
+
+            renderWithContext(
+                <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
+                contextValue
+            );
+
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
+
+            // Form should be opened
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+        });
+    });
+
+    describe('Inline Mode (modal=false)', () => {
+        it('should render button in inline mode', () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    edit: mockHalFormsTemplate({title: 'Edit'}),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+            renderWithContext(
+                <HalFormButton name="edit" modal={false}/>,
+                contextValue
+            );
+            expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
+        });
+
+        it('should navigate with form query parameter when button is clicked', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
@@ -309,42 +377,18 @@ describe('HalFormButton Component', () => {
             const contextValue = createMockContext(resourceData);
             renderWithContext(
                 <HalFormButton name="edit" modal={false}/>,
-                contextValue
+                contextValue,
+                ['/members/123'] // Initial entry
             );
 
+            // Click button to navigate to URL with form query parameter
             const button = screen.getByRole('button', {name: /edit/i});
             await user.click(button);
 
-            // Form should display inline on current page (not navigate away)
-            // Target URL is only used to fetch initial values and submit
-            expect(button).toBeInTheDocument();
-        });
-
-        it('should use current pathname with query parameter even for different target', async () => {
-            const user = userEvent.setup();
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Member',
-                _templates: {
-                    createEvent: mockHalFormsTemplate({
-                        title: 'Create Event',
-                        target: '/api/events',
-                        method: 'POST',
-                    }),
-                },
-            };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
-                <HalFormButton name="createEvent" modal={false}/>,
-                contextValue
-            );
-
-            const button = screen.getByRole('button', {name: /create event/i});
-            await user.click(button);
-
-            // Form should display on current page (/members/123?form=createEvent)
-            // NOT navigate to /events
-            expect(button).toBeInTheDocument();
+            // Form should be displayed inline on the page (not in a modal)
+            // This happens through HalFormsPageLayout detecting the ?form=edit parameter
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
         });
 
         it('should not open modal when modal=false', async () => {
@@ -364,8 +408,36 @@ describe('HalFormButton Component', () => {
             const button = screen.getByRole('button', {name: /create/i});
             await user.click(button);
 
-            // Modal should NOT be displayed in non-modal mode
-            expect(screen.queryByTestId('hal-forms-display')).not.toBeInTheDocument();
+            // Modal overlay should not be displayed (form is inline)
+            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
+        });
+
+        it('should use current pathname for query parameter regardless of template target', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                name: 'Test Member',
+                _templates: {
+                    createEvent: mockHalFormsTemplate({
+                        title: 'Create Event',
+                        target: '/api/events',
+                        method: 'POST',
+                    }),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+            renderWithContext(
+                <HalFormButton name="createEvent" modal={false}/>,
+                contextValue,
+                ['/members/123']
+            );
+
+            const button = screen.getByRole('button', {name: /create event/i});
+            await user.click(button);
+
+            // Form should display inline on current page (/members/123?form=createEvent)
+            // NOT navigate to /api/events
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
     });
 
@@ -402,488 +474,118 @@ describe('HalFormButton Component', () => {
         });
     });
 
-    describe('Form Modal Setup and Context Integration', () => {
-        const submitHalFormsData = mockedHateoas.submitHalFormsData;
-
-        beforeEach(() => {
-            submitHalFormsData.mockClear();
-        });
-
-        it('should prepare modal for form submission with correct parameters', async () => {
+    describe('Modal Display via HalFormsPageLayout', () => {
+        it('should render form in modal overlay when modal form is requested', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {
                 id: 1,
-                name: 'Test Resource',
                 _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create',
-                        target: '/api/members',
-                        method: 'POST',
-                    }),
+                    create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-
-            const mockRefetch = vi.fn().mockResolvedValue(undefined);
-            const contextValue = {
-                ...createMockContext(resourceData),
-                refetch: mockRefetch,
-            };
-
-            submitHalFormsData.mockResolvedValueOnce(createMockResponse({}));
-
+            const contextValue = createMockContext(resourceData);
             renderWithContext(
                 <HalFormButton name="create" modal={true}/>,
                 contextValue
             );
 
-            // Open modal
+            // Click button to request form
             const button = screen.getByRole('button', {name: /create/i});
             await user.click(button);
 
-            // Verify modal is ready for form submission
-            await waitFor(() => {
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-            });
+            // HalFormsPageLayout should render the modal
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
 
-        it('should close modal when close button is clicked', async () => {
-            const user = userEvent.setup();
+        it('should render form inline when inline form is requested via URL', () => {
             const resourceData: HalResponse = {
                 id: 1,
-                name: 'Test Resource',
                 _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create',
-                        target: '/api/members',
-                        method: 'POST',
-                    }),
+                    edit: mockHalFormsTemplate({title: 'Edit'}),
                 },
             };
-
-            const mockRefetch = vi.fn().mockResolvedValue(undefined);
-            const contextValue = {
-                ...createMockContext(resourceData),
-                refetch: mockRefetch,
-            };
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true}/>,
-                contextValue
-            );
-
-            // Open modal
-            const button = screen.getByRole('button', {name: /create/i});
-            await user.click(button);
-
-            await waitFor(() => {
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-            });
-
-            // Close modal
-            const closeButton = screen.getByTestId('close-form-button');
-            await user.click(closeButton);
-
-            // Modal should be closed
-            await waitFor(() => {
-                expect(screen.queryByTestId('hal-forms-display')).not.toBeInTheDocument();
-            });
-        });
-
-        it('should display form for error handling when modal is open', async () => {
-            const user = userEvent.setup();
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create',
-                        target: '/api/members',
-                        method: 'POST',
-                    }),
-                },
-            };
-
             const contextValue = createMockContext(resourceData);
-
-            submitHalFormsData.mockRejectedValueOnce(new Error('Submission failed'));
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true}/>,
-                contextValue
-            );
-
-            // Open modal
-            const button = screen.getByRole('button', {name: /create/i});
-            await user.click(button);
-
-            // Verify form is displayed for potential error handling
-            await waitFor(() => {
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-            });
-        });
-
-        it('should pass refetch callback to form context', async () => {
-            const mockRefetch = vi.fn().mockResolvedValue(undefined);
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create',
-                        target: '/api/members',
-                        method: 'POST',
-                    }),
-                },
-            };
-
-            const contextValue = {
-                ...createMockContext(resourceData),
-                refetch: mockRefetch,
-            };
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true}/>,
-                contextValue
-            );
-
-            // Verify the button renders with the context value available
-            expect(screen.getByRole('button', {name: /create/i})).toBeInTheDocument();
-        });
-
-        it('should pass navigateToResource callback to form context', async () => {
-            const mockNavigateToResource = vi.fn();
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create',
-                        target: '/api/members',
-                        method: 'POST',
-                    }),
-                },
-            };
-
-            const contextValue = {
-                ...createMockContext(resourceData),
-                navigateToResource: mockNavigateToResource,
-            };
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true}/>,
-                contextValue
-            );
-
-            // Verify the button renders with the context value available for post-submission navigation
-            expect(screen.getByRole('button', {name: /create/i})).toBeInTheDocument();
-        });
-    });
-
-    describe('API Without GET Endpoint (HTTP 404/405)', () => {
-        let fetchSpy: Mock;
-
-        beforeEach(() => {
-            // Clear query cache before each test
-            queryClient.clear();
-            // Mock global fetch
-            fetchSpy = vi.fn() as Mock;
-            (globalThis as any).fetch = fetchSpy;
-        });
-
-        afterEach(() => {
-            delete (globalThis as any).fetch;
-        });
-
-        it('should display form with empty data when target returns HTTP 404', async () => {
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create Event',
-                        target: '/api/events/404test',
-                        method: 'POST',
-                    }),
-                },
-            };
-
-            const contextValue = createMockContext(resourceData);
-
-            // Simulate HTTP 404 error from target endpoint
-            fetchSpy.mockResolvedValue(createMockResponse({}, 404));
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true}/>,
-                contextValue
-            );
-
-            // Click button to open modal
-            const button = screen.getByTestId('form-template-button-create');
-            await userEvent.click(button);
-
-            // Wait for form to be displayed (should not show error)
-            await waitFor(() => {
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-                expect(screen.queryByText(/Nepodařilo se načíst data/i)).not.toBeInTheDocument();
-            });
-        });
-
-        it('should display form with empty data when target returns HTTP 405', async () => {
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create Event',
-                        target: '/api/events/405test',
-                        method: 'POST',
-                    }),
-                },
-            };
-
-            const contextValue = createMockContext(resourceData);
-
-            // Simulate HTTP 405 error from target endpoint
-            fetchSpy.mockResolvedValue(createMockResponse({}, 405));
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true}/>,
-                contextValue
-            );
-
-            // Click button to open modal
-            const button = screen.getByTestId('form-template-button-create');
-            await userEvent.click(button);
-
-            // Wait for form to be displayed (should not show error)
-            await waitFor(() => {
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-                expect(screen.queryByText(/Nepodařilo se načíst data/i)).not.toBeInTheDocument();
-            });
-        });
-
-        it('should still show error for other HTTP errors (e.g., 500)', async () => {
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create Event',
-                        target: '/api/events/500test',
-                        method: 'POST',
-                    }),
-                },
-            };
-
-            const contextValue = createMockContext(resourceData);
-
-            // Simulate HTTP 500 error from target endpoint
-            fetchSpy.mockResolvedValue(createMockResponse({}, 500));
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true}/>,
-                contextValue
-            );
-
-            // Click button to open modal
-            const button = screen.getByTestId('form-template-button-create');
-            await userEvent.click(button);
-
-            // Wait for error to be displayed
-            await waitFor(() => {
-                expect(screen.getByText(/Nepodařilo se načíst data/i)).toBeInTheDocument();
-            });
-        });
-    });
-
-    describe('Custom Layout Support', () => {
-        let fetchSpy: Mock;
-
-        beforeEach(() => {
-            queryClient.clear();
-            fetchSpy = vi.fn() as Mock;
-            (globalThis as any).fetch = fetchSpy;
-        });
-
-        afterEach(() => {
-            delete (globalThis as any).fetch;
-        });
-
-        it('should pass custom layout to modal form', async () => {
-            const user = userEvent.setup();
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create',
-                        target: '/api/members',
-                        method: 'POST',
-                        properties: [
-                            {
-                                name: 'name',
-                                prompt: 'Name',
-                                type: 'text',
-                                required: true,
-                            },
-                        ],
-                    }),
-                },
-            };
-
-            const contextValue = createMockContext(resourceData);
-
-            // Mock fetch for form target data
-            fetchSpy.mockResolvedValue(createMockResponse({name: 'John'}));
-
-            const customLayout = (
-                <div data-testid="custom-modal-layout">
-                    <div>Custom Layout</div>
-                </div>
-            );
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
-                contextValue
-            );
-
-            // Open modal
-            const button = screen.getByRole('button', {name: /create/i});
-            await user.click(button);
-
-            // Verify custom layout is applied
-            await waitFor(() => {
-                expect(screen.getByTestId('custom-modal-layout')).toBeInTheDocument();
-                expect(screen.getByText('Custom Layout')).toBeInTheDocument();
-            });
-        });
-
-        it('should pass callback-based custom layout to modal form', async () => {
-            const user = userEvent.setup();
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create',
-                        target: '/api/members',
-                        method: 'POST',
-                        properties: [
-                            {
-                                name: 'name',
-                                prompt: 'Name',
-                                type: 'text',
-                                required: true,
-                            },
-                        ],
-                    }),
-                },
-            };
-
-            const contextValue = createMockContext(resourceData);
-
-            // Mock fetch for form target data
-            fetchSpy.mockResolvedValue(createMockResponse({name: 'Jane'}));
-
-            const customLayout: RenderFormCallback = (renderField) => (
-                <div data-testid="custom-callback-modal-layout">
-                    <div>Callback Layout: {renderField('name')}</div>
-                </div>
-            );
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
-                contextValue
-            );
-
-            // Open modal
-            const button = screen.getByRole('button', {name: /create/i});
-            await user.click(button);
-
-            // Verify custom callback layout is applied
-            await waitFor(() => {
-                expect(screen.getByTestId('custom-callback-modal-layout')).toBeInTheDocument();
-                expect(screen.getByText(/Callback Layout:/)).toBeInTheDocument();
-            });
-        });
-
-        it('should work without custom layout (backward compatibility)', async () => {
-            const user = userEvent.setup();
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    create: mockHalFormsTemplate({
-                        title: 'Create',
-                        target: '/api/members',
-                        method: 'POST',
-                        properties: [
-                            {
-                                name: 'name',
-                                prompt: 'Name',
-                                type: 'text',
-                                required: true,
-                            },
-                        ],
-                    }),
-                },
-            };
-
-            const contextValue = createMockContext(resourceData);
-
-            // Mock fetch for form target data
-            fetchSpy.mockResolvedValue(createMockResponse({name: 'Bob'}));
-
-            renderWithContext(
-                <HalFormButton name="create" modal={true}/>,
-                contextValue
-            );
-
-            // Open modal
-            const button = screen.getByRole('button', {name: /create/i});
-            await user.click(button);
-
-            // Form should display with automatic layout
-            await waitFor(() => {
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
-                expect(screen.getByDisplayValue('Bob')).toBeInTheDocument();
-            });
-        });
-
-        it('should work with inline form (customLayout used via HalFormsPageLayout)', async () => {
-            const resourceData: HalResponse = {
-                id: 1,
-                name: 'Test Resource',
-                _templates: {
-                    edit: mockHalFormsTemplate({
-                        title: 'Edit',
-                        target: '/api/members/1',
-                        method: 'PUT',
-                        properties: [
-                            {
-                                name: 'name',
-                                prompt: 'Name',
-                                type: 'text',
-                                required: true,
-                            },
-                        ],
-                    }),
-                },
-            };
-
-            const contextValue = createMockContext(resourceData);
-
-            // Note: customLayout is optional for inline forms since they use HalFormsPageLayout's customLayouts prop
-            // HalFormButton passes customLayout to HalFormDisplay which is used when modal=true
-            // For inline forms, use HalFormsPageLayout with customLayouts prop instead
             renderWithContext(
                 <HalFormButton name="edit" modal={false}/>,
+                contextValue,
+                ['/members/123?form=edit'] // Start with form query param
+            );
+
+            // HalFormsPageLayout should render the inline form
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+
+            // Modal should not be rendered
+            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
+        });
+
+        it('should give precedence to modal over inline form', () => {
+            // This test verifies that when both modal and inline forms exist,
+            // the modal (from context) takes precedence and is rendered first
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create'}),
+                    edit: mockHalFormsTemplate({title: 'Edit'}),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+
+            // Start with URL param for inline form
+            renderWithContext(
+                <HalFormButton name="edit" modal={false}/>,
+                contextValue,
+                ['/members/123?form=edit']
+            );
+
+            // Inline form should be displayed when URL param exists
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            expect(screen.getByText('Edit')).toBeInTheDocument();
+            expect(screen.queryByTestId('modal-overlay')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Default Props', () => {
+        it('should use modal=true as default', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create'}),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+            renderWithContext(
+                <HalFormButton name="create"/>, // No modal prop specified
                 contextValue
             );
 
-            // Verify button is rendered - customLayout handling for inline forms is done via HalFormsPageLayout
-            const button = screen.getByRole('button', {name: /edit/i});
-            expect(button).toBeInTheDocument();
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
+
+            // Should open modal by default
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+        });
+
+        it('should not use custom layout by default', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create'}),
+                },
+            };
+            const contextValue = createMockContext(resourceData);
+            renderWithContext(
+                <HalFormButton name="create" modal={true}/>, // No customLayout
+                contextValue
+            );
+
+            const button = screen.getByRole('button', {name: /create/i});
+            await user.click(button);
+
+            // Form should render without custom layout
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
     });
 });

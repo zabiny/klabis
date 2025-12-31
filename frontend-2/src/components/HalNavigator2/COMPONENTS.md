@@ -5,13 +5,87 @@ implementují **customizované stránky bez GenericHalPage**.
 
 ## Obsah
 
-1. [Úvod](#úvod)
-2. [useHalRoute hook](#usehalroute-hook)
-3. [Komponenty pro formuláře](#komponenty-pro-formuláře)
-4. [Komponenty pro navigaci](#komponenty-pro-navigaci)
-5. [Komponenty pro tabulky](#komponenty-pro-tabulky)
-6. [Praktické příklady](#praktické-příklady)
-7. [Best practices](#best-practices)
+1. [Architektura](#architektura)
+2. [Úvod](#úvod)
+3. [useHalRoute hook](#usehalroute-hook)
+4. [Komponenty pro formuláře](#komponenty-pro-formuláře)
+    - [HalFormButton](#1-halformbutton)
+    - [HalFormsSection](#2-halformssection)
+    - [HalFormsPageLayout](#3-halformspageLayout)
+    - [HalFormContext + useHalForm](#4-halformcontext--usehalform-hook)
+    - [HalFormDisplay](#5-halformdisplay)
+    - [HalFormTemplateButton](#6-halformtemplatebutton)
+5. [Komponenty pro navigaci](#komponenty-pro-navigaci)
+6. [Komponenty pro tabulky](#komponenty-pro-tabulky)
+7. [Praktické příklady](#praktické-příklady)
+8. [Best practices](#best-practices)
+
+---
+
+## Architektura
+
+HalNavigator2 používá **Context API + URL hybrid** přístup pro správu formulářů:
+
+### Diagram - Tok formulářů
+
+```mermaid
+graph TB
+    subgraph "User Interaction"
+        Button["👆 HalFormButton\n(klik na tlačítko)"]
+    end
+
+    subgraph "Modal Flow (Ephemeral)"
+        Context["🔄 HalFormContext\n(requestForm)"]
+        ContextProvider["📦 HalFormProvider\n(manages state)"]
+    end
+
+    subgraph "Inline Flow (Persistent)"
+        Router["🔗 React Router\n(?form=name URL param)"]
+    end
+
+    subgraph "Rendering"
+        PageLayout["📄 HalFormsPageLayout\n(listens to both)"]
+        Modal["🪟 ModalOverlay\n+ HalFormDisplay"]
+        Inline["📋 HalFormDisplay\n(inline)"]
+    end
+
+    Button -->|modal: true| Context
+    Button -->|modal: false| Router
+    Context -->|dispatch| ContextProvider
+    ContextProvider -->|provide state| PageLayout
+    Router -->|URL change| PageLayout
+    PageLayout -->|if modal request| Modal
+    PageLayout -->|if URL param| Inline
+    Modal -->|onClose| ContextProvider
+    Inline -->|onClose| Router
+    style Button fill: #e1f5ff
+    style Context fill: #fff3e0
+    style Router fill: #f3e5f5
+    style PageLayout fill: #e8f5e9
+    style Modal fill: #fce4ec
+    style Inline fill: #fce4ec
+```
+
+### Jak funguje
+
+**1. Modal formuláře** (ephemeral, bez URL):
+
+- `HalFormButton` s `modal={true}` volá `requestForm()` přes `HalFormContext`
+- `HalFormProvider` udržuje stav `currentFormRequest`
+- `HalFormsPageLayout` naslouchá kontextu a renderuje `ModalOverlay`
+- Po zavření → stav se vymaže → žádný trace v URL
+
+**2. Inline formuláře** (persistent, s URL):
+
+- `HalFormButton` s `modal={false}` naviguje na `?form=templateName` (React Router)
+- `HalFormsPageLayout` detekuje URL parametr
+- Zobrazí `HalFormDisplay` inline místo `children`
+- Po zavření → URL parametr se smaže → vrátí se k `children`
+
+**3. Priorita** (když existují obě):
+
+- Modal formulář se renderuje na top (má vyšší prioritu)
+- Inline formulář je skrytý dokud se modal nezavře
 
 ---
 
@@ -109,7 +183,8 @@ const handleManualRefresh = async () => {
 
 ### 1. HalFormButton
 
-Tlačítko, které zobrazuje formulář konkrétního HAL Forms šablony.
+Tlačítko, které **deleguje zobrazení formuláře** na `HalFormsPageLayout`. Komponenta sama formulář nerendruje - jen
+komunikuje s `HalFormsPageLayout` přes URL nebo Context API.
 
 #### Props
 
@@ -121,7 +196,7 @@ interface HalFormButtonProps {
     /** Pokud true, otevře formulář v modálním okně. Pokud false, zobrazí formulář inline */
     modal?: boolean;
 
-   /** Volitelné vlastní rozložení formuláře - ReactNode nebo callback */
+    /** Volitelné vlastní rozložení formuláře - ReactNode nebo callback (pouze v modal režimu) */
    customLayout?: ReactNode | RenderFormCallback;
 }
 
@@ -132,8 +207,41 @@ type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => 
 
 - Automaticky zkontroluje, zda šablona existuje v `resourceData._templates[name]`
 - Pokud neexistuje, komponenta vrátí `null` (tlačítko se nezobrazí)
-- **Modal mode:** Otevře formulář v overlay modálním okně
-- **Non-modal mode:** Přidá query parameter `?form=name` a zobrazí formulář inline
+- **Modal mode** (`modal={true}`):
+    - Volá `requestForm()` z `HalFormContext`
+    - Formulář se renderuje v `ModalOverlay` v `HalFormsPageLayout`
+    - URL zůstává nezměněna (ephemeral state)
+    - Při zavření → stav se vymaže
+- **Non-modal mode** (`modal={false}`):
+    - Naviguje na `?form=name` (React Router)
+    - Formulář se renderuje inline v `HalFormsPageLayout`
+    - URL je změněna pro persistenci (shareable, browser history compatible)
+    - Při zavření → URL parametr se smaže
+
+#### Architektura - Jak funguje
+
+```
+User clicks HalFormButton
+    ↓
+modal=true?
+├─ YES → requestForm() via HalFormContext
+│        ↓
+│        HalFormProvider updates currentFormRequest
+│        ↓
+│        HalFormsPageLayout listens to context
+│        ↓
+│        Renders ModalOverlay + HalFormDisplay
+│
+└─ NO → navigate(`${pathname}?form=${name}`) via React Router
+         ↓
+         URL changes to include ?form parameter
+         ↓
+         HalFormsPageLayout detects URL change
+         ↓
+         Renders HalFormDisplay inline instead of children
+```
+
+**Důležité:** HalFormButton **sám nerendruje** Modal ani formulář. Jen komunikuje s `HalFormsPageLayout`!
 
 #### Příklad
 
@@ -177,7 +285,9 @@ Viz [HalFormsPageLayout](#halformspageLayout) pro automatické zpracování.
 
 #### Vlastní rozložení formuláře (Custom Layout)
 
-Pokud chceš přizpůsobit rozložení formuláře, můžeš předat `customLayout` prop (pouze v modal režimu - `modal={true}`).
+> ⚠️ Vlastní rozložení (`customLayout`) funguje **POUZE v modal režimu** (`modal={true}`).
+
+Pokud chceš přizpůsobit rozložení formuláře, můžeš předat `customLayout` prop.
 Existují dva způsoby:
 
 ##### 1. Children Pattern - struktura s `<HalFormsFormField>`
@@ -343,22 +453,44 @@ export const CustomPage = () => {
 
 ### 3. HalFormsPageLayout
 
-Wrapper komponenta pro stránky, které chcou **automaticky zobrazit formulář inline** na základě query parametru.
+Centrální wrapper komponenta pro stránky, která **orchestruje zobrazení formulářů** z obou zdrojů:
+
+- **Modal formuláře** z `HalFormContext` (ephemeral)
+- **Inline formuláře** z URL query parametrů (persistent)
 
 #### Props
 
 ```typescript
 interface HalFormsPageLayoutProps {
     children: ReactNode;
+
+    /** Volitelná vlastní rozložení pro inline formuláře */
+    customLayouts?: Record<string, ReactNode | RenderFormCallback>;
 }
 ```
 
 #### Chování
 
-- Automaticky zjistí query parametr `?form=templateName`
-- Pokud parametr existuje a šablona je dostupná → zobrazí `HalFormDisplay`
-- Pokud parametr neexistuje → zobrazí `children`
-- Po úspěšném odeslání formuláře → smaže query parametr a zobrazí `children` znovu
+**Monitoruje tři věci:**
+
+1. **URL query parametr** `?form=templateName`:
+    - Pokud existuje a šablona je dostupná → zobrazí `HalFormDisplay` inline
+    - Pokud neexistuje → zobrazí `children`
+
+2. **HalFormContext** (modal request):
+    - Pokud je `currentFormRequest` v kontextu → zobrazí `ModalOverlay` + `HalFormDisplay`
+    - Renderuje se na top (vyšší priorita než inline formulář)
+
+3. **Priorita** (když existují obě):
+    - Modal formulář se renderuje v `ModalOverlay`
+    - Inline formulář je skrytý
+    - Když se modal zavře → inline formulář se opět zobrazí
+
+**Post-submission:**
+
+- Inline formuláře: Query parametr se automaticky smaže
+- Modal formuláře: `closeForm()` se volá automaticky
+- Zobrazí se `children` zpět
 
 #### Příklad
 
@@ -404,7 +536,84 @@ export const EventDetailsPage = () => {
 
 ---
 
-### 4. HalFormDisplay
+### 4. HalFormContext (+ useHalForm hook)
+
+Context pro komunikaci mezi `HalFormButton` a `HalFormsPageLayout`. Spravuje stav **modal** formulářových požadavků.
+
+#### Setup
+
+Musíš zabalit tvou aplikaci do `HalFormProvider` (obvykle v `Layout.tsx` nebo `App.tsx`):
+
+```typescript
+import {HalFormProvider} from '../contexts/HalFormContext';
+
+export const App = () => {
+    return (
+        <HalRouteProvider>
+            <HalFormProvider>
+                <HalFormsPageLayout>
+                    <Routes>
+                        {/* tvoje routes */}
+        < /Routes>
+        < /HalFormsPageLayout>
+        < /HalFormProvider>
+        < /HalRouteProvider>
+    );
+};
+```
+
+#### Hook - useHalForm()
+
+```typescript
+interface HalFormRequest {
+    templateName: string;
+    modal: boolean;
+    customLayout?: ReactNode | RenderFormCallback;
+}
+
+interface HalFormContextValue {
+    currentFormRequest: HalFormRequest | null;
+    requestForm: (request: HalFormRequest) => void;
+    closeForm: () => void;
+}
+
+const {currentFormRequest, requestForm, closeForm} = useHalForm();
+```
+
+#### Chování
+
+- `currentFormRequest`: Aktuální požadavek na zobrazení modal formuláře (nebo `null`)
+- `requestForm(request)`: Nastaví nový formulář k zobrazení
+- `closeForm()`: Vymaže aktuální požadavek (zavře modal)
+
+#### Příklad - Custom integration
+
+Pokud chceš integrovat vlastní komponenty s modal formuláři:
+
+```typescript
+import {useHalForm} from '../contexts/HalFormContext';
+
+export const MyCustomButton = ({templateName}) => {
+    const {requestForm} = useHalForm();
+
+    const handleClick = () => {
+        requestForm({
+            templateName,
+            modal: true,
+            customLayout: <MyCustomLayout / >
+        });
+    };
+
+    return <button onClick = {handleClick} > Open
+    Form < /button>;
+};
+```
+
+> **Poznámka:** Normálně nebudeš potřebovat volat `useHalForm()` přímo - `HalFormButton` to dělá za tebe.
+
+---
+
+### 5. HalFormDisplay
 
 Komponenta, která **skutečně vykresluje HAL Forms formulář**.
 
@@ -501,7 +710,7 @@ export const CustomFormWorkflow = () => {
 
 ---
 
-### 5. HalFormTemplateButton
+### 6. HalFormTemplateButton
 
 Čistě presentační komponenta - **tlačítko pro šablonu**.
 
@@ -1023,22 +1232,30 @@ export const MemberDetailPage = () => {
 
 ## Shrnutí komponent
 
-| Komponenta           | Účel                            | Použití                  |
-|----------------------|---------------------------------|--------------------------|
-| `useHalRoute`        | Přístup k HAL datům a metadata  | Vždy v komponentách      |
-| `HalFormButton`      | Tlačítko pro konkrétní formulář | Modal nebo inline        |
-| `HalFormsSection`    | Všechny dostupné formuláře      | Modal (všechny najednou) |
-| `HalFormsPageLayout` | Wrapper pro inline formuláře    | Query param handling     |
-| `HalFormDisplay`     | Renderování formuláře           | Custom workflow (vzácně) |
-| `HalLinksSection`    | Zobrazení dostupných akcí       | HAL linky                |
-| `HalEmbeddedTable`   | Tabulka z `_embedded` kolekce   | Páginace + řazení        |
+| Komponenta           | Účel                                      | Použití                      |
+|----------------------|-------------------------------------------|------------------------------|
+| `useHalRoute`        | Přístup k HAL datům a metadata            | Vždy v komponentách          |
+| `useHalForm`         | Komunikace s modal formuláři (context)    | V HalFormButton + PageLayout |
+| `HalFormButton`      | Tlačítko - deleguje do HalFormsPageLayout | Modal nebo inline            |
+| `HalFormsSection`    | Všechny dostupné formuláře jako tlačítka  | Modal (všechny najednou)     |
+| `HalFormsPageLayout` | Orchestrace modal + inline formulářů      | Wrapper kolem children       |
+| `HalFormDisplay`     | Renderování formuláře                     | Custom workflow (vzácně)     |
+| `HalLinksSection`    | Zobrazení dostupných akcí (HAL linky)     | Navigační akce               |
+| `HalEmbeddedTable`   | Tabulka z `_embedded` kolekce             | Páginace + řazení            |
 
 ---
 
 ## Viz také
 
-- [HAL specification](https://tools.ietf.org/html/draft-kelly-json-hal)
-- [HAL Forms specification](http://mamund.com/hal-forms/)
-- `/frontend-2/src/contexts/HalRouteContext.tsx` - Context setup
+**Projekty:**
+
+- `/frontend-2/src/contexts/HalRouteContext.tsx` - HalRoute context pro HAL data
+- `/frontend-2/src/contexts/HalFormContext.tsx` - HalForm context pro modal formuláře
+- `/frontend-2/src/components/HalNavigator2/` - Všechny komponenty
 - `/frontend-2/src/pages/MemberDetailsPage.tsx` - Real-world example
 - `/frontend-2/src/pages/CalendarPage.tsx` - Real-world example
+
+**Specifikace:**
+
+- [HAL specification](https://tools.ietf.org/html/draft-kelly-json-hal)
+- [HAL Forms specification](http://mamund.com/hal-forms/)

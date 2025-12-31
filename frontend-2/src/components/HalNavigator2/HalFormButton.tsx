@@ -1,14 +1,18 @@
 /**
  * Component for rendering a single HAL Forms template button
- * Shows a button that opens a form either in modal or navigates to a new page
+ * Shows a button that opens a form either in modal or inline on the current page
+ *
+ * - Modal mode: Requests form display via HalFormContext
+ * - Inline mode: Navigates with query parameter (?form=templateName)
+ *
+ * Form rendering is delegated to HalFormsPageLayout
  */
 
-import {type ReactElement, type ReactNode, useState} from 'react';
+import {type ReactElement, type ReactNode} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
-import {HalFormDisplay} from './HalFormDisplay.tsx';
+import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
-import {ModalOverlay} from '../UI';
 import type {RenderFormCallback} from '../HalFormsForm';
 
 /**
@@ -30,24 +34,25 @@ export interface HalFormButtonProps {
  *
  * Checks if a template with the given name exists in the current resource.
  * If it exists, renders a button. When clicked:
- * - In modal mode: Opens the form as an overlay
- * - In non-modal mode: Displays form inline on current page with query parameter
+ * - In modal mode: Requests form display via HalFormContext (HalFormsPageLayout renders the modal)
+ * - In non-modal mode: Navigates to current page with query parameter (?form=templateName)
+ *   HalFormsPageLayout detects the parameter and renders the form inline
  *
  * Note: Forms always display on the current resource page (which contains the _templates).
  * The template's target URL is only used to fetch initial form values and as the submission endpoint.
  *
  * @example
- * // Modal mode
+ * // Modal mode (requires HalFormsPageLayout and HalFormProvider in parent tree)
  * <HalFormButton name="create" modal={true} />
  *
  * @example
- * // Non-modal mode (displays form inline on current page with query param)
+ * // Inline mode (requires HalFormsPageLayout in parent tree)
  * <HalFormButton name="edit" modal={false} />
  */
 export function HalFormButton({name, modal = true, customLayout}: HalFormButtonProps): ReactElement | null {
     const {resourceData, pathname} = useHalRoute();
     const navigate = useNavigate();
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const {requestForm} = useHalForm();
 
     // Check if template exists
     if (!resourceData?._templates?.[name]) {
@@ -58,40 +63,23 @@ export function HalFormButton({name, modal = true, customLayout}: HalFormButtonP
 
     const handleButtonClick = () => {
         if (modal) {
-            setIsModalOpen(true);
+            // Request form display via context (HalFormsPageLayout will render the modal)
+            requestForm({
+                templateName: name,
+                modal: true,
+                customLayout
+            });
         } else {
             // Display form inline on current page (target URL only used for form data/submission)
             navigate(`${pathname}?form=${name}`);
         }
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-    };
-
     return (
-        <>
-            <HalFormTemplateButton
-                template={template}
-                templateName={name}
-                onClick={handleButtonClick}
-            />
-
-            {/* TODO: let HalFormButton just tell HalFormsPageLayout to display form as modal instead of displaying it directly  */}
-            {/* Render modal if in modal mode and open */}
-            {modal && (
-                <ModalOverlay isOpen={isModalOpen} onClose={handleCloseModal}>
-                    <HalFormDisplay
-                        template={template}
-                        templateName={name}
-                        resourceData={resourceData}
-                        pathname={pathname}
-                        onClose={handleCloseModal}
-                        showCloseButton={true}
-                        customLayout={customLayout}
-                    />
-                </ModalOverlay>
-            )}
-        </>
+        <HalFormTemplateButton
+            template={template}
+            templateName={name}
+            onClick={handleButtonClick}
+        />
     );
 }

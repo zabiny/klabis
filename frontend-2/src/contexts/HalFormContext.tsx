@@ -1,0 +1,79 @@
+import {createContext, type ReactElement, type ReactNode, useContext, useState} from 'react';
+import type {RenderFormCallback} from '../components/HalFormsForm';
+
+/**
+ * Represents a request to display a form
+ */
+export interface HalFormRequest {
+    /** Name of the HAL Forms template to display */
+    templateName: string;
+
+    /** If true, form should be displayed in modal. If false, inline */
+    modal: boolean;
+
+    /** Optional custom form layout */
+    customLayout?: ReactNode | RenderFormCallback;
+}
+
+/**
+ * Context value for form request management
+ */
+interface HalFormContextValue {
+    /** Currently requested form (null if no form is requested) */
+    currentFormRequest: HalFormRequest | null;
+
+    /** Request to display a form */
+    requestForm: (request: HalFormRequest) => void;
+
+    /** Close the currently displayed form */
+    closeForm: () => void;
+}
+
+/**
+ * Context for managing form display requests
+ * Used to communicate between HalFormButton and HalFormsPageLayout
+ */
+const HalFormContext = createContext<HalFormContextValue | undefined>(undefined);
+
+/**
+ * Provider component for HalFormContext
+ * Must wrap components that use useHalForm hook
+ */
+export function HalFormProvider({children}: { children: ReactNode }): ReactElement {
+    const [currentFormRequest, setCurrentFormRequest] = useState<HalFormRequest | null>(null);
+
+    const requestForm = (request: HalFormRequest) => {
+        setCurrentFormRequest(request);
+    };
+
+    const closeForm = () => {
+        setCurrentFormRequest(null);
+    };
+
+    const value: HalFormContextValue = {
+        currentFormRequest,
+        requestForm,
+        closeForm,
+    };
+
+    return (
+        <HalFormContext.Provider value={value}>
+            {children}
+        </HalFormContext.Provider>
+    );
+}
+
+/**
+ * Hook to use HalFormContext
+ * Must be called within a component wrapped by HalFormProvider
+ * @throws {Error} if used outside HalFormProvider
+ */
+export function useHalForm(): HalFormContextValue {
+    const context = useContext(HalFormContext);
+
+    if (context === undefined) {
+        throw new Error('useHalForm must be used within a component wrapped by HalFormProvider');
+    }
+
+    return context;
+}
