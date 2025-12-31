@@ -1,11 +1,12 @@
 import React, {type PropsWithChildren, useContext} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
-import {toHref} from '../components/HalNavigator/hooks';
 import type {HalResourceLinks, HalResponse, Link} from '../api';
 import {extractNavigationPath} from "../utils/navigationPath.ts";
 import {isHalResponse} from "../components/HalFormsForm/utils.ts";
 import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
+
+import {toHref} from "../api/hateoas.ts";
 
 /**
  * Context value provided by HalRouteProvider

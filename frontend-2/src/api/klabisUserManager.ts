@@ -1,4 +1,5 @@
 import {User, UserManager, WebStorageStateStore,} from 'oidc-client-ts';
+import {normalizeUrl} from "./hateoas.ts";
 
 export interface AuthConfig {
     authority: string;
@@ -25,23 +26,6 @@ export const authConfig: AuthConfig = {
     response_type: 'code',
     scope: 'openid profile email'
 };
-
-/**
- * Converts relative URL to absolute using current window.location's hostname. Absolute URL is left unchanged
- * @param input
- */
-export const normalizeUrl = (input: string): string => {
-    if (input.startsWith("/")) {
-        // relative paths - normalize against current location URL
-        const result = new URL(window.location.toString());
-        result.pathname = input;
-        result.search = "";
-        return result.toString();
-    } else {
-        // presumably absolute path, return unchanged
-        return input;
-    }
-}
 
 export const createUserManager = ({
                                       onUserLoaded = () => {

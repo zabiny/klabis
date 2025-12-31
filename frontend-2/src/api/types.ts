@@ -85,11 +85,6 @@ export interface HalFormsProperty {
 // only update methods as template represents "request body"
 export type HalFormsTemplateMethod = "POST" | "PUT" | "DELETE" | "PATCH";
 
-export interface TemplateTarget {
-    target: string,
-    method?: HalFormsTemplateMethod
-}
-
 export interface HalFormsTemplate {
     method?: HalFormsTemplateMethod
     target?: string,

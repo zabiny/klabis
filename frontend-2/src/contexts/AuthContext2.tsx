@@ -1,6 +1,7 @@
 import React, {createContext, type ReactNode, useContext, useEffect, useState,} from 'react';
 import {User, UserManager,} from 'oidc-client-ts';
-import {type AuthConfig, createUserManager, normalizeUrl} from '../api/klabisUserManager.ts';
+import {type AuthConfig, createUserManager} from '../api/klabisUserManager.ts';
+import {normalizeUrl} from "../api/hateoas.ts";
 
 // Your required interface
 interface AuthContextType {
