@@ -126,8 +126,8 @@ export function useHalPageData<T extends HalResponse = HalResponse>(): UseHalPag
     const halActions = useHalActions();
     const adminState = useIsAdmin();
 
-    // Compute combined loading state
-    const isLoading = halRoute.isLoading || adminState.isLoading;
+    // Compute combined loading state - only from route, admin loading is separate
+    const isLoading = halRoute.isLoading;
 
     // Memoize helper methods to prevent unnecessary re-renders
     const helpers = useMemo(() => {

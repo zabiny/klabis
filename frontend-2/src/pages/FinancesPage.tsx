@@ -4,6 +4,7 @@ import {HalEmbeddedTable} from "../components/HalNavigator2/HalEmbeddedTable.tsx
 import {HalSubresourceProvider, useHalRoute} from "../contexts/HalRouteContext.tsx";
 import {Skeleton} from "../components/UI";
 import {HalFormButton} from "../components/HalNavigator2/HalFormButton.tsx";
+import {useHalPageData} from "../hooks/useHalPageData.ts";
 
 interface MemberNameProps {
     user?: { firstName: string, lastName: string }
@@ -22,7 +23,7 @@ function formatCurrency(amount?: number): string {
 }
 
 export const MemberFinancePage = (): ReactElement => {
-    const {isLoading, resourceData, navigateToResource} = useHalRoute();
+    const {isLoading, resourceData, route} = useHalPageData();
 
     if (isLoading) {
         return <Skeleton/>
@@ -50,7 +51,7 @@ export const MemberFinancePage = (): ReactElement => {
             <h2 className="text-xl font-bold text-text-primary">Transakce</h2>
             <HalSubresourceProvider subresourceLinkName={"transactions"}>
                 <HalEmbeddedTable collectionName={"transactionItemResponseList"} defaultOrderBy={"lastName"}
-                                  onRowClick={navigateToResource}>
+                                  onRowClick={route.navigateToResource}>
                     <TableCell sortable column="date">Datum</TableCell>
                     <TableCell column="amount">Částka</TableCell>
                     <TableCell column="note">Poznámka</TableCell>

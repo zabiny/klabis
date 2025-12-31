@@ -1,21 +1,19 @@
 import {type ReactElement} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {useHalRoute} from '../contexts/HalRouteContext';
 import {Alert, Button, Spinner} from '../components/UI';
 import {MemberDetailsCard} from '../components/members/MemberDetailsCard';
 import {MemberDetailsField} from '../components/members/MemberDetailsField';
 import {extractNavigationPath} from '../utils/navigationPath';
 import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
 import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
-import {useHalActions} from "../hooks/useHalActions";
+import {useHalPageData} from '../hooks/useHalPageData';
 import {formatDate} from "../utils/dateUtils.ts";
 
 /**
  * Page for displaying member details fetched from GET /members/{id} API
  */
 export const MemberDetailsPage = (): ReactElement => {
-    const {resourceData, isLoading, error, pathname} = useHalRoute();
-    const {handleNavigateToItem} = useHalActions();
+    const {resourceData, isLoading, error, route, actions} = useHalPageData();
     const navigate = useNavigate();
 
     if (isLoading) {
@@ -30,7 +28,7 @@ export const MemberDetailsPage = (): ReactElement => {
         return (
             <Alert severity="error">
                 <div className="space-y-2">
-                    <p>Nepodařilo se načíst detaily člena z {pathname}</p>
+                    <p>Nepodařilo se načíst detaily člena z {route.pathname}</p>
                     <p className="text-sm text-gray-600">{error.message}</p>
                 </div>
             </Alert>
@@ -267,7 +265,7 @@ export const MemberDetailsPage = (): ReactElement => {
             {resourceData?._links && Object.keys(resourceData._links).length > 0 ? (
                 <HalLinksSection
                     links={resourceData._links}
-                    onNavigate={handleNavigateToItem}
+                    onNavigate={actions.handleNavigateToItem}
                 />
             ) : null}
 

@@ -1,13 +1,12 @@
 import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {useHalRoute} from '../contexts/HalRouteContext';
 import {Alert} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {hasCalendarItems} from '../api';
 import {extractNavigationPath} from '../utils/navigationPath';
 import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
 import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
-import {useHalActions} from "../hooks/useHalActions";
+import {useHalPageData} from '../hooks/useHalPageData';
 
 interface CalendarItem {
     start: string;
@@ -24,8 +23,7 @@ interface CalendarItem {
  * Shows all calendar items on their respective dates
  */
 const CalendarPage = () => {
-    const {resourceData, isLoading, error} = useHalRoute();
-    const {handleNavigateToItem} = useHalActions();
+    const {resourceData, isLoading, error, actions} = useHalPageData();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
@@ -194,7 +192,7 @@ const CalendarPage = () => {
                 <div className="flex flex-col gap-4">
                     <HalLinksSection
                         links={resourceData._links}
-                        onNavigate={handleNavigateToItem}
+                        onNavigate={actions.handleNavigateToItem}
                     />
                 </div>
             ) : null}

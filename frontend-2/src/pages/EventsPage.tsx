@@ -7,13 +7,13 @@ import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
 import EventType from "../components/events/EventType.tsx";
 import MemberName from "../components/members/MemberName.tsx";
 import {formatDate} from "../utils/dateUtils.ts";
-import {useHalRoute} from "../contexts/HalRouteContext.tsx";
+import {useHalPageData} from "../hooks/useHalPageData.ts";
 
 interface EventListData extends EntityModel<{ date: string, name: string, id: number, location: string }> {
 };
 
 export const EventsPage = (): ReactElement => {
-    const {navigateToResource} = useHalRoute();
+    const {route} = useHalPageData();
 
     return <div className="flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-text-primary">Závody</h1>
@@ -21,7 +21,7 @@ export const EventsPage = (): ReactElement => {
         <div className="flex flex-col gap-4">
             <h2 className="text-xl font-bold text-text-primary">Seznam závodů</h2>
             <HalEmbeddedTable<EventListData> collectionName={"eventResponseList"} defaultOrderBy={"date"}
-                                             onRowClick={navigateToResource}>
+                                             onRowClick={route.navigateToResource}>
                 <TableCell sortable column={"date"}
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>Datum</TableCell>
                 <TableCell sortable column={"name"}>Název</TableCell>

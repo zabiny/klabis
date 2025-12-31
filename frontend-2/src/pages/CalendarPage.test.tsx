@@ -5,15 +5,9 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
 import CalendarPage from './CalendarPage';
 import {vi} from 'vitest';
-import * as HalRouteContextModule from '../contexts/HalRouteContext';
-import * as HalActionsModule from '../hooks/useHalActions';
+import * as HalPageDataModule from '../hooks/useHalPageData';
 
 // Mock child components
-vi.mock('../contexts/HalRouteContext', async () => ({
-    ...(await vi.importActual('../contexts/HalRouteContext')),
-    useHalRoute: vi.fn(),
-}));
-
 vi.mock('../components/UI', () => ({
     Alert: ({severity, children}: any) => (
         <div data-testid={`alert-${severity}`} role="alert">
@@ -54,15 +48,11 @@ vi.mock('../components/HalNavigator2/HalFormsSection.tsx', () => ({
         ) : null,
 }));
 
-vi.mock('../hooks/useHalActions', () => ({
-    useHalActions: vi.fn(),
-}));
+vi.mock('../hooks/useHalPageData');
 
-const useHalRoute = vi.mocked(HalRouteContextModule.useHalRoute);
-const useHalActions = vi.mocked(HalActionsModule.useHalActions);
+const useHalPageData = vi.mocked(HalPageDataModule.useHalPageData);
 
 describe('CalendarPage Component', () => {
-    let mockHalActions: any;
     let queryClient: QueryClient;
 
     beforeEach(() => {
@@ -72,24 +62,34 @@ describe('CalendarPage Component', () => {
             },
         });
 
-        mockHalActions = {
-            handleNavigateToItem: vi.fn(),
-        };
-
-        useHalActions.mockReturnValue(mockHalActions);
         vi.clearAllMocks();
     });
 
-    // Helper function to create a complete mock context
+    // Helper function to create a complete mock context for useHalPageData
     const createMockContext = (resourceData: any = null) => ({
         resourceData,
         isLoading: false,
         error: null,
-        navigateToResource: vi.fn(),
-        refetch: vi.fn(),
-        pathname: '/calendar',
-        queryState: 'success' as const,
-        getResourceLink: vi.fn(),
+        isAdmin: false,
+        route: {
+            pathname: '/calendar',
+            navigateToResource: vi.fn(),
+            refetch: vi.fn(),
+            queryState: 'success' as const,
+            getResourceLink: vi.fn(),
+        },
+        actions: {
+            handleNavigateToItem: vi.fn(),
+        },
+        getLinks: () => resourceData?._links,
+        getTemplates: () => resourceData?._templates,
+        hasEmbedded: () => !!resourceData?._embedded && Object.keys(resourceData._embedded).length > 0,
+        getEmbeddedItems: () => resourceData?._embedded ? Object.values(resourceData._embedded).flat() : [],
+        isCollection: () => !!resourceData?.page || (!!resourceData?._embedded && Object.keys(resourceData._embedded).length > 0),
+        hasLink: (name: string) => !!resourceData?._links?.[name],
+        hasTemplate: (name: string) => !!resourceData?._templates?.[name],
+        hasForms: () => !!resourceData?._templates && Object.keys(resourceData._templates).length > 0,
+        getPageMetadata: () => resourceData?.page,
     });
 
     // Helper function to render with router and query params
@@ -115,7 +115,7 @@ describe('CalendarPage Component', () => {
 
     describe('Reference Date Handling', () => {
         it('should use current date when no referenceDate parameter is provided', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             renderWithRouter(<CalendarPage/>);
 
@@ -130,7 +130,7 @@ describe('CalendarPage Component', () => {
         });
 
         it('should use referenceDate when provided in yyyy-mm-dd format', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-06-15');
 
@@ -139,7 +139,7 @@ describe('CalendarPage Component', () => {
         });
 
         it('should display November 2025 when referenceDate=2025-11-26', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-11-26');
 
@@ -151,7 +151,7 @@ describe('CalendarPage Component', () => {
         });
 
         it('should display correct month for different reference dates', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-12-25');
 
@@ -160,7 +160,7 @@ describe('CalendarPage Component', () => {
         });
 
         it('should fall back to current date for invalid referenceDate format', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=invalid-date');
 
@@ -175,7 +175,7 @@ describe('CalendarPage Component', () => {
         });
 
         it('should fall back to current date for malformed dates', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-13-01');
 
@@ -192,7 +192,7 @@ describe('CalendarPage Component', () => {
 
     describe('Calendar Display', () => {
         it('should display calendar grid', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             const {container} = renderWithRouter(<CalendarPage/>);
 
@@ -202,7 +202,7 @@ describe('CalendarPage Component', () => {
         });
 
         it('should display weekday headers', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             renderWithRouter(<CalendarPage/>);
 
@@ -228,7 +228,7 @@ describe('CalendarPage Component', () => {
                 },
             ];
 
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData(items)));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData(items)));
 
             renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-06-15');
 
@@ -238,15 +238,10 @@ describe('CalendarPage Component', () => {
 
     describe('Loading and Error States', () => {
         it('should display loading message when data is loading', () => {
-            useHalRoute.mockReturnValue({
-                resourceData: null,
+            useHalPageData.mockReturnValue({
+                ...createMockContext(null),
                 isLoading: true,
-                error: null,
-                navigateToResource: vi.fn(),
-                refetch: vi.fn(),
-                pathname: '/calendar',
-                queryState: 'pending' as const,
-                getResourceLink: vi.fn(),
+                resourceData: null,
             });
 
             renderWithRouter(<CalendarPage/>);
@@ -257,15 +252,10 @@ describe('CalendarPage Component', () => {
         it('should display error alert when error occurs', () => {
             const error = new Error('Failed to load calendar');
 
-            useHalRoute.mockReturnValue({
-                resourceData: null,
-                isLoading: false,
+            useHalPageData.mockReturnValue({
+                ...createMockContext(null),
                 error,
-                navigateToResource: vi.fn(),
-                refetch: vi.fn(),
-                pathname: '/calendar',
-                queryState: 'error' as const,
-                getResourceLink: vi.fn(),
+                resourceData: null,
             });
 
             renderWithRouter(<CalendarPage/>);
@@ -277,7 +267,7 @@ describe('CalendarPage Component', () => {
 
     describe('Navigation via HalLinks', () => {
         it('should update calendar when referenceDate changes via URL navigation', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             // Render with December reference date
             const {unmount} = renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-12-15');
@@ -289,7 +279,7 @@ describe('CalendarPage Component', () => {
         });
 
         it('should correctly display November when referenceDate=2025-11-15', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             // Render with November reference date
             renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-11-15');
@@ -299,7 +289,7 @@ describe('CalendarPage Component', () => {
         });
 
         it('should display different months for different referenceDate values', () => {
-            useHalRoute.mockReturnValue(createMockContext(mockCalendarData()));
+            useHalPageData.mockReturnValue(createMockContext(mockCalendarData()));
 
             // Test January
             const {unmount: unmountJan} = renderWithRouter(<CalendarPage/>, '/calendar?referenceDate=2025-01-15');
