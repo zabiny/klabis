@@ -6,7 +6,7 @@
 
 import {type ReactElement, type ReactNode} from 'react';
 import type {HalFormsTemplate} from '../../api';
-import {useHalRoute} from '../../contexts/HalRouteContext';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {HalFormButton} from './HalFormButton.tsx';
 import {formsSectionStyles} from '../../theme/designTokens';
@@ -43,7 +43,7 @@ export function HalFormsSection({
 									modal = true,
 									customLayouts,
 								}: HalFormsSectionProps): ReactElement | null {
-	const {resourceData} = useHalRoute();
+	const {resourceData} = useHalPageData();
 
 	// Use provided templates or fallback to resourceData._templates
 	const templates = propsTemplates || resourceData?._templates;

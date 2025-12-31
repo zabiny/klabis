@@ -1,12 +1,12 @@
 import {HalEmbeddedTable} from './HalEmbeddedTable';
-import {useHalRoute} from '../../contexts/HalRouteContext';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {render, screen} from '@testing-library/react';
 import type {KlabisTableWithQueryProps} from "../KlabisTable/KlabisTableWithQuery.tsx";
 import {type Mock, vi} from 'vitest';
 
-// Mock the useHalRoute hook
-vi.mock('../../contexts/HalRouteContext', () => ({
-    useHalRoute: vi.fn(),
+// Mock the useHalPageData hook
+vi.mock('../../hooks/useHalPageData', () => ({
+    useHalPageData: vi.fn(),
 }));
 
 // Mock KlabisTableWithQuery component to simplify testing
@@ -40,8 +40,15 @@ describe('HalEmbeddedTable', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockGetResourceLink.mockReturnValue({href: '/api/test/resource'});
-        (useHalRoute as Mock).mockReturnValue({
-            getResourceLink: mockGetResourceLink,
+        (useHalPageData as Mock).mockReturnValue({
+            isLoading: false,
+            route: {
+                getResourceLink: mockGetResourceLink,
+                pathname: '/test',
+                navigateToResource: vi.fn(),
+                refetch: vi.fn(),
+                queryState: 'success',
+            },
         });
     });
 

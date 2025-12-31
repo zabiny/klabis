@@ -3,8 +3,12 @@ import {render, screen} from '@testing-library/react';
 import {HalFormsSection} from './HalFormsSection.tsx';
 import type {HalFormsTemplate} from '../../api';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
-import * as HalRouteContext from '../../contexts/HalRouteContext';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {vi} from 'vitest';
+
+vi.mock('../../hooks/useHalPageData', () => ({
+	useHalPageData: vi.fn(),
+}));
 
 // Mock the HalFormButton component since we're testing HalFormsSection in isolation
 vi.mock('./HalFormButton.tsx', () => ({
@@ -15,25 +19,43 @@ vi.mock('./HalFormButton.tsx', () => ({
 	),
 }));
 
+const createMockPageData = (overrides: any = {}) => ({
+	resourceData: null,
+	isLoading: false,
+	error: null,
+	isAdmin: false,
+	route: {
+		pathname: '/test',
+		navigateToResource: vi.fn(),
+		refetch: async () => {},
+		queryState: 'success',
+		getResourceLink: vi.fn(),
+	},
+	actions: {
+		handleNavigateToItem: vi.fn(),
+	},
+	getLinks: vi.fn(() => undefined),
+	getTemplates: vi.fn(() => undefined),
+	hasEmbedded: vi.fn(() => false),
+	getEmbeddedItems: vi.fn(() => []),
+	isCollection: vi.fn(() => false),
+	hasLink: vi.fn(() => false),
+	hasTemplate: vi.fn(() => false),
+	hasForms: vi.fn(() => false),
+	getPageMetadata: vi.fn(() => undefined),
+	...overrides,
+});
+
 describe('HalFormsSection Component', () => {
 	const mockTemplate = (overrides = {}): HalFormsTemplate => mockHalFormsTemplate(overrides);
 
 	beforeEach(() => {
-		vi.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
-			resourceData: null,
-			isLoading: false,
-			error: null,
-			refetch: async () => {
-			},
-			pathname: '/test',
-			queryState: 'success',
-			navigateToResource: vi.fn(),
-			getResourceLink: vi.fn()
-		});
+		const mockUseHalPageData = vi.mocked(useHalPageData);
+		mockUseHalPageData.mockReturnValue(createMockPageData());
 	});
 
 	afterEach(() => {
-		vi.restoreAllMocks();
+		vi.clearAllMocks();
 	});
 
 	describe('Rendering', () => {
@@ -43,21 +65,14 @@ describe('HalFormsSection Component', () => {
 		});
 
 		it('should render when resourceData._templates is provided automatically', () => {
-			vi.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+			const mockUseHalPageData = vi.mocked(useHalPageData);
+			mockUseHalPageData.mockReturnValue(createMockPageData({
 				resourceData: {
 					_templates: {
 						create: mockTemplate({title: 'Create'}),
 					},
 				} as any,
-				isLoading: false,
-				error: null,
-				refetch: async () => {
-				},
-				pathname: '/test',
-				queryState: 'success',
-				navigateToResource: vi.fn(),
-				getResourceLink: vi.fn()
-			});
+			}));
 
 			render(<HalFormsSection/>);
 

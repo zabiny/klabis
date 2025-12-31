@@ -4,7 +4,7 @@
  */
 
 import {type ReactElement} from 'react'
-import {useHalRoute} from '../../contexts/HalRouteContext'
+import {useHalPageData} from '../../hooks/useHalPageData'
 import {KlabisTableWithQuery} from '../KlabisTable'
 import {ErrorDisplay} from '../UI'
 import {containerStyles, spinnerStyles} from '../../theme/designTokens'
@@ -60,10 +60,10 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
                                                                               emptyMessage = 'Žádná data',
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
-    const {getResourceLink, isLoading} = useHalRoute()
+    const {route, isLoading} = useHalPageData()
 
     // Extract self link from HAL resource
-    const selfLink = getResourceLink();
+    const selfLink = route.getResourceLink();
 
     if (isLoading) {
         return (

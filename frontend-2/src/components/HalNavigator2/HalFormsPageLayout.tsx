@@ -15,7 +15,7 @@
 
 import {type ReactElement, type ReactNode} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {ModalOverlay} from '../UI';
@@ -40,7 +40,7 @@ interface HalFormsPageLayoutProps {
  * - Form display and lifecycle
  */
 export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayoutProps): ReactElement {
-    const {resourceData, pathname} = useHalRoute();
+    const {resourceData, route} = useHalPageData();
     const [, setSearchParams] = useSearchParams();
     const {currentFormRequest, closeForm} = useHalForm();
 
@@ -79,7 +79,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                         template={template}
                         templateName={currentFormRequest.templateName}
                         resourceData={resourceData}
-                        pathname={pathname}
+                        pathname={route.pathname}
                         onClose={handleCloseForm}
                         showCloseButton={true}
                         customLayout={currentFormRequest.customLayout}
@@ -97,7 +97,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                     template={template}
                     templateName={currentFormRequest.templateName}
                     resourceData={resourceData}
-                    pathname={pathname}
+                    pathname={route.pathname}
                     onClose={handleCloseForm}
                     onSubmitSuccess={handleSubmitSuccess}
                     customLayout={customLayouts?.[currentFormRequest.templateName]}

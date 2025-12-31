@@ -3,13 +3,18 @@ import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
-import {HalRouteContext, type HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import {createMockResponse} from '../../__mocks__/mockFetch';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {type Mock, vi} from 'vitest';
 import {HalFormsFormField, type RenderFormCallback} from './halforms/HalFormsForm.tsx';
+import {MemoryRouter} from "react-router-dom";
+
+vi.mock('../../hooks/useHalPageData', () => ({
+    useHalPageData: vi.fn(),
+}));
 
 // Mock dependencies
 vi.mock('../../api/klabisUserManager', () => ({
@@ -50,23 +55,41 @@ describe('HalFormDisplay Component', () => {
         delete (globalThis as any).fetch;
     });
 
-    const createMockContext = (resourceData: HalResponse | null = null): HalRouteContextValue => ({
+    const createMockPageData = (resourceData: HalResponse | null = null) => ({
         resourceData: resourceData || {id: 1, name: 'Test Resource'},
         isLoading: false,
         error: null,
-        refetch: vi.fn(),
-        pathname: '/test/123',
-        queryState: 'success',
-        navigateToResource: vi.fn(),
-        getResourceLink: vi.fn()
+        isAdmin: false,
+        route: {
+            pathname: '/test/123',
+            navigateToResource: vi.fn(),
+            refetch: vi.fn(),
+            queryState: 'success',
+            getResourceLink: vi.fn(),
+        },
+        actions: {
+            handleNavigateToItem: vi.fn(),
+        },
+        getLinks: vi.fn(() => undefined),
+        getTemplates: vi.fn(() => undefined),
+        hasEmbedded: vi.fn(() => false),
+        getEmbeddedItems: vi.fn(() => []),
+        isCollection: vi.fn(() => false),
+        hasLink: vi.fn(() => false),
+        hasTemplate: vi.fn(() => false),
+        hasForms: vi.fn(() => false),
+        getPageMetadata: vi.fn(() => undefined),
     });
 
-    const createWrapper = (contextValue: HalRouteContextValue) => {
+    const createWrapper = (pageData: any) => {
+        const mockUseHalPageData = vi.mocked(useHalPageData);
+        mockUseHalPageData.mockReturnValue(pageData);
+
         return ({children}: { children: React.ReactNode }) => (
             <QueryClientProvider client={queryClient}>
-                <HalRouteContext.Provider value={contextValue}>
+                <MemoryRouter>
                     {children}
-                </HalRouteContext.Provider>
+                </MemoryRouter>
             </QueryClientProvider>
         );
     };
@@ -81,8 +104,8 @@ describe('HalFormDisplay Component', () => {
             id: 1,
             name: 'Test Resource',
         };
-        const contextValue = createMockContext(resourceData);
-        const Wrapper = createWrapper(contextValue);
+        const pageData = createMockPageData(resourceData);
+        const Wrapper = createWrapper(pageData);
         return render(
             <Wrapper>
                 <HalFormDisplay
@@ -173,11 +196,11 @@ describe('HalFormDisplay Component', () => {
                 ],
             });
 
-            const contextValue = createMockContext({id: 1});
+            const pageData = createMockPageData({id: 1});
             const mockRefetch = vi.fn();
-            contextValue.refetch = mockRefetch;
+            pageData.route.refetch = mockRefetch;
 
-            const Wrapper = createWrapper(contextValue);
+            const Wrapper = createWrapper(pageData);
 
             // Mock fetch calls:
             // First call: fetching form target data (200 OK)
@@ -288,11 +311,11 @@ describe('HalFormDisplay Component', () => {
                 ],
             });
 
-            const contextValue = createMockContext({id: 1});
+            const pageData = createMockPageData({id: 1});
             const mockRefetch = vi.fn();
-            contextValue.refetch = mockRefetch;
+            pageData.route.refetch = mockRefetch;
 
-            const Wrapper = createWrapper(contextValue);
+            const Wrapper = createWrapper(pageData);
 
             // Mock fetch calls:
             fetchSpy
@@ -357,11 +380,11 @@ describe('HalFormDisplay Component', () => {
                 ],
             });
 
-            const contextValue = createMockContext({id: 123});
+            const pageData = createMockPageData({id: 123});
             const mockRefetch = vi.fn();
-            contextValue.refetch = mockRefetch;
+            pageData.route.refetch = mockRefetch;
 
-            const Wrapper = createWrapper(contextValue);
+            const Wrapper = createWrapper(pageData);
 
             // Mock fetch calls:
             fetchSpy
@@ -425,8 +448,8 @@ describe('HalFormDisplay Component', () => {
                 ],
             });
 
-            const contextValue = createMockContext({id: 1});
-            const Wrapper = createWrapper(contextValue);
+            const pageData = createMockPageData({id: 1});
+            const Wrapper = createWrapper(pageData);
 
             // Mock fetch to return initial data successfully, but fail on submission
             fetchSpy
@@ -581,8 +604,8 @@ describe('HalFormDisplay Component', () => {
                 id: 1,
                 name: 'Test Resource',
             };
-            const contextValue = createMockContext(resourceData);
-            const Wrapper = createWrapper(contextValue);
+            const pageData = createMockPageData(resourceData);
+            const Wrapper = createWrapper(pageData);
 
             // Mock fetch for target data
             fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing Member'}));
@@ -632,8 +655,8 @@ describe('HalFormDisplay Component', () => {
                 id: 1,
                 name: 'Test Resource',
             };
-            const contextValue = createMockContext(resourceData);
-            const Wrapper = createWrapper(contextValue);
+            const pageData = createMockPageData(resourceData);
+            const Wrapper = createWrapper(pageData);
 
             // Mock fetch for target data
             fetchSpy.mockResolvedValueOnce(createMockResponse({
@@ -693,8 +716,8 @@ describe('HalFormDisplay Component', () => {
                 id: 1,
                 name: 'Test Resource',
             };
-            const contextValue = createMockContext(resourceData);
-            const Wrapper = createWrapper(contextValue);
+            const pageData = createMockPageData(resourceData);
+            const Wrapper = createWrapper(pageData);
 
             // Mock fetch for target data
             fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'John Doe'}));
@@ -751,8 +774,8 @@ describe('HalFormDisplay Component', () => {
                 id: 1,
                 name: 'Test Resource',
             };
-            const contextValue = createMockContext(resourceData);
-            const Wrapper = createWrapper(contextValue);
+            const pageData = createMockPageData(resourceData);
+            const Wrapper = createWrapper(pageData);
 
             // Mock fetch for target data
             fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'Jane Smith'}));

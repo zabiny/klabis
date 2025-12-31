@@ -2,8 +2,12 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {BrowserRouter} from 'react-router-dom';
 import {HalLinksSection} from './HalLinksSection.tsx';
-import * as HalRouteContext from '../../contexts/HalRouteContext';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {vi} from 'vitest';
+
+vi.mock('../../hooks/useHalPageData', () => ({
+    useHalPageData: vi.fn(),
+}));
 
 const TestWrapper = ({children}: { children: React.ReactNode }) => (
     <BrowserRouter>
@@ -15,23 +19,41 @@ const renderWithRouter = (component: React.ReactElement) => {
     return render(component, {wrapper: TestWrapper});
 };
 
+const createMockPageData = (overrides: any = {}) => ({
+    resourceData: null,
+    isLoading: false,
+    error: null,
+    isAdmin: false,
+    route: {
+        pathname: '/test',
+        navigateToResource: vi.fn(),
+        refetch: async () => {},
+        queryState: 'success',
+        getResourceLink: vi.fn(),
+    },
+    actions: {
+        handleNavigateToItem: vi.fn(),
+    },
+    getLinks: vi.fn(() => undefined),
+    getTemplates: vi.fn(() => undefined),
+    hasEmbedded: vi.fn(() => false),
+    getEmbeddedItems: vi.fn(() => []),
+    isCollection: vi.fn(() => false),
+    hasLink: vi.fn(() => false),
+    hasTemplate: vi.fn(() => false),
+    hasForms: vi.fn(() => false),
+    getPageMetadata: vi.fn(() => undefined),
+    ...overrides,
+});
+
 describe('HalLinksSection Component', () => {
     beforeEach(() => {
-        vi.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
-            resourceData: null,
-            isLoading: false,
-            error: null,
-            refetch: async () => {
-            },
-            pathname: '/test',
-            queryState: 'success',
-            navigateToResource: vi.fn(),
-            getResourceLink: vi.fn()
-        });
+        const mockUseHalPageData = vi.mocked(useHalPageData);
+        mockUseHalPageData.mockReturnValue(createMockPageData());
     });
 
     afterEach(() => {
-        vi.restoreAllMocks();
+        vi.clearAllMocks();
     });
 
     describe('Rendering', () => {
@@ -43,21 +65,14 @@ describe('HalLinksSection Component', () => {
         });
 
         it('should render when resourceData._links is provided automatically', () => {
-            vi.spyOn(HalRouteContext, 'useHalRoute').mockReturnValue({
+            const mockUseHalPageData = vi.mocked(useHalPageData);
+            mockUseHalPageData.mockReturnValue(createMockPageData({
                 resourceData: {
                     _links: {
                         next: {href: '/api/items?page=1'},
                     },
                 } as any,
-                isLoading: false,
-                error: null,
-                refetch: async () => {
-                },
-                pathname: '/test',
-                queryState: 'success',
-                navigateToResource: vi.fn(),
-                getResourceLink: vi.fn()
-            });
+            }));
 
             const {container} = renderWithRouter(
                 <HalLinksSection/>

@@ -5,7 +5,7 @@
 
 import {type ReactElement, type ReactNode} from 'react';
 import type {HalFormsTemplate} from '../../api';
-import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {ErrorDisplay, Spinner} from '../UI';
 import {HalFormsForm, type RenderFormCallback} from './halforms';
 import {toFormValidationError} from '../../api/hateoas.ts';
@@ -53,14 +53,14 @@ export const HalFormDisplay = ({
                                    showCloseButton = true,
                                    customLayout,
                                }: HalFormDisplayProps): ReactElement => {
-    const {refetch} = useHalRoute();
+    const {route} = useHalPageData();
     const {invalidateAllCaches} = useFormCacheInvalidation();
 
     const {mutate: submitForm, isPending: isSubmitting, error: rawError} = useAuthorizedMutation({
         method: template.method || 'POST',
         onSuccess: async () => {
             await invalidateAllCaches();
-            await refetch();
+            await route.refetch();
             onSubmitSuccess?.();
             onClose();
         },

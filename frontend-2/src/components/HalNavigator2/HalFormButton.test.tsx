@@ -4,13 +4,48 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {HalFormButton} from './HalFormButton.tsx';
-import {HalRouteContext, type HalRouteContextValue} from '../../contexts/HalRouteContext.tsx';
 import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
 import {HalFormsPageLayout} from './HalFormsPageLayout.tsx';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {vi} from 'vitest';
+
+vi.mock('../../hooks/useHalPageData', () => ({
+	useHalPageData: vi.fn(),
+}));
+
+const createMockPageData = (resourceData: HalResponse | null, pathname: string = '/members/123') => ({
+	resourceData,
+	isLoading: false,
+	error: null,
+	isAdmin: false,
+	route: {
+		pathname,
+		navigateToResource: vi.fn(),
+		refetch: async () => {},
+		queryState: 'success',
+		getResourceLink: vi.fn(),
+	},
+	actions: {
+		handleNavigateToItem: vi.fn(),
+	},
+	getLinks: vi.fn(() => undefined),
+	getTemplates: vi.fn(() => undefined),
+	hasEmbedded: vi.fn(() => false),
+	getEmbeddedItems: vi.fn(() => []),
+	isCollection: vi.fn(() => false),
+	hasLink: vi.fn(() => false),
+	hasTemplate: vi.fn(() => false),
+	hasForms: vi.fn(() => false),
+	getPageMetadata: vi.fn(() => undefined),
+});
+
+beforeEach(() => {
+	const mockUseHalPageData = vi.mocked(useHalPageData);
+	mockUseHalPageData.mockReturnValue(createMockPageData(null) as any);
+});
 
 // Mock dependencies
 vi.mock('../../api/klabisUserManager', () => ({
@@ -61,32 +96,22 @@ describe('HalFormButton Component', () => {
         vi.clearAllMocks();
     });
 
-    const createMockContext = (resourceData: HalResponse | null): HalRouteContextValue => ({
-        resourceData,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-        pathname: '/members/123',
-        queryState: 'success',
-        navigateToResource: vi.fn(),
-        getResourceLink: vi.fn()
-    });
-
-    const renderWithContext = (
+    const renderWithPageData = (
         ui: React.ReactElement,
-        contextValue: HalRouteContextValue,
+        pageData: any,
         initialEntries: string[] = ['/members/123']
     ) => {
+        const mockUseHalPageData = vi.mocked(useHalPageData);
+        mockUseHalPageData.mockReturnValue(pageData);
+
         return render(
             <QueryClientProvider client={queryClient}>
                 <MemoryRouter initialEntries={initialEntries}>
-                    <HalRouteContext.Provider value={contextValue}>
-                        <HalFormProvider>
-                            <HalFormsPageLayout>
-                                {ui}
-                            </HalFormsPageLayout>
-                        </HalFormProvider>
-                    </HalRouteContext.Provider>
+                    <HalFormProvider>
+                        <HalFormsPageLayout>
+                            {ui}
+                        </HalFormsPageLayout>
+                    </HalFormProvider>
                 </MemoryRouter>
             </QueryClientProvider>
         );
@@ -94,10 +119,9 @@ describe('HalFormButton Component', () => {
 
     describe('Template Existence Check', () => {
         it('should render nothing when resourceData is null', () => {
-            const contextValue = createMockContext(null);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(null)
             );
             // Button should not be rendered when no template exists
             expect(screen.queryByTestId('form-template-button-create')).not.toBeInTheDocument();
@@ -108,10 +132,9 @@ describe('HalFormButton Component', () => {
                 id: 1,
                 name: 'Test Resource',
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             // Button should not be rendered when _templates is undefined
             expect(screen.queryByTestId('form-template-button-create')).not.toBeInTheDocument();
@@ -125,10 +148,9 @@ describe('HalFormButton Component', () => {
                     update: mockHalFormsTemplate({title: 'Update'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             // Button should not be rendered when template doesn't exist
             expect(screen.queryByTestId('form-template-button-create')).not.toBeInTheDocument();
@@ -142,10 +164,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create New'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             expect(screen.getByRole('button', {name: /create new/i})).toBeInTheDocument();
         });
@@ -159,10 +180,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create Member'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             expect(screen.getByText('Create Member')).toBeInTheDocument();
         });
@@ -174,10 +194,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: undefined}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             expect(screen.getByText('create')).toBeInTheDocument();
         });
@@ -189,10 +208,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create Member'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             const button = screen.getByRole('button');
             expect(button).toHaveAttribute('aria-label', 'Select Create Member form');
@@ -205,10 +223,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             expect(screen.getByTestId('form-template-button-create')).toBeInTheDocument();
         });
@@ -224,11 +241,11 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
+            // createMockPageData(resourceData) replaced with createMockPageData call below
 
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
 
             // Initially no modal should be visible
@@ -250,10 +267,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
 
             // Modal should not be visible initially
@@ -276,10 +292,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
 
             // Open modal
@@ -304,13 +319,13 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
+            // createMockPageData(resourceData) replaced with createMockPageData call below
 
             const customLayout = <div>Custom Form Layout</div>;
 
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
 
             const button = screen.getByRole('button', {name: /create/i});
@@ -328,13 +343,13 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
+            // createMockPageData(resourceData) replaced with createMockPageData call below
 
             const customLayout = (_renderField: any) => <div>Custom Callback Layout</div>;
 
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true} customLayout={customLayout}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
 
             const button = screen.getByRole('button', {name: /create/i});
@@ -353,10 +368,9 @@ describe('HalFormButton Component', () => {
                     edit: mockHalFormsTemplate({title: 'Edit'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="edit" modal={false}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             expect(screen.getByRole('button', {name: /edit/i})).toBeInTheDocument();
         });
@@ -374,10 +388,9 @@ describe('HalFormButton Component', () => {
                     }),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="edit" modal={false}/>,
-                contextValue,
+                createMockPageData(resourceData),
                 ['/members/123'] // Initial entry
             );
 
@@ -399,10 +412,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={false}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
 
             const button = screen.getByRole('button', {name: /create/i});
@@ -425,10 +437,9 @@ describe('HalFormButton Component', () => {
                     }),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="createEvent" modal={false}/>,
-                contextValue,
+                createMockPageData(resourceData),
                 ['/members/123']
             );
 
@@ -449,10 +460,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             expect(screen.getByRole('button')).toBeInTheDocument();
         });
@@ -464,10 +474,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create New Member'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
             const button = screen.getByRole('button');
             expect(button).toHaveAttribute('title', 'Create New Member');
@@ -483,10 +492,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>,
-                contextValue
+                createMockPageData(resourceData)
             );
 
             // Click button to request form
@@ -505,10 +513,9 @@ describe('HalFormButton Component', () => {
                     edit: mockHalFormsTemplate({title: 'Edit'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="edit" modal={false}/>,
-                contextValue,
+                createMockPageData(resourceData),
                 ['/members/123?form=edit'] // Start with form query param
             );
 
@@ -529,12 +536,12 @@ describe('HalFormButton Component', () => {
                     edit: mockHalFormsTemplate({title: 'Edit'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
+            // createMockPageData(resourceData) replaced with createMockPageData call below
 
             // Start with URL param for inline form
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="edit" modal={false}/>,
-                contextValue,
+                createMockPageData(resourceData),
                 ['/members/123?form=edit']
             );
 
@@ -554,10 +561,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create"/>, // No modal prop specified
-                contextValue
+                createMockPageData(resourceData)
             );
 
             const button = screen.getByRole('button', {name: /create/i});
@@ -575,10 +581,9 @@ describe('HalFormButton Component', () => {
                     create: mockHalFormsTemplate({title: 'Create'}),
                 },
             };
-            const contextValue = createMockContext(resourceData);
-            renderWithContext(
+            renderWithPageData(
                 <HalFormButton name="create" modal={true}/>, // No customLayout
-                contextValue
+                createMockPageData(resourceData)
             );
 
             const button = screen.getByRole('button', {name: /create/i});

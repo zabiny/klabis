@@ -10,7 +10,7 @@
 
 import {type ReactElement, type ReactNode} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {useHalRoute} from '../../contexts/HalRouteContext.tsx';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
 import type {RenderFormCallback} from './halforms';
@@ -50,7 +50,7 @@ export interface HalFormButtonProps {
  * <HalFormButton name="edit" modal={false} />
  */
 export function HalFormButton({name, modal = true, customLayout}: HalFormButtonProps): ReactElement | null {
-    const {resourceData, pathname} = useHalRoute();
+    const {resourceData, route} = useHalPageData();
     const navigate = useNavigate();
     const {requestForm} = useHalForm();
 
@@ -71,7 +71,7 @@ export function HalFormButton({name, modal = true, customLayout}: HalFormButtonP
             });
         } else {
             // Display form inline on current page (target URL only used for form data/submission)
-            navigate(`${pathname}?form=${name}`);
+            navigate(`${route.pathname}?form=${name}`);
         }
     };
 

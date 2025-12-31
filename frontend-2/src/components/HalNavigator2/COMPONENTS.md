@@ -7,7 +7,7 @@ implementují **customizované stránky bez GenericHalPage**.
 
 1. [Architektura](#architektura)
 2. [Úvod](#úvod)
-3. [useHalRoute hook](#usehalroute-hook)
+3. [useHalPageData hook](#usehalpageddata-hook)
 4. [Komponenty pro formuláře](#komponenty-pro-formuláře)
     - [HalFormButton](#1-halformbutton)
     - [HalFormsSection](#2-halformssection)
@@ -102,77 +102,103 @@ layout a potřebují vybraným komponentám říci, která data zobrazit.
 ```
 HalRouteProvider (v App.tsx)
   ↓
-useHalRoute() - poskytuje resourceData
+useHalPageData() - poskytuje resourceData, route, actions a helper metody
   ↓
 HalFormButton, HalFormsSection, HalLinksSection - komponenty
 ```
 
 ---
 
-## useHalRoute hook
+## useHalPageData hook
 
-Hook, který poskytuje aktuální HAL resource data a související metadata.
+Hook, který kombinuje `useHalRoute`, `useHalActions` a `useIsAdmin`, poskytující unified rozhraní pro HAL resource data, akce a admin stav.
 
 ### Signatura
 
 ```typescript
-const useHalRoute = (): HalRouteContextValue => { ...
+const useHalPageData<T extends HalResponse = HalResponse>(): UseHalPageDataReturn<T> => { ...
 }
 ```
 
-### HalRouteContextValue interface
+### UseHalPageDataReturn interface
 
 ```typescript
-interface HalRouteContextValue {
-    /** Fetched HAL resource data from /api + pathname */
-    resourceData: HalResponse | null;
+interface UseHalPageDataReturn<T extends HalResponse = HalResponse> {
+    // --- Top-level properties (most commonly used) ---
 
-    /** Loading state while fetching from API */
+    /** The fetched HAL resource data */
+    resourceData: T | null;
+
+    /** Combined loading state (true if ANY underlying hook is loading) */
     isLoading: boolean;
 
-    /** Error state if fetch failed */
+    /** Error from fetching resource data */
     error: Error | null;
 
-    /** Manual refetch function for updating data after form submissions */
-    refetch: () => Promise<void>;
+    /** Whether the current user is an admin */
+    isAdmin: boolean;
 
-    /** Current pathname being displayed */
-    pathname: string;
+    // --- Grouped properties (less common) ---
 
-    /** React Query query state */
-    queryState: 'idle' | 'pending' | 'success' | 'error';
+    /** Route-related properties */
+    route: {
+        pathname: string;
+        navigateToResource: (resource: HalResponse | Link) => void;
+        refetch: () => Promise<void>;
+        queryState: 'idle' | 'pending' | 'success' | 'error';
+        getResourceLink: (linkName?: string) => Link | null;
+    };
+
+    /** Action-related properties */
+    actions: {
+        handleNavigateToItem: (href: string) => void;
+    };
+
+    // --- Helper methods (common page patterns) ---
+
+    getLinks: () => Record<string, HalResourceLinks> | undefined;
+    getTemplates: () => Record<string, HalFormsTemplate> | undefined;
+    hasEmbedded: () => boolean;
+    getEmbeddedItems: () => unknown[];
+    isCollection: () => boolean;
+    hasLink: (linkName: string) => boolean;
+    hasTemplate: (templateName: string) => boolean;
+    hasForms: () => boolean;
+    getPageMetadata: () => PageMetadata | undefined;
 }
 ```
 
 ### Použití
 
 ```typescript
-import {useHalRoute} from '../contexts/HalRouteContext';
+import {useHalPageData} from '../hooks/useHalPageData';
 
 export const MyPage = () => {
-    const {resourceData, isLoading, error, pathname, refetch} = useHalRoute();
+    const {resourceData, isLoading, error, route, isAdmin} = useHalPageData();
 
-    if (isLoading) return <Spinner / >;
-    if (error) return <Alert severity = "error" > {error.message} < /Alert>;
+    if (isLoading) return <Spinner />;
+    if (error) return <Alert severity="error">{error.message}</Alert>;
 
     return (
         <div>
-            {/* Tvůj obsah */}
-        < /div>
+            <h1>Pathname: {route.pathname}</h1>
+            {isAdmin && <AdminPanel />}
+        </div>
     );
 };
 ```
 
-### Kdy volat `refetch()`
+### Kdy volat `route.refetch()`
 
-`refetch()` se automaticky volá v `HalFormDisplay` po úspěšném odeslání formuláře. **Ruční volání je potřeba, když:**
+`route.refetch()` se automaticky volá v `HalFormDisplay` po úspěšném odeslání formuláře. **Ruční volání je potřeba, když:**
 
 - Chceš načíst data z API po nějaké akcí (např. po kliknutí na tlačítko mimo formulář)
 - Aktualizuješ data v rámci customizované logiky
 
 ```typescript
 const handleManualRefresh = async () => {
-    await refetch();
+    const {route} = useHalPageData();
+    await route.refetch();
     // resourceData jsou nyní aktualizovaná
 };
 ```
@@ -249,27 +275,19 @@ modal=true?
 import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
 
 export const MemberDetailsPage = () => {
-    const {resourceData} = useHalRoute();
+    const {resourceData} = useHalPageData();
 
     return (
         <div>
-            <h1>Detail
-    člena < /h1>
+            <h1>Detail člena</h1>
 
-    {/* Tlačítko se zobrazí POUZE pokud v _templates existuje "editMember" */
-    }
-    <HalFormButton name = "editMember"
-    modal = {true}
-    />
+            {/* Tlačítko se zobrazí POUZE pokud v _templates existuje "editMember" */}
+            <HalFormButton name="editMember" modal={true} />
 
-    {/* Formulář se zobrazí inline s query param ?form=updateAddress */
-    }
-    <HalFormButton name = "updateAddress"
-    modal = {false}
-    />
-    < /div>
-)
-    ;
+            {/* Formulář se zobrazí inline s query param ?form=updateAddress */}
+            <HalFormButton name="updateAddress" modal={false} />
+        </div>
+    );
 };
 ```
 
@@ -499,29 +517,19 @@ import {HalFormsPageLayout} from '../components/HalNavigator2/HalFormsPageLayout
 import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
 
 export const EventDetailsPage = () => {
-    const {resourceData} = useHalRoute();
+    const {resourceData} = useHalPageData();
 
     return (
         <HalFormsPageLayout>
             <div>
-                <h1>Detail
-    akce < /h1>
-    < p > Název
-:
-    {
-        resourceData?.name
-    }
-    </p>
+                <h1>Detail akce</h1>
+                <p>Název: {resourceData?.name}</p>
 
-    {/* Tlačítko v non-modal režimu */
-    }
-    <HalFormButton name = "editEvent"
-    modal = {false}
-    />
-    < /div>
-    < /HalFormsPageLayout>
-)
-    ;
+                {/* Tlačítko v non-modal režimu */}
+                <HalFormButton name="editEvent" modal={false} />
+            </div>
+        </HalFormsPageLayout>
+    );
 };
 ```
 
@@ -662,7 +670,7 @@ Ale můžeš ji použít, pokud potřebuješ **zcela customizovaný formulářov
 import {HalFormDisplay} from '../components/HalNavigator2/HalFormDisplay';
 
 export const CustomFormWorkflow = () => {
-    const {resourceData, pathname, refetch} = useHalRoute();
+    const {resourceData, route} = useHalPageData();
     const [showForm, setShowForm] = useState(false);
 
     if (!resourceData || !resourceData._templates?.customForm) {
@@ -671,40 +679,26 @@ export const CustomFormWorkflow = () => {
 
     return (
         <>
-            <button onClick = {()
-=>
-    setShowForm(true)
-}>
-    Zobrazit
-    custom
-    formulář
-    < /button>
+            <button onClick={() => setShowForm(true)}>
+                Zobrazit custom formulář
+            </button>
 
-    {
-        showForm && (
-            <HalFormDisplay
-                template = {resourceData._templates.customForm}
-        templateName = "customForm"
-        resourceData = {resourceData}
-        pathname = {pathname}
-        onClose = {()
-    =>
-        setShowForm(false)
-    }
-        onSubmitSuccess = {()
-    =>
-        {
-            setShowForm(false);
-            // Další custom logika
-        }
-    }
-        showCloseButton = {true}
-        />
-    )
-    }
-    </>
-)
-    ;
+            {showForm && (
+                <HalFormDisplay
+                    template={resourceData._templates.customForm}
+                    templateName="customForm"
+                    resourceData={resourceData}
+                    pathname={route.pathname}
+                    onClose={() => setShowForm(false)}
+                    onSubmitSuccess={() => {
+                        setShowForm(false);
+                        // Další custom logika
+                    }}
+                    showCloseButton={true}
+                />
+            )}
+        </>
+    );
 };
 ```
 
@@ -724,27 +718,22 @@ Tuto komponentu používej, pokud máš vlastní workflow a chceš:
 import {HalFormTemplateButton} from '../components/HalNavigator2/HalFormTemplateButton';
 
 export const CustomFormsUI = () => {
-    const {resourceData} = useHalRoute();
+    const {resourceData} = useHalPageData();
 
     return (
-        <div className = "custom-layout" >
+        <div className="custom-layout">
             {resourceData?._templates &&
             Object.entries(resourceData._templates).map(([name, template]) => (
                 <HalFormTemplateButton
-                    key = {name}
-    template = {template}
-    templateName = {name}
-    onClick = {()
-=>
-    handleFormClick(name)
-}
-    className = "my-custom-class"
-        / >
-))
-}
-    </div>
-)
-    ;
+                    key={name}
+                    template={template}
+                    templateName={name}
+                    onClick={() => handleFormClick(name)}
+                    className="my-custom-class"
+                />
+            ))}
+        </div>
+    );
 };
 ```
 
@@ -1013,14 +1002,14 @@ import {KlabisTable} from '../components/KlabisTable';
 ### Příklad 1: Customizovaná stránka s detail view + formuláře
 
 ```typescript
-import {useHalRoute} from '../contexts/HalRouteContext';
+import {useHalPageData} from '../hooks/useHalPageData';
 import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
 import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection';
 import {useNavigate} from 'react-router-dom';
 import {extractNavigationPath} from '../utils/navigationPath';
 
 export const CalendarEventPage = () => {
-    const {resourceData, isLoading, error} = useHalRoute();
+    const {resourceData, isLoading, error, actions} = useHalPageData();
     const navigate = useNavigate();
 
     if (isLoading) return <Spinner / >;
@@ -1077,10 +1066,10 @@ export const CalendarEventPage = () => {
 ```typescript
 import {HalFormsPageLayout} from '../components/HalNavigator2/HalFormsPageLayout';
 import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
-import {useHalRoute} from '../contexts/HalRouteContext';
+import {useHalPageData} from '../hooks/useHalPageData';
 
 export const EventEditablePage = () => {
-    const {resourceData} = useHalRoute();
+    const {resourceData} = useHalPageData();
     const event = resourceData as any;
 
     return (
@@ -1119,10 +1108,10 @@ Co se stane:
 import {HalFormsPageLayout} from '../components/HalNavigator2/HalFormsPageLayout';
 import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
 import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
-import {useHalRoute} from '../contexts/HalRouteContext';
+import {useHalPageData} from '../hooks/useHalPageData';
 
 export const MemberDetailPage = () => {
-    const {resourceData} = useHalRoute();
+    const {resourceData} = useHalPageData();
 
     return (
         <HalFormsPageLayout>
@@ -1170,7 +1159,7 @@ export const MemberDetailPage = () => {
 
 1. **Vždy zkontroluj `isLoading` a `error`**
    ```typescript
-   const { resourceData, isLoading, error } = useHalRoute();
+   const { resourceData, isLoading, error } = useHalPageData();
 
    if (isLoading) return <Spinner />;
    if (error) return <Alert severity="error">{error.message}</Alert>;
@@ -1186,9 +1175,10 @@ export const MemberDetailPage = () => {
    <HalLinksSection links={_links} onNavigate={handleNav} />
    ```
 
-4. **Volej `refetch()` když potřebuješ ručně aktualizovat data**
+4. **Volej `route.refetch()` když potřebuješ ručně aktualizovat data**
    ```typescript
-   await refetch();
+   const { route } = useHalPageData();
+   await route.refetch();
    ```
 
 5. **Používej `useNavigate` + `extractNavigationPath` pro HAL linky**
@@ -1207,7 +1197,7 @@ export const MemberDetailPage = () => {
     - Použij `HalFormButton` nebo `HalFormsPageLayout`
 
 2. **Nezapomeň na `HalRouteProvider` v App.tsx**
-    - Bez něj `useHalRoute()` vrátí error!
+    - Bez něj `useHalPageData()` vrátí error!
 
 3. **Neobjevuj query parametry ručně**
     - Nech `HalFormsPageLayout` aby je řídil
@@ -1215,11 +1205,11 @@ export const MemberDetailPage = () => {
 4. **Nepreskakuj error handling**
    ```typescript
    // ❌ BAD
-   const { resourceData } = useHalRoute();
+   const { resourceData } = useHalPageData();
    return <div>{resourceData.field}</div>; // Crash!
 
    // ✅ GOOD
-   const { resourceData, isLoading, error } = useHalRoute();
+   const { resourceData, isLoading, error } = useHalPageData();
    if (isLoading) return <Spinner />;
    if (error) return <Alert />;
    return <div>{resourceData?.field}</div>;

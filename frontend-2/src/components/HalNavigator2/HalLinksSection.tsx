@@ -6,7 +6,7 @@
 
 import {type ReactElement, useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {useHalRoute} from '../../contexts/HalRouteContext';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {HAL_LINK_RELS} from '../../constants/hal.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {extractNavigationPath} from '../../utils/navigationPath';
@@ -41,7 +41,7 @@ export function HalLinksSection({
 									links: propsLinks,
 									onNavigate: propsOnNavigate
 								}: HalLinksSectionProps): ReactElement | null {
-	const {resourceData} = useHalRoute();
+	const {resourceData} = useHalPageData();
 	const routerNavigate = useNavigate();
 
 	// Use provided links or fallback to resourceData._links
