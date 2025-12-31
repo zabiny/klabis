@@ -1,14 +1,11 @@
 import {type ReactElement, useState} from 'react';
-import {useHalRoute} from '../contexts/HalRouteContext';
 import type {HalCollectionResponse, HalResponse} from '../api';
 import {Alert, Modal, Spinner} from '../components/UI';
 import {JsonPreview} from '../components/JsonPreview';
 import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection.tsx';
 import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection.tsx';
-import {useHalActions} from '../hooks/useHalActions';
-import {useIsAdmin} from '../hooks/useIsAdmin';
+import {useHalPageData} from '../hooks/useHalPageData';
 import {TABLE_HEADERS, UI_MESSAGES} from '../constants/messages';
-import {isHalResponse} from "../components/HalNavigator2/halforms/utils.ts";
 import NotFoundPage from "./NotFoundPage.tsx";
 
 /**
@@ -21,7 +18,7 @@ import NotFoundPage from "./NotFoundPage.tsx";
  * Used as a fallback for routes that don't have specialized pages
  */
 export const GenericHalPage = (): ReactElement => {
-    const {resourceData, isLoading, error, pathname} = useHalRoute();
+    const {resourceData, isLoading, error, isCollection, route} = useHalPageData();
 
     if (isLoading) {
         return (
@@ -38,7 +35,7 @@ export const GenericHalPage = (): ReactElement => {
         return (
             <Alert severity="error">
                 <div className="space-y-2">
-                    <p>Nepodařilo se načíst data z {pathname}</p>
+                    <p>Nepodařilo se načíst data z {route.pathname}</p>
                     <p className="text-sm text-gray-600">{error.message}</p>
                 </div>
             </Alert>
@@ -53,12 +50,9 @@ export const GenericHalPage = (): ReactElement => {
         );
     }
 
-    // Determine if the resource is a collection or a single item
-    const isCollection = isHalCollection(resourceData);
-
     return (
         <div className="p-4">
-            {isCollection ? (
+            {isCollection() ? (
                 <GenericCollectionDisplay data={resourceData as HalCollectionResponse}/>
             ) : (
                 <GenericItemDisplay data={resourceData}/>
@@ -66,20 +60,6 @@ export const GenericHalPage = (): ReactElement => {
         </div>
     );
 };
-
-/**
- * Check if a HAL response is a collection
- */
-function isHalCollection(data: unknown): data is HalCollectionResponse {
-    return isHalResponse(data) && ((data?.page !== undefined) || (data?._embedded !== undefined && !isEmptyObject(data._embedded)));
-}
-
-/**
- * Check if an object is empty
- */
-function isEmptyObject(obj: unknown): boolean {
-    return typeof obj === 'object' && Object.keys(obj || {}).length === 0;
-}
 
 /**
  * Strip HAL/HAL+JSON meta attributes from an object
@@ -127,8 +107,7 @@ interface GenericCollectionDisplayProps {
 
 const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactElement => {
     const [selectedItemForJsonView, setSelectedItemForJsonView] = useState<Record<string, unknown> | null>(null);
-    const {handleNavigateToItem} = useHalActions();
-    const {isAdmin} = useIsAdmin();
+    const {actions, isAdmin} = useHalPageData();
     const items = Object.values(data._embedded || {}).flat();
     const attributes = items.length > 0 ? getCollectionAttributes(items) : [];
 
@@ -197,7 +176,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
                                     </button>
                                     {item._links?.self?.href && (
                                         <button
-                                            onClick={() => handleNavigateToItem(item._links.self.href)}
+                                            onClick={() => actions.handleNavigateToItem(item._links.self.href)}
                                             className="text-blue-600 hover:underline dark:text-blue-400 bg-none border-none cursor-pointer"
                                         >
                                             Zobrazit
@@ -217,7 +196,7 @@ const GenericCollectionDisplay = ({data}: GenericCollectionDisplayProps): ReactE
 
             <HalLinksSection
                 links={data._links}
-                onNavigate={handleNavigateToItem}
+                onNavigate={actions.handleNavigateToItem}
             />
 
             <HalFormsSection templates={data._templates}/>
@@ -258,8 +237,7 @@ interface GenericItemDisplayProps {
 }
 
 const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
-    const {handleNavigateToItem} = useHalActions();
-    const {isAdmin} = useIsAdmin();
+    const {actions, isAdmin} = useHalPageData();
 
     return (
         <div className="space-y-4">
@@ -297,7 +275,7 @@ const GenericItemDisplay = ({data}: GenericItemDisplayProps): ReactElement => {
 
             <HalLinksSection
                 links={data._links}
-                onNavigate={handleNavigateToItem}
+                onNavigate={actions.handleNavigateToItem}
             />
 
             <HalFormsSection templates={data._templates}/>
