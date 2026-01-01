@@ -74,6 +74,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
     if (currentFormRequest.modal) {
         return (
             <>
+                <div className="space-y-6">{children}</div>
                 <ModalOverlay isOpen={true} onClose={handleCloseForm}>
                     <HalFormDisplay
                         template={template}
@@ -85,7 +86,6 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                         customLayout={currentFormRequest.customLayout}
                     />
                 </ModalOverlay>
-                <div className="space-y-6">{children}</div>
             </>
         );
     }
