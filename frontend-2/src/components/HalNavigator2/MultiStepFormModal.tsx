@@ -58,8 +58,6 @@ export interface MultiStepFormModalProps {
     backButtonLabel?: string;
     /** Text for submit button (default: "Odeslat") */
     submitButtonLabel?: string;
-    /** Text for cancel button (default: "Zrušit") */
-    cancelButtonLabel?: string;
     /** Show step numbers in title (default: true) */
     showStepNumbers?: boolean;
 }
@@ -77,7 +75,6 @@ export const MultiStepFormModal = ({
                                        nextButtonLabel = 'Další',
                                        backButtonLabel = 'Zpět',
                                        submitButtonLabel = 'Odeslat',
-                                       cancelButtonLabel = 'Zrušit',
                                        showStepNumbers = true,
                                    }: MultiStepFormModalProps) => {
     const contextValue = useContext(HalFormsFormContext);
@@ -114,7 +111,7 @@ export const MultiStepFormModal = ({
         }
 
         // Validate the entire form to populate errors
-        const errors = await formik.validateForm();
+        const errors = (await formik.validateForm()) as Record<string, any>;
 
         // Check if any of the fields for this step have errors
         const hasErrors = step.fields.some(field => errors[field]);
