@@ -224,11 +224,14 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
 
                 let formContent: ReactElement;
                 if (children) {
+                    // Important: formikIsSubmitting and externalIsSubmitting must be in dependencies
+                    // so that when submission errors occur, the memoized renderField is recalculated.
+                    // Without them, the submit button would remain disabled even after an error response.
                     const contextValue: HalFormsFormContextType = useMemo(
                         () => ({
                             renderField: createRenderFieldCallback()
                         }),
-                        [template, errors, touched, fieldsFactory]
+                        [template, errors, touched, fieldsFactory, formikIsSubmitting, externalIsSubmitting]
                     );
                     formContent = <HalFormsFormContext value={contextValue}>
                         {children}
@@ -272,4 +275,4 @@ interface HalFormsFormContextType {
     renderField: FieldRenderFunc
 }
 
-export {HalFormsForm};
+export {HalFormsForm, HalFormsFormContext};
