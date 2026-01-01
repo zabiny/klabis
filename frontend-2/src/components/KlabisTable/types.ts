@@ -1,48 +1,61 @@
 import React from "react";
-import {type PaginatedApiParams, type SortDirection} from "../../api";
+import {type SortDirection} from "../../api";
 
+// Cell rendering props
 export interface TableCellRenderProps {
     item: Record<string, unknown>;
     column: string;
     value: unknown;
 }
 
+// Column definition component props
 export interface TableCellProps {
     column: string;
-    hidden?: boolean,
-    sortable?: boolean,
+    hidden?: boolean;
+    sortable?: boolean;
     children: React.ReactNode;
     dataRender?: (props: TableCellRenderProps) => React.ReactNode;
 }
 
-
-export interface Paging {
-    page: number,
-    rowsPerPage: number
-}
-
+// Pagination data from API
 export interface TablePageData {
-    size: number,
-    totalElements: number,
-    totalPages: number,
-    number: number
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    number: number;
 }
 
-
-export interface TableData<T> {
-    page?: TablePageData,
-    data: T[]
+// Sort state representation
+export interface SortState {
+    by: string;
+    direction: SortDirection;
 }
 
-export type FetchTableDataCallback<T> = (apiParams: PaginatedApiParams) => Promise<TableData<T>>;
-
-
+// Pure UI table component props
+// This is the pure presentation component with no data fetching
 export interface KlabisTableProps<T extends Record<string, unknown>> {
-    fetchData: FetchTableDataCallback<T>;
-    children: React.ReactNode;
+    // Data (required - from parent)
+    data: T[];
+    page?: TablePageData;
+
+    // Error state
+    error?: Error | null;
+
+    // User interaction callbacks
+    onSortChange?: (column: string, direction: SortDirection) => void;
+    onPageChange?: (page: number) => void;
+    onRowsPerPageChange?: (rowsPerPage: number) => void;
     onRowClick?: (item: T) => void;
+
+    // UI configuration
+    children: React.ReactNode;
     defaultOrderBy?: string;
     defaultOrderDirection?: SortDirection;
-    defaultRowsPerPage?: number;
     emptyMessage?: string;
+    rowsPerPageOptions?: number[];
+
+    // Controlled state (from parent)
+    rowsPerPage?: number;
+    currentPage?: number;
+    currentSort?: SortState;
 }

@@ -1,14 +1,11 @@
 package club.klabis.oris.infrastructure.restapi;
 
-import club.klabis.events.domain.Event;
 import club.klabis.members.domain.RegistrationNumber;
-import club.klabis.oris.application.OrisEventsImporter;
-import club.klabis.oris.application.OrisIntegrationComponent;
-import club.klabis.oris.application.dto.OrisEventListFilter;
 import club.klabis.oris.infrastructure.apiclient.OrisApiClient;
 import club.klabis.oris.infrastructure.restapi.dto.ORISUserInfoApiDto;
 import club.klabis.shared.ConversionService;
 import club.klabis.shared.RFC7807ErrorResponseApiDto;
+import club.klabis.shared.application.OrisIntegrationComponent;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
@@ -28,11 +25,7 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.client.HttpClientErrorException;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @Tag(name = "ORIS", description = "Integration endpoints with ORIS - https://oris.orientacnisporty.cz/")
 @ApiController(openApiTagName = "ORIS", securityScopes = {"oris"})
@@ -40,12 +33,10 @@ import java.util.List;
 class OrisProxyController {
 
     private final OrisApiClient orisApiClient;
-    private final OrisEventsImporter orisEventsImporter;
     private final ConversionService conversionService;
 
-    public OrisProxyController(OrisApiClient orisApiClient, OrisEventsImporter orisEventsImporter, ConversionService conversionService) {
+    public OrisProxyController(OrisApiClient orisApiClient, ConversionService conversionService) {
         this.orisApiClient = orisApiClient;
-        this.orisEventsImporter = orisEventsImporter;
         this.conversionService = conversionService;
     }
 
@@ -86,45 +77,6 @@ class OrisProxyController {
                 ORISUserInfoApiDto.class);
         userInfoApiDto.setRegistrationNumber(RegistrationNumber.ofRegistrationId(regNum).toRegistrationId());
         return ResponseEntity.ok(userInfoApiDto);
-    }
-
-
-    @Operation(
-            operationId = "synchronizeAllEventsWithOris",
-            summary = "Triggers events synchronization with ORIS",
-            description = "#### Required authorization requires `system:admin` grant ",
-            tags = {"ORIS"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Successfully triggered events synchronization"),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed"),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation")
-            }
-    )
-    @PostMapping("/oris/synchronizeEvents")
-    @HasGrant(ApplicationGrant.SYSTEM_ADMIN)
-    public ResponseEntity<Void> synchronizeAllEventsWithOris() {
-        orisEventsImporter.loadOrisEvents(OrisEventListFilter.createDefault()
-                .withDateFrom(LocalDate.now().minusMonths(3))
-                .withDateTo(LocalDate.now().plusMonths(6)));
-        return ResponseEntity.ok(null);
-    }
-
-    @Operation(
-            operationId = "SynchronizeEventWithOris",
-            summary = "Triggers events synchronization with ORIS",
-            description = "#### Required authorization requires `system:admin` grant ",
-            tags = {"ORIS"},
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Successfully triggered events synchronization"),
-                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed"),
-                    @ApiResponse(responseCode = "403", description = "User is not allowed to perform requested operation")
-            }
-    )
-    @PostMapping("/events/{eventId}/synchronizeWithOris")
-    @HasGrant(ApplicationGrant.SYSTEM_ADMIN)
-    public ResponseEntity<Void> synchronizeEventWithOris(@PathVariable("eventId") Event.Id eventId) {
-        orisEventsImporter.synchronizeEvents(List.of(eventId));
-        return ResponseEntity.ok(null);
     }
 
     @ExceptionHandler(HttpClientErrorException.NotFound.class)

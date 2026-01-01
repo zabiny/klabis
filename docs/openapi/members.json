@@ -1,13 +1,14 @@
 {
   "openapi": "3.1.0",
-  "info": {
-    "title": "OpenAPI definition",
-    "version": "v0"
-  },
   "servers": [
     {
       "url": "http://localhost:8080",
       "description": "Generated server url"
+    }
+  ],
+  "security": [
+    {
+      "klabis_auth": []
     }
   ],
   "tags": [
@@ -32,8 +33,7 @@
             "description": "ID of member",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -43,22 +43,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMembershipSuspensionInfoApiDto"
+                  "$ref": "#/components/schemas/MembershipSuspensionInfoApiDto"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMembershipSuspensionInfoApiDto"
+                  "$ref": "#/components/schemas/MembershipSuspensionInfoApiDto"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMembershipSuspensionInfoApiDto"
+                  "$ref": "#/components/schemas/MembershipSuspensionInfoApiDto"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMembershipSuspensionInfoApiDto"
+                  "$ref": "#/components/schemas/MembershipSuspensionInfoApiDto"
                 }
               }
             }
@@ -86,8 +86,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -106,8 +106,7 @@
             "description": "ID of member",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -178,8 +177,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -194,11 +193,10 @@
         "parameters": [
           {
             "name": "memberId",
-            "in": "query",
+            "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -209,8 +207,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -230,8 +228,7 @@
             "description": "ID of member",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -241,22 +238,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEditMyDetailsForm"
+                  "$ref": "#/components/schemas/EditMyDetailsForm"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEditMyDetailsForm"
+                  "$ref": "#/components/schemas/EditMyDetailsForm"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEditMyDetailsForm"
+                  "$ref": "#/components/schemas/EditMyDetailsForm"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEditMyDetailsForm"
+                  "$ref": "#/components/schemas/EditMyDetailsForm"
                 }
               }
             }
@@ -304,8 +301,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -323,8 +320,7 @@
             "description": "ID of member",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -385,8 +381,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -407,8 +403,7 @@
             "description": "ID of member",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -418,22 +413,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEditAnotherMemberDetailsForm"
+                  "$ref": "#/components/schemas/EditAnotherMemberDetailsForm"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEditAnotherMemberDetailsForm"
+                  "$ref": "#/components/schemas/EditAnotherMemberDetailsForm"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEditAnotherMemberDetailsForm"
+                  "$ref": "#/components/schemas/EditAnotherMemberDetailsForm"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEditAnotherMemberDetailsForm"
+                  "$ref": "#/components/schemas/EditAnotherMemberDetailsForm"
                 }
               }
             }
@@ -481,8 +476,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -500,8 +495,7 @@
             "description": "ID of member",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -562,8 +556,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -581,22 +575,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMemberRegistrationForm"
+                  "$ref": "#/components/schemas/MemberRegistrationForm"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMemberRegistrationForm"
+                  "$ref": "#/components/schemas/MemberRegistrationForm"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMemberRegistrationForm"
+                  "$ref": "#/components/schemas/MemberRegistrationForm"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelMemberRegistrationForm"
+                  "$ref": "#/components/schemas/MemberRegistrationForm"
                 }
               }
             }
@@ -604,8 +598,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -674,8 +668,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -869,8 +863,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -891,8 +885,7 @@
             "description": "ID of member",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -945,8 +938,8 @@
         },
         "security": [
           {
-            "klabis": [
-              "members"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -955,46 +948,11 @@
   },
   "components": {
     "schemas": {
-      "Link": {
-        "type": "object",
-        "properties": {
-          "rel": {
-            "type": "string"
-          },
-          "href": {
-            "type": "string"
-          },
-          "hreflang": {
-            "type": "string"
-          },
-          "media": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "deprecation": {
-            "type": "string"
-          },
-          "profile": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
       "MembersMemberIdEditMemberInfoFormGet400ResponseAllOfValidationErrorsInnerApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "fieldName": {
             "type": "string"
@@ -1007,11 +965,8 @@
       "MembersMemberIdEditMemberInfoFormGet400ResponseApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "title": {
             "type": "string",
@@ -1022,7 +977,7 @@
             "format": "int32",
             "description": "error status value"
           },
-          "detail": {
+          "relatedItem": {
             "type": "string",
             "description": "User friendly description of the error"
           },
@@ -1041,8 +996,8 @@
           }
         },
         "required": [
-          "detail",
           "instance",
+          "relatedItem",
           "status",
           "title"
         ]
@@ -1050,11 +1005,8 @@
       "RFC7807ErrorResponseApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "title": {
             "type": "string",
@@ -1101,11 +1053,8 @@
       "AddressApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "streetAndNumber": {
             "type": "string",
@@ -1136,11 +1085,8 @@
         "type": "object",
         "description": "At least one of email or phone value is required",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "email": {
             "type": "string",
@@ -1223,11 +1169,8 @@
       "IdentityCardApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "number": {
             "type": "string",
@@ -1243,11 +1186,8 @@
       "LegalGuardianApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "firstName": {
             "type": "string",
@@ -1274,22 +1214,16 @@
       "MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           }
         }
       },
       "MembersMemberIdEditMemberInfoFormGet403ResponseApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "title": {
             "type": "string",
@@ -1300,7 +1234,7 @@
             "format": "int32",
             "description": "error status value"
           },
-          "detail": {
+          "relatedItem": {
             "type": "string",
             "description": "User friendly description of the error"
           },
@@ -1316,8 +1250,8 @@
           }
         },
         "required": [
-          "detail",
           "instance",
+          "relatedItem",
           "status",
           "title"
         ]
@@ -1371,11 +1305,8 @@
       "MemberRegistrationsPost409ResponseApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "title": {
             "type": "string",
@@ -1386,7 +1317,7 @@
             "format": "int32",
             "description": "error status value"
           },
-          "detail": {
+          "relatedItem": {
             "type": "string",
             "description": "User friendly description of the error"
           },
@@ -1404,8 +1335,8 @@
           }
         },
         "required": [
-          "detail",
           "instance",
+          "relatedItem",
           "status",
           "title"
         ]
@@ -1489,11 +1420,8 @@
       "RegistrationNumberGet200ResponseApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "suggestedRegistrationNumber": {
             "type": "string",
@@ -1509,8 +1437,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "int32",
+            "$ref": "#/components/schemas/MemberId",
             "description": "Unique identifier for the club member"
           },
           "userId": {
@@ -1600,11 +1527,8 @@
             "type": "boolean",
             "description": "Whether the club member has completed the medic course"
           },
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           }
         },
         "required": [
@@ -1621,11 +1545,8 @@
       "LicencesApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "ob": {
             "$ref": "#/components/schemas/OBLicenceApiDto"
@@ -1638,14 +1559,20 @@
           }
         }
       },
+      "MemberId": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "OBLicenceApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "licence": {
             "type": "string",
@@ -1687,17 +1614,19 @@
       "PagedModelEntityModelMembersApiResponse": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
+          "_embedded": {
+            "type": "object",
+            "properties": {
+              "membersApiResponseList": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EntityModelMembersApiResponse"
+                }
+              }
             }
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EntityModelMembersApiResponse"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "page": {
             "$ref": "#/components/schemas/PageMetadata"
@@ -1707,11 +1636,8 @@
       "RefereeLicenceApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "licence": {
             "type": "string",
@@ -1736,11 +1662,8 @@
       "TrainerLicenceApiDto": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "licence": {
             "type": "string",
@@ -1762,7 +1685,7 @@
           "licence"
         ]
       },
-      "EntityModelMembershipSuspensionInfoApiDto": {
+      "MembershipSuspensionInfoApiDto": {
         "type": "object",
         "properties": {
           "isSuspended": {
@@ -1783,12 +1706,6 @@
             "type": "boolean",
             "description": "tells if member account should be suspended even when there are some unfinished things (canSuspend\u003dfalse)",
             "writeOnly": true
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
           }
         },
         "required": [
@@ -1822,211 +1739,53 @@
           "status"
         ]
       },
-      "EntityModelEditMyDetailsForm": {
+      "Link": {
         "type": "object",
         "properties": {
-          "identityCard": {
-            "$ref": "#/components/schemas/IdentityCardApiDto"
+          "href": {
+            "type": "string"
           },
-          "nationality": {
-            "type": "string",
-            "description": "two letter country code, ISO 3166-1 alpha-2",
-            "pattern": "^[A-Z]{2}$"
+          "hreflang": {
+            "type": "string"
           },
-          "address": {
-            "$ref": "#/components/schemas/AddressApiDto"
+          "title": {
+            "type": "string"
           },
-          "contact": {
-            "$ref": "#/components/schemas/Contact"
+          "type": {
+            "type": "string"
           },
-          "guardians": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LegalGuardianApiDto"
-            }
+          "deprecation": {
+            "type": "string"
           },
-          "siCard": {
-            "type": "integer",
-            "format": "int32",
-            "description": "SI chip used by member"
+          "profile": {
+            "type": "string"
           },
-          "bankAccount": {
-            "type": "string",
-            "description": "Bank account number of the club member IBAN"
+          "name": {
+            "type": "string"
           },
-          "dietaryRestrictions": {
-            "type": "string",
-            "description": "Dietary restrictions of the club member"
-          },
-          "drivingLicence": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "B",
-                "BE",
-                "C",
-                "D"
-              ]
-            }
-          },
-          "medicCourse": {
-            "type": "boolean",
-            "description": "Whether the club member has completed the medic course"
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
+          "templated": {
+            "type": "boolean"
           }
-        },
-        "required": [
-          "address",
-          "nationality"
-        ]
+        }
       },
-      "EntityModelEditAnotherMemberDetailsForm": {
+      "Links": {
         "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string",
-            "description": "First name of the club member",
-            "minLength": 1
-          },
-          "lastName": {
-            "type": "string",
-            "description": "Last name of the club member",
-            "minLength": 1
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "format": "date",
-            "description": "Date of birth of the club member"
-          },
-          "birthCertificateNumber": {
-            "type": "string",
-            "description": "Birth certificate number for Czech citizens",
-            "pattern": "^[0-9]{6}/[0-9]{3,4}$"
-          },
-          "nationality": {
-            "type": "string",
-            "description": "two letter country code, ISO 3166-1 alpha-2",
-            "minLength": 1,
-            "pattern": "^[A-Z]{2}$"
-          },
-          "sex": {
-            "type": "string",
-            "enum": [
-              "male",
-              "female"
-            ]
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          }
-        },
-        "required": [
-          "dateOfBirth",
-          "firstName",
-          "lastName",
-          "nationality",
-          "sex"
-        ]
-      },
-      "EntityModelMemberRegistrationForm": {
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string",
-            "description": "First name of the club member"
-          },
-          "lastName": {
-            "type": "string",
-            "description": "Last name of the club member"
-          },
-          "sex": {
-            "type": "string",
-            "enum": [
-              "male",
-              "female"
-            ]
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "format": "date",
-            "description": "Date of birth of the club member"
-          },
-          "birthCertificateNumber": {
-            "type": "string",
-            "description": "Birth certificate number for Czech citizens",
-            "pattern": "^[0-9]{6}/[0-9]{3,4}$"
-          },
-          "nationality": {
-            "type": "string",
-            "description": "two letter country code, ISO 3166-1 alpha-2",
-            "pattern": "^[A-Z]{2}$"
-          },
-          "address": {
-            "$ref": "#/components/schemas/AddressApiDto"
-          },
-          "contact": {
-            "$ref": "#/components/schemas/Contact"
-          },
-          "guardians": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LegalGuardianApiDto"
-            }
-          },
-          "siCard": {
-            "type": "integer",
-            "format": "int32",
-            "description": "SI chip used by member"
-          },
-          "bankAccount": {
-            "type": "string",
-            "description": "Bank account number of the club member IBAN",
-            "pattern": "^[A-Z]{2}[0-9]+$"
-          },
-          "registrationNumber": {
-            "type": "string",
-            "description": "ORIS registration number",
-            "pattern": "^[A-Z]{3}[0-9]{4}$"
-          },
-          "orisId": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Oris ID of registered orienteering runner"
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link"
-            }
-          }
-        },
-        "required": [
-          "address",
-          "dateOfBirth",
-          "firstName",
-          "lastName",
-          "nationality",
-          "sex"
-        ]
+        "additionalProperties": {
+          "$ref": "#/components/schemas/Link"
+        }
       }
     },
     "securitySchemes": {
-      "security_auth": {
+      "klabis_auth": {
         "type": "oauth2",
         "flows": {
           "authorizationCode": {
             "authorizationUrl": "/oauth/authorize",
             "tokenUrl": "/oauth/token",
-            "scopes": {}
+            "scopes": {
+              "openid": "openid scope",
+              "klabis": "Klabis API"
+            }
           }
         }
       }

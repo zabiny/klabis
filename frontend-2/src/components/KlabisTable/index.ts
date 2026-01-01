@@ -1,4 +1,4 @@
-export {KlabisTable} from './KlabisTable';
-export {TableCell} from './TableCell';
-export {useKlabisTableContext, KlabisTableProvider} from './KlabisTableContext';
-export * from './types';
+export {KlabisTable} from './KlabisTable'
+export {KlabisTableWithQuery, type Link} from './KlabisTableWithQuery'
+export {TableCell} from './TableCell'
+export * from './types'

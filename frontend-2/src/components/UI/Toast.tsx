@@ -32,24 +32,24 @@ export const Toast = ({toast, onClose}: ToastProps) => {
     }, [toast.id, toast.duration, onClose])
 
     const bgClass = {
-        success: 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700',
-        error: 'bg-red-50 dark:bg-red-900 border-red-200 dark:border-red-700',
-        warning: 'bg-yellow-50 dark:bg-yellow-900 border-yellow-200 dark:border-yellow-700',
-        info: 'bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-700'
+        success: 'bg-alert-success border-l-4 border-l-feedback-success border-b border-r border-feedback-success',
+        error: 'bg-alert-error border-l-4 border-l-feedback-error border-b border-r border-feedback-error',
+        warning: 'bg-alert-warning border-l-4 border-l-feedback-warning border-b border-r border-feedback-warning',
+        info: 'bg-alert-info border-l-4 border-l-feedback-info border-b border-r border-feedback-info'
     }[toast.type]
 
     const iconClass = {
-        success: 'text-green-600 dark:text-green-400',
-        error: 'text-red-600 dark:text-red-400',
-        warning: 'text-yellow-600 dark:text-yellow-400',
-        info: 'text-blue-600 dark:text-blue-400'
+        success: 'text-feedback-success',
+        error: 'text-feedback-error',
+        warning: 'text-feedback-warning',
+        info: 'text-feedback-info'
     }[toast.type]
 
     const textClass = {
-        success: 'text-green-900 dark:text-green-100',
-        error: 'text-red-900 dark:text-red-100',
-        warning: 'text-yellow-900 dark:text-yellow-100',
-        info: 'text-blue-900 dark:text-blue-100'
+        success: 'text-alert-text-success',
+        error: 'text-alert-text-error',
+        warning: 'text-alert-text-warning',
+        info: 'text-alert-text-info'
     }[toast.type]
 
     const icons = {
@@ -92,7 +92,8 @@ export const Toast = ({toast, onClose}: ToastProps) => {
     }
 
     return (
-        <div className={`flex items-start gap-3 p-4 rounded-lg border ${bgClass}`}>
+        <div
+            className={`flex items-start gap-3 p-4 rounded-md border-l-4 border-b border-r animate-slide-up ${bgClass}`}>
             <div className={`flex-shrink-0 ${iconClass}`}>{icons[toast.type]}</div>
             <div className="flex-1">
                 <p className={`text-sm font-medium ${textClass}`}>{toast.message}</p>

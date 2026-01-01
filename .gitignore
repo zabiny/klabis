@@ -16,3 +16,7 @@ backend/build/**
 backend/local.env
 **/.gradle/**
 
+/oauth2-authorizations.json
+/backend/http-client.env.json
+/frontend-2/tsconfig.tsbuildinfo
+/.vite/vitest/results.json

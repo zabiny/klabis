@@ -43,7 +43,7 @@ export const Skeleton = ({
                         width: widthStyle,
                         height: heightStyle
                     }}
-                    className={`bg-gray-200 dark:bg-gray-700 animate-pulse ${circleClass}`}
+                    className={`bg-surface-raised animate-pulse ${circleClass}`}
                 />
             ))}
         </div>

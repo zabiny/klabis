@@ -1,7 +1,7 @@
 package club.klabis.events.application;
 
 import club.klabis.events.domain.Event;
-import club.klabis.events.domain.OrisId;
+import club.klabis.events.domain.OrisEventId;
 import club.klabis.members.MemberId;
 import club.klabis.shared.application.DataRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
@@ -16,7 +16,7 @@ import java.util.Optional;
 @SecondaryPort
 public interface EventsRepository extends DataRepository<Event, Event.Id> {
 
-    Optional<Event> findByOrisId(OrisId orisId);
+    Optional<Event> findByOrisId(OrisEventId orisId);
 
     Page<Event> findEvents(EventsQuery filter, Pageable pageable);
 

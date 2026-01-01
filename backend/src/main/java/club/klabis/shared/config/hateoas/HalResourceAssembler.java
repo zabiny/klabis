@@ -1,6 +1,7 @@
 package club.klabis.shared.config.hateoas;
 
 
+import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,10 +40,12 @@ public class HalResourceAssembler<D, T> implements ModelAssembler<D, T> {
     }
 
     @Override
-    public CollectionModel<EntityModel<T>> toCollectionModel(Iterable<? extends D> events) {
+    public CollectionModel<EntityModel<T>> toCollectionModel(Iterable<? extends D> events, Class<T> dtoType) {
         CollectionModel<EntityModel<T>> result = StreamSupport.stream(events.spliterator(), false) //
                 .map(this::toEntityResponse)
-                .collect(Collectors.collectingAndThen(Collectors.toList(), CollectionModel::of));
+                .collect(Collectors.collectingAndThen(Collectors.toList(), CollectionModel::of))
+                // fallback needed to properly apply postprocessors when model doesn't have any items (when fallback type is missing, postprocessors for different types can be applied)
+                .withFallbackType(ResolvableType.forClass(dtoType));
         preparator.addLinks(result);
         return result;
     }

@@ -18,11 +18,11 @@ function MemberName({memberId, loadingValue = "Loading..."}: MemberNameProps) {
 
     if (!member) {
         console.warn(`No member data returned from API for member Id ${memberId}`)
-        return <span>Neznamý člověk</span>
+        return <span className="text-text-secondary">Neznamý člověk</span>
     }
 
     return (
-        <span>{member.firstName} {member.lastName}</span>
+        <span className="text-text-primary">{member.firstName} {member.lastName}</span>
     );
 }
 

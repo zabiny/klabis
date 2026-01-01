@@ -1,8 +1,8 @@
 package club.klabis.events.infrastructure.restapi.dto;
 
-import club.klabis.events.application.EventManagementForm;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
+import club.klabis.events.domain.commands.EventManagementCommand;
 import club.klabis.shared.config.restapi.ResponseViews;
 import com.fasterxml.jackson.annotation.*;
 import io.soabase.recordbuilder.core.RecordBuilder;
@@ -22,7 +22,7 @@ public record EventResponse(@JsonIgnore Event source,
                             @JsonProperty(access = JsonProperty.Access.READ_ONLY) TypeEnum type,
                             @JsonProperty(access = JsonProperty.Access.READ_ONLY) String web,
                             @JsonProperty(access = JsonProperty.Access.READ_ONLY) @JsonView(ResponseViews.Detailed.class) List<EventRegistrationResponse> registrations,
-                            @JsonUnwrapped EventManagementForm managementForm
+                            @JsonUnwrapped EventManagementCommand managementForm
 
 ) {
 

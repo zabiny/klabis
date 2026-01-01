@@ -1,7 +1,7 @@
 import type React from 'react'
-import {TextField} from '../FormFields/TextField'
-import {SelectField} from '../FormFields/SelectField'
-import type {SelectOption} from '../FormFields'
+import {TextField} from '../UI/forms/TextField.tsx'
+import {SelectField} from '../UI/forms/SelectField.tsx'
+import type {SelectOption} from '../UI/forms'
 
 type Address = {
   streetAndNumber: string

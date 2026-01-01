@@ -8,6 +8,7 @@ import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.security.ApplicationGrant;
 import club.klabis.shared.config.security.HasGrant;
 import club.klabis.shared.config.security.HasMemberGrant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Disabled;
@@ -138,6 +139,16 @@ public class HalFormsTests {
                     .containsExactly("id", "name", "address", "sex", "subobject", "active");
         }
 
+        @DisplayName("it should NOT return HAL+FORM template property derived from getter method")
+        @Test
+        void itShouldNotReturnTemplatePropertyDerivedFromGetterMethod() {
+            assertThat(getFormsTestApi())
+                    .hasStatusOk()
+                    .bodyJson()
+                    .extractingPath("$._templates['putFormData'].properties[*].name")
+                    .asArray()
+                    .doesNotContain("calculatedValue");
+        }
 
         @Test
         @DisplayName("It should NOT return record attributes as readOnly if there is not @JsonProperty(readOnly=true)")
@@ -293,6 +304,13 @@ class HalFormsTestController {
     ) {
         DataModel(int id, String name, String address, Sex sex) {
             this(id, name, address, sex, new Subobject("auto", 2), true);
+        }
+
+        // shall we allow jackson annotation here? For now it seems like easiest way for as long as commands stay simple. Alternative would be leave them as pure DTO (no declared methods)
+        @JsonIgnore
+        public String getCalculatedValue() {
+            // may want define some commands helping methods which we do not want to have in output.
+            return "Don't want method 'fields' in the HAL+FORMS properties list";
         }
     }
 }

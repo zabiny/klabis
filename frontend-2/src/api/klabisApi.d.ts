@@ -318,7 +318,7 @@ export interface components {
     schemas: {
         Link: {
             rel?: string;
-            href?: string;
+            href: string;
             hreflang?: string;
             media?: string;
             title?: string;

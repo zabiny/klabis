@@ -1,9 +1,13 @@
 package club.klabis.events.domain;
 
+import club.klabis.events.domain.commands.EventManagementCommand;
+
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,19 +34,36 @@ public class Competition extends Event {
         return result;
     }
 
-    public Set<Category> getCategories() {
-        return new HashSet<>(categories);
+    @Override
+    public Competition apply(EventManagementCommand command) {
+        super.apply(command);
+        setCategories(command.categories());
+        return this;
     }
 
-    public void setCategories(Collection<Category> categories) {
-        if (
-                this.getEventRegistrations().stream().map(Registration::getCategory).anyMatch(categories::contains)
-        ) {
-            throw new RuntimeException("Cannot change categories - there are registrations with removed category");
+    public Set<Category> getCategories() {
+        return Collections.unmodifiableSet(categories);
+    }
+
+    public Set<Registration> getRegistrationsForCategory(Category category) {
+        return getEventRegistrations().stream()
+                .filter(registration -> registration.getCategory().equals(category))
+                .collect(Collectors.toSet());
+    }
+
+    public void setCategories(Collection<Category> newCategories) {
+
+        Set<Category> categoriesToRemoveWithRegistrations = this.categories.stream()
+                .filter(Predicate.not(newCategories::contains))   // keep removed categories
+                .filter(c -> !getRegistrationsForCategory(c).isEmpty()) // keep categories with registrations
+                .collect(Collectors.toSet());
+
+        if (!categoriesToRemoveWithRegistrations.isEmpty()) {
+            throw EventException.createCategoriesUpdateRejectedException(getId(), categoriesToRemoveWithRegistrations);
         }
 
         this.categories.clear();
-        this.categories.addAll(categories);
+        this.categories.addAll(newCategories);
     }
 
 

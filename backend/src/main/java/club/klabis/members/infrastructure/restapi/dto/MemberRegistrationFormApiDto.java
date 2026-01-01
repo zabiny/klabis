@@ -121,9 +121,21 @@ public record MemberRegistrationFormApiDto(
     }
 
     /**
-     * Constructor with only required parameters
+     * Creates MemberRegistration form with minimal (required) parameters
      */
-    public MemberRegistrationFormApiDto(String firstName, String lastName, SexApiDto sex, LocalDate dateOfBirth, String nationality, AddressApiDto address) {
-        this(firstName, lastName, sex, dateOfBirth, null, nationality, address, null, null, null, null, null, null);
+    public static MemberRegistrationFormApiDto minimal(String firstName, String lastName, SexApiDto sex, LocalDate dateOfBirth, String nationality, AddressApiDto address) {
+        return new MemberRegistrationFormApiDto(firstName,
+                lastName,
+                sex,
+                dateOfBirth,
+                null,
+                nationality,
+                address,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 }

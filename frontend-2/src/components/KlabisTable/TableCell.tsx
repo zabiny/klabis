@@ -1,37 +1,22 @@
 import React from 'react'
-import {useKlabisTableContext} from './KlabisTableContext'
-import {TableHeaderCell} from './TableHeaderCell'
 import type {TableCellProps} from './types'
 
 /**
  * TableCell - Column definition component
- * Used declaratively to define table columns
- * Renders as a TableHeaderCell in the table header
+ *
+ * Used declaratively to define table columns. This is a pure definition component
+ * that doesn't render directly - the parent KlabisTable extracts column definitions
+ * from children and uses them to render the actual table.
+ *
+ * @example
+ * <KlabisTable>
+ *   <TableCell column="name" sortable>Name</TableCell>
+ *   <TableCell column="email">Email</TableCell>
+ * </KlabisTable>
  */
-export const TableCell: React.FC<TableCellProps> = ({
-                                                        column,
-                                                        children,
-                                                        hidden = false,
-                                                        sortable = false
-                                                    }) => {
-    const {sort, handleRequestSort} = useKlabisTableContext()
-
-    if (hidden) {
-        return <></>
-    }
-
-    const isSorted = sort?.by === column
-    const sortDirection = sort?.direction
-
-    return (
-        <TableHeaderCell
-            sortable={sortable}
-            isSorted={isSorted}
-            sortDirection={sortDirection}
-            onSort={() => handleRequestSort(column)}
-        >
-            {children}
-        </TableHeaderCell>
-    )
+export const TableCell: React.FC<TableCellProps> = () => {
+    // This component doesn't render anything - it's only used for its props
+    return null
 }
 
+TableCell.displayName = 'TableCell'

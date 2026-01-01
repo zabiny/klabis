@@ -1,7 +1,9 @@
 package club.klabis.calendar;
 
-import org.jmolecules.ddd.annotation.Entity;
+import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
+import org.springframework.data.domain.AbstractAggregateRoot;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -9,8 +11,8 @@ import java.util.Objects;
 
 import static club.klabis.shared.config.Globals.toZonedDateTime;
 
-@Entity
-public class CalendarItem {
+@AggregateRoot
+public class CalendarItem extends AbstractAggregateRoot<CalendarItem> {
     @Identity
     private Id id;
     private ZonedDateTime start;
@@ -35,6 +37,8 @@ public class CalendarItem {
     }
 
     public static CalendarItem calendarItem(ZonedDateTime start, ZonedDateTime end) {
+        Assert.notNull(start, "Calendar item start date must not be null");
+        Assert.notNull(end, "Calendar item end date must not be null");
         return new CalendarItem(Id.newId(), start, end, null);
     }
 
@@ -54,6 +58,8 @@ public class CalendarItem {
     }
 
     public void reschedule(ZonedDateTime newStart, ZonedDateTime newEnd) {
+        Assert.notNull(newStart, "Calendar item start date must not be null");
+        Assert.notNull(newEnd, "Calendar item end date must not be null");
         this.start = newStart;
         this.end = newEnd;
     }

@@ -5,14 +5,17 @@
  */
 package club.klabis.members.infrastructure.restapi;
 
+import club.klabis.finance.infrastructure.restapi.AccountReponse;
 import club.klabis.members.MemberId;
 import club.klabis.members.application.MembersRepository;
 import club.klabis.members.domain.Member;
 import club.klabis.members.domain.MemberNotFoundException;
+import club.klabis.members.infrastructure.restapi.dto.MemberOptionDto;
 import club.klabis.members.infrastructure.restapi.dto.MembersApiResponse;
 import club.klabis.shared.config.hateoas.HalResourceAssembler;
 import club.klabis.shared.config.hateoas.ModelAssembler;
 import club.klabis.shared.config.hateoas.ModelPreparator;
+import club.klabis.shared.config.hateoas.forms.KlabisHateoasImprovements;
 import club.klabis.shared.config.restapi.ApiController;
 import club.klabis.shared.config.restapi.JsonViewMapping;
 import club.klabis.shared.config.restapi.JsonViewParameter;
@@ -28,14 +31,22 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.converters.models.PageableAsQueryParam;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.Objects;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -83,15 +94,64 @@ public class MembersApi {
             @Valid @RequestParam(value = "suspended", required = false, defaultValue = "false") Boolean suspended,
             @Parameter(hidden = true) Pageable pageable
     ) {
+        if (suspended && !klabisSecurityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Displaying suspended members requires MEMBERS_REGISTER grant");
+        }
         Page<Member> result = membersRepository.findAllBySuspended(suspended,
                 memberModelAssembler.toDomainPageable(pageable));
         var resultModel = memberModelAssembler.toPagedResponse(result);
-        if (klabisSecurityService.hasGrant(ApplicationGrant.MEMBERS_RESUMEMEMBERSHIP) || klabisSecurityService.hasGrant(
-                ApplicationGrant.MEMBERS_SUSPENDMEMBERSHIP)) {
+        if (klabisSecurityService.hasGrant(ApplicationGrant.MEMBERS_REGISTER)) {
             resultModel.add(linkTo(methodOn(getClass()).membersGet(!suspended,
                     pageable.first())).withRel(suspended ? "activeMembers" : "suspendedMembers"));
         }
         return resultModel;
+    }
+
+    /**
+     * GET /members/options : Get members as form options
+     * Returns a list of members formatted for HAL+Forms option selection
+     *
+     * @return Members formatted as HAL+Forms options (status code 200)
+     * or Missing required user authentication or authentication failed (status code 401)
+     */
+    @Operation(
+            operationId = "membersOptionsGet",
+            summary = "Members as form options",
+            description = "Returns members formatted as HAL+Forms options for selection fields",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Members as options"),
+                    @ApiResponse(responseCode = "401", description = "Missing required user authentication or authentication failed", content = {
+                            @Content(mediaType = "application/problem+json", schema = @Schema(implementation = club.klabis.shared.RFC7807ErrorResponseApiDto.class))
+                    })
+            }
+    )
+    @GetMapping("/options")
+    public List<MemberOptionDto> membersOptionsGet() {
+        // Load all active members as options for select fields
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
+
+        return membersRepository.findAllBySuspended(false, pageable)
+                .stream()
+                .map(member -> new MemberOptionDto(
+                        member.getId().value(),
+                        formatMemberOption(member)
+                ))
+                .toList();
+    }
+
+    /**
+     * Format member information for display in select field options
+     * Safely handles cases where registration or registration ID might be null
+     */
+    private String formatMemberOption(Member member) {
+        String firstName = Objects.requireNonNullElse(member.getFirstName(), "");
+        String lastName = Objects.requireNonNullElse(member.getLastName(), "");
+        String registrationId = member.getRegistration() != null
+                ? Objects.requireNonNullElse(member.getRegistration().toRegistrationId(), "N/A")
+                : "N/A";
+
+        return "%s %s (%s)".formatted(firstName, lastName, registrationId).trim();
     }
 
     /**
@@ -126,4 +186,21 @@ public class MembersApi {
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 
+}
+
+@Component
+class FinanceAccountRepresentationPostprocessor implements RepresentationModelProcessor<EntityModel<AccountReponse>> {
+
+    @Override
+    public EntityModel<AccountReponse> process(EntityModel<AccountReponse> model) {
+
+        MemberId ownerId = model.getContent().ownerId();
+
+        KlabisHateoasImprovements.linkIfAuthorized(methodOn(MembersApi.class).membersMemberIdGet(ownerId))
+                .map(link -> link.withRel("owner"))
+                .ifPresent(model::add);
+
+        return model;
+
+    }
 }

@@ -1,11 +1,9 @@
 package club.klabis.calendar;
 
 import club.klabis.shared.config.Globals;
-import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
-import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.util.Assert;
 
 import java.time.LocalDate;
@@ -16,8 +14,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-@AggregateRoot
-public class Calendar extends AbstractAggregateRoot<Calendar> {
+public class Calendar {
 
     @Identity
     private CalendarPeriod period;
@@ -30,6 +27,8 @@ public class Calendar extends AbstractAggregateRoot<Calendar> {
     public record CalendarPeriod(LocalDate periodStart, LocalDate periodEnd) {
 
         public CalendarPeriod {
+            Assert.notNull(periodStart, "Period start date must not be null");
+            Assert.notNull(periodEnd, "Period end date must not be null");
             Assert.isTrue(!periodStart.isAfter(periodEnd), "Start date must not be after end date");
         }
 

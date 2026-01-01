@@ -1,5 +1,0 @@
-export {LogoutIcon} from './LogoutIcon'
-export {DeleteIcon} from './DeleteIcon'
-export {EditIcon} from './EditIcon'
-export {NewspaperIcon} from './NewspaperIcon'
-export {SyncIcon} from './SyncIcon'

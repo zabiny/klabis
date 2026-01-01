@@ -1,7 +1,0 @@
-export {HalFormsInput} from './HalFormsInput'
-export {HalFormsTextArea} from './HalFormsTextArea'
-export {HalFormsSelect} from './HalFormsSelect'
-export {HalFormsRadio} from './HalFormsRadio'
-export {HalFormsCheckbox} from './HalFormsCheckbox'
-export {HalFormsCheckboxGroup} from './HalFormsCheckboxGroup'
-export {HalFormsBoolean} from './HalFormsBoolean'

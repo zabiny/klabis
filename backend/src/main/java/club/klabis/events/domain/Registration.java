@@ -38,7 +38,7 @@ public final class Registration {
         this.siNumber = siNumber;
         this.category = new Competition.Category(category);
         this.createdAt = ZonedDateTime.now();
-        this.updatedAt = ZonedDateTime.now();
+        this.updatedAt = createdAt;
     }
 
     public Competition.Category getCategory() {
@@ -50,13 +50,12 @@ public final class Registration {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
         var that = (Registration) obj;
-        return Objects.equals(this.memberId, that.memberId) &&
-               Objects.equals(this.siNumber, that.siNumber) && Objects.equals(this.category, that.category);
+        return Objects.equals(this.memberId, that.memberId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(memberId, siNumber, category);
+        return Objects.hash(memberId);
     }
 
     @Override
@@ -71,5 +70,13 @@ public final class Registration {
         this.category = new Competition.Category(category);
         this.siNumber = siNumber;
         this.updatedAt = ZonedDateTime.now();
+    }
+
+    public ZonedDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public ZonedDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }

@@ -1,5 +1,5 @@
 import type React from 'react'
-import {TextField} from '../FormFields/TextField'
+import {TextField} from '../UI/forms/TextField.tsx'
 
 type Contact = {
     email: string

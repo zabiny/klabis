@@ -10,50 +10,87 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                primary: {
-                    DEFAULT: '#f44336',
-                    dark: '#d32f2f',
-                    light: '#ef5350',
-                },
-                secondary: {
-                    DEFAULT: '#424242',
-                    dark: '#212121',
-                    light: '#616161',
-                },
-                background: {
-                    DEFAULT: '#121212',
-                    paper: '#1e1e1e',
-                },
+                // Neutral base colors (using CSS variables for theme support)
+                black: 'var(--color-black)',
+                dark: 'var(--color-dark)',
                 surface: {
-                    DEFAULT: '#ffffff',
-                    dark: '#1e1e1e',
+                    DEFAULT: 'var(--color-surface-raised)',
+                    base: 'var(--color-surface-base)',
+                    raised: 'var(--color-surface-raised)',
                 },
-                text: {
-                    primary: '#ffffff',
-                    secondary: 'rgba(255, 255, 255, 0.7)',
+                // Primary action color (blue)
+                primary: {
+                    DEFAULT: 'var(--color-primary)',
+                    light: 'var(--color-primary-light)',
+                    dark: 'var(--color-primary-dark)',
                 },
+                // Secondary action color
+                secondary: {
+                    DEFAULT: 'var(--color-secondary)',
+                    light: 'var(--color-secondary-light)',
+                    dark: 'var(--color-secondary-dark)',
+                },
+                // Semantic colors
                 feedback: {
-                    success: '#4caf50',
-                    warning: '#ff9800',
-                    info: '#2196f3',
-                    error: '#f44336',
+                    success: 'var(--color-feedback-success)',
+                    warning: 'var(--color-feedback-warning)',
+                    error: 'var(--color-feedback-error)',
+                    info: 'var(--color-feedback-info)',
+                },
+                // Focus/highlight accent
+                accent: {
+                    DEFAULT: 'var(--color-accent)',
+                    light: 'var(--color-accent-light)',
+                    dark: 'var(--color-accent-dark)',
+                },
+                // Text colors
+                text: {
+                    primary: 'var(--color-text-primary)',
+                    secondary: 'var(--color-text-secondary)',
+                    tertiary: 'var(--color-text-tertiary)',
+                },
+                // Border colors
+                border: {
+                    DEFAULT: 'var(--color-border)',
+                    light: 'var(--color-border-light)',
+                    dark: 'var(--color-border-dark)',
+                },
+                // Alert backgrounds (theme-aware via CSS variables)
+                alert: {
+                    success: 'var(--color-alert-success)',
+                    warning: 'var(--color-alert-warning)',
+                    error: 'var(--color-alert-error)',
+                    info: 'var(--color-alert-info)',
+                },
+                // Alert text colors
+                'alert-text': {
+                    success: 'var(--color-alert-text-success)',
+                    warning: 'var(--color-alert-text-warning)',
+                    error: 'var(--color-alert-text-error)',
+                    info: 'var(--color-alert-text-info)',
                 },
             },
             fontFamily: {
-                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                sans: ['Geist', 'Sohne', ...defaultTheme.fontFamily.sans],
+                display: ['Sohne', ...defaultTheme.fontFamily.sans],
                 mono: ['Fira Code', ...defaultTheme.fontFamily.mono],
             },
             spacing: {
-                '4px': '0.25rem',
-                '8px': '0.5rem',
-                '12px': '0.75rem',
-                '16px': '1rem',
+                'xs': '0.125rem', // 2px
+                'sm': '0.25rem',  // 4px
+                'md': '0.5rem',   // 8px
+                'lg': '0.75rem',  // 12px
+                'xl': '1rem',     // 16px
+                '2xl': '1.5rem',  // 24px
+                '3xl': '2rem',    // 32px
+                '4xl': '3rem',    // 48px
             },
             borderRadius: {
-                'sm': '4px',
+                'sm': '6px',
                 'base': '8px',
-                'md': '12px',
-                'lg': '16px',
+                'md': '8px',
+                'lg': '12px',
+                'pill': '999px',
             },
             boxShadow: {
                 'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
@@ -68,6 +105,51 @@ const config: Config = {
                 'fast': '150ms',
                 'base': '200ms',
                 'slow': '300ms',
+            },
+            keyframes: {
+                'fade-in': {
+                    '0%': {opacity: '0'},
+                    '100%': {opacity: '1'},
+                },
+                'slide-up': {
+                    '0%': {transform: 'translateY(1rem)', opacity: '0'},
+                    '100%': {transform: 'translateY(0)', opacity: '1'},
+                },
+                'slide-down': {
+                    '0%': {transform: 'translateY(-1rem)', opacity: '0'},
+                    '100%': {transform: 'translateY(0)', opacity: '1'},
+                },
+                'scale-in': {
+                    '0%': {transform: 'scale(0.95)', opacity: '0'},
+                    '100%': {transform: 'scale(1)', opacity: '1'},
+                },
+                'bounce-gentle': {
+                    '0%, 100%': {transform: 'translateY(0)'},
+                    '50%': {transform: 'translateY(-4px)'},
+                },
+                'shake': {
+                    '0%, 100%': {transform: 'translateX(0)'},
+                    '25%': {transform: 'translateX(-3px)'},
+                    '75%': {transform: 'translateX(3px)'},
+                },
+                'shimmer': {
+                    '0%': {backgroundPosition: '-1000px 0'},
+                    '100%': {backgroundPosition: '1000px 0'},
+                },
+                'spin-slow': {
+                    '0%': {transform: 'rotate(0deg)'},
+                    '100%': {transform: 'rotate(360deg)'},
+                },
+            },
+            animation: {
+                'fade-in': 'fade-in 200ms ease-out',
+                'slide-up': 'slide-up 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                'slide-down': 'slide-down 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                'scale-in': 'scale-in 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                'bounce-gentle': 'bounce-gentle 400ms ease-in-out',
+                'shake': 'shake 300ms ease-in-out',
+                'shimmer': 'shimmer 2s infinite',
+                'spin-slow': 'spin-slow 2s linear infinite',
             },
         },
     },

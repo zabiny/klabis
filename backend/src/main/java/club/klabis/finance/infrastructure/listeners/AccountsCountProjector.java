@@ -3,7 +3,6 @@ package club.klabis.finance.infrastructure.listeners;
 import club.klabis.finance.domain.MoneyAmount;
 import club.klabis.finance.domain.events.AccountCreatedEvent;
 import club.klabis.finance.domain.events.DepositedAmountEvent;
-import club.klabis.finance.domain.events.WithdrawnAmountEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -20,18 +19,13 @@ public class AccountsCountProjector {
 
     @EventListener
     public void onAccountCreate(AccountCreatedEvent ev) {
-        overalClubBalance.add(ev.getInitialBalance());
+        overalClubBalance = overalClubBalance.add(ev.getInitialBalance());
         count++;
     }
 
     @EventListener
     public void onDeposit(DepositedAmountEvent ev) {
         overalClubBalance = overalClubBalance.add(ev.getAmount());
-    }
-
-    @EventListener
-    public void onWithdraw(WithdrawnAmountEvent ev) {
-        overalClubBalance = overalClubBalance.subtract(ev.getAmount());
     }
 
     public AccountsStats getStats() {

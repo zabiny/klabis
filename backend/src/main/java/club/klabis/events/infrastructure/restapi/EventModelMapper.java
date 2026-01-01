@@ -1,8 +1,8 @@
 package club.klabis.events.infrastructure.restapi;
 
-import club.klabis.events.application.EventManagementForm;
 import club.klabis.events.domain.Competition;
 import club.klabis.events.domain.Event;
+import club.klabis.events.domain.commands.EventManagementCommand;
 import club.klabis.events.infrastructure.restapi.dto.EventResponse;
 import club.klabis.events.infrastructure.restapi.dto.EventResponseBuilder;
 import club.klabis.shared.config.hateoas.ModelPreparator;
@@ -22,7 +22,6 @@ import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
 import org.springframework.hateoas.mediatype.hal.forms.ImprovedHalFormsAffordanceModel;
 import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.LinkRelationProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +38,6 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
 
     private EntityLinks entityLinks;
 
-    private LinkRelationProvider linkRelationProvider;
-
 
     @Mapping(target = "type", ignore = true)
     @Mapping(target = "web", source = "website")
@@ -50,8 +47,8 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
     @Override
     public abstract EventResponse toResponseDto(Event event);
 
-    EventManagementForm toForm(Event event) {
-        return EventManagementForm.fromEvent(event);
+    EventManagementCommand toForm(Event event) {
+        return EventManagementCommand.fromEvent(event);
     }
 
     String map(Competition.Category category) {
@@ -74,7 +71,7 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
         selfAffordances.addAll(affordBetter(methodOn(EventsController.class).updateEventById(event.getId(), null)));
 
         klabisSecurityService.getAuthenticatedMemberId()
-                .ifPresentOrElse(memberId -> {
+                .ifPresent(memberId -> {
                     if (event.areRegistrationsOpen()) {
                         if (event.isMemberRegistered(memberId)) {
                             // update registration
@@ -92,8 +89,6 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
                                     null), a -> addOptions(a, event)));
                         }
                     }
-                }, () -> {
-                    LOG.warn("No authenticated KLabis member available!");
                 });
 
         resource.add(entityLinks.linkToItemResource(Event.class, event.getId().value())
@@ -127,8 +122,4 @@ abstract class EventModelMapper implements ModelPreparator<Event, EventResponse>
         this.entityLinks = entityLinks;
     }
 
-    @Autowired
-    public void setLinkRelationProvider(LinkRelationProvider linkRelationProvider) {
-        this.linkRelationProvider = linkRelationProvider;
-    }
 }

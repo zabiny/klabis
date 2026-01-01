@@ -1,6 +1,8 @@
 package club.klabis.oris.infrastructure.apiclient;
 
+import club.klabis.events.oris.dto.OrisEventListFilter;
 import club.klabis.oris.application.dto.*;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -9,12 +11,13 @@ import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.DefaultResponseCreator;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,10 +25,10 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 @RestClientTest(OrisApiClientConfiguration.class)
+@ActiveProfiles("oris")
 class OrisApiClientTest {
 
     @Autowired
@@ -49,16 +52,22 @@ class OrisApiClientTest {
     @Nested
     class GetUserApiTests {
         @Test
-        @DisplayName("it returns expected response when member is not found")
+        @DisplayName("it returns expected response when ORIS API returns empty 'data' attribute")
         void checkMemberNotFoundHandling() throws IOException {
             // ORIS returns HTTP 200 with [] in Data when member is not found.
             // That means it's wrong type (causes parsing error).
             // This test makes sure that "workaround" what is in place for that case in configured API client works properly and throws NotFound exception instead of behaving like successs and returning bad data
             restServiceServer.expect(MockRestRequestMatchers.anything())
-                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getUserNotFoundResponse.json"));
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEmptyDataResponse.json"));
 
-            assertThatThrownBy(() -> testedClient.getUserInfo("32323"))
-                    .isInstanceOf(HttpClientErrorException.NotFound.class);
+            OrisApiClient.OrisResponse<OrisUserInfo> expectedData = new OrisApiClient.OrisResponse<>(null,
+                    "json",
+                    "OK",
+                    LocalDateTime.of(2024, 8, 29, 17, 43, 36),
+                    "getUser");
+
+            Assertions.assertThat(testedClient.getUserInfo("32323"))
+                    .isEqualTo(expectedData);
         }
 
         @Test
@@ -147,7 +156,7 @@ class OrisApiClientTest {
         @DisplayName("it should call expected API with defined parameters")
         void itShouldCallExpectedApiWithParams() throws IOException {
             restServiceServer.expect(MockRestRequestMatchers.requestTo(
-                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205&datefrom=2020-10-01&dateto=2023-04-10&rg=JM"))
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventList&myClubId=205&datefrom=2020-10-01&dateto=2023-04-10&rg=JM&all=0"))
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventListResponse.json"));
 
             testedClient.getEventList(OrisEventListFilter.EMPTY.withRegion(OrisApiClient.REGION_JIHOMORAVSKA)
@@ -228,6 +237,79 @@ class OrisApiClientTest {
                     .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventDetailsResponse.json"));
 
             testedClient.getEventDetails(12345);
+
+            restServiceServer.verify();
+        }
+    }
+
+
+    @DisplayName("getEventEntries API tests")
+    @Nested
+    class GetEventEntriesApiTests {
+        @Test
+        @DisplayName("it should return parsed data from response")
+        void itShouldReturnExpectedData() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.anything())
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventEntriesResponse.json"));
+
+            var actualResponse = testedClient.getEventEntries(2077, 205);
+
+            Map<String, EventEntry> expected = Map.of(
+                    "Entry_14000",
+                    EventEntryBuilder.builder()
+                            .id(14000)
+                            .classId(39529)
+                            .classDesc("H20C")
+                            .regNo("AOV9401")
+                            .firstName("Marek")
+                            .lastName("Rohel")
+                            .si(1625050)
+                            .userId(14263)
+                            .clubId(7)
+                            .note("")
+                            .fee(BigDecimal.valueOf(70))
+                            .entryStop(1)
+                            .createdByUserId(14263)
+                            .updatedByUserId(2553)
+                            .build(),
+                    "Entry_17952",
+                    EventEntryBuilder.builder()
+                            .id(17952)
+                            .classId(39533)
+                            .classDesc("H55C")
+                            .regNo("OOP5001")
+                            .firstName("Břetislav")
+                            .lastName("Ševčík")
+                            .si(49301)
+                            .userId(3418)
+                            .clubId(104)
+                            .note("")
+                            .fee(BigDecimal.valueOf(70))
+                            .entryStop(1)
+                            .createdByUserId(3418)
+                            .updatedByUserId(3418)
+                            .build()
+            );
+
+            assertThat(actualResponse).isNotNull();
+            assertThat(actualResponse.status()).isEqualTo("OK");
+            assertThat(actualResponse.format()).isEqualTo("json");
+            assertThat(actualResponse.method()).isEqualTo("getEventEntries");
+            assertThat(actualResponse.data()).isNotNull();
+            assertThat(actualResponse.data())
+                    .usingRecursiveComparison()
+                    .ignoringExpectedNullFields()
+                    .isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("it should call expected API with parameters")
+        void itShouldCallExpectedApi() throws IOException {
+            restServiceServer.expect(MockRestRequestMatchers.requestTo(
+                            "https://oris.orientacnisporty.cz/API/?format=json&method=getEventEntries&eventid=2077&clubid=205"))
+                    .andRespond(withJsonResponseHavingBodyFromResourceFile(200, "oris/getEventEntriesResponse.json"));
+
+            testedClient.getEventEntries(2077, 205);
 
             restServiceServer.verify();
         }

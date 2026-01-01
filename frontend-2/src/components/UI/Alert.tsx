@@ -9,14 +9,14 @@ interface AlertProps {
 }
 
 const severityClasses = {
-    success: 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200',
-    error: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200',
-    warning: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200',
-    info: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200',
+    success: 'bg-alert-success border-l-4 border-l-feedback-success border-b border-r border-feedback-success text-alert-text-success',
+    error: 'bg-alert-error border-l-4 border-l-feedback-error border-b border-r border-feedback-error text-alert-text-error',
+    warning: 'bg-alert-warning border-l-4 border-l-feedback-warning border-b border-r border-feedback-warning text-alert-text-warning',
+    info: 'bg-alert-info border-l-4 border-l-feedback-info border-b border-r border-feedback-info text-alert-text-info',
 }
 
 /**
- * Alert component - Replaces MUI Alert
+ * Alert component - Refined with semantic colors and left border accent
  * Displays messages with different severity levels
  */
 export const Alert = ({
@@ -26,7 +26,7 @@ export const Alert = ({
                           onClose,
                       }: AlertProps) => {
     const classes = clsx(
-        'w-full px-4 py-3 rounded-lg border flex items-start justify-between gap-4',
+        'w-full px-4 py-3 rounded-md border-l-4 border-b border-r flex items-start justify-between gap-4 animate-fade-in',
         severityClasses[severity],
         className
     )

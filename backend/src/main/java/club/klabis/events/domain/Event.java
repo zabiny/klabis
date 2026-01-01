@@ -1,16 +1,20 @@
 package club.klabis.events.domain;
 
-import club.klabis.events.domain.forms.EventRegistrationForm;
+import club.klabis.events.domain.commands.EventManagementCommand;
+import club.klabis.events.domain.commands.EventRegistrationCommand;
+import club.klabis.events.domain.events.*;
 import club.klabis.finance.domain.MoneyAmount;
 import club.klabis.members.MemberId;
+import club.klabis.shared.config.Globals;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.AbstractAggregateRoot;
+import org.springframework.util.Assert;
 
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -23,21 +27,24 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         id = Id.newId();
     }
 
-    public Event(String name, LocalDate eventDate) {
+    public Event(@NonNull String name, @NonNull LocalDate eventDate) {
+        Assert.hasLength(name, "Name must not be empty");
+        Assert.notNull(eventDate, "Name must not be empty");
+
         id = Id.newId();
         this.setName(name);
         this.setEventDate(eventDate);
     }
 
     public Collection<Registration> getEventRegistrations() {
-        return new HashSet<>(registrations);
+        return Collections.unmodifiableCollection(registrations);
     }
 
     public record Id(int value) {
 
         private static Id LAST_ID = new Id(0);
 
-        private static Id newId() {
+        private static synchronized Id newId() {
             LAST_ID = new Id(LAST_ID.value() + 1);
             return LAST_ID;
         }
@@ -49,13 +56,13 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
 
     @Identity
     private final Id id;
-    private ZonedDateTime eventStart;
+    private LocalDate eventStart;
     private String name;
     private String location;
     private String organizer;
     private ZonedDateTime registrationDeadline;
     private MemberId coordinator;
-    private OrisId orisId;
+    private OrisEventId orisId;
     private URL website;
     private MoneyAmount cost = MoneyAmount.ZERO;
 
@@ -65,12 +72,12 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         return Optional.ofNullable(coordinator);
     }
 
-    public Optional<OrisId> getOrisId() {
+    public Optional<OrisEventId> getOrisId() {
         return Optional.ofNullable(orisId);
     }
 
     public LocalDate getDate() {
-        return eventStart.toLocalDate();
+        return eventStart;
     }
 
     public Id getId() {
@@ -106,25 +113,31 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         return orisId != null;
     }
 
-    public void setEventDate(LocalDate newDate) {
-        this.eventStart = toZonedDateTime(newDate);
+    public void setEventDate(@NonNull LocalDate newDate) {
+        Assert.notNull(newDate, "Event date must not be null");
+        this.eventStart = newDate;
 
         if (this.registrationDeadline == null) {
-            this.setRegistrationDeadline(toZonedDateTime(newDate));
-        } else if (this.registrationDeadline.isAfter(eventStart)) {
-            this.setRegistrationDeadline(eventStart.truncatedTo(ChronoUnit.DAYS));
+            this.closeRegistrationsAt(toZonedDateTime(newDate));
+        } else if (eventStart.isBefore(Globals.toLocalDate(this.registrationDeadline))) {
+            this.closeRegistrationsAt(Globals.toZonedDateTime(eventStart));
         }
         andEvent(new EventDateChangedEvent(this));
     }
 
-    public void setRegistrationDeadline(ZonedDateTime registrationDeadline) {
-        if (registrationDeadline.isAfter(this.eventStart)) {
-            throw new EventException(getId(),
-                    "Cannot set registration deadline after event start",
-                    EventException.Type.UNSPECIFIED);
+    public Event apply(EventManagementCommand command) {
+        setName(command.name());
+        setLocation(command.location());
+        setOrganizer(command.organizer());
+        setCoordinator(command.coordinator());
+        setEventDate(command.date());
+        closeRegistrationsAt(command.registrationDeadline());
+        if (command.cost() != null) {
+            updateCost(MoneyAmount.of(command.cost()));
+        } else {
+            updateCost(null);
         }
-        this.registrationDeadline = registrationDeadline;
-        andEvent(new EventRegistrationsDeadlineChangedEvent(this));
+        return this;
     }
 
     public void setName(String name) {
@@ -143,19 +156,25 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         this.coordinator = coordinator;
     }
 
-    public void closeRegistrations(ZonedDateTime registrationDeadline) {
+    public void closeRegistrationsAt(ZonedDateTime registrationDeadline) {
+        if (registrationDeadline.isAfter(Globals.toZonedDateTime(this.eventStart))) {
+            throw new EventException(getId(),
+                    "Cannot set registration deadline after event start",
+                    EventException.Type.UNSPECIFIED);
+        }
         this.registrationDeadline = registrationDeadline;
+        andEvent(new EventRegistrationsDeadlineChangedEvent(this));
     }
 
-    public Event linkWithOris(OrisId orisId) {
+    public Event linkWithOris(OrisEventId orisEventId) {
         if (this.orisId != null) {
-            if (!this.orisId.equals(orisId)) {
+            if (!this.orisId.equals(orisEventId)) {
                 throw new EventException(id,
                         "Attempt to link event %s with already assigned orisId %s to another orisId %s".formatted(
-                                getId(), this.orisId, orisId), EventException.Type.UNSPECIFIED);
+                                getId(), this.orisId, orisEventId), EventException.Type.UNSPECIFIED);
             }
         } else {
-            this.orisId = orisId;
+            this.orisId = orisEventId;
         }
         return this;
     }
@@ -182,7 +201,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         this.andEvent(new EventCostChangedEvent(this));
     }
 
-    public void registerMember(MemberId memberId, EventRegistrationForm form) {
+    public void registerMember(MemberId memberId, EventRegistrationCommand form) {
         if (!this.areRegistrationsOpen()) {
             throw new EventException(this.id,
                     "Cannot add new registration to event, registrations are already closed",
@@ -197,7 +216,7 @@ public abstract class Event extends AbstractAggregateRoot<Event> {
         this.andEvent(new MemberEventRegistrationCreated(this, memberId));
     }
 
-    public void changeRegistration(MemberId memberId, EventRegistrationForm form) {
+    public void changeRegistration(MemberId memberId, EventRegistrationCommand form) {
         if (!this.areRegistrationsOpen()) {
             throw new EventException(this.id,
                     "Cannot change registration for event, registrations are already closed",

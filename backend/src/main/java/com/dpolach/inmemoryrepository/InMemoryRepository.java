@@ -5,12 +5,14 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+@NoRepositoryBean
 public interface InMemoryRepository<T, ID> extends ListCrudRepository<T, ID>, PagingAndSortingRepository<T, ID> {
 
     @NonNull

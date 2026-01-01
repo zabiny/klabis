@@ -1,16 +1,132 @@
 {
   "openapi": "3.1.0",
-  "info": {
-    "title": "OpenAPI definition",
-    "version": "v0"
-  },
   "servers": [
     {
       "url": "http://localhost:8080",
       "description": "Generated server url"
     }
   ],
+  "security": [
+    {
+      "klabis_auth": []
+    }
+  ],
   "paths": {
+    "/events/{eventId}": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Returns event details",
+        "operationId": "getEventById",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "description": "ID eventu",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEventResponse_Detailed"
+                }
+              },
+              "application/klabis+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEventResponse_Detailed"
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEventResponse_Detailed"
+                }
+              },
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityModelEventResponse_Detailed"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "klabis_auth": [
+              "klabis"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Updates given event",
+        "operationId": "updateEventById",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventManagementCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "application/klabis+json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "klabis_auth": [
+              "klabis"
+            ]
+          }
+        ]
+      }
+    },
     "/events/{eventId}/registrationForms/{memberId}": {
       "get": {
         "tags": [
@@ -44,22 +160,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               }
             }
@@ -69,22 +185,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               }
             }
@@ -94,22 +210,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               }
             }
@@ -119,22 +235,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               }
             }
@@ -144,22 +260,22 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RepresentationModelEntityModelEventRegistrationForm"
+                  "$ref": "#/components/schemas/EntityModelEventRegistrationFormData"
                 }
               }
             }
@@ -167,7 +283,7 @@
         },
         "security": [
           {
-            "klabis": [
+            "klabis_auth": [
               "klabis"
             ]
           }
@@ -203,7 +319,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EventRegistrationForm"
+                "$ref": "#/components/schemas/EventRegistrationCommand"
               }
             }
           },
@@ -228,7 +344,7 @@
         },
         "security": [
           {
-            "klabis": [
+            "klabis_auth": [
               "klabis"
             ]
           }
@@ -245,8 +361,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           },
           {
@@ -254,8 +369,7 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
@@ -266,7 +380,7 @@
         },
         "security": [
           {
-            "klabis": [
+            "klabis_auth": [
               "klabis"
             ]
           }
@@ -282,12 +396,11 @@
         "operationId": "getEvents",
         "parameters": [
           {
-            "name": "registeredMember.value",
+            "name": "filter",
             "in": "query",
-            "required": false,
+            "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "$ref": "#/components/schemas/EventsQuery_Summary"
             }
           },
           {
@@ -349,53 +462,50 @@
         },
         "security": [
           {
-            "klabis": [
-              "events"
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
-      }
-    },
-    "/events/{eventId}": {
-      "get": {
+      },
+      "post": {
         "tags": [
           "Events"
         ],
-        "summary": "Returns event details",
-        "operationId": "getEventById",
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "description": "ID eventu",
-            "required": true,
-            "schema": {
-              "type": "integer"
+        "summary": "Creates new event",
+        "operationId": "createEvent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventManagementCommand"
+              }
             }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "Event details",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEventResponse_Detailed"
+                  "type": "object"
                 }
               },
               "application/klabis+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEventResponse_Detailed"
+                  "type": "object"
                 }
               },
               "application/hal+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEventResponse_Detailed"
+                  "type": "object"
                 }
               },
               "application/prs.hal-forms+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EntityModelEventResponse_Detailed"
+                  "type": "object"
                 }
               }
             }
@@ -403,8 +513,72 @@
         },
         "security": [
           {
-            "klabis": [
-              "events"
+            "klabis_auth": [
+              "klabis"
+            ]
+          }
+        ]
+      }
+    },
+    "/events/{eventId}/categories": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "operationId": "getEventCategories",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "application/klabis+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "application/hal+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "application/prs.hal-forms+json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "klabis_auth": [
+              "klabis"
             ]
           }
         ]
@@ -413,7 +587,65 @@
   },
   "components": {
     "schemas": {
-      "EventRegistrationForm": {
+      "Category": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "EventManagementCommand": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "organizer": {
+            "type": "string"
+          },
+          "registrationDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "coordinator": {
+            "$ref": "#/components/schemas/MemberId"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            },
+            "uniqueItems": true
+          },
+          "cost": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "date",
+          "name",
+          "registrationDeadline"
+        ]
+      },
+      "MemberId": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "EventRegistrationCommand": {
         "type": "object",
         "properties": {
           "siNumber": {
@@ -430,83 +662,88 @@
           "siNumber"
         ]
       },
+      "EventsQuery_Summary": {
+        "type": "object",
+        "properties": {
+          "registeredMember": {
+            "$ref": "#/components/schemas/MemberId"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/Id_Summary"
+          },
+          "before": {
+            "type": "string",
+            "format": "date"
+          },
+          "after": {
+            "type": "string",
+            "format": "date"
+          },
+          "onlyOpenedRegistrations": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Id_Summary": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "EntityModelEventResponse_Summary": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "name": {
-            "type": "string"
-          },
-          "location": {
-            "type": "string"
-          },
-          "organizer": {
-            "type": "string"
+            "$ref": "#/components/schemas/Id_Summary"
           },
           "type": {
             "type": "string",
             "enum": [
               "TRAINING",
               "COMPETITION"
-            ]
+            ],
+            "readOnly": true
           },
           "web": {
+            "type": "string",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "organizer": {
             "type": "string"
           },
           "registrationDeadline": {
             "type": "string",
-            "format": "date"
+            "format": "date-time"
           },
           "coordinator": {
-            "type": "integer",
-            "format": "int32"
+            "$ref": "#/components/schemas/MemberId"
           },
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link_Summary"
-            }
+          "cost": {
+            "type": "number"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           }
-        }
-      },
-      "Link_Summary": {
-        "type": "object",
-        "properties": {
-          "rel": {
-            "type": "string"
-          },
-          "href": {
-            "type": "string"
-          },
-          "hreflang": {
-            "type": "string"
-          },
-          "media": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "deprecation": {
-            "type": "string"
-          },
-          "profile": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        }
+        },
+        "required": [
+          "date",
+          "name",
+          "registrationDeadline"
+        ]
       },
       "PageMetadata_Summary": {
         "type": "object",
@@ -532,17 +769,19 @@
       "PagedModelEntityModelEventResponse_Summary": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link_Summary"
+          "_embedded": {
+            "type": "object",
+            "properties": {
+              "eventResponseList": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EntityModelEventResponse_Summary"
+                }
+              }
             }
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EntityModelEventResponse_Summary"
-            }
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           },
           "page": {
             "$ref": "#/components/schemas/PageMetadata_Summary"
@@ -553,86 +792,150 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "name": {
-            "type": "string"
-          },
-          "location": {
-            "type": "string"
-          },
-          "organizer": {
-            "type": "string"
+            "$ref": "#/components/schemas/Id_Summary"
           },
           "type": {
             "type": "string",
             "enum": [
               "TRAINING",
               "COMPETITION"
-            ]
+            ],
+            "readOnly": true
           },
           "web": {
-            "type": "string"
-          },
-          "registrationDeadline": {
             "type": "string",
-            "format": "date"
-          },
-          "coordinator": {
-            "type": "integer",
-            "format": "int32"
+            "readOnly": true
           },
           "registrations": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventRegistrationResponse_Detailed"
-            }
+            },
+            "readOnly": true
           },
-          "links": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "organizer": {
+            "type": "string"
+          },
+          "registrationDeadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "coordinator": {
+            "$ref": "#/components/schemas/MemberId"
+          },
+          "categories": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Link_Summary"
-            }
+              "$ref": "#/components/schemas/Category"
+            },
+            "uniqueItems": true
+          },
+          "cost": {
+            "type": "number"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           }
-        }
+        },
+        "required": [
+          "date",
+          "name",
+          "registrationDeadline"
+        ]
       },
       "EventRegistrationResponse_Detailed": {
         "type": "object",
         "properties": {
           "memberId": {
-            "type": "integer",
-            "format": "int32"
+            "$ref": "#/components/schemas/MemberId"
           },
           "category": {
             "type": "string"
           }
         }
       },
-      "RepresentationModelEntityModelEventRegistrationForm": {
+      "EntityModelEventRegistrationFormData": {
         "type": "object",
         "properties": {
-          "links": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Link_Summary"
-            }
+          "siNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "eventName": {
+            "type": "string",
+            "readOnly": true
+          },
+          "_links": {
+            "$ref": "#/components/schemas/Links"
           }
+        },
+        "required": [
+          "category",
+          "siNumber"
+        ]
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string"
+          },
+          "hreflang": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "deprecation": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "templated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Links": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/Link"
         }
       }
     },
     "securitySchemes": {
-      "security_auth": {
+      "klabis_auth": {
         "type": "oauth2",
         "flows": {
           "authorizationCode": {
             "authorizationUrl": "/oauth/authorize",
             "tokenUrl": "/oauth/token",
-            "scopes": {}
+            "scopes": {
+              "openid": "openid scope",
+              "klabis": "Klabis API"
+            }
           }
         }
       }
