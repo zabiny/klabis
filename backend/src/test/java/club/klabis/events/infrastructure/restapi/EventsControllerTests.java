@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @ApiTestConfiguration(controllers = {EventsController.class})
-@Import({EventModelMapperImpl.class})
+@Import({EventModelMapperImpl.class, EventResponseModelPostprocessor.class})
 @ActiveProfiles("oris")
 public class EventsControllerTests {
     @MockitoBean
