@@ -4,6 +4,7 @@ import club.klabis.calendar.Calendar;
 import club.klabis.calendar.CalendarItem;
 import club.klabis.calendar.CalendarRepository;
 import club.klabis.calendar.CreateCalendarItemCommand;
+import club.klabis.shared.config.Globals;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +33,12 @@ public class CalendarService {
 
     @Transactional
     public CalendarItem createCalendarItem(CreateCalendarItemCommand command) {
-        Calendar c = calendarRepository.readCalendar(command.getPeriod());
+        CalendarItem result = CalendarItem.calendarItem(
+                Globals.toZonedDateTime(command.start()),
+                Globals.toZonedDateTime(command.end()));
+        result.updateNote(command.note());
 
-        return calendarRepository.save(c.handle(command));
+        return calendarRepository.save(result);
     }
 
 }

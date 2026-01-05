@@ -1,7 +1,6 @@
 package club.klabis.calendar;
 
 import club.klabis.shared.config.Globals;
-import org.jmolecules.ddd.annotation.Identity;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
@@ -16,7 +15,6 @@ import java.util.Set;
 
 public class Calendar {
 
-    @Identity
     private CalendarPeriod period;
     private Set<CalendarItem> items = new HashSet<>();
 
@@ -81,20 +79,6 @@ public class Calendar {
     public Calendar(CalendarPeriod period, Collection<CalendarItem> items) {
         this.period = period;
         this.items.addAll(items);
-    }
-
-    public CalendarItem handle(CreateCalendarItemCommand command) {
-        if (!period.includes(command.start()) && !period.includes(command.end())) {
-            throw new IllegalArgumentException("Requested item is not placed in this calendar");
-        }
-
-        CalendarItem result = CalendarItem.calendarItem(
-                        Globals.toZonedDateTime(command.start()),
-                Globals.toZonedDateTime(command.end()));
-        result.updateNote(command.note());
-        this.items.add(result);
-        return result;
-
     }
 
     public Set<CalendarItem> getItems() {
