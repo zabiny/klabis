@@ -43,7 +43,9 @@ public class CalendarItem extends AbstractAggregateRoot<CalendarItem> {
     }
 
     public static CalendarItem task(LocalDate day, String note) {
-        return calendarItem(toZonedDateTime(day), toZonedDateTime(day)).withNote(note);
+        CalendarItem item = calendarItem(toZonedDateTime(day), toZonedDateTime(day));
+        item.updateNote(note);
+        return item;
     }
 
     protected CalendarItem() {
@@ -64,13 +66,14 @@ public class CalendarItem extends AbstractAggregateRoot<CalendarItem> {
         this.end = newEnd;
     }
 
-    public CalendarItem withNote(String note) {
+    public void updateNote(String note) {
         this.note = note;
-        return this;
     }
 
     public static CalendarItem todayTask(String note) {
-        return CalendarItem.calendarItem(ZonedDateTime.now(), ZonedDateTime.now()).withNote(note);
+        CalendarItem item = CalendarItem.calendarItem(ZonedDateTime.now(), ZonedDateTime.now());
+        item.updateNote(note);
+        return item;
     }
 
     public Id getId() {

@@ -77,7 +77,8 @@ class CalendarApiControllerTest {
         @Test
         void itShouldPassCorrectParamsToService() {
             CalendarItem returnedItem = CalendarItem.calendarItem(Globals.createZonedDateTime(2020, 10, 2),
-                    Globals.createZonedDateTime(2020, 12, 5)).withNote("Example task");
+                    Globals.createZonedDateTime(2020, 12, 5));
+            returnedItem.updateNote("Example task");
 
             when(calendarServiceMock.getCalendarItem(CalendarItem.id(2))).thenReturn(Optional.of(returnedItem));
 
@@ -132,8 +133,9 @@ class CalendarApiControllerTest {
         void itShouldReturnExpectedData() {
             CalendarItem item = CalendarItem.calendarItem(
                             Globals.createZonedDateTime(2020, 12, 1),
-                            Globals.createZonedDateTime(2020, 12, 12))
-                    .withNote("Budou vanoce");
+                    Globals.createZonedDateTime(2020, 12, 12));
+            item.updateNote("Budou vanoce");
+
             when(calendarServiceMock.createCalendarItem(any(CreateCalendarItemCommand.class)))
                     .thenReturn(item);
 

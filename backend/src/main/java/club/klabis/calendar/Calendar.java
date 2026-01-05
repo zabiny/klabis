@@ -90,8 +90,8 @@ public class Calendar {
 
         CalendarItem result = CalendarItem.calendarItem(
                         Globals.toZonedDateTime(command.start()),
-                        Globals.toZonedDateTime(command.end()))
-                .withNote(command.note());
+                Globals.toZonedDateTime(command.end()));
+        result.updateNote(command.note());
         this.items.add(result);
         return result;
 
