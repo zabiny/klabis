@@ -7,26 +7,36 @@
     - See `./backend/CLAUDE.md` for build/test/run commands
     - Gradle build, Java 17+, Spring Boot 3.5.9
 
-2. **Frontend (UI Mockup)** → `./backend/src/main/resources/static/mock` (Vanilla JS)
-    - Static HTML/CSS/JavaScript UI served by Spring Boot
+2. **Frontend** → `./frontend/` (React + TypeScript + Vite)
+    - Modern React SPA with OpenAPI integration
+    - OAuth2 authentication via oidc-client-ts
+    - TanStack Query, React Router, Tailwind CSS
+    - See `./frontend/CLAUDE.md` for development workflow
+
+3. **Frontend (UI Mockup)** → `./backend/src/main/resources/static/mock` (Vanilla JS)
+    - Legacy static HTML/CSS/JavaScript UI served by Spring Boot
     - See `./backend/src/main/resources/static/mock/CLAUDE.md` for development
     - OAuth2 Authorization Code flow integration
 
-3. **Specifications** → `./openspec/` (OpenSpec change proposal workflow)
+4. **Specifications** → `./openspec/` (OpenSpec change proposal workflow)
     - Feature specifications, design docs, tasks
     - Uses experimental artifact workflow (opsx commands)
 
 ## Quick Start
 
 ```bash
-# Start backend (serves both API and UI mockup on https://localhost:8443)
+# Start backend (serves API and legacy UI mockup on https://localhost:8443)
 cd backend
 BOOTSTRAP_ADMIN_USERNAME='admin' \
 BOOTSTRAP_ADMIN_PASSWORD='admin123' \
 OAUTH2_CLIENT_SECRET='test-secret-123' \
 ./gradlew bootRun
 
-# UI accessible at: https://localhost:8443/mock-login.html
+# Legacy UI mockup: https://localhost:8443/mock-login.html
+
+# Start modern frontend (React SPA on http://localhost:5173)
+cd frontend
+npm run dev
 ```
 
 ## OpenSpec Workflow
@@ -58,11 +68,14 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 Before starting work, check the appropriate CLAUDE.md:
 
-- **Backend work** → `./klabis/CLAUDE.md`
+- **Backend work** → `./backend/CLAUDE.md`
     - Build commands, test strategies, security setup, gotchas
 
-- **UI mockup work** → `./klabis/src/main/resources/static/mock/CLAUDE.md`
-    - Frontend structure, OAuth2 flow, HTML/CSS/JS conventions
+- **Frontend work** → `./frontend/CLAUDE.md`
+    - React/TypeScript conventions, build/dev workflow, testing strategy
+
+- **UI mockup work** → `./backend/src/main/resources/static/mock/CLAUDE.md`
+    - Mockup frontend UI, OAuth2 flow, HTML/CSS/JS conventions
 
 - **Specifications** → Reference `./openspec/` for change proposals
     - Feature specifications and design documents
