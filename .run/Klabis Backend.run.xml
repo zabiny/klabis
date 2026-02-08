@@ -1,22 +1,23 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Klabis Backend" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <option name="ACTIVE_PROFILES" value="dev"/>
+    <option name="ACTIVE_PROFILES" value="dev" />
     <additionalParameters>
       <param>
-        <option name="enabled" value="true"/>
-        <option name="name" value="management.endpoint.env.show-values"/>
-        <option name="value" value="when_authorized"/>
+        <option name="enabled" value="true" />
+        <option name="name" value="management.endpoint.env.show-values" />
+        <option name="value" value="when_authorized" />
       </param>
     </additionalParameters>
+    <envs>
+      <env name="BOOTSTRAP_ADMIN_PASSWORD" value="admin123" />
+      <env name="OAUTH2_CLIENT_SECRET" value="test-secret-123" />
+    </envs>
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/backend/local.env" />
     </option>
-    <module name="com.klabis.klabis.main"/>
-    <selectedOptions>
-      <option name="environmentVariables" />
-    </selectedOptions>
-    <option name="SPRING_BOOT_MAIN_CLASS" value="com.klabis.KlabisApplication"/>
-    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/backend"/>
+    <module name="com.klabis.klabis.main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.klabis.KlabisApplication" />
+    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/backend" />
     <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">
       <option name="credential" />
       <option name="region" />
