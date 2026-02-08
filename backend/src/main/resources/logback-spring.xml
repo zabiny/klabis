@@ -10,9 +10,7 @@
     <!-- Console appender with colors and new format -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %threadOrRequest [corr=%X{correlationId}]
-                [user=%replace(%X{userId}){'^$', '-'}] %-5highlightLevel %cyan(%logger{36}) - %msg%n
-            </pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %threadOrRequest [corr=%X{correlationId}] [user=%replace(%X{userId}){'^$', '-'}] %-5highlightLevel %cyan(%logger{36}) - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -25,9 +23,7 @@
                 <maxHistory>30</maxHistory>
             </rollingPolicy>
             <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %threadOrRequest [corr=%X{correlationId}]
-                    [user=%replace(%X{userId}){'^$', '-'}] %-5level %logger{36} - %msg%n
-                </pattern>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %threadOrRequest [corr=%X{correlationId}] [user=%replace(%X{userId}){'^$', '-'}] %-5level %logger{36} - %msg%n</pattern>
             </encoder>
         </appender>
     </springProfile>
