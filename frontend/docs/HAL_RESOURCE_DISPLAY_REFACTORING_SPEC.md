@@ -133,41 +133,30 @@ graph TD
 ```mermaid
 graph LR
     HRD["HalResourceDisplay"]
-
     HRD -->|hideLinks,<br/>hideForms,<br/>hideEmbedded| VISIBILITY["Section<br/>Visibility"]
-
     HRD -->|links,<br/>templates| MANUAL["Manual Data<br/>Override"]
-
     HRD -->|embeddedConfig| EMBED["Embedded<br/>Configuration"]
-
     HRD -->|sectionOrder| ORDER["Section<br/>Ordering"]
-
     HRD -->|spacing,<br/>containerClassName| STYLE["Styling &<br/>Layout"]
-
     HRD -->|onNavigate,<br/>formsModal,<br/>customFormLayouts| CONFIG["Feature<br/>Configuration"]
-
     VISIBILITY --> HLS["HalLinksSection"]
     VISIBILITY --> HFS["HalFormsSection"]
     VISIBILITY --> HET["HalEmbeddedTable"]
-
     MANUAL --> HLS
     MANUAL --> HFS
-
     EMBED --> HET
-
     CONFIG --> HLS
     CONFIG --> HFS
-
-    style HRD fill:#fff59d
-    style VISIBILITY fill:#c8e6c9
-    style MANUAL fill:#b3e5fc
-    style EMBED fill:#f8bbd0
-    style ORDER fill:#ffe0b2
-    style STYLE fill:#e1bee7
-    style CONFIG fill:#dcedc8
-    style HLS fill:#fff3e0
-    style HFS fill:#f3e5f5
-    style HET fill:#e8f5e9
+    style HRD fill: #fff59d
+    style VISIBILITY fill: #c8e6c9
+    style MANUAL fill: #b3e5fc
+    style EMBED fill: #f8bbd0
+    style ORDER fill: #ffe0b2
+    style STYLE fill: #e1bee7
+    style CONFIG fill: #dcedc8
+    style HLS fill: #fff3e0
+    style HFS fill: #f3e5f5
+    style HET fill: #e8f5e9
 ```
 
 ## Component Design
@@ -176,34 +165,34 @@ graph LR
 
 ```typescript
 interface EmbeddedTableConfig<T = any> {
-  collectionName: string;
-  columns: ReactNode;           // TableCell components
-  onRowClick?: (item: T) => void;
-  defaultOrderBy?: string;
-  defaultOrderDirection?: SortDirection;
-  emptyMessage?: string;
+    collectionName: string;
+    columns: ReactNode;           // TableCell components
+    onRowClick?: (item: T) => void;
+    defaultOrderBy?: string;
+    defaultOrderDirection?: SortDirection;
+    emptyMessage?: string;
 }
 
 interface HalResourceDisplayProps {
-  // Section visibility
-  hideLinks?: boolean;
-  hideForms?: boolean;
-  hideEmbedded?: boolean;
+    // Section visibility
+    hideLinks?: boolean;
+    hideForms?: boolean;
+    hideEmbedded?: boolean;
 
-  // Manual overrides (optional - auto-detects if not provided)
-  links?: Record<string, any>;
-  templates?: Record<string, HalFormsTemplate>;
+    // Manual overrides (optional - auto-detects if not provided)
+    links?: Record<string, any>;
+    templates?: Record<string, HalFormsTemplate>;
 
-  // Embedded table configuration
-  embeddedConfig?: EmbeddedTableConfig | EmbeddedTableConfig[];
+    // Embedded table configuration
+    embeddedConfig?: EmbeddedTableConfig | EmbeddedTableConfig[];
 
-  // Customization
-  onNavigate?: (href: string) => void;
-  formsModal?: boolean;
-  customFormLayouts?: Record<string, ReactNode | RenderFormCallback>;
-  sectionOrder?: Array<'links' | 'forms' | 'embedded'>;
-  spacing?: 'compact' | 'normal' | 'relaxed';
-  containerClassName?: string;
+    // Customization
+    onNavigate?: (href: string) => void;
+    formsModal?: boolean;
+    customFormLayouts?: Record<string, ReactNode | RenderFormCallback>;
+    sectionOrder?: Array<'links' | 'forms' | 'embedded'>;
+    spacing?: 'compact' | 'normal' | 'relaxed';
+    containerClassName?: string;
 }
 ```
 
@@ -214,15 +203,15 @@ interface HalResourceDisplayProps {
 ```tsx
 // Auto-detects and renders all available sections
 <HalResourceDisplay
-  embeddedConfig={{
-    collectionName: "membersApiResponseList",
-    columns: (
-      <>
-        <TableCell sortable column="firstName">Jméno</TableCell>
-        <TableCell sortable column="lastName">Příjmení</TableCell>
-      </>
-    )
-  }}
+    embeddedConfig={{
+        collectionName: "membersApiResponseList",
+        columns: (
+            <>
+                <TableCell sortable column="firstName">Jméno</TableCell>
+                <TableCell sortable column="lastName">Příjmení</TableCell>
+            </>
+        )
+    }}
 />
 ```
 
@@ -273,57 +262,57 @@ Rationale:
 
 ```tsx
 export function HalResourceDisplay({
-  hideLinks = false,
-  hideForms = false,
-  hideEmbedded = false,
-  links: propsLinks,
-  templates: propsTemplates,
-  embeddedConfig,
-  onNavigate,
-  formsModal = true,
-  customFormLayouts,
-  sectionOrder = ['embedded', 'links', 'forms'],
-  spacing = 'normal',
-  containerClassName = ''
-}: HalResourceDisplayProps): ReactElement | null {
+                                       hideLinks = false,
+                                       hideForms = false,
+                                       hideEmbedded = false,
+                                       links: propsLinks,
+                                       templates: propsTemplates,
+                                       embeddedConfig,
+                                       onNavigate,
+                                       formsModal = true,
+                                       customFormLayouts,
+                                       sectionOrder = ['embedded', 'links', 'forms'],
+                                       spacing = 'normal',
+                                       containerClassName = ''
+                                   }: HalResourceDisplayProps): ReactElement | null {
 
-  const {resourceData} = useHalPageData();
+    const {resourceData} = useHalPageData();
 
-  // Auto-detect or use provided data
-  const links = propsLinks || resourceData?._links;
-  const templates = propsTemplates || resourceData?._templates;
+    // Auto-detect or use provided data
+    const links = propsLinks || resourceData?._links;
+    const templates = propsTemplates || resourceData?._templates;
 
-  // Build section map
-  const sections = {
-    links: !hideLinks && shouldRenderLinks(links)
-      ? <HalLinksSection links={links} onNavigate={onNavigate} />
-      : null,
-    forms: !hideForms && shouldRenderForms(templates)
-      ? <HalFormsSection templates={templates} modal={formsModal} customLayouts={customFormLayouts} />
-      : null,
-    embedded: !hideEmbedded && shouldRenderEmbedded(embeddedConfig, resourceData)
-      ? renderEmbeddedSections(embeddedConfig)
-      : null
-  };
+    // Build section map
+    const sections = {
+        links: !hideLinks && shouldRenderLinks(links)
+            ? <HalLinksSection links={links} onNavigate={onNavigate}/>
+            : null,
+        forms: !hideForms && shouldRenderForms(templates)
+            ? <HalFormsSection templates={templates} modal={formsModal} customLayouts={customFormLayouts}/>
+            : null,
+        embedded: !hideEmbedded && shouldRenderEmbedded(embeddedConfig, resourceData)
+            ? renderEmbeddedSections(embeddedConfig)
+            : null
+    };
 
-  // Order and filter sections
-  const orderedSections = sectionOrder
-    .map(key => sections[key])
-    .filter(Boolean);
+    // Order and filter sections
+    const orderedSections = sectionOrder
+        .map(key => sections[key])
+        .filter(Boolean);
 
-  if (orderedSections.length === 0) return null;
+    if (orderedSections.length === 0) return null;
 
-  const spacingClasses = {
-    compact: 'space-y-2',
-    normal: 'space-y-4',
-    relaxed: 'space-y-8'
-  };
+    const spacingClasses = {
+        compact: 'space-y-2',
+        normal: 'space-y-4',
+        relaxed: 'space-y-8'
+    };
 
-  return (
-    <div className={`${spacingClasses[spacing]} ${containerClassName}`}>
-      {orderedSections}
-    </div>
-  );
+    return (
+        <div className={`${spacingClasses[spacing]} ${containerClassName}`}>
+            {orderedSections}
+        </div>
+    );
 }
 ```
 
@@ -601,7 +590,7 @@ graph LR
 
 **Objective:** Set up the test file with proper imports, mocks, and test utilities
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
 
 **Duration:** 30 minutes
 
@@ -737,7 +726,7 @@ npm run typecheck
 
 **Objective:** Create tests that verify the component correctly detects and renders HAL metadata
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
 
 **Duration:** 45 minutes
 
@@ -867,7 +856,7 @@ npm test -- --run src/components/HalNavigator2/HalResourceDisplay.test.tsx
 
 **Objective:** Create tests that verify the hide* props work correctly
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
 
 **Duration:** 30 minutes
 
@@ -981,7 +970,7 @@ it('should return null when all sections are hidden', () => {
 
 **Objective:** Create tests that verify section ordering works correctly
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
 
 **Duration:** 30 minutes
 
@@ -1106,7 +1095,7 @@ it('should handle partial section ordering correctly', () => {
 
 **Objective:** Create tests that verify spacing prop applies correct CSS classes
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
 
 **Duration:** 20 minutes
 
@@ -1192,7 +1181,7 @@ it('should apply custom container class', () => {
 
 **Objective:** Create tests that verify props are correctly passed to child components
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.test.tsx`
 
 **Duration:** 30 minutes
 
@@ -1325,7 +1314,7 @@ npm test -- --run src/components/HalNavigator2/HalResourceDisplay.test.tsx
 
 **Objective:** Define TypeScript types and interfaces for the component
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.tsx`
 
 **Duration:** 30 minutes
 
@@ -1481,7 +1470,7 @@ npm run typecheck
 
 **Objective:** Implement logic to detect available HAL metadata
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.tsx`
 
 **Duration:** 30 minutes
 
@@ -1597,7 +1586,7 @@ npm test -- --run src/components/HalNavigator2/HalResourceDisplay.test.tsx
 
 **Objective:** Implement logic to render sections using child components
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.tsx`
 
 **Duration:** 45 minutes
 
@@ -1737,7 +1726,7 @@ npm test -- --run src/components/HalNavigator2/HalResourceDisplay.test.tsx
 
 **Objective:** Implement section ordering and apply spacing styles
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.tsx`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.tsx`
 
 **Duration:** 30 minutes
 
@@ -1897,7 +1886,7 @@ npm test -- --run src/components/HalNavigator2/HalResourceDisplay.test.tsx --cov
 
 **Objective:** Export the new component and types from the module index
 
-**File:** `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/index.ts`
+**File:** `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/index.ts`
 
 **Duration:** 10 minutes
 
@@ -1906,7 +1895,7 @@ npm test -- --run src/components/HalNavigator2/HalResourceDisplay.test.tsx --cov
 12.1. **Check if index.ts exists:**
 
 ```bash
-ls frontend-2/src/components/HalNavigator2/index.ts
+ls frontend/src/components/HalNavigator2/index.ts
 ```
 
 12.2. **If file exists, add exports:**
@@ -2008,7 +1997,7 @@ npm run build
 14.1. **Create example file:**
 
 ```typescript
-// /home/davca/Documents/Devel/klabis/frontend-2/src/examples/HalResourceDisplayExample.tsx
+// /home/davca/Documents/Devel/klabis/frontend/src/examples/HalResourceDisplayExample.tsx
 
 import {type ReactElement} from 'react';
 import {HalResourceDisplay} from '../components/HalNavigator2';
@@ -2120,20 +2109,20 @@ Add comprehensive JSDoc examples to the component showing different usage patter
 
 ### New Files Created
 
-1. `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.test.tsx` -
+1. `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.test.tsx` -
    Comprehensive test suite
-2. `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.tsx` - Component
+2. `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.tsx` - Component
    implementation
 
 ### Modified Files
 
-1. `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/index.ts` - Added exports (if exists)
+1. `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/index.ts` - Added exports (if exists)
 
 ### Unchanged Files (Backward Compatible)
 
-1. `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalLinksSection.tsx`
-2. `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalFormsSection.tsx`
-3. `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalEmbeddedTable.tsx`
+1. `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalLinksSection.tsx`
+2. `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalFormsSection.tsx`
+3. `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalEmbeddedTable.tsx`
 4. All existing page components
 
 ## Backward Compatibility
@@ -2239,20 +2228,20 @@ export const MembersPage = (): ReactElement => {
 
 ### New Files
 
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.test.tsx` - Tests (
+- `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.test.tsx` - Tests (
   TDD - write first)
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalResourceDisplay.tsx` - Implementation
+- `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalResourceDisplay.tsx` - Implementation
 
 ### Modified Files
 
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/index.ts` - Add exports (if exists)
+- `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/index.ts` - Add exports (if exists)
 
 ### Reference Files (Unchanged)
 
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalLinksSection.tsx`
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalFormsSection.tsx`
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/components/HalNavigator2/HalEmbeddedTable.tsx`
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/hooks/useHalPageData.ts`
+- `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalLinksSection.tsx`
+- `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalFormsSection.tsx`
+- `/home/davca/Documents/Devel/klabis/frontend/src/components/HalNavigator2/HalEmbeddedTable.tsx`
+- `/home/davca/Documents/Devel/klabis/frontend/src/hooks/useHalPageData.ts`
 - `/home/davca/Documents/Devel/klabis/docs/frontend/testing_patterns.md`
 
 ## Testing Strategy

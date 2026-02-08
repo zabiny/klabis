@@ -18,5 +18,5 @@ backend/local.env
 
 /oauth2-authorizations.json
 /backend/http-client.env.json
-/frontend-2/tsconfig.tsbuildinfo
+/frontend/tsconfig.tsbuildinfo
 /.vite/vitest/results.json

@@ -965,7 +965,7 @@ const mockData = mockHalResponse({name: 'Custom Name'});
 
 ## Related Files
 
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/contexts/HalRouteContext.test.tsx` - Hook testing examples
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/pages/FinancesPage.test.tsx` - Component integration testing
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/pages/GenericHalPage.test.tsx` - Error handling patterns
-- `/home/davca/Documents/Devel/klabis/frontend-2/src/__mocks__/halData.ts` - Mock factory functions
+- `/home/davca/Documents/Devel/klabis/frontend/src/contexts/HalRouteContext.test.tsx` - Hook testing examples
+- `/home/davca/Documents/Devel/klabis/frontend/src/pages/FinancesPage.test.tsx` - Component integration testing
+- `/home/davca/Documents/Devel/klabis/frontend/src/pages/GenericHalPage.test.tsx` - Error handling patterns
+- `/home/davca/Documents/Devel/klabis/frontend/src/__mocks__/halData.ts` - Mock factory functions

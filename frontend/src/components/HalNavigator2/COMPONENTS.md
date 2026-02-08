@@ -111,12 +111,14 @@ HalFormButton, HalFormsSection, HalLinksSection - komponenty
 
 ## useHalPageData hook
 
-Hook, který kombinuje `useHalRoute`, `useHalActions` a `useIsAdmin`, poskytující unified rozhraní pro HAL resource data, akce a admin stav.
+Hook, který kombinuje `useHalRoute`, `useHalActions` a `useIsAdmin`, poskytující unified rozhraní pro HAL resource data,
+akce a admin stav.
 
 ### Signatura
 
 ```typescript
-const useHalPageData<T extends HalResponse = HalResponse>(): UseHalPageDataReturn<T> => { ...
+const useHalPageData
+<T extends HalResponse = HalResponse>(): UseHalPageDataReturn<T> => { ...
 }
 ```
 
@@ -176,21 +178,30 @@ import {useHalPageData} from '../hooks/useHalPageData';
 export const MyPage = () => {
     const {resourceData, isLoading, error, route, isAdmin} = useHalPageData();
 
-    if (isLoading) return <Spinner />;
-    if (error) return <Alert severity="error">{error.message}</Alert>;
+    if (isLoading) return <Spinner / >;
+    if (error) return <Alert severity = "error" > {error.message} < /Alert>;
 
     return (
         <div>
-            <h1>Pathname: {route.pathname}</h1>
-            {isAdmin && <AdminPanel />}
-        </div>
-    );
+            <h1>Pathname
+:
+    {
+        route.pathname
+    }
+    </h1>
+    {
+        isAdmin && <AdminPanel / >
+    }
+    </div>
+)
+    ;
 };
 ```
 
 ### Kdy volat `route.refetch()`
 
-`route.refetch()` se automaticky volá v `HalFormDisplay` po úspěšném odeslání formuláře. **Ruční volání je potřeba, když:**
+`route.refetch()` se automaticky volá v `HalFormDisplay` po úspěšném odeslání formuláře. **Ruční volání je potřeba,
+když:**
 
 - Chceš načíst data z API po nějaké akcí (např. po kliknutí na tlačítko mimo formulář)
 - Aktualizuješ data v rámci customizované logiky
@@ -223,7 +234,7 @@ interface HalFormButtonProps {
     modal?: boolean;
 
     /** Volitelné vlastní rozložení formuláře - ReactNode nebo callback (pouze v modal režimu) */
-   customLayout?: ReactNode | RenderFormCallback;
+    customLayout?: ReactNode | RenderFormCallback;
 }
 
 type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => ReactElement;
@@ -279,15 +290,23 @@ export const MemberDetailsPage = () => {
 
     return (
         <div>
-            <h1>Detail člena</h1>
+            <h1>Detail
+    člena < /h1>
 
-            {/* Tlačítko se zobrazí POUZE pokud v _templates existuje "editMember" */}
-            <HalFormButton name="editMember" modal={true} />
+    {/* Tlačítko se zobrazí POUZE pokud v _templates existuje "editMember" */
+    }
+    <HalFormButton name = "editMember"
+    modal = {true}
+    />
 
-            {/* Formulář se zobrazí inline s query param ?form=updateAddress */}
-            <HalFormButton name="updateAddress" modal={false} />
-        </div>
-    );
+    {/* Formulář se zobrazí inline s query param ?form=updateAddress */
+    }
+    <HalFormButton name = "updateAddress"
+    modal = {false}
+    />
+    < /div>
+)
+    ;
 };
 ```
 
@@ -315,33 +334,33 @@ import {HalFormButton} from '../components/HalNavigator2/HalFormButton';
 import {HalFormsFormField} from '../components/HalFormsForm/HalFormsForm';
 
 export const MemberDetailsPage = () => {
-   return (
-           <div>
-              {/* Vlastní rozložení s strukturou */}
-              <HalFormButton
-                      name="editMember"
-                      modal={true}
-                      customLayout={
-                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                               <h3>Osobní údaje</h3>
-                               <HalFormsFormField fieldName="firstName"/>
-                               <HalFormsFormField fieldName="lastName"/>
-                            </div>
-                            <div>
-                               <h3>Kontakt</h3>
-                               <HalFormsFormField fieldName="email"/>
-                               <HalFormsFormField fieldName="phone"/>
-                            </div>
-                            <div className="col-span-2 flex gap-2 mt-4">
-                               <HalFormsFormField fieldName="submit"/>
-                               <HalFormsFormField fieldName="cancel"/>
-                            </div>
-                         </div>
-                      }
-              />
-           </div>
-   );
+    return (
+        <div>
+            {/* Vlastní rozložení s strukturou */}
+            <HalFormButton
+                name="editMember"
+                modal={true}
+                customLayout={
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <h3>Osobní údaje</h3>
+                            <HalFormsFormField fieldName="firstName"/>
+                            <HalFormsFormField fieldName="lastName"/>
+                        </div>
+                        <div>
+                            <h3>Kontakt</h3>
+                            <HalFormsFormField fieldName="email"/>
+                            <HalFormsFormField fieldName="phone"/>
+                        </div>
+                        <div className="col-span-2 flex gap-2 mt-4">
+                            <HalFormsFormField fieldName="submit"/>
+                            <HalFormsFormField fieldName="cancel"/>
+                        </div>
+                    </div>
+                }
+            />
+        </div>
+    );
 };
 ```
 
@@ -349,26 +368,26 @@ export const MemberDetailsPage = () => {
 
 ```tsx
 <HalFormButton
-        name="editMember"
-        modal={true}
-        customLayout={(renderField) => (
-                <div className="space-y-4">
-                   <section>
-                      <h3 className="font-semibold mb-2">Osobní údaje</h3>
-                      {renderField('firstName')}
-                      {renderField('lastName')}
-                   </section>
-                   <section>
-                      <h3 className="font-semibold mb-2">Kontakt</h3>
-                      {renderField('email')}
-                      {renderField('phone')}
-                   </section>
-                   <div className="flex gap-2 mt-6">
-                      {renderField('submit')}
-                      {renderField('cancel')}
-                   </div>
-                </div>
-        )}
+    name="editMember"
+    modal={true}
+    customLayout={(renderField) => (
+        <div className="space-y-4">
+            <section>
+                <h3 className="font-semibold mb-2">Osobní údaje</h3>
+                {renderField('firstName')}
+                {renderField('lastName')}
+            </section>
+            <section>
+                <h3 className="font-semibold mb-2">Kontakt</h3>
+                {renderField('email')}
+                {renderField('phone')}
+            </section>
+            <div className="flex gap-2 mt-6">
+                {renderField('submit')}
+                {renderField('cancel')}
+            </div>
+        </div>
+    )}
 />
 ```
 
@@ -383,8 +402,8 @@ změně reference. Pro optimální výkon definuj layout mimo render funkci:
 ```tsx
 // ❌ Může způsobit zbytečné re-rendery
 <HalFormButton
-        name="edit"
-        customLayout={(renderField) => <div>{renderField('name')}</div>}
+    name="edit"
+    customLayout={(renderField) => <div>{renderField('name')}</div>}
 />
 
 // ✅ Lepší - stabilní reference
@@ -393,8 +412,8 @@ const customLayout = (renderField) => <div>{renderField('name')}</div>;
 
 // ✅ Nebo použij useMemo pro složitější layouty
 const customLayout = useMemo(
-        () => (renderField) => <div>{renderField('name')}</div>,
-        []
+    () => (renderField) => <div>{renderField('name')}</div>,
+    []
 );
 <HalFormButton name="edit" customLayout={customLayout}/>
 ```
@@ -416,8 +435,8 @@ interface HalFormsSectionProps {
     /** Zda otevřít formuláře v modálním okně (default: true) nebo inline */
     modal?: boolean;
 
-   /** Volitelná vlastní rozložení pro jednotlivé šablony */
-   customLayouts?: Record<string, ReactNode | RenderFormCallback>;
+    /** Volitelná vlastní rozložení pro jednotlivé šablony */
+    customLayouts?: Record<string, ReactNode | RenderFormCallback>;
 }
 ```
 
@@ -433,37 +452,44 @@ interface HalFormsSectionProps {
 **Příklad 1: Automatické - bez props (doporučeno)**
 
 ```typescript
-import { HalFormsSection } from '../components/HalNavigator2/HalFormsSection';
+import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
 
 export const CalendarPage = () => {
-  return (
-    <div>
-      <h1>Kalendář</h1>
-      {/* Automaticky čte z resourceData._templates a otevře v modálech */}
-      <HalFormsSection />
+    return (
+        <div>
+            <h1>Kalendář < /h1>
+    {/* Automaticky čte z resourceData._templates a otevře v modálech */
+    }
+    <HalFormsSection / >
     </div>
-  );
+)
+    ;
 };
 ```
 
 **Příklad 2: Manuální - s custom šablonami a inline režimem**
 
 ```typescript
-import { HalFormsSection } from '../components/HalNavigator2/HalFormsSection';
+import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
 
 export const CustomPage = () => {
-  const customTemplates = {
-    create: { /* HAL Forms template */ },
-    edit: { /* HAL Forms template */ },
-  };
+    const customTemplates = {
+        create: { /* HAL Forms template */},
+        edit: { /* HAL Forms template */},
+    };
 
-  return (
-    <div>
-      <h1>Custom formuláře</h1>
-      {/* Zobrazí inline - bez modálů */}
-      <HalFormsSection templates={customTemplates} modal={false} />
-    </div>
-  );
+    return (
+        <div>
+            <h1>Custom
+    formuláře < /h1>
+    {/* Zobrazí inline - bez modálů */
+    }
+    <HalFormsSection templates = {customTemplates}
+    modal = {false}
+    />
+    < /div>
+)
+    ;
 };
 ```
 
@@ -522,14 +548,24 @@ export const EventDetailsPage = () => {
     return (
         <HalFormsPageLayout>
             <div>
-                <h1>Detail akce</h1>
-                <p>Název: {resourceData?.name}</p>
+                <h1>Detail
+    akce < /h1>
+    < p > Název
+:
+    {
+        resourceData?.name
+    }
+    </p>
 
-                {/* Tlačítko v non-modal režimu */}
-                <HalFormButton name="editEvent" modal={false} />
-            </div>
-        </HalFormsPageLayout>
-    );
+    {/* Tlačítko v non-modal režimu */
+    }
+    <HalFormButton name = "editEvent"
+    modal = {false}
+    />
+    < /div>
+    < /HalFormsPageLayout>
+)
+    ;
 };
 ```
 
@@ -679,26 +715,40 @@ export const CustomFormWorkflow = () => {
 
     return (
         <>
-            <button onClick={() => setShowForm(true)}>
-                Zobrazit custom formulář
-            </button>
+            <button onClick = {()
+=>
+    setShowForm(true)
+}>
+    Zobrazit
+    custom
+    formulář
+    < /button>
 
-            {showForm && (
-                <HalFormDisplay
-                    template={resourceData._templates.customForm}
-                    templateName="customForm"
-                    resourceData={resourceData}
-                    pathname={route.pathname}
-                    onClose={() => setShowForm(false)}
-                    onSubmitSuccess={() => {
-                        setShowForm(false);
-                        // Další custom logika
-                    }}
-                    showCloseButton={true}
-                />
-            )}
-        </>
-    );
+    {
+        showForm && (
+            <HalFormDisplay
+                template = {resourceData._templates.customForm}
+        templateName = "customForm"
+        resourceData = {resourceData}
+        pathname = {route.pathname}
+        onClose = {()
+    =>
+        setShowForm(false)
+    }
+        onSubmitSuccess = {()
+    =>
+        {
+            setShowForm(false);
+            // Další custom logika
+        }
+    }
+        showCloseButton = {true}
+        />
+    )
+    }
+    </>
+)
+    ;
 };
 ```
 
@@ -721,19 +771,24 @@ export const CustomFormsUI = () => {
     const {resourceData} = useHalPageData();
 
     return (
-        <div className="custom-layout">
+        <div className = "custom-layout" >
             {resourceData?._templates &&
             Object.entries(resourceData._templates).map(([name, template]) => (
                 <HalFormTemplateButton
-                    key={name}
-                    template={template}
-                    templateName={name}
-                    onClick={() => handleFormClick(name)}
-                    className="my-custom-class"
-                />
-            ))}
-        </div>
-    );
+                    key = {name}
+    template = {template}
+    templateName = {name}
+    onClick = {()
+=>
+    handleFormClick(name)
+}
+    className = "my-custom-class"
+        / >
+))
+}
+    </div>
+)
+    ;
 };
 ```
 
@@ -776,16 +831,16 @@ interface HalLinksSectionProps {
 import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection';
 
 export const MemberDetailsPage = () => {
-   return (
-           <div>
-                   <h1>Detail
-   člena < /h1>
-   {/* Automaticky čte z resourceData._links a naviguje přes React Router */
-   }
-   <HalLinksSection / >
-   </div>
+    return (
+        <div>
+            <h1>Detail
+    člena < /h1>
+    {/* Automaticky čte z resourceData._links a naviguje přes React Router */
+    }
+    <HalLinksSection / >
+    </div>
 )
-   ;
+    ;
 };
 ```
 
@@ -797,29 +852,29 @@ import {extractNavigationPath} from '../utils/navigationPath';
 import {useNavigate} from 'react-router-dom';
 
 export const CustomPage = () => {
-   const navigate = useNavigate();
+    const navigate = useNavigate();
 
-   const customLinks = {
-      edit: {href: '/edit', title: 'Upravit'},
-      delete: {href: '/delete'},
-   };
+    const customLinks = {
+        edit: {href: '/edit', title: 'Upravit'},
+        delete: {href: '/delete'},
+    };
 
-   const handleNavigate = (href: string) => {
-      const path = extractNavigationPath(href);
-      navigate(path);
-   };
+    const handleNavigate = (href: string) => {
+        const path = extractNavigationPath(href);
+        navigate(path);
+    };
 
-   return (
-           <div>
-                   <h1>Custom
-   stránka < /h1>
-   < HalLinksSection
-   links = {customLinks}
-   onNavigate = {handleNavigate}
-   />
-   < /div>
+    return (
+        <div>
+            <h1>Custom
+    stránka < /h1>
+    < HalLinksSection
+    links = {customLinks}
+    onNavigate = {handleNavigate}
+    />
+    < /div>
 )
-   ;
+    ;
 };
 ```
 
@@ -861,23 +916,23 @@ Komponenta pro zobrazení HAL `_embedded` kolekce v tabulkovém formátu s autom
 
 ```typescript
 interface HalEmbeddedTableProps<T = any> {
-  /** Jméno kolekce v _embedded objektu */
-  collectionName: string;
+    /** Jméno kolekce v _embedded objektu */
+    collectionName: string;
 
-  /** Callback když uživatel klikne na řádek */
-  onRowClick?: (item: T) => void;
+    /** Callback když uživatel klikne na řádek */
+    onRowClick?: (item: T) => void;
 
-  /** Sloupec pro default řazení */
-  defaultOrderBy?: string;
+    /** Sloupec pro default řazení */
+    defaultOrderBy?: string;
 
-  /** Směr řazení (asc/desc) */
-  defaultOrderDirection?: SortDirection;
+    /** Směr řazení (asc/desc) */
+    defaultOrderDirection?: SortDirection;
 
-  /** Zpráva když nejsou data */
-  emptyMessage?: string;
+    /** Zpráva když nejsou data */
+    emptyMessage?: string;
 
-  /** Definice sloupců (TableCell komponenty) */
-  children: React.ReactNode;
+    /** Definice sloupců (TableCell komponenty) */
+    children: React.ReactNode;
 }
 ```
 
@@ -915,41 +970,41 @@ import {TableCell} from '../components/KlabisTable';
 import {useNavigate} from 'react-router-dom';
 
 interface Member {
-   id: number;
-   firstName: string;
-   lastName: string;
-   registrationNumber: string;
+    id: number;
+    firstName: string;
+    lastName: string;
+    registrationNumber: string;
 }
 
 export const MembersPage = () => {
-   const navigate = useNavigate();
+    const navigate = useNavigate();
 
-   const handleRowClick = (member: Member) => {
-      navigate(`/members/${member.id}`);
-   };
+    const handleRowClick = (member: Member) => {
+        navigate(`/members/${member.id}`);
+    };
 
-   return (
-           <div>
-                   <h1>Adresář
-   členů < /h1>
+    return (
+        <div>
+            <h1>Adresář
+    členů < /h1>
 
-   < HalEmbeddedTable<Member>
-   collectionName = "membersApiResponseList"
-   defaultOrderBy = "lastName"
-   defaultOrderDirection = "asc"
-   onRowClick = {handleRowClick}
-   >
-   <TableCell column = "firstName"
-   sortable > Jméno < /TableCell>
-   < TableCell
-   column = "lastName"
-   sortable > Příjmení < /TableCell>
-   < TableCell
-   column = "registrationNumber" > Reg.číslo < /TableCell>
-           < /HalEmbeddedTable>
-           < /div>
+    < HalEmbeddedTable<Member>
+    collectionName = "membersApiResponseList"
+    defaultOrderBy = "lastName"
+    defaultOrderDirection = "asc"
+    onRowClick = {handleRowClick}
+    >
+    <TableCell column = "firstName"
+    sortable > Jméno < /TableCell>
+    < TableCell
+    column = "lastName"
+    sortable > Příjmení < /TableCell>
+    < TableCell
+    column = "registrationNumber" > Reg.číslo < /TableCell>
+        < /HalEmbeddedTable>
+        < /div>
 )
-   ;
+    ;
 };
 ```
 
@@ -959,10 +1014,10 @@ export const MembersPage = () => {
 2. `HalEmbeddedTable` extrahuje `self` link z `resourceData._links`
 3. Předá link do `KlabisTableWithQuery` s `collectionName`
 4. `KlabisTableWithQuery` si vezme starosti o:
-   - Data fetching z API (useAuthorizedQuery)
-   - Pagination state management
-   - Sort state management
-   - Query parameter building (`page`, `size`, `sort`)
+    - Data fetching z API (useAuthorizedQuery)
+    - Pagination state management
+    - Sort state management
+    - Query parameter building (`page`, `size`, `sort`)
 5. `KlabisTable` (pure UI) renderuje tabulku s daty
 
 #### Kdy ji používat
@@ -987,11 +1042,17 @@ import {KlabisTable} from '../components/KlabisTable';
 
 // Spravuješ data a state sám
 <KlabisTable
-   data={myData}
-   page={pageInfo}
-   error={error}
-   onSortChange={(col, dir) => handleSort(col, dir)}
-   onPageChange={(newPage) => handlePageChange(newPage)}
+    data = {myData}
+page = {pageInfo}
+error = {error}
+onSortChange = {(col, dir)
+=>
+handleSort(col, dir)
+}
+onPageChange = {(newPage)
+=>
+handlePageChange(newPage)
+}
 />
 ```
 
@@ -1239,11 +1300,11 @@ export const MemberDetailPage = () => {
 
 **Projekty:**
 
-- `/frontend-2/src/contexts/HalRouteContext.tsx` - HalRoute context pro HAL data
-- `/frontend-2/src/contexts/HalFormContext.tsx` - HalForm context pro modal formuláře
-- `/frontend-2/src/components/HalNavigator2/` - Všechny komponenty
-- `/frontend-2/src/pages/MemberDetailsPage.tsx` - Real-world example
-- `/frontend-2/src/pages/CalendarPage.tsx` - Real-world example
+- `/frontend/src/contexts/HalRouteContext.tsx` - HalRoute context pro HAL data
+- `/frontend/src/contexts/HalFormContext.tsx` - HalForm context pro modal formuláře
+- `/frontend/src/components/HalNavigator2/` - Všechny komponenty
+- `/frontend/src/pages/MemberDetailsPage.tsx` - Real-world example
+- `/frontend/src/pages/CalendarPage.tsx` - Real-world example
 
 **Specifikace:**
 

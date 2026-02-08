@@ -81,6 +81,7 @@ export interface HalFormsTemplate {
     title?: string;
     properties: Array<HalFormsProperty>
 }
+
 export type EntityModel<T> = T & { _links: { [rel: string]: Link | Link[] } };
 // Type guards for HAL responses with specific structures
 

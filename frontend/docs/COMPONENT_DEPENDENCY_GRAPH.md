@@ -1,6 +1,6 @@
-# Frontend-2 Component Dependency Graph
+# Frontend Component Dependency Graph
 
-This document visualizes the dependency relationships between pages and UI components in the frontend-2 application.
+This document visualizes the dependency relationships between pages and UI components in the frontend application.
 
 ---
 
@@ -180,7 +180,6 @@ graph TD
     end
 
     Icons["Icon Components<br/>(Folder: UI/icons/)"]
-
     FieldWrapper --> TextField
     FieldWrapper --> SelectField
     FieldWrapper --> CheckboxField
@@ -220,11 +219,9 @@ graph TD
     HalRouteCtx --> UseHalRoute
     HalFormCtx --> UseHalFormData
     AuthCtx --> UseIsAdmin
-
     UseHalRoute --> HalLinksSection
     UseHalRoute --> HalFormsSection
     UseHalRoute --> Pages
-
     UseHalFormOptions --> HalFormDisplay
     UseAuthorizedFetch --> Components
 ```
@@ -256,20 +253,16 @@ graph TD
     end
 
     UI["UI Components<br/>(Button, Card, etc.)"]
-
     MemberDetailsPage --> MemberDetailsCard
     MemberDetailsPage --> MemberDetailsField
     MemberDetailsPage --> MemberName
-
     MemberDetailsCard --> MemberDetailsField
     MemberDetailsCard --> AddressFields
     MemberDetailsCard --> ContactFields
-
     KlabisFieldFactory --> HalInput
     KlabisFieldFactory --> HalSelect
     KlabisFieldFactory --> HalBoolean
     KlabisFieldFactory --> HalCheckboxGroup
-
     MemberDetailsField --> UI
 ```
 
@@ -448,7 +441,7 @@ sequenceDiagram
 ### Current Structure ✅
 
 ```
-frontend-2/src/
+frontend/src/
 ├── components/
 │   ├── HalNavigator2/          # HAL protocol implementation
 │   │   ├── halforms/           # Form components & fields

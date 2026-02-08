@@ -13,38 +13,39 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {vi} from 'vitest';
 
 vi.mock('../../hooks/useHalPageData', () => ({
-	useHalPageData: vi.fn(),
+    useHalPageData: vi.fn(),
 }));
 
 const createMockPageData = (resourceData: HalResponse | null, pathname: string = '/members/123') => ({
-	resourceData,
-	isLoading: false,
-	error: null,
-	isAdmin: false,
-	route: {
-		pathname,
-		navigateToResource: vi.fn(),
-		refetch: async () => {},
-		queryState: 'success',
-		getResourceLink: vi.fn(),
-	},
-	actions: {
-		handleNavigateToItem: vi.fn(),
-	},
-	getLinks: vi.fn(() => undefined),
-	getTemplates: vi.fn(() => undefined),
-	hasEmbedded: vi.fn(() => false),
-	getEmbeddedItems: vi.fn(() => []),
-	isCollection: vi.fn(() => false),
-	hasLink: vi.fn(() => false),
-	hasTemplate: vi.fn(() => false),
-	hasForms: vi.fn(() => false),
-	getPageMetadata: vi.fn(() => undefined),
+    resourceData,
+    isLoading: false,
+    error: null,
+    isAdmin: false,
+    route: {
+        pathname,
+        navigateToResource: vi.fn(),
+        refetch: async () => {
+        },
+        queryState: 'success',
+        getResourceLink: vi.fn(),
+    },
+    actions: {
+        handleNavigateToItem: vi.fn(),
+    },
+    getLinks: vi.fn(() => undefined),
+    getTemplates: vi.fn(() => undefined),
+    hasEmbedded: vi.fn(() => false),
+    getEmbeddedItems: vi.fn(() => []),
+    isCollection: vi.fn(() => false),
+    hasLink: vi.fn(() => false),
+    hasTemplate: vi.fn(() => false),
+    hasForms: vi.fn(() => false),
+    getPageMetadata: vi.fn(() => undefined),
 });
 
 beforeEach(() => {
-	const mockUseHalPageData = vi.mocked(useHalPageData);
-	mockUseHalPageData.mockReturnValue(createMockPageData(null) as any);
+    const mockUseHalPageData = vi.mocked(useHalPageData);
+    mockUseHalPageData.mockReturnValue(createMockPageData(null) as any);
 });
 
 // Mock dependencies

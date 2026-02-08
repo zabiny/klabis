@@ -27,7 +27,8 @@ const createMockPageData = (overrides: any = {}) => ({
     route: {
         pathname: '/test',
         navigateToResource: vi.fn(),
-        refetch: async () => {},
+        refetch: async () => {
+        },
         queryState: 'success',
         getResourceLink: vi.fn(),
     },
