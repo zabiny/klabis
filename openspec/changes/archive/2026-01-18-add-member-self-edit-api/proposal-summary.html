@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Self-Edit & Admin Edit API - Proposal Summary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        h3 {
+            color: #555;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        .header-info {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+
+        .header-info p {
+            margin: 5px 0;
+        }
+
+        .highlight-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-member {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-admin {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-value-object {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+
+        .decision {
+            background: #fff;
+            border: 2px solid #27ae60;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .decision-title {
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .pros {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .cons {
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .pros h4 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+
+        .cons h4 {
+            color: #721c24;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📋 Member Self-Edit & Admin Edit API - Proposal Summary</h1>
+
+    <div class="header-info">
+        <p><strong>GitHub Issue:</strong> <a href="https://github.com/zabiny/klabis/issues/4">https://github.com/zabiny/klabis/issues/4</a>
+        </p>
+        <p><strong>Change ID:</strong> add-member-self-edit-api</p>
+        <p><strong>Status:</strong> Ready for Review</p>
+        <p><strong>Branch:</strong> specs</p>
+    </div>
+
+    <div class="highlight-box">
+        <h3>🎯 Executive Summary</h3>
+        <p><strong>Problem:</strong> Members currently cannot update their own personal information. All updates require
+            administrator intervention, creating overhead and potential delays.</p>
+        <br>
+        <p><strong>Solution:</strong> Implement a member self-edit API that allows members to update their own
+            information, with administrators able to edit core data (name, date of birth) when needed.</p>
+        <br>
+        <p><strong>Impact:</strong> Reduces administrative workload, improves data accuracy, and enhances member
+            satisfaction while maintaining data security through role-based access control.</p>
+    </div>
+
+    <h2>1. What's Changing</h2>
+
+    <h3>🆕 New API Endpoint</h3>
+    <p><code>PATCH /api/members/{id}</code> - Update member information</p>
+
+    <h3>👤 Two Authorization Models</h3>
+
+    <div class="two-column">
+        <div class="info-box">
+            <h4>Member Self-Edit</h4>
+            <ul>
+                <li>Members can only edit <strong>their own</strong> information</li>
+                <li>Access matched via OAuth2 subject</li>
+                <li>Limited set of editable fields</li>
+                <li>Prevents accidental data corruption</li>
+            </ul>
+        </div>
+
+        <div class="warning-box">
+            <h4>Admin Edit</h4>
+            <ul>
+                <li>Users with <code>MEMBERS:UPDATE</code> permission</li>
+                <li>Can edit <strong>any member's</strong> information</li>
+                <li>Additional fields: firstName, lastName, dateOfBirth</li>
+                <li>For data corrections and critical updates</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>📝 Fields Members Can Edit</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Field/Group</th>
+            <th>Description</th>
+            <th>Type</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>Chip number</td>
+            <td>Číslo čipu (numeric only)</td>
+            <td>String</td>
+        </tr>
+        <tr>
+            <td>Nationality</td>
+            <td>Národnost (required)</td>
+            <td>String (ISO 3166-1 alpha-2)</td>
+        </tr>
+        <tr>
+            <td>Address</td>
+            <td>Ulice, city, postal code, country (all required)</td>
+            <td><span class="badge badge-value-object">Value Object</span></td>
+        </tr>
+        <tr>
+            <td>Email</td>
+            <td>Member's own email</td>
+            <td>String</td>
+        </tr>
+        <tr>
+            <td>Phone</td>
+            <td>Member's own phone</td>
+            <td>String</td>
+        </tr>
+        <tr>
+            <td>Bank account</td>
+            <td>Číslo bankovního účtu</td>
+            <td>String</td>
+        </tr>
+        <tr>
+            <td>Guardian contact</td>
+            <td>Legal guardian's email & phone</td>
+            <td>String</td>
+        </tr>
+        <tr>
+            <td>ID Card</td>
+            <td>Číslo OP a platnost</td>
+            <td><span class="badge badge-value-object">Value Object</span></td>
+        </tr>
+        <tr>
+            <td>Dietary restrictions</td>
+            <td>Dieta (food requirements for accommodation)</td>
+            <td>Text (max 500 chars)</td>
+        </tr>
+        <tr>
+            <td>Driving license</td>
+            <td>Skupina řidičského oprávnění (B, BE, C, D...)</td>
+            <td>Enum</td>
+        </tr>
+        <tr>
+            <td>Medical course</td>
+            <td>Zdravotnický kurz + platnost</td>
+            <td><span class="badge badge-value-object">Value Object</span></td>
+        </tr>
+        <tr>
+            <td>Trainer license</td>
+            <td>Trenérská licence a platnost</td>
+            <td><span class="badge badge-value-object">Value Object</span></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>🔒 Admin-Only Fields</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Field</th>
+            <th>Description</th>
+            <th>Who Can Edit</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>First name</td>
+            <td>Jméno</td>
+            <td><span class="badge badge-admin">Admins only</span></td>
+        </tr>
+        <tr>
+            <td>Last name</td>
+            <td>Příjmení</td>
+            <td><span class="badge badge-admin">Admins only</span></td>
+        </tr>
+        <tr>
+            <td>Date of birth</td>
+            <td>Datum narození</td>
+            <td><span class="badge badge-admin">Admins only</span></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2>2. Important Validation Rules</h2>
+
+    <div class="success-box">
+        <h3>✅ Contact Requirements</h3>
+        <ul>
+            <li><strong>At least one email</strong> must be provided (either member's own OR guardian's)</li>
+            <li><strong>At least one phone</strong> must be provided (either member's own OR guardian's)</li>
+            <li>This ensures we can always reach the member or their legal guardian</li>
+        </ul>
+    </div>
+
+    <div class="warning-box">
+        <h3>⚠️ Document Expiry Validation</h3>
+        <p><strong>Important:</strong> Expiry date validation <strong>only applies when setting/updating</strong> a
+            document.</p>
+        <ul>
+            <li>Member CAN update phone number even if their ID card is expired</li>
+            <li>Member CAN update address even if their trainer license is expired</li>
+            <li>Validation prevents <strong>setting</strong> expired documents, but doesn't block other updates</li>
+            <li>This provides better user experience while maintaining data integrity</li>
+        </ul>
+    </div>
+
+    <div class="info-box">
+        <h3>🇨🇿 Nationality-Dependent Fields</h3>
+        <ul>
+            <li><strong>Rodné číslo</strong> (Czech ID number) field is <strong>only available</strong> when Czech
+                nationality is selected
+            </li>
+            <li>If nationality changes from Czech to non-Czech, the rodné číslo field is cleared</li>
+            <li>This is a conditional field based on nationality selection</li>
+        </ul>
+    </div>
+
+    <h2>3. Technical Decisions</h2>
+
+    <div class="decision">
+        <div class="decision-title">🔧 Decision 1: PATCH vs PUT</div>
+        <p><strong>Chosen:</strong> <code>PATCH /api/members/{id}</code> (partial updates)</p>
+
+        <div class="pros-cons">
+            <div class="pros">
+                <h4>✅ Why PATCH (Benefits)</h4>
+                <ul>
+                    <li><strong>Bandwidth efficient:</strong> Only send changed fields</li>
+                    <li><strong>Better UX:</strong> Matches real-world editing (1-3 fields typically)</li>
+                    <li><strong>Mobile-friendly:</strong> Less data transfer</li>
+                    <li><strong>Prevents data loss:</strong> Concurrent edits to different fields don't overwrite each
+                        other
+                    </li>
+                    <li><strong>Industry standard:</strong> Modern RESTful API best practice</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h4>❌ Trade-offs</h4>
+                <ul>
+                    <li><strong>Higher complexity:</strong> ~4-5x more code than PUT (~40-50 LOC vs ~10 LOC)</li>
+                    <li><strong>Merge logic:</strong> Must carefully merge partial data with existing state</li>
+                    <li><strong>Null semantics:</strong> Must define what null means (we chose: null = ignore field)
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <p><strong>Exit Strategy:</strong> Can add PUT endpoint later if needed (low complexity). PATCH can be
+            deprecated if it proves overkill.</p>
+    </div>
+
+    <div class="decision">
+        <div class="decision-title">🏗️ Decision 2: Value Objects for Complex Data</div>
+        <p><strong>Chosen:</strong> Domain-Driven Design (DDD) value objects instead of scattered primitive fields</p>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Value Object</th>
+                <th>Contains</th>
+                <th>Benefits</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><strong>IdentityCard</strong></td>
+                <td>cardNumber + validityDate</td>
+                <td>Encapsulation, validation at construction, immutable</td>
+            </tr>
+            <tr>
+                <td><strong>MedicalCourse</strong></td>
+                <td>completionDate + optional validityDate</td>
+                <td>Keeps related data together, ensures validity after completion</td>
+            </tr>
+            <tr>
+                <td><strong>TrainerLicense</strong></td>
+                <td>licenseNumber + validityDate</td>
+                <td>Type-safe, reusable, self-validating</td>
+            </tr>
+            <tr>
+                <td><strong>Address</strong></td>
+                <td>street + city + postalCode + country</td>
+                <td>Already exists, proven pattern</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Benefits:</strong> Better encapsulation, type safety, validation enforcement, easier testing,
+            self-documenting code.</p>
+    </div>
+
+    <h2>4. Implementation Overview</h2>
+
+    <h3>📊 What Will Be Built</h3>
+
+    <ol>
+        <li><strong>Domain Model</strong>
+            <ul>
+                <li>3 new value objects: IdentityCard, MedicalCourse, TrainerLicense</li>
+                <li>1 new enum: DrivingLicenseGroup</li>
+                <li>1 new text field: dietaryRestrictions</li>
+            </ul>
+        </li>
+        <li><strong>API Endpoint</strong>
+            <ul>
+                <li><code>PATCH /api/members/{id}</code> with role-based field access</li>
+                <li>HATEOAS hypermedia controls (HAL+FORMS format)</li>
+                <li>Dynamic templates based on user role (member vs admin)</li>
+            </ul>
+        </li>
+        <li><strong>Authorization</strong>
+            <ul>
+                <li>Self-edit: OAuth2 subject must match member ID</li>
+                <li>Admin edit: MEMBERS:UPDATE permission required</li>
+                <li>Role-based field filtering (members can't edit admin-only fields)</li>
+            </ul>
+        </li>
+        <li><strong>Database</strong>
+            <ul>
+                <li>New columns for each value object</li>
+                <li>Optimistic locking (version column) to prevent concurrent update conflicts</li>
+                <li>Indexes on expiry date fields for future queries</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>🔄 API Response Format</h3>
+
+    <div class="info-box">
+        <p><strong>Example Request:</strong></p>
+        <code>PATCH /api/members/123</code>
+        <pre><code>{
+  "phone": "+420 987 654 321",
+  "drivingLicenseGroup": "B"
+}</code></pre>
+
+        <p><strong>Example Response:</strong></p>
+        <pre><code>{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "firstName": "Jan",
+  "lastName": "Novák",
+  "phone": "+420 987 654 321",
+  "drivingLicenseGroup": "B",
+  "_links": {
+    "self": {"href": "/api/members/123"},
+    "edit": {"href": "/api/members/123"},
+    "collection": {"href": "/api/members"}
+  }
+}</code></pre>
+    </div>
+
+    <h2>5. Impact & Benefits</h2>
+
+    <div class="two-column">
+        <div class="success-box">
+            <h4>✅ Business Benefits</h4>
+            <ul>
+                <li><strong>Reduced admin workload:</strong> Members update their own data</li>
+                <li><strong>Faster updates:</strong> No waiting for admin intervention</li>
+                <li><strong>Better data accuracy:</strong> Members keep their info current</li>
+                <li><strong>Improved member satisfaction:</strong> Self-service capability</li>
+                <li><strong>Dietary requests handled:</strong> Food accommodation planning</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h4>🔒 Security & Control</h4>
+            <ul>
+                <li><strong>Role-based access:</strong> Members can only edit their own data</li>
+                <li><strong>Admin oversight:</strong> Core fields (name, DOB) remain admin-only</li>
+                <li><strong>Audit trail:</strong> All changes logged with user context</li>
+                <li><strong>Optimistic locking:</strong> Prevents concurrent update conflicts</li>
+                <li><strong>Field filtering:</strong> Non-admins can't access admin-only fields</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>6. Risks & Mitigations</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th style="width: 35%;">Risk</th>
+            <th style="width: 65%;">Mitigation</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><strong>Members accidentally break their data</strong></td>
+            <td>Strict validation rules, admin can still edit core fields (name, DOB), optimistic locking prevents
+                concurrent overwrites
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Higher implementation complexity</strong></td>
+            <td>Comprehensive testing, clear documentation, value objects encapsulate validation logic, can fall back to
+                PUT if needed
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Expired documents in database</strong></td>
+            <td>Accepted design choice - allows updating other fields, UI can show warnings, background job can flag
+                expired documents
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Mobile app performance</strong></td>
+            <td>PATCH reduces bandwidth (only send changed fields), value objects keep payloads small</td>
+        </tr>
+        <tr>
+            <td><strong>Concurrent edits causing conflicts</strong></td>
+            <td>PATCH only updates specified fields (other fields untouched), optimistic locking (version column)
+                detects conflicts
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2>7. Success Criteria</h2>
+
+    <div class="success-box">
+        <p>We will validate the success of this implementation based on:</p>
+        <ul>
+            <li>✅ <strong>Usage metrics:</strong> Average fields updated per request < 5 (indicates PATCH is
+                appropriate)
+            </li>
+            <li>✅ <strong>Data integrity:</strong> Race condition data loss issues < 1 per month</li>
+            <li>✅ <strong>User feedback:</strong> Mobile app and web performance acceptable</li>
+            <li>✅ <strong>Team velocity:</strong> Complexity doesn't slow future development</li>
+            <li>✅ <strong>Admin workload:</strong> Measurable reduction in manual update requests</li>
+        </ul>
+    </div>
+
+    <h2>8. Next Steps</h2>
+
+    <ol>
+        <li><strong>Review & Approve</strong> - Review this proposal and approve if acceptable</li>
+        <li><strong>Create Implementation Tasks</strong> - Break down into development tasks</li>
+        <li><strong>Implementation</strong> - Develop according to OpenSpec specification</li>
+        <li><strong>Testing</strong> - Comprehensive unit, integration, and HTTP client tests</li>
+        <li><strong>Documentation</strong> - Update API documentation with examples</li>
+        <li><strong>Deployment</strong> - Roll out to production with monitoring</li>
+        <li><strong>Review</strong> - Assess success criteria after 6 months</li>
+    </ol>
+
+    <div class="highlight-box">
+        <h3>📎 Additional Resources</h3>
+        <ul>
+            <li><strong>Full Specification:</strong> <code>openspec/changes/add-member-self-edit-api/specs/members/spec.md</code>
+            </li>
+            <li><strong>Implementation Tasks:</strong> <code>openspec/changes/add-member-self-edit-api/tasks.md</code>
+            </li>
+            <li><strong>Technical Design:</strong> <code>openspec/changes/add-member-self-edit-api/design.md</code></li>
+            <li><strong>GitHub Issue:</strong> <a href="https://github.com/zabiny/klabis/issues/4">https://github.com/zabiny/klabis/issues/4</a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="warning-box">
+        <h3>⚠️ Review Checklist</h3>
+        <p>Please review and confirm:</p>
+        <ul>
+            <li>☐ Member self-edit fields are appropriate for self-service</li>
+            <li>☐ Admin-only fields (firstName, lastName, dateOfBirth) should remain admin-only</li>
+            <li>☐ Validation rules (email/phone requirements) are acceptable</li>
+            <li>☐ Expiry validation approach (only on set, not on read) is acceptable</li>
+            <li>☐ PATCH approach (partial updates) is appropriate for use case</li>
+            <li>☐ Value object design aligns with DDD principles</li>
+            <li>☐ Impact on existing members and systems is acceptable</li>
+            <li>☐ Success criteria and metrics are appropriate</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #7f8c8d;">
+        <p><strong>Proposal Status:</strong> Ready for Approval | <strong>Generated:</strong> 2025-01-17</p>
+        <p><strong>OpenSpec Change ID:</strong> add-member-self-edit-api</p>
+    </div>
+</div>
+</body>
+</html>

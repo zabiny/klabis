@@ -1,0 +1,130 @@
+package com.klabis.events;
+
+import com.klabis.users.UserId;
+import org.jmolecules.ddd.annotation.Association;
+import org.jmolecules.ddd.annotation.ValueObject;
+
+import java.time.Instant;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Value Object representing a member's registration for an event.
+ * <p>
+ * This represents the association between a member and an event,
+ * capturing the SI card number they will use for the event.
+ * <p>
+ * Business rules:
+ * - Each registration has a unique ID
+ * - Both memberId and siCardNumber are required
+ * - Registration timestamp is automatically set at creation
+ * - Equality is based solely on registration ID
+ */
+@ValueObject
+public class EventRegistration {
+
+    private final UUID id;
+    @Association
+    private final UserId memberId;
+    private final SiCardNumber siCardNumber;
+    private final Instant registeredAt;
+
+    /**
+     * Private constructor for creating EventRegistration instances.
+     *
+     * @param id           unique registration identifier
+     * @param memberId     member's user ID
+     * @param siCardNumber SI card number for this registration
+     * @param registeredAt timestamp when registration was created
+     */
+    private EventRegistration(UUID id, UserId memberId, SiCardNumber siCardNumber, Instant registeredAt) {
+        this.id = id;
+        this.memberId = memberId;
+        this.siCardNumber = siCardNumber;
+        this.registeredAt = registeredAt;
+    }
+
+    /**
+     * Static factory method to create a new EventRegistration.
+     * <p>
+     * Generates a unique ID and sets the registration timestamp automatically.
+     *
+     * @param memberId     member's user ID (required)
+     * @param siCardNumber SI card number (required)
+     * @return new EventRegistration instance
+     * @throws IllegalArgumentException if validation fails
+     */
+    public static EventRegistration create(UserId memberId, SiCardNumber siCardNumber) {
+        if (memberId == null) {
+            throw new IllegalArgumentException("memberId is required");
+        }
+        if (siCardNumber == null) {
+            throw new IllegalArgumentException("siCardNumber is required");
+        }
+
+        return new EventRegistration(
+                UUID.randomUUID(),
+                memberId,
+                siCardNumber,
+                Instant.now()
+        );
+    }
+
+    /**
+     * Factory method for reconstructing EventRegistration from persistence layer.
+     * <p>
+     * This bypasses validation since the data was already validated when originally stored.
+     *
+     * @param id           registration's unique identifier
+     * @param memberId     member's user ID
+     * @param siCardNumber SI card number
+     * @param registeredAt registration timestamp
+     * @return reconstructed EventRegistration instance
+     */
+    public static EventRegistration reconstruct(UUID id, UserId memberId, SiCardNumber siCardNumber, Instant registeredAt) {
+        return new EventRegistration(id, memberId, siCardNumber, registeredAt);
+    }
+
+    // ========== Getters ==========
+
+    public UUID id() {
+        return id;
+    }
+
+    public UserId memberId() {
+        return memberId;
+    }
+
+    public SiCardNumber siCardNumber() {
+        return siCardNumber;
+    }
+
+    public Instant registeredAt() {
+        return registeredAt;
+    }
+
+    // ========== Object Methods ==========
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EventRegistration that = (EventRegistration) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "EventRegistration{" +
+               "id=" + id +
+               ", memberId=" + memberId +
+               ", siCardNumber=" + siCardNumber +
+               ", registeredAt=" + registeredAt +
+               '}';
+    }
+}

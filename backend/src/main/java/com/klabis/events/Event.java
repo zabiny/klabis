@@ -1,0 +1,537 @@
+package com.klabis.events;
+
+import com.klabis.users.UserId;
+import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Association;
+import org.jmolecules.ddd.annotation.Identity;
+import org.springframework.data.domain.DomainEvents;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.*;
+
+/**
+ * Event aggregate root.
+ * <p>
+ * Represents an orienteering event with details about name, date, location, and coordinator.
+ * This is the aggregate root for the Events bounded context.
+ * <p>
+ * Business invariants:
+ * - Name, event date, location, and organizer are required
+ * - Website URL and event coordinator are optional
+ * - Events start in DRAFT status
+ * - Status transitions follow defined lifecycle rules
+ * - Updates only allowed in DRAFT and ACTIVE status
+ *
+ * <p>Persistence:
+ * - This aggregate root is a pure domain object without Spring Data JDBC annotations
+ * - ID is stored as UUID in database, exposed as EventId value object in domain
+ * - Value objects are maintained as fields for domain logic
+ * - Domain events are published via Spring Modulith's transactional outbox pattern
+ */
+@AggregateRoot
+public class Event {
+
+    @Identity
+    private final EventId id;
+
+    // Event details
+    private String name;
+    private LocalDate eventDate;
+    private String location;
+    private String organizer;
+    private WebsiteUrl websiteUrl;
+    @Association
+    private UserId eventCoordinatorId;
+    private EventStatus status;
+
+    // Event registrations
+    private final List<EventRegistration> registrations = new ArrayList<>();
+
+    // Audit metadata
+    private Instant createdAt;
+    private String createdBy;
+    private Instant lastModifiedAt;
+    private String lastModifiedBy;
+
+    // Domain events list (published synchronously in same thread, no concurrent access)
+    private final List<Object> domainEvents = new ArrayList<>();
+
+    /**
+     * Private constructor for creating new Event instances.
+     * <p>
+     * This constructor is used by the static factory methods (create, reconstruct)
+     * to ensure business invariants are validated during construction.
+     */
+    private Event(
+            EventId id,
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            UserId eventCoordinatorId,
+            EventStatus status) {
+
+        this.id = id;
+        this.name = name;
+        this.eventDate = eventDate;
+        this.location = location;
+        this.organizer = organizer;
+        this.websiteUrl = websiteUrl;
+        this.eventCoordinatorId = eventCoordinatorId;
+        this.status = status;
+    }
+
+    /**
+     * Factory method for reconstructing Event from persistence layer.
+     * This bypasses validation since the data was already validated when originally stored.
+     * <p>
+     * This method is public only for infrastructure/persistence layer usage.
+     * Use {@link #create(String, LocalDate, String, String, WebsiteUrl, UserId)} for creating new events.
+     *
+     * @param id                 event's unique identifier
+     * @param name               event name
+     * @param eventDate          event date
+     * @param location           event location
+     * @param organizer          event organizer
+     * @param websiteUrl         event website URL (may be null)
+     * @param eventCoordinatorId event coordinator ID (may be null)
+     * @param status             event status
+     * @return reconstructed Event instance
+     */
+    public static Event reconstruct(
+            EventId id,
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            UserId eventCoordinatorId,
+            EventStatus status) {
+
+        Event event = new Event(
+                id,
+                name,
+                eventDate,
+                location,
+                organizer,
+                websiteUrl,
+                eventCoordinatorId,
+                status
+        );
+        // No domain events for reconstructed entities
+        return event;
+    }
+
+    /**
+     * Static factory method to create a new Event.
+     * <p>
+     * Creates a new event in DRAFT status with a generated ID.
+     * The event must be published using {@link #publish()} to make it ACTIVE.
+     *
+     * @param name               event name (required)
+     * @param eventDate          event date (required)
+     * @param location           event location (required)
+     * @param organizer          event organizer (required)
+     * @param websiteUrl         event website URL (may be null)
+     * @param eventCoordinatorId event coordinator ID (may be null)
+     * @return new Event instance in DRAFT status
+     * @throws IllegalArgumentException if business rules are violated
+     */
+    public static Event create(
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            UserId eventCoordinatorId) {
+
+        // Validate required fields
+        validateName(name);
+        validateEventDate(eventDate);
+        validateLocation(location);
+        validateOrganizer(organizer);
+
+        Event event = new Event(
+                EventId.generate(),
+                name,
+                eventDate,
+                location,
+                organizer,
+                websiteUrl,
+                eventCoordinatorId,
+                EventStatus.DRAFT
+        );
+
+        // Register domain event
+        event.registerEvent(EventCreatedEvent.fromEvent(event));
+
+        return event;
+    }
+
+    // ========== Validation Methods ==========
+
+    private static void validateName(String name) {
+        if (name == null || name.trim().isBlank()) {
+            throw new IllegalArgumentException("Event name is required");
+        }
+    }
+
+    private static void validateEventDate(LocalDate eventDate) {
+        if (eventDate == null) {
+            throw new IllegalArgumentException("eventDate is required");
+        }
+    }
+
+    private static void validateLocation(String location) {
+        if (location == null || location.trim().isBlank()) {
+            throw new IllegalArgumentException("Event location is required");
+        }
+    }
+
+    private static void validateOrganizer(String organizer) {
+        if (organizer == null || organizer.trim().isBlank()) {
+            throw new IllegalArgumentException("Event organizer is required");
+        }
+    }
+
+    // ========== Getters ==========
+
+    public EventId getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public LocalDate getEventDate() {
+        return eventDate;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public String getOrganizer() {
+        return organizer;
+    }
+
+    public WebsiteUrl getWebsiteUrl() {
+        return websiteUrl;
+    }
+
+    public UserId getEventCoordinatorId() {
+        return eventCoordinatorId;
+    }
+
+    public EventStatus getStatus() {
+        return status;
+    }
+
+    // ========== Domain Methods ==========
+
+    /**
+     * Publishes the event, transitioning it from DRAFT to ACTIVE status.
+     * <p>
+     * Business rule: Only DRAFT events can be published.
+     *
+     * @throws IllegalStateException if transition is not allowed
+     */
+    public void publish() {
+        status.validateTransition(EventStatus.ACTIVE);
+        this.status = EventStatus.ACTIVE;
+
+        // Register domain event
+        registerEvent(new EventPublishedEvent(this.id));
+    }
+
+    /**
+     * Cancels the event, transitioning it to CANCELLED status.
+     * <p>
+     * Business rule: Only DRAFT and ACTIVE events can be cancelled.
+     *
+     * @throws IllegalStateException if transition is not allowed
+     */
+    public void cancel() {
+        status.validateTransition(EventStatus.CANCELLED);
+        this.status = EventStatus.CANCELLED;
+
+        // Register domain event
+        registerEvent(new EventCancelledEvent(this.id));
+    }
+
+    /**
+     * Finishes the event, transitioning it from ACTIVE to FINISHED status.
+     * <p>
+     * Business rule: Only ACTIVE events can be finished.
+     *
+     * @throws IllegalStateException if transition is not allowed
+     */
+    public void finish() {
+        status.validateTransition(EventStatus.FINISHED);
+        this.status = EventStatus.FINISHED;
+
+        // Register domain event
+        registerEvent(new EventFinishedEvent(this.id));
+    }
+
+    /**
+     * Updates event details.
+     * <p>
+     * Business rule: Events can only be updated in DRAFT or ACTIVE status.
+     * Updates are forbidden for FINISHED and CANCELLED events.
+     *
+     * @param name               new event name (required)
+     * @param eventDate          new event date (required)
+     * @param location           new event location (required)
+     * @param organizer          new event organizer (required)
+     * @param websiteUrl         new website URL (may be null)
+     * @param eventCoordinatorId new coordinator ID (may be null)
+     * @throws IllegalStateException    if event is in FINISHED or CANCELLED status
+     * @throws IllegalArgumentException if validation fails
+     */
+    public void update(
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            UserId eventCoordinatorId) {
+
+        // Check status allows updates
+        if (status == EventStatus.FINISHED) {
+            throw new IllegalStateException("Cannot update event in FINISHED status");
+        }
+        if (status == EventStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot update event in CANCELLED status");
+        }
+
+        // Validate required fields
+        validateName(name);
+        validateEventDate(eventDate);
+        validateLocation(location);
+        validateOrganizer(organizer);
+
+        // Modify fields in-place
+        this.name = name;
+        this.eventDate = eventDate;
+        this.location = location;
+        this.organizer = organizer;
+        this.websiteUrl = websiteUrl;
+        this.eventCoordinatorId = eventCoordinatorId;
+    }
+
+    // ========== Registration Methods ==========
+
+    /**
+     * Register a member for this event.
+     * <p>
+     * Business rules:
+     * - Registration is only allowed for ACTIVE events
+     * - Member cannot be registered twice for the same event
+     *
+     * @param memberId     member's user ID (required)
+     * @param siCardNumber SI card number (required)
+     * @throws IllegalStateException if event is not ACTIVE or member already registered
+     */
+    public void registerMember(UserId memberId, SiCardNumber siCardNumber) {
+        // Check event status
+        if (status != EventStatus.ACTIVE) {
+            throw new IllegalStateException("Registration is only allowed for ACTIVE events");
+        }
+
+        // Check for duplicate registration
+        if (findRegistration(memberId).isPresent()) {
+            throw new IllegalStateException("Duplicate registration not allowed for this event");
+        }
+
+        // Create and add registration
+        EventRegistration registration = EventRegistration.create(memberId, siCardNumber);
+        registrations.add(registration);
+
+        // Register domain event
+        registerEvent(new MemberRegisteredForEventEvent(this.id, memberId));
+    }
+
+    /**
+     * Unregister a member from this event.
+     * <p>
+     * Business rule: Unregistration is only allowed before the event date.
+     *
+     * @param memberId    member's user ID (required)
+     * @param currentDate current date for validation
+     * @throws IllegalStateException    if current date is on or after event date
+     * @throws IllegalArgumentException if member is not registered
+     */
+    public void unregisterMember(UserId memberId, LocalDate currentDate) {
+        // Check if unregistration is allowed (before event date)
+        if (!currentDate.isBefore(eventDate)) {
+            throw new IllegalStateException("Cannot unregister on or after event date");
+        }
+
+        // Find and remove registration
+        EventRegistration registration = findRegistration(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Member is not registered for this event"));
+
+        registrations.remove(registration);
+
+        // Register domain event
+        registerEvent(new MemberUnregisteredFromEventEvent(this.id, memberId));
+    }
+
+    /**
+     * Find a registration by member ID.
+     *
+     * @param memberId member's user ID
+     * @return Optional containing the registration if found, empty otherwise
+     */
+    public Optional<EventRegistration> findRegistration(UserId memberId) {
+        return registrations.stream()
+                .filter(r -> r.memberId().equals(memberId))
+                .findFirst();
+    }
+
+    /**
+     * Get all registrations for this event.
+     *
+     * @return unmodifiable list of registrations
+     */
+    public List<EventRegistration> getRegistrations() {
+        return Collections.unmodifiableList(registrations);
+    }
+
+    // ========== Domain Events ==========
+
+    /**
+     * Register a domain event to be published.
+     *
+     * @param event the domain event to register
+     */
+    protected void registerEvent(Object event) {
+        this.domainEvents.add(event);
+    }
+
+    /**
+     * Get all domain events registered on this aggregate.
+     * <p>
+     * Public accessor that returns the domain events list.
+     * Annotated with @DomainEvents for Spring Modulith automatic event publishing.
+     *
+     * @return unmodifiable list of domain events
+     */
+    @DomainEvents
+    public List<Object> getDomainEvents() {
+        return Collections.unmodifiableList(domainEvents);
+    }
+
+    /**
+     * Get all domain events (for memento delegation).
+     * <p>
+     * Public method for infrastructure layer to access domain events.
+     *
+     * @return list of domain events
+     */
+    public List<Object> domainEvents() {
+        return Collections.unmodifiableList(domainEvents);
+    }
+
+    /**
+     * Clear all domain events (typically called after publishing).
+     */
+    public void clearDomainEvents() {
+        this.domainEvents.clear();
+    }
+
+    // ========== Audit Metadata Methods ==========
+
+    /**
+     * Public method to add a registration during reconstruction.
+     * Used by the persistence layer when loading events from the database.
+     *
+     * @param registration the registration to add
+     */
+    public void addRegistration(EventRegistration registration) {
+        this.registrations.add(registration);
+    }
+
+    /**
+     * Gets the creation timestamp of this event.
+     *
+     * @return creation timestamp, or null if not set
+     */
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    /**
+     * Gets the user who created this event.
+     *
+     * @return creator user identifier, or null if not set
+     */
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    /**
+     * Gets the last modification timestamp of this event.
+     *
+     * @return last modification timestamp, or null if not set
+     */
+    public Instant getLastModifiedAt() {
+        return lastModifiedAt;
+    }
+
+    /**
+     * Gets the user who last modified this event.
+     *
+     * @return last modifier user identifier, or null if not set
+     */
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    /**
+     * Sets audit metadata on this event.
+     * Public method for persistence layer to restore audit information.
+     *
+     * @param createdAt      creation timestamp
+     * @param createdBy      creator user identifier
+     * @param lastModifiedAt last modification timestamp
+     * @param lastModifiedBy last modifier user identifier
+     */
+    public void setAuditMetadata(Instant createdAt, String createdBy, Instant lastModifiedAt, String lastModifiedBy) {
+        this.createdAt = createdAt;
+        this.createdBy = createdBy;
+        this.lastModifiedAt = lastModifiedAt;
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
+    // ========== Object Methods ==========
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Event event = (Event) o;
+        return Objects.equals(id, event.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Event{" +
+               "id=" + id +
+               ", name='" + name + '\'' +
+               ", eventDate=" + eventDate +
+               ", location='" + location + '\'' +
+               ", organizer='" + organizer + '\'' +
+               ", status=" + status +
+               '}';
+    }
+}

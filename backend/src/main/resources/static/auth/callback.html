@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potvrzení přihlášení - Klabis</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="#4F46E5"/>
+                    <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round"
+                          stroke-linejoin="round"/>
+                </svg>
+                <h1>Klabis</h1>
+            </div>
+            <p>Potvrzení přihlášení</p>
+        </div>
+
+        <div id="statusContainer">
+            <div id="loadingIndicator">
+                <svg class="animate-spin" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                     style="margin: 0 auto 1rem; display: block; animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+                            style="opacity: 0.25;"></circle>
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <p style="text-align: center; color: var(--gray-600);">Výměna autorizačního kódu za přístupový
+                    token...</p>
+            </div>
+
+            <div id="errorContainer" style="display: none;">
+                <div style="padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 0.375rem; border-left: 3px solid var(--danger); margin-bottom: 1rem;">
+                    <p style="font-size: 0.875rem; color: var(--danger); font-weight: 600; margin-bottom: 0.5rem;">Chyba
+                        při přihlášení</p>
+                    <p id="errorMessage" style="font-size: 0.75rem; color: var(--gray-600);"></p>
+                </div>
+                <button class="btn btn-primary btn-block" onclick="goToLogin()">
+                    Zpět na přihlášení
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="../api-client.js"></script>
+<script>
+    async function handleCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorContainer = document.getElementById('errorContainer');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Check if authorization server returned an error
+        if (error) {
+            loadingIndicator.style.display = 'none';
+            errorContainer.style.display = 'block';
+            errorMessage.textContent = errorDescription || error;
+            return;
+        }
+
+        // Check if we have an authorization code
+        if (!code) {
+            loadingIndicator.style.display = 'none';
+            errorContainer.style.display = 'block';
+            errorMessage.textContent = 'Autorizační kód nebyl nalezen v URL.';
+            return;
+        }
+
+        try {
+            // Get client ID and backend URL from sessionStorage
+            const clientId = sessionStorage.getItem('clientId');
+            const backendUrl = sessionStorage.getItem('backendUrl');
+
+            if (!clientId || !backendUrl) {
+                throw new Error('Chybí konfigurace klienta. Zkuste se přihlásit znovu.');
+            }
+
+            // Update API client config
+            apiClient.baseUrl = backendUrl;
+            apiClient.apiBaseUrl = `${backendUrl}/api`;
+            apiClient.clientId = clientId;
+
+            // Exchange authorization code for access token
+            await apiClient.exchangeCodeForToken(code, `${backendUrl}/auth/callback.html`);
+
+            // Mark as authenticated
+            sessionStorage.setItem('isAuthenticated', 'true');
+            sessionStorage.setItem('backendUrl', backendUrl);
+
+            // Show success message briefly
+            loadingIndicator.innerHTML = `
+                    <svg width="40" height="40" viewBox="0 0 20 20" fill="currentColor" style="margin: 0 auto 1rem; display: block; color: var(--success);">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                    </svg>
+                    <p style="text-align: center; color: var(--gray-600);">Přihlášení úspěšné!</p>
+                `;
+
+            // Redirect to dashboard after a short delay
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1000);
+
+        } catch (err) {
+            console.error('Token exchange error:', err);
+            loadingIndicator.style.display = 'none';
+            errorContainer.style.display = 'block';
+            errorMessage.textContent = err.message || 'Došlo k chybě při výměně tokenu. Zkuste to prosím znovu.';
+        }
+    }
+
+    function goToLogin() {
+        window.location.href = 'auth/login.html';
+    }
+
+    // Handle callback on page load
+    window.addEventListener('DOMContentLoaded', () => {
+        handleCallback();
+    });
+</script>
+<style>
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+</body>
+</html>

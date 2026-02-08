@@ -1,0 +1,232 @@
+package com.klabis.events.completion;
+
+import com.klabis.events.Event;
+import com.klabis.events.EventStatus;
+import com.klabis.events.persistence.EventRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+/**
+ * TDD Test for EventCompletionScheduler (RED phase).
+ * <p>
+ * Tests scheduler behavior:
+ * - Finds ACTIVE events with past date and transitions them to FINISHED
+ * - DRAFT events with past date are NOT affected
+ * - Idempotent execution (running twice produces same result)
+ * - Graceful handling when no events need completion
+ * - Individual event failure should not stop processing others
+ */
+@ExtendWith(MockitoExtension.class)
+@DisplayName("EventCompletionScheduler")
+class EventCompletionSchedulerTest {
+
+    @Mock
+    private EventRepository eventRepository;
+
+    @InjectMocks
+    private EventCompletionScheduler scheduler;
+
+    @Nested
+    @DisplayName("completeExpiredEvents() method")
+    class CompleteExpiredEventsMethod {
+
+        @Test
+        @DisplayName("should complete ACTIVE events with past dates")
+        void shouldCompleteActiveEventsWithPastDates() {
+            // Arrange
+            LocalDate today = LocalDate.of(2025, 2, 1);
+            LocalDate pastDate = LocalDate.of(2025, 1, 15);
+
+            Event event1 = Event.create("Event 1", pastDate, "Location 1", "Organizer 1", null, null);
+            event1.publish(); // Make ACTIVE
+
+            Event event2 = Event.create("Event 2", pastDate, "Location 2", "Organizer 2", null, null);
+            event2.publish(); // Make ACTIVE
+
+            List<Event> activeEventsWithPastDate = List.of(event1, event2);
+
+            when(eventRepository.findActiveEventsWithDateBefore(today))
+                    .thenReturn(activeEventsWithPastDate);
+
+            // Act
+            scheduler.completeExpiredEvents(today);
+
+            // Assert
+            // Verify repository was queried with correct date
+            verify(eventRepository).findActiveEventsWithDateBefore(today);
+
+            // Verify each event was transitioned to FINISHED
+            assertThat(event1.getStatus()).isEqualTo(EventStatus.FINISHED);
+            assertThat(event2.getStatus()).isEqualTo(EventStatus.FINISHED);
+
+            // Verify each event was saved
+            verify(eventRepository, times(2)).save(any(Event.class));
+            verify(eventRepository).save(event1);
+            verify(eventRepository).save(event2);
+        }
+
+        @Test
+        @DisplayName("should not affect DRAFT events with past dates")
+        void shouldNotAffectDraftEventsWithPastDates() {
+            // Arrange
+            LocalDate today = LocalDate.of(2025, 2, 1);
+
+            // findActiveEventsWithDateBefore should only return ACTIVE events
+            // Repository implementation ensures DRAFT events are not included
+            when(eventRepository.findActiveEventsWithDateBefore(today))
+                    .thenReturn(Collections.emptyList());
+
+            // Act
+            scheduler.completeExpiredEvents(today);
+
+            // Assert
+            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            // No saves should occur since no ACTIVE events were found
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should handle no events to complete gracefully")
+        void shouldHandleNoEventsToCompleteGracefully() {
+            // Arrange
+            LocalDate today = LocalDate.of(2025, 2, 1);
+
+            when(eventRepository.findActiveEventsWithDateBefore(today))
+                    .thenReturn(Collections.emptyList());
+
+            // Act
+            scheduler.completeExpiredEvents(today);
+
+            // Assert
+            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should be idempotent - running twice produces same result")
+        void shouldBeIdempotentRunningTwiceProducesSameResult() {
+            // Arrange
+            LocalDate today = LocalDate.of(2025, 2, 1);
+            LocalDate pastDate = LocalDate.of(2025, 1, 15);
+
+            Event event = Event.create("Test Event", pastDate, "Location", "Organizer", null, null);
+            event.publish(); // Make ACTIVE
+
+            // First run - returns the event
+            when(eventRepository.findActiveEventsWithDateBefore(today))
+                    .thenReturn(List.of(event))
+                    .thenReturn(Collections.emptyList()); // Second run - no events
+
+            // Act - First run
+            scheduler.completeExpiredEvents(today);
+
+            // Assert - Event is FINISHED
+            assertThat(event.getStatus()).isEqualTo(EventStatus.FINISHED);
+            verify(eventRepository).save(event);
+
+            // Reset mock to clear invocation counts
+            reset(eventRepository);
+            when(eventRepository.findActiveEventsWithDateBefore(today))
+                    .thenReturn(Collections.emptyList()); // No events since all are already FINISHED
+
+            // Act - Second run
+            scheduler.completeExpiredEvents(today);
+
+            // Assert - No additional saves (idempotent)
+            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should continue processing if individual event save fails")
+        void shouldContinueProcessingIfIndividualEventSaveFails() {
+            // Arrange
+            LocalDate today = LocalDate.of(2025, 2, 1);
+            LocalDate pastDate = LocalDate.of(2025, 1, 15);
+
+            Event event1 = Event.create("Event 1", pastDate, "Location 1", "Organizer 1", null, null);
+            event1.publish();
+
+            Event event2 = Event.create("Event 2", pastDate, "Location 2", "Organizer 2", null, null);
+            event2.publish();
+
+            Event event3 = Event.create("Event 3", pastDate, "Location 3", "Organizer 3", null, null);
+            event3.publish();
+
+            List<Event> events = List.of(event1, event2, event3);
+
+            when(eventRepository.findActiveEventsWithDateBefore(today))
+                    .thenReturn(events);
+
+            // Simulate failure when saving event2
+            when(eventRepository.save(event1)).thenReturn(event1);
+            when(eventRepository.save(event2)).thenThrow(new RuntimeException("Database error"));
+            when(eventRepository.save(event3)).thenReturn(event3);
+
+            // Act
+            scheduler.completeExpiredEvents(today);
+
+            // Assert
+            // All events should have been transitioned to FINISHED
+            assertThat(event1.getStatus()).isEqualTo(EventStatus.FINISHED);
+            assertThat(event2.getStatus()).isEqualTo(EventStatus.FINISHED);
+            assertThat(event3.getStatus()).isEqualTo(EventStatus.FINISHED);
+
+            // All events should have been attempted to save (3 times)
+            verify(eventRepository, times(3)).save(any(Event.class));
+            verify(eventRepository).save(event1);
+            verify(eventRepository).save(event2);
+            verify(eventRepository).save(event3);
+        }
+
+        @Test
+        @DisplayName("should use current date when called without parameters")
+        void shouldUseCurrentDateWhenCalledWithoutParameters() {
+            // Arrange
+            Event event = Event.create("Event", LocalDate.of(2025, 1, 15), "Location", "Organizer", null, null);
+            event.publish();
+
+            when(eventRepository.findActiveEventsWithDateBefore(any(LocalDate.class)))
+                    .thenReturn(List.of(event));
+
+            // Act
+            scheduler.completeExpiredEvents();
+
+            // Assert
+            verify(eventRepository).findActiveEventsWithDateBefore(any(LocalDate.class));
+            verify(eventRepository).save(event);
+            assertThat(event.getStatus()).isEqualTo(EventStatus.FINISHED);
+        }
+
+        @Test
+        @DisplayName("should handle repository query failure gracefully")
+        void shouldHandleRepositoryQueryFailureGracefully() {
+            // Arrange
+            LocalDate today = LocalDate.of(2025, 2, 1);
+
+            when(eventRepository.findActiveEventsWithDateBefore(today))
+                    .thenThrow(new RuntimeException("Database connection failed"));
+
+            // Act - should not throw exception
+            scheduler.completeExpiredEvents(today);
+
+            // Assert
+            verify(eventRepository).findActiveEventsWithDateBefore(today);
+            // No save should be attempted since query failed
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+    }
+}

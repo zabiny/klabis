@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrace na akci - Klabis</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="#4F46E5"/>
+                    <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round"
+                          stroke-linejoin="round"/>
+                </svg>
+                <h1>Klabis</h1>
+            </div>
+            <p class="sidebar-subtitle">Systém správy členů</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="../index.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <span>Přehled</span>
+            </a>
+            <a href="../members/list.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                </svg>
+                <span>Členové</span>
+            </a>
+            <a href="list.html" class="nav-item active">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M6 2a1 1 0 00-1 1v2H4a2 2 0 00-2 2v2h16V7a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v2H7V3a1 1 0 00-1-1zm0 5H4v9a2 2 0 002 2h12a2 2 0 002-2V7h-2v2a1 1 0 11-2 0V7H8v2a1 1 0 11-2 0V7z"/>
+                </svg>
+                <span>Akce</span>
+            </a>
+            <a href="../user-permissions/permissions.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/>
+                </svg>
+                <span>Oprávnění</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">A</div>
+                <div class="user-details">
+                    <span class="user-name">Administrátor</span>
+                    <span class="user-reg-number">admin</span>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="btn-logout">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd"
+                          d="M10 12.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-9a.5.5 0 01.5-.5h8a.5.5 0 01.5.5v2a.5.5 0 001 0v-2A1.5 1.5 0 009.5 2h-8A1.5 1.5 0 000 3.5v9A1.5 1.5 0 001.5 14h8a1.5 1.5 0 001.5-1.5v-2a.5.5 0 00-1 0v2z"/>
+                    <path fill-rule="evenodd"
+                          d="M15.854 8.354a.5.5 0 000-.708l-3-3a.5.5 0 00-.708.708L14.293 7.5H5.5a.5.5 0 000 1h8.793l-2.147 2.146a.5.5 0 00.708.708l3-3z"/>
+                </svg>
+                Odhlásit
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div id="loadingState" style="text-align: center; padding: 3rem;">
+            <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p style="margin-top: 1rem; color: var(--gray-500);">Načítání registrací...</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <div class="content-header">
+                <h2>Registrace na akci</h2>
+                <p id="eventSubtitle">Seznam registrací na akci</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Registrovaní členové</h3>
+                    <span class="registration-count" id="registrationCount">0 registrací</span>
+                </div>
+
+                <table class="registrations-table">
+                    <thead>
+                    <tr>
+                        <th>Jméno</th>
+                        <th>Příjmení</th>
+                        <th>Čas registrace</th>
+                    </tr>
+                    </thead>
+                    <tbody id="registrationsTableBody"></tbody>
+                </table>
+
+                <div id="myRegistrationSection"
+                     style="display: none; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--gray-200);">
+                    <h4>Moje registrace</h4>
+                    <div id="myRegistrationDetails"></div>
+                </div>
+
+                <div class="form-actions">
+                    <a id="backLink" class="btn btn-secondary">Zpět na detail akce</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorState" style="display: none; text-align: center; padding: 3rem;">
+            <svg width="64" height="64" viewBox="0 0 20 20" fill="#DC2626" style="margin-bottom: 1rem;">
+                <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"/>
+            </svg>
+            <h3 style="color: var(--gray-900);">Akce nebyla nalezena</h3>
+            <p style="color: var(--gray-500);">Požadovaná akce neexistuje nebo nemáte přístup.</p>
+            <a href="list.html" class="btn btn-primary" style="margin-top: 1rem;">Zpět na seznam akcí</a>
+        </div>
+    </main>
+</div>
+
+<script src="../api-client.js"></script>
+<script src="../app.js"></script>
+<script>
+    let eventData = null;
+    let registrations = [];
+    let myRegistration = null;
+    const eventId = new URLSearchParams(window.location.search).get('id');
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        checkAuth();
+        if (eventId) {
+            await loadData();
+        } else {
+            showErrorState();
+        }
+    });
+
+    async function loadData() {
+        try {
+            const [eventResponse, registrationsResponse, myRegResponse] = await Promise.all([
+                apiClient.getEvent(eventId),
+                apiClient.getEventRegistrations(eventId),
+                apiClient.getMyEventRegistration(eventId).catch(() => null)
+            ]);
+
+            eventData = eventResponse;
+            registrations = registrationsResponse._embedded?.registrationSummaryDtoList || [];
+            myRegistration = myRegResponse;
+
+            renderData();
+        } catch (error) {
+            showErrorState();
+        }
+    }
+
+    function renderData() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+
+        document.getElementById('eventSubtitle').textContent = 'Registrace na akci: ' + eventData.name;
+        document.getElementById('backLink').href = 'detail.html?id=' + eventId;
+
+        const count = eventData.registrationCount || 0;
+        const countText = count === 1 ? 'registrace' : (count >= 2 && count <= 4 ? 'registrace' : 'registrací');
+        document.getElementById('registrationCount').textContent = count + ' ' + countText;
+
+        renderRegistrations();
+        renderMyRegistration();
+    }
+
+    function renderRegistrations() {
+        const tbody = document.getElementById('registrationsTableBody');
+        tbody.innerHTML = '';
+
+        if (registrations.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 3;
+            td.style.textAlign = 'center';
+            td.style.padding = '2rem';
+            td.style.color = 'var(--gray-500)';
+            td.textContent = 'Zatím žádné registrace';
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        registrations.forEach(reg => {
+            const tr = document.createElement('tr');
+
+            const firstNameCell = document.createElement('td');
+            firstNameCell.textContent = reg.memberFirstName || '';
+            tr.appendChild(firstNameCell);
+
+            const lastNameCell = document.createElement('td');
+            lastNameCell.textContent = reg.memberLastName || '';
+            tr.appendChild(lastNameCell);
+
+            const timeCell = document.createElement('td');
+            timeCell.textContent = formatDateTime(reg.registeredAt);
+            tr.appendChild(timeCell);
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderMyRegistration() {
+        const section = document.getElementById('myRegistrationSection');
+        const details = document.getElementById('myRegistrationDetails');
+
+        if (!myRegistration) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        details.innerHTML = '';
+
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;';
+
+        const createDetail = (label, value) => {
+            const div = document.createElement('div');
+            div.innerHTML = '<span style="color: var(--gray-500); font-size: 0.875rem;">' + label + ':</span><br><strong>' + value + '</strong>';
+            return div;
+        };
+
+        grid.appendChild(createDetail('Jméno', (myRegistration.memberFirstName || '') + ' ' + (myRegistration.memberLastName || '')));
+        grid.appendChild(createDetail('SI karta', myRegistration.siCardNumber || ''));
+        grid.appendChild(createDetail('Čas registrace', formatDateTime(myRegistration.registeredAt)));
+
+        const actionDiv = document.createElement('div');
+        actionDiv.style.cssText = 'display: flex; align-items: end;';
+        const unregisterBtn = document.createElement('button');
+        unregisterBtn.className = 'btn btn-danger';
+        unregisterBtn.textContent = 'Odregistrovat se';
+        unregisterBtn.onclick = handleUnregister;
+        actionDiv.appendChild(unregisterBtn);
+        grid.appendChild(actionDiv);
+
+        details.appendChild(grid);
+    }
+
+    async function handleUnregister() {
+        if (!confirm('Opravdu se chcete odregistrovat z této akce?')) return;
+
+        try {
+            await apiClient.unregisterFromEvent(eventId);
+            showToast('Registrace byla zrušena', 'success');
+            await loadData();
+        } catch (error) {
+            handleApiError(error);
+        }
+    }
+
+    function showErrorState() {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('content').style.display = 'none';
+        document.getElementById('errorState').style.display = 'block';
+    }
+
+    function handleLogout() {
+        if (confirm('Opravdu se chcete odhlásit?')) {
+            sessionStorage.removeItem('isAuthenticated');
+            apiClient.clearToken();
+            window.location.href = '../auth/login.html';
+        }
+    }
+</script>
+<style>
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .registration-count {
+        background-color: var(--gray-100);
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    .registrations-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .registrations-table th,
+    .registrations-table td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .registrations-table th {
+        background-color: var(--gray-50);
+        font-weight: 600;
+        color: var(--gray-700);
+    }
+
+    .registrations-table tr:hover {
+        background-color: var(--gray-50);
+    }
+
+    .btn-danger {
+        background-color: #EF4444;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #DC2626;
+    }
+
+    @media (max-width: 640px) {
+        .registrations-table {
+            font-size: 0.875rem;
+        }
+
+        .registrations-table th,
+        .registrations-table td {
+            padding: 0.5rem;
+        }
+    }
+</style>
+</body>
+</html>

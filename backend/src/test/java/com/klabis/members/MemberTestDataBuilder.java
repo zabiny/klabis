@@ -1,0 +1,133 @@
+package com.klabis.members;
+
+import com.klabis.users.UserId;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+public class MemberTestDataBuilder {
+
+    private UUID memberId = UUID.randomUUID();
+    private RegistrationNumber registrationNumber = new RegistrationNumber("ZBM1234");
+    private String firstName = "Jan";
+    private String lastName = "Novák";
+    private LocalDate dateOfBirth = LocalDate.of(2010, 5, 15);
+    private String nationality = "CZE";
+    private Gender gender = Gender.MALE;
+    private Address address = Address.of("Hlavní 123", "Praha", "110 00", "CZ");
+    private EmailAddress email = EmailAddress.of("jan.novak@example.com");
+    private PhoneNumber phone = PhoneNumber.of("+420 123 456 789");
+    private GuardianInformation guardian = new GuardianInformation("Petr", "Novák", "Father",
+            EmailAddress.of("petr.novak@example.com"),
+            PhoneNumber.of("+420 987 654 321"));
+    private boolean isActive = true;
+    private String chipNumber = null;
+    private IdentityCard identityCard = null;
+    private MedicalCourse medicalCourse = null;
+    private TrainerLicense trainerLicense = null;
+    private DrivingLicenseGroup drivingLicenseGroup = null;
+    private String dietaryRestrictions = null;
+
+    private MemberTestDataBuilder() {
+    }
+
+    public static MemberTestDataBuilder aMember() {
+        return new MemberTestDataBuilder();
+    }
+
+    public static MemberTestDataBuilder aMemberWithId(UUID memberId) {
+        return new MemberTestDataBuilder().withId(memberId);
+    }
+
+    public MemberTestDataBuilder withId(UUID memberId) {
+        this.memberId = memberId;
+        return this;
+    }
+
+    public MemberTestDataBuilder withRegistrationNumber(String registrationNumber) {
+        this.registrationNumber = new RegistrationNumber(registrationNumber);
+        return this;
+    }
+
+    public MemberTestDataBuilder withName(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        return this;
+    }
+
+    public MemberTestDataBuilder withEmail(String email) {
+        this.email = EmailAddress.of(email);
+        return this;
+    }
+
+    public MemberTestDataBuilder withPhone(String phone) {
+        this.phone = PhoneNumber.of(phone);
+        return this;
+    }
+
+    public MemberTestDataBuilder withDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+        return this;
+    }
+
+    public MemberTestDataBuilder withNationality(String nationality) {
+        this.nationality = nationality;
+        return this;
+    }
+
+    public MemberTestDataBuilder withGender(Gender gender) {
+        this.gender = gender;
+        return this;
+    }
+
+    public MemberTestDataBuilder withAddress(Address address) {
+        this.address = address;
+        return this;
+    }
+
+    public MemberTestDataBuilder withGuardian(GuardianInformation guardian) {
+        this.guardian = guardian;
+        return this;
+    }
+
+    public MemberTestDataBuilder withNoGuardian() {
+        this.guardian = null;
+        return this;
+    }
+
+    public MemberTestDataBuilder withActive(boolean isActive) {
+        this.isActive = isActive;
+        return this;
+    }
+
+    public Member build() {
+        return Member.reconstruct(new UserId(memberId),
+                registrationNumber,
+                PersonalInformation.of(firstName, lastName, dateOfBirth, nationality, gender),
+                address,
+                email,
+                phone,
+                guardian,
+                isActive,
+                chipNumber,
+                identityCard,
+                medicalCourse,
+                trainerLicense,
+                drivingLicenseGroup,
+                dietaryRestrictions
+        );
+    }
+
+    /**
+     * Creates a default Member domain object for mapping tests.
+     * <p>
+     * Provides a fully populated Member instance with all fields set,
+     * suitable for testing mapper conversions between domain and entity models.
+     *
+     * @param memberId the member ID (UUID)
+     * @return a Member domain object with all fields populated
+     */
+    public static Member defaultMemberForMapping(UUID memberId) {
+        return aMemberWithId(memberId).build();
+    }
+}

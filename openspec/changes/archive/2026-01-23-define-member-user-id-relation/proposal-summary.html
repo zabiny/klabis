@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Define Member-User ID Relationship - Proposal Summary</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        h3 {
+            color: #555;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        .header-info {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+
+        .header-info p {
+            margin: 5px 0;
+        }
+
+        .highlight-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-member {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-admin {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-value-object {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .badge-record {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-internal {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+
+        .decision {
+            background: #fff;
+            border: 2px solid #27ae60;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .decision-title {
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        .pros {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .cons {
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .pros h4 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+
+        .cons h4 {
+            color: #721c24;
+            margin-bottom: 10px;
+        }
+
+        .architecture-diagram {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .architecture-diagram pre {
+            text-align: left;
+            background: white;
+            border: 1px solid #dee2e6;
+        }
+
+        .flow-diagram {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📋 Define Member-User ID Relationship - Proposal Summary</h1>
+
+    <div class="header-info">
+        <p><strong>Change ID:</strong> define-member-user-id-relation</p>
+        <p><strong>Status:</strong> Ready for Stakeholder Review</p>
+        <p><strong>Type:</strong> Design Clarification / Architectural Enhancement <span class="badge badge-internal">Internal Only</span>
+        </p>
+        <p><strong>Proposed:</strong> 2025-01-18</p>
+    </div>
+
+    <div class="highlight-box">
+        <h3>🎯 Executive Summary</h3>
+        <p><strong>Problem:</strong> Currently, there's ambiguity in how member and user entities relate to each other
+            regarding their IDs. The system needs a clear design pattern for the Member-User relationship.</p>
+        <br>
+        <p><strong>Solution:</strong> Establish that every Member has an associated User, and the User's ID is used as
+            the Member's ID. Introduce a <code>UserId</code> Java record as a type-safe identifier shared between both
+            aggregates.</p>
+        <br>
+        <p><strong>Impact:</strong> Simplifies relationship management, improves query performance, and establishes a
+            clear DDD pattern for future aggregate identification.</p>
+        <br>
+        <p><strong><em>Important:</em></strong> This is an <strong>internal implementation change only</strong>. No API
+            changes - clients continue to use the same member registration endpoint. The User is created automatically
+            as part of the member registration flow.</p>
+    </div>
+
+    <h2>1. What's Changing</h2>
+
+    <h3>🔗 Core Design Rule</h3>
+    <div class="success-box">
+        <p><strong>Rule:</strong> <code>Member.id == User.id</code> for all members</p>
+        <p>Every Member entity is created with an associated User entity, and both share the same <code>UserId</code>
+            instance.</p>
+    </div>
+
+    <h3>🆕 New Component: UserId Value Object</h3>
+    <div class="info-box">
+        <h4>UserId Java Record</h4>
+        <ul>
+            <li><strong>Location:</strong> <code>users.domain</code> package</li>
+            <li><strong>Type:</strong> Java record (immutable, type-safe) <span class="badge badge-record">Record</span>
+            </li>
+            <li><strong>Purpose:</strong> Prevents accidental mixing of IDs from different aggregates</li>
+            <li><strong>Used by:</strong> Both User and Member aggregates</li>
+        </ul>
+    </div>
+
+    <h3>📊 Member Registration Flow Changes</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Aspect</th>
+            <th>Current State</th>
+            <th>Proposed State</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><strong>ID Generation</strong></td>
+            <td>Member gets generated UUID independently</td>
+            <td>Member uses User's UserId (shared UUID)</td>
+        </tr>
+        <tr>
+            <td><strong>User Creation</strong></td>
+            <td>Manual or separate process</td>
+            <td><strong>Automatic</strong> as part of member registration</td>
+        </tr>
+        <tr>
+            <td><strong>API Endpoint</strong></td>
+            <td><code>POST /api/members</code></td>
+            <td><strong>No change</strong> - same endpoint</td>
+        </tr>
+        <tr>
+            <td><strong>API Parameters</strong></td>
+            <td>Member data only</td>
+            <td><strong>No change</strong> - same parameters</td>
+        </tr>
+        <tr>
+            <td><strong>Implementation</strong></td>
+            <td>Direct member creation</td>
+            <td>User created first, then Member with shared UserId</td>
+        </tr>
+        <tr>
+            <td><strong>Query Performance</strong></td>
+            <td>Requires joins between tables</td>
+            <td>Direct lookup by shared ID (no joins)</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>⚠️ No API Changes</h3>
+    <div class="warning-box">
+        <h4>Important: Internal Implementation Only</h4>
+        <p><strong>This proposal does NOT change the API contract.</strong></p>
+        <ul>
+            <li><strong>Endpoint:</strong> Still <code>POST /api/members</code></li>
+            <li><strong>Request body:</strong> Still contains member data only (no <code>user_id</code> parameter)</li>
+            <li><strong>Response:</strong> Same format with HAL+FORMS links</li>
+            <li><strong>Change:</strong> Only internal - RegisterMemberCommandHandler now creates User first, then
+                Member
+            </li>
+        </ul>
+        <p><strong>Client Impact:</strong> None. Clients don't need to change anything.</p>
+    </div>
+
+    <h2>2. Architecture & Design Decisions</h2>
+
+    <div class="decision">
+        <div class="decision-title">🏗️ Decision 1: Shared ID Pattern (Member ID = User ID)</div>
+        <p><strong>Chosen:</strong> Member and User share the same <code>UserId</code> instance</p>
+
+        <div class="pros-cons">
+            <div class="pros">
+                <h4>✅ Benefits</h4>
+                <ul>
+                    <li><strong>Simplified queries:</strong> No JOIN operations needed to get member by user ID</li>
+                    <li><strong>Clear relationship:</strong> 1:1 mapping is explicit and enforced</li>
+                    <li><strong>Performance:</strong> Direct primary key lookups</li>
+                    <li><strong>Consistency:</strong> Cannot have orphaned members or users without clear association
+                    </li>
+                    <li><strong>DDD pattern:</strong> Aggregate root identity is clear and consistent</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h4>❌ Trade-offs</h4>
+                <ul>
+                    <li><strong>Module dependency:</strong> Members module depends on Users module (for UserId)</li>
+                    <li><strong>Tighter coupling:</strong> Member lifecycle tied to User lifecycle</li>
+                    <li><strong>Creation order:</strong> User must be created before Member</li>
+                </ul>
+            </div>
+        </div>
+
+        <p><strong>Mitigation:</strong> Module dependency is natural (members are created for users). UserId is a
+            stable, immutable value object safe to share across modules.</p>
+    </div>
+
+    <div class="decision">
+        <div class="decision-title">🔧 Decision 2: UserId as Java Record</div>
+        <p><strong>Chosen:</strong> Java record instead of class or plain UUID</p>
+
+        <div class="pros-cons">
+            <div class="pros">
+                <h4>✅ Why Java Record</h4>
+                <ul>
+                    <li><strong>Type safety:</strong> Compiler prevents mixing UserId with other ID types</li>
+                    <li><strong>Immutability:</strong> Records are immutable by design</li>
+                    <li><strong>Concise:</strong> 1 line of code vs 15+ for equivalent class</li>
+                    <li><strong>Auto-generated:</strong> equals(), hashCode(), constructor, toString()</li>
+                    <li><strong>Domain clarity:</strong> Explicitly expresses this ID belongs to User domain</li>
+                    <li><strong>Future-proof:</strong> Easy to extend when other aggregates are added</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h4>❌ Trade-offs</h4>
+                <ul>
+                    <li><strong>Additional type:</strong> One more class to maintain</li>
+                    <li><strong>Module dependency:</strong> Members module imports from Users module</li>
+                </ul>
+            </div>
+        </div>
+
+        <p><strong>Exit Strategy:</strong> Can be refactored to separate IDs if the 1:1 relationship changes. However,
+            this is unlikely given the domain model.</p>
+    </div>
+
+    <div class="decision">
+        <div class="decision-title">📦 Decision 3: UserId Location in users.domain Package</div>
+        <p><strong>Chosen:</strong> <code>com.klabis.users.domain.UserId</code></p>
+
+        <div class="pros-cons">
+            <div class="pros">
+                <h4>✅ Benefits</h4>
+                <ul>
+                    <li><strong>DDD principle:</strong> UserId belongs to Users bounded context (primary domain)</li>
+                    <li><strong>Clear ownership:</strong> Users module owns this core type</li>
+                    <li><strong>Logical dependency:</strong> Members depending on Users is natural</li>
+                </ul>
+            </div>
+            <div class="cons">
+                <h4>❌ Trade-offs</h4>
+                <ul>
+                    <li><strong>Cross-module import:</strong> Members module imports from Users module</li>
+                </ul>
+            </div>
+        </div>
+
+        <p><strong>Alternative Considered:</strong> <code>shared.domain</code> package - Rejected because UserId has
+            primary meaning in Users domain, not a generic shared concept.</p>
+    </div>
+
+    <h2>3. Technical Implementation</h2>
+
+    <h3>📝 UserId Record Structure</h3>
+    <div class="architecture-diagram">
+            <pre><code>package com.klabis.users.domain;
+
+public record UserId(UUID uuid) {
+    public UserId {
+        if (uuid == null) {
+            throw new IllegalArgumentException("UUID cannot be null");
+        }
+    }
+
+    public static UserId fromString(String uuidString) {
+        try {
+            return new UserId(UUID.fromString(uuidString));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid UUID string: " + uuidString);
+        }
+    }
+}</code></pre>
+    </div>
+
+    <h3>🔄 Member Registration Flow</h3>
+    <div class="flow-diagram">
+        <h4>Updated RegisterMemberCommandHandler Flow</h4>
+        <pre><code>┌─────────────────────────────────────────────────────────┐
+│  POST /api/members (request with member data)          │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  RegisterMemberCommandHandler.handle()                  │
+│  1. Create User entity with new UserId                  │
+│  2. Create Member entity with same UserId               │
+│  3. Save both in transaction                             │
+│  4. Return response                                      │
+└─────────────────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  Response: 201 Created with HAL+FORMS links             │
+└─────────────────────────────────────────────────────────┘</code></pre>
+        <p><strong>Key Points:</strong></p>
+        <ul style="text-align: left; display: inline-block;">
+            <li>User created <strong>first</strong> with generated UserId</li>
+            <li>Member created <strong>second</strong> using the same UserId</li>
+            <li>Both operations in <strong>single transaction</strong></li>
+            <li>If User creation fails, Member creation is <strong>not attempted</strong></li>
+        </ul>
+    </div>
+
+    <h3>🔌 Module Dependencies</h3>
+    <div class="info-box">
+        <h4>Dependency Flow</h4>
+        <pre><code>┌─────────────────┐
+│   members       │
+│   module        │
+│   (uses UserId) │
+└────────┬────────┘
+         │ imports
+         ↓
+┌─────────────────┐
+│   users         │
+│   module        │
+│   (UserId)      │
+└─────────────────┘</code></pre>
+        <p><strong>Note:</strong> This is a <strong>unidirectional, natural dependency</strong>. Members conceptually
+            depend on Users because members are created for users.</p>
+    </div>
+
+    <h3>💾 Database Impact</h3>
+    <div class="info-box">
+        <p><strong>Note:</strong> No migration needed - application uses in-memory H2 database with no existing members.
+        </p>
+        <ul>
+            <li><code>members.id</code> column will store the same UUID value as <code>users.id</code></li>
+            <li>Can establish foreign key constraint: <code>members.id REFERENCES users.id</code></li>
+            <li>Index optimization: queries by user_id become primary key lookups</li>
+            <li><strong>No API changes</strong> - same endpoint, same request/response format</li>
+        </ul>
+    </div>
+
+    <h2>4. Impact & Benefits</h2>
+
+    <div class="two-column">
+        <div class="success-box">
+            <h4>✅ Technical Benefits</h4>
+            <ul>
+                <li><strong>Query performance:</strong> No JOIN needed (shared ID)</li>
+                <li><strong>Type safety:</strong> Compiler prevents ID type confusion</li>
+                <li><strong>Clear design:</strong> Explicit 1:1 Member-User relationship</li>
+                <li><strong>DDD alignment:</strong> Proper aggregate identification pattern</li>
+                <li><strong>Future-proof:</strong> Pattern extends to other aggregates</li>
+                <li><strong>Code clarity:</strong> Self-documenting domain model</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h4>🏛️ Architectural Benefits</h4>
+            <ul>
+                <li><strong>Established pattern:</strong> Template for future aggregates</li>
+                <li><strong>Encapsulation:</strong> ID validation in one place</li>
+                <li><strong>Immutability:</strong> Records are thread-safe</li>
+                <li><strong>Testing:</strong> Easier to test with typed IDs</li>
+                <li><strong>Refactoring:</strong> IDE supports refactor with types</li>
+                <li><strong>Documentation:</strong> Types serve as documentation</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="success-box">
+        <h4>🎯 Client-Facing Benefits</h4>
+        <p><strong>Zero Breaking Changes</strong></p>
+        <ul>
+            <li><strong>API stability:</strong> Clients don't need to change anything</li>
+            <li><strong>Same endpoint:</strong> <code>POST /api/members</code> works exactly as before</li>
+            <li><strong>Same request:</strong> Member data only, no new parameters</li>
+            <li><strong>Same response:</strong> HAL+FORMS format unchanged</li>
+            <li><strong>Internal optimization:</strong> Performance improvements are transparent</li>
+        </ul>
+    </div>
+
+    <h2>5. Implementation Overview</h2>
+
+    <h3>📊 What Will Be Built</h3>
+
+    <ol>
+        <li><strong>UserId Value Object</strong>
+            <ul>
+                <li>Java record in <code>users.domain</code> package</li>
+                <li>Compact constructor with null validation</li>
+                <li>Static factory method: <code>fromString(String uuidString)</code></li>
+                <li>Unit tests for validation, equals/hashCode</li>
+            </ul>
+        </li>
+        <li><strong>Domain Model Updates</strong>
+            <ul>
+                <li>User aggregate uses <code>UserId</code> instead of <code>UUID</code></li>
+                <li>Member aggregate uses <code>UserId</code> instead of <code>UUID</code></li>
+            </ul>
+        </li>
+        <li><strong>RegisterMemberCommandHandler Update</strong>
+            <ul>
+                <li>Create User entity first with generated UserId</li>
+                <li>Create Member entity with same UserId</li>
+                <li>Transactional operation (both or none)</li>
+                <li>Error handling if User creation fails</li>
+            </ul>
+        </li>
+        <li><strong>Database</strong>
+            <ul>
+                <li>Constraints to establish shared ID relationship</li>
+                <li>Optional: Foreign key constraint</li>
+            </ul>
+        </li>
+        <li><strong>Repository & Query Optimization</strong>
+            <ul>
+                <li>Leverage shared ID for direct lookups</li>
+                <li>No JOIN operations for member-by-user queries</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>📋 Implementation Tasks</h3>
+    <div class="info-box">
+        <p><strong>Total:</strong> 17 implementation tasks + 3 documentation tasks</p>
+        <ul>
+            <li>Tasks 1.1-1.5: Create UserId record (validation, factory method)</li>
+            <li>Tasks 1.6-1.9: Update User and Member aggregates</li>
+            <li>Tasks 1.10-1.12: RegisterMemberCommandHandler and database updates</li>
+            <li>Tasks 1.13-1.16: Comprehensive testing (unit, integration, failure scenarios)</li>
+            <li>Task 1.17: Update code documentation</li>
+            <li>Tasks 2.1-2.3: Documentation updates (specs, ADR)</li>
+        </ul>
+    </div>
+
+    <h2>6. Risks & Mitigations</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th style="width: 35%;">Risk</th>
+            <th style="width: 65%;">Mitigation</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><strong>Module coupling</strong><br>Members depending on Users</td>
+            <td>Natural and acceptable dependency. Members are created for Users, so the dependency reflects the domain
+                reality. UserId is stable and immutable.
+            </td>
+        </tr>
+        <tr>
+            <td><strong>User creation failure blocking member creation</strong></td>
+            <td>Acceptable - if User cannot be created, Member should not exist. Transactional rollback ensures data
+                consistency.
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Performance impact of User-first creation</strong></td>
+            <td>Negligible. User creation is lightweight (UUID generation, minimal fields). Same transaction context
+                minimizes overhead.
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Complexity increase</strong></td>
+            <td>Minimal. Records are simple, and the pattern is well-established. Developer onboarding is
+                straightforward.
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Testing overhead</strong></td>
+            <td>Low. UserId is simple to test. Additional test for User-then-Member creation flow is straightforward.
+            </td>
+        </tr>
+        <tr>
+            <td><strong>API compatibility</strong></td>
+            <td><strong>No risk</strong> - No API changes. Clients continue working without modifications.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h2>7. Success Criteria</h2>
+
+    <div class="success-box">
+        <p>We will validate the success of this implementation based on:</p>
+        <ul>
+            <li>✅ <strong>Type safety:</strong> Compiler prevents ID type confusion in code</li>
+            <li>✅ <strong>Query performance:</strong> Member-by-user queries use direct lookups (no JOINs)</li>
+            <li>✅ <strong>Code clarity:</strong> Domain model is self-documenting with typed IDs</li>
+            <li>✅ <strong>Test coverage:</strong> All UserId scenarios tested (validation, equals, hashCode, fromString)
+            </li>
+            <li>✅ <strong>Flow correctness:</strong> User-then-Member creation flow works transactionally</li>
+            <li>✅ <strong>API compatibility:</strong> Existing client tests pass without changes</li>
+            <li>✅ <strong>Team adoption:</strong> Pattern understood and applied consistently</li>
+        </ul>
+    </div>
+
+    <h2>8. Next Steps</h2>
+
+    <ol>
+        <li><strong>Stakeholder Review</strong> - Review this proposal and approve if acceptable</li>
+        <li><strong>Implementation</strong> - Develop according to OpenSpec specification (17 tasks)</li>
+        <li><strong>Testing</strong> - Comprehensive unit, integration, and flow tests</li>
+        <li><strong>Documentation</strong> - Update code documentation and add ADR</li>
+        <li><strong>Code Review</strong> - Ensure pattern is applied correctly</li>
+        <li><strong>Deployment</strong> - Roll out with monitoring</li>
+        <li><strong>Pattern Assessment</strong> - Evaluate if pattern should extend to other aggregates</li>
+    </ol>
+
+    <div class="highlight-box">
+        <h3>📎 Additional Resources</h3>
+        <ul>
+            <li><strong>Full Specification:</strong> <code>openspec/changes/define-member-user-id-relation/specs/</code>
+            </li>
+            <li>
+                <ul>
+                    <li><code>members/spec.md</code> - Member requirements (2 ADDED, 1 MODIFIED)</li>
+                    <li><code>auth/spec.md</code> - User requirements (1 ADDED, 1 MODIFIED)</li>
+                </ul>
+            </li>
+            <li><strong>Implementation Tasks:</strong>
+                <code>openspec/changes/define-member-user-id-relation/tasks.md</code></li>
+            <li><strong>Proposal:</strong> <code>openspec/changes/define-member-user-id-relation/proposal.md</code></li>
+        </ul>
+    </div>
+
+    <div class="warning-box">
+        <h3>⚠️ Review Checklist</h3>
+        <p>Please review and confirm:</p>
+        <ul>
+            <li>☐ Shared ID pattern (Member ID = User ID) is appropriate for the domain</li>
+            <li>☐ UserId as Java record in <code>users.domain</code> package is acceptable</li>
+            <li>☐ Module dependency (members → users) is reasonable given the domain model</li>
+            <li>☐ Automatic User creation during member registration is acceptable</li>
+            <li>☐ User-first creation flow (User → Member) is acceptable</li>
+            <li>☐ Query optimization benefits (no JOINs) justify the design</li>
+            <li>☐ Type safety benefits outweigh the complexity of introducing UserId type</li>
+            <li>☐ Pattern can be extended to future aggregates if needed</li>
+            <li>☐ No API changes (internal implementation only) is acceptable</li>
+            <li>☐ No migration needed (in-memory DB, no existing members) is acceptable</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #7f8c8d;">
+        <p><strong>Proposal Status:</strong> Ready for Stakeholder Approval | <strong>Generated:</strong> 2025-01-18</p>
+        <p><strong>OpenSpec Change ID:</strong> define-member-user-id-relation</p>
+        <p><strong>Validation Status:</strong> ✅ Passed OpenSpec strict validation</p>
+        <p><strong>API Impact:</strong> ✅ No API changes (internal implementation only)</p>
+    </div>
+</div>
+</body>
+</html>

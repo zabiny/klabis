@@ -1,234 +1,308 @@
 spring:
-  profiles:
-    active:
-      - server
-    include:
-      - http2
-      - hateoas
-      - springdoc
-      - inmemorydb
-    group:
-      server:
-        - inmemorydb
-        #- oris
-        #- zipkin
-      localhost:
-        - inmemorydb
   application:
-    name: Klabis API
+    name: klabis-backend
+
+  profiles:
+    active: dev
+
+  # Spring Modulith configuration for event-driven architecture
+  modulith:
+    # Only detect modules that are explicitly annotated with @ApplicationModule
+    detection-strategy: explicitly-annotated
+    # Enable event publication and persistence
+    events:
+      enabled: true
+      # Event completion mode: UPDATE marks events as complete after successful processing
+      completion-mode: UPDATE
+      # Republish incomplete events on application restart (set to false in multi-instance deployments)
+      republish-outstanding-events-on-restart: false
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/klabis
+    username: ${DB_USERNAME:klabis}
+    password: ${DB_PASSWORD:klabis}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Connection pool settings optimized for production
+      # Maximum pool size: max number of connections in the pool
+      # Adjust based on your database and application load
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      # Minimum number of idle connections kept in the pool
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      # Maximum time to wait for a connection from the pool (milliseconds)
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      # Maximum time a connection can sit idle in the pool (milliseconds)
+      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      # Maximum lifetime of a connection in the pool (milliseconds)
+      # Connections older than this will be closed and removed from pool
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  mail:
+    #host: ${SMTP_HOST:null}  // disabling email in default as we don't have SMTP server yet
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
   security:
     oauth2:
       authorizationserver:
-        endpoint:
-          oidc:
-            user-info-uri: /oidc/userinfo
-          authorization-uri: /oauth/authorize
-          token-uri: /oauth/token
-        client:
-          1000:
-            registration:
-              client-id: "klabiswiki"
-              client-secret: "{noop}secret"
-              client-authentication-methods:
-                - "client_secret_basic"
-                - "client_secret_jwt"
-                - "client_secret_post"
-              #  - none
-              authorization-grant-types:
-                - "authorization_code"
-                - "refresh_token"
-              redirect-uris:
-                - "https://wiki.zabiny.club/auth/oidc.callback"
-                - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
-              post-logout-redirect-uris:
-                - "https://wiki.zabiny.club"
-              scopes:
-                - "openid"
-                - "profile"
-                - "email"
-            #require-authorization-consent: true
-          1100:
-            registration:
-              client-id: "frontend"
-              client-secret: "{noop}fesecret"
-              client-authentication-methods:
-                - "client_secret_basic"
-                - "client_secret_jwt"
-                - "client_secret_post"
-              authorization-grant-types:
-                - "authorization_code"
-                - "refresh_token"
-              redirect-uris:
-                - "https://klabis.otakar.io/auth/callback"
-                - "https://api.klabis.otakar.io/auth/callback"
-                - "http://localhost:8788/auth/callback"
-                - "http://localhost:5173/auth/callback"
-                - "http://localhost:3000/auth/callback"
-                - "https://localhost:8443/login/oauth2/code/klabis"
-                - "https://localhost:8443/auth/callback"
-              post-logout-redirect-uris:
-                - "https://klabis.otakar.io"
-                - "http://localhost:8788"
-                - "http://localhost:5173"
-              scopes:
-                - "openid"
-                - "profile"
-                - "email"
-            require-proof-key: true
-            token:
-              reuse-refresh-tokens: false
-              refresh-token-time-to-live: P5D   # 5 days
-              access-token-time-to-live: PT1H   # 1 hour
-          1200:
-            registration:
-              client-id: "aife"           # AI UI
-              client-secret: "{noop}aifesecret"
-              client-authentication-methods:
-                - "client_secret_basic"
-                - "client_secret_jwt"
-                - "client_secret_post"
-              authorization-grant-types:
-                - "authorization_code"
-                - "refresh_token"
-              redirect-uris:
-                - "http://localhost:8080/callback"
-                - "https://preview--orienter-club-hub.lovable.app/callback" # preview URL
-                - "https://*.lovableproject.com/callback"  # Sandboxes are dynamic :(
-                - "https://*.lovable.app/callback"  # Sandboxes are dynamic :(
-              post-logout-redirect-uris:
-                - "http://localhost:8080"
-                - "https://preview--orienter-club-hub.lovable.app"
-              scopes:
-                - "openid"
-                - "profile"
-                - "email"
-            require-proof-key: true
-            token:
-              reuse-refresh-tokens: false
-              refresh-token-time-to-live: P5D   # 5 days
-              access-token-time-to-live: PT1H   # 1 hour
-          2000:
-            registration:
-              client-id: "test"
-              client-secret: "{noop}test"
-              client-authentication-methods:
-                - "client_secret_basic"
-                - "client_secret_post"
-              authorization-grant-types:
-                - "authorization_code"
-                - "refresh_token"
-              redirect-uris:
-                - "https://localhost:8443/login/oauth2/code/klabis"
-                - "https://klabis-auth.polach.cloud/login/oauth2/code/klabis"
-                - "http://klabis-auth.polach.cloud/login/oauth2/code/klabis"
-                - "https://localhost:8443/swagger-ui/oauth2-redirect.html"
-                - "https://klabis-auth.polach.cloud/swagger-ui/oauth2-redirect.html"
-                - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
-              #              post-logout-redirect-uris:
-              #                - "https://wiki.zabiny.club"
-              scopes:
-                - "openid"
-                - "profile"
-                - "email"
-            #            require-authorization-consent: true
-            token:
-              reuse-refresh-tokens: false
-              refresh-token-time-to-live: P5D   # 5 days
-              access-token-time-to-live: PT1H   # 1 hour
-          3000:
-            registration:
-              client-id: "apispec"
-              client-secret: "{noop}apispec"
-              client-authentication-methods:
-                - "client_secret_basic"
-                - "client_secret_post"
-              authorization-grant-types:
-                - "authorization_code"
-                - "refresh_token"
-              redirect-uris:
-                - "https://localhost:8443/swagger-ui/oauth2-redirect.html"
-                - "https://klabis-auth.polach.cloud/swagger-ui/oauth2-redirect.html"
-                - "https://klabis-api-docs.otakar.io/oauth2-redirect.html"
-                - "https://api.klabis.otakar.io/oauth2-redirect.html"
-                - "https://api.klabis.otakar.io/swagger-ui/oauth2-redirect.html"
-              scopes:
-                - klabis
-                - members
-                - events
-                - finance
-                - openid
-                - profile
-      client:
-        registration: # configurations are used by authorization server's login page - "Resource" server has hardcoded single registration - klabis OIDC
-          google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
-            scope:
-              - openid
-          #              - profile
-          #              - email
+        issuer: ${OAUTH2_ISSUER:https://localhost:8443}
+        # OAuth2 client registration is now managed by BootstrapDataLoader
+        # which reads credentials from environment variables for better security
+        # See: com.klabis.config.BootstrapDataLoader
 
-          #facebook:
-          #  client-id: ${FACEBOOK_CLIENT_ID}
-          #  client-secret: ${FACEBOOK_CLIENT_SECRET}
-          #github:
-          #  client-id: ${GITHUB_CLIENT_ID}
-          #  client-secret: ${GITHUB_CLIENT_SECRET}
-          #  scope:
-          #              - openid
-          #    - profile
-  jpa:
-    hibernate:
-      ddl-auto: validate  # pro persistentni DB pouze zvalidovat schema databaze
+  # Cache configuration for rate limiting
+  cache:
+    type: simple
+    cache-names: rateLimitCache
+    # Simple cache (in-memory) with time-to-live matching rate limit duration
+    # Note: In production, consider using Redis for distributed rate limiting
 
-  jackson:
-    mapper:
-      default-view-inclusion: true
-
-  mvc:
-    problemdetails:
-      enabled: true
-
-logging:
-  level:
-    club.klabis: debug
-    org.springframework.security.jackson2.SecurityJackson2Modules: info
-    org.springframework.security.web.savedrequest.HttpSessionRequestCache: trace
-    #org.springframework.data.repository.config.RepositoryConfigurationDelegate: trace
-    #org.springframework.data.repository.core.support.RepositoryFactorySupport: trace
-    #org.springframework.web.client.RestTemplate: DEBUG
-    #REQUESTS_LOGGER: TRACE
-    org.zalando.logbook: info
-
-    # Specifické logování pro CORS
-    #org.springframework.web.cors: trace
-
-    # Web security logování
-    #org.springframework.security.web: TRACE
-    oauthserver: info
-    oauthclient: info
-  pattern:
-    console: "%clr(%d{${LOG_DATEFORMAT_PATTERN:yyyy-MM-dd'T'HH:mm:ss.SSSXXX}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%X{URL}){magenta} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
-  group:
-    oauthserver: club.klabis.config.authserver,org.springframework.security,org.springframework.security.oauth2,org.springframework.security.oauth2.core,org.springframework.security.oauth2.server
-    oauthclient: org.springframework.security.oauth2.client,org.springframework.security.oauth2.core
-
+  # Actuator configuration for monitoring and management endpoints
 management:
-  endpoint:
-    loggers:
-      access: read-only
-    health:
-      probes:
-        enabled: true
   endpoints:
     web:
+      # Expose actuator endpoints (health, info, modulith) for monitoring
       exposure:
-        #include: loggers, caches, configprops, env, flyway, httpexchanges, info, mappings, scheduledtasks
-        include: loggers, caches, env, info, mappings, health, modulith, prometheus, metrics
-  tracing:
-    export.enabled: false
+        include: health,info,modulith,prometheus,metrics
+      # Enable actuator endpoints at /actuator path
+      base-path: /actuator
+  endpoint:
+    # Enable Spring Modulith endpoint for event publication metrics
+    modulith:
+      access: read_only
+    # Enable health endpoint for health checks
+    health:
+      access: unrestricted
+    # Enable info endpoint for application information
+    info:
+      access: read_only
 
-springdoc:
-  api-docs:
-    enabled: false
+# Resilience4j configuration for rate limiting
+resilience4j:
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 10
+        limit-refresh-period: 1m
+        timeout-duration: 5s
+    instances:
+      password-reset:
+        base-config: default
+        limit-for-period: 3
+        limit-refresh-period: 1h
+        timeout-duration: 0s
+      password-setup-token-request:
+        base-config: default
+        limit-for-period: 3
+        limit-refresh-period: 1h
+        timeout-duration: 0s
+
+
+# Klabis specific configuration
+klabis:
+  club:
+    code: ${CLUB_CODE:ZBM}
+    name: ${CLUB_NAME:Klub orientačního běhu}
+
+  password-reset-token:
+    token-validity-hours: ${EMAIL_ACTIVATION_TOKEN_VALIDITY_HOURS:72}
+    base-url: ${KLABIS_BASE_URL:https://localhost:8443}
+
+  email:
+    enabled: ${EMAIL_ENABLED:false}
+    from: ${EMAIL_FROM:noreply@klabis.cz}
+
+  # Event lifecycle logging configuration
+  events:
+    logging:
+      enabled: ${EVENT_LOGGING_ENABLED:true}
+
+# Password setup configuration
+password-setup:
+  token:
+    expiration-hours: ${PASSWORD_SETUP_TOKEN_EXPIRATION_HOURS:4}
+    hash-algorithm: SHA-256
+  rate-limit:
+    # Rate limiting per registration number
+    requests: 3                          # Max requests per time window per registration number
+    duration-seconds: 3600               # Time window: 1 hour (3600 seconds)
+  email:
+    base-url: ${APP_BASE_URL:https://localhost:8443}
+
+# Frontend CORS configuration
+frontend:
+  allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:https://localhost:3000,https://localhost:8443}
+  allow-credentials: ${FRONTEND_ALLOW_CREDENTIALS:true}
+
+# Jasypt encryption for GDPR sensitive fields
+jasypt:
+  encryptor:
+    password: ${JASYPT_ENCRYPTOR_PASSWORD}
+    # Upgraded from PBEWithMD5AndDES (weak/broken) to PBEWithHmacSHA512AndAES_256
+    # PBEWithHmacSHA512AndAES_256 provides:
+    # - HMAC-SHA512 for key derivation (cryptographically strong)
+    # - AES-256 for encryption (256-bit key, approved for top secret data)
+    # - Random IV for each encryption (prevents pattern analysis)
+    algorithm: PBEWithHmacSHA512AndAES_256
+    iv-generator-classname: org.jasypt.iv.RandomIvGenerator
+
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: ${SSL_KEYSTORE_PATH:keystore/dev-keystore.p12}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD:changeit}
+    key-store-type: PKCS12
+    key-alias: localhost
+  http2:
+    enabled: true
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Application information for /actuator/info endpoint
+info:
+  app:
+    name: Klabis Backend API
+    description: Klabis Membership Management System
+    version: 0.1.0-SNAPSHOT
+
+# Logging pattern configuration moved to logback-spring.xml for MDC support
+# Log levels can still be overridden here if needed
+logging:
+  level:
+    com.klabis: DEBUG
+    org.springframework.web: INFO
+    # Enable DEBUG level to see Spring Modulith event lifecycle (persisted, published, completed, failed)
+    # Provides observability for event delivery issues
+    # Configurable via EVENT_LOGGING_LEVEL environment variable (default: DEBUG)
+    org.springframework.modulith.events: ${EVENT_LOGGING_LEVEL:DEBUG}
+
+
+---
+# Development profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:h2:mem:klabis;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+# Development SSL configuration
+server:
+  ssl:
+    key-store: keystore/dev-keystore.p12
+    key-store-password: changeit
+    key-store-type: PKCS12
+    key-alias: localhost
+
+# Logging pattern configuration moved to logback-spring.xml for MDC support
+logging:
+  level:
+    com.klabis: DEBUG
+    org.springframework.security: DEBUG
+
+---
+# Test profile
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    hikari:
+      # Tests typically need fewer connections
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 10000
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    clean-disabled: false
+
+# Test SSL configuration - uses classpath test keystore
+server:
+  ssl:
+    key-store: classpath:keystore/test-keystore.p12
+    key-store-password: test1234
+    key-store-type: PKCS12
+    key-alias: localhost
+
+# Logging pattern configuration moved to logback-spring.xml for MDC support
+logging:
+  level:
+    com.klabis: DEBUG
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  # H2 console is disabled in production for security
+  h2:
+    console:
+      enabled: false
+
+  # Production-optimized HikariCP settings
+  datasource:
+    hikari:
+      # Production databases typically handle more concurrent connections
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:10}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:300000}  # 5 minutes
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}  # 30 minutes
+
+  mail:
+    host: ${SMTP_HOST}
+
+# Production SSL configuration - uses environment variable for keystore path
+server:
+  ssl:
+    key-store: ${SSL_KEYSTORE_PATH}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD}
+    key-store-type: PKCS12
+    key-alias: ${SSL_KEY_ALIAS:localhost}
+
+# Production frontend CORS configuration
+# Override with your production frontend URL(s)
+frontend:
+  allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:https://your-frontend-domain.com}
+  allow-credentials: ${FRONTEND_ALLOW_CREDENTIALS:true}
+
+
+# Logging pattern configuration moved to logback-spring.xml for MDC support
+logging:
+  level:
+    com.klabis: INFO
+    org.springframework.security: WARN
+

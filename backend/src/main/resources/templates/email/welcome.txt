@@ -1,0 +1,23 @@
+================================================================================
+                              VÍTEJTE!
+================================================================================
+
+Dobrý den [(${firstName})] [(${lastName})],
+
+Vítejte v [(${clubName})]!
+
+Vaše registrace byla úspěšně vytvořena. Pro aktivaci účtu prosím klikněte na odkaz níže.
+
+REGISTRAČNÍ ČÍSLO: [(${registrationNumber})]
+
+AKTIVOVAT ÚČET:
+[(${activationUrl})]
+
+POZNÁMKA: Tento aktivační odkaz je platný 72 hodin.
+
+Těšíme se na spolupráci!
+[(${clubName})]
+
+================================================================================
+Tento email byl odeslán automaticky. Prosím neodpovídejte na něj.
+================================================================================

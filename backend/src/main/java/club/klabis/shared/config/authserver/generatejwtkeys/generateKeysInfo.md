@@ -1,1 +1,0 @@
-To generate new RSA key for OAuth2 server use `JWKKeyGenerator` class

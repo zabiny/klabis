@@ -1,0 +1,477 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Build & Test Commands
+
+### Building
+
+```bash
+# Compile and package
+./gradlew clean build
+
+# Skip tests
+./gradlew clean build -x test
+
+# Run application (dev profile with H2)
+./gradlew bootRun
+```
+
+### Starting the Development Server
+
+**IMPORTANT:** Always start the server with required environment variables:
+
+```bash
+# Minimal required variables for development
+cd klabis-backend
+BOOTSTRAP_ADMIN_USERNAME='admin' \
+BOOTSTRAP_ADMIN_PASSWORD='admin123' \
+OAUTH2_CLIENT_SECRET='test-secret-123' \
+./gradlew bootRun
+```
+
+**Server Management Best Practices:**
+
+1. **Use foreground mode** for development - Do NOT run in background (`&`) unless absolutely necessary
+    - Reason: You need to see logs immediately for debugging
+    - Background tasks capture output poorly, making debugging difficult
+
+2. **Check if server is running before starting:**
+   ```bash
+   # Check for existing Spring Boot processes
+   ps aux | grep -E "bootRun" | grep -v grep
+
+   # Check if port 8443 is in use
+   lsof -i :8443 || netstat -tulpn | grep 8443
+   ```
+
+3. **Stop server cleanly:**
+   ```bash
+   # Press Ctrl+C in the terminal where server is running (preferred)
+   # Or use:
+   pkill -f "bootRun"
+   ```
+
+4. **Wait for startup confirmation:**
+   ```bash
+   # Health check - server is ready when this returns 200
+   curl -k https://localhost:8443/actuator/health | jq '.status'
+   ```
+
+5. **Database reset:** H2 in-memory database resets on server restart. No manual cleanup needed.
+
+### Testing
+
+```bash
+# Run all tests (spring.modulith.test.file-modification-detector=default is configured in build.gradle.kts)
+./gradlew test
+
+# Run single test class
+./gradlew test --tests "ClassName"
+
+# Run single test method
+./gradlew test --tests "ClassName.methodName"
+
+# Run tests with specific profile
+./gradlew test -Dspring.profiles.active=test
+```
+
+- `spring.modulith.test.file-modification-detector=default` is configured as system property in `build.gradle.kts` — no
+  need to pass it manually
+
+## Documentation Index
+
+### Architecture & Design
+
+- **High-level architecture** → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Domain model** → [docs/DOMAIN-MODEL.md](docs/DOMAIN-MODEL.md)
+- **Package structure** → [docs/PACKAGE-STRUCTURE.md](docs/PACKAGE-STRUCTURE.md)
+- **Event-driven architecture** → [docs/EVENT-DRIVEN-ARCHITECTURE.md](docs/EVENT-DRIVEN-ARCHITECTURE.md)
+
+### API & Integration
+
+- **API reference** → [docs/API.md](docs/API.md)
+- **HATEOAS guide** → [docs/HATEOAS-GUIDE.md](docs/HATEOAS-GUIDE.md)
+- **Integration guide** → [docs/INTEGRATION-GUIDE.md](docs/INTEGRATION-GUIDE.md)
+- **Examples** → [docs/examples/README.md](docs/examples/README.md)
+
+### Security
+
+- **OAuth2 & JWT** → [docs/SPRING_SECURITY_ARCHITECTURE.md](docs/SPRING_SECURITY_ARCHITECTURE.md)
+
+### Operations
+
+- **Monitoring & troubleshooting** → [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md)
+
+### User Documentation
+
+- **Getting started** → [README.md](README.md)
+- **Documentation index** → [docs/README.md](docs/README.md)
+
+## Development Guidelines
+
+### Test-Driven Development
+
+- Always write tests for new features
+- Prefer running single tests and not the whole test suite - for performance
+- Ensure code passes linting and type checking
+- Ensure all tests pass before committing
+
+### Test Types & Locations
+
+**Unit Tests** (business logic in isolation):
+
+- Domain entities: `src/test/java/com/klabis/{module}/domain/*Test.java`
+- Application services: `src/test/java/com/klabis/{module}/application/*Test.java`
+- Use pure JUnit 5, no Spring context
+- Example: `MemberTest`, `GetUserPermissionsQueryHandlerTest`
+
+**Integration Tests** (with Spring context and database):
+
+- Repository tests: `src/test/java/com/klabis/{module}/infrastructure/persistence/*IntegrationTest.java`
+- Controller tests: `src/test/java/com/klabis/{module}/presentation/*Test.java`
+- Use appropriate spring slice - `@DataJpaTest`, or `@WebMvcTest`, or `@JsonTest` etc. in depends on what adapter is
+  tested
+- Example: `UserJpaRepositoryTest`, `UserControllerPermissionsTest`
+
+**E2E Tests** (full application flow):
+
+- Location: `src/test/java/com/klabis/{module}/*E2ETest.java`
+- Use `@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES)` (usually with
+  `@AutoConfigureMockMvc`)
+- Test complete user journeys across modules
+- Example: `MemberRegistrationE2ETest`, `PasswordSetupFlowE2ETest`
+
+### Integration Test Best Practices
+
+**Module Boundaries:**
+
+- Do NOT inject repositories from other modules (e.g., don't use `MemberRepository` in events module tests)
+- For foreign key constraints across modules, use `@Sql` to insert minimal test data
+- This respects architectural boundaries while enabling proper persistence testing
+
+**@Sql Annotation Usage:**
+
+```java
+// Class-level setup - runs before each test method
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
+    "delete from event_registrations",
+    "delete from events",
+    "delete from members",
+    // Insert test data with complete SQL statements
+    "INSERT INTO members (id, registration_number, first_name, last_name, ...) VALUES ('uuid', 'REG001', 'Test', 'User', ...)"
+})
+```
+
+**Important:**
+
+- Each statement in `statements = {}` must be a complete, valid SQL statement
+- Cannot use string concatenation with non-constant values (annotation requires compile-time constants)
+- One INSERT per row is clearer than multi-value INSERTs
+
+**Schema Constraints:**
+
+- Always check column length constraints (e.g., `organizer VARCHAR(10)`)
+- Use realistic test values: "OOB", "PRG", "BRN" instead of "Organizer A"
+- Foreign key constraints must be satisfied by test data
+
+### Coding Conventions
+
+#### Java Best Practices
+
+- Use **Java Records** for value objects (DTOs, immutable domain objects)
+- Use `org.springframework.util.Assert` for parameter validation in methods
+- Use Lombok annotations sparingly (only for entities/infrastructure where needed)
+- Use MapStruct for DTO ↔ Entity mapping
+- Prefix test methods with `should` (e.g., `shouldCreateMemberWithValidData`)
+- Use 'package protected' visibility as default for new classes. Make them public only when they need to be accessed
+  from other package
+- **Do not mock data objects** (entities, value objects, DTOs) in tests - use real instances instead
+- **Refactor methods with more than 4 parameters** by introducing parameter objects, request models, or splitting the
+  method
+
+#### Decision-Making: Simple vs. Pure Solutions
+
+**CRITICAL**: When facing a trade-off between a simple/pragmatic solution and a "pure" (clean/architecturally ideal)
+solution:
+
+1. **Stop and ask the user** - Do not make the decision yourself
+2. **Prepare a clear summary** of both options:
+    - **Simple option**: What it is, pros/cons, implementation effort
+    - **Pure option**: What it is, pros/cons, implementation effort
+    - **Impact**: How each option affects maintainability, testability, architecture
+3. **Present as a structured choice** with clear headings
+4. **Wait for user decision** before proceeding
+
+**Example format:**
+
+```
+## Decision Required: [Feature Name]
+
+I need your decision on how to implement [feature]:
+
+### Option 1: Simple Solution
+- Description: [brief description]
+- Pros: [benefits]
+- Cons: [drawbacks]
+- Effort: [time estimate]
+- Impact: [architectural implications]
+
+### Option 2: Pure (Clean) Solution
+- Description: [brief description]
+- Pros: [benefits]
+- Cons: [drawbacks]
+- Effort: [time estimate]
+- Impact: [architectural implications]
+
+Which approach would you prefer?
+```
+
+**Examples of when to ask:**
+
+- Duplicating code vs. creating abstraction
+- Package-private vs. public visibility
+- Constructor vs. field injection
+- Simple validation vs. framework integration
+- Pragmatic workaround vs. proper architectural fix
+
+#### Domain Model Design
+
+- **Aggregates** encapsulate business rules and publish domain events
+- **Value Objects** are immutable (use Java Records)
+- **Domain Events** are immutable records published by aggregates
+- **Repository interfaces** in domain layer, implementations in infrastructure
+
+#### Security Considerations
+
+- Sensitive data (e.g., rodne cislo) encrypted with Jasypt
+- Passwords hashed with BCrypt
+- Tokens stored as SHA-256 hashes, never plain text
+
+## Common Development Pitfalls
+
+### 1. Jackson Configuration ⚠️ **CRITICAL WARNING**
+
+**DO NOT** create global `JacksonConfiguration` or `ObjectMapper` beans with custom `PolymorphicTypeValidator` settings.
+
+**Why:** Global Jackson configuration affects ALL serialization/deserialization in the application, including:
+
+- Spring Security authentication
+- OAuth2 token processing
+- Database entity mapping
+- API request/response handling
+
+**Symptoms of incorrect Jackson configuration:**
+
+- Authentication fails with "Invalid credentials" even with correct password
+- Security filter chains behave unexpectedly
+- Deserialization errors for seemingly valid JSON
+
+**Correct Approach:**
+
+- Let Spring Boot auto-configure Jackson (default is usually sufficient)
+- If you need custom serialization, use `@JsonSerialize`/`@JsonDeserialize` annotations on specific classes
+- For OAuth2 issues, look for domain-specific solutions, not global Jackson changes
+
+**Reference:** `JacksonConfiguration.java.disabled` in this repo shows what NOT to do.
+
+### 2. Background Process Management
+
+**Problem:** Running `./gradlew bootRun &` in background makes debugging difficult.
+
+**Issues:**
+
+- Can't see startup logs in real-time
+- Output files often empty or missing
+- Hard to tell if server started successfully
+- Process may not terminate properly
+
+**Solution:** Run server in foreground mode during development:
+
+```bash
+# Good - Run in terminal where you can see logs
+./gradlew bootRun
+
+# Only use background for automated testing with explicit output redirection
+./gradlew bootRun > /tmp/server.log 2>&1 &
+```
+
+### 3. Testing Order Matters
+
+When testing OAuth2 or authentication:
+
+1. **First:** Verify server is running (`curl /actuator/health`)
+2. **Second:** Check bootstrap data loaded (`grep "Bootstrap data" server.log`)
+3. **Third:** Test endpoints in order (authorize → login → token → API call)
+4. **Last:** Use browser/Playwright for full E2E flow
+
+Don't skip steps - testing out of order wastes time debugging wrong problems.
+
+### 4. Environment Variables
+
+**Always** set required environment variables when starting server:
+
+```bash
+# Minimal set needed for development
+BOOTSTRAP_ADMIN_USERNAME='admin' \
+BOOTSTRAP_ADMIN_PASSWORD='admin123' \
+OAUTH2_CLIENT_SECRET='test-secret-123' \
+./gradlew bootRun
+```
+
+Without these:
+
+- Admin user won't be created (or gets random password)
+- OAuth2 clients won't work
+- Authentication will fail
+
+### 5. H2 Database Gotchas
+
+**In-memory H2 behavior:**
+
+- Database resets on EVERY server restart
+- Data does NOT persist between runs
+- Bootstrap data loads on startup (check logs for confirmation)
+
+**Common mistake:** Thinking data persists when debugging database issues.
+**Solution:** Check `BootstrapDataLoader` logs to confirm data was created.
+
+**Accessing H2 Console:**
+
+- URL: https://localhost:8443/h2-console
+- JDBC URL: `jdbc:h2:mem:klabis`
+- No username/password required (dev profile)
+
+### 6. Incremental Testing Workflow
+
+**When implementing new features or debugging issues:**
+
+1. **Compile first:** `./gradlew compileJava` - Catch syntax errors early
+2. **Start server:** `./gradlew bootRun` with proper env vars
+3. **Verify startup:** Check logs for "Started KlabisBackendApplication"
+4. **Health check:** `curl -k https://localhost:8443/actuator/health`
+5. **Test simple endpoint:** Try a public endpoint first
+6. **Test complex flow:** Only after basics work
+7. **Check logs IMMEDIATELY** if something fails
+
+**Why this order:**
+
+- Compilation errors are quick to find
+- Server startup issues are visible in logs
+- Health check confirms basic infrastructure
+- Simple tests rule out systemic issues
+- Complex tests have fewer variables to debug
+
+**Anti-pattern (don't do this):**
+
+- Make multiple code changes
+- Restart server multiple times without testing
+- Jump straight to E2E browser tests
+- Ignore logs and try to guess the problem
+
+### 7. Cross-Module Repository Access in Tests
+
+**Problem:** Injecting repositories from other modules violates architectural boundaries.
+
+**Example:** Don't inject `MemberRepository` into `EventJdbcRepositoryTest` just to create test members.
+
+**Solution:** Use `@Sql` annotation to insert minimal test data:
+
+```java
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
+    "delete from members",
+    "INSERT INTO members (id, registration_number, first_name, last_name, ...) VALUES ('uuid', 'REG001', 'Test', 'User', ...)"
+})
+```
+
+**Why:** Integration tests test persistence layer, not domain logic. Direct SQL insertion is acceptable for setting up
+foreign key relationships.
+
+### 8. @Sql Annotation String Concatenation
+
+**Problem:** `@Sql` annotation requires compile-time constants, cannot use string concatenation with variables.
+
+**Wrong:**
+
+```java
+private static final String INSERT_MEMBER = "INSERT INTO members (...) VALUES " + memberId;
+@Sql(statements = INSERT_MEMBER)  // Compilation error
+```
+
+**Correct:**
+
+```java
+@Sql(statements = {
+    "INSERT INTO members (id, ...) VALUES ('11111111-1111-1111-1111-111111111111', ...)"
+})
+```
+
+### 9. Column Length Constraints
+
+**Problem:** Test data values exceed database column length limits.
+
+**Example:** `organizer VARCHAR(10)` but test uses "Organizer A" (11 chars).
+
+**Solution:** Check schema first, use realistic values:
+
+- Organizer codes: "OOB", "PRG", "BRN" (3 letters, typical orienteering format)
+- Registration numbers: "ZBM0501" (7 chars per schema)
+
+## Command-Line Tool Usage
+
+When using command-line tools (sed, awk, cat, etc.), **always quote file paths** to avoid issues with spaces and special
+characters:
+
+**Wrong:**
+
+```bash
+sed -n '138,148p' src/main/java/com/klabis/users/domain/User.java
+```
+
+**Correct:**
+
+```bash
+sed -n '138,148p' "src/main/java/com/klabis/users/domain/User.java"
+```
+
+## Commit Conventions
+
+Follow Conventional Commits format:
+
+```
+<type>(<scope>): <description>
+
+feat(members): add member registration endpoint
+fix(email): correct welcome email template
+test(members): add tests for registration number generation
+docs(api): update authentication examples
+refactor(users): extract password validation to service
+```
+
+**Common types:** feat, fix, test, docs, refactor, chore, perf, style, ci
+
+## Application Profiles
+
+⚠️ **Development Status**: Application is currently in development. There is no production environment yet. All
+instances run on in-memory H2 database (dev profile).
+
+- **dev** (default): H2 in-memory database, SQL logging, H2 console enabled
+- **test**: For integration tests, isolated H2 database
+- **prod**: PostgreSQL, production settings, actuator endpoints secured (not yet deployed)
+
+## Key Technologies
+
+- **Java 17+**
+- **Spring Boot 3.5.9**
+- **Spring Modulith 1.4.6** - Event-driven modular architecture
+- **Spring Security** - OAuth2 Authorization Server + Resource Server
+- **Spring Data JPA** - Hibernate ORM
+- **Spring HATEOAS** - HAL+FORMS hypermedia
+- **PostgreSQL** (prod) / H2 (dev/test)
+- **Flyway** - Database migrations
+- **Resilience4j** - Rate limiting
+- **Jasypt** - Encryption for GDPR data
+- **MapStruct** - DTO mapping
+- **Gradle** (Kotlin DSL) - Build tool
+- **JUnit 5** + **AssertJ** + **Mockito** - Testing
+- **TestContainers** - Integration test database

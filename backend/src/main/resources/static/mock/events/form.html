@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nová akce - Klabis</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="#4F46E5"/>
+                    <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round"
+                          stroke-linejoin="round"/>
+                </svg>
+                <h1>Klabis</h1>
+            </div>
+            <p class="sidebar-subtitle">Systém správy členů</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="../index.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <span>Přehled</span>
+            </a>
+            <a href="../members/list.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                </svg>
+                <span>Členové</span>
+            </a>
+            <a href="../members/form.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
+                </svg>
+                <span>Nový člen</span>
+            </a>
+            <a href="list.html" class="nav-item active">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M6 2a1 1 0 00-1 1v2H4a2 2 0 00-2 2v2h16V7a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v2H7V3a1 1 0 00-1-1zm0 5H4v9a2 2 0 002 2h12a2 2 0 002-2V7h-2v2a1 1 0 11-2 0V7H8v2a1 1 0 11-2 0V7z"/>
+                </svg>
+                <span>Akce</span>
+            </a>
+            <a href="form.html" class="nav-item active">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
+                </svg>
+                <span>Nová akce</span>
+            </a>
+            <a href="../user-permissions/permissions.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/>
+                </svg>
+                <span>Oprávnění</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">A</div>
+                <div class="user-details">
+                    <span class="user-name">Administrátor</span>
+                    <span class="user-reg-number">admin</span>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="btn-logout">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd"
+                          d="M10 12.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-9a.5.5 0 01.5-.5h8a.5.5 0 01.5.5v2a.5.5 0 001 0v-2A1.5 1.5 0 009.5 2h-8A1.5 1.5 0 000 3.5v9A1.5 1.5 0 001.5 14h8a1.5 1.5 0 001.5-1.5v-2a.5.5 0 00-1 0v2z"/>
+                    <path fill-rule="evenodd"
+                          d="M15.854 8.354a.5.5 0 000-.708l-3-3a.5.5 0 00-.708.708L14.293 7.5H5.5a.5.5 0 000 1h8.793l-2.147 2.146a.5.5 0 00.708.708l3-3z"/>
+                </svg>
+                Odhlásit
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="content-header">
+            <h2>Nová akce</h2>
+            <p>Vytvořit novou plánovanou akci</p>
+        </div>
+
+        <div class="form-container">
+            <div class="card">
+                <form id="eventForm" onsubmit="handleSubmit(event)">
+                    <div class="form-section">
+                        <h3>Základní informace</h3>
+
+                        <div class="form-group">
+                            <label for="name">Název akce *</label>
+                            <input type="text" id="name" name="name" class="form-input"
+                                   placeholder="např. Spring Cup 2026" maxlength="200" required>
+                            <span class="error-message" id="name-error"></span>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventDate">Datum akce *</label>
+                                <input type="date" id="eventDate" name="eventDate" class="form-input" required>
+                                <span class="error-message" id="eventDate-error"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="location">Místo konání *</label>
+                                <input type="text" id="location" name="location" class="form-input"
+                                       placeholder="např. Lesy u Slaného" maxlength="200" required>
+                                <span class="error-message" id="location-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="organizer">Pořadatel *</label>
+                                <select id="organizer" name="organizer" class="form-input" required>
+                                    <option value="">Vyberte pořadatele...</option>
+                                    <option value="OOB">OOB - Občanský orientační běh</option>
+                                    <option value="PRG">PRG - Praha</option>
+                                    <option value="BRN">BRN - Brno</option>
+                                    <option value="OLA">OLA - Olomouc</option>
+                                    <option value="OST">OST - Ostrava</option>
+                                </select>
+                                <span class="error-message" id="organizer-error"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="websiteUrl">Web (URL)</label>
+                                <input type="url" id="websiteUrl" name="websiteUrl" class="form-input"
+                                       placeholder="https://example.com" maxlength="2000">
+                                <span class="error-message" id="websiteUrl-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Volitelné informace</h3>
+
+                        <div class="form-group">
+                            <label for="eventCoordinatorId">Koordinátor akce</label>
+                            <input type="text" id="eventCoordinatorId" name="eventCoordinatorId" class="form-input"
+                                   placeholder="Jméno nebo ID koordinátora" disabled>
+                            <small style="color: var(--gray-500); margin-top: 0.25rem; display: block;">
+                                Funkce zatím není dostupná. Bude přidána v další verzi.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="list.html" class="btn btn-secondary">Zrušit</a>
+                        <button type="submit" class="btn btn-primary">Vytvořit akci</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="../api-client.js"></script>
+<script src="../app.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        checkAuth();
+    });
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+
+        // Clear previous errors
+        document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+
+        const formData = {
+            name: document.getElementById('name').value.trim(),
+            eventDate: document.getElementById('eventDate').value,
+            location: document.getElementById('location').value.trim(),
+            organizer: document.getElementById('organizer').value,
+            websiteUrl: document.getElementById('websiteUrl').value.trim() || null
+        };
+
+        // Basic client-side validation
+        if (!formData.name) {
+            showError('name-error', 'Název akce je povinný');
+            return;
+        }
+
+        if (formData.name.length > 200) {
+            showError('name-error', 'Název nesmí přesáhnout 200 znaků');
+            return;
+        }
+
+        if (!formData.eventDate) {
+            showError('eventDate-error', 'Datum akce je povinné');
+            return;
+        }
+
+        if (!formData.location) {
+            showError('location-error', 'Místo konání je povinné');
+            return;
+        }
+
+        if (formData.location.length > 200) {
+            showError('location-error', 'Místo nesmí přesáhnout 200 znaků');
+            return;
+        }
+
+        if (!formData.organizer) {
+            showError('organizer-error', 'Pořadatel je povinný');
+            return;
+        }
+
+        if (formData.websiteUrl && !isValidUrl(formData.websiteUrl)) {
+            showError('websiteUrl-error', 'Zadejte platnou URL (http:// nebo https://)');
+            return;
+        }
+
+        try {
+            const response = await apiClient.createEvent(formData);
+            showToast('Akce byla úspěšně vytvořena', 'success');
+            setTimeout(() => {
+                window.location.href = `detail.html?id=${response.id}`;
+            }, 1000);
+        } catch (error) {
+            if (error.data && error.data.detail) {
+                showToast(error.data.detail, 'error');
+            } else {
+                handleApiError(error);
+            }
+        }
+    }
+
+    function showError(elementId, message) {
+        const el = document.getElementById(elementId);
+        if (el) el.textContent = message;
+    }
+
+    function isValidUrl(string) {
+        try {
+            const url = new URL(string);
+            return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function handleLogout() {
+        if (confirm('Opravdu se chcete odhlásit?')) {
+            sessionStorage.removeItem('isAuthenticated');
+            apiClient.clearToken();
+            window.location.href = '../auth/login.html';
+        }
+    }
+</script>
+<style>
+    .form-container {
+        max-width: 600px;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 500;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: 0.375rem;
+        font-size: 1rem;
+        font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-group input:disabled,
+    .form-group select:disabled {
+        background-color: var(--gray-100);
+        color: var(--gray-500);
+        cursor: not-allowed;
+    }
+
+    .error-message {
+        display: block;
+        color: #DC2626;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        min-height: 1.25rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    @media (max-width: 640px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .form-actions a,
+    .form-actions button {
+        flex: 1;
+    }
+</style>
+</body>
+</html>

@@ -1,0 +1,54 @@
+# Maven
+target/
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# MacOS
+.DS_Store
+
+# Spring Boot
+HELP.md
+spring-boot-devtools.jar
+
+# Logs
+*.log
+logs/
+
+# H2 Database
+*.db
+
+# Environment variables
+.env
+.env.local
+
+# Sensitive configuration (should be in env vars)
+application-local.yml
+application-local.properties
+
+# IntelliJ HTTP Client private configuration
+http-client.private.env.json
+
+# SSL/TLS Keystores (development certificates)
+keystore/
+*.p12
+*.jks
+*.keystore

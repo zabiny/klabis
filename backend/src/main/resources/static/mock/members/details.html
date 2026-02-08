@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail člena - Klabis</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="#4F46E5"/>
+                    <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round"
+                          stroke-linejoin="round"/>
+                </svg>
+                <h1>Klabis</h1>
+            </div>
+            <p class="sidebar-subtitle">Systém správy členů</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="../index.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <span>Přehled</span>
+            </a>
+            <a href="list.html" class="nav-item active">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                </svg>
+                <span>Členové</span>
+            </a>
+            <a href="form.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
+                </svg>
+                <span>Nový člen</span>
+            </a>
+            <a href="../user-permissions/permissions.html" class="nav-item">
+                <svg class="nav-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"/>
+                </svg>
+                <span>Oprávnění</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">A</div>
+                <div class="user-details">
+                    <span class="user-name">Administrátor</span>
+                    <span class="user-reg-number">admin</span>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="btn-logout">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd"
+                          d="M10 12.5a.5.5 0 01-.5.5h-8a.5.5 0 01-.5-.5v-9a.5.5 0 01.5-.5h8a.5.5 0 01.5.5v2a.5.5 0 001 0v-2A1.5 1.5 0 009.5 2h-8A1.5 1.5 0 000 3.5v9A1.5 1.5 0 001.5 14h8a1.5 1.5 0 001.5-1.5v-2a.5.5 0 00-1 0v2z"/>
+                    <path fill-rule="evenodd"
+                          d="M15.854 8.354a.5.5 0 000-.708l-3-3a.5.5 0 00-.708.708L14.293 7.5H5.5a.5.5 0 000 1h8.793l-2.147 2.146a.5.5 0 00.708.708l3-3z"/>
+                </svg>
+                Odhlásit
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-header">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <a href="list.html" class="btn-link" style="margin-bottom: 0.5rem; display: inline-block;">← Zpět na
+                        seznam</a>
+                    <h2 id="memberName">Jan Novák</h2>
+                    <p id="memberRegNumber">ZBM0101</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button onclick="handleEdit()" class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                        </svg>
+                        Upravit
+                    </button>
+                    <button onclick="handleDelete()" class="btn" style="background: var(--danger); color: white;">
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"/>
+                        </svg>
+                        Smazat
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="member-details">
+            <!-- Personal Information -->
+            <div class="detail-section">
+                <div class="detail-section-header">
+                    <h3>Osobní údaje</h3>
+                </div>
+                <div class="detail-section-body">
+                    <div class="detail-row">
+                        <span class="detail-label">Registrační číslo</span>
+                        <span class="detail-value" id="detailRegNumber">ZBM0101</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Jméno</span>
+                        <span class="detail-value" id="detailFirstName">Jan</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Příjmení</span>
+                        <span class="detail-value" id="detailLastName">Novák</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Datum narození</span>
+                        <span class="detail-value" id="detailDateOfBirth">10. 3. 2001</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Státní příslušnost</span>
+                        <span class="detail-value" id="detailNationality">Česká republika</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Pohlaví</span>
+                        <span class="detail-value" id="detailGender">Muž</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Rodné číslo</span>
+                        <span class="detail-value" id="detailRodneCislo">0103101234</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Stav člena</span>
+                        <span class="detail-value">
+                                <span class="status-badge status-active" id="detailStatus">Aktivní</span>
+                            </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="detail-section">
+                <div class="detail-section-header">
+                    <h3>Adresa</h3>
+                </div>
+                <div class="detail-section-body">
+                    <div class="detail-row">
+                        <span class="detail-label">Ulice a číslo</span>
+                        <span class="detail-value" id="detailStreet">Hlavní 123</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Město</span>
+                        <span class="detail-value" id="detailCity">Praha</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">PSČ</span>
+                        <span class="detail-value" id="detailPostalCode">110 00</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Stát</span>
+                        <span class="detail-value" id="detailCountry">Česká republika</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="detail-section">
+                <div class="detail-section-header">
+                    <h3>Kontaktní údaje</h3>
+                </div>
+                <div class="detail-section-body">
+                    <div class="detail-row">
+                        <span class="detail-label">E-maily</span>
+                        <span class="detail-value" id="detailEmails">jan.novak@email.cz</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Telefony</span>
+                        <span class="detail-value" id="detailPhones">+420 123 456 789</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="detail-section">
+                <div class="detail-section-header">
+                    <h3>Další údaje</h3>
+                </div>
+                <div class="detail-section-body">
+                    <div class="detail-row">
+                        <span class="detail-label">Číslo čipu</span>
+                        <span class="detail-value" id="detailChipNumber">123456789</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Číslo bankovního účtu</span>
+                        <span class="detail-value" id="detailBankAccount">12-34567890123/0100</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guardian Information (if minor) -->
+            <div class="detail-section" id="guardianSection" style="display: none;">
+                <div class="detail-section-header">
+                    <h3>Zákonný zástupce</h3>
+                </div>
+                <div class="detail-section-body">
+                    <div class="detail-row">
+                        <span class="detail-label">Jméno</span>
+                        <span class="detail-value" id="detailGuardianName">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Telefon</span>
+                        <span class="detail-value" id="detailGuardianPhone">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">E-mail</span>
+                        <span class="detail-value" id="detailGuardianEmail">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Information -->
+            <div class="detail-section">
+                <div class="detail-section-header">
+                    <h3>Auditní informace</h3>
+                </div>
+                <div class="detail-section-body">
+                    <div class="detail-row">
+                        <span class="detail-label">Vytvořeno</span>
+                        <span class="detail-value" id="detailCreatedAt">15. 1. 2026 10:30</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Vytvořil(a)</span>
+                        <span class="detail-value" id="detailCreatedBy">admin</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Upraveno</span>
+                        <span class="detail-value" id="detailModifiedAt">20. 1. 2026 14:45</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Upravil(a)</span>
+                        <span class="detail-value" id="detailModifiedBy">admin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="../api-client.js"></script>
+<script src="../app.js"></script>
+<script>
+    // Load member data
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const memberId = urlParams.get('id');
+
+        if (!memberId) {
+            showToast('ID člena chybí', 'error');
+            setTimeout(() => {
+                window.location.href = 'list.html';
+            }, 1500);
+            return;
+        }
+
+        try {
+            showLoading();
+            const member = await apiClient.getMember(memberId);
+            displayMemberDetails(member);
+        } catch (error) {
+            console.error('Failed to load member:', error);
+            handleApiError(error);
+
+            // Redirect to members list on error
+            setTimeout(() => {
+                window.location.href = 'list.html';
+            }, 2000);
+        }
+    });
+
+    function showLoading() {
+        // Show loading in header
+        document.getElementById('memberName').innerHTML = `
+                <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <span style="margin-left: 0.5rem; color: var(--gray-500);">Načítání...</span>
+            `;
+
+        // Hide all detail sections during loading
+        document.querySelectorAll('.detail-section').forEach(section => {
+            section.style.opacity = '0.5';
+            section.style.pointerEvents = 'none';
+        });
+    }
+
+    function displayMemberDetails(member) {
+        // Restore opacity
+        document.querySelectorAll('.detail-section').forEach(section => {
+            section.style.opacity = '1';
+            section.style.pointerEvents = 'auto';
+        });
+
+        // Update header
+        document.getElementById('memberName').textContent = `${member.firstName} ${member.lastName}`;
+        document.getElementById('memberRegNumber').textContent = member.registrationNumber;
+
+        // Personal information
+        document.getElementById('detailRegNumber').textContent = member.registrationNumber;
+        document.getElementById('detailFirstName').textContent = member.firstName;
+        document.getElementById('detailLastName').textContent = member.lastName;
+        document.getElementById('detailDateOfBirth').textContent = formatDate(member.dateOfBirth);
+        document.getElementById('detailNationality').textContent = getNationalityText(member.nationality);
+        document.getElementById('detailGender').textContent = getGenderText(member.gender);
+        document.getElementById('detailRodneCislo').textContent = '-'; // Not in API response
+        document.getElementById('detailStatus').textContent = member.active ? 'Aktivní' : 'Neaktivní';
+        document.getElementById('detailStatus').className = `status-badge ${member.active ? 'status-active' : 'status-inactive'}`;
+
+        // Address
+        if (member.address) {
+            document.getElementById('detailStreet').textContent = member.address.street || '-';
+            document.getElementById('detailCity').textContent = member.address.city || '-';
+            document.getElementById('detailPostalCode').textContent = member.address.postalCode || '-';
+            document.getElementById('detailCountry').textContent = getCountryText(member.address.country);
+        } else {
+            document.getElementById('detailStreet').textContent = '-';
+            document.getElementById('detailCity').textContent = '-';
+            document.getElementById('detailPostalCode').textContent = '-';
+            document.getElementById('detailCountry').textContent = '-';
+        }
+
+        // Contact
+        document.getElementById('detailEmails').textContent = member.email || '-';
+        document.getElementById('detailPhones').textContent = member.phone || '-';
+
+        // Additional (not in API, placeholders)
+        document.getElementById('detailChipNumber').textContent = '-';
+        document.getElementById('detailBankAccount').textContent = '-';
+
+        // Audit (not in API, placeholders)
+        document.getElementById('detailCreatedAt').textContent = '-';
+        document.getElementById('detailCreatedBy').textContent = '-';
+        document.getElementById('detailModifiedAt').textContent = '-';
+        document.getElementById('detailModifiedBy').textContent = '-';
+
+        // Guardian section
+        if (member.guardian) {
+            document.getElementById('guardianSection').style.display = 'block';
+            document.getElementById('detailGuardianName').textContent =
+                `${member.guardian.firstName} ${member.guardian.lastName}`;
+            document.getElementById('detailGuardianPhone').textContent = member.guardian.phone;
+            document.getElementById('detailGuardianEmail').textContent = member.guardian.email;
+        } else {
+            document.getElementById('guardianSection').style.display = 'none';
+        }
+    }
+
+    function handleDelete() {
+        if (confirm('Opravdu chcete smazat tohoto člena? Tato akce je nevratná.')) {
+            showToast('Člen byl smazán', 'success');
+            setTimeout(() => {
+                window.location.href = 'list.html';
+            }, 1500);
+        }
+    }
+
+    function handleEdit() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const memberId = urlParams.get('id');
+        window.location.href = `edit.html?id=${memberId}`;
+    }
+
+    function handleLogout() {
+        if (confirm('Opravdu se chcete odhlásit?')) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '../auth/login.html';
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+# OpenSpec Project Configuration
+# This configuration provides context for AI-assisted specification work
+
+context: |
+  Klabis is a backend API for orienteering club management (members, events, finances).
+
+  **Tech Stack:** Java 17+, Spring Boot 3.5.9, Spring MVC, Spring Data JDBC, Spring Modulith 1.4.6, Maven
+  **API Design:** REST with HATEOAS (mandatory), HAL+FORMS media type, hypermedia navigation
+  **Architecture:** Clean Architecture + DDD, dependency rule inward, hybrid package structure (not layered), KISS
+  **Testing:** TDD required (write tests first), JUnit 5 + AssertJ + Mockito, >80% coverage
+  **Git:** Conventional Commits, branches `feature/[issue-id]-description` or `bugfix/[issue-id]-description`
+
+  **Package Structure (Hybrid):**
+  - Module root: `{Aggregate}.java`, `{Aggregate}s.java` (public query API), value objects, domain enums, entities, domain events
+  - `{feature}/` packages: Service, controller, DTOs, exceptions co-located (@NamedInterface)
+  - `persistence/` package: Repository interfaces (internal, hidden from other modules)
+  - `persistence/jdbc/` package: JDBC repositories, mementos, adapters, converters (internal)
+  - `shared/` package: Utilities, validators (internal)
+
+  **Key Constraints:**
+  - All API responses must include `_links` (HATEOAS compliance)
+  - Frontend is separate (consumes via HAL+FORMS)
+  - GDPR compliance required
+  - Target: 10+ concurrent users, <500ms API response
+
+rules:
+  specs:
+    - "write files strictly using English"
+    - "Focus on business requirements (WHAT), not implementation (HOW)"
+    - "Avoid implementation related requirements and scenario descriptions (keep it purely business specs)"
+    - "Can use API contracts: endpoints, methods, status codes, media types"
+    - "Security requirements OK: use \"cryptographically hashed\" not \"BCrypt\""
+    - "every module shall have single specs.md file"
+
+  tasks:
+    - "Follow TDD: write failing test, implement, refactor"
+    - "Aim for >80% tests coverage coverage, 100% for domain logic"
+    - "Use ubiquitous language (UserId, EmailAddress) not Java patterns (record, factory method)"
+
+  design:
+    - "Use Mermaid diagrams in design.md to visualize concepts if applicable"
+    - "Use ubiquitous language (UserId, EmailAddress) not Java patterns (record, factory method)"
+
+  proposal:
+    - "Use Mermaid diagrams in proposal.md to visualize concepts if applicable"
+
