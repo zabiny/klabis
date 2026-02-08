@@ -18,8 +18,8 @@ export interface AuthConfig {
 export const authConfig: AuthConfig = {
     authority: '/',
     //authority: '/api',
-    client_id: 'frontend',
-    client_secret: 'fesecret',
+    client_id: 'klabis-web',
+    client_secret: 'test-secret-123',
     redirect_uri: '/auth/callback', // must match OIDC config
     //redirect_uri: 'http://localhost:3000/auth/callback', // must match OIDC config
     post_logout_redirect_uri: '/oauth/logout',

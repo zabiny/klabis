@@ -271,7 +271,7 @@ monitoring, see [EVENT-DRIVEN-ARCHITECTURE.md](./EVENT-DRIVEN-ARCHITECTURE.md)
 **Default Clients:**
 
 - `klabis-web` - Web application (authorization code flow)
-- `||mock-web||` - UI mock application (testing)
+- `klabis-web` - UI mock application (testing)
 
 **Bootstrap Data:**
 

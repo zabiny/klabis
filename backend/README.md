@@ -170,7 +170,7 @@ The API uses **OAuth2** with JWT tokens.
 **Default Credentials (Development Only):**
 
 - **Admin User:** `admin` / `admin123` (ROLE_ADMIN, all authorities)
-- **OAuth2 Client:** `||mock-web||` / `test-secret-123`
+- **OAuth2 Client:** `klabis-web` / `test-secret-123`
 
 ⚠️ **Never use in production!**
 
@@ -180,7 +180,7 @@ The API uses **OAuth2** with JWT tokens.
 # Get access token
 TOKEN=$(curl -s -k -X POST https://localhost:8443/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "||mock-web||:test-secret-123" \
+  -u "klabis-web:test-secret-123" \
   -d "grant_type=client_credentials&scope=MEMBERS:CREATE" \
   | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 

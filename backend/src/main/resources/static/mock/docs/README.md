@@ -19,7 +19,7 @@ Mockup je nyní propojen s reálným Klabis backend API pomocí **OAuth2 Authori
 
 1. Spusťte backend: `cd klabis-backend && ./gradlew bootRun`
 2. Otevřete mockup: https://localhost:8443/mock-login.html
-3. Zadejte Client ID (výchozí: mock-web)
+3. Zadejte Client ID (výchozí: klabis-web)
 4. Budete přesměrováni na přihlašovací stránku autorizačního serveru
 5. Přihlašte se uživatelským účtem (admin / admin123)
 6. Prohlížejte reálná data z databáze!
@@ -66,7 +66,7 @@ JavaScriptu. Jsou psány v češtině, což odpovídá cílové skupině uživat
 
 - **OAuth2 Authorization Code flow** - bezpečný OAuth2 standardní flow
 - Backend URL: `https://localhost:8443` (auto-detected)
-- Client ID: `mock-web` (z V002 migration)
+- Client ID: `klabis-web` (z V002 migration)
 - Redirect URI: `https://localhost:8443/callback.html`
 - Přesměrování na autorizační server pro přihlášení
 - Automatická výměna authorization code za access token
@@ -75,7 +75,7 @@ JavaScriptu. Jsou psány v češtině, což odpovídá cílové skupině uživat
 
 **Login proces:**
 
-1. Zadáte Client ID (mock-web)
+1. Zadáte Client ID (klabis-web)
 2. Budete přesměrováni na autorizační server
 3. Přihlašte se uživatelským jménem a heslem (např. admin / admin123)
 4. Autorizační server vás přesměruje zpět s authorization code

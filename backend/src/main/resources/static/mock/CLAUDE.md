@@ -100,7 +100,7 @@ Then open your browser: **https://localhost:8443/mock-login.html**
 // Note: UI is served from same origin as backend (https://localhost:8443)
 const apiClient = new KlabisApiClient({
     baseUrl: window.location.origin,  // https://localhost:8443
-    clientId: 'mock-web',
+    clientId: 'klabis-web',
     clientSecret: 'test-secret-123',  // Must match OAUTH2_CLIENT_SECRET env variable
     redirectUri: window.location.origin + '/callback.html'
 });
@@ -340,7 +340,7 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 # Browser: https://localhost:8443/mock-login.html
 
 # 3. Test OAuth2 Authorization Code flow
-# - At "Enter Client ID": use `mock-web`
+# - At "Enter Client ID": use `klabis-web`
 # - Username: `admin`
 # - Password: `admin123`
 ```

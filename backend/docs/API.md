@@ -7,7 +7,7 @@
 ```bash
 curl -k -X POST https://localhost:8443/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "||mock-web||:test-secret-123" \
+  -u "klabis-web:test-secret-123" \
   -d "grant_type=client_credentials&scope=MEMBERS:CREATE" \
   | grep -o '"access_token":"[^"]*' | cut -d'"' -f4 \
   | { read TOKEN; curl -k -X POST https://localhost:8443/api/members \
@@ -81,7 +81,7 @@ The API uses **OAuth2** with **JWT tokens** for authentication.
 ```bash
 TOKEN=$(curl -s -k -X POST https://localhost:8443/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "||mock-web||:test-secret-123" \
+  -u "klabis-web:test-secret-123" \
   -d "grant_type=client_credentials&scope=MEMBERS:CREATE" \
   | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 ```
@@ -92,7 +92,7 @@ The backend automatically creates OAuth2 clients and bootstrap admin user on sta
 
 **Default OAuth2 Clients:**
 
-- Client ID: `||mock-web||` (for UI mockup testing)
+- Client ID: `klabis-web` (for UI mockup testing)
     - Client Secret: `test-secret-123` (set via `OAUTH2_CLIENT_SECRET` env var)
 - Client ID: `klabis-web` (for production use)
     - Client Secret: auto-generated on first startup
@@ -121,7 +121,7 @@ Use this method for automated scripts, cron jobs, or server-to-server communicat
 ```bash
 curl -k -X POST https://localhost:8443/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "||mock-web||:test-secret-123" \
+  -u "klabis-web:test-secret-123" \
   -d "grant_type=client_credentials&scope=MEMBERS:CREATE,MEMBERS:READ"
 ```
 
@@ -798,7 +798,7 @@ sequenceDiagram
 # 1. Authenticate
 TOKEN=$(curl -s -k -X POST https://localhost:8443/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "||mock-web||:test-secret-123" \
+  -u "klabis-web:test-secret-123" \
   -d "grant_type=client_credentials&scope=MEMBERS:CREATE" \
   | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 

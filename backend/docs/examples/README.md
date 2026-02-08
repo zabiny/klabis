@@ -135,7 +135,7 @@ Contains 5 sample members with various field combinations:
 All examples use the following default configuration:
 
 - **Backend URL:** `https://localhost:8443` (override with `BACKEND_URL` env var)
-- **OAuth2 Client:** `||mock-web||` / `test-secret-123`
+- **OAuth2 Client:** `klabis-web` / `test-secret-123`
 - **Admin User:** `admin` / `admin123`
 
 ### Environment Variables
@@ -165,7 +165,7 @@ export OAUTH2_CLIENT_SECRET=test-secret-123
 # Get token and create member in one command
 curl -k -X POST https://localhost:8443/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "||mock-web||:test-secret-123" \
+  -u "klabis-web:test-secret-123" \
   -d "grant_type=client_credentials&scope=MEMBERS:CREATE" \
   | grep -o '"access_token":"[^"]*' | cut -d'"' -f4 \
   | { read TOKEN; curl -k -X POST https://localhost:8443/api/members \

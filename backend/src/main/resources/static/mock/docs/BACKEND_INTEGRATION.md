@@ -32,7 +32,7 @@ const members = await apiClient.getMembers({ page: 0, size: 10, sort: 'lastName,
 Updated to use OAuth2 Authorization Code flow:
 
 - **Backend URL**: `https://localhost:8443` (auto-detected)
-- **Client ID**: `mock-web`
+- **Client ID**: `klabis-web`
 - **Redirect URI**: `https://localhost:8443/callback.html`
 
 The login redirects to the authorization server's login page with the authorization code flow parameters.
@@ -74,7 +74,7 @@ The API client can be configured via the login page:
 // UI is served from same origin as backend, so use relative URLs
 apiClient.baseUrl = window.location.origin;  // https://localhost:8443
 apiClient.apiBaseUrl = window.location.origin + '/api';  // https://localhost:8443/api
-apiClient.clientId = 'mock-web';
+apiClient.clientId = 'klabis-web';
 apiClient.clientSecret = 'admin123';  // Used for token exchange only
 apiClient.redirectUri = window.location.origin + '/callback.html';
 ```
@@ -88,7 +88,7 @@ User clicks login → Redirect to authorization server:
 ```http
 GET https://localhost:8443/oauth2/authorize?
     response_type=code&
-    client_id=mock-web&
+    client_id=klabis-web&
     redirect_uri=https://localhost:8443/callback.html&
     scope=MEMBERS:CREATE+MEMBERS:UPDATE+MEMBERS:DELETE+MEMBERS:READ
 ```
@@ -201,7 +201,7 @@ refresh_token=REFRESH_TOKEN
 
 ### Test Flow
 
-1. **Login**: Enter Client ID (mock-web) and click login
+1. **Login**: Enter Client ID (klabis-web) and click login
 2. **Authorization**: You'll be redirected to authorization server login page (default: `/login`)
 3. **Authenticate**: Enter user credentials (admin / admin123)
 4. **Callback**: Authorization server redirects back with authorization code
@@ -210,7 +210,7 @@ refresh_token=REFRESH_TOKEN
 
 ### Default Credentials
 
-- **OAuth2 Client**: mock-web / test-secret-123
+- **OAuth2 Client**: klabis-web / test-secret-123
 - **Admin User**: admin / admin123
 
 ## 🐛 Troubleshooting

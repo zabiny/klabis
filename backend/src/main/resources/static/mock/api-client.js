@@ -9,7 +9,7 @@ class KlabisApiClient {
         const origin = window.location.origin;  // e.g., https://localhost:8443
         this.baseUrl = config.baseUrl || origin;
         this.apiBaseUrl = config.apiBaseUrl || `${origin}/api`;
-        this.clientId = config.clientId || '||mock-web||';
+        this.clientId = config.clientId || 'klabis-web';
         this.clientSecret = config.clientSecret || 'test-secret-123';
         this.redirectUri = config.redirectUri || `${origin}/auth/callback.html`;
 

@@ -48,7 +48,6 @@ public class BootstrapDataLoader implements ApplicationRunner {
 
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
     private static final String DEFAULT_OAUTH2_CLIENT_ID = "klabis-web";
-    private static final String MOCK_WEB_OAUTH2_CLIENT_ID = "||mock-web||";
 
     public BootstrapDataLoader(
             JdbcTemplate jdbcTemplate,
@@ -142,10 +141,8 @@ public class BootstrapDataLoader implements ApplicationRunner {
         String clientId = environment.getProperty("oauth2.client.id", DEFAULT_OAUTH2_CLIENT_ID);
         String clientSecret = environment.getProperty("oauth2.client.secret");
         String clientUuid = environment.getProperty("oauth2.client.id.uuid", UUID.randomUUID().toString());
-        String mockWebClientUuid = UUID.randomUUID().toString();
 
         createOAuth2Client(clientUuid, clientId, clientSecret);
-        createOAuth2Client(mockWebClientUuid, MOCK_WEB_OAUTH2_CLIENT_ID, clientSecret);
     }
 
     private void createOAuth2Client(String clientUuid, String clientId, String clientSecret) {

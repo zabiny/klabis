@@ -14,13 +14,13 @@ echo ""
 
 # === STEP 1: Authenticate as Admin ===
 echo "Step 1: Authenticating using client credentials..."
-echo "  Client ID: ||mock-web||"
+echo "  Client ID: klabis-web"
 echo "  Client Secret: test-secret-123"
 echo ""
 
 TOKEN_RESPONSE=$(curl -s -X POST "$BACKEND_URL/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "||mock-web||:test-secret-123" \
+  -u "klabis-web:test-secret-123" \
   -d "grant_type=client_credentials&scope=MEMBERS:CREATE,MEMBERS:READ")
 
 ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token // empty' 2>/dev/null || echo "")
