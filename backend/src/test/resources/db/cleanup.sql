@@ -22,10 +22,6 @@ FROM oauth2_registered_client;
 DELETE
 FROM password_setup_tokens;
 
--- User authorities (deprecated, kept for backward compatibility - ON DELETE CASCADE)
-DELETE
-FROM user_authorities;
-
 -- User permissions (current table, references users)
 DELETE
 FROM user_permissions;

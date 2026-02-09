@@ -60,6 +60,14 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 5. **Database reset:** H2 in-memory database resets on server restart. No manual cleanup needed.
 
+### Database Migrations
+
+- **Single migration:** `V001__initial_schema.sql` contains complete initial schema (squashed from historical V001-V013)
+- **Schema evolution:** H2 in-memory database resets on server restart, so historical migration steps are unnecessary
+- **Bootstrap data:** Managed by `BootstrapDataLoader` component (not migrations) - reads credentials from environment variables
+- **Deprecated tables:** `user_authorities` table was removed; all authorization uses `user_permissions` table exclusively
+- **Migration location:** `src/main/resources/db/migration/V001__initial_schema.sql`
+
 ### Testing
 
 ```bash
