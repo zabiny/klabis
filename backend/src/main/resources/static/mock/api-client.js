@@ -11,7 +11,7 @@ class KlabisApiClient {
         this.apiBaseUrl = config.apiBaseUrl || `${origin}/api`;
         this.clientId = config.clientId || 'klabis-web';
         this.clientSecret = config.clientSecret || 'test-secret-123';
-        this.redirectUri = config.redirectUri || `${origin}/auth/callback.html`;
+        this.redirectUri = config.redirectUri || `${origin}/mock/auth/callback.html`;
 
         // Try to restore token from sessionStorage
         this.accessToken = sessionStorage.getItem('access_token') || null;

@@ -30,14 +30,14 @@ async function checkAuth() {
     // Allow login and callback pages without auth
     if (currentPage === 'login.html' || currentPage === 'callback.html') {
         if (isAuthenticated && currentPage === 'login.html') {
-            window.location.href = '/index.html';
+            window.location.href = '/mock/index.html';
         }
         return;
     }
 
     // For protected pages, verify we can get a token
     if (!isAuthenticated) {
-        window.location.href = '/auth/login.html';
+        window.location.href = 'auth/login.html';
         return;
     }
 
@@ -47,7 +47,7 @@ async function checkAuth() {
     } catch (error) {
         console.error('Auth check failed:', error);
         sessionStorage.removeItem('isAuthenticated');
-        window.location.href = '/auth/login.html';
+        window.location.href = 'auth/login.html';
     }
 }
 
@@ -62,7 +62,7 @@ function handleLogout() {
         apiClient.clearTokens();
         showToast('Byli jste odhlášeni', 'success');
         setTimeout(() => {
-            window.location.href = '/auth/login.html';
+            window.location.href = 'auth/login.html';
         }, 500);
     }
 }
@@ -238,7 +238,7 @@ function handleApiError(error) {
         sessionStorage.removeItem('backendUrl');
         apiClient.clearTokens();
         setTimeout(() => {
-            window.location.href = '/auth/login.html';
+            window.location.href = 'auth/login.html';
         }, 1500);
     } else if (error.isForbidden()) {
         showToast('Nemáte dostatečná oprávnění pro tuto akci.', 'error');

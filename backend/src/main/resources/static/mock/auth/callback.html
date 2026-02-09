@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Potvrzení přihlášení - Klabis</title>
-    <link rel="stylesheet" href="../mock/styles.css">
+    <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
 <div class="login-container">
@@ -90,7 +90,7 @@
             apiClient.clientId = clientId;
 
             // Exchange authorization code for access token
-            await apiClient.exchangeCodeForToken(code, `${backendUrl}/auth/callback.html`);
+            await apiClient.exchangeCodeForToken(code, `${backendUrl}/mock/auth/callback.html`);
 
             // Mark as authenticated
             sessionStorage.setItem('isAuthenticated', 'true');
@@ -106,7 +106,7 @@
 
             // Redirect to dashboard after a short delay
             setTimeout(() => {
-                window.location.href = '/index.html';
+                window.location.href = '/mock/index.html';
             }, 1000);
 
         } catch (err) {
@@ -118,7 +118,7 @@
     }
 
     function goToLogin() {
-        window.location.href = 'auth/login.html';
+        window.location.href = 'login.html';
     }
 
     // Handle callback on page load

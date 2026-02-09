@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Přihlášení - Klabis</title>
-    <link rel="stylesheet" href="../mock/styles.css">
+    <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
 <div class="login-container">
@@ -96,7 +96,7 @@
         const authParams = new URLSearchParams({
             response_type: 'code',
             client_id: clientId,
-            redirect_uri: `${backendUrl}/auth/callback.html`,
+            redirect_uri: `${backendUrl}/mock/auth/callback.html`,
             scope: 'MEMBERS:CREATE MEMBERS:UPDATE MEMBERS:DELETE MEMBERS:READ'
         });
 
