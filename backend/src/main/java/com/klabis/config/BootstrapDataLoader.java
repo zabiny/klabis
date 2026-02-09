@@ -162,9 +162,8 @@ public class BootstrapDataLoader implements ApplicationRunner {
         // Supports comma-separated list for multiple redirect URIs
         String redirectUrisProperty = environment.getProperty(
                 "oauth2.client.redirect-uris",
-                "https://localhost:3000/callback,https://localhost:8443/auth/callback.html"
+                "http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback"
         );
-
         // Get scopes from environment or use default
         // Note: Using Authority enum values for type safety, plus 'openid' for OIDC support
         String defaultScopes = String.join(",",
