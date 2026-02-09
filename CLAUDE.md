@@ -34,7 +34,7 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 # Legacy UI mockup: https://localhost:8443/mock-login.html
 
-# Start modern frontend (React SPA on http://localhost:5173)
+# Start modern frontend (React SPA on http://localhost:3000)
 cd frontend
 npm run dev
 ```
