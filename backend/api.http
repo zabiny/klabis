@@ -1,11 +1,11 @@
 ### API OAuth2 test endpoint
-GET {{host}}/oidc/userinfo
+GET {{host}}/userinfo
 Accept: application/json
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Register member
 POST {{host}}/memberRegistrations
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 Content-Type: application/json
 
 {
@@ -30,36 +30,36 @@ Content-Type: application/json
 
 ### Get all members compact (hal format)
 GET {{host}}/members?view=compact
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 Accept: application/hal+json
 
 ### Get all members compact (klabis format)
 GET {{host}}/members?view=compact
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 Accept: application/klabis+json
 
 ### Get all members (full details)
 GET {{host}}/members?view=full
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 Accept: application/klabis+json
 
 ### GET single member
 GET {{host}}/members/1
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Suggest registration number
 GET {{host}}/registrationNumber?sex=MALE&dateOfBirth=2020-10-11
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### GET Edit member form data
 GET {{host}}/members/1/editMemberInfoForm
 Content-Type: application/json
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### PUT Edit member form data
 PUT {{host}}/members/1/editMemberInfoForm
 Content-Type: application/json
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 {
   "identityCard": null,
@@ -90,12 +90,12 @@ Authorization: Bearer {{$auth.token("frontend")}}
 
 ### Get form data for Member Edit by Admin
 GET {{host}}/members/1/editByAdminForm
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Update member info by ADMIN
 PUT {{host}}/members/1/editByAdminForm
 Content-Type: application/json
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 {
   "firstName": "Dave",
@@ -108,11 +108,11 @@ Authorization: Bearer {{$auth.token("frontend")}}
 
 ###
 GET {{host}}/members/1/editOwnMemberInfoForm
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ###
 PUT {{host}}/members/1/editOwnMemberInfoForm
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 Content-Type: application/json
 
 {
@@ -140,31 +140,31 @@ Content-Type: application/json
 
 ### Membership suspension info
 GET {{host}}/members/1/suspendMembershipForm
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Suspend membership
 PUT {{host}}/members/1/suspendMembershipForm
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Get ORIS user info data
 GET {{host}}/oris/userInfo/ZBM8003
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### GET ORIS user info data - unknown reg num
 GET {{host}}/oris/userInfo/ZBM8002
-Authorization: Bearer {{$auth.token("frontend")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Get List of available grants
 GET {{host}}/grants
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Get Member grants Form data
 GET {{host}}/members/1/changeGrantsForm
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Update member grants
 PUT {{host}}/members/1/changeGrantsForm
-Authorization: Bearer {{$auth.token("test")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 Content-Type: application/json
 
 {
@@ -173,11 +173,11 @@ Content-Type: application/json
 
 ### Get events list
 GET {{host}}/events
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Register member for event
 POST {{host}}/events/1/registrations
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 Content-Type: application/json
 
 {
@@ -188,12 +188,12 @@ Content-Type: application/json
 
 ### Events where member is registered
 GET {{host}}/member/2/registeredEvents
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Get event registrations
 GET {{host}}/events/1/registrations
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ###
 DELETE {{host}}/events/1/registrations/2
-Authorization: Bearer {{$auth.token("frontend@Local")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
