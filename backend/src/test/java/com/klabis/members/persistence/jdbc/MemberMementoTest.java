@@ -96,7 +96,7 @@ class MemberMementoTest {
         );
 
         member.updateDocuments(identityCard, medicalCourse, trainerLicense);
-        member.updatePersonalDetails(
+        member.updateMemberDetails(
                 null, null, null, null, null,
                 "CHIP123", DrivingLicenseGroup.A, "Vegetarian", null
         );

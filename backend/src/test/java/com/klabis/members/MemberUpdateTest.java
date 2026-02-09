@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests the mutable update behavior of Member aggregate:
  * - updateContactInformation() - member-editable fields
  * - updateDocuments() - document updates
- * - updatePersonalDetails() - admin-only fields
+ * - updateMemberDetails() - admin-only fields
  * <p>
  * Note: After migrating to Memento pattern, update methods modify the Member
  * in-place (mutable pattern) instead of returning new instances.
@@ -316,7 +316,7 @@ class MemberUpdateTest {
     }
 
     @Nested
-    @DisplayName("updatePersonalDetails() method")
+    @DisplayName("updateMemberDetails() method")
     class UpdatePersonalDetailsMethod {
 
         @Test
@@ -326,7 +326,7 @@ class MemberUpdateTest {
             Member member = createTestMember();
 
             // Act
-            member.updatePersonalDetails(
+            member.updateMemberDetails(
                     null, null, null, null, null,
                     null, null, null, Gender.FEMALE
             );
@@ -343,7 +343,7 @@ class MemberUpdateTest {
             Member member = createTestMember();
 
             // Act
-            member.updatePersonalDetails(
+            member.updateMemberDetails(
                     null, null, null, null, null,
                     "12345", null, null, null
             );
@@ -359,7 +359,7 @@ class MemberUpdateTest {
             Member member = createTestMember();
 
             // Act
-            member.updatePersonalDetails(
+            member.updateMemberDetails(
                     null, null, null, null, null,
                     null, DrivingLicenseGroup.A, null, null
             );
@@ -375,7 +375,7 @@ class MemberUpdateTest {
             Member member = createTestMember();
 
             // Act
-            member.updatePersonalDetails(
+            member.updateMemberDetails(
                     null, null, null, null, null,
                     null, null, "Vegetarian, no nuts", null
             );
@@ -391,7 +391,7 @@ class MemberUpdateTest {
             Member member = createTestMember();
 
             // Act
-            member.updatePersonalDetails(
+            member.updateMemberDetails(
                     null, null, null, null, null,
                     "12345", DrivingLicenseGroup.A, "No dairy", Gender.FEMALE
             );
@@ -420,7 +420,7 @@ class MemberUpdateTest {
             PhoneNumber newPhone = PhoneNumber.of("+420555555555");
 
             // Act
-            member.updatePersonalDetails(
+            member.updateMemberDetails(
                     newPersonalInfo, newAddress, newEmail, newPhone, null,
                     "999", DrivingLicenseGroup.B, "No gluten", null
             );
@@ -465,7 +465,7 @@ class MemberUpdateTest {
             );
 
             // Act
-            minor.updatePersonalDetails(
+            minor.updateMemberDetails(
                     null, null, null, null, null,
                     "123", null, "No nuts", null
             );
@@ -483,7 +483,7 @@ class MemberUpdateTest {
             Member member = createTestMember();
 
             // Act
-            member.updatePersonalDetails(
+            member.updateMemberDetails(
                     null, null, null, null, null,
                     "12345", null, null, null
             );

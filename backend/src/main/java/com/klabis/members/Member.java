@@ -577,7 +577,7 @@ public class Member {
      * @param gender              new gender (null = keep existing, requires personalInformation update)
      * @throws IllegalArgumentException if validation fails
      */
-    public void updatePersonalDetails(
+    public void updateMemberDetails(
             PersonalInformation personalInformation,
             Address address,
             EmailAddress email,
@@ -621,15 +621,21 @@ public class Member {
             validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
         }
 
+        String newChipNumber = (chipNumber != null) ? chipNumber : this.chipNumber;
+        DrivingLicenseGroup newDrivingLicenseGroup =
+                (drivingLicenseGroup != null) ? drivingLicenseGroup : this.drivingLicenseGroup;
+        String newDietaryRestrictions =
+                (dietaryRestrictions != null) ? dietaryRestrictions : this.dietaryRestrictions;
+
         // Modify fields in-place
         this.personalInformation = newPersonalInfo;
         this.address = newAddress;
         this.email = newEmail;
         this.phone = newPhone;
         this.guardian = newGuardian;
-        this.chipNumber = chipNumber;
-        this.drivingLicenseGroup = drivingLicenseGroup;
-        this.dietaryRestrictions = dietaryRestrictions;
+        this.chipNumber = newChipNumber;
+        this.drivingLicenseGroup = newDrivingLicenseGroup;
+        this.dietaryRestrictions = newDietaryRestrictions;
     }
 
     @Override

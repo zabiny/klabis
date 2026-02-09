@@ -351,7 +351,7 @@ class ManagementService {
                         firstName, lastName, dateOfBirth, gender);
             }
 
-            updatedMember.updatePersonalDetails(
+            updatedMember.updateMemberDetails(
                     personalInformation,
                     null, // address - already handled in contact updates
                     null, // email - already handled in contact updates
