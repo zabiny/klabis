@@ -62,11 +62,15 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### Database Migrations
 
-- **Single migration:** `V001__initial_schema.sql` contains complete initial schema (squashed from historical V001-V013)
+- **Domain schema:** `V001__initial_schema.sql` creates all domain and business tables (members, users, events, permissions)
+- **OAuth2 infrastructure:** `V002__create_oauth2_infrastructure_tables.sql` creates Spring Authorization Server tables
+- **Schema organization:** Separates domain model (V001) from infrastructure (V002) for clearer concerns
 - **Schema evolution:** H2 in-memory database resets on server restart, so historical migration steps are unnecessary
 - **Bootstrap data:** Managed by `BootstrapDataLoader` component (not migrations) - reads credentials from environment variables
 - **Deprecated tables:** `user_authorities` table was removed; all authorization uses `user_permissions` table exclusively
-- **Migration location:** `src/main/resources/db/migration/V001__initial_schema.sql`
+- **Migration locations:**
+  - `src/main/resources/db/migration/V001__initial_schema.sql` (7 domain tables)
+  - `src/main/resources/db/migration/V002__create_oauth2_infrastructure_tables.sql` (3 OAuth2 tables)
 
 ### Testing
 
