@@ -37,7 +37,7 @@ public class UserMemento implements Persistable<UUID> {
     @Column("id")
     private UUID id;
 
-    @Column("registration_number")
+    @Column("user_name")
     private String username;
 
     @Column("password_hash")

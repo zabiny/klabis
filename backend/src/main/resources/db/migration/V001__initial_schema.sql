@@ -106,7 +106,7 @@ COMMENT ON COLUMN members.dietary_restrictions IS 'Dietary restrictions or food 
 CREATE TABLE users
 (
     id                      UUID PRIMARY KEY,
-    registration_number     VARCHAR(7)   NOT NULL UNIQUE,
+    user_name               VARCHAR(7)   NOT NULL UNIQUE,
     password_hash           VARCHAR(255) NOT NULL,
     account_status          VARCHAR(50)  NOT NULL DEFAULT 'ACTIVE',
     account_non_expired     BOOLEAN      NOT NULL DEFAULT TRUE,
@@ -125,13 +125,13 @@ CREATE TABLE users
 );
 
 -- Indexes for users
-CREATE INDEX idx_users_registration_number ON users (registration_number);
+CREATE INDEX idx_users_user_name ON users (user_name);
 CREATE INDEX idx_users_account_status ON users (account_status);
 CREATE INDEX idx_users_created_at ON users (created_at);
 
 -- Comments for users table
 COMMENT ON TABLE users IS 'User accounts for authentication';
-COMMENT ON COLUMN users.registration_number IS 'Unique registration number, username for login';
+COMMENT ON COLUMN users.user_name IS 'Unique username for login. For members, auto-populated from registration number (XXXYYDD format). For standalone users, can be any unique string.';
 COMMENT ON COLUMN users.password_hash IS 'BCrypt-hashed password';
 
 -- ============================================================================

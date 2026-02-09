@@ -62,7 +62,7 @@ INSERT INTO members (
 -- Insert User entity (password: 'password123', BCrypt hashed)
 INSERT INTO users (
     id,
-    registration_number,
+    user_name,
     password_hash,
     account_status,
     account_non_expired,

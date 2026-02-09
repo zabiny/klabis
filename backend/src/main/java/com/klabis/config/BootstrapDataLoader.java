@@ -87,7 +87,7 @@ public class BootstrapDataLoader implements ApplicationRunner {
     private boolean bootstrapDataExists() {
         // Check if admin user already exists
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM users WHERE registration_number = ?",
+                "SELECT COUNT(*) FROM users WHERE user_name = ?",
                 Integer.class,
                 environment.getProperty("bootstrap.admin.username", DEFAULT_ADMIN_USERNAME)
         );
@@ -117,7 +117,7 @@ public class BootstrapDataLoader implements ApplicationRunner {
 
         // Insert admin user WITHOUT authorities column
         jdbcTemplate.update(
-                "INSERT INTO users (id, registration_number, password_hash, account_status, account_non_expired, account_non_locked, credentials_non_expired, enabled) " +
+                "INSERT INTO users (id, user_name, password_hash, account_status, account_non_expired, account_non_locked, credentials_non_expired, enabled) " +
                 "VALUES (?, ?, ?, 'ACTIVE', TRUE, TRUE, TRUE, TRUE)",
                 userId,
                 username,
