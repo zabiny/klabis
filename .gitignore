@@ -21,3 +21,5 @@ backend/local.env
 /frontend/tsconfig.tsbuildinfo
 /.vite/vitest/results.json
 /.do-not-commit/
+/ukolovnik.md
+/TODOS.md
