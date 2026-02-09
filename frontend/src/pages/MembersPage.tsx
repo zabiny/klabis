@@ -8,7 +8,7 @@ import {HalFormButton} from "../components/HalNavigator2/HalFormButton.tsx";
 import {type FormStep, MultiStepFormModal} from "../components/HalNavigator2/MultiStepFormModal.tsx";
 
 type MemberListData = EntityModel<{
-    id: number,
+    id: string,  // UUID as string
     firstName: string,
     lastName: string,
     registrationNumber: string
@@ -25,7 +25,7 @@ export const MembersPage = (): ReactElement => {
                 <h2 className="text-xl font-bold text-text-primary">Členové</h2>
                 <RegisterMemberFormButton/>
             </div>
-            <HalEmbeddedTable<MemberListData> collectionName={"membersApiResponseList"} defaultOrderBy={"lastName"}
+            <HalEmbeddedTable<MemberListData> collectionName={"memberSummaryResponseList"} defaultOrderBy={"lastName"}
                                               onRowClick={route.navigateToResource}>
                 <TableCell sortable column="firstName">Jméno</TableCell>
                 <TableCell sortable column="lastName">Příjmení</TableCell>

@@ -1,5 +1,6 @@
 package com.klabis.members.management;
 
+import com.klabis.common.root.RootModel;
 import com.klabis.members.Member;
 import com.klabis.users.Authority;
 import com.klabis.users.authorization.HasAuthority;
@@ -22,10 +23,12 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -389,5 +392,15 @@ class MemberController {
                 dto.drivingLicenseGroup(),
                 dto.dietaryRestrictions()
         );
+    }
+}
+
+@Component
+class MembersRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+
+    @Override
+    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        model.add(linkTo(methodOn(MemberController.class).listMembers(null)).withRel("members"));
+        return model;
     }
 }

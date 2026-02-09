@@ -1,5 +1,6 @@
 package com.klabis.events.management;
 
+import com.klabis.common.root.RootModel;
 import com.klabis.events.Event;
 import com.klabis.events.EventStatus;
 import com.klabis.users.Authority;
@@ -24,8 +25,10 @@ import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -468,4 +471,14 @@ class EventController {
         entityModel.add(Link.of("/api/events/" + eventId + "/registrations").withRel("registrations"));
     }
 
+}
+
+@Component
+class EventsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+
+    @Override
+    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        model.add(linkTo(methodOn(EventController.class).listEvents(null, Pageable.unpaged())).withRel("events"));
+        return model;
+    }
 }

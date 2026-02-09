@@ -3,35 +3,60 @@ GET {{host}}/userinfo
 Accept: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
-### Register member
-POST {{host}}/memberRegistrations
+###
+GET {{host}}/api
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+### Register member
+POST {{host}}/api/members
 Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 {
-  "registrationNumber": "ZBM2001",
-  "firstName": "John",
-  "lastName": "Dow",
-  "dateOfBirth": "2020-02-10",
-  "nationality": "SK",
-  "sex": "male",
+  "firstName": "Alex",
+  "lastName": "Novak",
+  "dateOfBirth": "2012-05-14",
+  "nationality": "CZ",
+  "gender": "MALE",
+  "email": "alex.novak@example.com",
+  "phone": "+420777123456",
   "address": {
-    "streetAndNumber": "Tesinska 12",
-    "city": "Ostrava",
-    "country": "CZ",
-    "postalCode": "14245"
+    "street": "Kvetna 12",
+    "city": "Brno",
+    "postalCode": "60200",
+    "country": "CZ"
   },
-  "contact": {
-    "email": "test@test.cz",
-    "phone": "1234567789",
-    "note": "Muj email"
+  "guardian": {
+    "relationship": "PARENT",
+    "firstName": "Eva",
+    "lastName": "Novakova",
+    "email": "eva.novakova@example.com",
+    "phone": "+420777654321"
   }
 }
 
-### Get all members compact (hal format)
-GET {{host}}/members?view=compact
+### Create event
+POST {{host}}/api/events
+Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
-Accept: application/hal+json
+
+{
+  "name": "1. BZL: Kratky den",
+  "eventDate": "2026-01-21",
+  "location": "Dubnany",
+  "organizer": "ZBM"
+}
+
+###
+
+GET {{host}}/api/events
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+###
+
+### Get all members compact (hal format)
+GET {{host}}/api/members?view=compact
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
 ### Get all members compact (klabis format)
 GET {{host}}/members?view=compact

@@ -8,16 +8,19 @@
  * @returns Relative path for React Router navigation
  */
 export function extractNavigationPath(url: string): string {
+    // Remove URI template variables first (e.g., {?status}) - common in HAL templated links
+    let cleanUrl = url.replace(/\{[^}]*\}/g, '');
+
     // it's already path when starts with '/', remove /api prefix if present
-    if (url.startsWith('/api')) {
-        return url.substring(4);
-    } else if (url.startsWith("/")) {
-        return url;
+    if (cleanUrl.startsWith('/api')) {
+        return cleanUrl.substring(4);
+    } else if (cleanUrl.startsWith("/")) {
+        return cleanUrl;
     }
 
-    const parsedUrl = new URL(url);
-    // remove hostname and keep just path and URL params
-    let path = url.substring(url.indexOf(parsedUrl.pathname));
+    // Parse absolute URL and extract pathname + search
+    const parsedUrl = new URL(cleanUrl);
+    let path = parsedUrl.pathname + parsedUrl.search;
 
     // Remove /api prefix if present, since HalRouteContext adds it back
     if (path.startsWith('/api')) {

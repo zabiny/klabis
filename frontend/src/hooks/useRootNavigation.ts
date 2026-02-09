@@ -1,7 +1,6 @@
 import type {HalResponse, Link} from '../api';
 import {extractNavigationPath} from '../utils/navigationPath';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
-import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
 
 /**
  * Represents a navigation menu item derived from HAL links
@@ -60,7 +59,7 @@ function convertItems(response: HalResponse): NavigationItem[] {
  * @returns {Object} with items array, loading state, and error state
  */
 export function useRootNavigation() {
-    return useAuthorizedQuery(normalizeKlabisApiPath('/'), {
+    return useAuthorizedQuery('/api', {
         select: (data) => convertItems(data as HalResponse),
         staleTime: 5 * 60 * 1000, // 5 minutes
         retry: 1,
