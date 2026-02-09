@@ -62,15 +62,26 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### Database Migrations
 
-- **Domain schema:** `V001__initial_schema.sql` creates all domain and business tables (members, users, events, permissions)
-- **OAuth2 infrastructure:** `V002__create_oauth2_infrastructure_tables.sql` creates Spring Authorization Server tables
-- **Schema organization:** Separates domain model (V001) from infrastructure (V002) for clearer concerns
-- **Schema evolution:** H2 in-memory database resets on server restart, so historical migration steps are unnecessary
-- **Bootstrap data:** Managed by `BootstrapDataLoader` component (not migrations) - reads credentials from environment variables
-- **Deprecated tables:** `user_authorities` table was removed; all authorization uses `user_permissions` table exclusively
-- **Migration locations:**
-  - `src/main/resources/db/migration/V001__initial_schema.sql` (7 domain tables)
-  - `src/main/resources/db/migration/V002__create_oauth2_infrastructure_tables.sql` (3 OAuth2 tables)
+**Three-layer schema organization:**
+
+1. **V001 - Domain Model** (6 tables)
+   - `members`, `users`, `user_permissions`, `password_setup_tokens`, `events`, `event_registrations`
+   - Core business logic and DDD aggregates
+   - File: `src/main/resources/db/migration/V001__initial_schema.sql`
+
+2. **V002 - OAuth2 Infrastructure** (3 tables)
+   - `oauth2_registered_client`, `oauth2_authorization`, `oauth2_authorization_consent`
+   - Spring Authorization Server infrastructure
+   - File: `src/main/resources/db/migration/V002__create_oauth2_infrastructure_tables.sql`
+
+3. **V003 - Spring Modulith Infrastructure** (1 table)
+   - `event_publication` - Outbox pattern for async event processing
+   - Spring Modulith event-driven architecture
+   - File: `src/main/resources/db/migration/V003__create_spring_modulith_infrastructure_tables.sql`
+
+**Additional notes:**
+- Schema evolution: H2 in-memory database resets on server restart (no historical migration steps needed)
+- Bootstrap data: Managed by `BootstrapDataLoader` component (not migrations)
 
 ### Testing
 
