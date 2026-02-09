@@ -33,8 +33,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 /**
  * REST controller for Member resources.
@@ -168,15 +167,16 @@ class MemberController {
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
         // Add self link
-        entityModel.add(linkTo(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel());
+        entityModel.add(
+                linkTo(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel()
+                        // Add edit link (indicates the edit capability is available)
+                        .andAffordance(afford(methodOn(MemberController.class).updateMember(updatedMemberId, null, null)))
+        );
 
         // Add collection link
         entityModel.add(linkTo(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10)
         )).withRel("collection"));
-
-        // Add edit link (indicates the edit capability is available)
-        entityModel.add(linkTo(methodOn(MemberController.class).getMember(updatedMemberId)).withRel("edit"));
 
         return ResponseEntity.ok(entityModel);
     }
@@ -347,17 +347,16 @@ class MemberController {
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
         // Add self link
-        entityModel.add(linkTo(methodOn(MemberController.class).getMember(id)).withSelfRel());
+        entityModel.add(
+                linkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
+                        // Add edit link (indicates the edit capability is available)
+                        .andAffordance(afford(methodOn(MemberController.class).updateMember(id, null, null)))
+        );
 
         // Add collection link
         entityModel.add(linkTo(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10)
         )).withRel("collection"));
-
-        // Add edit link
-        // Note: The actual authorization is enforced by @PreAuthorize on the endpoint
-        // This link indicates the edit capability is available in the API
-        entityModel.add(linkTo(methodOn(MemberController.class).getMember(id)).withRel("edit"));
 
         return ResponseEntity.ok(entityModel);
     }

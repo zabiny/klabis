@@ -33,8 +33,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 /**
  * REST controller for Event resources.
@@ -439,26 +438,22 @@ class EventController {
         UUID eventId = eventDto.id();
         EventStatus status = eventDto.status();
 
-        // Self link - always present
-        entityModel.add(linkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel());
-
-        // Collection link - always present
-        entityModel.add(linkTo(methodOn(EventController.class).listEvents(null, null)).withRel("collection"));
+        Link selfLink = linkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
 
         // Status-specific links
         switch (status) {
             case DRAFT:
                 // DRAFT: can edit, publish, or cancel
-                entityModel.add(linkTo(methodOn(EventController.class).getEvent(eventId)).withRel("edit"));
-                entityModel.add(linkTo(methodOn(EventController.class).publishEvent(eventId)).withRel("publish"));
-                entityModel.add(linkTo(methodOn(EventController.class).cancelEvent(eventId)).withRel("cancel"));
+                selfLink = selfLink.andAffordance(afford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordance(afford(methodOn(EventController.class).publishEvent(eventId)));
+                selfLink = selfLink.andAffordance(afford(methodOn(EventController.class).cancelEvent(eventId)));
                 break;
 
             case ACTIVE:
                 // ACTIVE: can edit, cancel, or finish
-                entityModel.add(linkTo(methodOn(EventController.class).getEvent(eventId)).withRel("edit"));
-                entityModel.add(linkTo(methodOn(EventController.class).cancelEvent(eventId)).withRel("cancel"));
-                entityModel.add(linkTo(methodOn(EventController.class).finishEvent(eventId)).withRel("finish"));
+                selfLink = selfLink.andAffordance(afford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordance(afford(methodOn(EventController.class).cancelEvent(eventId)));
+                selfLink = selfLink.andAffordance(afford(methodOn(EventController.class).finishEvent(eventId)));
                 break;
 
             case FINISHED:
@@ -466,6 +461,12 @@ class EventController {
                 // FINISHED/CANCELLED: read-only, no edit/transition links
                 break;
         }
+
+        // Self link - always present
+        entityModel.add(selfLink);
+
+        // Collection link - always present
+        entityModel.add(linkTo(methodOn(EventController.class).listEvents(null, null)).withRel("collection"));
 
         // Registrations link - always present (links to event registration endpoint)
         entityModel.add(Link.of("/api/events/" + eventId + "/registrations").withRel("registrations"));
