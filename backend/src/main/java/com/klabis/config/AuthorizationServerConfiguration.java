@@ -26,6 +26,7 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -154,7 +155,8 @@ public class AuthorizationServerConfiguration {
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http,
-            Members members) throws Exception {
+            Members members,
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
                 .oidc(oidc -> oidc
@@ -164,6 +166,8 @@ public class AuthorizationServerConfiguration {
                 );
 
         http
+                // Enable CORS for OAuth2 endpoints (including /oauth2/token)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 // Accept access tokens for User Info and/or Client Registration
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 // Redirect to login page when not authenticated for authorization endpoint
