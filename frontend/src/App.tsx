@@ -43,6 +43,7 @@ function App() {
                             </ProtectedRoute>
                         }>
                             <Route index path="/" element={<HomePage/>}/>
+                            <Route path="/index.html" element={<HomePage/>}/>
                             <Route path="/sandplace" element={<SandplacePage/>}/>
                             <Route path="/calendar-items" element={<CalendarPage/>}/>
                             <Route path="/members" element={<MembersPage/>}/>
