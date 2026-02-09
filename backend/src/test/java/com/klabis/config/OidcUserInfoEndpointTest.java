@@ -109,15 +109,16 @@ class OidcUserInfoEndpointTest {
         String accessToken = obtainAccessTokenWithScope("openid");
 
         // WHEN: Calling UserInfo endpoint with Bearer token
-        // THEN: Should return 200 OK with only sub claim (openid scope)
-        // Note: Admin user has no linked Member entity and no profile/email scopes requested
+        // THEN: Should return 200 OK with only sub claim (openid scope without profile)
+        // Note: user_name, is_member, and profile claims require profile scope
         mockMvc.perform(
                         get("/userinfo")
                                 .header("Authorization", "Bearer " + accessToken)
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sub").value(ADMIN_USERNAME))
-                .andExpect(jsonPath("$.registrationNumber").doesNotExist())
+                .andExpect(jsonPath("$.user_name").doesNotExist())
+                .andExpect(jsonPath("$.is_member").doesNotExist())
                 .andExpect(jsonPath("$.given_name").doesNotExist())
                 .andExpect(jsonPath("$.family_name").doesNotExist())
                 .andExpect(jsonPath("$.email").doesNotExist());
@@ -177,9 +178,10 @@ class OidcUserInfoEndpointTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sub").value(ADMIN_USERNAME))
+                .andExpect(jsonPath("$.user_name").doesNotExist())
+                .andExpect(jsonPath("$.is_member").doesNotExist())
                 .andExpect(jsonPath("$.given_name").doesNotExist())
                 .andExpect(jsonPath("$.family_name").doesNotExist())
-                .andExpect(jsonPath("$.registrationNumber").doesNotExist())
                 .andExpect(jsonPath("$.updated_at").doesNotExist())
                 .andExpect(jsonPath("$.email").doesNotExist())
                 .andExpect(jsonPath("$.email_verified").doesNotExist());
@@ -198,22 +200,23 @@ class OidcUserInfoEndpointTest {
     // See TCF Iterace 4 for details on technical blockers
 
     @Test
-    @DisplayName("should return only sub for admin user regardless of scopes")
-    void shouldReturnOnlySubForAdminUserRegardlessOfScopes() throws Exception {
+    @DisplayName("should return is_member false for admin user with profile scope")
+    void shouldReturnIsMemberFalseForAdminUserWithProfileScope() throws Exception {
         // GIVEN: A valid access token for admin user (no Member entity) with all scopes
         String accessToken = obtainAccessTokenWithScope("openid profile email");
 
         // WHEN: Calling UserInfo endpoint
-        // THEN: Should return ONLY sub claim (admin has no Member entity)
+        // THEN: Should return sub, user_name, and is_member=false (admin has no Member entity)
         mockMvc.perform(
                         get("/userinfo")
                                 .header("Authorization", "Bearer " + accessToken)
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sub").value(ADMIN_USERNAME))
+                .andExpect(jsonPath("$.user_name").value(ADMIN_USERNAME))
+                .andExpect(jsonPath("$.is_member").value(false))
                 .andExpect(jsonPath("$.given_name").doesNotExist())
                 .andExpect(jsonPath("$.family_name").doesNotExist())
-                .andExpect(jsonPath("$.registrationNumber").doesNotExist())
                 .andExpect(jsonPath("$.updated_at").doesNotExist())
                 .andExpect(jsonPath("$.email").doesNotExist())
                 .andExpect(jsonPath("$.email_verified").doesNotExist());

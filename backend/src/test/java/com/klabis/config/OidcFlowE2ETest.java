@@ -182,7 +182,7 @@ class OidcFlowE2ETest {
 
         assertThat(idTokenClaims.get("sub")).isEqualTo(ADMIN_USERNAME);
         assertThat(idTokenClaims.get("iss")).isEqualTo(ISSUER);
-        assertThat(idTokenClaims.get("registrationNumber")).isEqualTo(ADMIN_USERNAME);
+        assertThat(idTokenClaims.get("user_name")).isEqualTo(ADMIN_USERNAME);
         assertThat(idTokenClaims).containsKeys("sub", "iss", "aud", "exp", "iat");
 
         // STEP 4: Call UserInfo endpoint with access token

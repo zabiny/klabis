@@ -82,17 +82,24 @@ client_secret = {{clientSecret}}
 # Requires valid access_token with 'openid' scope
 # Scope-based claims:
 #   - openid scope: returns only 'sub' claim
-#   - profile scope: adds 'given_name', 'family_name', 'registrationNumber', 'updated_at' (requires Member entity)
+#   - profile scope: adds 'user_name', 'is_member', 'given_name', 'family_name', 'updated_at' (given_name/family_name only if Member entity exists)
 #   - email scope: adds 'email', 'email_verified' (requires Member entity with email)
-# Example response with openid+profile+email scopes:
+# Example response with openid+profile+email scopes (for member):
 # {
 #   "sub": "ZBM0501",
+#   "user_name": "ZBM0501",
+#   "is_member": true,
 #   "given_name": "Jan",
 #   "family_name": "Novák",
-#   "registrationNumber": "ZBM0501",
 #   "updated_at": "2026-02-09T12:00:00Z",
 #   "email": "jan.novak@example.com",
 #   "email_verified": false
+# }
+# Example response with openid+profile scopes (for admin/non-member):
+# {
+#   "sub": "admin",
+#   "user_name": "admin",
+#   "is_member": false
 # }
 GET {{baseUrl}}/userinfo
 Authorization: Bearer {{access_token}}

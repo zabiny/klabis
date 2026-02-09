@@ -92,7 +92,7 @@ public class AuthorizationServerConfiguration {
                     context.getClaims().claim("authorities", new HashSet<>(authorizedScopes));
                 } else {
                     // For user-based grants (authorization_code, etc.), use user authorities
-                    context.getClaims().claim("registrationNumber",
+                    context.getClaims().claim("user_name",
                             context.getPrincipal().getName());
                     context.getClaims().claim("authorities",
                             context.getPrincipal().getAuthorities().stream()
@@ -104,7 +104,7 @@ public class AuthorizationServerConfiguration {
                 // Note: Standard claims (sub, iss, aud, exp, iat, auth_time) are handled
                 // automatically by Spring Authorization Server. We only add custom claims here.
                 String subject = context.getPrincipal().getName();
-                context.getClaims().claim("registrationNumber", subject);
+                context.getClaims().claim("user_name", subject);
 
                 // Add profile claims (given_name, family_name) for OIDC profile scope
                 if (RegistrationNumber.isRegistrationNumber(subject)) {
@@ -151,15 +151,31 @@ public class AuthorizationServerConfiguration {
             // Task 2.2: Start with only sub claim (openid scope)
             OidcUserInfo.Builder builder = OidcUserInfo.builder().subject(subject);
 
-            // Task 2.7: Only load Member if subject is valid registration number and scopes require it
-            // Admin users without valid registration number format will only get sub claim
-            if ((scopes.contains("profile") || scopes.contains("email"))
-                    && RegistrationNumber.isRegistrationNumber(subject)) {
-                members.findByRegistrationNumber(RegistrationNumber.of(subject))
-                        .ifPresent(member -> {
-                            addProfileClaims(builder, scopes, member);
-                            addEmailClaims(builder, scopes, member);
-                        });
+            // Add profile-scoped claims (is_member, user_name, and member profile data)
+            // For users without profile scope, only sub claim is returned
+            if (scopes.contains("profile")) {
+                // Always add user_name claim (username from authentication)
+                builder.claim("user_name", subject);
+
+                // Check if user has Member profile
+                if (RegistrationNumber.isRegistrationNumber(subject)) {
+                    members.findByRegistrationNumber(RegistrationNumber.of(subject))
+                            .ifPresentOrElse(
+                                    member -> {
+                                        // User has Member profile - add is_member=true and member claims
+                                        builder.claim("is_member", true);
+                                        addProfileClaims(builder, scopes, member);
+                                        addEmailClaims(builder, scopes, member);
+                                    },
+                                    () -> {
+                                        // Username looks like registration number but no Member found
+                                        builder.claim("is_member", false);
+                                    }
+                            );
+                } else {
+                    // Username format is not registration number (e.g., admin)
+                    builder.claim("is_member", false);
+                }
             }
 
             return builder.build();
@@ -167,19 +183,19 @@ public class AuthorizationServerConfiguration {
     }
 
     /**
-     * Adds OIDC profile scope claims to UserInfo response.
+     * Adds OIDC profile scope claims to UserInfo response for members.
      * <p>
-     * Task 2.3-2.4: Maps Member data to standard OIDC claims:
-     * - given_name (was firstName)
-     * - family_name (was lastName)
-     * - registrationNumber (custom claim)
+     * Maps Member data to OIDC claims:
+     * - given_name (first name)
+     * - family_name (last name)
      * - updated_at (profile last modification timestamp)
+     * <p>
+     * Note: user_name and is_member claims are added by oidcUserInfoMapper before calling this method.
      */
     private void addProfileClaims(OidcUserInfo.Builder builder, Set<String> scopes, com.klabis.members.Member member) {
         if (scopes.contains("profile")) {
             builder.givenName(member.getFirstName())
                    .familyName(member.getLastName())
-                   .claim("registrationNumber", member.getRegistrationNumber().getValue())
                    .claim("updated_at", member.getAuditMetadata().lastModifiedAt());
         }
     }
