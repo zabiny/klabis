@@ -5,10 +5,6 @@ import devtoolsJson from 'vite-plugin-devtools-json';
 
 // https://vite.dev/config/
 export default defineConfig({
-    define: {
-        // Make __DEV__ available at runtime for API base URL detection
-        'globalThis.__DEV__': JSON.stringify(process.env.NODE_ENV !== 'production'),
-    },
     plugins: [
         react(),
         devtoolsJson()
@@ -23,11 +19,11 @@ export default defineConfig({
         port: 3000,
         open: true,
         proxy: {
-            '/api': {               // rewrite API calls.
+            '/api': {               // proxy API calls to backend
                 target: 'https://localhost:8443',
                 secure: false,
                 changeOrigin: true,
-                rewrite: path => path.substr("/api".length)
+                // DON'T rewrite - backend expects /api prefix
             },
             '/.well-known': {       // rewrite OAuth2 authorization. Only this is needed - all other URIs (token, etc) returned there are going directly to 8443
                 target: 'https://localhost:8443',

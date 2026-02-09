@@ -2,12 +2,11 @@
  * Utility functions for HAL Forms handling
  */
 
-import {getApiBaseUrl} from "./getApiBaseUrl.ts";
-
 /**
- * Normalize an API path to "relative path" with `/api` prefix (for DEV) or without `/api` (for other envs) and handling URLs
+ * Normalize an API path by removing /api prefix if present
+ * Backend HAL links don't include /api prefix, but frontend needs to add it when making requests
  * @param path - The path or URL to normalize
- * @returns The normalized path with /api prefix if needed (on DEV)
+ * @returns The normalized path without /api prefix
  */
 export function normalizeKlabisApiPath(path: string): string {
     if (!path) {
@@ -29,13 +28,9 @@ export function normalizeKlabisApiPath(path: string): string {
             normalized = '/' + normalized;
         }
 
-        // Add base URL prefix if needed
-        const isDev = !!getApiBaseUrl(); // if apiBaseUrl is nonempty, it's DEV server
-        console.log(`isDev: ${isDev}`)
-        if (!isDev && normalized.startsWith('/api')) {
+        // Remove /api prefix if present (backend doesn't include it in HAL links)
+        if (normalized.startsWith('/api')) {
             return normalized.substring('/api'.length);
-        } else if (isDev && !normalized.startsWith('/api')) {
-            return `/api${normalized}`;
         }
 
         return normalized;

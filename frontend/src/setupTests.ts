@@ -2,11 +2,6 @@
 import '@testing-library/jest-dom';
 import {afterAll, afterEach, beforeAll, beforeEach, vi} from 'vitest';
 
-// Set up globalThis.__DEV__ for getApiBaseUrl()
-// Vite will replace this at build time in production/dev builds,
-// but in Vitest tests we default to false (production-like behavior)
-(globalThis as any).__DEV__ = false;
-
 // Mock klabisUserManager to avoid initialization errors in tests
 vi.mock('./api/klabisUserManager', () => {
     const mockUserManager = {

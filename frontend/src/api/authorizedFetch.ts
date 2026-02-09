@@ -6,8 +6,8 @@ import {klabisAuthUserManager} from './klabisUserManager';
  * Retrieves the current user's access token and adds it as a Bearer token
  * in the Authorization header. Other headers are merged with provided options.
  *
- * Note: API prefix (/api in dev, empty in prod) is handled by the HAL context
- * and openapi-fetch setup, so you typically pass relative paths.
+ * Note: API prefix (/api) is automatically prepended to relative URLs.
+ * Absolute URLs (starting with http:// or https://) are used as-is.
  *
  * @param url - The URL to fetch (can be relative or absolute)
  * @param options - Fetch options (optional). Headers will be merged with auth headers.
@@ -34,13 +34,29 @@ export async function authorizedFetch(
 ): Promise<Response> {
     const user = await klabisAuthUserManager.getUser();
 
+    // Prepend /api prefix to relative URLs
+    let fetchUrl: string;
+    if (typeof url === 'string') {
+        // If URL is absolute (starts with http:// or https://), use as-is
+        // If URL already starts with /api, use as-is
+        // Otherwise, prepend /api
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/api')) {
+            fetchUrl = url;
+        } else {
+            fetchUrl = `/api${url.startsWith('/') ? '' : '/'}${url}`;
+        }
+    } else {
+        // URL object - convert to string and check if absolute
+        fetchUrl = url.toString();
+    }
+
     const headers: HeadersInit = {
         Accept: "application/prs.hal-forms+json,application/hal+json,application/json",
         ...options?.headers,
         Authorization: `Bearer ${user?.access_token}`,
     };
 
-    const response = await fetch(url, {
+    const response = await fetch(fetchUrl, {
         ...options,
         headers,
     });

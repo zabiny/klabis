@@ -133,9 +133,9 @@ describe('useHalFormOptions', () => {
                 {value: 'Option 1', label: 'Option 1'},
                 {value: 'Option 2', label: 'Option 2'},
             ]);
-            // In test environment (production-like), /api/ prefix is stripped
+            // authorizedFetch now prepends /api to relative URLs
             expect(fetchSpy).toHaveBeenCalledWith(
-                '/form-options',
+                '/api/form-options',
                 expect.objectContaining({
                     headers: expect.objectContaining({
                         'Authorization': expect.stringContaining('Bearer'),
