@@ -247,7 +247,8 @@ class EventController {
             summary = "List events with pagination and filtering",
             description = "Retrieves a paginated list of events. " +
                           "Supports filtering by status and sorting by various fields. " +
-                          "Default: page=0, size=10, sort=eventDate,desc.",
+                          "Default: page=0, size=10, sort=eventDate,desc. " +
+                          "Allowed sort fields: id, name, eventDate, location, organizer, status.",
             security = @SecurityRequirement(name = "OAuth2")
     )
     @ApiResponses(value = {
@@ -282,6 +283,8 @@ class EventController {
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) Pageable pageable) {
 
+        validateSortFields(pageable.getSort());
+
         Page<EventSummaryDto> page = status != null
                 ? eventManagementService.listEventsByStatus(status, pageable)
                 : eventManagementService.listEvents(pageable);
@@ -296,6 +299,32 @@ class EventController {
         );
 
         return ResponseEntity.ok(pagedModel);
+    }
+
+    /**
+     * Validates that all sort fields are in the allowed list.
+     *
+     * @param sort the sort specification to validate
+     * @throws IllegalArgumentException if any sort field is not allowed
+     */
+    private void validateSortFields(Sort sort) {
+        final var allowedSortFields = java.util.Set.of(
+                "id",
+                "name",
+                "eventDate",
+                "location",
+                "organizer",
+                "status"
+        );
+
+        for (Sort.Order order : sort) {
+            if (!allowedSortFields.contains(order.getProperty())) {
+                throw new IllegalArgumentException(
+                        "Invalid sort field: " + order.getProperty() +
+                        ". Allowed fields: " + allowedSortFields
+                );
+            }
+        }
     }
 
     /**
