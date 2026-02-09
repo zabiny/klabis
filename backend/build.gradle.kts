@@ -13,6 +13,7 @@ plugins {
     id("org.springframework.boot") version "3.5.9"
     id("io.spring.dependency-management") version "1.1.7"
     id("net.bytebuddy.byte-buddy-gradle-plugin") version "1.18.4"
+    id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
     jacoco
 }
 
@@ -137,4 +138,15 @@ tasks.jacocoTestReport {
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     classpath = classpath.filter { !it.name.contains("lombok") }
+}
+
+// SpringDoc OpenAPI Gradle Plugin configuration
+openApi {
+    apiDocsUrl.set("http://localhost:8080/v3/api-docs")
+    outputDir.set(file("../docs/openapi"))
+    outputFileName.set("klabis-full.json")
+    waitTimeInSeconds.set(30)
+    customBootRun {
+        args.set(listOf("--server.ssl.enabled=false", "--server.port=8080"))
+    }
 }

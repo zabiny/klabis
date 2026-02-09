@@ -4,23 +4,15 @@
  */
 
 export interface paths {
-    "/users/{userId}/changeGrantsForm": {
+    "/api/users/{id}/permissions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * returns grants assigned to member
-         * @description Requires `members:permissions` grant
-         */
-        get: operations["getUserGrants"];
-        /**
-         * updates grants assigned to user
-         * @description Requires `members:permissions` grant
-         */
-        put: operations["updateUserGrants"];
+        get: operations["getUserPermissions"];
+        put: operations["updatePermissions"];
         post?: never;
         delete?: never;
         options?: never;
@@ -28,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/members/{memberId}/suspendMembershipForm": {
+    "/api/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -36,57 +28,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Retrieve information about member account status for membership suspension
-         * @description Returns information about member account to be suspended.   #### Required authorization requires `members:suspendMembership` grant
+         * List members with pagination and sorting
+         * @description Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). Supports pagination (page, size) and sorting (sort=field,direction). Default: page=0, size=10, sort=lastName,asc. Allowed sort fields: firstName, lastName, registrationNumber. Returns HATEOAS links for navigation including pagination links (first, last, next, prev).
          */
-        get: operations["membersMemberIdSuspendMembershipFormGet"];
+        get: operations["listMembers"];
+        put?: never;
         /**
-         * Suspend membership for a club member
-         * @description Suspends membership for a club member.   If there are some blockers (debt, etc), it responds with HTTP '409' unless `force=true` parameter was used.  #### Required authorization requires `members:suspendMembership` grant
+         * Register a new member
+         * @description Creates a new member with personal information, contact details, and optional guardian information for minors. Automatically generates a unique registration number in format XXXYYSS (club code, birth year, sequence). Returns HATEOAS links for resource navigation.
          */
-        put: operations["membersMemberIdSuspendMembershipFormPut"];
-        post?: never;
+        post: operations["registerMember"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/members/{memberId}/resumeMembershipForm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["resumeMembership"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/members/{memberId}/editOwnMemberInfoForm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Returns data for edit member information form */
-        get: operations["membersMemberIdEditOwnMemberInfoFormGet"];
-        /** Update member information */
-        put: operations["membersMemberIdEditOwnMemberInfoFormPut"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/members/{memberId}/editByAdminForm": {
+    "/api/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -94,38 +52,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Returns data for edit member information form
-         * @description Returns data for edit member information form  #### Required authorization requires `members:suspendMembership` grant
+         * List events with pagination and filtering
+         * @description Retrieves a paginated list of events. Supports filtering by status and sorting by various fields. Default: page=0, size=10, sort=eventDate,desc. Allowed sort fields: id, name, eventDate, location, organizer, status.
          */
-        get: operations["getMemberEditByAdminForm"];
-        /** Update member information */
-        put: operations["putMemberEditByAdminForm"];
-        post?: never;
+        get: operations["listEvents"];
+        put?: never;
+        /**
+         * Create a new event
+         * @description Creates a new event in DRAFT status. Event coordinator ID is optional. Returns HATEOAS links for resource navigation.
+         */
+        post: operations["createEvent"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/events/{eventId}/registrationForms/{memberId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Returns data for registration form */
-        get: operations["getRegistrationForm"];
-        /** Submits registration form - registers member to event */
-        put: operations["submitRegistrationForm"];
-        post?: never;
-        delete: operations["cancelEventRegistration"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/oris/synchronizeEvents": {
+    "/api/events/{id}/publish": {
         parameters: {
             query?: never;
             header?: never;
@@ -135,77 +78,57 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Triggers events synchronization with ORIS
-         * @description #### Required authorization requires `system:admin` grant
+         * Publish an event
+         * @description Transitions event from DRAFT to ACTIVE status.
          */
-        post: operations["orisSynchronizeEvents"];
+        post: operations["publishEvent"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/memberRegistrations": {
+    "/api/events/{id}/finish": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getRegistrationForm_1"];
+        get?: never;
         put?: never;
         /**
-         * Register a new club member
-         * @description Registers a new club member with the provided details.  #### Required authorization requires `members:register` grant
+         * Finish an event
+         * @description Transitions event from ACTIVE to FINISHED status.
          */
-        post: operations["memberRegistrationsPost"];
+        post: operations["finishEvent"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/registrationNumber": {
+    "/api/events/{id}/cancel": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get recommended registration number for sex and date of birth
-         * @description #### Required authorization requires `members:register` grant
-         */
-        get: operations["registrationNumberGet"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Cancel an event
+         * @description Transitions event to CANCELLED status.
+         */
+        post: operations["cancelEvent"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/oris/userInfo/{regNum}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get information about user from ORIS
-         * @description #### Required authorization requires `members:register` grant
-         */
-        get: operations["orisUserInfoRegNumGet"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/members": {
+    "/api/events/{eventId}/registrations": {
         parameters: {
             query?: never;
             header?: never;
@@ -213,19 +136,67 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Club members list
-         * @description Returns club members
+         * List event registrations
+         * @description List all registrations for an event. SI card numbers are not included for privacy protection.
          */
-        get: operations["membersGet"];
+        get: operations["listRegistrations"];
         put?: never;
-        post?: never;
+        /**
+         * Register for an event
+         * @description Register the authenticated member for an event with SI card number. Only allowed for ACTIVE events. Returns HATEOAS links for resource navigation.
+         */
+        post: operations["registerForEvent"];
+        /**
+         * Unregister from an event
+         * @description Unregister the authenticated member from an event. Only allowed before the event date.
+         */
+        delete: operations["unregisterFromEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password-setup/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request new password setup token
+         * @description Requests a new token if the previous one expired
+         */
+        post: operations["requestNewToken"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/members/{memberId}": {
+    "/api/auth/password-setup/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete password setup
+         * @description Sets the user's password and activates the account
+         */
+        post: operations["completePasswordSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -234,69 +205,46 @@ export interface paths {
         };
         /**
          * Get member by ID
-         * @description Returns a member
+         * @description Retrieves detailed member information by ID including personal information, contact details, and guardian information if applicable. Returns HATEOAS links for navigation.
          */
-        get: operations["membersMemberIdGet"];
+        get: operations["getMember"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update member information (partial update)
+         * @description Updates member information with PATCH semantics (partial update). Supports dual authorization: members can edit their own information (limited fields), users with MEMBERS:UPDATE authority can edit any member (all fields). Only provided fields are updated; null/missing fields keep existing values. Member-editable fields: email, phone, address, dietaryRestrictions. Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup. Returns HATEOAS links for resource navigation.
+         */
+        patch: operations["updateMember"];
         trace?: never;
     };
-    "/grants": {
+    "/api/events/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** returns details about available security grants what can be assigned to users */
-        get: operations["getAllGrants"];
+        /**
+         * Get event by ID
+         * @description Retrieves detailed event information by ID. Returns HATEOAS links based on event status.
+         */
+        get: operations["getEvent"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update an event
+         * @description Updates event information. Only allowed for DRAFT and ACTIVE events. Returns HATEOAS links for resource navigation.
+         */
+        patch: operations["updateEvent"];
         trace?: never;
     };
-    "/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Returns events */
-        get: operations["getEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/events/{eventId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Returns event details */
-        get: operations["getEventById"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/": {
+    "/api": {
         parameters: {
             query?: never;
             header?: never;
@@ -312,506 +260,449 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/{eventId}/registrations/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get own registration
+         * @description Get the authenticated member's registration details including SI card number.
+         */
+        get: operations["getOwnRegistration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password-setup/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Validate password setup token
+         * @description Validates a token before showing the password setup form
+         */
+        get: operations["validateToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
-
 export type webhooks = Record<string, never>;
-
 export interface components {
     schemas: {
+        UpdatePermissionsRequest: {
+            authorities: ("MEMBERS:CREATE" | "MEMBERS:READ" | "MEMBERS:UPDATE" | "MEMBERS:DELETE" | "MEMBERS:PERMISSIONS" | "EVENTS:MANAGE")[];
+        };
+        PermissionsResponseModel: {
+            /** Format: uuid */
+            userId?: string;
+            authorities?: string[];
+            _links?: components["schemas"]["Links"];
+        };
+        AddressRequest: {
+            street: string;
+            city: string;
+            postalCode: string;
+            country: string;
+        };
+        /** @description Guardian information for minors */
+        GuardianDTO: {
+            /**
+             * @description Guardian's first name
+             * @example Pavel
+             */
+            firstName: string;
+            /**
+             * @description Guardian's last name
+             * @example Novák
+             */
+            lastName: string;
+            /**
+             * @description Relationship to member (e.g., PARENT, LEGAL_GUARDIAN)
+             * @example PARENT
+             */
+            relationship: string;
+            /**
+             * Format: email
+             * @description Guardian's email address
+             * @example pavel.novak@example.com
+             */
+            email: string;
+            /**
+             * @description Guardian's phone number
+             * @example +420987654321
+             */
+            phone: string;
+        };
+        /** @description Member registration data including personal information, contacts, and optional guardian */
+        RegisterMemberRequest: {
+            /**
+             * @description Member's first name
+             * @example Jan
+             */
+            firstName: string;
+            /**
+             * @description Member's last name
+             * @example Novák
+             */
+            lastName: string;
+            /**
+             * Format: date
+             * @description Member's date of birth
+             * @example 2005-05-15
+             */
+            dateOfBirth: string;
+            /**
+             * @description Nationality (ISO 3166-1 alpha-2 or alpha-3 code)
+             * @example CZ
+             */
+            nationality: string;
+            /**
+             * @description Member's gender
+             * @example MALE
+             * @enum {string}
+             */
+            gender: "MALE" | "FEMALE";
+            /**
+             * Format: email
+             * @description Email address
+             * @example jan.novak@example.com
+             */
+            email: string;
+            /**
+             * @description Phone number
+             * @example +420777123456
+             */
+            phone: string;
+            /** @description Postal address */
+            address: components["schemas"]["AddressRequest"];
+            /** @description Guardian information (required for minors under 18) */
+            guardian?: components["schemas"]["GuardianDTO"];
+        };
+        /** @description Member registration response with HATEOAS links */
+        MemberRegistrationResponse: {
+            /**
+             * Format: uuid
+             * @description Unique member identifier (UUID)
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            id?: string;
+            /**
+             * @description Member's first name
+             * @example Jan
+             */
+            firstName?: string;
+            /**
+             * @description Member's last name
+             * @example Novák
+             */
+            lastName?: string;
+        };
+        ProblemDetail: {
+            /** Format: uri */
+            type?: string;
+            title?: string;
+            /** Format: int32 */
+            status?: number;
+            detail?: string;
+            /** Format: uri */
+            instance?: string;
+            properties?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Event creation data */
+        CreateEventCommand: {
+            name: string;
+            /** Format: date */
+            eventDate: string;
+            location: string;
+            organizer: string;
+            websiteUrl?: string;
+            /** Format: uuid */
+            eventCoordinatorId?: string;
+        };
+        EventDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            /** Format: date */
+            eventDate?: string;
+            location?: string;
+            organizer?: string;
+            websiteUrl?: string;
+            /** Format: uuid */
+            eventCoordinatorId?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
+        };
+        EntityModelEventDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            /** Format: date */
+            eventDate?: string;
+            location?: string;
+            organizer?: string;
+            websiteUrl?: string;
+            /** Format: uuid */
+            eventCoordinatorId?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
+            _links?: components["schemas"]["Links"];
+        };
+        /** @description Registration data */
+        RegisterForEventCommand: {
+            siCardNumber: string;
+        };
+        OwnRegistrationDto: {
+            firstName?: string;
+            lastName?: string;
+            siCardNumber?: string;
+            /** Format: date-time */
+            registeredAt?: string;
+        };
+        /** @description Request for a new password setup token */
+        TokenRequestRequest: {
+            /**
+             * @description The user's registration number (format: XXXYYDD)
+             * @example 12345678
+             */
+            registrationNumber: string;
+            /**
+             * @description The member's email address
+             * @example member@example.com
+             */
+            email: string;
+        };
+        /** @description Response for password setup token request */
+        TokenRequestResponse: {
+            /**
+             * @description Success message
+             * @example If your account is pending activation, you will receive an email with a new setup link.
+             */
+            message?: string;
+        };
+        /** @description Error response for password setup API errors */
+        ErrorResponse: {
+            /**
+             * @description Error message describing what went wrong
+             * @example Invalid token
+             */
+            message?: string;
+        };
+        /** @description Password setup request containing token and new credentials */
+        SetPasswordRequest: {
+            /**
+             * @description The plain text token from email
+             * @example abc123def456
+             */
+            token: string;
+            /**
+             * @description The new password (minimum 12 characters with uppercase, lowercase, number, and special character)
+             * @example Password123!
+             */
+            password: string;
+            /**
+             * @description Password confirmation must match the password field
+             * @example Password123!
+             */
+            passwordConfirmation: string;
+        };
+        /** @description Response for completed password setup */
+        PasswordSetupResponse: {
+            /**
+             * @description Success message
+             * @example Password set successfully
+             */
+            message?: string;
+            /**
+             * @description The user's registration number
+             * @example 12345678
+             */
+            registrationNumber?: string;
+        };
+        IdentityCardDto: {
+            cardNumber?: string;
+            /** Format: date */
+            validityDate?: string;
+        };
+        MedicalCourseDto: {
+            /** Format: date */
+            completionDate?: string;
+            /** Format: date */
+            validityDate?: string;
+        };
+        TrainerLicenseDto: {
+            licenseNumber?: string;
+            /** Format: date */
+            validityDate?: string;
+        };
+        /** @description Partial update request - only include fields to update */
+        UpdateMemberRequest: {
+            email?: string;
+            phone?: string;
+            address?: components["schemas"]["AddressRequest"];
+            firstName?: string;
+            lastName?: string;
+            /** Format: date */
+            dateOfBirth?: string;
+            /** @enum {string} */
+            gender?: "MALE" | "FEMALE";
+            chipNumber?: string;
+            identityCard?: components["schemas"]["IdentityCardDto"];
+            medicalCourse?: components["schemas"]["MedicalCourseDto"];
+            trainerLicense?: components["schemas"]["TrainerLicenseDto"];
+            /** @enum {string} */
+            drivingLicenseGroup?: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
+            dietaryRestrictions?: string;
+        };
+        AddressResponse: {
+            street?: string;
+            city?: string;
+            postalCode?: string;
+            country?: string;
+        };
+        MemberDetailsResponse: {
+            /** Format: uuid */
+            id?: string;
+            registrationNumber?: string;
+            firstName?: string;
+            lastName?: string;
+            /** Format: date */
+            dateOfBirth?: string;
+            nationality?: string;
+            /** @enum {string} */
+            gender?: "MALE" | "FEMALE";
+            email?: string;
+            phone?: string;
+            address?: components["schemas"]["AddressResponse"];
+            guardian?: components["schemas"]["GuardianDTO"];
+            active?: boolean;
+            chipNumber?: string;
+            identityCard?: components["schemas"]["IdentityCardDto"];
+            medicalCourse?: components["schemas"]["MedicalCourseDto"];
+            trainerLicense?: components["schemas"]["TrainerLicenseDto"];
+            /** @enum {string} */
+            drivingLicenseGroup?: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
+            dietaryRestrictions?: string;
+        };
+        /** @description Event update data */
+        UpdateEventCommand: {
+            name: string;
+            /** Format: date */
+            eventDate: string;
+            location: string;
+            organizer: string;
+            websiteUrl?: string;
+            /** Format: uuid */
+            eventCoordinatorId?: string;
+        };
+        EntityModelRootModel: {
+            _links?: components["schemas"]["Links"];
+        };
+        Pageable: {
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: string[];
+        };
+        /** @description Member summary with essential information and HATEOAS links */
+        MemberSummaryResponse: {
+            /**
+             * Format: uuid
+             * @description Unique member identifier (UUID)
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            id?: string;
+            /**
+             * @description Member's first name
+             * @example Jan
+             */
+            firstName?: string;
+            /**
+             * @description Member's last name
+             * @example Novák
+             */
+            lastName?: string;
+            /**
+             * @description Member's unique registration number
+             * @example ZBM0501
+             */
+            registrationNumber?: string;
+        };
+        EventSummaryDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            /** Format: date */
+            eventDate?: string;
+            location?: string;
+            organizer?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
+        };
+        RegistrationDto: {
+            firstName?: string;
+            lastName?: string;
+            /** Format: date-time */
+            registeredAt?: string;
+        };
+        CollectionModelRegistrationDto: {
+            _embedded?: {
+                registrationDtoList?: components["schemas"]["RegistrationDto"][];
+            };
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelOwnRegistrationDto: {
+            firstName?: string;
+            lastName?: string;
+            siCardNumber?: string;
+            /** Format: date-time */
+            registeredAt?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        /** @description Response for token validation */
+        ValidateTokenResponse: {
+            /**
+             * @description Whether the token is valid
+             * @example true
+             */
+            valid?: boolean;
+            /**
+             * Format: date-time
+             * @description When the token expires (ISO-8601 format)
+             * @example 2024-12-31T23:59:59Z
+             */
+            expiresAt?: string;
+        };
         Link: {
-            rel?: string;
-            href: string;
+            href?: string;
             hreflang?: string;
-            media?: string;
             title?: string;
             type?: string;
             deprecation?: string;
             profile?: string;
             name?: string;
+            templated?: boolean;
         };
-        /** @description Data for form setting member grants */
-        MemberGrantsForm: {
-            links?: components["schemas"]["Link"][];
-            grants?: ("members:register" | "members:edit" | "members:suspendMembership" | "members:resumeMembership" | "system:admin" | "members:permissions")[];
-        };
-        MembersMemberIdEditMemberInfoFormGet400ResponseAllOfValidationErrorsInnerApiDto: {
-            links?: components["schemas"]["Link"][];
-            fieldName?: string;
-            errorMessage?: string;
-        };
-        MembersMemberIdEditMemberInfoFormGet400ResponseApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description Description of the error status */
-            title: string;
-            /**
-             * Format: int32
-             * @description error status value
-             */
-            status: number;
-            /** @description User friendly description of the error */
-            detail: string;
-            /** @description URI of the resource which has thrown the error */
-            instance: string;
-            type?: string;
-            validationErrors?: components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseAllOfValidationErrorsInnerApiDto"][];
-        };
-        RFC7807ErrorResponseApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description Description of the error status */
-            title: string;
-            /**
-             * Format: int32
-             * @description error status value
-             */
-            status: number;
-            /** @description User friendly description of the error */
-            detail: string;
-            /** @description URI of the resource which has thrown the error */
-            instance: string;
-            type?: string;
-        };
-        /** @description Forces membership suspension for member even if there are some reasons (like negative finance account balance, etc..) why it would be wise to postpone user membership suspension */
-        MembershipSuspensionInfoRequestDto: {
-            /** @description tells if member account should be suspended even when there are some unfinished things (canSuspend=false) */
-            force: boolean;
-        };
-        AddressApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description Street name and number */
-            streetAndNumber: string;
-            /** @description City */
-            city: string;
-            /** @description Postal or ZIP code */
-            postalCode: string;
-            /** @description two letter country code, ISO 3166-1 alpha-2 */
-            country: string;
-        };
-        /** @description At least one of email or phone value is required */
-        Contact: {
-            links?: components["schemas"]["Link"][];
-            /**
-             * Format: email
-             * @description Email address of the club member or guardian
-             */
-            email: string;
-            /** @description Phone number of the club member or guardian */
-            phone: string;
-            /** @description Note about the contact */
-            note?: string;
-        };
-        /** @description Member attributes which can be updated by member himself (member can update some own attributes)    #### Required authorization - user can edit own member data   Additional validations: - either contact or at least 1 guardian needs to be entered  */
-        EditMyDetailsForm: {
-            identityCard?: components["schemas"]["IdentityCardApiDto"];
-            /** @description two letter country code, ISO 3166-1 alpha-2 */
-            nationality: string;
-            address: components["schemas"]["AddressApiDto"];
-            contact?: components["schemas"]["Contact"];
-            guardians?: components["schemas"]["LegalGuardianApiDto"][];
-            /**
-             * Format: int32
-             * @description SI chip used by member
-             */
-            siCard?: number;
-            /** @description Bank account number of the club member IBAN */
-            bankAccount?: string;
-            /** @description Dietary restrictions of the club member */
-            dietaryRestrictions?: string;
-            drivingLicence?: ("B" | "BE" | "C" | "D")[];
-            /** @description Whether the club member has completed the medic course */
-            medicCourse?: boolean;
-        };
-        IdentityCardApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description Personal identification number of the club member */
-            number?: string;
-            /**
-             * Format: date
-             * @description Expiry date of the ID card, YYYY-MM-DD
-             */
-            expiryDate?: string;
-        };
-        LegalGuardianApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description First name of the guardian */
-            firstName: string;
-            /** @description Last name of the guardian */
-            lastName: string;
-            contact: components["schemas"]["Contact"];
-            /** @description Note about the guardian (matka, otec) */
-            note?: string;
-        };
-        MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto: {
-            links?: components["schemas"]["Link"][];
-        };
-        MembersMemberIdEditMemberInfoFormGet403ResponseApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description Description of the error status */
-            title: string;
-            /**
-             * Format: int32
-             * @description error status value
-             */
-            status: number;
-            /** @description User friendly description of the error */
-            detail: string;
-            /** @description URI of the resource which has thrown the error */
-            instance: string;
-            type?: string;
-            missingGrant?: components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseAllOfMissingGrantApiDto"];
-        };
-        /** @description Member attributes editable by authorized user who can change details about other members  #### Required authorization - requires `members:edit` grant  Additional validations:  - when `CZ` is selected as nationality, then `birthCertificateNumber` is required value */
-        EditAnotherMemberDetailsForm: {
-            /** @description First name of the club member */
-            firstName: string;
-            /** @description Last name of the club member */
-            lastName: string;
-            /**
-             * Format: date
-             * @description Date of birth of the club member
-             */
-            dateOfBirth: string;
-            /** @description Birth certificate number for Czech citizens */
-            birthCertificateNumber?: string;
-            /** @description two letter country code, ISO 3166-1 alpha-2 */
-            nationality: string;
-            /** @enum {string} */
-            sex: "male" | "female";
-        };
-        EventRegistrationForm: {
-            siNumber: string;
-            category: string;
-        };
-        /** @description DTO containing event IDs to synchronize */
-        SynchronizeEventsRequest: {
-            eventIds?: number[];
-        };
-        MemberRegistrationsPost409ResponseApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description Description of the error status */
-            title: string;
-            /**
-             * Format: int32
-             * @description error status value
-             */
-            status: number;
-            /** @description User friendly description of the error */
-            detail: string;
-            /** @description URI of the resource which has thrown the error */
-            instance: string;
-            type?: string;
-            /**
-             * Format: uuid
-             * @description ID of conflicting member
-             */
-            existingUserId?: string;
-        };
-        /** @description Data required to register new member.    #### Required authorization - requires `members:register` grant  Additional validations:  - either contact or guardian needs to be set - when nationality is different than `CZ`, `birthCertificateNumber` value will be ignored */
-        MemberRegistrationForm: {
-            /** @description First name of the club member */
-            firstName: string;
-            /** @description Last name of the club member */
-            lastName: string;
-            /** @enum {string} */
-            sex: "male" | "female";
-            /**
-             * Format: date
-             * @description Date of birth of the club member
-             */
-            dateOfBirth: string;
-            /** @description Birth certificate number for Czech citizens */
-            birthCertificateNumber?: string;
-            /** @description two letter country code, ISO 3166-1 alpha-2 */
-            nationality: string;
-            address: components["schemas"]["AddressApiDto"];
-            contact?: components["schemas"]["Contact"];
-            guardians?: components["schemas"]["LegalGuardianApiDto"][];
-            /**
-             * Format: int32
-             * @description SI chip used by member
-             */
-            siCard?: number;
-            /** @description Bank account number of the club member IBAN */
-            bankAccount?: string;
-            /** @description ORIS registration number */
-            registrationNumber?: string;
-            /**
-             * Format: int32
-             * @description Oris ID of registered orienteering runner
-             */
-            orisId?: number;
-        };
-        RegistrationNumberGet200ResponseApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @description ORIS registration number */
-            suggestedRegistrationNumber: string;
-        };
-        /** @description User data retrieved from ORIS    #### Required authorization - requires `members:register` grant */
-        ORISUserInfo: {
-            links?: components["schemas"]["Link"][];
-            /** @description First name of the club member */
-            firstName: string;
-            /** @description Last name of the club member */
-            lastName: string;
-            /** @description ORIS registration number */
-            registrationNumber: string;
-            /**
-             * Format: int32
-             * @description Oris ID of registered orienteering runner
-             */
-            orisId?: number;
-        };
-        EntityModelMembersApiResponse: {
-            /**
-             * Format: int32
-             * @description Unique identifier for the club member
-             */
-            id: number;
-            /** Format: int32 */
-            userId?: number;
-            /** @description First name of the club member */
-            firstName: string;
-            /** @description Last name of the club member */
-            lastName: string;
-            /** @description ORIS registration number */
-            registrationNumber: string;
-            /** @description Birth certificate number for Czech citizens */
-            birthCertificateNumber?: string;
-            identityCard?: components["schemas"]["IdentityCardApiDto"];
-            address: components["schemas"]["AddressApiDto"];
-            /**
-             * Format: date
-             * @description Date of birth of the club member
-             */
-            dateOfBirth: string;
-            contact?: components["schemas"]["Contact"];
-            legalGuardians?: components["schemas"]["LegalGuardianApiDto"][];
-            /**
-             * Format: int32
-             * @description Chip number assigned to the club member
-             */
-            siCard?: number;
-            /** @description two letter country code, ISO 3166-1 alpha-2 */
-            nationality: string;
-            /** @enum {string} */
-            sex: "male" | "female";
-            licences?: components["schemas"]["LicencesApiDto"];
-            /** @description Bank account number of the club member IBAN */
-            bankAccount?: string;
-            /** @description Dietary restrictions of the club member */
-            dietaryRestrictions?: string;
-            drivingLicence?: ("B" | "BE" | "C" | "D")[];
-            /** @description Whether the club member has completed the medic course */
-            medicCourse?: boolean;
-            links?: components["schemas"]["Link"][];
-        };
-        LicencesApiDto: {
-            links?: components["schemas"]["Link"][];
-            ob?: components["schemas"]["OBLicenceApiDto"];
-            referee?: components["schemas"]["RefereeLicenceApiDto"];
-            trainer?: components["schemas"]["TrainerLicenceApiDto"];
-        };
-        OBLicenceApiDto: {
-            links?: components["schemas"]["Link"][];
-            /**
-             * @description License number of the club member
-             * @enum {string}
-             */
-            licence: "E" | "R" | "A" | "B" | "C";
-        };
-        PageMetadata: {
-            /** Format: int64 */
-            size?: number;
-            /** Format: int64 */
-            totalElements?: number;
-            /** Format: int64 */
-            totalPages?: number;
-            /** Format: int64 */
-            number?: number;
-        };
-        PagedModelEntityModelMembersApiResponse: {
-            links?: components["schemas"]["Link"][];
-            content?: components["schemas"]["EntityModelMembersApiResponse"][];
-            page?: components["schemas"]["PageMetadata"];
-        };
-        RefereeLicenceApiDto: {
-            links?: components["schemas"]["Link"][];
-            /**
-             * @description referee license number of the club member
-             * @enum {string}
-             */
-            licence: "R1" | "R2" | "R3";
-            /**
-             * Format: date
-             * @description Expiry date of the license
-             */
-            expiryDate: string;
-        };
-        TrainerLicenceApiDto: {
-            links?: components["schemas"]["Link"][];
-            /**
-             * @description trainer license number of the club member
-             * @enum {string}
-             */
-            licence: "T1" | "T2" | "T3";
-            /**
-             * Format: date
-             * @description Expiry date of the license
-             */
-            expiryDate: string;
-        };
-        EntityModelMembershipSuspensionInfoApiDto: {
-            /** @description tells if member account is currently suspended */
-            readonly isSuspended: boolean;
-            /** @description tells if member account can be suspended */
-            readonly canSuspend: boolean;
-            readonly details: components["schemas"]["SuspendMembershipBlockers"];
-            /** @description tells if member account should be suspended even when there are some unfinished things (canSuspend=false) */
-            force: boolean;
-            links?: components["schemas"]["Link"][];
-        };
-        /** @description describes conditions which may prevent membership suspension and their actual status */
-        SuspendMembershipBlockers: {
-            finance: components["schemas"]["SuspendMembershipBlockersFinanceApiDto"];
-        };
-        SuspendMembershipBlockersFinanceApiDto: {
-            /** @description tells if finance account balance permits membership suspension */
-            status: boolean;
-        };
-        EntityModelEditMyDetailsForm: {
-            identityCard?: components["schemas"]["IdentityCardApiDto"];
-            /** @description two letter country code, ISO 3166-1 alpha-2 */
-            nationality: string;
-            address: components["schemas"]["AddressApiDto"];
-            contact?: components["schemas"]["Contact"];
-            guardians?: components["schemas"]["LegalGuardianApiDto"][];
-            /**
-             * Format: int32
-             * @description SI chip used by member
-             */
-            siCard?: number;
-            /** @description Bank account number of the club member IBAN */
-            bankAccount?: string;
-            /** @description Dietary restrictions of the club member */
-            dietaryRestrictions?: string;
-            drivingLicence?: ("B" | "BE" | "C" | "D")[];
-            /** @description Whether the club member has completed the medic course */
-            medicCourse?: boolean;
-            links?: components["schemas"]["Link"][];
-        };
-        EntityModelEditAnotherMemberDetailsForm: {
-            /** @description First name of the club member */
-            firstName: string;
-            /** @description Last name of the club member */
-            lastName: string;
-            /**
-             * Format: date
-             * @description Date of birth of the club member
-             */
-            dateOfBirth: string;
-            /** @description Birth certificate number for Czech citizens */
-            birthCertificateNumber?: string;
-            /** @description two letter country code, ISO 3166-1 alpha-2 */
-            nationality: string;
-            /** @enum {string} */
-            sex: "male" | "female";
-            links?: components["schemas"]["Link"][];
-        };
-        EntityModelMemberRegistrationForm: {
-            /** @description First name of the club member */
-            firstName: string;
-            /** @description Last name of the club member */
-            lastName: string;
-            /** @enum {string} */
-            sex: "male" | "female";
-            /**
-             * Format: date
-             * @description Date of birth of the club member
-             */
-            dateOfBirth: string;
-            /** @description Birth certificate number for Czech citizens */
-            birthCertificateNumber?: string;
-            /** @description two letter country code, ISO 3166-1 alpha-2 */
-            nationality: string;
-            address: components["schemas"]["AddressApiDto"];
-            contact?: components["schemas"]["Contact"];
-            guardians?: components["schemas"]["LegalGuardianApiDto"][];
-            /**
-             * Format: int32
-             * @description SI chip used by member
-             */
-            siCard?: number;
-            /** @description Bank account number of the club member IBAN */
-            bankAccount?: string;
-            /** @description ORIS registration number */
-            registrationNumber?: string;
-            /**
-             * Format: int32
-             * @description Oris ID of registered orienteering runner
-             */
-            orisId?: number;
-            links?: components["schemas"]["Link"][];
-        };
-        GetAllGrants200ResponseApiDto: {
-            links?: components["schemas"]["Link"][];
-            grants?: components["schemas"]["GlobalGrantDetailApiDto"][];
-        };
-        GlobalGrantDetailApiDto: {
-            links?: components["schemas"]["Link"][];
-            /** @enum {string} */
-            grant?: "members:register" | "members:edit" | "members:suspendMembership" | "members:resumeMembership" | "system:admin" | "members:permissions";
-            /** @description User friendly description of the grant */
-            description?: string;
-        };
-        EntityModelEventResponse_Summary: {
-            /** Format: int32 */
-            id?: number;
-            /** Format: date */
-            date?: string;
-            name?: string;
-            location?: string;
-            organizer?: string;
-            /** @enum {string} */
-            type?: "TRAINING" | "COMPETITION";
-            web?: string;
-            /** Format: date */
-            registrationDeadline?: string;
-            /** Format: int32 */
-            coordinator?: number;
-            links?: components["schemas"]["Link"][];
-        };
-        PagedModelEntityModelEventResponse_Summary: {
-            links?: components["schemas"]["Link"][];
-            content?: components["schemas"]["EntityModelEventResponse_Summary"][];
-            page?: components["schemas"]["PageMetadata"];
-        };
-        EntityModelEventResponse_Detailed: {
-            /** Format: int32 */
-            id?: number;
-            /** Format: date */
-            date?: string;
-            name?: string;
-            location?: string;
-            organizer?: string;
-            /** @enum {string} */
-            type?: "TRAINING" | "COMPETITION";
-            web?: string;
-            /** Format: date */
-            registrationDeadline?: string;
-            /** Format: int32 */
-            coordinator?: number;
-            registrations?: components["schemas"]["EventRegistrationResponse_Detailed"][];
-            links?: components["schemas"]["Link"][];
-        };
-        EventRegistrationResponse_Detailed: {
-            /** Format: int32 */
-            memberId?: number;
-            category?: string;
-        };
-        RepresentationModelEntityModelEventRegistrationForm: {
-            links?: components["schemas"]["Link"][];
-        };
-        RepresentationModelObject: {
-            links?: components["schemas"]["Link"][];
+        Links: {
+            [key: string]: components["schemas"]["Link"];
         };
     };
     responses: never;
@@ -820,558 +711,521 @@ export interface components {
     headers: never;
     pathItems: never;
 }
-
 export type $defs = Record<string, never>;
-
 export interface operations {
-    getUserGrants: {
+    getUserPermissions: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PermissionsResponseModel"];
+                };
+            };
+        };
+    };
+    updatePermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePermissionsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PermissionsResponseModel"];
+                };
+            };
+        };
+    };
+    listMembers: {
+        parameters: {
+            query: {
+                /** @description Pagination parameters: page (default=0), size (default=10, max=100), sort (default=lastName,asc). Example: ?page=0&size=20&sort=lastName,asc&sort=firstName,asc */
+                pageable: components["schemas"]["Pageable"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Edit member grants form content */
+            /** @description Paginated list of members retrieved successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MemberGrantsForm"];
+                    "application/prs.hal-forms+json": components["schemas"]["MemberSummaryResponse"];
                 };
             };
-        };
-    };
-    updateUserGrants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of application user */
-                userId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["MemberGrantsForm"];
-            };
-        };
-        responses: {
-            /** @description User grants were successfully updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    membersMemberIdSuspendMembershipFormGet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of member */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description details about member account important for membership suspension */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntityModelMembershipSuspensionInfoApiDto"];
-                    "application/klabis+json": components["schemas"]["EntityModelMembershipSuspensionInfoApiDto"];
-                    "application/hal+json": components["schemas"]["EntityModelMembershipSuspensionInfoApiDto"];
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelMembershipSuspensionInfoApiDto"];
-                };
-            };
-            /** @description User is not allowed to perform requested operation */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-        };
-    };
-    membersMemberIdSuspendMembershipFormPut: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of member */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MembershipSuspensionInfoRequestDto"];
-            };
-        };
-        responses: {
-            /** @description Membership of club member was suspended successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid user input */
+            /** @description Invalid request - invalid sort field or page parameters */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Missing required user authentication or authentication failed */
+            /** @description Unauthorized - authentication required */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description User is not allowed to perform requested operation */
+            /** @description Forbidden - insufficient permissions (requires MEMBERS:READ) */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Missing required user authentication or authentication failed */
+        };
+    };
+    registerMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Member successfully registered */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["MemberRegistrationResponse"];
+                };
+            };
+            /** @description Validation error - invalid request data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (requires MEMBERS:CREATE) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listEvents: {
+        parameters: {
+            query: {
+                /** @description Filter by event status (optional) */
+                status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
+                /** @description Pagination parameters: page, size, sort */
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of events retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EventSummaryDto"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEventCommand"];
+            };
+        };
+        responses: {
+            /** @description Event successfully created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EventDto"];
+                };
+            };
+            /** @description Validation error - invalid request data */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (requires EVENTS:MANAGE) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    publishEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event published successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Invalid state transition */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Event not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
                 };
             };
-            /** @description It's not possible to suspend membership for club member. See response body for actual reason(s). You may use `force` to override these reasons. */
+        };
+    };
+    finishEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event finished successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Invalid state transition */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+        };
+    };
+    cancelEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event cancelled successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Invalid state transition */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+            /** @description Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                };
+            };
+        };
+    };
+    listRegistrations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event UUID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of registrations retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["RegistrationDto"];
+                };
+            };
+            /** @description Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelRegistrationDto"];
+                };
+            };
+        };
+    };
+    registerForEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event UUID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterForEventCommand"];
+            };
+        };
+        responses: {
+            /** @description Successfully registered for event */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["OwnRegistrationDto"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - user must have a member profile to register for events */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Registration Conflict - already registered */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
     };
-    resumeMembership: {
-        parameters: {
-            query: {
-                memberId: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    membersMemberIdEditOwnMemberInfoFormGet: {
+    unregisterFromEvent: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description ID of member */
-                memberId: number;
+                /** @description Event UUID */
+                eventId: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Club member updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntityModelEditMyDetailsForm"];
-                    "application/klabis+json": components["schemas"]["EntityModelEditMyDetailsForm"];
-                    "application/hal+json": components["schemas"]["EntityModelEditMyDetailsForm"];
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEditMyDetailsForm"];
-                };
-            };
-            /** @description Invalid user input */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description User is not allowed to perform requested operation */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-        };
-    };
-    membersMemberIdEditOwnMemberInfoFormPut: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of member */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EditMyDetailsForm"];
-            };
-        };
-        responses: {
-            /** @description Club member updated successfully */
-            200: {
+            /** @description Successfully unregistered */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Invalid user input */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description User is not allowed to perform requested operation */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-        };
-    };
-    getMemberEditByAdminForm: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of member */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Club member updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntityModelEditAnotherMemberDetailsForm"];
-                    "application/klabis+json": components["schemas"]["EntityModelEditAnotherMemberDetailsForm"];
-                    "application/hal+json": components["schemas"]["EntityModelEditAnotherMemberDetailsForm"];
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEditAnotherMemberDetailsForm"];
-                };
-            };
-            /** @description Invalid user input */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description User is not allowed to perform requested operation */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-        };
-    };
-    putMemberEditByAdminForm: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of member */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EditAnotherMemberDetailsForm"];
-            };
-        };
-        responses: {
-            /** @description Club member updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid user input */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description User is not allowed to perform requested operation */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-        };
-    };
-    getRegistrationForm: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID události */
-                eventId: number;
-                /** @description ID clena */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Prepared event registration form for member and event */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                };
-            };
-            /** @description User is not allowed to perform requested operation */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                };
-            };
-            /** @description Event with given doesn't exist */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/klabis+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/hal+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelEntityModelEventRegistrationForm"];
-                };
-            };
-        };
-    };
-    submitRegistrationForm: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID události */
-                eventId: number;
-                /** @description ID clena */
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EventRegistrationForm"];
-            };
-        };
-        responses: {
-            /** @description Member was registered to event successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid request */
+            /** @description Cannot unregister on or after event date */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Missing required user authentication or authentication failed */
+            /** @description Unauthorized - authentication required */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description User is not allowed to perform requested operation */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Event with given doesn't exist */
+            /** @description Event or registration not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1380,28 +1234,7 @@ export interface operations {
             };
         };
     };
-    cancelEventRegistration: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                eventId: number;
-                memberId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    orisSynchronizeEvents: {
+    requestNewToken: {
         parameters: {
             query?: never;
             header?: never;
@@ -1410,57 +1243,40 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SynchronizeEventsRequest"];
+                "application/json": components["schemas"]["TokenRequestRequest"];
             };
         };
         responses: {
-            /** @description Successfully triggered events synchronization */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description User is not allowed to perform requested operation */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    getRegistrationForm_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
+            /** @description Request processed successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EntityModelMemberRegistrationForm"];
-                    "application/klabis+json": components["schemas"]["EntityModelMemberRegistrationForm"];
-                    "application/hal+json": components["schemas"]["EntityModelMemberRegistrationForm"];
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberRegistrationForm"];
+                    "*/*": components["schemas"]["TokenRequestResponse"];
+                };
+            };
+            /** @description Invalid registration number format */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    memberRegistrationsPost: {
+    completePasswordSetup: {
         parameters: {
             query?: never;
             header?: never;
@@ -1469,325 +1285,252 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MemberRegistrationForm"];
+                "application/json": components["schemas"]["SetPasswordRequest"];
             };
         };
         responses: {
-            /** @description Registration was processed successfully */
-            201: {
+            /** @description Password set successfully */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "*/*": components["schemas"]["PasswordSetupResponse"];
+                };
             };
-            /** @description Invalid user input */
+            /** @description Invalid request (validation failed, bad token, password mismatch) */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
+                    "*/*": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Missing required user authentication or authentication failed */
+            /** @description Token expired or already used */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Member UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["MemberDetailsResponse"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description User is not allowed to perform requested operation */
+            /** @description Forbidden - insufficient permissions (requires MEMBERS:READ) */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Conflict - Member already exists (usually registration was submitted with existing registration number) */
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Member UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Member updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["MemberDetailsResponse"];
+                };
+            };
+            /** @description Validation error - invalid request data or empty update */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["MemberRegistrationsPost409ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
     };
-    registrationNumberGet: {
-        parameters: {
-            query: {
-                dateOfBirth: string;
-                sex: "male" | "female";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Recommended (available) registration number for new member registration */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegistrationNumberGet200ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["RegistrationNumberGet200ResponseApiDto"];
-                };
-            };
-            /** @description Invalid user input */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-        };
-    };
-    orisUserInfoRegNumGet: {
+    getEvent: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Registration number of user to retrieve ORIS data about */
-                regNum: string;
+                /** @description Event UUID */
+                id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Available information about user read from ORIS */
+            /** @description Event found */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ORISUserInfo"];
-                    "application/problem+json": components["schemas"]["ORISUserInfo"];
+                    "application/prs.hal-forms+json": components["schemas"]["EventDto"];
                 };
             };
-            /** @description Invalid user input */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet400ResponseApiDto"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-            /** @description User is not allowed to perform requested operation */
+            /** @description Forbidden - insufficient permissions */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
-                    "application/problem+json": components["schemas"]["MembersMemberIdEditMemberInfoFormGet403ResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Missing required user authentication or authentication failed */
+            /** @description Event not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
     };
-    membersGet: {
-        parameters: {
-            query?: {
-                suspended?: boolean;
-                /** @description Zero-based page index (0..N) */
-                page?: number;
-                /** @description The size of the page to be returned */
-                size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
-                sort?: string[];
-                /**
-                 * @description Defines how many data are returned for every item
-                 * @example SUMMARY
-                 */
-                view?: "SUMMARY" | "DETAILED";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description A list of club members */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PagedModelEntityModelMembersApiResponse"];
-                    "application/klabis+json": components["schemas"]["PagedModelEntityModelMembersApiResponse"];
-                    "application/hal+json": components["schemas"]["PagedModelEntityModelMembersApiResponse"];
-                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelMembersApiResponse"];
-                };
-            };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-        };
-    };
-    membersMemberIdGet: {
+    updateEvent: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description ID of member */
-                memberId: number;
+                /** @description Event UUID */
+                id: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEventCommand"];
+            };
+        };
         responses: {
-            /** @description A single member */
+            /** @description Event successfully updated */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EntityModelMembersApiResponse"];
-                    "application/klabis+json": components["schemas"]["EntityModelMembersApiResponse"];
-                    "application/hal+json": components["schemas"]["EntityModelMembersApiResponse"];
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelMembersApiResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["EventDto"];
                 };
             };
-            /** @description Missing required user authentication or authentication failed */
-            401: {
+            /** @description Validation error or invalid state transition */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Requested resource wasn't found */
+            /** @description Forbidden - insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Event not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["RFC7807ErrorResponseApiDto"];
-                };
-            };
-        };
-    };
-    getAllGrants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of grants which can be assigned to members */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetAllGrants200ResponseApiDto"];
-                };
-            };
-        };
-    };
-    getEvents: {
-        parameters: {
-            query?: {
-                "registeredMember.value"?: number;
-                /** @description Zero-based page index (0..N) */
-                page?: number;
-                /** @description The size of the page to be returned */
-                size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
-                sort?: string[];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Events */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PagedModelEntityModelEventResponse_Summary"];
-                    "application/klabis+json": components["schemas"]["PagedModelEntityModelEventResponse_Summary"];
-                    "application/hal+json": components["schemas"]["PagedModelEntityModelEventResponse_Summary"];
-                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelEventResponse_Summary"];
-                };
-            };
-        };
-    };
-    getEventById: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID eventu */
-                eventId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Event details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntityModelEventResponse_Detailed"];
-                    "application/klabis+json": components["schemas"]["EntityModelEventResponse_Detailed"];
-                    "application/hal+json": components["schemas"]["EntityModelEventResponse_Detailed"];
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventResponse_Detailed"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -1807,10 +1550,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RepresentationModelObject"];
-                    "application/klabis+json": components["schemas"]["RepresentationModelObject"];
-                    "application/hal+json": components["schemas"]["RepresentationModelObject"];
-                    "application/prs.hal-forms+json": components["schemas"]["RepresentationModelObject"];
+                    "application/hal+json": components["schemas"]["EntityModelRootModel"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelRootModel"];
+                };
+            };
+        };
+    };
+    getOwnRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Event UUID */
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Own registration retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["OwnRegistrationDto"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
+                };
+            };
+            /** @description Event or registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
+                };
+            };
+        };
+    };
+    validateToken: {
+        parameters: {
+            query: {
+                /**
+                 * @description The plain text token from the email link
+                 * @example abc123def456
+                 */
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Token is valid */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ValidateTokenResponse"];
+                };
+            };
+            /** @description Invalid token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ValidateTokenResponse"];
+                };
+            };
+            /** @description Token expired or already used */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ValidateTokenResponse"];
                 };
             };
         };
