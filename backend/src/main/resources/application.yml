@@ -144,7 +144,7 @@ password-setup:
 
 # Frontend CORS configuration
 frontend:
-  allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:https://localhost:3000,https://localhost:8443}
+  allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:3000,https://localhost:8443}
   allow-credentials: ${FRONTEND_ALLOW_CREDENTIALS:true}
 
 # Jasypt encryption for GDPR sensitive fields
