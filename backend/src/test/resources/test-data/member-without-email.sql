@@ -3,7 +3,6 @@
 
 -- Clean up existing test data
 DELETE FROM user_permissions WHERE user_id = '33333333-3333-3333-3333-333333333333';
-DELETE FROM user_authorities WHERE user_id = '33333333-3333-3333-3333-333333333333';
 DELETE FROM users WHERE id = '33333333-3333-3333-3333-333333333333';
 DELETE FROM members WHERE id = '33333333-3333-3333-3333-333333333333';
 
@@ -80,10 +79,6 @@ INSERT INTO users (
     TRUE,
     TRUE
 );
-
--- Insert user_authorities (for Spring Security authentication)
-INSERT INTO user_authorities (user_id, authority) VALUES
-    ('33333333-3333-3333-3333-333333333333', 'MEMBERS:READ');
 
 -- Insert UserPermissions (application-level permissions)
 INSERT INTO user_permissions (

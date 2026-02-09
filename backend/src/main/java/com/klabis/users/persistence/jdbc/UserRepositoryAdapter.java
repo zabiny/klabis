@@ -2,7 +2,6 @@ package com.klabis.users.persistence.jdbc;
 
 import com.klabis.users.User;
 import com.klabis.users.Users;
-import com.klabis.users.Authority;
 import com.klabis.users.UserAuditMetadata;
 import com.klabis.users.UserId;
 import com.klabis.users.persistence.UserRepository;
@@ -60,11 +59,6 @@ class UserRepositoryAdapter implements Users, UserRepository {
     public Optional<User> findByUsername(String username) {
         return jdbcRepository.findByUsername(username)
                 .map(UserMemento::toUser);
-    }
-
-    @Override
-    public long countActiveUsersWithAuthority(Authority authority) {
-        return jdbcRepository.countActiveByAccountStatusAndAuthority(authority.getValue());
     }
 
     @Override

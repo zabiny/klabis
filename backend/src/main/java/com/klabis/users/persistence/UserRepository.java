@@ -1,7 +1,6 @@
 package com.klabis.users.persistence;
 
 import com.klabis.users.User;
-import com.klabis.users.Authority;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 import org.jmolecules.ddd.annotation.Repository;
@@ -45,14 +44,6 @@ public interface UserRepository {
      * @return optional containing user if found
      */
     Optional<User> findByUsername(String username);
-
-    /**
-     * Count active users with a specific authority.
-     *
-     * @param authority the authority to check for
-     * @return count of active users with the specified authority
-     */
-    long countActiveUsersWithAuthority(Authority authority);
 
     /**
      * Delete user by ID.

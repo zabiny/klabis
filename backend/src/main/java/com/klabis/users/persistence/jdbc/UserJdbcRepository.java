@@ -36,21 +36,4 @@ public interface UserJdbcRepository extends CrudRepository<UserMemento, UUID> {
      * @return optional containing user memento if found
      */
     Optional<UserMemento> findByUsername(String username);
-
-    /**
-     * Count active users with a specific authority.
-     * <p>
-     * Uses custom SQL query to join with user_authorities table.
-     *
-     * @param authority the authority to check for
-     * @return count of users with the specified authority and ACTIVE account status
-     */
-    @Query("""
-            SELECT COUNT(*)
-            FROM users
-                inner join user_authorities on users.id = user_authorities.user_id
-            WHERE account_status = 'ACTIVE'
-            AND (authority = :authority)
-            """)
-    long countActiveByAccountStatusAndAuthority(@Param("authority") String authority);
 }
