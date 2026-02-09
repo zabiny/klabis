@@ -83,7 +83,7 @@ public class AuthorizationServerConfiguration {
     }
 
     @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(Members members) {
         return context -> {
             if (context.getTokenType().getValue().equals("access_token")) {
                 // For client_credentials grant, use authorized scopes as authorities
@@ -103,7 +103,18 @@ public class AuthorizationServerConfiguration {
                 // ID Token claims for OpenID Connect
                 // Note: Standard claims (sub, iss, aud, exp, iat, auth_time) are handled
                 // automatically by Spring Authorization Server. We only add custom claims here.
-                context.getClaims().claim("registrationNumber", context.getPrincipal().getName());
+                String subject = context.getPrincipal().getName();
+                context.getClaims().claim("registrationNumber", subject);
+
+                // Add profile claims (given_name, family_name) for OIDC profile scope
+                if (RegistrationNumber.isRegistrationNumber(subject)) {
+                    members.findByRegistrationNumber(RegistrationNumber.of(subject))
+                            .ifPresent(member -> {
+                                context.getClaims().claim("given_name", member.getFirstName());
+                                context.getClaims().claim("family_name", member.getLastName());
+                                context.getClaims().claim("preferred_username", subject);
+                            });
+                }
             }
         };
     }

@@ -39,7 +39,7 @@ const createAuthUserDetails = (user: User | null | undefined): AuthUserDetails |
         firstName: user.profile.given_name,
         lastName: user.profile.family_name,
         id: parseInt(user.profile.sub),
-        registrationNumber: user.profile.preferred_username
+        registrationNumber: user.profile.registrationNumber || user.profile.preferred_username
     } as AuthUserDetails;
 }
 

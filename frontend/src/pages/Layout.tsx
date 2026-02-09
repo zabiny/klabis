@@ -31,16 +31,18 @@ const Layout = () => {
         const loadUserName = async () => {
             if (isAuthenticated) {
                 try {
-                    return await getUser()
+                    const user = await getUser()
+                    setUserDetails(user)
                 } catch (error) {
-                    throw new Error("Error loading user name: ", {cause: error})
+                    console.error("Error loading user name: ", error)
+                    setUserDetails(null)
                 }
             } else {
-                throw new Error("No user is authenticated")
+                setUserDetails(null)
             }
         }
 
-        loadUserName().then(setUserDetails)
+        loadUserName()
     }, [isAuthenticated, getUser]) // Note: getUser is stable due to useCallback, but kept in deps for clarity
 
     const handleLogout = () => {
@@ -49,7 +51,7 @@ const Layout = () => {
     }
 
     const handleUserNameClick = () => {
-        if (userDetails) {
+        if (userDetails && userDetails.firstName && userDetails.lastName) {
             navigate(`members/${userDetails.id}`)
         }
     }
@@ -83,12 +85,18 @@ const Layout = () => {
                     {/* Right side: User info and logout */}
                     <div className="flex items-center gap-4">
                         {userDetails && (
-                            <button
-                                onClick={handleUserNameClick}
-                                className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-base rounded-md transition-colors duration-base"
-                            >
-                                {userDetails.firstName} {userDetails.lastName} [{userDetails.registrationNumber}]
-                            </button>
+                            userDetails.firstName && userDetails.lastName ? (
+                                <button
+                                    onClick={handleUserNameClick}
+                                    className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-base rounded-md transition-colors duration-base"
+                                >
+                                    {userDetails.firstName} {userDetails.lastName} [{userDetails.registrationNumber}]
+                                </button>
+                            ) : (
+                                <span className="px-3 py-2 text-sm text-text-secondary">
+                                    [{userDetails.registrationNumber}]
+                                </span>
+                            )
                         )}
                         <ThemeToggle/>
                         <AdminToggle/>
