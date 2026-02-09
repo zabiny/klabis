@@ -20,3 +20,4 @@ backend/local.env
 /backend/http-client.env.json
 /frontend/tsconfig.tsbuildinfo
 /.vite/vitest/results.json
+/.do-not-commit/
