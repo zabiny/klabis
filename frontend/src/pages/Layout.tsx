@@ -51,7 +51,7 @@ const Layout = () => {
     }
 
     const handleUserNameClick = () => {
-        if (userDetails && userDetails.firstName && userDetails.lastName) {
+        if (userDetails?.isMember && userDetails.firstName && userDetails.lastName) {
             navigate(`members/${userDetails.id}`)
         }
     }
@@ -86,15 +86,21 @@ const Layout = () => {
                     <div className="flex items-center gap-4">
                         {userDetails && (
                             userDetails.firstName && userDetails.lastName ? (
-                                <button
-                                    onClick={handleUserNameClick}
-                                    className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-base rounded-md transition-colors duration-base"
-                                >
-                                    {userDetails.firstName} {userDetails.lastName} [{userDetails.registrationNumber}]
-                                </button>
+                                userDetails.isMember ? (
+                                    <button
+                                        onClick={handleUserNameClick}
+                                        className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-base rounded-md transition-colors duration-base"
+                                    >
+                                        {userDetails.firstName} {userDetails.lastName} [{userDetails.userName}]
+                                    </button>
+                                ) : (
+                                    <span className="px-3 py-2 text-sm text-text-secondary">
+                                        {userDetails.firstName} {userDetails.lastName} [{userDetails.userName}]
+                                    </span>
+                                )
                             ) : (
                                 <span className="px-3 py-2 text-sm text-text-secondary">
-                                    [{userDetails.registrationNumber}]
+                                    [{userDetails.userName}]
                                 </span>
                             )
                         )}

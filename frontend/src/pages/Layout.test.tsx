@@ -85,7 +85,8 @@ describe('Layout - Responsive Sidebar', () => {
                 id: 'user-1',
                 firstName: 'John',
                 lastName: 'Doe',
-                registrationNumber: '12345',
+                userName: '12345',
+                isMember: true,
             }),
             logout: vi.fn(),
         })

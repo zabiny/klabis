@@ -16,7 +16,8 @@ export interface AuthUserDetails {
     firstName: string,
     lastName: string,
     id: number,
-    registrationNumber: string
+    userName: string,
+    isMember: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,7 +40,8 @@ const createAuthUserDetails = (user: User | null | undefined): AuthUserDetails |
         firstName: user.profile.given_name,
         lastName: user.profile.family_name,
         id: parseInt(user.profile.sub),
-        registrationNumber: user.profile.registrationNumber || user.profile.preferred_username
+        userName: user.profile.user_name || user.profile.preferred_username,
+        isMember: user.profile.is_member === true
     } as AuthUserDetails;
 }
 
