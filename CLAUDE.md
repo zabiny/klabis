@@ -39,6 +39,31 @@ cd frontend
 npm run dev
 ```
 
+## Development Workflow Best Practices
+
+### Check Before Starting Services
+
+**CRITICAL:** Always check if services are already running before starting new processes.
+
+```bash
+# Check backend (port 8443)
+lsof -i :8443 || netstat -tulpn | grep 8443
+ps aux | grep -E "bootRun" | grep -v grep
+
+# Check frontend (port 3000)
+lsof -i :3000 || netstat -tulpn | grep 3000
+ps aux | grep -E "vite|npm.*dev" | grep -v grep
+
+# Check IntelliJ Run tool window for existing processes
+```
+
+**Why this matters:**
+
+- Avoids duplicate processes consuming resources
+- Prevents port conflicts (e.g., frontend on 3001 instead of 3000)
+- Ensures you're testing the correct running instance
+- Saves debugging time
+
 ## OpenSpec Workflow
 
 When planning or implementing new features:

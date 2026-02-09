@@ -368,6 +368,34 @@ npm run build
 
 ## Gotchas & Best Practices
 
+### 0. Process Management - Check Before Starting
+
+**CRITICAL:** Always check if frontend is already running before starting new process.
+
+```bash
+# Check if port 3000 is in use
+lsof -i :3000 || netstat -tulpn | grep 3000
+
+# Check for Vite dev server processes
+ps aux | grep -E "vite|npm.*dev" | grep -v grep
+
+# If already running, DON'T start another instance
+# Either:
+# 1. Use the existing process (check IntelliJ Run tool window)
+# 2. Stop it first: pkill -f "vite" or stop from IntelliJ
+```
+
+**Common mistake:** Starting duplicate frontend process (e.g., port 3001) when frontend is already running from IntelliJ on port 3000.
+
+**Result:** Confusion about which process serves which code, wasted resources, port conflicts.
+
+**Best practice:**
+
+1. Check IntelliJ Run tool window first
+2. Check running processes with `lsof -i :3000`
+3. Only start `npm run dev` if nothing is running
+4. Prefer running from IntelliJ for better integration
+
 ### 1. HATEOAS Navigation
 
 ❌ **Don't hardcode URLs:**
@@ -402,10 +430,26 @@ type Member = components['schemas']['MemberDto'];
 
 If getting 401 errors:
 
-1. Check backend is running on `https://localhost:8443`
-2. Verify OAuth2 client secret matches backend config
-3. Clear browser cookies/local storage
-4. Check proxy configuration in `vite.config.ts`
+1. **Check backend is running on `https://localhost:8443`**
+   ```bash
+   curl -k https://localhost:8443/actuator/health
+   ```
+
+2. **Inspect actual OAuth2 responses** (don't assume):
+   - Open browser DevTools → Network tab
+   - Check `/oauth2/authorize` response
+   - Decode `id_token` at jwt.io to see actual claims
+   - Verify `access_token` scopes
+
+3. **Common OAuth2 mistakes:**
+   - Using password grant (NOT supported - use authorization code)
+   - Wrong `client_id` (must match backend registration)
+   - Requesting scopes not registered in backend
+   - Backend running old code before OAuth2 changes
+
+4. Clear browser cookies/local storage (last resort)
+
+5. Check proxy configuration in `vite.config.ts`
 
 ### 4. Build Output
 
