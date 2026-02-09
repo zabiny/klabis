@@ -130,7 +130,7 @@ for record-keeping.
 ### Requirement: UserInfo Endpoint
 
 The system SHALL provide a UserInfo endpoint at `/oauth2/userinfo` that returns claims about the authenticated user. The
-endpoint MUST accept valid access tokens and return user profile information as JSON.
+endpoint MUST accept valid access tokens and return user profile information as JSON with scope-based claim filtering.
 
 The UserInfo endpoint MUST:
 
@@ -139,25 +139,96 @@ The UserInfo endpoint MUST:
 - Support both JSON and JWT response formats
 - Return HTTP 401 Unauthorized for invalid or expired access tokens
 - Return HTTP 403 Forbidden if access token lacks required scopes
+- Filter claims based on authorized scopes (scope-based access control)
+- Omit claims when underlying data is unavailable (null-safe)
 
-Standard UserInfo claims:
+Scope-to-Claims Mapping:
 
-- `sub`: Subject identifier (required, matches ID token)
-- `registrationNumber`: User's registration number
-- `firstName`: User's first name
-- `lastName`: User's last name
+| Scope | Claims Returned | Condition |
+|-------|----------------|-----------|
+| `openid` | `sub` | Always (required) |
+| `profile` | `given_name`, `family_name`, `registrationNumber`, `updated_at` | Member entity exists |
+| `email` | `email`, `email_verified` | Member entity exists AND email not null |
 
-#### Scenario: UserInfo endpoint returns user profile
+OIDC Standard UserInfo claims:
+
+- `sub`: Subject identifier (required, matches ID token) - always returned with `openid` scope
+- `given_name`: User's given name - returned with `profile` scope
+- `family_name`: User's family name - returned with `profile` scope
+- `updated_at`: Profile last modification timestamp (Instant) - returned with `profile` scope
+- `email`: User's email address - returned with `email` scope when available
+- `email_verified`: Boolean indicating email verification status - returned with `email` scope (currently always `false`)
+
+Custom domain-specific claims:
+
+- `registrationNumber`: User's registration number - returned with `profile` scope
+
+#### Scenario: UserInfo endpoint returns only sub claim with openid scope
 
 - **GIVEN** user has valid access token
-- **AND** access token includes `openid` scope
+- **AND** access token includes only `openid` scope
+- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
+- **THEN** system returns HTTP 200 OK with Content-Type: application/json
+- **AND** response includes only `sub` claim matching user's registrationNumber
+- **AND** response does NOT include profile claims (given_name, family_name, registrationNumber)
+- **AND** response does NOT include email claims (email, email_verified)
+
+#### Scenario: UserInfo endpoint returns profile claims with profile scope
+
+- **GIVEN** user has valid access token
+- **AND** access token includes `openid` and `profile` scopes
+- **AND** user has associated Member entity
 - **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
 - **THEN** system returns HTTP 200 OK with Content-Type: application/json
 - **AND** response includes `sub` claim matching user's registrationNumber
+- **AND** response includes `given_name` claim (user's first name)
+- **AND** response includes `family_name` claim (user's last name)
 - **AND** response includes `registrationNumber` claim
-- **AND** response includes `firstName` claim
-- **AND** response includes `lastName` claim
-- **AND** response does not include sensitive information (password hash, authorities)
+- **AND** response includes `updated_at` claim (profile last modification timestamp)
+- **AND** response does NOT include email claims without `email` scope
+
+#### Scenario: UserInfo endpoint returns email claims with email scope
+
+- **GIVEN** user has valid access token
+- **AND** access token includes `openid` and `email` scopes
+- **AND** user has associated Member entity with email address
+- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
+- **THEN** system returns HTTP 200 OK with Content-Type: application/json
+- **AND** response includes `sub` claim
+- **AND** response includes `email` claim (user's email address)
+- **AND** response includes `email_verified` claim (currently `false`)
+- **AND** response does NOT include profile claims without `profile` scope
+
+#### Scenario: UserInfo endpoint combines profile and email scopes
+
+- **GIVEN** user has valid access token
+- **AND** access token includes `openid`, `profile`, and `email` scopes
+- **AND** user has associated Member entity with email address
+- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
+- **THEN** system returns HTTP 200 OK with Content-Type: application/json
+- **AND** response includes all claims: `sub`, `given_name`, `family_name`, `registrationNumber`, `updated_at`, `email`, `email_verified`
+
+#### Scenario: UserInfo endpoint omits profile claims for admin users
+
+- **GIVEN** admin user has valid access token
+- **AND** access token includes `openid` and `profile` scopes
+- **AND** admin user has NO associated Member entity
+- **WHEN** admin sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
+- **THEN** system returns HTTP 200 OK with Content-Type: application/json
+- **AND** response includes only `sub` claim (admin username)
+- **AND** response does NOT include profile claims (no Member entity exists)
+- **AND** response does NOT include email claims (no Member entity exists)
+
+#### Scenario: UserInfo endpoint omits email claims when Member has no email
+
+- **GIVEN** user has valid access token
+- **AND** access token includes `openid`, `profile`, and `email` scopes
+- **AND** user has associated Member entity WITHOUT email address (e.g., minor with guardian)
+- **WHEN** client sends GET request to `/oauth2/userinfo` with Authorization: Bearer <access_token>
+- **THEN** system returns HTTP 200 OK with Content-Type: application/json
+- **AND** response includes profile claims: `sub`, `given_name`, `family_name`, `registrationNumber`, `updated_at`
+- **AND** response does NOT include email claims (email is null)
+- **AND** no error is returned (omitting claims is OIDC-compliant)
 
 #### Scenario: UserInfo endpoint rejects expired access token
 
@@ -262,6 +333,11 @@ The `openid` scope:
 - Can be combined with other scopes (e.g., `openid profile email`)
 - MUST be registered in OAuth2 client scope configuration
 
+Additional OIDC standard scopes:
+
+- `profile`: Requests access to user profile claims (given_name, family_name, registrationNumber, updated_at)
+- `email`: Requests access to user email claims (email, email_verified)
+
 #### Scenario: Client requests openid scope
 
 - **GIVEN** OAuth2 client is registered with `openid` in allowed scopes
@@ -290,9 +366,10 @@ The `openid` scope:
 
 - **GIVEN** system is initialized with default OAuth2 client
 - **WHEN** default client is registered in database
-- **THEN** client's allowed scopes include `openid`
+- **THEN** client's allowed scopes include `openid`, `profile`, and `email`
 - **AND** client can request OIDC authentication flows
 - **AND** client can use discovery, UserInfo, and logout endpoints
+- **AND** client can request granular access to user profile and email data
 
 ---
 

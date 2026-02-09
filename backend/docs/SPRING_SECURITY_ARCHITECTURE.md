@@ -719,7 +719,8 @@ identity layer on top of OAuth2.
 
 ✅ **Discovery Endpoint**: `/.well-known/openid-configuration` returns OIDC metadata
 ✅ **ID Tokens**: JWT tokens with identity claims (sub, auth_time, registrationNumber) when `openid` scope requested
-✅ **UserInfo Endpoint**: `/oauth2/userinfo` returns user profile claims (requires valid access token)
+✅ **UserInfo Endpoint**: `/oauth2/userinfo` returns user profile claims with scope-based filtering (profile/email scopes)
+✅ **Scope-Based Claims**: `profile` scope for given_name/family_name, `email` scope for email claims
 ✅ **RP-Initiated Logout**: `/oauth2/logout` for single sign-out flows
 ✅ **Backward Compatible**: Existing OAuth2 clients work unchanged (OIDC is opt-in via scope)
 
@@ -732,6 +733,51 @@ identity layer on top of OAuth2.
 | **Scope**        | Requested when `openid` scope included   | Always included                     |
 | **Usage**        | Frontend sessions, user identification   | API authorization checks            |
 | **Profile Data** | Not included (minimal claims)            | Not included                        |
+
+### UserInfo Endpoint: Scope-Based Claims
+
+The UserInfo endpoint (`/oauth2/userinfo`) implements OIDC-compliant scope-based access control:
+
+| Scope      | Claims Returned                                                      | Condition                           |
+|------------|----------------------------------------------------------------------|-------------------------------------|
+| `openid`   | `sub` (subject identifier)                                           | Always (required)                   |
+| `profile`  | `given_name`, `family_name`, `registrationNumber`, `updated_at`      | Member entity exists                |
+| `email`    | `email`, `email_verified`                                            | Member entity exists AND email != null |
+
+**Behavior:**
+- Claims are **omitted** (not returned as `null`) when data is unavailable (OIDC best practice)
+- Admin users without Member entity return only `sub` claim regardless of scopes
+- Members without email address omit email claims even when `email` scope is requested
+- `email_verified` always returns `false` until email verification feature is implemented
+
+**Example Responses:**
+
+```json
+// openid scope only
+{
+  "sub": "ZBM0501"
+}
+
+// openid + profile scopes
+{
+  "sub": "ZBM0501",
+  "given_name": "Jan",
+  "family_name": "Novák",
+  "registrationNumber": "ZBM0501",
+  "updated_at": "2026-02-09T12:00:00Z"
+}
+
+// openid + profile + email scopes (full profile)
+{
+  "sub": "ZBM0501",
+  "given_name": "Jan",
+  "family_name": "Novák",
+  "registrationNumber": "ZBM0501",
+  "updated_at": "2026-02-09T12:00:00Z",
+  "email": "jan.novak@example.com",
+  "email_verified": false
+}
+```
 
 ### OIDC Flow: Authorization Code with ID Token
 
@@ -756,7 +802,7 @@ sequenceDiagram
     TokenEndpoint-->>Client: 200 OK<br/>{<br/>  "access_token": "eyJhbG...",<br/>  "id_token": "eyJhbG...",<br/>  "token_type": "Bearer",<br/>  "expires_in": 900<br/>}
 
     Client->>UserInfoEndpoint: GET /oauth2/userinfo<br/>Authorization: Bearer ACCESS_TOKEN
-    UserInfoEndpoint-->>Client: 200 OK<br/>{<br/>  "sub": "user123",<br/>  "registrationNumber": "user123"<br/>}
+    UserInfoEndpoint-->>Client: 200 OK<br/>{<br/>  "sub": "ZBM0501",<br/>  "given_name": "Jan",<br/>  "family_name": "Novák",<br/>  "registrationNumber": "ZBM0501",<br/>  "updated_at": "2026-02-09T12:00:00Z",<br/>  "email": "jan.novak@example.com",<br/>  "email_verified": false<br/>}
 
     Client->>ResourceServer: GET /api/members<br/>Authorization: Bearer ACCESS_TOKEN
     ResourceServer-->>Client: 200 OK (members list)

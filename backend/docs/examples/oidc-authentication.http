@@ -37,8 +37,9 @@ GET {{baseUrl}}/oauth2/jwks
 # This step requires browser interaction for user login
 # Copy this URL and open it in a browser:
 #
-# {{baseUrl}}/oauth2/authorize?response_type=code&client_id={{clientId}}&scope=openid%20MEMBERS:READ&redirect_uri={{redirectUri}}&state=random-state-123
+# {{baseUrl}}/oauth2/authorize?response_type=code&client_id={{clientId}}&scope=openid%20profile%20email%20MEMBERS:READ&redirect_uri={{redirectUri}}&state=random-state-123
 #
+# Note: Including 'profile' and 'email' scopes enables UserInfo endpoint to return user profile claims
 # After login (username: admin, password: admin123), you'll be redirected to:
 # {{redirectUri}}?code=AUTHORIZATION_CODE&state=random-state-123
 #
@@ -79,7 +80,20 @@ client_secret = {{clientSecret}}
 
 ### 5. UserInfo Endpoint - Get User Profile Data
 # Requires valid access_token with 'openid' scope
-# Returns user profile: sub, registrationNumber, firstName, lastName
+# Scope-based claims:
+#   - openid scope: returns only 'sub' claim
+#   - profile scope: adds 'given_name', 'family_name', 'registrationNumber', 'updated_at' (requires Member entity)
+#   - email scope: adds 'email', 'email_verified' (requires Member entity with email)
+# Example response with openid+profile+email scopes:
+# {
+#   "sub": "ZBM0501",
+#   "given_name": "Jan",
+#   "family_name": "Novák",
+#   "registrationNumber": "ZBM0501",
+#   "updated_at": "2026-02-09T12:00:00Z",
+#   "email": "jan.novak@example.com",
+#   "email_verified": false
+# }
 GET {{baseUrl}}/userinfo
 Authorization: Bearer {{access_token}}
 

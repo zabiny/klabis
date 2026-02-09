@@ -1,4 +1,4 @@
-### API OAuth2 test endpoint
+### API OAuth2 UserInfo endpoint - openid scope only (returns sub claim)
 GET {{host}}/userinfo
 Accept: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}

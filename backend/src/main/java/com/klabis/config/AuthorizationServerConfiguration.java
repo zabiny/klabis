@@ -30,6 +30,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -111,44 +112,81 @@ public class AuthorizationServerConfiguration {
      * Custom UserInfo endpoint response for OpenID Connect.
      * <p>
      * Spring Authorization Server provides the UserInfo endpoint (/oauth2/userinfo) automatically
-     * when OIDC is enabled. This customizer loads member profile data from the Member entity
-     * and adds firstName and lastName to the UserInfo response.
+     * when OIDC is enabled. This customizer implements OIDC-compliant scope-based access control
+     * for user claims.
      * <p>
-     * UserInfo claims:
-     * - sub: registrationNumber (standard OIDC claim)
-     * - registrationNumber: member's registration number
-     * - firstName: member's first name (from Member entity)
-     * - lastName: member's last name (from Member entity)
+     * Scope-to-Claims Mapping:
+     * - openid: sub (always returned)
+     * - profile: given_name, family_name, registrationNumber, updated_at
+     * - email: email, email_verified (only if Member has email)
      * <p>
-     * For admin users who don't have a linked Member entity, only sub and registrationNumber are returned.
+     * For admin users who don't have a linked Member entity, only sub is returned.
      */
     private Function<OidcUserInfoAuthenticationContext, OidcUserInfo> oidcUserInfoMapper(
             Members members) {
         return context -> {
+            // Task 2.1: Extract authorized scopes from context
+            Set<String> scopes = context.getAuthorization().getAuthorizedScopes();
+
             OidcUserInfoAuthenticationToken authentication = context.getAuthentication();
             JwtAuthenticationToken principal = (JwtAuthenticationToken) authentication.getPrincipal();
 
-            // Extract registrationNumber from token subject
-            String registrationNumber = principal.getToken().getSubject();
+            // Extract subject from token (always present)
+            String subject = principal.getToken().getSubject();
+            if (subject == null) {
+                return OidcUserInfo.builder().subject("unknown").build();
+            }
 
-            // Build UserInfo with standard claims
-            OidcUserInfo.Builder userInfoBuilder = OidcUserInfo.builder()
-                    .subject(registrationNumber)
-                    .claim("registrationNumber", registrationNumber);
+            // Task 2.2: Start with only sub claim (openid scope)
+            OidcUserInfo.Builder builder = OidcUserInfo.builder().subject(subject);
 
-            // Load Member entity by registrationNumber and add profile claims
-            // Only query if registrationNumber has valid format (admin users have invalid format)
-            if (RegistrationNumber.isRegistrationNumber(registrationNumber)) {
-                members.findByRegistrationNumber(RegistrationNumber.of(registrationNumber))
+            // Task 2.7: Only load Member if subject is valid registration number and scopes require it
+            // Admin users without valid registration number format will only get sub claim
+            if ((scopes.contains("profile") || scopes.contains("email"))
+                    && RegistrationNumber.isRegistrationNumber(subject)) {
+                members.findByRegistrationNumber(RegistrationNumber.of(subject))
                         .ifPresent(member -> {
-                            userInfoBuilder
-                                    .claim("firstName", member.getFirstName())
-                                    .claim("lastName", member.getLastName());
+                            addProfileClaims(builder, scopes, member);
+                            addEmailClaims(builder, scopes, member);
                         });
             }
 
-            return userInfoBuilder.build();
+            return builder.build();
         };
+    }
+
+    /**
+     * Adds OIDC profile scope claims to UserInfo response.
+     * <p>
+     * Task 2.3-2.4: Maps Member data to standard OIDC claims:
+     * - given_name (was firstName)
+     * - family_name (was lastName)
+     * - registrationNumber (custom claim)
+     * - updated_at (profile last modification timestamp)
+     */
+    private void addProfileClaims(OidcUserInfo.Builder builder, Set<String> scopes, com.klabis.members.Member member) {
+        if (scopes.contains("profile")) {
+            builder.givenName(member.getFirstName())
+                   .familyName(member.getLastName())
+                   .claim("registrationNumber", member.getRegistrationNumber().getValue())
+                   .claim("updated_at", member.getAuditMetadata().lastModifiedAt());
+        }
+    }
+
+    /**
+     * Adds OIDC email scope claims to UserInfo response.
+     * <p>
+     * Task 2.5-2.6: Maps Member email to standard OIDC claims:
+     * - email (member's email address)
+     * - email_verified (always false until email verification is implemented)
+     * <p>
+     * Omits email claims if Member has no email (null-safe).
+     */
+    private void addEmailClaims(OidcUserInfo.Builder builder, Set<String> scopes, com.klabis.members.Member member) {
+        if (scopes.contains("email") && member.getEmail() != null) {
+            builder.email(member.getEmail().value())
+                   .emailVerified(false);
+        }
     }
 
     @Bean

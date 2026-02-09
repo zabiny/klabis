@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Bootstrap data loader that populates initial data from environment variables.
@@ -168,6 +169,8 @@ public class BootstrapDataLoader implements ApplicationRunner {
         // Note: Using Authority enum values for type safety, plus 'openid' for OIDC support
         String defaultScopes = String.join(",",
                 "openid",  // OpenID Connect scope
+                "profile", // OIDC standard scope for profile claims
+                "email",   // OIDC standard scope for email claims
                 Authority.MEMBERS_CREATE.getValue(),
                 Authority.MEMBERS_READ.getValue(),
                 Authority.MEMBERS_UPDATE.getValue(),
@@ -200,7 +203,9 @@ public class BootstrapDataLoader implements ApplicationRunner {
                 })
                 .postLogoutRedirectUri(environment.getProperty("oauth2.client.post-logout-redirect-uris",
                         "https://localhost:8443"))
-                .scopes(items -> items.addAll(Arrays.asList(scopes.split(","))))
+                .scopes(items -> items.addAll(Arrays.stream(scopes.split(","))
+                        .map(String::trim)
+                        .collect(Collectors.toList())))
                 .clientSettings(ClientSettings.builder()
                         .requireProofKey(false)
                         .build())

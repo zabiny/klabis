@@ -72,7 +72,7 @@ class OidcFlowE2ETest {
     private static final String CLIENT_SECRET = "test-secret-123";
     private static final String ADMIN_USERNAME = "admin";
     private static final String ADMIN_PASSWORD = "admin123";
-    private static final String REDIRECT_URI = "https://localhost:8443/auth/callback.html";
+    private static final String REDIRECT_URI = "https://localhost:8443/auth/callback";
     private static final String ISSUER = "https://localhost:8443";
 
     @BeforeEach
