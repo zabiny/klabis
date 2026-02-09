@@ -1,6 +1,7 @@
 package com.klabis.events.registration;
 
 import com.klabis.events.Event;
+import com.klabis.events.EventRegistration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,6 +16,7 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -24,8 +26,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 /**
  * REST controller for Event Registration resources.
@@ -37,6 +38,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping(value = "/api/events/{eventId}/registrations", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Event Registrations", description = "Event registration API for members")
 @PrimaryAdapter
+@ExposesResourceFor(EventRegistration.class)
 class EventRegistrationController {
 
     private final EventRegistrationService registrationService;
@@ -245,9 +247,9 @@ class EventRegistrationController {
      * @param eventId     event ID
      */
     private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId) {
-        entityModel.add(linkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId)).withSelfRel());
+        entityModel.add(linkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId)).withSelfRel()
+                .andAffordance(afford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId)))
+        );
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
-        entityModel.add(linkTo(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId)).withRel(
-                "unregister"));
     }
 }

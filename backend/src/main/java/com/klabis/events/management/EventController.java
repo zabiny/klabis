@@ -300,6 +300,10 @@ class EventController {
                 }
         );
 
+        pagedModel.add(linkTo(methodOn(EventController.class).listEvents(status, pageable)).withSelfRel()
+                .andAffordance(afford(methodOn(EventController.class).createEvent(null)))
+        );
+
         return ResponseEntity.ok(pagedModel);
     }
 

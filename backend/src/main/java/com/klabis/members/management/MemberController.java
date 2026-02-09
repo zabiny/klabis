@@ -262,6 +262,10 @@ class MemberController {
                 }
         );
 
+        pagedModel.add(linkTo(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
+                .andAffordance(afford(methodOn(RegistrationController.class).registerMember(null)))
+        );
+
         return ResponseEntity.ok(pagedModel);
     }
 
