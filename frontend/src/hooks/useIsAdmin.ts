@@ -4,7 +4,7 @@ import {useRootNavigation} from './useRootNavigation';
 /**
  * Hook to detect if the current user is a System Admin
  *
- * Admin status is determined by the presence of a 'systemEvents' link
+ * Admin status is determined by the presence of a 'admin' link
  * in the root navigation. Only System Admin users will have this link
  * exposed by the backend.
  *
@@ -17,7 +17,7 @@ export function useIsAdmin() {
         if (!navigationItems || navigationItems.length === 0) {
             return false;
         }
-        return navigationItems.some((item) => item.rel === 'sourceEvents');
+        return navigationItems.some((item) => item.rel === 'admin');
     }, [navigationItems]);
 
     return {

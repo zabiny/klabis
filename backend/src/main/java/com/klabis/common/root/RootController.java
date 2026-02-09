@@ -2,7 +2,9 @@ package com.klabis.common.root;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,8 +19,12 @@ class RootController {
 
     // API for HAL ROOT endpoint. Main purpose is to have root node where HAL viewer can start viewing Klabis API. Links are added in postprocessors from respective modules.
     @GetMapping
-    public EntityModel<RootModel> rootNavigation() {
-        return EntityModel.of(new RootModel());
+    public EntityModel<RootModel> rootNavigation(Authentication authentication) {
+        EntityModel<RootModel> result = EntityModel.of(new RootModel());
+        if (authentication != null && authentication.isAuthenticated() && "admin".equalsIgnoreCase(authentication.getName())) {
+            result.add(Link.of("/sandplace").withRel("admin"));
+        }
+        return result;
     }
 
 }

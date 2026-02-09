@@ -3,6 +3,7 @@ import {NavLink, Outlet, useNavigate} from 'react-router-dom'
 import {Alert, Button} from '../components/UI'
 import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
+import {AdminToggle} from '../components/AdminToggle/AdminToggle'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'
 import {useRootNavigation} from '../hooks/useRootNavigation'
@@ -90,6 +91,7 @@ const Layout = () => {
                             </button>
                         )}
                         <ThemeToggle/>
+                        <AdminToggle/>
                         <Button
                             variant="ghost"
                             size="sm"

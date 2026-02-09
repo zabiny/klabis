@@ -6,6 +6,7 @@ import {HalRouteProvider} from '../contexts/HalRouteContext'
 import {vi} from 'vitest';
 import * as RootNavigationModule from '../hooks/useRootNavigation'
 import * as AuthContext2Module from '../contexts/AuthContext2'
+import {AdminModeProvider} from "../contexts/AdminModeContext.tsx";
 
 // Mock useRootNavigation hook to avoid API calls
 vi.mock('../hooks/useRootNavigation', () => ({
@@ -95,11 +96,13 @@ describe('Layout - Responsive Sidebar', () => {
     const renderLayout = () => {
         return render(
             <QueryClientProvider client={queryClient}>
+                <AdminModeProvider>
                 <MemoryRouter initialEntries={['/']}>
                     <HalRouteProvider>
                         <Layout/>
                     </HalRouteProvider>
                 </MemoryRouter>
+                </AdminModeProvider>
             </QueryClientProvider>,
         )
     }

@@ -39,7 +39,7 @@ describe('useIsAdmin', () => {
     it('should return isAdmin true when sourceEvents link exists', () => {
         const navigationItems: NavigationItem[] = [
             {rel: 'members', label: 'Members', href: '/members'},
-            {rel: 'sourceEvents', label: 'System Events', href: '/system-events'},
+            {rel: 'admin', label: 'Admin dashboard', href: '/admin'},
             {rel: 'events', label: 'Events', href: '/events'},
         ];
 
