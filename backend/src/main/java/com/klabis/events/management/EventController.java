@@ -34,6 +34,116 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
+ * Pageable sort translation utilities.
+ */
+class EventSortTranslator {
+
+    /**
+     * Translates JSON DTO property names to domain entity property names.
+     */
+    private static final java.util.Map<String, String> JSON_TO_DOMAIN = java.util.Map.of(
+            "eventDate", "eventDate",
+            "id", "id",
+            "name", "name",
+            "location", "location",
+            "organizer", "organizer",
+            "status", "status"
+    );
+
+    /**
+     * Converts Pageable with JSON property names to Pageable with domain property names.
+     */
+    static Pageable translateJsonToDomain(Pageable pageable) {
+        Sort translatedSort = translateSort(pageable.getSort());
+        return PageableRequest.of(pageable.getPageNumber(), pageable.getPageSize(), translatedSort);
+    }
+
+    /**
+     * Translates Sort orders from JSON to domain property names.
+     */
+    private static Sort translateSort(Sort sort) {
+        java.util.List<Sort.Order> orders = sort.stream()
+                .map(order -> {
+                    String domainProperty = JSON_TO_DOMAIN.getOrDefault(order.getProperty(), order.getProperty());
+                    return new Sort.Order(
+                            order.getDirection(),
+                            domainProperty,
+                            order.getNullHandling()
+                    );
+                })
+                .toList();
+
+        return orders.isEmpty() ? Sort.unsorted() : Sort.by(orders);
+    }
+
+    /**
+     * Simple Pageable implementation for translated values.
+     */
+    private static class PageableRequest implements Pageable {
+        private final int page;
+        private final int size;
+        private final Sort sort;
+
+        PageableRequest(int page, int size, Sort sort) {
+            this.page = page;
+            this.size = size;
+            this.sort = sort;
+        }
+
+        static Pageable of(int page, int size, Sort sort) {
+            return new PageableRequest(page, size, sort);
+        }
+
+        @Override
+        public int getPageNumber() { return page; }
+
+        @Override
+        public int getPageSize() { return size; }
+
+        @Override
+        public long getOffset() { return (long) page * size; }
+
+        @Override
+        public Sort getSort() { return sort; }
+
+        @Override
+        public Pageable next() {
+            return new PageableRequest(getPageNumber() + 1, getPageSize(), getSort());
+        }
+
+        @Override
+        public Pageable previousOrFirst() {
+            return getPageNumber() == 0 ? this : new PageableRequest(getPageNumber() - 1, getPageSize(), getSort());
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return getPageNumber() > 0;
+        }
+
+        @Override
+        public Pageable first() {
+            return new PageableRequest(0, getPageSize(), getSort());
+        }
+
+        @Override
+        public Pageable withPage(int pageNumber) {
+            return new PageableRequest(pageNumber, getPageSize(), getSort());
+        }
+
+        public Pageable withSort(Sort sort) {
+            return new PageableRequest(getPageNumber(), getPageSize(), sort);
+        }
+
+        @Override
+        public boolean isPaged() { return true; }
+
+        @Override
+        public boolean isUnpaged() { return false; }
+    }
+}
+
+/**
  * REST controller for Event resources.
  * <p>
  * Provides HATEOAS-compliant endpoints for event management.
@@ -282,9 +392,12 @@ class EventController {
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) Pageable pageable) {
 
+        // Translate JSON property names to domain property names
+        Pageable domainPageable = EventSortTranslator.translateJsonToDomain(pageable);
+
         Page<EventSummaryDto> page = status != null
-                ? eventManagementService.listEventsByStatus(status, pageable)
-                : eventManagementService.listEvents(pageable);
+                ? eventManagementService.listEventsByStatus(status, domainPageable)
+                : eventManagementService.listEvents(domainPageable);
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,
