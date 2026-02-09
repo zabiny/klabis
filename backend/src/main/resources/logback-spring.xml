@@ -28,33 +28,26 @@
         </appender>
     </springProfile>
 
-    <!-- Root logger configuration for non-prod profiles -->
+    <!-- Non-prod loggers configuration -->
     <springProfile name="!prod">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
         </root>
-    </springProfile>
-
-    <!-- Root logger configuration for prod profile -->
-    <springProfile name="prod">
-        <root level="INFO">
-            <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="FILE"/>
-        </root>
-    </springProfile>
-
-    <!-- Application logger configuration for non-prod profiles -->
-    <springProfile name="!prod">
         <logger name="com.klabis" level="DEBUG" additivity="false">
             <appender-ref ref="CONSOLE"/>
         </logger>
     </springProfile>
 
-    <!-- Application logger configuration for prod profile -->
+    <!-- Prod loggers configuration -->
     <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
         <logger name="com.klabis" level="INFO" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </logger>
     </springProfile>
+
 </configuration>
