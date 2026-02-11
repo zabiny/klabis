@@ -1,5 +1,6 @@
 package com.klabis.users.authorization;
 
+import com.klabis.common.mvc.MvcComponent;
 import com.klabis.users.Authority;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -39,6 +40,7 @@ import java.lang.reflect.Method;
  */
 @Aspect
 @Component
+@MvcComponent
 class HasAuthorityAspect {
 
     private static final Logger log = LoggerFactory.getLogger(HasAuthorityAspect.class);

@@ -1,5 +1,6 @@
 package com.klabis.events;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -486,7 +487,7 @@ class EventTest {
                     null,
                     null
             ))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot update event in FINISHED status");
         }
 
@@ -514,7 +515,7 @@ class EventTest {
                     null,
                     null
             ))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot update event in CANCELLED status");
         }
 
@@ -750,7 +751,7 @@ class EventTest {
 
             // Act & Assert
             assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
 
@@ -775,7 +776,7 @@ class EventTest {
 
             // Act & Assert
             assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
 
@@ -799,7 +800,7 @@ class EventTest {
 
             // Act & Assert
             assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
 
@@ -878,7 +879,7 @@ class EventTest {
 
             // Act & Assert
             assertThatThrownBy(() -> event.unregisterMember(memberId, currentDate))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
         }
 
@@ -904,7 +905,7 @@ class EventTest {
 
             // Act & Assert
             assertThatThrownBy(() -> event.unregisterMember(memberId, currentDate))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
         }
 

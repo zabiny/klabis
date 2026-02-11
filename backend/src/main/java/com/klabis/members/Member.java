@@ -1,5 +1,6 @@
 package com.klabis.members;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -327,9 +328,10 @@ public class Member {
         boolean isMinor = age < 18;
 
         if (isMinor && guardian == null) {
-            throw new IllegalArgumentException(
+            throw new BusinessRuleViolationException(
                     "Guardian is required for minors (under 18 years)"
-            );
+            ) {
+            };
         }
     }
 

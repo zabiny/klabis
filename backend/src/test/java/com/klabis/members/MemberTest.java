@@ -1,5 +1,6 @@
 package com.klabis.members;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -139,7 +140,7 @@ class MemberTest {
                     phone,
                     null // no guardian
             ))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
         }
 

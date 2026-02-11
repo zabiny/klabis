@@ -5,10 +5,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,15 +17,13 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = PasswordSetupController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
-@AutoConfigureMockMvc(addFilters = false)
+@WebMvcTest(controllers = PasswordSetupController.class)
 @DisplayName("PasswordSetupController API tests")
 class PasswordSetupControllerTest {
 
@@ -37,7 +34,10 @@ class PasswordSetupControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private PasswordSetupService passwordSetupService;
+    private PasswordSetupService passwordSetupServiceMock;
+
+    @MockitoBean
+    private UserDetailsService userDetailsServiceMock;
 
     @Nested
     @DisplayName("POST /api/auth/password-setup/complete tests")
@@ -52,7 +52,7 @@ class PasswordSetupControllerTest {
             SetPasswordRequest request =
                     new SetPasswordRequest(plainToken, password, password);
 
-            when(passwordSetupService.completePasswordSetup(any(), anyString()))
+            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenReturn(new PasswordSetupResponse(
                             "Password set successfully. You can now log in.",
                             "ZBM0101"
@@ -75,7 +75,7 @@ class PasswordSetupControllerTest {
             SetPasswordRequest request =
                     new SetPasswordRequest(plainToken, "Password123!", "DifferentPassword123!");
 
-            when(passwordSetupService.completePasswordSetup(any(), anyString()))
+            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new PasswordValidationException("Passwords do not match"));
 
             // When/Then
@@ -95,7 +95,7 @@ class PasswordSetupControllerTest {
             SetPasswordRequest request =
                     new SetPasswordRequest(plainToken, weakPassword, weakPassword);
 
-            when(passwordSetupService.completePasswordSetup(any(), anyString()))
+            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new PasswordValidationException(
                             "Password must be at least 12 characters long"));
 
@@ -116,7 +116,7 @@ class PasswordSetupControllerTest {
                             "SecurePassword123!",
                             "SecurePassword123!");
 
-            when(passwordSetupService.completePasswordSetup(any(), anyString()))
+            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new TokenValidationException("Invalid token"));
 
             // When/Then
@@ -137,7 +137,7 @@ class PasswordSetupControllerTest {
                             "SecurePassword123!",
                             "SecurePassword123!");
 
-            when(passwordSetupService.completePasswordSetup(any(), anyString()))
+            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new TokenExpiredException("Token has expired"));
 
             // When/Then
@@ -158,7 +158,7 @@ class PasswordSetupControllerTest {
                             "SecurePassword123!",
                             "SecurePassword123!");
 
-            when(passwordSetupService.completePasswordSetup(any(), anyString()))
+            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
                     .thenThrow(new TokenAlreadyUsedException("Token has already been used"));
 
             // When/Then
@@ -209,7 +209,7 @@ class PasswordSetupControllerTest {
             String plainToken = UUID.randomUUID().toString();
             Instant expiresAt = Instant.now().plus(Duration.ofHours(4));
 
-            when(passwordSetupService.validateToken(plainToken))
+            when(passwordSetupServiceMock.validateToken(plainToken))
                     .thenReturn(new ValidateTokenResponse(true, expiresAt));
 
             // When/Then
@@ -226,7 +226,7 @@ class PasswordSetupControllerTest {
             // Given
             String invalidToken = "invalid-token";
 
-            when(passwordSetupService.validateToken(invalidToken))
+            when(passwordSetupServiceMock.validateToken(invalidToken))
                     .thenThrow(new TokenValidationException("Invalid token"));
 
             // When/Then
@@ -242,7 +242,7 @@ class PasswordSetupControllerTest {
             // Given
             String expiredToken = UUID.randomUUID().toString();
 
-            when(passwordSetupService.validateToken(expiredToken))
+            when(passwordSetupServiceMock.validateToken(expiredToken))
                     .thenThrow(new TokenExpiredException("Token has expired"));
 
             // When/Then
@@ -258,7 +258,7 @@ class PasswordSetupControllerTest {
             // Given
             String usedToken = UUID.randomUUID().toString();
 
-            when(passwordSetupService.validateToken(usedToken))
+            when(passwordSetupServiceMock.validateToken(usedToken))
                     .thenThrow(new TokenAlreadyUsedException("Token has already been used"));
 
             // When/Then
@@ -275,7 +275,8 @@ class PasswordSetupControllerTest {
             // HandlerMethodValidationException wraps the validation error and returns 500
             mockMvc.perform(get("/api/auth/password-setup/validate")
                             .param("token", ""))
-                    .andExpect(status().isInternalServerError());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.parameterErrors[0]").value("token: must not be blank"));
         }
 
         @Test
@@ -298,14 +299,15 @@ class PasswordSetupControllerTest {
             TokenRequestRequest request =
                     new TokenRequestRequest("ZBM0101", "test@example.com");
 
-            doThrow(new UnsupportedOperationException("Token reissuance is not yet supported"))
-                    .when(passwordSetupService).requestNewToken(anyString(), anyString());
-
             // When/Then - UnsupportedOperationException is not caught, returns 500
             mockMvc.perform(post("/api/auth/password-setup/request")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isInternalServerError());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.message").value("If your account is pending activation, you will receive an email with a new setup link."));
+
+            verify(passwordSetupServiceMock, times(1))
+                    .requestNewToken("ZBM0101", "test@example.com");
         }
 
         @Test

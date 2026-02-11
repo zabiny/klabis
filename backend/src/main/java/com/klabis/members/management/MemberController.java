@@ -20,15 +20,18 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -44,7 +47,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @PrimaryAdapter
 @RestController
 @RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Members", description = "Member registration and management API")
+@Tag(name = "Members ", description = "Member registration and management API")
 @ExposesResourceFor(Member.class)
 class MemberController {
 
@@ -170,7 +173,9 @@ class MemberController {
         entityModel.add(
                 linkTo(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel()
                         // Add edit link (indicates the edit capability is available)
-                        .andAffordance(afford(methodOn(MemberController.class).updateMember(updatedMemberId, null, null)))
+                        .andAffordance(afford(methodOn(MemberController.class).updateMember(updatedMemberId,
+                                null,
+                                null)))
         );
 
         // Add collection link
@@ -262,8 +267,9 @@ class MemberController {
                 }
         );
 
-        pagedModel.add(linkTo(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
-                .andAffordance(afford(methodOn(RegistrationController.class).registerMember(null)))
+        pagedModel.mapLink(IanaLinkRelations.SELF,
+                oldLink -> linkTo(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
+                        .andAffordance(afford(methodOn(RegistrationController.class).registerMember(null)))
         );
 
         return ResponseEntity.ok(pagedModel);
@@ -280,10 +286,12 @@ class MemberController {
 
         for (Sort.Order order : sort) {
             if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
-                throw new IllegalArgumentException(
-                        "Invalid sort field: " + order.getProperty() +
-                        ". Allowed fields: " + ALLOWED_SORT_FIELDS
-                );
+                throw new ErrorResponseException(HttpStatus.BAD_REQUEST,
+                        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                                "Invalid sort field: " + order.getProperty() +
+                                ". Allowed fields: " + ALLOWED_SORT_FIELDS
+                        ),
+                        null);
             }
         }
     }

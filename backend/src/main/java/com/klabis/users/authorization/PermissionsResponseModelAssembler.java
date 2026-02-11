@@ -1,8 +1,8 @@
 package com.klabis.users.authorization;
 
+import com.klabis.common.mvc.MvcComponent;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
-import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
@@ -12,7 +12,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 /**
  * HATEOAS assembler for PermissionsResponse.
  */
-@Component
+@MvcComponent
 class PermissionsResponseModelAssembler
         extends RepresentationModelAssemblerSupport<PermissionsResponse, PermissionsResponseModel> {
 

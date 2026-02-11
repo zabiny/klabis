@@ -48,8 +48,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @ExposesResourceFor(Event.class)
 class EventController {
 
-    private static final String EVENTS_MANAGE = "EVENTS:MANAGE";
-
     private final EventManagementService eventManagementService;
     private final PagedResourcesAssembler<EventSummaryDto> pagedResourcesAssembler;
 

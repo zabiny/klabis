@@ -1,5 +1,6 @@
 package com.klabis.events.management;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.EventStatus;
@@ -219,7 +220,7 @@ class EventManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> service.updateEvent(eventId.value(), command))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("FINISHED");
         }
 
@@ -251,7 +252,7 @@ class EventManagementServiceTest {
 
             // When & Then
             assertThatThrownBy(() -> service.updateEvent(eventId.value(), command))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("CANCELLED");
         }
 

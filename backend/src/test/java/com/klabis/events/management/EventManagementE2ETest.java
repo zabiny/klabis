@@ -16,7 +16,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -369,9 +368,9 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$._links.self.href").exists())
-                .andExpect(jsonPath("$._links.edit.href").exists())
-                .andExpect(jsonPath("$._links.publish.href").exists())
-                .andExpect(jsonPath("$._links.cancel.href").exists())
+                .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // EDIT
+                .andExpect(jsonPath("$._templates.publishEvent").exists())
+                .andExpect(jsonPath("$._templates.cancelEvent").exists())
                 .andExpect(jsonPath("$._links.registrations.href").exists());
 
         // When: Publish to ACTIVE and check links
@@ -387,9 +386,9 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$._links.self.href").exists())
-                .andExpect(jsonPath("$._links.edit.href").exists())
-                .andExpect(jsonPath("$._links.cancel.href").exists())
-                .andExpect(jsonPath("$._links.finish.href").exists())
+                .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // EDIT
+                .andExpect(jsonPath("$._templates.cancelEvent").exists())
+                .andExpect(jsonPath("$._templates.finishEvent").exists())
                 .andExpect(jsonPath("$._links.registrations.href").exists());
     }
 

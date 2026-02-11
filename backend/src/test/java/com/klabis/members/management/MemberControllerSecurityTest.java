@@ -151,7 +151,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
                 )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.type").exists())
-                .andExpect(jsonPath("$.title").value("Member Not Found"));
+                .andExpect(jsonPath("$.title").value("Resource Not Found"));
     }
 
     @Test

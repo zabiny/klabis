@@ -20,6 +20,7 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -252,4 +253,11 @@ class EventRegistrationController {
         );
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }
+
+
+    @ExceptionHandler(DuplicateRegistrationException.class)
+    public ErrorResponse handleBusinessRuleViolationException(DuplicateRegistrationException ex) {
+        return ErrorResponse.builder(ex, HttpStatus.CONFLICT, "").title("Registration Conflict").build();
+    }
+
 }

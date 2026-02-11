@@ -1,5 +1,6 @@
 package com.klabis.events.registration;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.SiCardNumber;
@@ -153,7 +154,7 @@ class EventRegistrationServiceTest {
 
             // When/Then
             assertThatThrownBy(() -> service.registerMember(eventId, command))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("only allowed for ACTIVE events");
 
             verify(eventRepository, never()).save(any(Event.class));
@@ -229,7 +230,7 @@ class EventRegistrationServiceTest {
 
             // When/Then
             assertThatThrownBy(() -> service.unregisterMember(eventId, eventDate))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
 
             verify(eventRepository, never()).save(any(Event.class));
@@ -244,7 +245,7 @@ class EventRegistrationServiceTest {
 
             // When/Then
             assertThatThrownBy(() -> service.unregisterMember(eventId, afterEventDate))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
 
             verify(eventRepository, never()).save(any(Event.class));

@@ -1,437 +1,414 @@
 package com.klabis.events.management;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.TestApplicationConfiguration;
-import com.klabis.common.SecurityTestBase;
+import com.klabis.events.EventStatus;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.modulith.test.ApplicationModuleTest;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Integration tests for EventController.
- * <p>
- * Tests REST API endpoints for event management including:
- * - Event creation with proper validation
- * - Event updates with status constraints
- * - Event listing with pagination and filtering
- * - Status transitions (publish, cancel, finish)
- * - Security authorization (EVENTS:MANAGE)
- * - HATEOAS link generation based on event status
- */
-@DisplayName("Event Controller API Tests")
-@ApplicationModuleTest(extraIncludes = {"users", "common", "members"}, mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
-@Import(TestApplicationConfiguration.class)
-class EventControllerTest extends SecurityTestBase {
+@DisplayName("EventController API tests")
+@WebMvcTest(controllers = EventController.class)
+class EventControllerTest {
+
+    private static final String ADMIN_USERNAME = "admin";
+    private static final String MEMBERS_READ_AUTHORITY = "MEMBERS:READ";
+    private static final String EVENTS_MANAGE_AUTHORITY = "EVENTS:MANAGE";
+
+    @Autowired
+    private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    private static final String EVENTS_MANAGE_AUTHORITY = "EVENTS:MANAGE";
+    @MockitoBean
+    private EventManagementService eventManagementService;
 
-    @Test
-    @DisplayName("POST /api/events should return 201 with Location header and HAL+FORMS links")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldCreateEventWithValidData() throws Exception {
-        CreateEventCommand command = new CreateEventCommand(
-                "Spring Cup 2026",
-                LocalDate.of(2026, 3, 15),
-                "Forest Park",
-                "OOB",
-                "https://example.com/spring-cup",
-                null  // No coordinator (optional field, would require FK constraint to members table)
-        );
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
-        mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isCreated())
-                .andExpect(header().exists("Location"))
-                .andExpect(jsonPath("$.id").isString())
-                .andExpect(jsonPath("$.name").value("Spring Cup 2026"))
-                .andExpect(jsonPath("$.location").value("Forest Park"))
-                .andExpect(jsonPath("$.organizer").value("OOB"))
-                .andExpect(jsonPath("$.status").value("DRAFT"))
-                .andExpect(jsonPath("$._links.self.href").exists());
+    @MockitoBean
+    private PasswordEncoder passwordEncoder;
+
+    @Nested
+    @DisplayName("POST /api/events")
+    class CreateEventTests {
+
+        @Test
+        @DisplayName("should return 201 with Location header and HAL+FORMS links")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldCreateEventWithValidData() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            CreateEventCommand command = new CreateEventCommand(
+                    "Spring Cup 2026",
+                    LocalDate.of(2026, 3, 15),
+                    "Forest Park",
+                    "OOB",
+                    "https://example.com/spring-cup",
+                    null
+            );
+
+            EventDto eventDto = new EventDto(
+                    eventId,
+                    "Spring Cup 2026",
+                    LocalDate.of(2026, 3, 15),
+                    "Forest Park",
+                    "OOB",
+                    "https://example.com/spring-cup",
+                    null,
+                    EventStatus.DRAFT
+            );
+
+            when(eventManagementService.createEvent(any(CreateEventCommand.class))).thenReturn(eventId);
+            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists("Location"))
+                    .andExpect(jsonPath("$.id").value(eventId.toString()))
+                    .andExpect(jsonPath("$.name").value("Spring Cup 2026"))
+                    .andExpect(jsonPath("$.location").value("Forest Park"))
+                    .andExpect(jsonPath("$.organizer").value("OOB"))
+                    .andExpect(jsonPath("$.status").value("DRAFT"))
+                    .andExpect(jsonPath("$._links.self.href").exists());
+        }
+
+        @Test
+        @DisplayName("should return 403 without EVENTS:MANAGE authority")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            CreateEventCommand command = new CreateEventCommand(
+                    "Test Event",
+                    LocalDate.of(2026, 5, 1),
+                    "Location",
+                    "OOB",
+                    null,
+                    null
+            );
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 400 with invalid data")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldReturn400WithInvalidData() throws Exception {
+            CreateEventCommand command = new CreateEventCommand(
+                    "",
+                    LocalDate.of(2026, 5, 1),
+                    "Location",
+                    "OOB",
+                    null,
+                    null
+            );
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isBadRequest());
+        }
     }
 
-    @Test
-    @DisplayName("POST /api/events should return 403 without EVENTS:MANAGE authority")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
-    void shouldReturn403WithoutEventsManageAuthority() throws Exception {
-        CreateEventCommand command = new CreateEventCommand(
-                "Test Event",
-                LocalDate.of(2026, 5, 1),
-                "Location",
-                "OOB",
-                null,
-                null
-        );
+    @Nested
+    @DisplayName("PATCH /api/events/{id}")
+    class UpdateEventTests {
 
-        mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andExpect(status().isForbidden());
+        @Test
+        @DisplayName("should return 200 with updated event")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldUpdateEventSuccessfully() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            UpdateEventCommand updateCommand = new UpdateEventCommand(
+                    "Updated Event",
+                    LocalDate.of(2026, 5, 15),
+                    "Updated Location",
+                    "PRG",
+                    "https://updated.com",
+                    null
+            );
+
+            EventDto eventDto = new EventDto(
+                    eventId,
+                    "Updated Event",
+                    LocalDate.of(2026, 5, 15),
+                    "Updated Location",
+                    "PRG",
+                    "https://updated.com",
+                    null,
+                    EventStatus.DRAFT
+            );
+
+            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(updateCommand))
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Updated Event"))
+                    .andExpect(jsonPath("$.location").value("Updated Location"))
+                    .andExpect(jsonPath("$.organizer").value("PRG"));
+        }
+
+        @Test
+        @DisplayName("should return 403 without EVENTS:MANAGE authority")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        void shouldReturn403WhenUpdatingWithoutAuthority() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            UpdateEventCommand command = new UpdateEventCommand(
+                    "Updated Event",
+                    LocalDate.of(2026, 5, 1),
+                    "Location",
+                    "OOB",
+                    null,
+                    null
+            );
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isForbidden());
+        }
     }
 
-    @Test
-    @DisplayName("POST /api/events should return 400 with invalid data")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldReturn400WithInvalidData() throws Exception {
-        CreateEventCommand command = new CreateEventCommand(
-                "",  // Invalid: empty name
-                LocalDate.of(2026, 5, 1),
-                "Location",
-                "OOB",
-                null,
-                null
-        );
+    @Nested
+    @DisplayName("GET /api/events")
+    class ListEventsTests {
 
-        mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andExpect(status().isBadRequest());
+        @Test
+        @DisplayName("should return paginated list with HAL+FORMS")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldListEventsWithPagination() throws Exception {
+            EventSummaryDto event1 = new EventSummaryDto(
+                    UUID.randomUUID(),
+                    "Event 1",
+                    LocalDate.of(2026, 6, 1),
+                    "Location 1",
+                    "OOB",
+                    EventStatus.DRAFT
+            );
+            EventSummaryDto event2 = new EventSummaryDto(
+                    UUID.randomUUID(),
+                    "Event 2",
+                    LocalDate.of(2026, 7, 1),
+                    "Location 2",
+                    "PRG",
+                    EventStatus.ACTIVE
+            );
+
+            when(eventManagementService.listEvents(any()))
+                    .thenReturn(new PageImpl<>(List.of(event1, event2), PageRequest.of(0, 10), 2));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
+                    .andExpect(jsonPath("$.page").exists());
+        }
+
+        @Test
+        @DisplayName("should filter by status")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldFilterEventsByStatus() throws Exception {
+            EventSummaryDto event = new EventSummaryDto(
+                    UUID.randomUUID(),
+                    "Active Event",
+                    LocalDate.of(2026, 6, 1),
+                    "Location",
+                    "OOB",
+                    EventStatus.ACTIVE
+            );
+
+            when(eventManagementService.listEventsByStatus(any(), any()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .param("status", "ACTIVE")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
+        }
     }
 
-    @Test
-    @DisplayName("PATCH /api/events/{id} should return 200 with updated event")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldUpdateEventSuccessfully() throws Exception {
-        // First create event
-        CreateEventCommand createCommand = new CreateEventCommand(
-                "Original Event",
-                LocalDate.of(2026, 5, 1),
-                "Original Location",
-                "OOB",
-                null,
-                null
-        );
+    @Nested
+    @DisplayName("GET /api/events/{id}")
+    class GetEventTests {
 
-        String createResponse = mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createCommand))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        @Test
+        @DisplayName("should return event detail with status-appropriate links")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldGetEventWithHateoasLinks() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            EventDto eventDto = new EventDto(
+                    eventId,
+                    "Test Event",
+                    LocalDate.of(2026, 6, 1),
+                    "Location",
+                    "OOB",
+                    null,
+                    null,
+                    EventStatus.DRAFT
+            );
 
-        String eventId = objectMapper.readTree(createResponse).get("id").asText();
+            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
 
-        // Update event
-        UpdateEventCommand updateCommand = new UpdateEventCommand(
-                "Updated Event",
-                LocalDate.of(2026, 5, 15),
-                "Updated Location",
-                "PRG",
-                "https://updated.com",
-                null
-        );
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // EDIT
+                    .andExpect(jsonPath("$._templates.publishEvent.target").exists())   // PUBLISH
+                    .andExpect(jsonPath("$._templates.cancelEvent.target").exists());   // CANCEL
+        }
 
-        mockMvc.perform(
-                        patch("/api/events/{id}", eventId)
-                                .contentType("application/json")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(updateCommand))
-                )
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Updated Event"))
-                .andExpect(jsonPath("$.location").value("Updated Location"))
-                .andExpect(jsonPath("$.organizer").value("PRG"));
+        @Test
+        @DisplayName("should return 404 for non-existent event")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldReturn404ForNonExistentEvent() throws Exception {
+            UUID nonExistentId = UUID.randomUUID();
+
+            when(eventManagementService.getEvent(nonExistentId)).thenThrow(new EventNotFoundException(nonExistentId));
+
+            mockMvc.perform(
+                            get("/api/events/{id}", nonExistentId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNotFound());
+        }
     }
 
-    @Test
-    @DisplayName("GET /api/events should return paginated list with HAL+FORMS")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldListEventsWithPagination() throws Exception {
-        // Create test events
-        CreateEventCommand event1 = new CreateEventCommand(
-                "Event 1",
-                LocalDate.of(2026, 6, 1),
-                "Location 1",
-                "OOB",
-                null,
-                null
-        );
-        CreateEventCommand event2 = new CreateEventCommand(
-                "Event 2",
-                LocalDate.of(2026, 7, 1),
-                "Location 2",
-                "PRG",
-                null,
-                null
-        );
+    @Nested
+    @DisplayName("POST /api/events/{id}/publish")
+    class PublishEventTests {
 
-        mockMvc.perform(
-                post("/api/events")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(event1))
-        );
-        mockMvc.perform(
-                post("/api/events")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(event2))
-        );
+        @Test
+        @DisplayName("should transition event to ACTIVE")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldPublishEvent() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            EventDto eventDto = new EventDto(
+                    eventId,
+                    "Test Event",
+                    LocalDate.of(2026, 6, 1),
+                    "Location",
+                    "OOB",
+                    null,
+                    null,
+                    EventStatus.ACTIVE
+            );
 
-        // List events
-        mockMvc.perform(
-                        get("/api/events")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                )
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
-                .andExpect(jsonPath("$.page").exists());
+            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+
+            mockMvc.perform(
+                            post("/api/events/{id}/publish", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("ACTIVE"));
+        }
     }
 
-    @Test
-    @DisplayName("GET /api/events?status=ACTIVE should filter by status")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldFilterEventsByStatus() throws Exception {
-        // Create and publish event
-        CreateEventCommand command = new CreateEventCommand(
-                "Active Event",
-                LocalDate.of(2026, 6, 1),
-                "Location",
-                "OOB",
-                null,
-                null
-        );
+    @Nested
+    @DisplayName("POST /api/events/{id}/cancel")
+    class CancelEventTests {
 
-        String createResponse = mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        @Test
+        @DisplayName("should transition event to CANCELLED")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldCancelEvent() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            EventDto eventDto = new EventDto(
+                    eventId,
+                    "Test Event",
+                    LocalDate.of(2026, 6, 1),
+                    "Location",
+                    "OOB",
+                    null,
+                    null,
+                    EventStatus.CANCELLED
+            );
 
-        String eventId = objectMapper.readTree(createResponse).get("id").asText();
+            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
 
-        // Publish event
-        mockMvc.perform(
-                post("/api/events/{id}/publish", eventId)
-                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-        );
-
-        // Filter by ACTIVE status
-        mockMvc.perform(
-                        get("/api/events")
-                                .param("status", "ACTIVE")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                )
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
+            mockMvc.perform(
+                            post("/api/events/{id}/cancel", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("CANCELLED"));
+        }
     }
 
-    @Test
-    @DisplayName("GET /api/events/{id} should return event detail with status-appropriate links")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldGetEventWithHateoasLinks() throws Exception {
-        // Create event
-        CreateEventCommand command = new CreateEventCommand(
-                "Test Event",
-                LocalDate.of(2026, 6, 1),
-                "Location",
-                "OOB",
-                null,
-                null
-        );
+    @Nested
+    @DisplayName("POST /api/events/{id}/finish")
+    class FinishEventTests {
 
-        String createResponse = mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        @Test
+        @DisplayName("should transition event to FINISHED")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        void shouldFinishEvent() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            EventDto eventDto = new EventDto(
+                    eventId,
+                    "Test Event",
+                    LocalDate.of(2026, 6, 1),
+                    "Location",
+                    "OOB",
+                    null,
+                    null,
+                    EventStatus.FINISHED
+            );
 
-        String eventId = objectMapper.readTree(createResponse).get("id").asText();
+            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
 
-        // Get event (DRAFT status should have publish/cancel links)
-        mockMvc.perform(
-                        get("/api/events/{id}", eventId)
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                )
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._links.self.href").exists())
-                .andExpect(jsonPath("$._links.edit.href").exists())
-                .andExpect(jsonPath("$._links.publish.href").exists())
-                .andExpect(jsonPath("$._links.cancel.href").exists());
-    }
-
-    @Test
-    @DisplayName("POST /api/events/{id}/publish should transition event to ACTIVE")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldPublishEvent() throws Exception {
-        // Create event
-        CreateEventCommand command = new CreateEventCommand(
-                "Test Event",
-                LocalDate.of(2026, 6, 1),
-                "Location",
-                "OOB",
-                null,
-                null
-        );
-
-        String createResponse = mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String eventId = objectMapper.readTree(createResponse).get("id").asText();
-
-        // Publish event
-        mockMvc.perform(
-                        post("/api/events/{id}/publish", eventId)
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                )
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
-    }
-
-    @Test
-    @DisplayName("POST /api/events/{id}/cancel should transition event to CANCELLED")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldCancelEvent() throws Exception {
-        // Create event
-        CreateEventCommand command = new CreateEventCommand(
-                "Test Event",
-                LocalDate.of(2026, 6, 1),
-                "Location",
-                "OOB",
-                null,
-                null
-        );
-
-        String createResponse = mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String eventId = objectMapper.readTree(createResponse).get("id").asText();
-
-        // Cancel event
-        mockMvc.perform(
-                        post("/api/events/{id}/cancel", eventId)
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                )
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELLED"));
-    }
-
-    @Test
-    @DisplayName("POST /api/events/{id}/finish should transition event to FINISHED")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldFinishEvent() throws Exception {
-        // Create and publish event
-        CreateEventCommand command = new CreateEventCommand(
-                "Test Event",
-                LocalDate.of(2026, 6, 1),
-                "Location",
-                "OOB",
-                null,
-                null
-        );
-
-        String createResponse = mockMvc.perform(
-                        post("/api/events")
-                                .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String eventId = objectMapper.readTree(createResponse).get("id").asText();
-
-        // Publish first (must be ACTIVE to finish)
-        mockMvc.perform(post("/api/events/{id}/publish", eventId));
-
-        // Finish event
-        mockMvc.perform(
-                        post("/api/events/{id}/finish", eventId)
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                )
-                .andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("FINISHED"));
-    }
-
-    @Test
-    @DisplayName("GET /api/events/{id} should return 404 for non-existent event")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
-    void shouldReturn404ForNonExistentEvent() throws Exception {
-        UUID nonExistentId = UUID.randomUUID();
-
-        mockMvc.perform(
-                        get("/api/events/{id}", nonExistentId)
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                )
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @DisplayName("PATCH /api/events/{id} should return 403 without EVENTS:MANAGE authority")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
-    void shouldReturn403WhenUpdatingWithoutAuthority() throws Exception {
-        UUID eventId = UUID.randomUUID();
-        UpdateEventCommand command = new UpdateEventCommand(
-                "Updated Event",
-                LocalDate.of(2026, 5, 1),
-                "Location",
-                "OOB",
-                null,
-                null
-        );
-
-        mockMvc.perform(
-                        patch("/api/events/{id}", eventId)
-                                .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(command))
-                )
-                .andExpect(status().isForbidden());
+            mockMvc.perform(
+                            post("/api/events/{id}/finish", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("FINISHED"));
+        }
     }
 }

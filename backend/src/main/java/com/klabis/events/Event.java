@@ -1,5 +1,6 @@
 package com.klabis.events;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
@@ -302,10 +303,12 @@ public class Event {
 
         // Check status allows updates
         if (status == EventStatus.FINISHED) {
-            throw new IllegalStateException("Cannot update event in FINISHED status");
+            throw new BusinessRuleViolationException("Cannot update event in FINISHED status") {
+            };
         }
         if (status == EventStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot update event in CANCELLED status");
+            throw new BusinessRuleViolationException("Cannot update event in CANCELLED status") {
+            };
         }
 
         // Validate required fields
@@ -339,7 +342,12 @@ public class Event {
     public void registerMember(UserId memberId, SiCardNumber siCardNumber) {
         // Check event status
         if (status != EventStatus.ACTIVE) {
-            throw new IllegalStateException("Registration is only allowed for ACTIVE events");
+            throw new BusinessRuleViolationException("Registration is only allowed for ACTIVE events") {
+                @Override
+                public synchronized Throwable fillInStackTrace() {
+                    return super.fillInStackTrace();
+                }
+            };
         }
 
         // Check for duplicate registration
@@ -368,7 +376,8 @@ public class Event {
     public void unregisterMember(UserId memberId, LocalDate currentDate) {
         // Check if unregistration is allowed (before event date)
         if (!currentDate.isBefore(eventDate)) {
-            throw new IllegalStateException("Cannot unregister on or after event date");
+            throw new BusinessRuleViolationException("Cannot unregister on or after event date") {
+            };
         }
 
         // Find and remove registration

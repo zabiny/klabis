@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,7 +43,7 @@ class PermissionControllerTest {
     private PermissionService permissionService;
 
     @MockitoBean
-    private PermissionsResponseModelAssembler permissionsAssembler;
+    private UserDetailsService userDetailsService;
 
     private static final UserId USER_ID = new UserId(UUID.randomUUID());
 
@@ -60,12 +61,6 @@ class PermissionControllerTest {
                     List.of("MEMBERS:CREATE", "MEMBERS:READ")
             );
             when(permissionService.getUserPermissions(any(UserId.class))).thenReturn(response);
-
-            PermissionsResponseModel model = new PermissionsResponseModel(
-                    USER_ID,
-                    Set.of("MEMBERS:CREATE", "MEMBERS:READ")
-            );
-            when(permissionsAssembler.toModel(any(PermissionsResponse.class))).thenReturn(model);
 
             // When & Then
             mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
@@ -86,18 +81,11 @@ class PermissionControllerTest {
             );
             when(permissionService.getUserPermissions(any(UserId.class))).thenReturn(response);
 
-            PermissionsResponseModel model = new PermissionsResponseModel(
-                    USER_ID,
-                    Set.of("MEMBERS:READ")
-            );
-            model.add(org.springframework.hateoas.Link.of("/api/users/" + USER_ID + "/permissions", "self"));
-            when(permissionsAssembler.toModel(any(PermissionsResponse.class))).thenReturn(model);
-
             // When & Then
             mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.self.href").value(containsString("/api/users/" + USER_ID + "/permissions")))
+                    .andExpect(jsonPath("$._links.self.href").value(containsString("/api/users/" + USER_ID.uuid().toString() + "/permissions")))
                     .andExpect(jsonPath("$._links.permissions.href").exists());
         }
 
@@ -139,12 +127,6 @@ class PermissionControllerTest {
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(updatedPermissions);
 
-            PermissionsResponseModel model = new PermissionsResponseModel(
-                    USER_ID,
-                    Set.of("MEMBERS:CREATE", "MEMBERS:READ")
-            );
-            when(permissionsAssembler.toModel(any(PermissionsResponse.class))).thenReturn(model);
-
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
                             .with(csrf())
@@ -172,13 +154,6 @@ class PermissionControllerTest {
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(updatedPermissions);
 
-            PermissionsResponseModel model = new PermissionsResponseModel(
-                    USER_ID,
-                    Set.of("MEMBERS:CREATE", "MEMBERS:READ")
-            );
-            model.add(org.springframework.hateoas.Link.of("/api/users/" + USER_ID + "/permissions", "self"));
-            when(permissionsAssembler.toModel(any(PermissionsResponse.class))).thenReturn(model);
-
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
                             .with(csrf())
@@ -202,12 +177,6 @@ class PermissionControllerTest {
             );
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(updatedPermissions);
-
-            PermissionsResponseModel model = new PermissionsResponseModel(
-                    USER_ID,
-                    Set.of("MEMBERS:READ")
-            );
-            when(permissionsAssembler.toModel(any(PermissionsResponse.class))).thenReturn(model);
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
@@ -285,10 +254,10 @@ class PermissionControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("https://klabis.com/problems/validation-error"))
-                    .andExpect(jsonPath("$.title").value("Validation Error"))
+                    .andExpect(jsonPath("$.type").value("about:blank"))
+                    .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.detail").value(containsString("Validation failed")));
+                    .andExpect(jsonPath("$.fieldErrors.authorities").value("must not be empty"));
         }
 
         @Test
