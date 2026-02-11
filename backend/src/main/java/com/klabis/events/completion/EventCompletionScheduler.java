@@ -2,10 +2,10 @@ package com.klabis.events.completion;
 
 import com.klabis.events.Event;
 import com.klabis.events.persistence.EventRepository;
+import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.List;
  * Business rule: Only ACTIVE events with past dates should be completed.
  * DRAFT events remain DRAFT even if their date has passed.
  */
-@Component
+@Service
 class EventCompletionScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(EventCompletionScheduler.class);
