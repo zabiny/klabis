@@ -1,10 +1,10 @@
 ## Context
 
 **Current State:**
-- Member detail API (`GET /api/members/{id}`) vrací `MemberDetailsResponse` bez userId
+- Member detail API (`GET /api/members/{id}`) vrací `MemberDetailsResponse` s `id` fieldem, který je UserId
 - Permission management API existuje na `GET/PUT /api/users/{userId}/permissions`
 - Frontend musí znát URL strukturu pro přístup k permissions (porušení HATEOAS)
-- Member a User jsou oddělené agregáty (1:1 relace), Member má UserId jako identity
+- Member a User jsou oddělené agregáty (1:1 relace), Member.id je přímo UserId
 - PermissionController je již public (viditelný z members modulu)
 
 **Constraints:**
@@ -24,33 +24,35 @@
 - Link je conditional - zobrazí se pouze pokud má user `MEMBERS:PERMISSIONS` authority
 - Zachovat clean architecture a agregátové hranice
 - Type-safe linkTo() místo hardcoded URLs
+- Použít existující `member.id` field (který je UserId) bez přidávání redundantního userId
 
 **Non-Goals:**
 - Embedding permission data do Member response (zbytečný overhead)
 - Změna Permission API contract
-- Změna Member domain modelu (userId je jen v DTO/presentation layer)
+- Změna Member DTOs/Response (member.id už je UserId, není třeba duplikovat)
 
 ## Decisions
 
-### Decision 1: userId v DTO layer (nikoli v domain)
+### Decision 1: Použít existující member.id místo separátního userId
 
-**Rozhodnutí:** Přidat `userId: UUID` do `MemberDetailsDTO` a `MemberDetailsResponse`, ale NEPŘIDÁVAT do Member entity.
+**Rozhodnutí:** Použít existující `MemberDetailsResponse.id` field (který je UserId) přímo v processoru. NEPŘIDÁVAT redundantní userId field.
 
 **Alternativy:**
-1. **Přidat userId do Member entity** ❌
-   - Porušuje DDD: Member identity je UserId, ne separátní field
-   - Member.getId() už vrací UserId
+1. **Přidat separátní userId field do DTOs** ❌
+   - Redundantní: member.id už je UserId (1:1 relace)
+   - Porušuje DRY princip
+   - Zbytečně zvětšuje API surface
 
 2. **Query userId dynamicky v processoru** ❌
    - Extra database query při každém GET request
    - Performance overhead
 
-3. **Přidat do DTO** ✅ (zvoleno)
-   - Presentation layer concern, ne domain
-   - Zero overhead - data už máme při mapování
-   - Clean: Member.getId().uuid() → DTO.userId
+3. **Použít existující id field** ✅ (zvoleno)
+   - Zero redundance: member.id = userId
+   - Žádné DTO změny potřeba
+   - Clean: response.id() → permissions link
 
-**Rationale:** userId je potřeba jen pro HATEOAS link generation (presentation concern). Domain model zůstává čistý.
+**Rationale:** Member.id JE UserId (1:1 relace), takže nepotřebujeme separátní field. Processor může přímo používat `response.id()`.
 
 ### Decision 2: RepresentationModelProcessor pattern
 
@@ -121,15 +123,14 @@ private boolean hasMembersPermissionsAuthority() {
 - Pouze import pro linkTo() - není runtime coupling
 - Spring Modulith dovoluje members → users direction
 
-### Risk 2: API contract change
+### Risk 2: Žádná změna API contract
 
-**Risk:** Přidání `userId` do response je API změna.
+**Risk:** None - pouze přidání HATEOAS linku, žádná změna struktury.
 
 **Mitigation:**
-- **Non-breaking change** - additive field
-- Existující klienti ignorují unknown fields (HAL+JSON standard)
-- Frontend očekává tento field (po dohodě)
-- Versioning není potřeba
+- **Výhradně additive change** - přidání linku do `_links`
+- Existující klienti ignorují nové linky (HAL+JSON standard)
+- Zero breaking changes
 
 ### Risk 3: Security check v processoru
 
@@ -140,15 +141,15 @@ private boolean hasMembersPermissionsAuthority() {
 - Samotný Permission endpoint má vlastní security (`@HasAuthority`)
 - Worst case: link se zobrazí, ale endpoint vrátí 403 (defense in depth)
 
-### Trade-off: userId v každé Member response
+### Trade-off: Conditional link overhead
 
-**Trade-off:** Přidáváme field, který většina klientů nepoužije.
+**Trade-off:** Security check v processoru při každém GET request.
 
 **Accepted because:**
-- UUID je malý (16 bytes)
-- JSON overhead minimální (~40 bytes)
-- Benefit: HATEOAS compliance > minimální overhead
-- Může být užitečný i pro jiné cross-aggregate odkazy v budoucnu
+- SecurityContext lookup je fast (ThreadLocal)
+- Authority check je O(n) kde n = malý počet authorities (~3-5)
+- Overhead < 1ms
+- Benefit: Správná HATEOAS semantika > minimální overhead
 
 ## Data Flow Diagram
 
@@ -165,39 +166,32 @@ sequenceDiagram
     MemberController->>ManagementService: getMember(id)
     ManagementService->>Member: load from repository
     Member-->>ManagementService: Member entity
-    ManagementService->>ManagementService: mapToMemberDetailsDTO()<br/>(včetně userId)
+    ManagementService->>ManagementService: mapToMemberDetailsDTO()
     ManagementService-->>MemberController: MemberDetailsDTO
     MemberController->>MemberController: mapToResponse(dto)
     MemberController->>MemberController: EntityModel.of(response)
     MemberController-->>Processor: EntityModel<MemberDetailsResponse>
+    Processor->>Processor: extract id from response<br/>(id = userId, protože 1:1 relace)
     Processor->>Security: getAuthentication()
     Security-->>Processor: authorities
     alt has MEMBERS:PERMISSIONS
-        Processor->>Processor: add permissions link
+        Processor->>Processor: add permissions link<br/>using response.id()
     end
     Processor-->>Client: HAL+JSON with _links
 ```
 
 ## Implementation Order
 
-1. **Extend DTOs** (TDD: update existing tests first)
-   - Add `userId` to `MemberDetailsDTO` record
-   - Add `userId` to `MemberDetailsResponse` record
-
-2. **Update ManagementService**
-   - Modify `mapToMemberDetailsDTO()` to include `member.getId().uuid()`
-
-3. **Update MemberController**
-   - Update `mapToResponse()` to pass userId from DTO to response
-
-4. **Create RepresentationModelProcessor** (TDD: write test first)
+1. **Create RepresentationModelProcessor** (TDD: write test first)
    - `MemberPermissionsLinkProcessor`
-   - Conditional link logic
-   - Security check helper
+   - Conditional link logic based on MEMBERS:PERMISSIONS authority
+   - Security check helper method
+   - Use `response.id()` directly for permissions link (protože member.id = userId)
 
-5. **Integration test**
+2. **Integration test**
    - Test with/without MEMBERS:PERMISSIONS authority
    - Verify link presence/absence
+   - Verify permissions link uses correct userId from member.id
 
 ## Open Questions
 

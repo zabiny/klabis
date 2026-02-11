@@ -4,11 +4,10 @@ Frontend potřebuje odkaz na endpoint pro správu oprávnění uživatele přím
 
 ## What Changes
 
-- Přidat `userId` field do `MemberDetailsDTO` (application layer)
-- Přidat `userId` field do `MemberDetailsResponse` (presentation layer)
-- Aktualizovat `ManagementService.mapToMemberDetailsDTO()` pro zahrnutí userId
 - Vytvořit `MemberPermissionsLinkProcessor` (RepresentationModelProcessor) pro přidání conditional permissions link
 - Link se zobrazí pouze uživatelům s `MEMBERS:PERMISSIONS` authority
+- Použít `member.id` (který je UserId) přímo v processoru pro vytvoření permissions linku
+- **Neměnit** DTOs - userId je redundantní, protože member.id už je UserId (1:1 relace)
 
 ## Capabilities
 
@@ -21,15 +20,11 @@ Frontend potřebuje odkaz na endpoint pro správu oprávnění uživatele přím
 ## Impact
 
 **Affected Files:**
-- `backend/src/main/java/com/klabis/members/management/MemberDetailsDTO.java` - přidat userId field
-- `backend/src/main/java/com/klabis/members/management/MemberDetailsResponse.java` - přidat userId field
-- `backend/src/main/java/com/klabis/members/management/ManagementService.java` - mapovat userId v DTO factory
-- `backend/src/main/java/com/klabis/members/management/MemberController.java` - aktualizovat DTO mapping
 - New: `backend/src/main/java/com/klabis/members/management/MemberPermissionsLinkProcessor.java`
 
 **API Changes:**
-- Member detail response (`GET /api/members/{id}`) obsahuje nový field `userId` (non-breaking, additive)
-- Member detail response obsahuje conditional `_links.permissions` odkaz na `GET /api/users/{userId}/permissions`
+- Member detail response (`GET /api/members/{id}`) obsahuje conditional `_links.permissions` odkaz na `GET /api/users/{userId}/permissions`
+- **Žádné změny polí** - používá se existující `id` field (který je UserId)
 
 **Dependencies:**
 - Members modul závisí na Users modul (PermissionController) - již existující závislost
@@ -38,4 +33,3 @@ Frontend potřebuje odkaz na endpoint pro správu oprávnění uživatele přím
 **Testing:**
 - Unit test pro MemberPermissionsLinkProcessor
 - Integration test pro Member API s/bez MEMBERS:PERMISSIONS authority
-- Aktualizace existujících testů mockujících MemberDetailsDTO

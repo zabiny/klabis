@@ -2,20 +2,19 @@
 
 ## Purpose
 
-This delta spec modifies the member-management capability to include userId in Member detail responses and add conditional HATEOAS link to user permissions endpoint.
+This delta spec modifies the member-management capability to add conditional HATEOAS link to user permissions endpoint. Uses existing `id` field (which is UserId due to 1:1 Member-User relationship).
 
 ## MODIFIED Requirements
 
 ### Requirement: Member Details Response Format
 
-The member details endpoint SHALL return complete member information in a HATEOAS-compliant HAL+FORMS format with proper ISO-8601 date serialization, structured address and contact information, and **userId for cross-aggregate navigation**.
+The member details endpoint SHALL return complete member information in a HATEOAS-compliant HAL+FORMS format with proper ISO-8601 date serialization, structured address and contact information. The `id` field represents UserId (1:1 relationship) and can be used for cross-aggregate navigation.
 
-#### Scenario: Response contains all personal information with structured address and userId
+#### Scenario: Response contains all personal information with structured address
 
 - **WHEN** a member details response is returned
 - **THEN** the response SHALL include:
-    - `id` - Member's unique identifier (UUID)
-    - **`userId` - User's unique identifier (UUID) for cross-aggregate navigation**
+    - `id` - Member's unique identifier (UUID), also UserId due to 1:1 relationship
     - `registrationNumber` - Unique registration number in format XXXYYSS
     - `firstName` - Member's first name
     - `lastName` - Member's last name
@@ -60,16 +59,6 @@ The member details endpoint SHALL return complete member information in a HATEOA
   "phone": "+420123456789"
   ```
 
-**#### Scenario: userId serialized as UUID string**
-
-- **WHEN** a member with userId "550e8400-e29b-41d4-a716-446655440000" is returned
-- **THEN** the response SHALL serialize userId as:
-  ```json
-  "userId": "550e8400-e29b-41d4-a716-446655440000"
-  ```
-- **AND** the userId SHALL match the User's unique identifier
-- **AND** the userId SHALL enable client navigation to user-related resources
-
 ### Requirement: HATEOAS Links for Member Details
 
 The member details response SHALL include hypermedia links following HAL+FORMS specification to enable API discoverability and navigation, **including conditional link to user permissions**.
@@ -102,7 +91,7 @@ The member details response SHALL include hypermedia links following HAL+FORMS s
 
 - **WHEN** an authenticated user with MEMBERS:PERMISSIONS authority views a member
 - **THEN** the response SHALL include a `permissions` link
-- **AND** the link SHALL point to /api/users/{userId}/permissions
+- **AND** the link SHALL point to /api/users/{id}/permissions (where id = member.id = userId)
 - **AND** the link SHALL use the rel "permissions"
 - **AND** the link SHALL enable navigation to user permissions management
 
