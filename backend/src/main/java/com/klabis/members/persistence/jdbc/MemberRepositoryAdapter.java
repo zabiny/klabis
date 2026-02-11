@@ -1,7 +1,10 @@
 package com.klabis.members.persistence.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.members.*;
+import com.klabis.members.Member;
+import com.klabis.members.Members;
+import com.klabis.members.RegistrationNumber;
+import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.data.domain.Page;

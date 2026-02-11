@@ -1,6 +1,7 @@
 package com.klabis.members.management;
 
 import com.klabis.members.*;
+import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.Authority;
 import com.klabis.users.UserCreationParams;
 import com.klabis.users.UserId;
@@ -56,11 +57,12 @@ class RegistrationService {
             MemberRepository memberRepository,
             UserService userService,
             PasswordEncoder passwordEncoder,
+            Members members,
             @Value("${klabis.club.code}") String clubCode) {
         this.memberRepository = memberRepository;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
-        this.registrationNumberGenerator = new RegistrationNumberGenerator(clubCode, memberRepository);
+        this.registrationNumberGenerator = new RegistrationNumberGenerator(clubCode, members);
     }
 
     /**

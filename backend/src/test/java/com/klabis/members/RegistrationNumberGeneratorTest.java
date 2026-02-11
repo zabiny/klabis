@@ -27,13 +27,13 @@ import static org.mockito.Mockito.when;
 class RegistrationNumberGeneratorTest {
 
     @Mock
-    private MemberRepository memberRepository;
+    private Members membersMock;
 
     private RegistrationNumberGenerator generator;
 
     @BeforeEach
     void setUp() {
-        generator = new RegistrationNumberGenerator("ZBM", memberRepository);
+        generator = new RegistrationNumberGenerator("ZBM", membersMock);
     }
 
     @Test
@@ -41,7 +41,7 @@ class RegistrationNumberGeneratorTest {
     void shouldGenerateRegistrationNumberWithSequence01ForFirstMember() {
         // Arrange
         LocalDate dateOfBirth = LocalDate.of(2005, 3, 15);
-        when(memberRepository.countByBirthYear(2005)).thenReturn(0);
+        when(membersMock.countByBirthYear(2005)).thenReturn(0);
 
         // Act
         RegistrationNumber regNumber = generator.generate(dateOfBirth);
@@ -51,7 +51,7 @@ class RegistrationNumberGeneratorTest {
         assertThat(regNumber.getClubCode()).isEqualTo("ZBM");
         assertThat(regNumber.getBirthYear()).isEqualTo(5);
         assertThat(regNumber.getSequenceNumber()).isEqualTo(1);
-        verify(memberRepository).countByBirthYear(2005);
+        verify(membersMock).countByBirthYear(2005);
     }
 
     @Test
@@ -59,7 +59,7 @@ class RegistrationNumberGeneratorTest {
     void shouldGenerateRegistrationNumberWithIncrementedSequence() {
         // Arrange
         LocalDate dateOfBirth = LocalDate.of(2005, 8, 22);
-        when(memberRepository.countByBirthYear(2005)).thenReturn(1);
+        when(membersMock.countByBirthYear(2005)).thenReturn(1);
 
         // Act
         RegistrationNumber regNumber = generator.generate(dateOfBirth);
@@ -76,8 +76,8 @@ class RegistrationNumberGeneratorTest {
         LocalDate dateOfBirth2004 = LocalDate.of(2004, 5, 10);
         LocalDate dateOfBirth2005 = LocalDate.of(2005, 5, 10);
 
-        when(memberRepository.countByBirthYear(2004)).thenReturn(5);
-        when(memberRepository.countByBirthYear(2005)).thenReturn(0);
+        when(membersMock.countByBirthYear(2004)).thenReturn(5);
+        when(membersMock.countByBirthYear(2005)).thenReturn(0);
 
         // Act
         RegistrationNumber regNumber2004 = generator.generate(dateOfBirth2004);
@@ -93,7 +93,7 @@ class RegistrationNumberGeneratorTest {
     void shouldHandleYear2000PlusCorrectly() {
         // Arrange
         LocalDate dateOfBirth = LocalDate.of(2023, 1, 1);
-        when(memberRepository.countByBirthYear(2023)).thenReturn(0);
+        when(membersMock.countByBirthYear(2023)).thenReturn(0);
 
         // Act
         RegistrationNumber regNumber = generator.generate(dateOfBirth);
@@ -108,7 +108,7 @@ class RegistrationNumberGeneratorTest {
     void shouldHandleYear1999AndBelowCorrectly() {
         // Arrange
         LocalDate dateOfBirth = LocalDate.of(1995, 6, 15);
-        when(memberRepository.countByBirthYear(1995)).thenReturn(0);
+        when(membersMock.countByBirthYear(1995)).thenReturn(0);
 
         // Act
         RegistrationNumber regNumber = generator.generate(dateOfBirth);
@@ -123,7 +123,7 @@ class RegistrationNumberGeneratorTest {
     void shouldHandleSequenceNumbersUpTo99() {
         // Arrange
         LocalDate dateOfBirth = LocalDate.of(2010, 4, 20);
-        when(memberRepository.countByBirthYear(2010)).thenReturn(98);
+        when(membersMock.countByBirthYear(2010)).thenReturn(98);
 
         // Act
         RegistrationNumber regNumber = generator.generate(dateOfBirth);
@@ -138,7 +138,7 @@ class RegistrationNumberGeneratorTest {
     void shouldFailWhenSequenceNumberExceeds99() {
         // Arrange
         LocalDate dateOfBirth = LocalDate.of(2010, 4, 20);
-        when(memberRepository.countByBirthYear(2010)).thenReturn(99);
+        when(membersMock.countByBirthYear(2010)).thenReturn(99);
 
         // Act & Assert
         assertThatThrownBy(() -> generator.generate(dateOfBirth))
@@ -161,9 +161,9 @@ class RegistrationNumberGeneratorTest {
     void shouldUseConfiguredClubCode() {
         // Arrange
         RegistrationNumberGenerator customGenerator =
-                new RegistrationNumberGenerator("ABC", memberRepository);
+                new RegistrationNumberGenerator("ABC", membersMock);
         LocalDate dateOfBirth = LocalDate.of(2005, 3, 15);
-        when(memberRepository.countByBirthYear(2005)).thenReturn(0);
+        when(membersMock.countByBirthYear(2005)).thenReturn(0);
 
         // Act
         RegistrationNumber regNumber = customGenerator.generate(dateOfBirth);
@@ -177,7 +177,7 @@ class RegistrationNumberGeneratorTest {
     @DisplayName("should fail when club code is null")
     void shouldFailWhenClubCodeIsNull() {
         // Act & Assert
-        assertThatThrownBy(() -> new RegistrationNumberGenerator(null, memberRepository))
+        assertThatThrownBy(() -> new RegistrationNumberGenerator(null, membersMock))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Club code is required");
     }
@@ -186,7 +186,7 @@ class RegistrationNumberGeneratorTest {
     @DisplayName("should fail when club code is blank")
     void shouldFailWhenClubCodeIsBlank() {
         // Act & Assert
-        assertThatThrownBy(() -> new RegistrationNumberGenerator("", memberRepository))
+        assertThatThrownBy(() -> new RegistrationNumberGenerator("", membersMock))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Club code is required");
     }
@@ -195,11 +195,11 @@ class RegistrationNumberGeneratorTest {
     @DisplayName("should fail when club code is not exactly 3 characters")
     void shouldFailWhenClubCodeIsNot3Characters() {
         // Act & Assert
-        assertThatThrownBy(() -> new RegistrationNumberGenerator("AB", memberRepository))
+        assertThatThrownBy(() -> new RegistrationNumberGenerator("AB", membersMock))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Club code must be exactly 3 characters");
 
-        assertThatThrownBy(() -> new RegistrationNumberGenerator("ABCD", memberRepository))
+        assertThatThrownBy(() -> new RegistrationNumberGenerator("ABCD", membersMock))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Club code must be exactly 3 characters");
     }

@@ -18,7 +18,7 @@ public class RegistrationNumberGenerator {
     private static final int MAX_SEQUENCE_NUMBER = 99;
 
     private final String clubCode;
-    private final MemberRepository memberRepository;
+    private final Members memberRepository;
 
     /**
      * Creates a new RegistrationNumberGenerator.
@@ -27,7 +27,7 @@ public class RegistrationNumberGenerator {
      * @param memberRepository repository for querying existing members
      * @throws IllegalArgumentException if club code is invalid
      */
-    public RegistrationNumberGenerator(String clubCode, MemberRepository memberRepository) {
+    public RegistrationNumberGenerator(String clubCode, Members memberRepository) {
         if (clubCode == null || clubCode.isBlank()) {
             throw new IllegalArgumentException("Club code is required");
         }

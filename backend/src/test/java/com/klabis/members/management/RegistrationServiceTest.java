@@ -3,7 +3,8 @@ package com.klabis.members.management;
 import com.klabis.members.Gender;
 import com.klabis.members.Member;
 import com.klabis.members.MemberAssert;
-import com.klabis.members.MemberRepository;
+import com.klabis.members.Members;
+import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.Authority;
 import com.klabis.users.UserCreationParams;
 import com.klabis.users.UserId;
@@ -51,6 +52,9 @@ class RegistrationServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private Members membersMock;
+
+    @Mock
     private UserService userService;
 
     @Mock
@@ -67,6 +71,7 @@ class RegistrationServiceTest {
                 memberRepository,
                 userService,
                 passwordEncoder,
+                membersMock,
                 CLUB_CODE
         );
 
@@ -142,7 +147,7 @@ class RegistrationServiceTest {
                     null
             );
 
-            when(memberRepository.countByBirthYear(2005)).thenReturn(0);
+            when(membersMock.countByBirthYear(2005)).thenReturn(0);
 
             // When
             UUID memberId = service.registerMember(request);
@@ -151,7 +156,7 @@ class RegistrationServiceTest {
             assertThat(memberId).isNotNull();
 
             // Verify member repository interactions
-            verify(memberRepository).countByBirthYear(2005);
+            verify(membersMock).countByBirthYear(2005);
             ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
             verify(memberRepository).save(memberCaptor.capture());
 
@@ -201,7 +206,7 @@ class RegistrationServiceTest {
                     null
             );
 
-            when(memberRepository.countByBirthYear(2005)).thenReturn(1);
+            when(membersMock.countByBirthYear(2005)).thenReturn(1);
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("87654321-4321-4321-4321-210987654321"));
@@ -249,7 +254,7 @@ class RegistrationServiceTest {
                     guardianDTO
             );
 
-            when(memberRepository.countByBirthYear(2010)).thenReturn(0);
+            when(membersMock.countByBirthYear(2010)).thenReturn(0);
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
@@ -293,7 +298,7 @@ class RegistrationServiceTest {
                     null
             );
 
-            when(memberRepository.countByBirthYear(1990)).thenReturn(5);
+            when(membersMock.countByBirthYear(1990)).thenReturn(5);
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
@@ -335,7 +340,7 @@ class RegistrationServiceTest {
             );
 
             // Simulate 2 existing members from 2005
-            when(memberRepository.countByBirthYear(2005)).thenReturn(2);
+            when(membersMock.countByBirthYear(2005)).thenReturn(2);
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
@@ -376,7 +381,7 @@ class RegistrationServiceTest {
                     null
             );
 
-            when(memberRepository.countByBirthYear(2000)).thenReturn(0);
+            when(membersMock.countByBirthYear(2000)).thenReturn(0);
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));

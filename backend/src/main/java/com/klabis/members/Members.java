@@ -48,4 +48,15 @@ public interface Members {
      * @return page of members
      */
     Page<Member> findAll(Pageable pageable);
+
+    /**
+     * Counts the number of members born in a specific year.
+     * <p>
+     * Used for registration number generation to determine the next sequence number.
+     *
+     * @param birthYear the birth year (e.g., 2005, 1995)
+     * @return count of members born in that year
+     */
+    int countByBirthYear(int birthYear);
+
 }

@@ -2,8 +2,8 @@ package com.klabis.members.management;
 
 import com.klabis.members.Address;
 import com.klabis.members.Member;
-import com.klabis.members.MemberRepository;
 import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.UserId;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;

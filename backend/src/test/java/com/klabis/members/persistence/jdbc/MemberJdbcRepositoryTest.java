@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MemberJdbcRepositoryTest extends BaseJdbcRepositoryTest {
 
     @Autowired
-    private MemberRepository memberRepository;
+    private MemberRepositoryAdapter memberRepository;
 
     @BeforeEach
     void setUp() {

@@ -2,7 +2,7 @@ package com.klabis.members.management;
 
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.members.Gender;
-import com.klabis.members.MemberRepository;
+import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.AccountStatus;
 import com.klabis.users.User;
 import com.klabis.users.UserId;

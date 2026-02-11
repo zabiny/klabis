@@ -1,6 +1,7 @@
 package com.klabis.members.management;
 
 import com.klabis.members.*;
+import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.Authority;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;

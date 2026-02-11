@@ -1,5 +1,7 @@
-package com.klabis.members;
+package com.klabis.members.persistence;
 
+import com.klabis.members.Member;
+import com.klabis.members.RegistrationNumber;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 import org.jmolecules.ddd.annotation.Repository;
@@ -22,16 +24,6 @@ import java.util.Optional;
 @Repository
 @SecondaryPort
 public interface MemberRepository {
-
-    /**
-     * Counts the number of members born in a specific year.
-     * <p>
-     * Used for registration number generation to determine the next sequence number.
-     *
-     * @param birthYear the birth year (e.g., 2005, 1995)
-     * @return count of members born in that year
-     */
-    int countByBirthYear(int birthYear);
 
     /**
      * Saves a member to the repository.
