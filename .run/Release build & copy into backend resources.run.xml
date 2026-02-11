@@ -1,9 +1,9 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="UI dev" type="js.build_tools.npm">
+  <configuration default="false" name="Release build &amp; copy into backend resources" type="js.build_tools.npm">
     <package-json value="$PROJECT_DIR$/frontend/package.json" />
     <command value="run" />
     <scripts>
-      <script value="dev" />
+      <script value="refresh-backend-server-resources" />
     </scripts>
     <node-interpreter value="project" />
     <envs />

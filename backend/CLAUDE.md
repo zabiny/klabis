@@ -85,6 +85,12 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### Testing
 
+**IntelliJ IDEA Run Configurations:**
+
+- `KlabisBackendApplication` - Start server with dev profile
+- `Backend Tests` - Run complete test suite
+- Individual test classes can be run via right-click → Run
+
 ```bash
 # Run all tests (spring.modulith.test.file-modification-detector=default is configured in build.gradle.kts)
 ./gradlew test
@@ -142,6 +148,9 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### Test Types & Locations
 
+**Module Names:**
+- Core domain modules: `members`, `users`, `events`
+
 **Unit Tests** (business logic in isolation):
 
 - Domain entities: `src/test/java/com/klabis/{module}/domain/*Test.java`
@@ -182,7 +191,7 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
     "delete from events",
     "delete from members",
     // Insert test data with complete SQL statements
-    "INSERT INTO members (id, registration_number, first_name, last_name, ...) VALUES ('uuid', 'REG001', 'Test', 'User', ...)"
+    "INSERT INTO members (id, user_name, first_name, last_name, ...) VALUES ('uuid', 'REG001', 'Test', 'User', ...)"
 })
 ```
 
@@ -408,7 +417,7 @@ Without these:
 ```java
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
     "delete from members",
-    "INSERT INTO members (id, registration_number, first_name, last_name, ...) VALUES ('uuid', 'REG001', 'Test', 'User', ...)"
+    "INSERT INTO members (id, user_name, first_name, last_name, ...) VALUES ('uuid', 'REG001', 'Test', 'User', ...)"
 })
 ```
 
