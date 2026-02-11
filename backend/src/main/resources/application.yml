@@ -5,6 +5,10 @@ spring:
   profiles:
     active: dev
 
+  mvc:
+    problemdetails:
+      enabled: true
+
   # Spring Modulith configuration for event-driven architecture
   modulith:
     # Only detect modules that are explicitly annotated with @ApplicationModule
