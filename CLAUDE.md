@@ -94,7 +94,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 Before starting work, check the appropriate CLAUDE.md:
 
 - **Backend work** → `./backend/CLAUDE.md`
-    - Build commands, test strategies, security setup, gotchas
+    - Build commands, architecture, coding practises, test strategies, security setup, gotchas
 
 - **Frontend work** → `./frontend/CLAUDE.md`
     - React/TypeScript conventions, build/dev workflow, testing strategy
