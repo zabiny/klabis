@@ -2,7 +2,6 @@ package com.klabis.members.persistence.jdbc;
 
 import com.klabis.common.BaseJdbcRepositoryTest;
 import com.klabis.members.*;
-import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.UserId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

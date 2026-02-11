@@ -1,6 +1,5 @@
 package com.klabis.members;
 
-import com.klabis.members.persistence.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

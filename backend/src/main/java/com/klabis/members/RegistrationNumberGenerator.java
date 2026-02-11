@@ -1,7 +1,5 @@
 package com.klabis.members;
 
-import com.klabis.members.persistence.MemberRepository;
-
 import java.time.LocalDate;
 import java.util.Objects;
 

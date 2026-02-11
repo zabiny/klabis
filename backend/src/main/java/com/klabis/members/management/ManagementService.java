@@ -1,7 +1,6 @@
 package com.klabis.members.management;
 
 import com.klabis.members.*;
-import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.Authority;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
@@ -299,7 +298,8 @@ class ManagementService {
                     .map(this::createAddress)
                     .orElse(null);
 
-            updatedMember.updateContactInformation(email, phone, address);
+            var command = new Member.UpdateContactInformation(email, phone, address);
+            updatedMember.handle(command);
             log.debug("Contact information updated");
         }
 
@@ -322,7 +322,8 @@ class ManagementService {
                     .map(dto -> TrainerLicense.of(dto.licenseNumber(), dto.validityDate()))
                     .orElse(null);
 
-            updatedMember.updateDocuments(identityCard, medicalCourse, trainerLicense);
+            var command = new Member.UpdateDocuments(identityCard, medicalCourse, trainerLicense);
+            updatedMember.handle(command);
             log.debug("Documents updated");
         }
 
@@ -351,7 +352,7 @@ class ManagementService {
                         firstName, lastName, dateOfBirth, gender);
             }
 
-            updatedMember.updateMemberDetails(
+            var command = new Member.UpdateMemberDetails(
                     personalInformation,
                     null, // address - already handled in contact updates
                     null, // email - already handled in contact updates
@@ -362,6 +363,7 @@ class ManagementService {
                     request.dietaryRestrictions().orElse(null),
                     null // gender - already handled in personalInformation
             );
+            updatedMember.handle(command);
             log.debug("Personal details updated");
         }
 

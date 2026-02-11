@@ -1,7 +1,5 @@
-package com.klabis.members.persistence;
+package com.klabis.members;
 
-import com.klabis.members.Member;
-import com.klabis.members.RegistrationNumber;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 import org.jmolecules.ddd.annotation.Repository;

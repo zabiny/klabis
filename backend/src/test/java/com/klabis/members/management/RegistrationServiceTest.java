@@ -3,7 +3,7 @@ package com.klabis.members.management;
 import com.klabis.members.Gender;
 import com.klabis.members.Member;
 import com.klabis.members.MemberAssert;
-import com.klabis.members.persistence.MemberRepository;
+import com.klabis.members.MemberRepository;
 import com.klabis.users.Authority;
 import com.klabis.users.UserCreationParams;
 import com.klabis.users.UserId;

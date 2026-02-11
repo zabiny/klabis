@@ -50,6 +50,69 @@ public class Member {
     // Domain events list (published synchronously in same thread, no concurrent access)
     private final List<Object> domainEvents = new ArrayList<>();
 
+    // ========== Command Records ==========
+
+    /**
+     * Command to register a new member with a specific ID.
+     * <p>
+     * This command is used when the Member ID needs to be shared with another aggregate
+     * (e.g., User aggregate) to ensure both aggregates use the same identifier.
+     */
+    public record RegisterMember(
+            UserId id,
+            RegistrationNumber registrationNumber,
+            PersonalInformation personalInformation,
+            Address address,
+            EmailAddress email,
+            PhoneNumber phone,
+            GuardianInformation guardian
+    ) {}
+
+    /**
+     * Command to update member contact information.
+     * <p>
+     * This command allows members to update their own contact details.
+     * Fields set to null will retain existing values (PATCH semantics).
+     */
+    public record UpdateContactInformation(
+            EmailAddress email,
+            PhoneNumber phone,
+            Address address
+    ) {}
+
+    /**
+     * Command to update member documents.
+     * <p>
+     * Admin-only command for updating identity card, medical course, and trainer license.
+     * Fields set to null will retain existing values (PATCH semantics).
+     */
+    public record UpdateDocuments(
+            IdentityCard identityCard,
+            MedicalCourse medicalCourse,
+            TrainerLicense trainerLicense
+    ) {}
+
+    /**
+     * Command to update admin-only member details.
+     * <p>
+     * This command allows administrators to update personal information,
+     * contact details, guardian info, and extended member attributes.
+     * Fields set to null will retain existing values (PATCH semantics).
+     */
+    public record UpdateMemberDetails(
+            PersonalInformation personalInformation,
+            Address address,
+            EmailAddress email,
+            PhoneNumber phone,
+            GuardianInformation guardian,
+            String chipNumber,
+            DrivingLicenseGroup drivingLicenseGroup,
+            String dietaryRestrictions,
+            Gender gender
+    ) {}
+
+    // ========== Constructors ==========
+
     /**
      * Private constructor for creating new Member instances.
      * <p>
@@ -498,30 +561,25 @@ public class Member {
         this.auditMetadata = auditMetadata;
     }
 
-    // ========== Domain Methods ==========
+    // ========== Command Handlers (Domain Methods) ==========
 
     /**
+     * Handles UpdateContactInformation command.
+     * <p>
      * Updates member-editable contact information.
+     * This method modifies the Member in-place (mutable pattern).
      * <p>
-     * <b>Important:</b> This method modifies the Member in-place (mutable pattern).
-     * This is a breaking change from the previous immutable pattern.
-     * <p>
-     * This method enforces the business rule that at least one email and one phone
+     * Enforces the business rule that at least one email and one phone
      * must exist after the update (member OR guardian).
-     * <p>
-     * <b>Important:</b> This method does NOT validate document expiry dates.
-     * Document validation only happens when setting new ExpiringDocument value objects.
      *
-     * @param email   new email address (null = keep existing)
-     * @param phone   new phone number (null = keep existing)
-     * @param address new address (null = keep existing)
+     * @param command the update contact information command
      * @throws IllegalArgumentException if contact validation fails
      */
-    public void updateContactInformation(EmailAddress email, PhoneNumber phone, Address address) {
+    public void handle(UpdateContactInformation command) {
         // Use provided values or fall back to existing values
-        EmailAddress newEmail = (email != null) ? email : this.email;
-        PhoneNumber newPhone = (phone != null) ? phone : this.phone;
-        Address newAddress = (address != null) ? address : this.address;
+        EmailAddress newEmail = (command.email() != null) ? command.email() : this.email;
+        PhoneNumber newPhone = (command.phone() != null) ? command.phone() : this.phone;
+        Address newAddress = (command.address() != null) ? command.address() : this.address;
 
         // Validate contact information (at least one email and one phone required)
         validateContactInformation(newEmail, newPhone, this.guardian);
@@ -533,69 +591,67 @@ public class Member {
     }
 
     /**
-     * Updates member documents (identity card, medical course, trainer license).
-     * <p>
-     * <b>Important:</b> This method modifies the Member in-place (mutable pattern).
-     * <p>
-     * <b>Important:</b> Document expiry validation happens automatically when
-     * creating new ExpiringDocument instances (IdentityCard, TrainerLicense).
-     * This method does NOT revalidate existing documents that aren't being changed.
-     *
-     * @param identityCard   new identity card (null = keep existing)
-     * @param medicalCourse  new medical course (null = keep existing)
-     * @param trainerLicense new trainer license (null = keep existing)
+     * @deprecated Use {@link #handle(UpdateContactInformation)} instead.
+     * This method is kept for backward compatibility during migration.
      */
-    public void updateDocuments(
-            IdentityCard identityCard,
-            MedicalCourse medicalCourse,
-            TrainerLicense trainerLicense) {
+    @Deprecated(since = "2.0", forRemoval = true)
+    public void updateContactInformation(EmailAddress email, PhoneNumber phone, Address address) {
+        handle(new UpdateContactInformation(email, phone, address));
+    }
 
+    /**
+     * Handles UpdateDocuments command.
+     * <p>
+     * Updates member documents (identity card, medical course, trainer license).
+     * This method modifies the Member in-place (mutable pattern).
+     * <p>
+     * Document expiry validation happens automatically when creating new
+     * ExpiringDocument instances (IdentityCard, TrainerLicense).
+     *
+     * @param command the update documents command
+     */
+    public void handle(UpdateDocuments command) {
         // Modify fields in-place
-        if (identityCard != null) {
-            this.identityCard = identityCard;
+        if (command.identityCard() != null) {
+            this.identityCard = command.identityCard();
         }
-        if (medicalCourse != null) {
-            this.medicalCourse = medicalCourse;
+        if (command.medicalCourse() != null) {
+            this.medicalCourse = command.medicalCourse();
         }
-        if (trainerLicense != null) {
-            this.trainerLicense = trainerLicense;
+        if (command.trainerLicense() != null) {
+            this.trainerLicense = command.trainerLicense();
         }
     }
 
     /**
-     * Updates admin-only fields and extended member information.
+     * @deprecated Use {@link #handle(UpdateDocuments)} instead.
+     * This method is kept for backward compatibility during migration.
+     */
+    @Deprecated(since = "2.0", forRemoval = true)
+    public void updateDocuments(
+            IdentityCard identityCard,
+            MedicalCourse medicalCourse,
+            TrainerLicense trainerLicense) {
+        handle(new UpdateDocuments(identityCard, medicalCourse, trainerLicense));
+    }
+
+    /**
+     * Handles UpdateMemberDetails command.
      * <p>
-     * <b>Important:</b> This method modifies the Member in-place (mutable pattern).
+     * Updates admin-only fields and extended member information.
+     * This method modifies the Member in-place (mutable pattern).
      * These fields are restricted to users with MEMBERS:UPDATE authority.
      *
-     * @param personalInformation new personal information (null = keep existing)
-     * @param address             new address (null = keep existing)
-     * @param email               new email (null = keep existing)
-     * @param phone               new phone (null = keep existing)
-     * @param guardian            new guardian (null = keep existing)
-     * @param chipNumber          new chip number (null = keep existing)
-     * @param drivingLicenseGroup new driving license group (null = keep existing)
-     * @param dietaryRestrictions new dietary restrictions (null = keep existing)
-     * @param gender              new gender (null = keep existing, requires personalInformation update)
+     * @param command the update member details command
      * @throws IllegalArgumentException if validation fails
      */
-    public void updateMemberDetails(
-            PersonalInformation personalInformation,
-            Address address,
-            EmailAddress email,
-            PhoneNumber phone,
-            GuardianInformation guardian,
-            String chipNumber,
-            DrivingLicenseGroup drivingLicenseGroup,
-            String dietaryRestrictions,
-            Gender gender) {
-
+    public void handle(UpdateMemberDetails command) {
         // If gender is provided, we need to update personalInformation with new gender
         PersonalInformation newPersonalInfo = this.personalInformation;
-        if (gender != null) {
-            if (personalInformation != null) {
+        if (command.gender() != null) {
+            if (command.personalInformation() != null) {
                 // Both provided - use the new personalInformation
-                newPersonalInfo = personalInformation;
+                newPersonalInfo = command.personalInformation();
             } else {
                 // Only gender provided - reconstruct personalInformation with new gender
                 newPersonalInfo = PersonalInformation.of(
@@ -603,31 +659,31 @@ public class Member {
                         this.personalInformation.getLastName(),
                         this.personalInformation.getDateOfBirth(),
                         this.personalInformation.getNationalityCode(),
-                        gender
+                        command.gender()
                 );
             }
-        } else if (personalInformation != null) {
-            newPersonalInfo = personalInformation;
+        } else if (command.personalInformation() != null) {
+            newPersonalInfo = command.personalInformation();
         }
 
-        Address newAddress = (address != null) ? address : this.address;
-        EmailAddress newEmail = (email != null) ? email : this.email;
-        PhoneNumber newPhone = (phone != null) ? phone : this.phone;
-        GuardianInformation newGuardian = (guardian != null) ? guardian : this.guardian;
+        Address newAddress = (command.address() != null) ? command.address() : this.address;
+        EmailAddress newEmail = (command.email() != null) ? command.email() : this.email;
+        PhoneNumber newPhone = (command.phone() != null) ? command.phone() : this.phone;
+        GuardianInformation newGuardian = (command.guardian() != null) ? command.guardian() : this.guardian;
 
         // Validate contact information
         validateContactInformation(newEmail, newPhone, newGuardian);
 
         // Validate guardian for minors if guardian is being updated
-        if (guardian != null || newPersonalInfo != this.personalInformation) {
+        if (command.guardian() != null || newPersonalInfo != this.personalInformation) {
             validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
         }
 
-        String newChipNumber = (chipNumber != null) ? chipNumber : this.chipNumber;
+        String newChipNumber = (command.chipNumber() != null) ? command.chipNumber() : this.chipNumber;
         DrivingLicenseGroup newDrivingLicenseGroup =
-                (drivingLicenseGroup != null) ? drivingLicenseGroup : this.drivingLicenseGroup;
+                (command.drivingLicenseGroup() != null) ? command.drivingLicenseGroup() : this.drivingLicenseGroup;
         String newDietaryRestrictions =
-                (dietaryRestrictions != null) ? dietaryRestrictions : this.dietaryRestrictions;
+                (command.dietaryRestrictions() != null) ? command.dietaryRestrictions() : this.dietaryRestrictions;
 
         // Modify fields in-place
         this.personalInformation = newPersonalInfo;
@@ -638,6 +694,34 @@ public class Member {
         this.chipNumber = newChipNumber;
         this.drivingLicenseGroup = newDrivingLicenseGroup;
         this.dietaryRestrictions = newDietaryRestrictions;
+    }
+
+    /**
+     * @deprecated Use {@link #handle(UpdateMemberDetails)} instead.
+     * This method is kept for backward compatibility during migration.
+     */
+    @Deprecated(since = "2.0", forRemoval = true)
+    public void updateMemberDetails(
+            PersonalInformation personalInformation,
+            Address address,
+            EmailAddress email,
+            PhoneNumber phone,
+            GuardianInformation guardian,
+            String chipNumber,
+            DrivingLicenseGroup drivingLicenseGroup,
+            String dietaryRestrictions,
+            Gender gender) {
+        handle(new UpdateMemberDetails(
+                personalInformation,
+                address,
+                email,
+                phone,
+                guardian,
+                chipNumber,
+                drivingLicenseGroup,
+                dietaryRestrictions,
+                gender
+        ));
     }
 
     @Override
