@@ -213,6 +213,11 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 - **Refactor methods with more than 4 parameters** by introducing parameter objects, request models, or splitting the
   method
 
+#### Naming conventions
+
+- if tested class is set in Test's attribute, name such attribute as `testedSubject` 
+- attribute with mocked instance shall have `Mock` postfix in the name (for example `userDetailServiceMock`) 
+
 #### Decision-Making: Simple vs. Pure Solutions
 
 **CRITICAL**: When facing a trade-off between a simple/pragmatic solution and a "pure" (clean/architecturally ideal)
@@ -439,6 +444,10 @@ private static final String INSERT_MEMBER = "INSERT INTO members (...) VALUES " 
 
 - Organizer codes: "OOB", "PRG", "BRN" (3 letters, typical orienteering format)
 - Registration numbers: "ZBM0501" (7 chars per schema)
+
+### 10. Spring Modulith skips test which should be executed
+
+- create temporal file in java resources folder - changed resource makes all test to be executed. (delete that file to when not needed to optimize tests performance) 
 
 ## Command-Line Tool Usage
 
