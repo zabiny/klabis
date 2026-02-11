@@ -53,8 +53,7 @@ public class RegistrationNumberGenerator {
         }
 
         int birthYear = dateOfBirth.getYear();
-        int existingCount = members.countByBirthYear(birthYear);
-        int nextSequence = existingCount + 1;
+        int nextSequence = members.countByBirthYear(birthYear);
 
         if (nextSequence > MAX_SEQUENCE_NUMBER) {
             throw new IllegalStateException(

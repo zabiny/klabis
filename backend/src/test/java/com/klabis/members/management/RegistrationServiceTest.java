@@ -166,14 +166,14 @@ class RegistrationServiceTest {
                     .hasLastName("Novák")
                     .hasDateOfBirth(dateOfBirth)
                     .hasGender(Gender.MALE);
-            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0501");
+            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0500");
 
             // Verify user creation via UserService with UserCreationParams
             ArgumentCaptor<UserCreationParams> paramsCaptor = ArgumentCaptor.forClass(UserCreationParams.class);
             verify(userService).createUserPendingActivation(paramsCaptor.capture());
 
             UserCreationParams params = paramsCaptor.getValue();
-            assertThat(params.username()).isEqualTo("ZBM0501");
+            assertThat(params.username()).isEqualTo("ZBM0500");
             assertThat(params.passwordHash()).isEqualTo(DEFAULT_HASHED_PASSWORD);
             assertThat(params.authorities()).isEqualTo(Set.of(Authority.MEMBERS_READ));
             assertThat(params.getEmail()).contains("jan.novak@example.com");
@@ -223,7 +223,7 @@ class RegistrationServiceTest {
             verify(userService).createUserPendingActivation(paramsCaptor.capture());
 
             UserCreationParams params = paramsCaptor.getValue();
-            assertThat(params.username()).isEqualTo("ZBM0502");
+            assertThat(params.username()).isEqualTo("ZBM0501");
             assertThat(params.passwordHash()).isEqualTo("$2a$10$encodedPassword");
             assertThat(params.authorities()).isEqualTo(Set.of(Authority.MEMBERS_READ));
             assertThat(params.getEmail()).contains("eva@example.com");
@@ -355,8 +355,8 @@ class RegistrationServiceTest {
             verify(memberRepository).save(memberCaptor.capture());
 
             Member savedMember = memberCaptor.getValue();
-            // Should be 3rd member (sequence 03) for birth year 2005
-            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0503");
+            // Should be 3rd member (sequence 02) for birth year 2005
+            assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0502");
         }
 
         @Test

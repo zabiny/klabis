@@ -72,22 +72,22 @@ The system SHALL automatically generate a unique registration number in format X
 
 - XXX = club code (3-character alphanumeric, configured by system administrator)
 - YY = member's birth year (last 2 digits)
-- DD = sequential number for members born in the same year (2 digits, starting at 01)
+- DD = sequential number for members born in the same year (2 digits, starting at 00)
 
 #### Scenario: Generate registration number for first member with given birth year
 
 - **WHEN** first member born in 2001 is registered
-- **THEN** registration number is formatted as XXX0101 (e.g., ZBM0101 for club ZBM)
+- **THEN** registration number is formatted as XXX0100 (e.g., ZBM0100 for club ZBM)
 
 #### Scenario: Generate registration number for subsequent members with same birth year
 
 - **WHEN** additional members born in 2001 are registered
-- **THEN** registration number increments sequence (e.g., ZBM0102, ZBM0103)
+- **THEN** registration number increments sequence (e.g., ZBM0101, ZBM0102)
 
 #### Scenario: Different birth years have independent sequences
 
 - **WHEN** member born in 2005 is registered after member born in 2001
-- **THEN** registration number starts new sequence for birth year 2005 (e.g., ZBM0501)
+- **THEN** registration number starts new sequence for birth year 2005 (e.g., ZBM0500)
 
 #### Scenario: Registration number uniqueness
 
