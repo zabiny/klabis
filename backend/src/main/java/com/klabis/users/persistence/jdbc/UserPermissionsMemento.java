@@ -55,6 +55,10 @@ public class UserPermissionsMemento implements Persistable<UUID> {
     @Column("modified_at")
     private Instant modifiedAt;
 
+    @org.springframework.data.annotation.Version
+    @Column("version")
+    private Long version;
+
     /**
      * Flag for Persistable interface - tracks if this is a new (unsaved) entity.
      */
@@ -78,6 +82,7 @@ public class UserPermissionsMemento implements Persistable<UUID> {
         UserPermissionsMemento memento = new UserPermissionsMemento();
         memento.userId = permissions.getUserId().uuid();
         memento.authoritiesJson = serializeAuthorities(permissions.getDirectAuthorities());
+        memento.version = permissions.getVersion();
         memento.isNew = permissions.isNew();
         return memento;
     }
@@ -90,6 +95,7 @@ public class UserPermissionsMemento implements Persistable<UUID> {
     UserPermissions toUserPermissions() {
         Set<Authority> authorities = deserializeAuthorities(authoritiesJson);
         UserPermissions permissions = UserPermissions.create(new UserId(userId), authorities);
+        permissions.setVersion(this.version);
         permissions.markAsPersisted();
         return permissions;
     }

@@ -184,7 +184,7 @@ class UserTest {
             // Given
             User pendingUser = UserTestDataBuilder.aPendingUser().build();
 
-            assertThatThrownBy(() -> pendingUser.activateWithPassword(null))
+            assertThatThrownBy(() -> pendingUser.activateWithPassword((String) null))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessageContaining("New password hash is required");
         }

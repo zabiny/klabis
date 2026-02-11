@@ -123,7 +123,7 @@ class UserPermissionsTest {
 
         // When/Then
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> permissions.grantAuthority(null))
+                .isThrownBy(() -> permissions.grantAuthority((Authority) null))
                 .withMessageContaining("Authority must not be null");
     }
 
@@ -168,7 +168,7 @@ class UserPermissionsTest {
 
         // When/Then
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> permissions.revokeAuthority(null))
+                .isThrownBy(() -> permissions.revokeAuthority((Authority) null))
                 .withMessageContaining("Authority must not be null");
     }
 
@@ -216,7 +216,7 @@ class UserPermissionsTest {
 
         // When/Then
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> permissions.replaceAuthorities(null))
+                .isThrownBy(() -> permissions.replaceAuthorities((Set<Authority>) null))
                 .withMessageContaining("New authorities must not be null");
     }
 

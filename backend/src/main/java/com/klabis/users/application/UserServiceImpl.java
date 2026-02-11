@@ -3,6 +3,7 @@ package com.klabis.users.application;
 import com.klabis.users.*;
 import com.klabis.users.persistence.UserPermissionsRepository;
 import com.klabis.users.persistence.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +21,10 @@ import java.util.Set;
  * - Transactional boundaries for multi-step operations
  * - Implementation detail hidden from other modules
  */
+@Slf4j
 @Service
 @Transactional
-public class UserServiceImpl implements UserService {
+class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserPermissionsRepository userPermissionsRepository;
@@ -58,6 +60,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserId createUserPendingActivation(UserCreationParams params) {
+        log.debug("Creating user pending activation: username={}, authorities={}",
+                params.username(), params.authorities());
+
         // Create user with PENDING_ACTIVATION status
         User user;
         if (params.getEmail().isPresent()) {
@@ -77,11 +82,19 @@ public class UserServiceImpl implements UserService {
         UserPermissions permissions = UserPermissions.create(userId, params.authorities());
         userPermissionsRepository.save(permissions);
 
+        log.info("Created user pending activation: userId={}, username={}", userId, params.username());
         return userId;
     }
 
     @Override
     public Optional<User> findUserByUsername(String username) {
-        return userRepository.findByUsername(username);
+        log.debug("Finding user by username: {}", username);
+        Optional<User> user = userRepository.findByUsername(username);
+        if (user.isPresent()) {
+            log.debug("User found: userId={}", user.get().getId());
+        } else {
+            log.debug("User not found for username: {}", username);
+        }
+        return user;
     }
 }

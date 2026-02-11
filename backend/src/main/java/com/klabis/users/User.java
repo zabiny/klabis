@@ -70,6 +70,34 @@ public class User {
     // Domain events list (manual management instead of AbstractAggregateRoot)
     private final List<Object> domainEvents = new ArrayList<>();
 
+    // ========== Command Records ==========
+
+    /**
+     * Command to create a new active user.
+     */
+    public record CreateUser(String username, String passwordHash) {
+    }
+
+    /**
+     * Command to create a new user pending activation.
+     */
+    public record CreatePendingActivation(String username, String passwordHash) {
+    }
+
+    /**
+     * Command to create a new user pending activation with email for password setup.
+     */
+    public record CreatePendingActivationWithEmail(String username, String passwordHash, String email) {
+    }
+
+    /**
+     * Command to activate a user with a new password.
+     */
+    public record ActivateWithPassword(String newPasswordHash) {
+    }
+
+    // ========== Constructors ==========
+
     /**
      * Default constructor.
      * Used for reconstruction from persistence.
@@ -100,6 +128,17 @@ public class User {
         this.accountNonLocked = accountNonLocked;
         this.credentialsNonExpired = credentialsNonExpired;
         this.enabled = enabled;
+    }
+
+    /**
+     * Static factory method to create a new User using a command.
+     *
+     * @param command the CreateUser command
+     * @return new User instance with ACTIVE status
+     * @throws IllegalArgumentException if business rules are violated
+     */
+    public static User create(CreateUser command) {
+        return create(command.username(), command.passwordHash());
     }
 
     /**
@@ -170,6 +209,17 @@ public class User {
     }
 
     /**
+     * Static factory method to create a new User with pending activation using a command.
+     *
+     * @param command the CreatePendingActivation command
+     * @return new User instance with PENDING_ACTIVATION status, not enabled
+     * @throws IllegalArgumentException if business rules are violated
+     */
+    public static User createPendingActivation(CreatePendingActivation command) {
+        return createPendingActivation(command.username(), command.passwordHash());
+    }
+
+    /**
      * Static factory method to create a new User with pending activation.
      *
      * <p>This is used during member registration when a password setup token will be generated.
@@ -202,6 +252,21 @@ public class User {
         user.registerEvent(UserCreatedEvent.fromUser(user));
 
         return user;
+    }
+
+    /**
+     * Static factory method to create a new User with pending activation and email using a command.
+     *
+     * @param command the CreatePendingActivationWithEmail command
+     * @return new User instance with PENDING_ACTIVATION status and UserCreatedEvent containing email
+     * @throws IllegalArgumentException if business rules are violated
+     */
+    public static User createPendingActivationWithEmail(CreatePendingActivationWithEmail command) {
+        return createPendingActivationWithEmail(
+                command.username(),
+                command.passwordHash(),
+                command.email()
+        );
     }
 
     /**
@@ -279,6 +344,16 @@ public class User {
                 credentialsNonExpired,
                 enabled
         );
+    }
+
+    /**
+     * Activates this user account with a new password using a command.
+     *
+     * @param command the ActivateWithPassword command
+     * @return new User instance with ACTIVE status and enabled=true
+     */
+    public User activateWithPassword(ActivateWithPassword command) {
+        return activateWithPassword(command.newPasswordHash());
     }
 
     /**

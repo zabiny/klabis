@@ -27,6 +27,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * <p>
  * Provides endpoints for managing user permissions using the {@link PermissionService}.
  * Separated from authentication concerns - this controller only handles authorization (permissions).
+ * <p>
+ * Note: Must be public for Spring HATEOAS linkTo(methodOn(...)) pattern used in cross-module HATEOAS links.
  *
  * @see PermissionService
  * @see UserPermissions

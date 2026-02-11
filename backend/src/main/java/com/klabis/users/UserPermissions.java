@@ -1,5 +1,7 @@
 package com.klabis.users;
 
+import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
 import java.util.HashSet;
@@ -31,13 +33,40 @@ import java.util.Set;
  * @see Authority
  * @see AuthorizationPolicy
  */
+@AggregateRoot
 public class UserPermissions {
 
+    @Identity
     private final UserId userId;
 
     private Set<Authority> directAuthorities;
 
+    // Optimistic locking
+    private Long version;
+
     private boolean isNew = true;
+
+    // ========== Command Records ==========
+
+    /**
+     * Command to grant an authority to a user.
+     */
+    public record GrantAuthority(Authority authority) {
+    }
+
+    /**
+     * Command to revoke an authority from a user.
+     */
+    public record RevokeAuthority(Authority authority) {
+    }
+
+    /**
+     * Command to replace all authorities with a new set.
+     */
+    public record ReplaceAuthorities(Set<Authority> authorities) {
+    }
+
+    // ========== Constructors ==========
 
     /**
      * Private constructor used by factory methods.
@@ -97,6 +126,26 @@ public class UserPermissions {
     }
 
     /**
+     * Gets the version for optimistic locking.
+     *
+     * @return the version number
+     */
+    public Long getVersion() {
+        return version;
+    }
+
+    /**
+     * Sets the version for optimistic locking.
+     * <p>
+     * Used by persistence layer after save/update operations.
+     *
+     * @param version the version number
+     */
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
+    /**
      * Checks if this is a new (unsaved) UserPermissions instance.
      * <p>
      * Used by Spring Data JDBC via Persistable.isNew() to determine INSERT vs UPDATE.
@@ -127,6 +176,16 @@ public class UserPermissions {
     }
 
     /**
+     * Grants a direct authority to this user using a command.
+     *
+     * @param command the GrantAuthority command
+     * @see AuthorizationPolicy#checkAdminLockoutPrevention
+     */
+    public void grantAuthority(GrantAuthority command) {
+        grantAuthority(command.authority());
+    }
+
+    /**
      * Grants a direct authority to this user.
      * <p>
      * This method:
@@ -154,6 +213,16 @@ public class UserPermissions {
     }
 
     /**
+     * Revokes a direct authority from this user using a command.
+     *
+     * @param command the RevokeAuthority command
+     * @see AuthorizationPolicy#checkAdminLockoutPrevention
+     */
+    public void revokeAuthority(RevokeAuthority command) {
+        revokeAuthority(command.authority());
+    }
+
+    /**
      * Revokes a direct authority from this user.
      * <p>
      * This method:
@@ -178,6 +247,16 @@ public class UserPermissions {
         Set<Authority> newAuthorities = new HashSet<>(this.directAuthorities);
         newAuthorities.remove(authority);
         this.directAuthorities = newAuthorities;
+    }
+
+    /**
+     * Replaces all direct authorities with a new set using a command.
+     *
+     * @param command the ReplaceAuthorities command
+     * @see AuthorizationPolicy#checkAdminLockoutPrevention
+     */
+    public void replaceAuthorities(ReplaceAuthorities command) {
+        replaceAuthorities(command.authorities());
     }
 
     /**

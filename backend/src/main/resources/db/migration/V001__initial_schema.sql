@@ -145,7 +145,8 @@ CREATE TABLE user_permissions
     user_id     UUID PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
     authorities VARCHAR(1000) NOT NULL, -- JSON array of authority strings: ["MEMBERS:READ", "TRAINING:VIEW"]
     created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modified_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+    modified_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version     BIGINT        NOT NULL DEFAULT 0  -- Optimistic locking
 );
 
 -- Index for user_permissions
