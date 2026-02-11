@@ -536,24 +536,23 @@ identifier.
 
 ### Requirement: Member Details Response Format
 
-The member details endpoint SHALL return complete member information in a HATEOAS-compliant HAL+FORMS format with proper
-ISO-8601 date serialization and structured address and contact information.
+The member details endpoint SHALL return complete member information in a HATEOAS-compliant HAL+FORMS format with proper ISO-8601 date serialization, structured address and contact information. The `id` field represents UserId (1:1 relationship) and can be used for cross-aggregate navigation.
 
 #### Scenario: Response contains all personal information with structured address
 
 - **WHEN** a member details response is returned
 - **THEN** the response SHALL include:
-    - `id` - Member's unique identifier (UUID)
+    - `id` - Member's unique identifier (UUID), also UserId due to 1:1 relationship
     - `registrationNumber` - Unique registration number in format XXXYYSS
     - `firstName` - Member's first name
     - `lastName` - Member's last name
     - `dateOfBirth` - Member's date of birth as ISO-8601 date string (YYYY-MM-DD)
     - `nationality` - Member's nationality code (ISO 3166-1 alpha-2)
     - `gender` - Member's gender (MALE, FEMALE, OTHER)
-    - **`address` - Object containing street, city, postalCode, country (ISO 3166-1 alpha-2)**
+    - `address` - Object containing street, city, postalCode, country (ISO 3166-1 alpha-2)
     - `rodneCislo` - Czech ID number (present only for Czech nationality)
-    - **`email` - Single email address string**
-    - **`phone` - Single phone number string**
+    - `email` - Single email address string
+    - `phone` - Single phone number string
     - `chipNumber` - Chip number (present if provided)
     - `bankAccountNumber` - Bank account number (present if provided)
     - `active` - Boolean indicating if member is active
@@ -590,8 +589,7 @@ ISO-8601 date serialization and structured address and contact information.
 
 ### Requirement: HATEOAS Links for Member Details
 
-The member details response SHALL include hypermedia links following HAL+FORMS specification to enable API
-discoverability and navigation.
+The member details response SHALL include hypermedia links following HAL+FORMS specification to enable API discoverability and navigation, including conditional link to user permissions.
 
 #### Scenario: Self link included
 
@@ -616,6 +614,26 @@ discoverability and navigation.
 - **WHEN** a user without MEMBERS:UPDATE permission views a member
 - **THEN** the response SHALL NOT include an `edit` link
 - **AND** HAL+FORMS templates SHALL reflect available actions only
+
+#### Scenario: Permissions link conditionally included
+
+- **WHEN** an authenticated user with MEMBERS:PERMISSIONS authority views a member
+- **THEN** the response SHALL include a `permissions` link
+- **AND** the link SHALL point to /api/users/{id}/permissions (where id = member.id = userId)
+- **AND** the link SHALL use the rel "permissions"
+- **AND** the link SHALL enable navigation to user permissions management
+
+#### Scenario: Permissions link excluded for users without permission
+
+- **WHEN** an authenticated user without MEMBERS:PERMISSIONS authority views a member
+- **THEN** the response SHALL NOT include a `permissions` link
+- **AND** only links for authorized actions are included
+
+#### Scenario: Unauthenticated users receive no permissions link
+
+- **WHEN** an unauthenticated user views a member (if allowed)
+- **THEN** the response SHALL NOT include a `permissions` link
+- **AND** only publicly available links are included
 
 ### Requirement: ISO-8601 Date and DateTime Serialization
 
@@ -1320,3 +1338,4 @@ both aggregates.
 - **THEN** no join operation is required between User and Member tables
 - **AND** query is optimized by using the shared UserId directly
 - **AND** performance is improved compared to foreign key lookups
+

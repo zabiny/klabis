@@ -303,5 +303,95 @@ class GetMemberApiTest {
                     .andExpect(jsonPath("$.address.postalCode").value("81101"))
                     .andExpect(jsonPath("$.address.country").value("SK"));
         }
+
+        @Test
+        @DisplayName("should include permissions link when user has MEMBERS:PERMISSIONS authority")
+        @WithMockUser(username = "admin", authorities = {"MEMBERS:READ", "MEMBERS:PERMISSIONS"})
+        void shouldIncludePermissionsLinkWhenUserHasMembersPermissionsAuthority() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            AddressResponse address = new AddressResponse(
+                    "Hlavní 123",
+                    "Praha",
+                    "11000",
+                    "CZ"
+            );
+
+            MemberDetailsDTO memberDTO = new MemberDetailsDTO(
+                    memberId,
+                    "ZBM0501",
+                    "Jan",
+                    "Novák",
+                    LocalDate.of(2005, 6, 15),
+                    "CZ",
+                    Gender.MALE,
+                    "jan.novak@example.com",
+                    "+420777888999",
+                    address,
+                    null,
+                    true,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+
+            when(memberService.getMember(any())).thenReturn(memberDTO);
+
+            mockMvc.perform(
+                            get("/api/members/{id}", memberId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.permissions").exists())
+                    .andExpect(jsonPath("$._links.permissions.href").value(
+                            org.hamcrest.Matchers.containsString("/api/users/" + memberId + "/permissions")));
+        }
+
+        @Test
+        @DisplayName("should not include permissions link when user lacks MEMBERS:PERMISSIONS authority")
+        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
+        void shouldNotIncludePermissionsLinkWhenUserLacksMembersPermissionsAuthority() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            AddressResponse address = new AddressResponse(
+                    "Hlavní 123",
+                    "Praha",
+                    "11000",
+                    "CZ"
+            );
+
+            MemberDetailsDTO memberDTO = new MemberDetailsDTO(
+                    memberId,
+                    "ZBM0501",
+                    "Jan",
+                    "Novák",
+                    LocalDate.of(2005, 6, 15),
+                    "CZ",
+                    Gender.MALE,
+                    "jan.novak@example.com",
+                    "+420777888999",
+                    address,
+                    null,
+                    true,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+
+            when(memberService.getMember(any())).thenReturn(memberDTO);
+
+            mockMvc.perform(
+                            get("/api/members/{id}", memberId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.permissions").doesNotExist());
+        }
     }
 }
