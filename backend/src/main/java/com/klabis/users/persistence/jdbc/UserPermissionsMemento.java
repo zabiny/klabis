@@ -3,11 +3,14 @@ package com.klabis.users.persistence.jdbc;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.Authority;
 import com.klabis.users.UserId;
 import com.klabis.users.UserPermissions;
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
@@ -51,9 +54,17 @@ public class UserPermissionsMemento implements Persistable<UUID> {
     @Column("created_at")
     private Instant createdAt;
 
+    @CreatedBy
+    @Column("created_by")
+    private String createdBy;
+
     @LastModifiedDate
     @Column("modified_at")
     private Instant modifiedAt;
+
+    @LastModifiedBy
+    @Column("last_modified_by")
+    private String lastModifiedBy;
 
     @org.springframework.data.annotation.Version
     @Column("version")
@@ -164,5 +175,25 @@ public class UserPermissionsMemento implements Persistable<UUID> {
 
     public Instant getModifiedAt() {
         return modifiedAt;
+    }
+
+    /**
+     * Get the audit metadata as an AuditMetadata value object.
+     * <p>
+     * Returns null if createdAt is null (new permissions not yet persisted).
+     *
+     * @return the audit metadata, or null if not available
+     */
+    public AuditMetadata getAuditMetadata() {
+        if (this.createdAt == null) {
+            return null;
+        }
+        return new AuditMetadata(
+                this.createdAt,
+                this.createdBy,
+                this.modifiedAt,
+                this.lastModifiedBy,
+                this.version
+        );
     }
 }

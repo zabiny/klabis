@@ -1,8 +1,8 @@
 package com.klabis.users.persistence.jdbc;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.User;
 import com.klabis.users.AccountStatus;
-import com.klabis.users.UserAuditMetadata;
 import com.klabis.users.UserId;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.AfterDomainEventPublication;
@@ -200,7 +200,7 @@ public class UserMemento implements Persistable<UUID> {
 
         // Update audit metadata
         if (this.createdAt != null) {
-            UserAuditMetadata auditMetadata = new UserAuditMetadata(
+            AuditMetadata auditMetadata = new AuditMetadata(
                     this.createdAt,
                     this.createdBy,
                     this.lastModifiedAt,
@@ -246,17 +246,17 @@ public class UserMemento implements Persistable<UUID> {
     }
 
     /**
-     * Get the audit metadata as a UserAuditMetadata value object.
+     * Get the audit metadata as an AuditMetadata value object.
      * <p>
      * Returns null if createdAt is null (new user not yet persisted).
      *
      * @return the audit metadata, or null if not available
      */
-    public UserAuditMetadata getAuditMetadata() {
+    public AuditMetadata getAuditMetadata() {
         if (this.createdAt == null) {
             return null;
         }
-        return new UserAuditMetadata(
+        return new AuditMetadata(
                 this.createdAt,
                 this.createdBy,
                 this.lastModifiedAt,

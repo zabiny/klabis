@@ -1,9 +1,9 @@
 package com.klabis.users.persistence.jdbc;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.User;
 import com.klabis.users.AccountStatus;
 import com.klabis.users.UserAssert;
-import com.klabis.users.UserAuditMetadata;
 import com.klabis.users.UserCreatedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,7 +34,7 @@ class UserMementoTest {
 
     private User createTestUserWithAudit() {
         User user = createTestUser();
-        UserAuditMetadata auditMetadata = new UserAuditMetadata(
+        AuditMetadata auditMetadata = new AuditMetadata(
                 Instant.now(),
                 "test-user",
                 Instant.now(),
@@ -281,7 +281,7 @@ class UserMementoTest {
             UserMemento memento = UserMemento.from(user);
 
             // Act
-            UserAuditMetadata auditMetadata = memento.getAuditMetadata();
+            AuditMetadata auditMetadata = memento.getAuditMetadata();
 
             // Assert
             assertThat(auditMetadata).isNotNull();
@@ -298,7 +298,7 @@ class UserMementoTest {
             UserMemento memento = UserMemento.from(user);
 
             // Act
-            UserAuditMetadata auditMetadata = memento.getAuditMetadata();
+            AuditMetadata auditMetadata = memento.getAuditMetadata();
 
             // Assert
             assertThat(auditMetadata).isNull();

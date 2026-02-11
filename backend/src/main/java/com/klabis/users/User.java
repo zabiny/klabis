@@ -1,5 +1,6 @@
 package com.klabis.users;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.persistence.jdbc.UserMemento;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -46,17 +47,8 @@ public class User {
 
     private AccountStatus accountStatus;
 
-    // Audit fields
-    private Instant createdAt;
-
-    private Instant lastModifiedAt;
-
-    private String createdBy;
-
-    private String lastModifiedBy;
-
-    // Optimistic locking
-    private Long version;
+    // Audit metadata
+    private AuditMetadata auditMetadata;
 
     // Spring Security fields
     private boolean accountNonExpired = true;
@@ -379,10 +371,8 @@ public class User {
                 true // enabled = true after activation
         );
 
-        // Copy audit fields and version
-        activated.createdAt = this.createdAt;
-        activated.lastModifiedAt = this.lastModifiedAt;
-        activated.version = this.version;
+        // Copy audit metadata
+        activated.auditMetadata = this.auditMetadata;
 
         return activated;
     }
@@ -445,23 +435,23 @@ public class User {
 
     // Public getters for audit fields (used by tests and monitoring)
     public Instant getCreatedAt() {
-        return createdAt;
+        return auditMetadata != null ? auditMetadata.createdAt() : null;
     }
 
     public Instant getLastModifiedAt() {
-        return lastModifiedAt;
+        return auditMetadata != null ? auditMetadata.lastModifiedAt() : null;
     }
 
     public Long getVersion() {
-        return version;
+        return auditMetadata != null ? auditMetadata.version() : null;
     }
 
     public String getCreatedBy() {
-        return createdBy;
+        return auditMetadata != null ? auditMetadata.createdBy() : null;
     }
 
     public String getLastModifiedBy() {
-        return lastModifiedBy;
+        return auditMetadata != null ? auditMetadata.lastModifiedBy() : null;
     }
 
     /**
@@ -472,14 +462,8 @@ public class User {
      *
      * @param auditMetadata the audit metadata to apply
      */
-    public void updateAuditMetadata(UserAuditMetadata auditMetadata) {
-        if (auditMetadata != null) {
-            this.createdAt = auditMetadata.createdAt();
-            this.createdBy = auditMetadata.createdBy();
-            this.lastModifiedAt = auditMetadata.lastModifiedAt();
-            this.lastModifiedBy = auditMetadata.lastModifiedBy();
-            this.version = auditMetadata.version();
-        }
+    public void updateAuditMetadata(AuditMetadata auditMetadata) {
+        this.auditMetadata = auditMetadata;
     }
 
     /**

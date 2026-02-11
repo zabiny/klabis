@@ -1,5 +1,6 @@
 package com.klabis.members.persistence.jdbc;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.members.*;
 import com.klabis.users.UserId;
 import org.springframework.data.annotation.*;

@@ -1,5 +1,6 @@
 package com.klabis.users.persistence.jdbc;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.Authority;
 import com.klabis.users.UserId;
 import com.klabis.users.UserPermissions;
@@ -40,11 +41,17 @@ public class UserPermissionsRepositoryAdapter implements UserPermissionsReposito
         UserPermissionsMemento memento = UserPermissionsMemento.from(permissions, !exists);
         UserPermissionsMemento saved = jdbcRepository.save(memento);
 
+        // Update audit metadata from saved memento
+        AuditMetadata auditMetadata = saved.getAuditMetadata();
+        if (auditMetadata != null) {
+            permissions.updateAuditMetadata(auditMetadata);
+        }
+
         // Mark as persisted
         permissions.markAsPersisted();
 
-        // Convert back to domain object
-        return saved.toUserPermissions();
+        // Return the same UserPermissions instance (now with updated audit metadata)
+        return permissions;
     }
 
     @Override

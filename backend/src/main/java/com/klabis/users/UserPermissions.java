@@ -1,5 +1,6 @@
 package com.klabis.users;
 
+import com.klabis.common.domain.AuditMetadata;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -40,6 +41,9 @@ public class UserPermissions {
     private final UserId userId;
 
     private Set<Authority> directAuthorities;
+
+    // Audit metadata
+    private AuditMetadata auditMetadata;
 
     // Optimistic locking
     private Long version;
@@ -163,6 +167,27 @@ public class UserPermissions {
      */
     public void markAsPersisted() {
         this.isNew = false;
+    }
+
+    /**
+     * Gets the audit metadata.
+     *
+     * @return the audit metadata
+     */
+    public AuditMetadata getAuditMetadata() {
+        return auditMetadata;
+    }
+
+    /**
+     * Updates the audit metadata from the persistence layer.
+     * <p>
+     * Called by repository after save to populate audit fields
+     * (createdAt, lastModifiedAt, version) that are set by the database.
+     *
+     * @param auditMetadata the audit metadata to apply
+     */
+    public void updateAuditMetadata(AuditMetadata auditMetadata) {
+        this.auditMetadata = auditMetadata;
     }
 
     /**

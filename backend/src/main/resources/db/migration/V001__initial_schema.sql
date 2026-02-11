@@ -142,11 +142,13 @@ COMMENT ON COLUMN users.password_hash IS 'BCrypt-hashed password';
 
 CREATE TABLE user_permissions
 (
-    user_id     UUID PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
-    authorities VARCHAR(1000) NOT NULL, -- JSON array of authority strings: ["MEMBERS:READ", "TRAINING:VIEW"]
-    created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modified_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    version     BIGINT        NOT NULL DEFAULT 0  -- Optimistic locking
+    user_id          UUID PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    authorities      VARCHAR(1000) NOT NULL, -- JSON array of authority strings: ["MEMBERS:READ", "TRAINING:VIEW"]
+    created_at       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by       VARCHAR(100),           -- User who created these permissions
+    modified_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_by VARCHAR(100),           -- User who last modified these permissions
+    version          BIGINT        NOT NULL DEFAULT 0  -- Optimistic locking
 );
 
 -- Index for user_permissions
@@ -157,7 +159,9 @@ COMMENT ON TABLE user_permissions IS 'User permissions/authorities, separated fr
 COMMENT ON COLUMN user_permissions.user_id IS 'Reference to user (UUID)';
 COMMENT ON COLUMN user_permissions.authorities IS 'Direct authorities as JSON array string (e.g., ["MEMBERS:READ", "TRAINING:VIEW"])';
 COMMENT ON COLUMN user_permissions.created_at IS 'Timestamp when permissions were created';
+COMMENT ON COLUMN user_permissions.created_by IS 'User who created these permissions';
 COMMENT ON COLUMN user_permissions.modified_at IS 'Timestamp when permissions were last modified';
+COMMENT ON COLUMN user_permissions.last_modified_by IS 'User who last modified these permissions';
 
 -- ============================================================================
 -- 4. PASSWORD_SETUP_TOKENS TABLE

@@ -1,5 +1,6 @@
 package com.klabis.members;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.AggregateRoot;

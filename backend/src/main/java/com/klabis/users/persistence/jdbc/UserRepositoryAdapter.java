@@ -1,8 +1,8 @@
 package com.klabis.users.persistence.jdbc;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.User;
 import com.klabis.users.Users;
-import com.klabis.users.UserAuditMetadata;
 import com.klabis.users.UserId;
 import com.klabis.users.persistence.UserRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
@@ -40,7 +40,7 @@ class UserRepositoryAdapter implements Users, UserRepository {
         UserMemento saved = jdbcRepository.save(memento);
 
         // Update User's audit metadata from saved memento (if available)
-        UserAuditMetadata auditMetadata = saved.getAuditMetadata();
+        AuditMetadata auditMetadata = saved.getAuditMetadata();
         if (auditMetadata != null) {
             user.updateAuditMetadata(auditMetadata);
         }
