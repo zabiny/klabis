@@ -30,64 +30,25 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 ./gradlew bootRun
 ```
 
-**Server Management Best Practices:**
-
-1. **Use foreground mode** for development - Do NOT run in background (`&`) unless absolutely necessary
-    - Reason: You need to see logs immediately for debugging
-    - Background tasks capture output poorly, making debugging difficult
-
-2. **Check if server is running before starting:**
-   ```bash
-   # Check for existing Spring Boot processes
-   ps aux | grep -E "bootRun" | grep -v grep
-
-   # Check if port 8443 is in use
-   lsof -i :8443 || netstat -tulpn | grep 8443
-   ```
-
-3. **Stop server cleanly:**
-   ```bash
-   # Press Ctrl+C in the terminal where server is running (preferred)
-   # Or use:
-   pkill -f "bootRun"
-   ```
-
-4. **Wait for startup confirmation:**
-   ```bash
-   # Health check - server is ready when this returns 200
-   curl -k https://localhost:8443/actuator/health | jq '.status'
-   ```
-
-5. **Database reset:** H2 in-memory database resets on server restart. No manual cleanup needed.
+**Server Management:**
+- Run in foreground (not `&`) to see logs
+- Check if running: `lsof -i :8443` or `ps aux | grep bootRun`
+- Stop: Ctrl+C or `pkill -f "bootRun"`
+- Health check: `curl -k https://localhost:8443/actuator/health`
+- DB resets on restart (H2 in-memory)
 
 ### Database Migrations
 
-**Three-layer schema organization:**
-
-1. **V001 - Domain Model** (6 tables)
-   - `members`, `users`, `user_permissions`, `password_setup_tokens`, `events`, `event_registrations`
-   - Core business logic and DDD aggregates
-   - File: `src/main/resources/db/migration/V001__initial_schema.sql`
-
-2. **V002 - OAuth2 Infrastructure** (3 tables)
-   - `oauth2_registered_client`, `oauth2_authorization`, `oauth2_authorization_consent`
-   - Spring Authorization Server infrastructure
-   - File: `src/main/resources/db/migration/V002__create_oauth2_infrastructure_tables.sql`
-
-3. **V003 - Spring Modulith Infrastructure** (1 table)
-   - `event_publication` - Outbox pattern for async event processing
-   - Spring Modulith event-driven architecture
-   - File: `src/main/resources/db/migration/V003__create_spring_modulith_infrastructure_tables.sql`
-
-**Additional notes:**
-- Schema evolution: H2 in-memory database resets on server restart (no historical migration steps needed)
-- Bootstrap data: Managed by `BootstrapDataLoader` component (not migrations)
+**Migrations:** Three layers - V001 (domain: 6 tables), V002 (OAuth2: 3 tables), V003 (Modulith: 1 table). 
+- H2 resets on restart
+- data Bootstrap via `BootstrapDataLoader`
+- do not add new migration scripts - update best fitting script (domain DDL into V001)
 
 ### Testing
 
 **IntelliJ IDEA Run Configurations:**
 
-- `KlabisBackendApplication` - Start server with dev profile
+- `Klabis Backend` - Start server with dev profile
 - `Backend Tests` - Run complete test suite
 - Individual test classes can be run via right-click → Run
 
@@ -176,36 +137,11 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### Integration Test Best Practices
 
-**Module Boundaries:**
-
-- Do NOT inject repositories from other modules (e.g., don't use `MemberRepository` in events module tests)
-- For foreign key constraints across modules, use `@Sql` to insert minimal test data
-- This respects architectural boundaries while enabling proper persistence testing
-
-**@Sql Annotation Usage:**
-
-```java
-// Class-level setup - runs before each test method
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
-    "delete from event_registrations",
-    "delete from events",
-    "delete from members",
-    // Insert test data with complete SQL statements
-    "INSERT INTO members (id, user_name, first_name, last_name, ...) VALUES ('uuid', 'REG001', 'Test', 'User', ...)"
-})
-```
-
-**Important:**
-
-- Each statement in `statements = {}` must be a complete, valid SQL statement
-- Cannot use string concatenation with non-constant values (annotation requires compile-time constants)
-- One INSERT per row is clearer than multi-value INSERTs
-
-**Schema Constraints:**
-
-- Always check column length constraints (e.g., `organizer VARCHAR(10)`)
-- Use realistic test values: "OOB", "PRG", "BRN" instead of "Organizer A"
-- Foreign key constraints must be satisfied by test data
+**Module Boundaries & @Sql:**
+- Don't inject cross-module repositories - use `@Sql` for FK setup
+- `@Sql` requires compile-time constants (no string concat)
+- Check schema constraints (column lengths, FK refs)
+- Use realistic test values (e.g., "OOB" not "Organizer A")
 
 ### Coding Conventions
 
@@ -251,14 +187,14 @@ I need your decision on how to implement [feature]:
 - Description: [brief description]
 - Pros: [benefits]
 - Cons: [drawbacks]
-- Effort: [time estimate]
+- Effort: [time and tokens estimate]
 - Impact: [architectural implications]
 
 ### Option 2: Pure (Clean) Solution
 - Description: [brief description]
 - Pros: [benefits]
 - Cons: [drawbacks]
-- Effort: [time estimate]
+- Effort: [time and tokens estimate]
 - Impact: [architectural implications]
 
 Which approach would you prefer?
@@ -310,8 +246,6 @@ Which approach would you prefer?
 - If you need custom serialization, use `@JsonSerialize`/`@JsonDeserialize` annotations on specific classes
 - For OAuth2 issues, look for domain-specific solutions, not global Jackson changes
 
-**Reference:** `JacksonConfiguration.java.disabled` in this repo shows what NOT to do.
-
 ### 2. Background Process Management
 
 **Problem:** Running `./gradlew bootRun &` in background makes debugging difficult.
@@ -333,130 +267,33 @@ Which approach would you prefer?
 ./gradlew bootRun > /tmp/server.log 2>&1 &
 ```
 
-### 3. Testing Order Matters
+### 3. Environment Variables
 
-When testing OAuth2 or authentication:
+Required: `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_PASSWORD`, `OAUTH2_CLIENT_SECRET` (see startup commands above).
 
-1. **First:** Verify server is running (`curl /actuator/health`)
-2. **Second:** Check bootstrap data loaded (`grep "Bootstrap data" server.log`)
-3. **Third:** Test endpoints in order (authorize → login → token → API call)
-4. **Last:** Use browser/Playwright for full E2E flow
+### 4. H2 Database
 
-Don't skip steps - testing out of order wastes time debugging wrong problems.
+In-memory, resets on restart. H2 Console: https://localhost:8443/h2-console (`jdbc:h2:mem:klabis`, no auth needed).
 
-### 4. Environment Variables
+### 5. Incremental Testing
 
-**Always** set required environment variables when starting server:
+Workflow: compile → start server → health check → simple endpoint → complex flow. Check logs immediately on failure. Don't make multiple changes without testing.
 
-```bash
-# Minimal set needed for development
-BOOTSTRAP_ADMIN_USERNAME='admin' \
-BOOTSTRAP_ADMIN_PASSWORD='admin123' \
-OAUTH2_CLIENT_SECRET='test-secret-123' \
-./gradlew bootRun
-```
+### 6. Cross-Module Repository Access
 
-Without these:
+Don't inject repositories from other modules in tests. Use `@Sql` for FK setup instead.
 
-- Admin user won't be created (or gets random password)
-- OAuth2 clients won't work
-- Authentication will fail
+### 7. @Sql String Concatenation
 
-### 5. H2 Database Gotchas
+`@Sql` requires compile-time constants - no string concatenation with variables.
 
-**In-memory H2 behavior:**
+### 8. Column Length Constraints
 
-- Database resets on EVERY server restart
-- Data does NOT persist between runs
-- Bootstrap data loads on startup (check logs for confirmation)
+Check schema first, use realistic values matching column limits (e.g., "OOB" not "Organizer A").
 
-**Common mistake:** Thinking data persists when debugging database issues.
-**Solution:** Check `BootstrapDataLoader` logs to confirm data was created.
+### 9. Spring Modulith Test Execution
 
-**Accessing H2 Console:**
-
-- URL: https://localhost:8443/h2-console
-- JDBC URL: `jdbc:h2:mem:klabis`
-- No username/password required (dev profile)
-
-### 6. Incremental Testing Workflow
-
-**When implementing new features or debugging issues:**
-
-1. **Compile first:** `./gradlew compileJava` - Catch syntax errors early
-2. **Start server:** `./gradlew bootRun` with proper env vars
-3. **Verify startup:** Check logs for "Started KlabisBackendApplication"
-4. **Health check:** `curl -k https://localhost:8443/actuator/health`
-5. **Test simple endpoint:** Try a public endpoint first
-6. **Test complex flow:** Only after basics work
-7. **Check logs IMMEDIATELY** if something fails
-
-**Why this order:**
-
-- Compilation errors are quick to find
-- Server startup issues are visible in logs
-- Health check confirms basic infrastructure
-- Simple tests rule out systemic issues
-- Complex tests have fewer variables to debug
-
-**Anti-pattern (don't do this):**
-
-- Make multiple code changes
-- Restart server multiple times without testing
-- Jump straight to E2E browser tests
-- Ignore logs and try to guess the problem
-
-### 7. Cross-Module Repository Access in Tests
-
-**Problem:** Injecting repositories from other modules violates architectural boundaries.
-
-**Example:** Don't inject `MemberRepository` into `EventJdbcRepositoryTest` just to create test members.
-
-**Solution:** Use `@Sql` annotation to insert minimal test data:
-
-```java
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
-    "delete from members",
-    "INSERT INTO members (id, user_name, first_name, last_name, ...) VALUES ('uuid', 'REG001', 'Test', 'User', ...)"
-})
-```
-
-**Why:** Integration tests test persistence layer, not domain logic. Direct SQL insertion is acceptable for setting up
-foreign key relationships.
-
-### 8. @Sql Annotation String Concatenation
-
-**Problem:** `@Sql` annotation requires compile-time constants, cannot use string concatenation with variables.
-
-**Wrong:**
-
-```java
-private static final String INSERT_MEMBER = "INSERT INTO members (...) VALUES " + memberId;
-@Sql(statements = INSERT_MEMBER)  // Compilation error
-```
-
-**Correct:**
-
-```java
-@Sql(statements = {
-    "INSERT INTO members (id, ...) VALUES ('11111111-1111-1111-1111-111111111111', ...)"
-})
-```
-
-### 9. Column Length Constraints
-
-**Problem:** Test data values exceed database column length limits.
-
-**Example:** `organizer VARCHAR(10)` but test uses "Organizer A" (11 chars).
-
-**Solution:** Check schema first, use realistic values:
-
-- Organizer codes: "OOB", "PRG", "BRN" (3 letters, typical orienteering format)
-- Registration numbers: "ZBM0501" (7 chars per schema)
-
-### 10. Spring Modulith skips test which should be executed
-
-- create temporal file in java resources folder - changed resource makes all test to be executed. (delete that file to when not needed to optimize tests performance) 
+Create temporal file in java resources to force all tests execution. Delete when not needed. 
 
 ## Command-Line Tool Usage
 
