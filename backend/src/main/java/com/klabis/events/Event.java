@@ -1,5 +1,6 @@
 package com.klabis.events;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -50,10 +51,7 @@ public class Event {
     private final List<EventRegistration> registrations = new ArrayList<>();
 
     // Audit metadata
-    private Instant createdAt;
-    private String createdBy;
-    private Instant lastModifiedAt;
-    private String lastModifiedBy;
+    private AuditMetadata auditMetadata;
 
     // Domain events list (published synchronously in same thread, no concurrent access)
     private final List<Object> domainEvents = new ArrayList<>();
@@ -471,7 +469,7 @@ public class Event {
      * @return creation timestamp, or null if not set
      */
     public Instant getCreatedAt() {
-        return createdAt;
+        return auditMetadata != null ? auditMetadata.createdAt() : null;
     }
 
     /**
@@ -480,7 +478,7 @@ public class Event {
      * @return creator user identifier, or null if not set
      */
     public String getCreatedBy() {
-        return createdBy;
+        return auditMetadata != null ? auditMetadata.createdBy() : null;
     }
 
     /**
@@ -489,7 +487,7 @@ public class Event {
      * @return last modification timestamp, or null if not set
      */
     public Instant getLastModifiedAt() {
-        return lastModifiedAt;
+        return auditMetadata != null ? auditMetadata.lastModifiedAt() : null;
     }
 
     /**
@@ -498,23 +496,17 @@ public class Event {
      * @return last modifier user identifier, or null if not set
      */
     public String getLastModifiedBy() {
-        return lastModifiedBy;
+        return auditMetadata != null ? auditMetadata.lastModifiedBy() : null;
     }
 
     /**
      * Sets audit metadata on this event.
      * Public method for persistence layer to restore audit information.
      *
-     * @param createdAt      creation timestamp
-     * @param createdBy      creator user identifier
-     * @param lastModifiedAt last modification timestamp
-     * @param lastModifiedBy last modifier user identifier
+     * @param auditMetadata last modifier user identifier
      */
-    public void setAuditMetadata(Instant createdAt, String createdBy, Instant lastModifiedAt, String lastModifiedBy) {
-        this.createdAt = createdAt;
-        this.createdBy = createdBy;
-        this.lastModifiedAt = lastModifiedAt;
-        this.lastModifiedBy = lastModifiedBy;
+    public void setAuditMetadata(AuditMetadata auditMetadata) {
+        this.auditMetadata = auditMetadata;
     }
 
     // ========== Object Methods ==========

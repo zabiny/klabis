@@ -1,5 +1,6 @@
 package com.klabis.events.persistence.jdbc;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.*;
 import com.klabis.users.UserId;
 import org.springframework.data.annotation.*;
@@ -189,11 +190,12 @@ class EventMemento implements Persistable<UUID> {
 
         // Restore audit metadata
         if (this.createdAt != null) {
-            event.setAuditMetadata(
+            event.setAuditMetadata(new AuditMetadata(
                     this.createdAt,
                     this.createdBy,
                     this.lastModifiedAt,
-                    this.lastModifiedBy
+                    this.lastModifiedBy,
+                    this.version)
             );
         }
 
@@ -233,12 +235,4 @@ class EventMemento implements Persistable<UUID> {
         return isNew;
     }
 
-    // Package-private setters for Spring Data JDBC
-    void setId(UUID id) {
-        this.id = id;
-    }
-
-    void setNew(boolean isNew) {
-        this.isNew = isNew;
-    }
 }
