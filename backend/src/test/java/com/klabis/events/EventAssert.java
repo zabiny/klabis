@@ -2,6 +2,9 @@ package com.klabis.events;
 
 import com.klabis.users.UserId;
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactory;
+import org.assertj.core.api.ListAssert;
 
 import java.time.LocalDate;
 
@@ -10,6 +13,9 @@ public class EventAssert extends AbstractAssert<EventAssert, Event> {
     private EventAssert(Event actual) {
         super(actual, EventAssert.class);
     }
+
+    public static final InstanceOfAssertFactory<Event, EventAssert> EVENT_ASSERT_FACTORY = new InstanceOfAssertFactory<>(Event.class,
+            EventAssert::assertThat);
 
     public static EventAssert assertThat(Event actual) {
         return new EventAssert(actual);
@@ -104,5 +110,18 @@ public class EventAssert extends AbstractAssert<EventAssert, Event> {
             failWithMessage("Expected event id to be not null");
         }
         return this;
+    }
+
+    public EventAssert hasEmptyRegistrations() {
+        isNotNull();
+        if (actual.getRegistrations() != null  && !actual.getRegistrations().isEmpty()) {
+            failWithMessage("Expected event registrations to be empty but contained %d registrations".formatted(actual.getRegistrations().size()));
+        }
+        return this;
+    }
+
+    public ListAssert<EventRegistration> getRegistrations() {
+        isNotNull();
+        return Assertions.assertThat(actual.getRegistrations());
     }
 }

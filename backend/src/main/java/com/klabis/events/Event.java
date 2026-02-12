@@ -107,7 +107,9 @@ public class Event {
             String organizer,
             WebsiteUrl websiteUrl,
             UserId eventCoordinatorId,
-            EventStatus status) {
+            EventStatus status,
+            List<EventRegistration> registrations,
+            AuditMetadata auditMetadata) {
 
         Event event = new Event(
                 id,
@@ -119,6 +121,8 @@ public class Event {
                 eventCoordinatorId,
                 status
         );
+        event.registrations.addAll(registrations);
+        event.auditMetadata = auditMetadata;
         // No domain events for reconstructed entities
         return event;
     }
@@ -331,11 +335,12 @@ public class Event {
      * <p>
      * Business rules:
      * - Registration is only allowed for ACTIVE events
-     * - Member cannot be registered twice for the same event
+     * - Member cannot be registered twice for the same event (domain invariant)
      *
      * @param memberId     member's user ID (required)
      * @param siCardNumber SI card number (required)
-     * @throws IllegalStateException if event is not ACTIVE or member already registered
+     * @throws BusinessRuleViolationException if event is not ACTIVE
+     * @throws IllegalStateException          if member is already registered (domain invariant violation)
      */
     public void registerMember(UserId memberId, SiCardNumber siCardNumber) {
         // Check event status
@@ -497,16 +502,6 @@ public class Event {
      */
     public String getLastModifiedBy() {
         return auditMetadata != null ? auditMetadata.lastModifiedBy() : null;
-    }
-
-    /**
-     * Sets audit metadata on this event.
-     * Public method for persistence layer to restore audit information.
-     *
-     * @param auditMetadata last modifier user identifier
-     */
-    public void setAuditMetadata(AuditMetadata auditMetadata) {
-        this.auditMetadata = auditMetadata;
     }
 
     // ========== Object Methods ==========

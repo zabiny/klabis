@@ -1,7 +1,10 @@
 package com.klabis.events.persistence.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.events.*;
+import com.klabis.events.Event;
+import com.klabis.events.EventId;
+import com.klabis.events.EventStatus;
+import com.klabis.events.WebsiteUrl;
 import com.klabis.users.UserId;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.Persistable;
@@ -171,7 +174,7 @@ class EventMemento implements Persistable<UUID> {
         UserId coordinatorId = this.eventCoordinatorId != null ? new UserId(this.eventCoordinatorId) : null;
         EventStatus eventStatus = EventStatus.valueOf(this.status);
 
-        Event event = Event.reconstruct(
+        return Event.reconstruct(
                 eventId,
                 this.name,
                 this.eventDate,
@@ -179,27 +182,15 @@ class EventMemento implements Persistable<UUID> {
                 this.organizer,
                 websiteUrlObj,
                 coordinatorId,
-                eventStatus
+                eventStatus,
+                registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),
+                new AuditMetadata(
+                        this.createdAt,
+                        this.createdBy,
+                        this.lastModifiedAt,
+                        this.lastModifiedBy,
+                        this.version)
         );
-
-        // Reconstruct registrations
-        this.registrations.forEach(regMemento -> {
-            EventRegistration registration = regMemento.toEventRegistration();
-            event.addRegistration(registration);
-        });
-
-        // Restore audit metadata
-        if (this.createdAt != null) {
-            event.setAuditMetadata(new AuditMetadata(
-                    this.createdAt,
-                    this.createdBy,
-                    this.lastModifiedAt,
-                    this.lastModifiedBy,
-                    this.version)
-            );
-        }
-
-        return event;
     }
 
     /**

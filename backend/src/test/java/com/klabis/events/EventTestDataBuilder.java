@@ -1,8 +1,11 @@
 package com.klabis.events;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.UserId;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class EventTestDataBuilder {
@@ -13,12 +16,31 @@ public class EventTestDataBuilder {
     private String organizer = "Test Organizer";
     private WebsiteUrl websiteUrl = null;
     private UserId coordinatorId = null;
+    private EventId eventId = new EventId(UUID.randomUUID());
+    private List<EventRegistration> registrations = new ArrayList<>();
+    private AuditMetadata auditMetadata = null;
 
     private EventTestDataBuilder() {
     }
 
     public static EventTestDataBuilder anEvent() {
         return new EventTestDataBuilder();
+    }
+
+    public static EventTestDataBuilder anEventWithId(EventId eventId) {
+        EventTestDataBuilder result = anEvent();
+        result.eventId = eventId;
+        return result;
+    }
+
+    public EventTestDataBuilder addRegistration(EventRegistration registration) {
+        registrations.add(registration);
+        return this;
+    }
+
+    public EventTestDataBuilder addRegistrations(List<EventRegistration> registrations) {
+        this.registrations.addAll(registrations);
+        return this;
     }
 
     public EventTestDataBuilder withName(String name) {
@@ -52,7 +74,16 @@ public class EventTestDataBuilder {
     }
 
     public Event build() {
-        return Event.create(name, eventDate, location, organizer, websiteUrl, coordinatorId);
+        return Event.reconstruct(eventId,
+                name,
+                eventDate,
+                location,
+                organizer,
+                websiteUrl,
+                coordinatorId,
+                EventStatus.DRAFT,
+                registrations,
+                auditMetadata);
     }
 
     public Event buildPublished() {
