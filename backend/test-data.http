@@ -1,0 +1,425 @@
+### Create test data: 10 members and 16 events
+### Uses "local" environment from http-client.env.json
+
+### Register member 1 - adult male
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Jan",
+  "lastName": "Novak",
+  "dateOfBirth": "1990-03-15",
+  "nationality": "CZ",
+  "gender": "MALE",
+  "email": "jan.novak@example.com",
+  "phone": "+420601111111",
+  "address": {
+    "street": "Hlavni 10",
+    "city": "Praha",
+    "postalCode": "11000",
+    "country": "CZ"
+  }
+}
+
+### Register member 2 - adult female
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Marie",
+  "lastName": "Svobodova",
+  "dateOfBirth": "1995-07-22",
+  "nationality": "CZ",
+  "gender": "FEMALE",
+  "email": "marie.svobodova@example.com",
+  "phone": "+420602222222",
+  "address": {
+    "street": "Namesti Miru 5",
+    "city": "Brno",
+    "postalCode": "60200",
+    "country": "CZ"
+  }
+}
+
+### Register member 3 - junior with guardian
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Tomas",
+  "lastName": "Dvorak",
+  "dateOfBirth": "2014-11-08",
+  "nationality": "CZ",
+  "gender": "MALE",
+  "email": "tomas.dvorak@example.com",
+  "phone": "+420603333333",
+  "address": {
+    "street": "Lesni 7",
+    "city": "Olomouc",
+    "postalCode": "77900",
+    "country": "CZ"
+  },
+  "guardian": {
+    "relationship": "PARENT",
+    "firstName": "Petr",
+    "lastName": "Dvorak",
+    "email": "petr.dvorak@example.com",
+    "phone": "+420604444444"
+  }
+}
+
+### Create event 1 - spring race
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "1. BZL: Jarni sprint",
+  "eventDate": "2026-03-15",
+  "location": "Brno",
+  "organizer": "ZBM"
+}
+
+### Create event 2 - spring long distance
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "2. BZL: Klasika",
+  "eventDate": "2026-04-12",
+  "location": "Blansko",
+  "organizer": "ZBM"
+}
+
+### Create event 3 - summer camp
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Letni soustredeni",
+  "eventDate": "2026-07-01",
+  "location": "Vysocina",
+  "organizer": "ZBM"
+}
+
+### Create event 4 - autumn relay
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "3. BZL: Stafety",
+  "eventDate": "2026-10-04",
+  "location": "Dubnany",
+  "organizer": "ZBM"
+}
+
+### Register member 4 - adult female, same year as member 1
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Eva",
+  "lastName": "Cerna",
+  "dateOfBirth": "1990-08-20",
+  "nationality": "CZ",
+  "gender": "FEMALE",
+  "email": "eva.cerna@example.com",
+  "phone": "+420605555555",
+  "address": {
+    "street": "Palackeho 23",
+    "city": "Ostrava",
+    "postalCode": "70200",
+    "country": "CZ"
+  }
+}
+
+### Register member 5 - adult male
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Pavel",
+  "lastName": "Kolar",
+  "dateOfBirth": "1988-12-05",
+  "nationality": "CZ",
+  "gender": "MALE",
+  "email": "pavel.kolar@example.com",
+  "phone": "+420606666666",
+  "address": {
+    "street": "Jiraskova 45",
+    "city": "Plzen",
+    "postalCode": "30100",
+    "country": "CZ"
+  }
+}
+
+### Register member 6 - junior male, same year as member 3
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Lukas",
+  "lastName": "Maly",
+  "dateOfBirth": "2014-02-14",
+  "nationality": "CZ",
+  "gender": "MALE",
+  "email": "lukas.maly@example.com",
+  "phone": "+420607777777",
+  "address": {
+    "street": "Skolni 12",
+    "city": "Brno",
+    "postalCode": "61200",
+    "country": "CZ"
+  },
+  "guardian": {
+    "relationship": "PARENT",
+    "firstName": "Jana",
+    "lastName": "Mala",
+    "email": "jana.mala@example.com",
+    "phone": "+420608888888"
+  }
+}
+
+### Register member 7 - adult female, same year as member 2
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Katerina",
+  "lastName": "Vesela",
+  "dateOfBirth": "1995-04-30",
+  "nationality": "CZ",
+  "gender": "FEMALE",
+  "email": "katerina.vesela@example.com",
+  "phone": "+420609999999",
+  "address": {
+    "street": "Masarykova 78",
+    "city": "Liberec",
+    "postalCode": "46001",
+    "country": "CZ"
+  }
+}
+
+### Register member 8 - junior female with guardian
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Tereza",
+  "lastName": "Novotna",
+  "dateOfBirth": "2016-06-18",
+  "nationality": "CZ",
+  "gender": "FEMALE",
+  "email": "tereza.novotna@example.com",
+  "phone": "+420611111112",
+  "address": {
+    "street": "Sportovni 34",
+    "city": "Hradec Kralove",
+    "postalCode": "50002",
+    "country": "CZ"
+  },
+  "guardian": {
+    "relationship": "PARENT",
+    "firstName": "Martin",
+    "lastName": "Novotny",
+    "email": "martin.novotny@example.com",
+    "phone": "+420612222223"
+  }
+}
+
+### Register member 9 - adult male, same year as member 5
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Miroslav",
+  "lastName": "Benes",
+  "dateOfBirth": "1988-03-11",
+  "nationality": "CZ",
+  "gender": "MALE",
+  "email": "miroslav.benes@example.com",
+  "phone": "+420613333334",
+  "address": {
+    "street": "Zahradni 56",
+    "city": "Ceske Budejovice",
+    "postalCode": "37001",
+    "country": "CZ"
+  }
+}
+
+### Register member 10 - adult female
+POST {{host}}/api/members
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "firstName": "Lenka",
+  "lastName": "Horakova",
+  "dateOfBirth": "1992-09-25",
+  "nationality": "CZ",
+  "gender": "FEMALE",
+  "email": "lenka.horakova@example.com",
+  "phone": "+420614444445",
+  "address": {
+    "street": "Kvetna 89",
+    "city": "Pardubice",
+    "postalCode": "53002",
+    "country": "CZ"
+  }
+}
+
+### Create event 5 - winter training
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Zimni trenink",
+  "eventDate": "2026-01-20",
+  "location": "Bile Karpaty",
+  "organizer": "OKV"
+}
+
+### Create event 6 - spring night race
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Nocni zavod",
+  "eventDate": "2026-05-08",
+  "location": "Praha",
+  "organizer": "SKP"
+}
+
+### Create event 7 - spring middle distance
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "4. BZL: Stredni trat",
+  "eventDate": "2026-05-23",
+  "location": "Tišnov",
+  "organizer": "ZBM"
+}
+
+### Create event 8 - summer championship
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Mistrovstvi CR",
+  "eventDate": "2026-06-20",
+  "location": "Sumava",
+  "organizer": "OOB"
+}
+
+### Create event 9 - summer youth camp
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Detsky tabor",
+  "eventDate": "2026-07-15",
+  "location": "Krkonose",
+  "organizer": "TJL"
+}
+
+### Create event 10 - summer relay championship
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Mistrovstvi CR ve stafetach",
+  "eventDate": "2026-08-10",
+  "location": "Jizerske hory",
+  "organizer": "OOB"
+}
+
+### Create event 11 - autumn sprint
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Podzimni sprint",
+  "eventDate": "2026-09-12",
+  "location": "Olomouc",
+  "organizer": "SKO"
+}
+
+### Create event 12 - autumn forest race
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "5. BZL: Lesni maraton",
+  "eventDate": "2026-09-26",
+  "location": "Adamov",
+  "organizer": "ZBM"
+}
+
+### Create event 13 - autumn regional championship
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Krajsky prebor",
+  "eventDate": "2026-10-17",
+  "location": "Vyskov",
+  "organizer": "SKV"
+}
+
+### Create event 14 - autumn night orienteering
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Nocni orientacni beh",
+  "eventDate": "2026-10-31",
+  "location": "Lednicko-valticky areal",
+  "organizer": "OKV"
+}
+
+### Create event 15 - winter series start
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Zimni serie - 1. zavod",
+  "eventDate": "2026-11-14",
+  "location": "Brno - Reckovice",
+  "organizer": "ZBM"
+}
+
+### Create event 16 - winter championship qualification
+POST {{host}}/api/events
+Content-Type: application/json
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+{
+  "name": "Kvalifikace na MS",
+  "eventDate": "2026-12-05",
+  "location": "Beskydy",
+  "organizer": "TJF"
+}
