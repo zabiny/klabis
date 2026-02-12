@@ -116,6 +116,7 @@ class ExpiringDocumentTest {
                 .hasMessageContaining("Identity card validity date");
     }
 
+    // TODO: this needs to be fixed: it must be possible to create value object with date in past. It must not be possible to "EDIT" such date to past date (validation must be on different place)
     @Test
     @DisplayName("Should reject document with past validity date")
     void shouldRejectDocumentWithPastValidityDate() {

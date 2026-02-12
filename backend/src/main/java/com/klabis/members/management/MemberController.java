@@ -1,7 +1,8 @@
 package com.klabis.members.management;
 
 import com.klabis.common.ui.RootModel;
-import com.klabis.members.*;
+import com.klabis.members.Member;
+import com.klabis.members.Members;
 import com.klabis.users.Authority;
 import com.klabis.users.UserId;
 import com.klabis.users.authorization.HasAuthority;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -50,19 +52,23 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @Tag(name = "Members ", description = "Member registration and management API")
 @ExposesResourceFor(Member.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
+@Import(MemberMapperImpl.class) // TODO: find out why this is needed
 class MemberController {
 
     private final ManagementService managementService;
     private final Members memberRepository;
     private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
+    private final MemberMapper memberMapper;
 
     public MemberController(
             ManagementService managementService,
             Members memberRepository,
-            PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler) {
+            PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
+            MemberMapper memberMapper) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
+        this.memberMapper = memberMapper;
     }
 
     /**
@@ -117,7 +123,7 @@ class MemberController {
                 .orElseThrow(() -> new MemberNotFoundException(updatedMemberId));
 
         // Map to response
-        MemberDetailsResponse response = mapToDetailsResponse(updatedMember);
+        MemberDetailsResponse response = memberMapper.toDetailsResponse(updatedMember);
 
         // Create entity model with HATEOAS links
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
@@ -171,7 +177,7 @@ class MemberController {
 
         // Map to DTOs and convert to PagedModel using assembler
         PagedModel<EntityModel<MemberSummaryResponse>> pagedModel = pagedResourcesAssembler.toModel(
-                memberPage.map(this::toSummaryResponse),
+                memberPage.map(memberMapper::toSummaryResponse),
                 response -> {
                     EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
                     // Add self link to individual member
@@ -234,7 +240,7 @@ class MemberController {
                 .orElseThrow(() -> new MemberNotFoundException(id));
 
         // Map to response
-        MemberDetailsResponse response = mapToDetailsResponse(member);
+        MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
 
         // Create entity model with HATEOAS links
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
@@ -254,111 +260,6 @@ class MemberController {
         return ResponseEntity.ok(entityModel);
     }
 
-    /**
-     * Maps Member domain object to MemberDetailsResponse.
-     *
-     * @param member the member domain object
-     * @return the member details response
-     */
-    private MemberDetailsResponse mapToDetailsResponse(Member member) {
-        // Map address, guardian, email and phone using null-safe methods
-        AddressResponse addressResponse = AddressResponse.from(member.getAddress());
-        GuardianDTO guardianDTO = GuardianDTO.from(member.getGuardian());
-        String email = member.getEmail().value();
-        String phone = member.getPhone().value();
-
-        // Map optional fields
-        String chipNumber = member.getChipNumber();
-        IdentityCardDto identityCardDto = mapToIdentityCardDto(member.getIdentityCard());
-        MedicalCourseDto medicalCourseDto = mapToMedicalCourseDto(member.getMedicalCourse());
-        TrainerLicenseDto trainerLicenseDto = mapToTrainerLicenseDto(member.getTrainerLicense());
-        DrivingLicenseGroup drivingLicenseGroup = member.getDrivingLicenseGroup();
-        String dietaryRestrictions = member.getDietaryRestrictions();
-
-        return new MemberDetailsResponse(
-                member.getId().uuid(),
-                member.getRegistrationNumber().getValue(),
-                member.getFirstName(),
-                member.getLastName(),
-                member.getDateOfBirth(),
-                member.getNationality(),
-                member.getGender(),
-                email,
-                phone,
-                addressResponse,
-                guardianDTO,
-                member.isActive(),
-                chipNumber,
-                identityCardDto,
-                medicalCourseDto,
-                trainerLicenseDto,
-                drivingLicenseGroup,
-                dietaryRestrictions
-        );
-    }
-
-    /**
-     * Maps Member domain object to MemberSummaryResponse.
-     *
-     * @param member the member domain object
-     * @return the member summary response
-     */
-    private MemberSummaryResponse toSummaryResponse(Member member) {
-        return new MemberSummaryResponse(
-                member.getId().uuid(),
-                member.getFirstName(),
-                member.getLastName(),
-                member.getRegistrationNumber().getValue()
-        );
-    }
-
-    /**
-     * Maps IdentityCard domain object to IdentityCardDto.
-     *
-     * @param identityCard the identity card to map
-     * @return the identity card DTO, or null if identityCard is null
-     */
-    private IdentityCardDto mapToIdentityCardDto(IdentityCard identityCard) {
-        if (identityCard == null) {
-            return null;
-        }
-        return new IdentityCardDto(
-                identityCard.cardNumber(),
-                identityCard.validityDate()
-        );
-    }
-
-    /**
-     * Maps MedicalCourse domain object to MedicalCourseDto.
-     *
-     * @param medicalCourse the medical course to map
-     * @return the medical course DTO, or null if medicalCourse is null
-     */
-    private MedicalCourseDto mapToMedicalCourseDto(MedicalCourse medicalCourse) {
-        if (medicalCourse == null) {
-            return null;
-        }
-        return new MedicalCourseDto(
-                medicalCourse.completionDate(),
-                medicalCourse.validityDate()
-        );
-    }
-
-    /**
-     * Maps TrainerLicense domain object to TrainerLicenseDto.
-     *
-     * @param trainerLicense the trainer license to map
-     * @return the trainer license DTO, or null if trainerLicense is null
-     */
-    private TrainerLicenseDto mapToTrainerLicenseDto(TrainerLicense trainerLicense) {
-        if (trainerLicense == null) {
-            return null;
-        }
-        return new TrainerLicenseDto(
-                trainerLicense.licenseNumber(),
-                trainerLicense.validityDate()
-        );
-    }
 }
 
 @Component

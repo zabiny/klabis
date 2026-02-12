@@ -69,6 +69,8 @@ public record ExpiringDocument<T extends DocumentType>(
         if (validityDate == null) {
             throw new IllegalArgumentException(documentTypeName + " validity date is required");
         }
+
+        // TODO: this needs to be corrected - value object must be possible to create with date in past. This validation must be in places where editation happens (validity date must not be in past when value is edited)
         if (validityDate.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(documentTypeName + " validity date cannot be in the past");
         }
