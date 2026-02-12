@@ -115,6 +115,7 @@ API client configured in `src/api/setup.ts`:
 - **Base URL:** Auto-detected (`/api` in dev, proxied to backend)
 - **Authentication:** OAuth2 Bearer tokens via `authorizedFetch`
 - **HATEOAS:** HAL+JSON support in `src/api/hateoas.ts`
+- **Klabis API types:** Type definitions in [klabisApi.d.ts](src/api/klabisApi.d.ts). Shall be used for typesafe work with requests and responses (export needed types through [index.ts](src/api/index.ts))
 
 ### HATEOAS Conventions
 

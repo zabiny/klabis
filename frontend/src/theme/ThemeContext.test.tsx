@@ -35,7 +35,7 @@ describe('ThemeContext', () => {
             })),
         })
 
-        // Mock document.documentElement classList methods
+        // Mock document.documentElement.classList methods
         vi.spyOn(document.documentElement.classList, 'add')
         vi.spyOn(document.documentElement.classList, 'remove')
     })
@@ -69,17 +69,7 @@ describe('ThemeContext', () => {
             expect(result.current.theme).toBe('dark')
         })
 
-        it('should initialize with system theme from localStorage', () => {
-            mockLocalStorage['theme'] = 'system'
-
-            const {result} = renderHook(() => useTheme(), {
-                wrapper: createWrapper(),
-            })
-
-            expect(result.current.theme).toBe('system')
-        })
-
-        it('should default to dark theme when system prefers dark and no saved preference', () => {
+        it('should default to light theme when system prefers dark and no saved preference', () => {
             const {result} = renderHook(() => useTheme(), {
                 wrapper: createWrapper(),
             })
@@ -123,18 +113,6 @@ describe('ThemeContext', () => {
             expect(result.current.theme).toBe('dark')
         })
 
-        it('should change theme to system', () => {
-            const {result} = renderHook(() => useTheme(), {
-                wrapper: createWrapper(),
-            })
-
-            act(() => {
-                result.current.setTheme('system')
-            })
-
-            expect(result.current.theme).toBe('system')
-        })
-
         it('should save theme to localStorage', () => {
             const {result} = renderHook(() => useTheme(), {
                 wrapper: createWrapper(),
@@ -175,22 +153,8 @@ describe('ThemeContext', () => {
             expect(result.current.theme).toBe('dark')
         })
 
-        it('should cycle from dark to system', () => {
+        it('should cycle from dark to light', () => {
             mockLocalStorage['theme'] = 'dark'
-
-            const {result} = renderHook(() => useTheme(), {
-                wrapper: createWrapper(),
-            })
-
-            act(() => {
-                result.current.toggleTheme()
-            })
-
-            expect(result.current.theme).toBe('system')
-        })
-
-        it('should cycle from system to light', () => {
-            mockLocalStorage['theme'] = 'system'
 
             const {result} = renderHook(() => useTheme(), {
                 wrapper: createWrapper(),
@@ -203,7 +167,7 @@ describe('ThemeContext', () => {
             expect(result.current.theme).toBe('light')
         })
 
-        it('should cycle through all three states sequentially', () => {
+        it('should cycle through both states sequentially', () => {
             const {result} = renderHook(() => useTheme(), {
                 wrapper: createWrapper(),
             })
@@ -211,91 +175,45 @@ describe('ThemeContext', () => {
             // Start with dark (from default)
             expect(result.current.theme).toBe('dark')
 
-            // First toggle: dark -> system
-            act(() => {
-                result.current.toggleTheme()
-            })
-            expect(result.current.theme).toBe('system')
-
-            // Second toggle: system -> light
+            // First toggle: dark -> light
             act(() => {
                 result.current.toggleTheme()
             })
             expect(result.current.theme).toBe('light')
 
-            // Third toggle: light -> dark
+            // Second toggle: light -> dark
             act(() => {
                 result.current.toggleTheme()
             })
             expect(result.current.theme).toBe('dark')
+
+            // Third toggle: dark -> light
+            act(() => {
+                result.current.toggleTheme()
+            })
+            expect(result.current.theme).toBe('light')
         })
     })
 
-    describe('effectiveTheme', () => {
-        it('should return light when theme is light', () => {
-            mockLocalStorage['theme'] = 'light'
-
-            const {result} = renderHook(() => useTheme(), {
-                wrapper: createWrapper(),
-            })
-
-            expect(result.current.effectiveTheme).toBe('light')
-        })
-
-        it('should return dark when theme is dark', () => {
+    describe('isDark', () => {
+        it('should return true when theme is dark', () => {
             mockLocalStorage['theme'] = 'dark'
 
             const {result} = renderHook(() => useTheme(), {
                 wrapper: createWrapper(),
             })
 
-            expect(result.current.effectiveTheme).toBe('dark')
+            expect(result.current.isDark).toBe(true)
         })
 
-        it('should return dark when theme is system and system prefers dark', () => {
-            mockLocalStorage['theme'] = 'system'
+        it('should return false when theme is light', () => {
+            mockLocalStorage['theme'] = 'light'
 
             const {result} = renderHook(() => useTheme(), {
                 wrapper: createWrapper(),
             })
 
-            expect(result.current.effectiveTheme).toBe('dark')
-        })
-
-        it('should return light when theme is system and system prefers light', () => {
-            mockLocalStorage['theme'] = 'system'
-
-            // Mock system preference to light
-            Object.defineProperty(window, 'matchMedia', {
-                writable: true,
-                value: vi.fn().mockImplementation((query) => ({
-                    matches: query !== '(prefers-color-scheme: dark)',
-                    media: query,
-                    onchange: null,
-                    addListener: vi.fn(),
-                    removeListener: vi.fn(),
-                    addEventListener: vi.fn(),
-                    removeEventListener: vi.fn(),
-                    dispatchEvent: vi.fn(),
-                })),
-            })
-
-            const {result} = renderHook(() => useTheme(), {
-                wrapper: createWrapper(),
-            })
-
-            expect(result.current.effectiveTheme).toBe('light')
-        })
-
-        it('should never be system (always light or dark)', () => {
-            mockLocalStorage['theme'] = 'system'
-
-            const {result} = renderHook(() => useTheme(), {
-                wrapper: createWrapper(),
-            })
-
-            expect(result.current.effectiveTheme).not.toBe('system')
-            expect(['light', 'dark']).toContain(result.current.effectiveTheme)
+            expect(result.current.isDark).toBe(false)
         })
     })
 
@@ -310,12 +228,6 @@ describe('ThemeContext', () => {
             })
 
             expect(mockLocalStorage['theme']).toBe('light')
-
-            act(() => {
-                result.current.setTheme('system')
-            })
-
-            expect(mockLocalStorage['theme']).toBe('system')
         })
 
         it('should persist toggle changes to localStorage', () => {
@@ -327,15 +239,14 @@ describe('ThemeContext', () => {
                 result.current.toggleTheme()
             })
 
-            expect(mockLocalStorage['theme']).toBe('system')
+            expect(mockLocalStorage['theme']).toBe('light')
         })
     })
 
     describe('useTheme hook validation', () => {
         it('should throw error when used outside ThemeProvider', () => {
             // Suppress console.error for this test
-            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
-            })
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
             expect(() => {
                 renderHook(() => useTheme())

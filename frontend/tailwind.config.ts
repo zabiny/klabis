@@ -1,5 +1,4 @@
 import type {Config} from 'tailwindcss'
-import defaultTheme from 'tailwindcss/defaultTheme'
 
 const config: Config = {
     content: [
@@ -10,96 +9,83 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                // Neutral base colors (using CSS variables for theme support)
-                black: 'var(--color-black)',
-                dark: 'var(--color-dark)',
-                surface: {
-                    DEFAULT: 'var(--color-surface-raised)',
-                    base: 'var(--color-surface-base)',
-                    raised: 'var(--color-surface-raised)',
+                // Semantic color mapping using CSS variables
+                bg: {
+                    base: 'var(--color-bg-base)',
+                    elevated: 'var(--color-bg-elevated)',
+                    subtle: 'var(--color-bg-subtle)',
                 },
-                // Primary action color (blue)
-                primary: {
-                    DEFAULT: 'var(--color-primary)',
-                    light: 'var(--color-primary-light)',
-                    dark: 'var(--color-primary-dark)',
-                },
-                // Secondary action color
-                secondary: {
-                    DEFAULT: 'var(--color-secondary)',
-                    light: 'var(--color-secondary-light)',
-                    dark: 'var(--color-secondary-dark)',
-                },
-                // Semantic colors
-                feedback: {
-                    success: 'var(--color-feedback-success)',
-                    warning: 'var(--color-feedback-warning)',
-                    error: 'var(--color-feedback-error)',
-                    info: 'var(--color-feedback-info)',
-                },
-                // Focus/highlight accent
-                accent: {
-                    DEFAULT: 'var(--color-accent)',
-                    light: 'var(--color-accent-light)',
-                    dark: 'var(--color-accent-dark)',
-                },
-                // Text colors
                 text: {
                     primary: 'var(--color-text-primary)',
                     secondary: 'var(--color-text-secondary)',
                     tertiary: 'var(--color-text-tertiary)',
                 },
-                // Border colors
                 border: {
-                    DEFAULT: 'var(--color-border)',
-                    light: 'var(--color-border-light)',
-                    dark: 'var(--color-border-dark)',
+                    subtle: 'var(--color-border-subtle)',
+                    DEFAULT: 'var(--color-border-default)',
+                    strong: 'var(--color-border-strong)',
                 },
-                // Alert backgrounds (theme-aware via CSS variables)
-                alert: {
-                    success: 'var(--color-alert-success)',
-                    warning: 'var(--color-alert-warning)',
-                    error: 'var(--color-alert-error)',
-                    info: 'var(--color-alert-info)',
+                primary: {
+                    DEFAULT: 'var(--color-primary)',
+                    hover: 'var(--color-primary-hover)',
+                    active: 'var(--color-primary-active)',
+                    subtle: 'var(--color-primary-subtle)',
                 },
-                // Alert text colors
-                'alert-text': {
-                    success: 'var(--color-alert-text-success)',
-                    warning: 'var(--color-alert-text-warning)',
-                    error: 'var(--color-alert-text-error)',
-                    info: 'var(--color-alert-text-info)',
+                secondary: {
+                    DEFAULT: 'var(--color-secondary)',
+                    hover: 'var(--color-secondary-hover)',
+                    active: 'var(--color-secondary-active)',
+                    subtle: 'var(--color-secondary-subtle)',
+                },
+                accent: {
+                    DEFAULT: 'var(--color-accent)',
+                    hover: 'var(--color-accent-hover)',
+                    subtle: 'var(--color-accent-subtle)',
+                },
+                success: {
+                    DEFAULT: 'var(--color-success)',
+                    bg: 'var(--color-success-bg)',
+                },
+                warning: {
+                    DEFAULT: 'var(--color-warning)',
+                    bg: 'var(--color-warning-bg)',
+                },
+                error: {
+                    DEFAULT: 'var(--color-error)',
+                    bg: 'var(--color-error-bg)',
+                },
+                info: {
+                    DEFAULT: 'var(--color-info)',
+                    bg: 'var(--color-info-bg)',
                 },
             },
             fontFamily: {
-                sans: ['Geist', 'Sohne', ...defaultTheme.fontFamily.sans],
-                display: ['Sohne', ...defaultTheme.fontFamily.sans],
-                mono: ['Fira Code', ...defaultTheme.fontFamily.mono],
+                sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                display: ['Space Grotesk', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                mono: ['JetBrains Mono', 'monospace'],
             },
             spacing: {
-                'xs': '0.125rem', // 2px
-                'sm': '0.25rem',  // 4px
-                'md': '0.5rem',   // 8px
-                'lg': '0.75rem',  // 12px
-                'xl': '1rem',     // 16px
-                '2xl': '1.5rem',  // 24px
-                '3xl': '2rem',    // 32px
-                '4xl': '3rem',    // 48px
+                'xs': '0.125rem',  // 2px
+                'sm': '0.25rem',   // 4px
+                'md': '0.5rem',    // 8px
+                'lg': '0.75rem',   // 12px
+                'xl': '1rem',       // 16px
+                '2xl': '1.5rem',   // 24px
+                '3xl': '2rem',      // 32px
+                '4xl': '3rem',      // 48px
             },
             borderRadius: {
                 'sm': '6px',
                 'base': '8px',
                 'md': '8px',
                 'lg': '12px',
-                'pill': '999px',
+                'xl': '16px',
+                'pill': '9999px',
             },
             boxShadow: {
-                'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                'base': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-                'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                'dark-sm': '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
-                'dark-md': '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
-                'dark-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+                'sm': 'var(--color-shadow-sm)',
+                'md': 'var(--color-shadow-md)',
+                'lg': 'var(--color-shadow-lg)',
             },
             transitionDuration: {
                 'fast': '150ms',
@@ -108,37 +94,37 @@ const config: Config = {
             },
             keyframes: {
                 'fade-in': {
-                    '0%': {opacity: '0'},
-                    '100%': {opacity: '1'},
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
                 },
                 'slide-up': {
-                    '0%': {transform: 'translateY(1rem)', opacity: '0'},
-                    '100%': {transform: 'translateY(0)', opacity: '1'},
+                    '0%': { transform: 'translateY(1rem)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' },
                 },
                 'slide-down': {
-                    '0%': {transform: 'translateY(-1rem)', opacity: '0'},
-                    '100%': {transform: 'translateY(0)', opacity: '1'},
+                    '0%': { transform: 'translateY(-1rem)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' },
                 },
                 'scale-in': {
-                    '0%': {transform: 'scale(0.95)', opacity: '0'},
-                    '100%': {transform: 'scale(1)', opacity: '1'},
+                    '0%': { transform: 'scale(0.95)', opacity: '0' },
+                    '100%': { transform: 'scale(1)', opacity: '1' },
                 },
                 'bounce-gentle': {
-                    '0%, 100%': {transform: 'translateY(0)'},
-                    '50%': {transform: 'translateY(-4px)'},
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-4px)' },
                 },
                 'shake': {
-                    '0%, 100%': {transform: 'translateX(0)'},
-                    '25%': {transform: 'translateX(-3px)'},
-                    '75%': {transform: 'translateX(3px)'},
+                    '0%, 100%': { transform: 'translateX(0)' },
+                    '25%': { transform: 'translateX(-3px)' },
+                    '75%': { transform: 'translateX(3px)' },
                 },
                 'shimmer': {
-                    '0%': {backgroundPosition: '-1000px 0'},
-                    '100%': {backgroundPosition: '1000px 0'},
+                    '0%': { backgroundPosition: '-1000px 0' },
+                    '100%': { backgroundPosition: '1000px 0' },
                 },
                 'spin-slow': {
-                    '0%': {transform: 'rotate(0deg)'},
-                    '100%': {transform: 'rotate(360deg)'},
+                    '0%': { transform: 'rotate(0deg)' },
+                    '100%': { transform: 'rotate(360deg)' },
                 },
             },
             animation: {

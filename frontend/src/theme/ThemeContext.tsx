@@ -1,110 +1,79 @@
 import type {ReactNode} from 'react'
 import {createContext, useContext, useEffect, useState} from 'react'
 
-type Theme = 'light' | 'dark' | 'system'
-type EffectiveTheme = 'light' | 'dark'
+type Theme = 'light' | 'dark'
 
 interface ThemeContextType {
     theme: Theme
-    effectiveTheme: EffectiveTheme
     toggleTheme: () => void
     setTheme: (theme: Theme) => void
+    isDark: boolean
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 /**
- * Helper function to resolve system theme preference
+ * Helper function to get initial theme from localStorage or system preference
  */
-const getSystemThemePreference = (): EffectiveTheme => {
+const getInitialTheme = (): Theme => {
+    try {
+        const savedTheme = localStorage.getItem('theme') as Theme | null
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+            return savedTheme
+        }
+    } catch {
+        // localStorage not available
+    }
+    // Fallback to system preference
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 /**
- * Helper function to get the effective theme (resolves 'system' to actual theme)
+ * Apply theme to HTML element
  */
-const getEffectiveTheme = (theme: Theme): EffectiveTheme => {
-    if (theme === 'system') {
-        return getSystemThemePreference()
+const applyThemeToDOM = (theme: Theme) => {
+    const htmlElement = document.documentElement
+    if (theme === 'dark') {
+        htmlElement.classList.add('dark')
+    } else {
+        htmlElement.classList.remove('dark')
     }
-    return theme as EffectiveTheme
 }
 
 /**
- * ThemeProvider component for managing dark/light/system mode
- * Wraps the application to provide theme context
+ * ThemeProvider component for managing dark/light mode
+ * Wraps application to provide theme context
  */
 export const ThemeProvider = ({children}: { children: ReactNode }) => {
-    const [theme, setThemeState] = useState<Theme>('dark')
-    const [effectiveTheme, setEffectiveTheme] = useState<EffectiveTheme>('dark')
+    const [theme, setThemeState] = useState<Theme>(getInitialTheme)
 
-    // Initialize theme from localStorage or system preference
+    // Apply theme on mount and when theme changes
     useEffect(() => {
+        applyThemeToDOM(theme)
+
         try {
-            const savedTheme = localStorage.getItem('theme') as Theme | null
-            const initialTheme = (savedTheme || 'dark') as Theme
-            setThemeState(initialTheme)
-            const effective = getEffectiveTheme(initialTheme)
-            setEffectiveTheme(effective)
-            applyTheme(initialTheme, effective)
+            localStorage.setItem('theme', theme)
         } catch {
-            // Handle cases where localStorage is not available (e.g., private browsing)
-            const systemPref = getSystemThemePreference()
-            setThemeState('system')
-            setEffectiveTheme(systemPref)
-            applyTheme('system', systemPref)
-        }
-    }, [])
-
-    // Listen for system preference changes when theme is 'system'
-    useEffect(() => {
-        if (theme !== 'system') return
-
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-        const handleChange = () => {
-            const newEffectiveTheme = getSystemThemePreference()
-            setEffectiveTheme(newEffectiveTheme)
-            applyTheme('system', newEffectiveTheme)
-        }
-
-        mediaQuery.addEventListener('change', handleChange)
-
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange)
+            // localStorage not available (private browsing) - theme is still applied
         }
     }, [theme])
 
-    const applyTheme = (newTheme: Theme, effective: EffectiveTheme) => {
-        const htmlElement = document.documentElement
-        if (effective === 'dark') {
-            htmlElement.classList.add('dark')
-        } else {
-            htmlElement.classList.remove('dark')
-        }
-        try {
-            localStorage.setItem('theme', newTheme)
-        } catch {
-            // Handle cases where localStorage is not available (e.g., private browsing)
-            // Theme is already applied, just can't persist it
-        }
-    }
-
     const setTheme = (newTheme: Theme) => {
         setThemeState(newTheme)
-        const effective = getEffectiveTheme(newTheme)
-        setEffectiveTheme(effective)
-        applyTheme(newTheme, effective)
+        applyThemeToDOM(newTheme)
     }
 
     const toggleTheme = () => {
-        const themes: Theme[] = ['light', 'dark', 'system']
-        const currentIndex = themes.indexOf(theme)
-        const nextIndex = (currentIndex + 1) % themes.length
-        setTheme(themes[nextIndex])
+        setThemeState(prev => prev === 'light' ? 'dark' : 'light')
     }
 
     return (
-        <ThemeContext.Provider value={{theme, effectiveTheme, toggleTheme, setTheme}}>
+        <ThemeContext.Provider value={{
+            theme,
+            toggleTheme,
+            setTheme,
+            isDark: theme === 'dark'
+        }}>
             {children}
         </ThemeContext.Provider>
     )

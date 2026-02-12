@@ -1,14 +1,14 @@
 import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
-import {Alert, Button} from '../components/UI'
+import {Alert} from '../components/UI'
 import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
 import {AdminToggle} from '../components/AdminToggle/AdminToggle'
 import type {AuthUserDetails} from '../contexts/AuthContext2'
 import {useAuth} from '../contexts/AuthContext2'
 import {useRootNavigation} from '../hooks/useRootNavigation'
-import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx";
-import {HalFormProvider} from '../contexts/HalFormContext.tsx';
+import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx"
+import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 
 const Layout = () => {
     const navigate = useNavigate()
@@ -43,7 +43,7 @@ const Layout = () => {
         }
 
         loadUserName()
-    }, [isAuthenticated, getUser]) // Note: getUser is stable due to useCallback, but kept in deps for clarity
+    }, [isAuthenticated, getUser])
 
     const handleLogout = () => {
         logout()
@@ -56,89 +56,131 @@ const Layout = () => {
         }
     }
 
-
     return (
-        <div className="flex flex-col h-screen bg-black">
-            {/* Header */}
-            <header
-                className="fixed top-0 left-0 right-0 bg-surface-raised border-b border-border text-text-primary shadow-md z-40">
-                <div className="flex items-center justify-between h-16 px-6">
-                    {/* Logo/Title */}
-                    <div className="flex items-center gap-4">
+        <div className="flex flex-col min-h-screen bg-bg-base">
+            {/* ==========================================
+                PREMIUM HEADER - ELEVATED, GLASS EFFECT
+                ========================================== */}
+            <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border-subtle">
+                <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+                    {/* Left side: Logo + mobile menu toggle */}
+                    <div className="flex items-center gap-3 sm:gap-4">
                         {/* Toggle button - hide on lg screens */}
                         {!isLargeScreen && (
                             <button
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="text-text-primary hover:bg-surface-base p-2 rounded-md transition-colors duration-base"
+                                className="p-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-subtle transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                aria-label="Toggle menu"
+                                type="button"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M4 6h16M4 12h16M4 18h16"/>
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                                 </svg>
                             </button>
                         )}
-                        <h1 className="text-lg font-semibold font-display"><NavLink to={"/"}
-                                                                                    className="text-text-primary hover:text-primary transition-colors">Klabis
-                            - Členská sekce</NavLink></h1>
+
+                        {/* Logo/Title */}
+                        <NavLink to="/" className="flex items-center gap-3 group">
+                            {/* Logo icon */}
+                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-base">
+                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2L2 7l10 5 10 10l-10-5-5 10 5-5-5 10 10 5 5-5-5 5 10z"/>
+                                </svg>
+                            </div>
+
+                            <h1 className="text-lg sm:text-xl font-display font-bold text-text-primary group-hover:text-primary transition-colors duration-fast">
+                                Klabis
+                            </h1>
+                        </NavLink>
                     </div>
 
-                    {/* Right side: User info and logout */}
-                    <div className="flex items-center gap-4">
+                    {/* Right side: User info, theme, admin, logout */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        {/* User name/info */}
                         {userDetails && (
                             userDetails.firstName && userDetails.lastName ? (
                                 userDetails.isMember ? (
                                     <button
                                         onClick={handleUserNameClick}
-                                        className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-base rounded-md transition-colors duration-base"
+                                        className="hidden sm:flex px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-subtle rounded-lg transition-all duration-fast"
+                                        title="Zobrazit detail člena"
                                     >
-                                        {userDetails.firstName} {userDetails.lastName} [{userDetails.userName}]
+                                        <span className="text-text-primary font-semibold">{userDetails.firstName} {userDetails.lastName}</span>
+                                        <span className="text-text-tertiary ml-2">[{userDetails.userName}]</span>
                                     </button>
                                 ) : (
-                                    <span className="px-3 py-2 text-sm text-text-secondary">
-                                        {userDetails.firstName} {userDetails.lastName} [{userDetails.userName}]
-                                    </span>
+                                    <div className="hidden sm:flex px-3 py-2 text-sm text-text-secondary">
+                                        <span className="font-medium text-text-primary">{userDetails.firstName} {userDetails.lastName}</span>
+                                        <span className="text-text-tertiary ml-2">[{userDetails.userName}]</span>
+                                    </div>
                                 )
                             ) : (
-                                <span className="px-3 py-2 text-sm text-text-secondary">
+                                <span className="hidden sm:inline-flex px-3 py-2 text-sm text-text-secondary">
                                     [{userDetails.userName}]
                                 </span>
                             )
                         )}
-                        <ThemeToggle/>
-                        <AdminToggle/>
-                        <Button
-                            variant="ghost"
-                            size="sm"
+
+                        {/* Theme toggle */}
+                        <ThemeToggle className="hidden sm:block" />
+
+                        {/* Admin mode toggle */}
+                        <AdminToggle />
+
+                        {/* Logout button */}
+                        <button
                             onClick={handleLogout}
-                            endIcon={<LogoutIcon size={20}/>}
+                            className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-subtle rounded-lg transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-error focus:ring-offset-2"
+                            title="Odhlásit"
+                            type="button"
                         >
-                            Odhlásit
-                        </Button>
+                            <LogoutIcon size={18} className="mr-2"/>
+                            <span className="hidden lg:inline">Odhlásit</span>
+                        </button>
+
+                        {/* Mobile menu - show all in dropdown */}
+                        <div className="sm:hidden flex items-center gap-2">
+                            <button
+                                onClick={handleLogout}
+                                className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-subtle transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                aria-label="Odhlásit"
+                                type="button"
+                            >
+                                <LogoutIcon size={18}/>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            {/* Sidebar overlay - only show on small screens */}
+            {/* ==========================================
+                SIDEBAR OVERLAY (mobile only)
+                ========================================== */}
             {sidebarOpen && !isLargeScreen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-60 z-20 transition-opacity duration-base"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 transition-opacity duration-base"
                     onClick={() => setSidebarOpen(false)}
                     data-testid="sidebar-overlay"
                 />
             )}
 
-            {/* Sidebar - always visible on lg screens, drawer on small screens */}
+            {/* ==========================================
+                SIDEBAR - NAVIGAČNÍ MENU
+                ========================================== */}
             <aside
-                className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-surface-base border-r border-border shadow-lg transform transition-transform duration-300 ease-in-out z-30 ${
+                className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-72 bg-bg-elevated border-r border-border-subtle shadow-lg transform transition-all duration-300 ease-in-out z-30 ${
                     isLargeScreen ? 'translate-x-0' : (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
                 }`}
             >
-                <nav className="flex flex-col p-4 gap-2">
+                <nav className="flex flex-col p-3 gap-1 overflow-y-auto">
                     {menuLoading ? (
-                        <div className="text-text-tertiary text-sm">Loading menu...</div>
+                        <div className="flex items-center gap-3 px-4 py-3 text-text-tertiary text-sm">
+                            <div className="w-5 h-5 rounded border-2 border-border-current border-t-transparent animate-spin" />
+                            Načítání menu...
+                        </div>
                     ) : menuError ? (
-                        <Alert severity="error" className="text-sm">
-                            Failed to load menu: {menuError.message}
+                        <Alert severity="error" className="m-3 text-sm">
+                            Chyba při načítání menu: {menuError.message}
                         </Alert>
                     ) : menuItems.length > 0 ? (
                         menuItems.map((item) => (
@@ -151,22 +193,52 @@ const Layout = () => {
                                         setSidebarOpen(false)
                                     }
                                 }}
-                                className={({isActive}) => `px-4 py-2 text-text-secondary font-medium hover:text-text-primary hover:bg-surface-raised rounded-md transition-all duration-base border-l-4 ${isActive ? 'border-l-primary bg-surface-raised text-primary' : 'border-l-transparent'}`}
-                            >
-                                {item.label}
-                            </NavLink>
+                                className={({isActive}: {isActive: boolean}) => {
+                                    const base = "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-fast"
+                                    const active = "bg-primary-subtle text-primary border-l-2 border-primary"
+                                    const inactive = "text-text-secondary hover:text-text-primary hover:bg-bg-subtle border-l-2 border-transparent"
+                                    return `${base} ${isActive ? active : inactive}`
+                                }}
+                                children={({isActive}: {isActive: boolean}) => (
+                                    <>
+                                        {/* Active indicator dot */}
+                                        {isActive && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-sm shadow-primary/50" />
+                                        )}
+
+                                        <span className="flex-1">{item.label}</span>
+
+                                        {/* Arrow icon on hover/active */}
+                                        <svg className="w-4 h-4 transition-transform duration-fast opacity-0 -translate-x-0.5 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </>
+                                )}
+                            />
                         ))
                     ) : (
-                        <div className="text-text-tertiary text-sm">No menu items available</div>
+                        <div className="text-text-tertiary text-sm px-4 py-3">
+                            Žádné položky menu nejsou dostupné
+                        </div>
                     )}
                 </nav>
+
+                {/* Sidebar footer - app info */}
+                <div className="mt-auto p-4 border-t border-border-subtle">
+                    <div className="text-xs text-text-tertiary">
+                        <div className="font-medium text-text-secondary mb-1">Klabis Club Manager</div>
+                        <div>Versi 1.0.0</div>
+                    </div>
+                </div>
             </aside>
 
-            {/* Main content - add left padding on lg screens for sidebar with extra spacing */}
-            <main className="flex-1 pt-20 px-6 py-6 overflow-auto lg:pl-72">
+            {/* ==========================================
+                MAIN CONTENT AREA
+                ========================================== */}
+            <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 py-6 lg:pl-80 overflow-auto">
                 <HalFormProvider>
                     <HalFormsPageLayout>
-                        <Outlet/>
+                        <Outlet />
                     </HalFormsPageLayout>
                 </HalFormProvider>
             </main>

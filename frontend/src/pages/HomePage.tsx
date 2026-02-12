@@ -1,159 +1,170 @@
 import {Link as RouterLink} from 'react-router-dom'
 import {Button, Card} from '../components/UI'
-import {useRootNavigation} from "../hooks/useRootNavigation.ts";
-
-const useRootMenu = () => {
-    const {isLoading, data: rootMenuItems} = useRootNavigation();
-
-    const containsMainMenuRel = (rel: string): boolean => {
-        if (isLoading) {
-            return false;
-        }
-
-        return rootMenuItems?.some(item => item.rel === rel) ?? false;
-    }
-
-    return {
-        containsMainMenuRel
-    };
-}
+import {useRootNavigation} from "../hooks/useRootNavigation";
 
 /**
  * HomePage - Main dashboard/home page
  * Displays welcome message and navigation cards to main sections
  */
 const HomePage = () => {
-    const {containsMainMenuRel} = useRootMenu();
+    const {data: menuItems = []} = useRootNavigation()
 
+    // Helper function to check if menu contains a rel
+    const containsMainMenuRel = (rel: string): boolean => {
+        return menuItems?.some((item: {rel: string}) => item.rel === rel) ?? false
+    }
+
+    const navigationCards = [
+        {
+            rel: 'members',
+            title: 'Členové',
+            description: 'Spravujte členy klubu, jejich údaje, registrace a oprávnění. Prohlížejteaktivní členy, sledujte členské příspěvky a historii.',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-8a1 1 0 00-1-1V6a1 1 0 00-1-1H6a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V6a1 1 0 00-1-1h-1zm0-6a4 4 0 00-8 0m8 0a4 4 0 00-8 8m-8-8a4 4 0 008 0z"/>
+                </svg>
+            ),
+            gradient: 'from-emerald-500 to-teal-600',
+            darkGradient: 'from-emerald-400 to-teal-500',
+        },
+        {
+            rel: 'events',
+            title: 'Akce',
+            description: 'Prohlížejte nadcházející akce, závody, tréninky a kempy. Sledujtehistorii akcí, spravujte účast a plánejte nové eventy.',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 18h18M3 21h18M3 3v18m0-4-4 4-4m12 0v12m0 4-4-4"/>
+                </svg>
+            ),
+            gradient: 'from-blue-500 to-indigo-600',
+            darkGradient: 'from-blue-400 to-indigo-500',
+        },
+        {
+            rel: 'groups',
+            title: 'Skupiny',
+            description: 'Organizujte členy do skupin, tréninků a týmů. Spravujteskupinové údaje, sledujte členství a spravujte skupinové aktivity.',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-8a1 1 0 00-1-1V6a1 1 0 00-1-1H6a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V6a1 1 0 00-1-1h-1zm0-6a4 4 0 00-8 0m8 0a4 4 0 00-8 8m-8-8a4 4 0 008 0zm9 2a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            ),
+            gradient: 'from-violet-500 to-purple-600',
+            darkGradient: 'from-violet-400 to-purple-500',
+        },
+        {
+            rel: 'admin',
+            title: 'Administrace',
+            description: 'Přejděte celou aplikaci pomoci generickeho HalNavigatoru. Pracujte všechny dostupné endpointy, prozkoumejte HAL strukturu.',
+            icon: (
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37-.826a1.724 1.724 0 01-2.573 1.066c0 .956-.076 2.227-.826 2.37-.826 1.724 1.724 0 01-1.066 2.573c-.94.426-2.099 1.311-3.35.826M8.666 16.5c-1.756.426-2.924 1.756-3.35 0a1.724 1.724 0 01-1.066-2.573c-.956.94-.826 2.227-.826 2.37 1.724 1.724 0 01-1.066 2.573.94.426 1.311 2.099.826 3.35"/>
+                </svg>
+            ),
+            gradient: 'from-amber-500 to-orange-600',
+            darkGradient: 'from-amber-400 to-orange-500',
+        },
+    ]
 
     return (
-        <div className="space-y-6">
-            {/* Header Section */}
-            <div>
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                    Vítejte v členské sekci
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
-                    Vítejte v členské sekci klubu orientačního běhu. Zde můžete spravovat své údaje, prohlížet akce a
-                    skupiny.
-                </p>
+        <div className="space-y-8 animate-fade-in">
+            {/* Header Section with gradient text */}
+            <div className="space-y-4">
+                <div>
+                    <h1 className="font-display text-5xl lg:text-6xl font-bold text-gradient-primary mb-3">
+                        Vítejte v Klabis
+                    </h1>
+                    <p className="text-lg text-text-secondary max-w-3xl">
+                        Moderní systém pro správu členského klubu. Spravujte členy, akce, skupiny a
+                        další údaje v intuitive a efektivním rozhraní.
+                    </p>
+                </div>
+
+                {/* Quick stats / info cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="card p-4">
+                        <div className="text-sm font-medium text-text-secondary mb-1">
+                            Aktivních členů
+                        </div>
+                        <div className="text-2xl font-bold text-primary">
+                            {containsMainMenuRel('members') ? 'Dostupné' : 'Nedostupné'}
+                        </div>
+                    </div>
+                    <div className="card p-4">
+                        <div className="text-sm font-medium text-text-secondary mb-1">
+                            Nadcházející akce
+                        </div>
+                        <div className="text-2xl font-bold text-secondary">
+                            {containsMainMenuRel('events') ? 'Dostupné' : 'Nedostupné'}
+                        </div>
+                    </div>
+                    <div className="card p-4">
+                        <div className="text-sm font-medium text-text-secondary mb-1">
+                            Skupiny a týmy
+                        </div>
+                        <div className="text-2xl font-bold text-accent">
+                            {containsMainMenuRel('groups') ? 'Dostupné' : 'Nedostupné'}
+                        </div>
+                    </div>
+                    <div className="card p-4">
+                        <div className="text-sm font-medium text-text-secondary mb-1">
+                            Systémový status
+                        </div>
+                        <div className="text-2xl font-bold text-success">
+                            Online
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Feature Cards Grid */}
+            {/* Navigation Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                {/* Members Card */}
-                {containsMainMenuRel('members') &&
-                    <Card hoverable className="p-6 flex flex-col h-full">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex-shrink-0">
-                                <svg
-                                    className="w-8 h-8 text-primary"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
-                                </svg>
-                            </div>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Členové
-                            </h2>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 flex-grow mb-4">
-                            Prohlížejte a spravujte členy klubu, jejich údaje a oprávnění.
-                        </p>
-                        <RouterLink to="/members" className="block">
-                            <Button variant="primary" className="w-full">
-                                Zobrazit členy
-                            </Button>
-                        </RouterLink>
-                    </Card>}
+                {navigationCards.map((card) => (
+                    containsMainMenuRel(card.rel) && (
+                        <RouterLink
+                            key={card.rel}
+                            to={card.rel === 'admin' ? '/sandplace' : `/${card.rel}`}
+                            className="group block"
+                        >
+                            <Card className="card-hoverable h-full overflow-hidden relative">
+                                {/* Gradient icon background */}
+                                <div className={`
+                                    absolute top-0 right-0 w-32 h-32 opacity-10
+                                    bg-gradient-to-br ${card.gradient}
+                                    dark:${card.darkGradient}
+                                    blur-3xl rounded-full -translate-y-1/2 translate-x-1/2
+                                    group-hover:opacity-20 transition-opacity duration-base
+                                `}>
+                                </div>
 
-                {/* Events Card */}
-                {containsMainMenuRel('events') &&
-                    <Card hoverable className="p-6 flex flex-col h-full">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex-shrink-0">
-                                <svg
-                                    className="w-8 h-8 text-primary"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </div>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Akce
-                            </h2>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 flex-grow mb-4">
-                            Prohlížejte nadcházející akce, závody a tréninky.
-                        </p>
-                        <RouterLink to="/events" className="block">
-                            <Button variant="primary" className="w-full">
-                                Zobrazit akce
-                            </Button>
-                        </RouterLink>
-                    </Card>}
+                                <div className="relative">
+                                    {/* Icon with gradient */}
+                                    <div className={`
+                                        inline-flex items-center justify-center w-14 h-14 rounded-xl
+                                        bg-gradient-to-br ${card.gradient}
+                                                                        dark:${card.darkGradient}
+                                                                        text-white shadow-lg mb-4
+                                                                        group-hover:scale-110 transition-transform duration-base
+                                    `}>
+                                        {card.icon}
+                                    </div>
 
-                {/* Groups Card */}
-                {containsMainMenuRel('groups') &&
-                    <Card hoverable className="p-6 flex flex-col h-full">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex-shrink-0">
-                                <svg
-                                    className="w-8 h-8 text-primary"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path
-                                        d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v2h8v-2zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-2a4 4 0 00-8 0v2h8zM9 12a4 4 0 100-8 4 4 0 000 8z"/>
-                                </svg>
-                            </div>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Skupiny
-                            </h2>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 flex-grow mb-4">
-                            Prohlížejte a spravujte skupiny členů, tréninkové skupiny a další.
-                        </p>
-                        <RouterLink to="/groups" className="block">
-                            <Button variant="primary" className="w-full">
-                                Zobrazit skupiny
-                            </Button>
-                        </RouterLink>
-                    </Card>}
+                                    {/* Content */}
+                                    <h2 className="text-2xl font-display font-bold text-text-primary mb-3">
+                                        {card.title}
+                                    </h2>
+                                    <p className="text-text-secondary mb-6 line-clamp-3">
+                                        {card.description}
+                                    </p>
 
-                {/* HalNavigator Card */}
-                {containsMainMenuRel('admin') &&
-                    <Card hoverable className="p-6 flex flex-col h-full">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex-shrink-0">
-                                <svg
-                                    className="w-8 h-8 text-primary"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path
-                                        d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v2h8v-2zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-2a4 4 0 00-8 0v2h8zM9 12a4 4 0 100-8 4 4 0 000 8z"/>
-                                </svg>
-                            </div>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                HalNavigator v1
-                            </h2>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 flex-grow mb-4">
-                            Prochazejte celou aplikaci pomoci generickeho HalNavigatoru v1
-                        </p>
-                        <RouterLink to="/sandplace" className="block">
-                            <Button variant="primary" className="w-full">
-                                HalNavigator v1
-                            </Button>
+                                    {/* Action button */}
+                                    <Button variant="primary" className="w-full">
+                                        Otevřít {card.title.toLowerCase()}
+                                    </Button>
+                                </div>
+                            </Card>
                         </RouterLink>
-                    </Card>}
+                    )
+                ))}
             </div>
         </div>
     )

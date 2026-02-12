@@ -19,7 +19,7 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // Mock localStorage
-const mockLocalStorage = {}
+const mockLocalStorage: any = {}
 Storage.prototype.getItem = vi.fn((key) => (mockLocalStorage as any)[key] || null)
 Storage.prototype.setItem = vi.fn((key, value) => {
     (mockLocalStorage as any)[key] = value
@@ -50,9 +50,7 @@ describe('ThemeToggle', () => {
         })
 
         it('should render without crashing', () => {
-            expect(() => {
-                renderThemeToggle(<ThemeToggle/>)
-            }).not.toThrow()
+            expect(() => renderThemeToggle(<ThemeToggle/>)).not.toThrow()
         })
     })
 
@@ -71,137 +69,82 @@ describe('ThemeToggle', () => {
             const button = screen.getByRole('button')
             expect(button.querySelector('svg')).toBeInTheDocument()
         })
-
-        it('should show ComputerDesktopIcon when theme is system', () => {
-            (mockLocalStorage as any).theme = 'system'
-            renderThemeToggle(<ThemeToggle/>)
-            const button = screen.getByRole('button')
-            expect(button.querySelector('svg')).toBeInTheDocument()
-        })
     })
 
     describe('Click Handler', () => {
         it('should toggle theme on click', () => {
-            renderThemeToggle(<ThemeToggle/>)
-            const button = screen.getByRole('button')
-
-            // Initial state: dark
-            expect(button.getAttribute('aria-label')).toContain('system')
-
-            // First click: dark -> system
-            fireEvent.click(button)
-            expect(button.getAttribute('aria-label')).toContain('light')
-
-            // Second click: system -> light
-            fireEvent.click(button)
-            expect(button.getAttribute('aria-label')).toContain('dark')
-        })
-
-        it('should cycle through all three themes', () => {
-            renderThemeToggle(<ThemeToggle/>)
-            const button = screen.getByRole('button')
-
-            // Start: dark -> system
-            fireEvent.click(button)
-            expect(button.getAttribute('aria-label')).toContain('light')
-
-            // system -> light
-            fireEvent.click(button)
-            expect(button.getAttribute('aria-label')).toContain('dark')
-
-            // light -> dark
-            fireEvent.click(button)
-            expect(button.getAttribute('aria-label')).toContain('system')
-        })
-    })
-
-    describe('Accessibility', () => {
-        it('should have ARIA label when theme is light', () => {
             (mockLocalStorage as any).theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
-            expect(button.getAttribute('aria-label')).toBeDefined()
+
+            // Initial state: light
+            expect(button.getAttribute('aria-label')).toContain('light')
+
+            // Click: light -> dark
+            fireEvent.click(button)
             expect(button.getAttribute('aria-label')).toContain('dark')
         })
 
-        it('should have ARIA label when theme is dark', () => {
-            (mockLocalStorage as any).theme = 'dark'
-            renderThemeToggle(<ThemeToggle/>)
-            const button = screen.getByRole('button')
-            expect(button.getAttribute('aria-label')).toBeDefined()
-            expect(button.getAttribute('aria-label')).toContain('system')
-        })
-
-        it('should have ARIA label when theme is system', () => {
-            (mockLocalStorage as any).theme = 'system'
-            renderThemeToggle(<ThemeToggle/>)
-            const button = screen.getByRole('button')
-            expect(button.getAttribute('aria-label')).toBeDefined()
-            expect(button.getAttribute('aria-label')).toContain('light')
-        })
-
-        it('should have title attribute', () => {
-            renderThemeToggle(<ThemeToggle/>)
-            const button = screen.getByRole('button')
-            expect(button.getAttribute('title')).toBeDefined()
-        })
-
-        it('should be keyboard accessible - Enter key', () => {
+        it('should cycle through both themes', () => {
+            (mockLocalStorage as any).theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
 
-            button.focus()
-            expect(document.activeElement).toBe(button)
+            // Start with light
+            expect(button.getAttribute('aria-label')).toBe('Přepnout do tmavého režimu')
 
-            fireEvent.keyDown(button, {key: 'Enter', code: 'Enter'})
-            // Button should still be accessible
-            expect(button).toBeInTheDocument()
-        })
+            // First click: light -> dark
+            fireEvent.click(button)
+            expect(button.getAttribute('aria-label')).toBe('Přepnout do světlého režimu')
 
-        it('should be keyboard accessible - Space key', () => {
-            renderThemeToggle(<ThemeToggle/>)
-            const button = screen.getByRole('button')
-
-            button.focus()
-            expect(document.activeElement).toBe(button)
-
-            fireEvent.keyDown(button, {key: ' ', code: 'Space'})
-            // Button should still be accessible
-            expect(button).toBeInTheDocument()
+            // Second click: dark -> light
+            fireEvent.click(button)
+            expect(button.getAttribute('aria-label')).toBe('Přepnout do tmavého režimu')
         })
     })
 
-    describe('Styling', () => {
-        it('should have px-3 py-2 text-sm classes', () => {
+    describe('ARIA Attributes', () => {
+        it('should have proper aria-label for light mode', () => {
+            (mockLocalStorage as any).theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
-            expect(button.className).toContain('px-3')
-            expect(button.className).toContain('py-2')
-            expect(button.className).toContain('text-sm')
+            expect(button.getAttribute('aria-label')).toBe('Přepnout do tmavého režimu')
         })
 
-        it('should have text color classes', () => {
+        it('should have proper aria-label for dark mode', () => {
+            (mockLocalStorage as any).theme = 'dark'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
-            expect(button.className).toContain('text-text-secondary')
+            expect(button.getAttribute('aria-label')).toBe('Přepnout do světlého režimu')
         })
 
-        it('should have rounded-md class', () => {
+        it('should have title attribute', () => {
+            (mockLocalStorage as any).theme = 'light'
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
-            expect(button.className).toContain('rounded-md')
+            expect(button.getAttribute('title')).toBeTruthy()
         })
+    })
 
-        it('should have transition class', () => {
+    describe('Button Styling', () => {
+        it('should have proper button classes', () => {
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
-            expect(button.className).toContain('transition-colors')
+            expect(button.className).toContain('p-2.5')
+            expect(button.className).toContain('rounded-lg')
         })
 
         it('should have focus ring classes', () => {
             renderThemeToggle(<ThemeToggle/>)
             const button = screen.getByRole('button')
-            expect(button.className).toContain('ring-accent')
+            expect(button.className).toContain('focus:ring-2')
+            expect(button.className).toContain('focus:ring-primary')
+        })
+
+        it('should have transition classes', () => {
+            renderThemeToggle(<ThemeToggle/>)
+            const button = screen.getByRole('button')
+            expect(button.className).toContain('transition-all')
         })
     })
 
@@ -211,8 +154,16 @@ describe('ThemeToggle', () => {
             const button = screen.getByRole('button')
             const svg = button.querySelector('svg')
             expect(svg).toBeInTheDocument()
-            expect(svg?.hasAttribute('width')).toBe(true)
-            expect(svg?.hasAttribute('height')).toBe(true)
+            expect(svg).toHaveAttribute('viewBox')
+            expect(svg).toHaveAttribute('stroke-width')
+        })
+
+        it('should have SVG with fill="none" and stroke="currentColor"', () => {
+            renderThemeToggle(<ThemeToggle/>)
+            const button = screen.getByRole('button')
+            const svg = button.querySelector('svg')
+            expect(svg).toHaveAttribute('fill', 'none')
+            expect(svg).toHaveAttribute('stroke', 'currentColor')
         })
     })
 })
