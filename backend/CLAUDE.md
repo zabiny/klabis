@@ -158,6 +158,7 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 - **Refactor methods with more than 4 parameters** by introducing parameter objects, request models, or splitting the
   method
 - use jMolecules annotations for "Ports and Adapters" (hexagonal) architecture
+- use `@MvcComponent` annotation on components from presentation layer 
 
 #### Naming conventions
 
