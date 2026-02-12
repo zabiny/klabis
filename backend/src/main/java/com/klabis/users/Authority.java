@@ -26,6 +26,9 @@ public enum Authority {
     MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", Scope.GLOBAL),
     EVENTS_MANAGE("EVENTS:MANAGE", Scope.CONTEXT_SPECIFIC);
 
+    public static final String MEMBERS_SCOPE = "MEMBERS";
+    public static final String EVENTS_SCOPE = "EVENTS";
+
     private final String value;
     private final Scope scope;
 

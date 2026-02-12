@@ -43,7 +43,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @Tag(name = "Events", description = "Event management API")
 @PrimaryAdapter
 @ExposesResourceFor(Event.class)
-@SecurityRequirement(name = "OAuth2")
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 class EventController {
 
     private final EventManagementService eventManagementService;

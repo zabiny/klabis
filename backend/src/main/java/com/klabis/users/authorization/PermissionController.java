@@ -4,6 +4,7 @@ import com.klabis.users.Authority;
 import com.klabis.users.AuthorizationPolicy;
 import com.klabis.users.UserId;
 import com.klabis.users.UserPermissions;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -36,6 +37,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping("/api/users")
 @PrimaryAdapter
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 public class PermissionController {
 
     private final PermissionService permissionService;

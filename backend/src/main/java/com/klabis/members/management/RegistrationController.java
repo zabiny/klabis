@@ -31,7 +31,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Members", description = "Member registration and management API")
-@SecurityRequirement(name = "OAuth2")
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 class RegistrationController {
 
     private final RegistrationService registrationService;

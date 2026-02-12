@@ -1,10 +1,14 @@
 package com.klabis.config;
 
+import com.klabis.users.Authority;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.security.OAuthFlow;
+import io.swagger.v3.oas.annotations.security.OAuthFlows;
+import io.swagger.v3.oas.annotations.security.OAuthScope;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import org.springframework.context.annotation.Configuration;
@@ -40,11 +44,11 @@ import org.springframework.context.annotation.Configuration;
                         """,
                 contact = @Contact(
                         name = "Klabis Development Team",
-                        email = "dev@klabis.com"
+                        email = "davca7@gmail.com"
                 ),
                 license = @License(
                         name = "Proprietary",
-                        url = "https://klabis.com/license"
+                        url = "https://github.com/zabiny/klabis/blob/main/LICENCE"
                 )
         ),
         servers = {
@@ -59,9 +63,15 @@ import org.springframework.context.annotation.Configuration;
         }
 )
 @SecurityScheme(
-        name = "OAuth2",
+        name = "KlabisAuth",
         type = SecuritySchemeType.OAUTH2,
-        description = "OAuth2 authentication with Spring Authorization Server"
+        description = "OAuth2 authentication with Klabis Authorization Server",
+        flows = @OAuthFlows(authorizationCode = @OAuthFlow(authorizationUrl = "/oauth2/authorize", tokenUrl = "/oauth2/token", scopes = {
+                @OAuthScope(name = "openid", description = "authenticate"),
+                @OAuthScope(name = "profile", description = "display user profile information"),
+                @OAuthScope(name = Authority.MEMBERS_SCOPE, description = "Members"),
+                @OAuthScope(name = Authority.EVENTS_SCOPE, description = "Events"),
+        }))
 )
 public class OpenApiConfig {
 }

@@ -2,6 +2,7 @@ package com.klabis.events.registration;
 
 import com.klabis.events.Event;
 import com.klabis.events.EventRegistration;
+import com.klabis.users.Authority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,7 +37,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @Tag(name = "Event Registrations", description = "Event registration API for members")
 @PrimaryAdapter
 @ExposesResourceFor(EventRegistration.class)
-@SecurityRequirement(name = "OAuth2")
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 class EventRegistrationController {
 
     private final EventRegistrationService registrationService;

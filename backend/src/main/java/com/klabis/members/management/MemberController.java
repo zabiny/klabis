@@ -49,7 +49,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Members ", description = "Member registration and management API")
 @ExposesResourceFor(Member.class)
-@SecurityRequirement(name = "OAuth2")
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 class MemberController {
 
     private final ManagementService managementService;

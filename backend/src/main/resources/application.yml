@@ -114,6 +114,42 @@ resilience4j:
         limit-refresh-period: 1h
         timeout-duration: 0s
 
+springdoc:
+  swagger-ui:
+    oauth:
+      client-id: apispec
+      client-secret: apispec
+      scopes: openid,profile
+    #url: /klabis-api-spec.yaml
+  show-actuator: true
+  api-docs:
+    groups:
+      enabled: true
+    enabled: true
+  group-configs:
+    - group: members
+      display-name: Members API
+      packages-to-scan:
+        - com.klabis.members
+        - com.klabis.users
+    - group: events
+      display-name: Events API
+      packages-to-scan:
+        - com.klabis.events
+    - group: finance
+      display-name: Finances API
+      packages-to-scan:
+        - com.klabis.finance
+    - group: all
+      display-name: X All endpoints
+      paths-to-match:
+        - /**
+      paths-to-exclude:
+        - /actuator/**
+    - group: actuator
+      display-name: System monitoring endpoints
+      paths-to-match:
+        - /actuator/**
 
 # Klabis specific configuration
 klabis:
@@ -309,4 +345,3 @@ logging:
   level:
     com.klabis: INFO
     org.springframework.security: WARN
-

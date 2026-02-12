@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -141,12 +142,17 @@ public class BootstrapDataLoader implements ApplicationRunner {
     private void createOAuth2Clients() {
         String clientId = environment.getProperty("oauth2.client.id", DEFAULT_OAUTH2_CLIENT_ID);
         String clientSecret = environment.getProperty("oauth2.client.secret");
-        String clientUuid = environment.getProperty("oauth2.client.id.uuid", UUID.randomUUID().toString());
+        String clientUuid = environment.getProperty("oauth2.client.id.uuid", clientId);
+        Set<String> redirectUris = Arrays.stream(environment.getProperty("oauth2.client.redirect-uris",
+                "http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback"
+        ).split(",")).map(String::trim).collect(Collectors.toSet());
 
-        createOAuth2Client(clientUuid, clientId, clientSecret);
+
+        createOAuth2Client(clientUuid, clientId, clientSecret, redirectUris);
+        createOAuth2Client("apispec", "apispec", "apispec", Set.of("https://localhost:8443/swagger-ui/oauth2-redirect.html"));
     }
 
-    private void createOAuth2Client(String clientUuid, String clientId, String clientSecret) {
+    private void createOAuth2Client(String clientUuid, String clientId, String clientSecret, Set<String> redirectUris) {
 
         // Generate secure random secret if not provided
         if (clientSecret == null || clientSecret.isBlank()) {
@@ -159,12 +165,6 @@ public class BootstrapDataLoader implements ApplicationRunner {
 
         String clientSecretHash = passwordEncoder.encode(clientSecret);
 
-        // Get redirect URIs from environment or use defaults
-        // Supports comma-separated list for multiple redirect URIs
-        String redirectUrisProperty = environment.getProperty(
-                "oauth2.client.redirect-uris",
-                "http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback"
-        );
         // Get scopes from environment or use default
         // Note: Using Authority enum values for type safety, plus 'openid' for OIDC support
         String defaultScopes = String.join(",",
@@ -196,10 +196,7 @@ public class BootstrapDataLoader implements ApplicationRunner {
                     items.add(AuthorizationGrantType.REFRESH_TOKEN);
                 })
                 .redirectUris(items -> {
-                    // Add all redirect URIs from the comma-separated property
-                    for (String redirectUri : redirectUrisProperty.split(",")) {
-                        items.add(redirectUri.trim());
-                    }
+                    items.addAll(redirectUris);
                 })
                 .postLogoutRedirectUri(environment.getProperty("oauth2.client.post-logout-redirect-uris",
                         "https://localhost:8443"))
