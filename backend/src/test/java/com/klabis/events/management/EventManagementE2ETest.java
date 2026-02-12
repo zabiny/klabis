@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Event Management E2E Tests")
+@WithMockUser(username = "admin", authorities = {EventManagementE2ETest.EVENTS_MANAGE_AUTHORITY, EventManagementE2ETest.EVENTS_READ_AUTHORITY})
 class EventManagementE2ETest extends SecurityTestBase {
 
     @Autowired
@@ -43,11 +44,11 @@ class EventManagementE2ETest extends SecurityTestBase {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private static final String EVENTS_MANAGE_AUTHORITY = "EVENTS:MANAGE";
+    static final String EVENTS_MANAGE_AUTHORITY = "EVENTS:MANAGE";
+    static final String EVENTS_READ_AUTHORITY = "EVENTS:READ";
 
     @Test
     @DisplayName("Complete event lifecycle: create → publish → finish")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
     void shouldCompleteEventLifecycleFromCreateToFinish() throws Exception {
         // Given: Create an event
         CreateEventCommand createCommand = new CreateEventCommand(
@@ -107,7 +108,6 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Test
     @DisplayName("Complete event lifecycle: create → cancel")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
     void shouldCompleteEventLifecycleFromCreateToCancel() throws Exception {
         // Given: Create an event
         CreateEventCommand createCommand = new CreateEventCommand(
@@ -153,7 +153,6 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Test
     @DisplayName("Event CRUD with optional websiteUrl")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
     void shouldCreateEventWithOptionalWebsiteUrl() throws Exception {
         // Given: Create event with optional websiteUrl (no coordinator due to FK constraint)
         CreateEventCommand createCommand = new CreateEventCommand(
@@ -215,7 +214,6 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Test
     @DisplayName("Event list with pagination and filtering by status")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
     void shouldListEventsWithPaginationAndStatusFilter() throws Exception {
         // Given: Create multiple events with different statuses
         CreateEventCommand draftEvent = new CreateEventCommand(
@@ -281,7 +279,6 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Test
     @DisplayName("Event list with filtering by organizer and date range")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
     void shouldListEventsWithOrganizerAndDateRangeFilter() throws Exception {
         // Given: Create events for different organizers
         CreateEventCommand oobEvent = new CreateEventCommand(
@@ -336,7 +333,6 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Test
     @DisplayName("Event detail should show status-appropriate HAL+FORMS links")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
     void shouldShowStatusAppropriateHateoasLinks() throws Exception {
         // Given: Create a DRAFT event
         CreateEventCommand createCommand = new CreateEventCommand(
@@ -394,7 +390,7 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Test
     @DisplayName("GET /api/events/{id} should return 404 for non-existent event")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
     void shouldReturn404ForNonExistentEventId() throws Exception {
         // Given: A non-existent UUID
         String nonExistentId = UUID.randomUUID().toString();

@@ -32,6 +32,7 @@ class EventControllerTest {
     private static final String ADMIN_USERNAME = "admin";
     private static final String MEMBERS_READ_AUTHORITY = "MEMBERS:READ";
     private static final String EVENTS_MANAGE_AUTHORITY = "EVENTS:MANAGE";
+    private static final String EVENTS_READ_AUTHORITY = "EVENTS:READ";
 
     @Autowired
     private MockMvc mockMvc;
@@ -213,7 +214,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return paginated list with HAL+FORMS")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
         void shouldListEventsWithPagination() throws Exception {
             EventSummaryDto event1 = new EventSummaryDto(
                     UUID.randomUUID(),
@@ -246,7 +247,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should filter by status")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
         void shouldFilterEventsByStatus() throws Exception {
             EventSummaryDto event = new EventSummaryDto(
                     UUID.randomUUID(),
@@ -276,7 +277,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return event detail with status-appropriate links")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
         void shouldGetEventWithHateoasLinks() throws Exception {
             UUID eventId = UUID.randomUUID();
             EventDto eventDto = new EventDto(
@@ -305,7 +306,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return 404 for non-existent event")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
         void shouldReturn404ForNonExistentEvent() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
 

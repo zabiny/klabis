@@ -175,7 +175,7 @@ class RegistrationServiceTest {
             UserCreationParams params = paramsCaptor.getValue();
             assertThat(params.username()).isEqualTo("ZBM0500");
             assertThat(params.passwordHash()).isEqualTo(DEFAULT_HASHED_PASSWORD);
-            assertThat(params.authorities()).isEqualTo(Set.of(Authority.MEMBERS_READ));
+            assertThat(params.authorities()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
             assertThat(params.getEmail()).contains("jan.novak@example.com");
 
             // CRITICAL: Verify Member ID equals the shared ID returned by UserService
@@ -225,7 +225,7 @@ class RegistrationServiceTest {
             UserCreationParams params = paramsCaptor.getValue();
             assertThat(params.username()).isEqualTo("ZBM0501");
             assertThat(params.passwordHash()).isEqualTo("$2a$10$encodedPassword");
-            assertThat(params.authorities()).isEqualTo(Set.of(Authority.MEMBERS_READ));
+            assertThat(params.authorities()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
             assertThat(params.getEmail()).contains("eva@example.com");
         }
 

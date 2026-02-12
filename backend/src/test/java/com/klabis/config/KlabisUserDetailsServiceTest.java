@@ -1,9 +1,6 @@
 package com.klabis.config;
 
-import com.klabis.users.AccountStatus;
-import com.klabis.users.User;
-import com.klabis.users.UserPermissions;
-import com.klabis.users.UserService;
+import com.klabis.users.*;
 import com.klabis.users.persistence.UserPermissionsRepository;
 import com.klabis.users.testdata.UserTestDataBuilder;
 import com.klabis.users.testdata.UserTestDataConstants;
@@ -14,9 +11,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,7 +73,7 @@ class KlabisUserDetailsServiceTest {
     }
 
     @Test
-    @DisplayName("should map ROLE_ADMIN to all authorities")
+    @DisplayName("'admin' user should have all authorities")
     void shouldMapAdminRoleToAuthorities() {
         User user = UserTestDataBuilder.anAdminUser().build();
         when(userRepository.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
@@ -87,15 +86,8 @@ class KlabisUserDetailsServiceTest {
         UserDetails userDetails = userDetailsService.loadUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME);
 
         assertThat(userDetails.getAuthorities())
-                .extracting(auth -> auth.getAuthority())
-                .containsExactlyInAnyOrder(
-                        "MEMBERS:CREATE",
-                        "MEMBERS:READ",
-                        "MEMBERS:UPDATE",
-                        "MEMBERS:DELETE",
-                        "MEMBERS:PERMISSIONS",
-                        "EVENTS:MANAGE"
-                );
+                .extracting(GrantedAuthority::getAuthority)
+                .containsExactlyInAnyOrder(Arrays.stream(Authority.values()).map(Authority::getValue).toArray(String[]::new));
     }
 
     @Test

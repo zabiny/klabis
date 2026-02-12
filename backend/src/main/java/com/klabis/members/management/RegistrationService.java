@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -130,7 +129,7 @@ class RegistrationService {
         UserCreationParams params = UserCreationParams.builder()
                 .username(registrationNumber.getValue())
                 .passwordHash(passwordHash)
-                .authorities(Set.of(Authority.MEMBERS_READ))  // Default authority for new members
+                .authorities(Authority.getStandardUserAuthorities())  // Default authority for new members
                 .email(email.value())  // PII from Member request for password setup
                 .build();
 

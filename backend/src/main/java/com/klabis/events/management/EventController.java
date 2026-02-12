@@ -128,6 +128,7 @@ class EventController {
      * @return event resource with full details
      */
     @GetMapping("/{id}")
+    @HasAuthority(Authority.EVENTS_READ)
     @Operation(
             summary = "Get event by ID",
             description = "Retrieves detailed event information by ID. " +
@@ -155,6 +156,7 @@ class EventController {
      * @return paginated collection of event summaries
      */
     @GetMapping
+    @HasAuthority(Authority.EVENTS_READ)
     @Operation(
             summary = "List events with pagination and filtering",
             description = """

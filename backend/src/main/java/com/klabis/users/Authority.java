@@ -1,5 +1,8 @@
 package com.klabis.users;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
  * Enum representing all valid user authorities in the system.
  * <p>
@@ -24,6 +27,7 @@ public enum Authority {
     MEMBERS_UPDATE("MEMBERS:UPDATE", Scope.CONTEXT_SPECIFIC),
     MEMBERS_DELETE("MEMBERS:DELETE", Scope.CONTEXT_SPECIFIC),
     MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", Scope.GLOBAL),
+    EVENTS_READ("EVENTS:READ", Scope.GLOBAL),
     EVENTS_MANAGE("EVENTS:MANAGE", Scope.CONTEXT_SPECIFIC);
 
     public static final String MEMBERS_SCOPE = "MEMBERS";
@@ -89,5 +93,9 @@ public enum Authority {
     @Override
     public String toString() {
         return value;
+    }
+
+    public static Set<Authority> getStandardUserAuthorities() {
+        return EnumSet.of(MEMBERS_READ, EVENTS_READ);
     }
 }
