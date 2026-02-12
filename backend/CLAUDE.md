@@ -157,6 +157,7 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 - **Do not mock data objects** (entities, value objects, DTOs) in tests - use real instances instead
 - **Refactor methods with more than 4 parameters** by introducing parameter objects, request models, or splitting the
   method
+- use jMolecules annotations for "Ports and Adapters" (hexagonal) architecture
 
 #### Naming conventions
 
