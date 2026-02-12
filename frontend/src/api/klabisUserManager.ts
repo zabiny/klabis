@@ -22,7 +22,7 @@ export const authConfig: AuthConfig = {
     redirect_uri: '/auth/callback', // must match OIDC config
     post_logout_redirect_uri: 'http://localhost:3000',
     response_type: 'code',
-    scope: 'openid profile MEMBERS:CREATE MEMBERS:READ MEMBERS:UPDATE MEMBERS:DELETE'
+    scope: 'openid profile MEMBERS EVENTS'
 };
 
 export const createUserManager = ({

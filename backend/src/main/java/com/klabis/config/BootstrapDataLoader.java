@@ -171,10 +171,8 @@ public class BootstrapDataLoader implements ApplicationRunner {
                 "openid",  // OpenID Connect scope
                 "profile", // OIDC standard scope for profile claims
                 "email",   // OIDC standard scope for email claims
-                Authority.MEMBERS_CREATE.getValue(),
-                Authority.MEMBERS_READ.getValue(),
-                Authority.MEMBERS_UPDATE.getValue(),
-                Authority.MEMBERS_DELETE.getValue()
+                Authority.MEMBERS_SCOPE,
+                Authority.EVENTS_SCOPE
         );
 
         String scopes = environment.getProperty(

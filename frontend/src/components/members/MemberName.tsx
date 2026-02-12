@@ -2,7 +2,7 @@ import {type ReactNode} from 'react';
 import {useKlabisApiQuery} from "../../api";
 
 interface MemberNameProps {
-    memberId: number,
+    memberId: string,
     loadingValue?: ReactNode
 }
 
@@ -10,7 +10,7 @@ function MemberName({memberId, loadingValue = "Loading..."}: MemberNameProps) {
     const {
         data: member,
         isLoading
-    } = useKlabisApiQuery("get", "/members/{memberId}", {params: {path: {memberId: memberId}}});
+    } = useKlabisApiQuery("get", "/api/members/{id}", {params: {path: {id: memberId}}});
 
     if (isLoading) {
         return <>${loadingValue}</>;

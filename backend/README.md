@@ -181,7 +181,7 @@ The API uses **OAuth2** with JWT tokens.
 TOKEN=$(curl -s -k -X POST https://localhost:8443/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -u "klabis-web:test-secret-123" \
-  -d "grant_type=client_credentials&scope=MEMBERS:CREATE" \
+  -d "grant_type=client_credentials&scope=MEMBERS" \
   | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
 
 # Use token

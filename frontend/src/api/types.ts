@@ -1,7 +1,13 @@
 import type {components} from "./klabisApi";
 
 export type Link = components["schemas"]["Link"];
-export type PageMetadata = components["schemas"]["PageMetadata"];
+
+export type PageMetadata = {
+    size: number,
+    totalElements: number,
+    totalPages: number,
+    number: number
+};
 export type SortDirection = 'asc' | 'desc';
 
 export type KlabisActionName = string;

@@ -17,15 +17,7 @@ export type KlabisApiDeletePaths = PathsWithMethod<paths, "delete">;
 export type KlabisApiMutationPaths = KlabisApiPostPaths | KlabisApiDeletePaths | KlabisApiPutPaths;
 export type KlabisApiPaths = KlabisApiGetPaths | KlabisApiMutationPaths;
 
-
-export type GetAllGrantsResponse = components["schemas"]["GetAllGrants200ResponseApiDto"];
-export type GetMemberGrantsResponse = components["schemas"]["MemberGrantsForm"]
-
-export type EditMyDetailsForm = components["schemas"]["EditMyDetailsForm"];
-export type MemberRegistrationForm = components["schemas"]["MemberRegistrationForm"];
-export type AddressApiDto = components["schemas"]["AddressApiDto"];
-
-export type EventRegistrationForm = components["schemas"]["EventRegistrationForm"];
+export type MemberRegistrationForm = components["schemas"]["RegisterMemberRequest"];
 
 export type Link = components["schemas"]["Link"];
 export {type HttpMethod} from 'openapi-typescript-helpers';

@@ -1,5 +1,5 @@
 import {FetchError} from "./authorizedFetch";
-import type {HalResourceLinks, HalResponse, KlabisAction, KlabisActionName, KlabisHateoasObject} from "./types.ts";
+import type {HalResourceLinks} from "./types.ts";
 import type {Link} from "./index.ts";
 import {isString} from "formik";
 
@@ -48,36 +48,6 @@ export {
     isFormValidationError
 };
 
-function isKlabisHateoasObject(item: KlabisHateoasObject | string[]) {
-    return (item as KlabisHateoasObject)._actions !== undefined;
-}
-
-function isHalModel(item: any): item is HalResponse {
-    return (item as HalResponse)._links !== undefined;
-}
-
-export const findAction = (rel: string, actions: KlabisAction[]): KlabisAction | undefined => {
-    return actions.find(l => isLink(l) && l.rel === rel || rel === l);
-}
-export const hasAction = (item: KlabisHateoasObject | KlabisAction[] | undefined, action: KlabisActionName): boolean => {
-    if (item === undefined) {
-        return false;
-    }
-
-    if (Array.isArray(item)) {
-        return findAction(action, item) !== undefined || false;
-    }
-
-    if (isKlabisHateoasObject(item)) {
-        return hasAction(item._actions || [], action);
-    }
-
-    if (isHalModel(item)) {
-        return hasAction(item._links || [], action);
-    }
-
-    return false;
-}
 export const isLink = (item: any): item is Link => {
     return item !== undefined && item !== null && (item as Link).href !== undefined;
 }

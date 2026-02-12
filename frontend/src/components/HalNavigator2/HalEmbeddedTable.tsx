@@ -75,7 +75,7 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
     }
 
     // Show error state if self link is not available
-    if (!selfLink) {
+    if (!selfLink || !selfLink.href) {
         const error = new Error('Self link not found in resource data - cannot fetch table data')
         console.error('Failed to fetch table data:', error)
         return (
@@ -86,9 +86,11 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
         )
     }
 
+    const tableLink = {href: selfLink.href};
+
     return (
         <KlabisTableWithQuery<T>
-            link={selfLink}
+            link={tableLink}
             collectionName={collectionName}
             onRowClick={onRowClick}
             defaultOrderBy={defaultOrderBy}

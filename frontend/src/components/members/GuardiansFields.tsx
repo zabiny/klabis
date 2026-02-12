@@ -5,7 +5,7 @@ import {TextField} from '../UI/forms/TextField.tsx'
 import ContactFields from './ContactFields'
 import type {MemberRegistrationForm} from '../../api'
 
-type Guardian = NonNullable<MemberRegistrationForm['guardians']>[number]
+type Guardian = NonNullable<MemberRegistrationForm['guardian']>
 
 export interface GuardiansFieldsProps {
     value: Guardian[]
@@ -59,9 +59,9 @@ const GuardianField: React.FC<GuardianFieldProps> = ({value, onChange, onRemove,
                 <div className="col-span-1 md:col-span-12">
                     <ContactFields
                         value={{
-                            email: value.contact?.email || '',
-                            phone: value.contact?.phone || '',
-                            note: value.contact?.note || ''
+                            email: value.email || '',
+                            phone: value.phone || '',
+                            note: value.relationship || ''
                         }}
                         onChange={(c) => handleChange('contact', c)}
                         showNote={false}
@@ -69,9 +69,9 @@ const GuardianField: React.FC<GuardianFieldProps> = ({value, onChange, onRemove,
                 </div>
                 <div className="col-span-1 md:col-span-12">
                     <TextField
-                        label="Poznámka k zástupci"
-                        value={value.note || ''}
-                        onChange={(e) => handleChange('note', e.target.value)}
+                        label="Vztah zastupce k clenovi"
+                        value={value.relationship || ''}
+                        onChange={(e) => handleChange('relationship', e.target.value)}
                     />
                 </div>
             </div>
@@ -92,7 +92,7 @@ const GuardiansFields: React.FC<GuardiansFieldsProps> = ({value, onChange, disab
     const handleAddGuardian = () => {
         onChange([
             ...value,
-            {firstName: '', lastName: '', contact: {email: '', phone: '', note: ''}, note: ''}
+            {firstName: '', lastName: '', email: '', phone: '', relationship: ''}
         ])
     }
 
