@@ -4,10 +4,7 @@ import com.klabis.events.Event;
 import com.klabis.events.EventRegistration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,7 +15,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +36,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @Tag(name = "Event Registrations", description = "Event registration API for members")
 @PrimaryAdapter
 @ExposesResourceFor(EventRegistration.class)
+@SecurityRequirement(name = "OAuth2")
 class EventRegistrationController {
 
     private final EventRegistrationService registrationService;
@@ -63,51 +60,10 @@ class EventRegistrationController {
     @Operation(
             summary = "Register for an event",
             description = "Register the authenticated member for an event with SI card number. " +
-                          "Only allowed for ACTIVE events. Returns HATEOAS links for resource navigation.",
-            security = @SecurityRequirement(name = "OAuth2")
+                          "Only allowed for ACTIVE events. Returns HATEOAS links for resource navigation."
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Successfully registered for event",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = OwnRegistrationDto.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - authentication required",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Event not found",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Registration Conflict - already registered",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - user must have a member profile to register for events",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            )
-    })
+    @ApiResponse(responseCode = "201", description = "Successfully registered for event")
+    @ApiResponse(responseCode = "409", description = "User already registered to this event")
     public ResponseEntity<EntityModel<OwnRegistrationDto>> registerForEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "Registration data") @Valid @RequestBody RegisterForEventCommand command) {
@@ -122,9 +78,7 @@ class EventRegistrationController {
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
         addLinksForOwnRegistration(entityModel, eventId);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .location(linkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId)).toUri())
+        return ResponseEntity.created(linkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId)).toUri())
                 .body(entityModel);
     }
 
@@ -139,16 +93,12 @@ class EventRegistrationController {
     @DeleteMapping
     @Operation(
             summary = "Unregister from an event",
-            description = "Unregister the authenticated member from an event. " +
-                          "Only allowed before the event date.",
-            security = @SecurityRequirement(name = "OAuth2")
+            description = """
+                    Unregister the authenticated member from an event.
+                    Only allowed before the event date.
+                    """
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Successfully unregistered"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
-            @ApiResponse(responseCode = "404", description = "Event or registration not found"),
-            @ApiResponse(responseCode = "400", description = "Cannot unregister on or after event date")
-    })
+    @ApiResponse(responseCode = "204", description = "Successfully unregistered")
     public ResponseEntity<Void> unregisterFromEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
@@ -169,21 +119,12 @@ class EventRegistrationController {
     @GetMapping
     @Operation(
             summary = "List event registrations",
-            description = "List all registrations for an event. " +
-                          "SI card numbers are not included for privacy protection.",
-            security = @SecurityRequirement(name = "OAuth2")
+            description = """
+                    List all registrations for an event.
+                    SI card numbers are not included for privacy protection.
+                    """
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "List of registrations retrieved successfully",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = RegistrationDto.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Event not found")
-    })
+    @ApiResponse(responseCode = "200", description = "List of registrations retrieved successfully")
     public ResponseEntity<CollectionModel<RegistrationDto>> listRegistrations(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
@@ -211,21 +152,9 @@ class EventRegistrationController {
     @GetMapping("/me")
     @Operation(
             summary = "Get own registration",
-            description = "Get the authenticated member's registration details including SI card number.",
-            security = @SecurityRequirement(name = "OAuth2")
+            description = "Get the authenticated member's registration details including SI card number."
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Own registration retrieved successfully",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = OwnRegistrationDto.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
-            @ApiResponse(responseCode = "404", description = "Event or registration not found")
-    })
+    @ApiResponse(responseCode = "200", description = "Own registration retrieved successfully")
     public ResponseEntity<EntityModel<OwnRegistrationDto>> getOwnRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 

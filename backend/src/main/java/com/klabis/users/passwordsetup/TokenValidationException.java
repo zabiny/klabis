@@ -1,9 +1,11 @@
 package com.klabis.users.passwordsetup;
 
+import com.klabis.common.exceptions.InvalidDataException;
+
 /**
  * Exception thrown when token validation fails.
  */
-public class TokenValidationException extends RuntimeException {
+public class TokenValidationException extends InvalidDataException {
     private final Reason reason;
 
     public TokenValidationException(String message) {

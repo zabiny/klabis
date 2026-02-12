@@ -7,14 +7,12 @@ import com.klabis.users.UserId;
 import com.klabis.users.authorization.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -51,6 +49,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Members ", description = "Member registration and management API")
 @ExposesResourceFor(Member.class)
+@SecurityRequirement(name = "OAuth2")
 class MemberController {
 
     private final ManagementService managementService;
@@ -101,59 +100,9 @@ class MemberController {
                           "Only provided fields are updated; null/missing fields keep existing values. " +
                           "Member-editable fields: email, phone, address, dietaryRestrictions. " +
                           "Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup. " +
-                          "Returns HATEOAS links for resource navigation.",
-            security = @SecurityRequirement(name = "OAuth2")
+                          "Returns HATEOAS links for resource navigation."
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Member updated successfully",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = MemberDetailsResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Validation error - invalid request data or empty update",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - authentication required",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields)",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Member not found",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Conflict - concurrent update (optimistic locking failure)",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            )
-    })
+    @ApiResponse(responseCode = "200", description = "Member updated successfully")
     public ResponseEntity<EntityModel<MemberDetailsResponse>> updateMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
@@ -207,47 +156,12 @@ class MemberController {
                           "Supports pagination (page, size) and sorting (sort=field,direction). " +
                           "Default: page=0, size=10, sort=lastName,asc. " +
                           "Allowed sort fields: firstName, lastName, registrationNumber. " +
-                          "Returns HATEOAS links for navigation including pagination links (first, last, next, prev).",
-            security = @SecurityRequirement(name = "OAuth2")
+                          "Returns HATEOAS links for navigation including pagination links (first, last, next, prev)."
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Paginated list of members retrieved successfully",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = MemberSummaryResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid request - invalid sort field or page parameters",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - authentication required",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - insufficient permissions (requires MEMBERS:READ)",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            )
-    })
+    @ApiResponse(responseCode = "200",description = "Paginated list of members retrieved successfully")
     public ResponseEntity<PagedModel<EntityModel<MemberSummaryResponse>>> listMembers(
-            @Parameter(description = "Pagination parameters: page (default=0), size (default=10, max=100), sort (default=lastName,asc). " +
-                                     "Example: ?page=0&size=20&sort=lastName,asc&sort=firstName,asc")
-            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) Pageable pageable) {
+            @Parameter(description = "Pagination parameters: page, size, sort")
+            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
 
         // Validate sort fields
         validateSortFields(pageable.getSort());
@@ -309,43 +223,9 @@ class MemberController {
     @Operation(
             summary = "Get member by ID",
             description = "Retrieves detailed member information by ID including personal information, " +
-                          "contact details, and guardian information if applicable. Returns HATEOAS links for navigation.",
-            security = @SecurityRequirement(name = "OAuth2")
+                          "contact details, and guardian information if applicable. Returns HATEOAS links for navigation."
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Member found",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = MemberDetailsResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Member not found",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - authentication required",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - insufficient permissions (requires MEMBERS:READ)",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            )
-    })
+    @ApiResponse(responseCode = "200", description = "Member found")
     public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id) {
 

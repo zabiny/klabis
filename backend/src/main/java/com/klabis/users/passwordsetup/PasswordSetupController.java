@@ -14,7 +14,9 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -53,8 +55,6 @@ public class PasswordSetupController {
     @Operation(summary = "Validate password setup token", description = "Validates a token before showing the password setup form")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Token is valid", content = @Content(schema = @Schema(implementation = ValidateTokenResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid token"),
-            @ApiResponse(responseCode = "410", description = "Token expired or already used")
     })
     @Parameter(name = "token", description = "The plain text token from the email link", required = true, example = "abc123def456")
     public ResponseEntity<ValidateTokenResponse> validateToken(@RequestParam @NotBlank String token) {
@@ -74,11 +74,7 @@ public class PasswordSetupController {
      */
     @PostMapping("/api/auth/password-setup/complete")
     @Operation(summary = "Complete password setup", description = "Sets the user's password and activates the account")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Password set successfully", content = @Content(schema = @Schema(implementation = PasswordSetupResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid request (validation failed, bad token, password mismatch)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "410", description = "Token expired or already used", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "200", description = "Password set successfully")
     public ResponseEntity<PasswordSetupResponse> completePasswordSetup(
             @Valid @RequestBody SetPasswordRequest request,
             HttpServletRequest httpRequest) {
@@ -115,11 +111,7 @@ public class PasswordSetupController {
      */
     @PostMapping("/api/auth/password-setup/request")
     @Operation(summary = "Request new password setup token", description = "Requests a new token if the previous one expired")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Request processed successfully", content = @Content(schema = @Schema(implementation = TokenRequestResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid registration number format", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "429", description = "Rate limit exceeded", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
+    @ApiResponse(responseCode = "200", description = "Request processed successfully")
     public ResponseEntity<TokenRequestResponse> requestNewToken(@Valid @RequestBody TokenRequestRequest request) {
         passwordSetupService.requestNewToken(request.registrationNumber(), request.email());
         return ResponseEntity.ok(new TokenRequestResponse(
@@ -148,33 +140,23 @@ public class PasswordSetupController {
         return ip;
     }
 
+    @ApiResponse(
+            responseCode = "410",
+            description = "Token expired or already used",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+    )
     @ExceptionHandler(TokenExpiredException.class)
-    public ResponseEntity<ErrorResponse> handleTokenExpired(TokenExpiredException e) {
-        return ResponseEntity.status(HttpStatus.GONE)
-                .body(new ErrorResponse("Token has expired. Please request a new one."));
+    public ErrorResponse handleTokenExpired(TokenExpiredException e) {
+        return ErrorResponse.create(e, HttpStatus.GONE, "Token has expired. Please request a new one.");
     }
 
+    @ApiResponse(
+            responseCode = "410",
+            description = "Token expired or already used",
+            content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class))
+    )
     @ExceptionHandler(TokenAlreadyUsedException.class)
-    public ResponseEntity<ErrorResponse> handleTokenAlreadyUsed(TokenAlreadyUsedException e) {
-        return ResponseEntity.status(HttpStatus.GONE)
-                .body(new ErrorResponse("Token has already been used. Please request a new one."));
-    }
-
-    @ExceptionHandler(TokenValidationException.class)
-    public ResponseEntity<ErrorResponse> handleTokenValidation(TokenValidationException e) {
-        return ResponseEntity.badRequest()
-                .body(new ErrorResponse("Invalid token"));
-    }
-
-    @ExceptionHandler(PasswordValidationException.class)
-    public ResponseEntity<ErrorResponse> handlePasswordValidation(PasswordValidationException e) {
-        return ResponseEntity.badRequest()
-                .body(new ErrorResponse(e.getMessage()));
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
-        return ResponseEntity.badRequest()
-                .body(new ErrorResponse("Invalid registration number format"));
+    public ErrorResponse handleTokenAlreadyUsed(TokenAlreadyUsedException e) {
+        return ErrorResponse.create(e, HttpStatus.GONE, "Token has already been used. Please request a new one.");
     }
 }

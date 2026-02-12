@@ -7,14 +7,12 @@ import com.klabis.users.Authority;
 import com.klabis.users.authorization.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -26,7 +24,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
@@ -46,6 +43,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @Tag(name = "Events", description = "Event management API")
 @PrimaryAdapter
 @ExposesResourceFor(Event.class)
+@SecurityRequirement(name = "OAuth2")
 class EventController {
 
     private final EventManagementService eventManagementService;
@@ -71,35 +69,9 @@ class EventController {
     @Operation(
             summary = "Create a new event",
             description = "Creates a new event in DRAFT status. Event coordinator ID is optional. " +
-                          "Returns HATEOAS links for resource navigation.",
-            security = @SecurityRequirement(name = "OAuth2")
+                          "Returns HATEOAS links for resource navigation."
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Event successfully created",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = EventDto.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Validation error - invalid request data",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - insufficient permissions (requires EVENTS:MANAGE)",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            )
-    })
+    @ApiResponse(responseCode = "201", description = "Event successfully created")
     public ResponseEntity<EntityModel<EventDto>> createEvent(
             @Parameter(description = "Event creation data")
             @Valid @RequestBody CreateEventCommand command) {
@@ -128,44 +100,12 @@ class EventController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Update an event",
-            description = "Updates event information. Only allowed for DRAFT and ACTIVE events. " +
-                          "Returns HATEOAS links for resource navigation.",
-            security = @SecurityRequirement(name = "OAuth2")
+            description = """
+                    Updates event information. Only allowed for DRAFT and ACTIVE events.
+                    Returns HATEOAS links for resource navigation.
+                    """
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Event successfully updated",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = EventDto.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Validation error or invalid state transition",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - insufficient permissions",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Event not found",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            )
-    })
+    @ApiResponse(responseCode = "200", description = "Event successfully updated")
     public ResponseEntity<EntityModel<EventDto>> updateEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @Parameter(description = "Event update data") @Valid @RequestBody UpdateEventCommand command) {
@@ -192,35 +132,9 @@ class EventController {
     @Operation(
             summary = "Get event by ID",
             description = "Retrieves detailed event information by ID. " +
-                          "Returns HATEOAS links based on event status.",
-            security = @SecurityRequirement(name = "OAuth2")
+                          "Returns HATEOAS links based on event status."
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Event found",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = EventDto.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Event not found",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - insufficient permissions",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            )
-    })
+    @ApiResponse(responseCode = "200", description = "Event found")
     public ResponseEntity<EntityModel<EventDto>> getEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
@@ -245,43 +159,19 @@ class EventController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "List events with pagination and filtering",
-            description = "Retrieves a paginated list of events. " +
-                          "Supports filtering by status and sorting by various fields. " +
-                          "Default: page=0, size=10, sort=eventDate,desc. " +
-                          "Allowed sort fields: id, name, eventDate, location, organizer, status.",
-            security = @SecurityRequirement(name = "OAuth2")
+            description = """
+                    Retrieves a paginated list of events.
+                    Supports filtering by status and sorting by various fields.
+                    Default: page=0, size=10, sort=eventDate,desc.
+                    Allowed sort fields: id, name, eventDate, location, organizer, status.
+                    """
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Paginated list of events retrieved successfully",
-                    content = @Content(
-                            mediaType = MediaTypes.HAL_FORMS_JSON_VALUE,
-                            schema = @Schema(implementation = EventSummaryDto.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid request parameters",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - insufficient permissions",
-                    content = @Content(
-                            mediaType = "application/problem+json",
-                            schema = @Schema(implementation = ProblemDetail.class)
-                    )
-            )
-    })
+    @ApiResponse(responseCode = "200", description = "Paginated list of events retrieved successfully")
     public ResponseEntity<PagedModel<EntityModel<EventSummaryDto>>> listEvents(
             @Parameter(description = "Filter by event status (optional)")
             @RequestParam(required = false) EventStatus status,
             @Parameter(description = "Pagination parameters: page, size, sort")
-            @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable) {
 
         validateSortFields(pageable.getSort());
 
@@ -343,15 +233,9 @@ class EventController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Publish an event",
-            description = "Transitions event from DRAFT to ACTIVE status.",
-            security = @SecurityRequirement(name = "OAuth2")
+            description = "Transitions event from DRAFT to ACTIVE status."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Event published successfully"),
-            @ApiResponse(responseCode = "404", description = "Event not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid state transition"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
-    })
+    @ApiResponse(responseCode = "200", description = "Event published successfully")
     public ResponseEntity<EntityModel<EventDto>> publishEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
@@ -376,15 +260,9 @@ class EventController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Cancel an event",
-            description = "Transitions event to CANCELLED status.",
-            security = @SecurityRequirement(name = "OAuth2")
+            description = "Transitions event to CANCELLED status."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Event cancelled successfully"),
-            @ApiResponse(responseCode = "404", description = "Event not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid state transition"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
-    })
+    @ApiResponse(responseCode = "200", description = "Event cancelled successfully")
     public ResponseEntity<EntityModel<EventDto>> cancelEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
@@ -409,15 +287,9 @@ class EventController {
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Finish an event",
-            description = "Transitions event from ACTIVE to FINISHED status.",
-            security = @SecurityRequirement(name = "OAuth2")
+            description = "Transitions event from ACTIVE to FINISHED status."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Event finished successfully"),
-            @ApiResponse(responseCode = "404", description = "Event not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid state transition"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
-    })
+    @ApiResponse(responseCode = "200", description = "Event finished successfully")
     public ResponseEntity<EntityModel<EventDto>> finishEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 

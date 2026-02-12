@@ -83,7 +83,7 @@ class PasswordSetupControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Passwords do not match"));
+                    .andExpect(jsonPath("$.detail").value("Passwords do not match"));
         }
 
         @Test
@@ -104,7 +104,7 @@ class PasswordSetupControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Password must be at least 12 characters long"));
+                    .andExpect(jsonPath("$.detail").value("Password must be at least 12 characters long"));
         }
 
         @Test
@@ -124,7 +124,7 @@ class PasswordSetupControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Invalid token"));
+                    .andExpect(jsonPath("$.detail").value("Invalid token"));
         }
 
         @Test
@@ -145,7 +145,7 @@ class PasswordSetupControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isGone())
-                    .andExpect(jsonPath("$.message").value("Token has expired. Please request a new one."));
+                    .andExpect(jsonPath("$.detail").value("Token has expired. Please request a new one."));
         }
 
         @Test
@@ -166,7 +166,7 @@ class PasswordSetupControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isGone())
-                    .andExpect(jsonPath("$.message").value("Token has already been used. Please request a new one."));
+                    .andExpect(jsonPath("$.detail").value("Token has already been used. Please request a new one."));
         }
 
         @Test
@@ -233,7 +233,7 @@ class PasswordSetupControllerTest {
             mockMvc.perform(get("/api/auth/password-setup/validate")
                             .param("token", invalidToken))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Invalid token"));
+                    .andExpect(jsonPath("$.detail").value("Invalid token"));
         }
 
         @Test
@@ -249,7 +249,7 @@ class PasswordSetupControllerTest {
             mockMvc.perform(get("/api/auth/password-setup/validate")
                             .param("token", expiredToken))
                     .andExpect(status().isGone())
-                    .andExpect(jsonPath("$.message").value("Token has expired. Please request a new one."));
+                    .andExpect(jsonPath("$.detail").value("Token has expired. Please request a new one."));
         }
 
         @Test
@@ -265,7 +265,7 @@ class PasswordSetupControllerTest {
             mockMvc.perform(get("/api/auth/password-setup/validate")
                             .param("token", usedToken))
                     .andExpect(status().isGone())
-                    .andExpect(jsonPath("$.message").value("Token has already been used. Please request a new one."));
+                    .andExpect(jsonPath("$.detail").value("Token has already been used. Please request a new one."));
         }
 
         @Test
