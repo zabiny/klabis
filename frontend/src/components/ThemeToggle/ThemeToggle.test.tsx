@@ -78,11 +78,11 @@ describe('ThemeToggle', () => {
             const button = screen.getByRole('button')
 
             // Initial state: light
-            expect(button.getAttribute('aria-label')).toContain('light')
+            expect(button.getAttribute('aria-label')).toContain('Přepnout do tmavého režimu')
 
             // Click: light -> dark
             fireEvent.click(button)
-            expect(button.getAttribute('aria-label')).toContain('dark')
+            expect(button.getAttribute('aria-label')).toContain('Přepnout do světlého režimu')
         })
 
         it('should cycle through both themes', () => {
