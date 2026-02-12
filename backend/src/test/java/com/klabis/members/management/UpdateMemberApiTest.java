@@ -1,9 +1,8 @@
 package com.klabis.members.management;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.members.DrivingLicenseGroup;
-import com.klabis.members.Gender;
-import com.klabis.members.RegistrationNumber;
+import com.klabis.members.*;
+import com.klabis.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,6 +48,9 @@ class UpdateMemberApiTest {
     private ManagementService memberService;
 
     @MockitoBean
+    private Members memberRepository;
+
+    @MockitoBean
     private UserDetailsService userDetailsService;
 
     private final UUID testMemberId = UUID.randomUUID();
@@ -83,8 +85,8 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any()))
-                        .thenReturn(createMemberDetailsDTO(testMemberId, "new.email@example.com"));
+                when(memberRepository.findById(any(UserId.class)))
+                        .thenReturn(Optional.of(createTestMember(testMemberId, "new.email@example.com")));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -126,7 +128,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -168,7 +170,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -206,7 +208,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -249,7 +251,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -286,7 +288,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -327,8 +329,8 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createMemberDetailsDTO(testMemberId,
-                        "my.new.email@example.com"));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createTestMember(testMemberId,
+                        "my.new.email@example.com")));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -363,7 +365,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -405,7 +407,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -441,7 +443,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -791,7 +793,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createMemberDetailsDTO(testMemberId, MEMBER_EMAIL));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createTestMember(testMemberId, MEMBER_EMAIL)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -828,7 +830,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createMemberDetailsDTO(testMemberId, MEMBER_EMAIL));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createTestMember(testMemberId, MEMBER_EMAIL)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -865,7 +867,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createMemberDetailsDTO(testMemberId, MEMBER_EMAIL));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createTestMember(testMemberId, MEMBER_EMAIL)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -902,7 +904,7 @@ class UpdateMemberApiTest {
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
-                when(memberService.getMember(any())).thenReturn(createUpdatedMemberDTO(request, testMemberId));
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -921,91 +923,56 @@ class UpdateMemberApiTest {
         }
     }
 
-    private MemberDetailsDTO createMemberDetailsDTO(UUID id, String email) {
-        return createMemberDetailsDTO(id, email, "+420777888999", null, null);
+    // Helper method to create basic test member
+    private Member createTestMember(UUID id, String email) {
+        return MemberTestDataBuilder.aMemberWithId(id)
+                .withRegistrationNumber("ZBM0501")
+                .withName("Jan", "Novák")
+                .withDateOfBirth(LocalDate.of(2005, 6, 15))
+                .withNationality("CZ")
+                .withGender(Gender.MALE)
+                .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                .withEmail(email)
+                .withPhone("+420777888999")
+                .withNoGuardian()
+                .build();
     }
 
-    private MemberDetailsDTO createMemberDetailsDTO(UUID id, String email, String phone, String dietaryRestrictions) {
-        return createMemberDetailsDTO(id, email, phone, dietaryRestrictions, null);
-    }
-
-    private MemberDetailsDTO createMemberDetailsDTO(
-            UUID id,
-            String email,
-            String phone,
-            String dietaryRestrictions,
-            AddressResponse address) {
-        AddressResponse defaultAddress = address != null ? address : new AddressResponse(
-                "Hlavní 123",
-                "Praha",
-                "11000",
-                "CZ"
-        );
-
-        return new MemberDetailsDTO(
-                id,
-                "ZBM0501",
-                "Jan",
-                "Novák",
-                LocalDate.of(2005, 6, 15),
-                "CZ",
-                Gender.MALE,
-                email,
-                phone,
-                defaultAddress,
-                null,
-                true,
-                null,
-                null,
-                null,
-                null,
-                null,
-                dietaryRestrictions
-        );
-    }
-
-    private MemberDetailsDTO createUpdatedMemberDTO(UpdateMemberRequest request, UUID memberId) {
+    // Helper method to create Member with updated data from request
+    private Member createUpdatedTestMember(UpdateMemberRequest request, UUID memberId) {
         String email = request.email().orElse("jan.novak@example.com");
-        String phone = request.phone().orElse("+420777888999");
-        String dietaryRestrictions = request.dietaryRestrictions().orElse(null);
+        String phoneValue = request.phone().orElse("+420777888999");
         Gender gender = request.gender().orElse(Gender.MALE);
-        String chipNumber = request.chipNumber().orElse(null);
-        DrivingLicenseGroup drivingLicenseGroup = request.drivingLicenseGroup().orElse(null);
 
-        AddressResponse address = request.address()
-                .map(addr -> new AddressResponse(addr.street(), addr.city(), addr.postalCode(), addr.country()))
-                .orElse(null);
+        Address address = request.address()
+                .map(addr -> Address.of(addr.street(), addr.city(), addr.postalCode(), addr.country()))
+                .orElse(Address.of("Hlavní 123", "Praha", "11000", "CZ"));
 
-        IdentityCardDto identityCard = request.identityCard().orElse(null);
-        MedicalCourseDto medicalCourse = request.medicalCourse().orElse(null);
-        TrainerLicenseDto trainerLicense = request.trainerLicense().orElse(null);
+        MemberTestDataBuilder builder = MemberTestDataBuilder.aMemberWithId(memberId)
+                .withRegistrationNumber("ZBM0501")
+                .withName("Jan", "Novák")
+                .withDateOfBirth(LocalDate.of(2005, 6, 15))
+                .withNationality("CZ")
+                .withGender(gender)
+                .withAddress(address)
+                .withEmail(email)
+                .withPhone(phoneValue)
+                .withNoGuardian();
 
-        AddressResponse finalAddress = address != null ? address : new AddressResponse(
-                "Hlavní 123",
-                "Praha",
-                "11000",
-                "CZ"
-        );
+        // Add optional fields from request
+        request.chipNumber().ifPresent(builder::withChipNumber);
+        request.drivingLicenseGroup().ifPresent(builder::withDrivingLicenseGroup);
+        request.dietaryRestrictions().ifPresent(builder::withDietaryRestrictions);
 
-        return new MemberDetailsDTO(
-                memberId,
-                "ZBM0501",
-                "Jan",
-                "Novák",
-                LocalDate.of(2005, 6, 15),
-                "CZ",
-                gender,
-                email,
-                phone,
-                finalAddress,
-                null,
-                true,
-                chipNumber,
-                identityCard,
-                medicalCourse,
-                trainerLicense,
-                drivingLicenseGroup,
-                dietaryRestrictions
-        );
+        request.identityCard().ifPresent(dto ->
+            builder.withIdentityCard(IdentityCard.of(dto.cardNumber(), dto.validityDate())));
+
+        request.medicalCourse().ifPresent(dto ->
+            builder.withMedicalCourse(MedicalCourse.of(dto.completionDate(), dto.validityDate())));
+
+        request.trainerLicense().ifPresent(dto ->
+            builder.withTrainerLicense(TrainerLicense.of(dto.licenseNumber(), dto.validityDate())));
+
+        return builder.build();
     }
 }

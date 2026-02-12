@@ -100,6 +100,36 @@ public class MemberTestDataBuilder {
         return this;
     }
 
+    public MemberTestDataBuilder withChipNumber(String chipNumber) {
+        this.chipNumber = chipNumber;
+        return this;
+    }
+
+    public MemberTestDataBuilder withIdentityCard(IdentityCard identityCard) {
+        this.identityCard = identityCard;
+        return this;
+    }
+
+    public MemberTestDataBuilder withMedicalCourse(MedicalCourse medicalCourse) {
+        this.medicalCourse = medicalCourse;
+        return this;
+    }
+
+    public MemberTestDataBuilder withTrainerLicense(TrainerLicense trainerLicense) {
+        this.trainerLicense = trainerLicense;
+        return this;
+    }
+
+    public MemberTestDataBuilder withDrivingLicenseGroup(DrivingLicenseGroup drivingLicenseGroup) {
+        this.drivingLicenseGroup = drivingLicenseGroup;
+        return this;
+    }
+
+    public MemberTestDataBuilder withDietaryRestrictions(String dietaryRestrictions) {
+        this.dietaryRestrictions = dietaryRestrictions;
+        return this;
+    }
+
     public Member build() {
         return Member.reconstruct(new UserId(memberId),
                 registrationNumber,
@@ -119,10 +149,7 @@ public class MemberTestDataBuilder {
     }
 
     /**
-     * Creates a default Member domain object for mapping tests.
-     * <p>
-     * Provides a fully populated Member instance with all fields set,
-     * suitable for testing mapper conversions between domain and entity models.
+     * Creates a default, fully populated Member domain object instance with all fields set
      *
      * @param memberId the member ID (UUID)
      * @return a Member domain object with all fields populated

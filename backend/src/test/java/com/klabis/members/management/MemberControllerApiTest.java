@@ -1,7 +1,7 @@
 package com.klabis.members.management;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.members.Gender;
+import com.klabis.members.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,6 +51,9 @@ class MemberControllerApiTest {
 
     @MockitoBean
     private ManagementService managementService;
+
+    @MockitoBean
+    private Members memberRepository;
 
     @MockitoBean
     private RegistrationService registrationService;
@@ -497,7 +500,7 @@ class MemberControllerApiTest {
         @DisplayName("should return 200 with empty collection when no members exist")
         @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
         void shouldReturnEmptyCollectionWhenNoMembers() throws Exception {
-            when(managementService.listMembers(any())).thenReturn(new PageImpl<>(List.of()));
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(
                             get("/api/members")
@@ -513,14 +516,10 @@ class MemberControllerApiTest {
         @DisplayName("should return collection of member summaries with HATEOAS links")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
         void shouldReturnMemberCollectionWithHateoasLinks() throws Exception {
-            MemberSummaryDTO member = new MemberSummaryDTO(
-                    UUID.randomUUID(),
-                    "Jan",
-                    "Novák",
-                    "ZBM0501"
-            );
+            UUID memberId = UUID.randomUUID();
+            Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
 
-            when(managementService.listMembers(any()))
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -538,7 +537,7 @@ class MemberControllerApiTest {
         @DisplayName("should return paginated results")
         @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
         void shouldReturnPaginatedResults() throws Exception {
-            when(managementService.listMembers(any()))
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -560,7 +559,7 @@ class MemberControllerApiTest {
         @DisplayName("should return sorted results")
         @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
         void shouldReturnSortedResults() throws Exception {
-            when(managementService.listMembers(any()))
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -595,7 +594,7 @@ class MemberControllerApiTest {
         @DisplayName("should handle multi-field sort")
         @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
         void shouldHandleMultiFieldSort() throws Exception {
-            when(managementService.listMembers(any()))
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -614,7 +613,7 @@ class MemberControllerApiTest {
         @DisplayName("should use default pagination when no parameters provided")
         @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
         void shouldUseDefaultPaginationWhenNoParams() throws Exception {
-            when(managementService.listMembers(any()))
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -632,13 +631,13 @@ class MemberControllerApiTest {
         @DisplayName("should include pagination links")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
         void shouldIncludePaginationLinks() throws Exception {
-            List<MemberSummaryDTO> members = List.of(
-                    new MemberSummaryDTO(UUID.randomUUID(), "Member0", "Test0", "ZBM0001"),
-                    new MemberSummaryDTO(UUID.randomUUID(), "Member1", "Test1", "ZBM0002"),
-                    new MemberSummaryDTO(UUID.randomUUID(), "Member2", "Test2", "ZBM0003")
+            List<Member> members = List.of(
+                    createTestMember(UUID.randomUUID(), "Member0", "Test0", "ZBM0001"),
+                    createTestMember(UUID.randomUUID(), "Member1", "Test1", "ZBM0002"),
+                    createTestMember(UUID.randomUUID(), "Member2", "Test2", "ZBM0003")
             );
 
-            when(managementService.listMembers(any()))
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(members, PageRequest.of(0, 2), members.size()));
 
             mockMvc.perform(
@@ -652,5 +651,20 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists());
         }
+    }
+
+    // Helper method to create test Member
+    private Member createTestMember(UUID id, String firstName, String lastName, String registrationNumber) {
+        return MemberTestDataBuilder.aMemberWithId(id)
+                .withRegistrationNumber(registrationNumber)
+                .withName(firstName, lastName)
+                .withDateOfBirth(LocalDate.of(2005, 6, 15))
+                .withNationality("CZ")
+                .withGender(Gender.MALE)
+                .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                .withEmail("test@example.com")
+                .withPhone("+420777888999")
+                .withNoGuardian()
+                .build();
     }
 }

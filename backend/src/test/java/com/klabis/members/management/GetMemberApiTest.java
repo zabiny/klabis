@@ -1,6 +1,7 @@
 package com.klabis.members.management;
 
-import com.klabis.members.Gender;
+import com.klabis.members.*;
+import com.klabis.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -32,7 +34,10 @@ class GetMemberApiTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ManagementService memberService;
+    private ManagementService managementService;
+
+    @MockitoBean
+    private Members memberRepository;
 
     @MockitoBean
     private UserDetailsService userDetailsService;
@@ -46,35 +51,9 @@ class GetMemberApiTest {
         @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
         void shouldReturnMemberDetailsWhenFound() throws Exception {
             UUID memberId = UUID.randomUUID();
-            AddressResponse address = new AddressResponse(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
+            Member member = createTestMember(memberId, "ZBM0501", "Jan", "Novák");
 
-            MemberDetailsDTO memberDTO = new MemberDetailsDTO(
-                    memberId,
-                    "ZBM0501",
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 6, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "jan.novak@example.com",
-                    "+420777888999",
-                    address,
-                    null,
-                    true,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-
-            when(memberService.getMember(any())).thenReturn(memberDTO);
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(
                             get("/api/members/{id}", memberId)
@@ -110,8 +89,7 @@ class GetMemberApiTest {
         @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
         void shouldReturn404WhenMemberNotFound() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
-            when(memberService.getMember(any()))
-                    .thenThrow(new MemberNotFoundException(nonExistentId));
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.empty());
 
             mockMvc.perform(
                             get("/api/members/{id}", nonExistentId)
@@ -155,35 +133,9 @@ class GetMemberApiTest {
         @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ", "MEMBERS:UPDATE"})
         void shouldIncludeEditLinkWhenUserHasUpdateAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
-            AddressResponse address = new AddressResponse(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
+            Member member = createTestMember(memberId, "ZBM0501", "Jan", "Novák");
 
-            MemberDetailsDTO memberDTO = new MemberDetailsDTO(
-                    memberId,
-                    "ZBM0501",
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 6, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "jan.novak@example.com",
-                    "+420777888999",
-                    address,
-                    null,
-                    true,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-
-            when(memberService.getMember(any())).thenReturn(memberDTO);
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(
                             get("/api/members/{id}", memberId)
@@ -199,43 +151,9 @@ class GetMemberApiTest {
         @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
         void shouldReturnGuardianInformationWhenPresent() throws Exception {
             UUID memberId = UUID.randomUUID();
-            GuardianDTO guardianDTO = new GuardianDTO(
-                    "Parent",
-                    "Name",
-                    "PARENT",
-                    "parent@example.com",
-                    "+420777111222"
-            );
+            Member member = createTestMemberWithGuardian(memberId);
 
-            AddressResponse address = new AddressResponse(
-                    "Hlavní 456",
-                    "Brno",
-                    "60000",
-                    "CZ"
-            );
-
-            MemberDetailsDTO memberDTO = new MemberDetailsDTO(
-                    memberId,
-                    "ZBM1501",
-                    "Child",
-                    "Member",
-                    LocalDate.of(2015, 1, 10),
-                    "CZ",
-                    Gender.MALE,
-                    "child@example.com",
-                    "+420777333444",
-                    address,
-                    guardianDTO,
-                    true,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-
-            when(memberService.getMember(any())).thenReturn(memberDTO);
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(
                             get("/api/members/{id}", memberId)
@@ -260,35 +178,20 @@ class GetMemberApiTest {
         @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
         void shouldReturnSingleEmailAndPhoneWithAddress() throws Exception {
             UUID memberId = UUID.randomUUID();
-            AddressResponse address = new AddressResponse(
-                    "Main Street 123",
-                    "Bratislava",
-                    "81101",
-                    "SK"
-            );
-
-            MemberDetailsDTO memberDTO = new MemberDetailsDTO(
+            Member member = createTestMember(
                     memberId,
                     "ZBM0501",
                     "Eva",
                     "Svobodová",
-                    LocalDate.of(2010, 3, 20),
                     "SK",
-                    Gender.FEMALE,
                     "eva.svobodova@example.com",
                     "+421777888999",
-                    address,
-                    null,
-                    true,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
+                    "Main Street 123",
+                    "Bratislava",
+                    "81101"
             );
 
-            when(memberService.getMember(any())).thenReturn(memberDTO);
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(
                             get("/api/members/{id}", memberId)
@@ -309,35 +212,9 @@ class GetMemberApiTest {
         @WithMockUser(username = "admin", authorities = {"MEMBERS:READ", "MEMBERS:PERMISSIONS"})
         void shouldIncludePermissionsLinkWhenUserHasMembersPermissionsAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
-            AddressResponse address = new AddressResponse(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
+            Member member = createTestMember(memberId, "ZBM0501", "Jan", "Novák");
 
-            MemberDetailsDTO memberDTO = new MemberDetailsDTO(
-                    memberId,
-                    "ZBM0501",
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 6, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "jan.novak@example.com",
-                    "+420777888999",
-                    address,
-                    null,
-                    true,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-
-            when(memberService.getMember(any())).thenReturn(memberDTO);
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(
                             get("/api/members/{id}", memberId)
@@ -355,35 +232,9 @@ class GetMemberApiTest {
         @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
         void shouldNotIncludePermissionsLinkWhenUserLacksMembersPermissionsAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
-            AddressResponse address = new AddressResponse(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
+            Member member = createTestMember(memberId, "ZBM0501", "Jan", "Novák");
 
-            MemberDetailsDTO memberDTO = new MemberDetailsDTO(
-                    memberId,
-                    "ZBM0501",
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 6, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "jan.novak@example.com",
-                    "+420777888999",
-                    address,
-                    null,
-                    true,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-
-            when(memberService.getMember(any())).thenReturn(memberDTO);
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(
                             get("/api/members/{id}", memberId)
@@ -393,5 +244,79 @@ class GetMemberApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist());
         }
+    }
+
+    // Helper methods to create test members
+    private Member createTestMember(UUID id, String regNumber, String firstName, String lastName) {
+        return createTestMember(id, regNumber, firstName, lastName, "CZ",
+                "jan.novak@example.com", "+420777888999",
+                "Hlavní 123", "Praha", "11000");
+    }
+
+    private Member createTestMember(
+            UUID id,
+            String regNumber,
+            String firstName,
+            String lastName,
+            String countryCode,
+            String email,
+            String phone,
+            String street,
+            String city,
+            String postalCode
+    ) {
+        PersonalInformation personalInfo = PersonalInformation.of(
+                firstName,
+                lastName,
+                LocalDate.of(2005, 6, 15),
+                countryCode,
+                Gender.MALE
+        );
+
+        Address address = Address.of(street, city, postalCode, countryCode);
+        EmailAddress emailAddress = EmailAddress.of(email);
+        PhoneNumber phoneNumber = PhoneNumber.of(phone);
+
+        return Member.createWithId(
+                new UserId(id),
+                new RegistrationNumber(regNumber),
+                personalInfo,
+                address,
+                emailAddress,
+                phoneNumber,
+                null
+        );
+    }
+
+    private Member createTestMemberWithGuardian(UUID id) {
+        PersonalInformation personalInfo = PersonalInformation.of(
+                "Child",
+                "Member",
+                LocalDate.of(2015, 1, 10),
+                "CZ",
+                Gender.MALE
+        );
+
+        Address address = Address.of("Hlavní 456", "Brno", "60000", "CZ");
+        EmailAddress email = EmailAddress.of("child@example.com");
+        PhoneNumber phone = PhoneNumber.of("+420777333444");
+
+        GuardianInformation guardian = new GuardianInformation(
+                "Parent",
+                "Name",
+                "PARENT",
+                EmailAddress.of("parent@example.com"),
+                PhoneNumber.of("+420777111222")
+        );
+
+        return Member.createWithId(
+                new UserId(id),
+                new RegistrationNumber("ZBM1501"),
+                personalInfo,
+                address,
+                email,
+                phone,
+                guardian
+        );
     }
 }

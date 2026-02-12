@@ -15,7 +15,6 @@ import jakarta.validation.constraints.Size;
  * <p>
  * Used by:
  * - RegisterMemberCommand (application layer)
- * - MemberDetailsDTO (application layer)
  * - RegisterMemberRequest (presentation layer)
  * - MemberDetailsResponse (presentation layer)
  */

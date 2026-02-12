@@ -1,8 +1,9 @@
 package com.klabis.members.management;
 
 import com.klabis.common.ui.RootModel;
-import com.klabis.members.Member;
+import com.klabis.members.*;
 import com.klabis.users.Authority;
+import com.klabis.users.UserId;
 import com.klabis.users.authorization.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,6 +32,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,15 +53,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @ExposesResourceFor(Member.class)
 class MemberController {
 
-    private static final String MEMBERS_READ = "MEMBERS:READ";
-
     private final ManagementService managementService;
-    private final PagedResourcesAssembler<MemberSummaryDTO> pagedResourcesAssembler;
+    private final Members memberRepository;
+    private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
 
     public MemberController(
             ManagementService managementService,
-            PagedResourcesAssembler<MemberSummaryDTO> pagedResourcesAssembler) {
+            Members memberRepository,
+            PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler) {
         this.managementService = managementService;
+        this.memberRepository = memberRepository;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
@@ -157,14 +160,15 @@ class MemberController {
             @Valid @RequestBody UpdateMemberRequest request,
             Authentication auth) {
 
-        // Call service directly with request object (authorization and field filtering done in service)
+        // Call service for update (authorization and field filtering done in service)
         UUID updatedMemberId = managementService.updateMember(id, request);
 
-        // Load updated member
-        MemberDetailsDTO memberDTO = managementService.getMember(updatedMemberId);
+        // Load updated member directly from repository
+        Member updatedMember = memberRepository.findById(new UserId(updatedMemberId))
+                .orElseThrow(() -> new MemberNotFoundException(updatedMemberId));
 
         // Map to response
-        MemberDetailsResponse response = mapToResponse(memberDTO);
+        MemberDetailsResponse response = mapToDetailsResponse(updatedMember);
 
         // Create entity model with HATEOAS links
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
@@ -195,6 +199,7 @@ class MemberController {
      * @return paginated collection of member summaries with HATEOAS links and page metadata
      */
     @GetMapping
+    @Transactional(readOnly = true)
     @HasAuthority(Authority.MEMBERS_READ)
     @Operation(
             summary = "List members with pagination and sorting",
@@ -247,22 +252,16 @@ class MemberController {
         // Validate sort fields
         validateSortFields(pageable.getSort());
 
-        // Call service directly
-        Page<MemberSummaryDTO> page = managementService.listMembers(pageable);
+        // Fetch page from repository directly
+        Page<Member> memberPage = memberRepository.findAll(pageable);
 
-        // Convert to PagedModel using assembler
+        // Map to DTOs and convert to PagedModel using assembler
         PagedModel<EntityModel<MemberSummaryResponse>> pagedModel = pagedResourcesAssembler.toModel(
-                page,
-                dto -> {
-                    MemberSummaryResponse response = new MemberSummaryResponse(
-                            dto.id(),
-                            dto.firstName(),
-                            dto.lastName(),
-                            dto.registrationNumber()
-                    );
+                memberPage.map(this::toSummaryResponse),
+                response -> {
                     EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
                     // Add self link to individual member
-                    model.add(linkTo(methodOn(MemberController.class).getMember(dto.id())).withSelfRel());
+                    model.add(linkTo(methodOn(MemberController.class).getMember(response.id())).withSelfRel());
                     return model;
                 }
         );
@@ -305,6 +304,7 @@ class MemberController {
      * @return member resource with full details
      */
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     @HasAuthority(Authority.MEMBERS_READ)
     @Operation(
             summary = "Get member by ID",
@@ -349,11 +349,12 @@ class MemberController {
     public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id) {
 
-        // Call service directly
-        MemberDetailsDTO memberDTO = managementService.getMember(id);
+        // Load member directly from repository
+        Member member = memberRepository.findById(new UserId(id))
+                .orElseThrow(() -> new MemberNotFoundException(id));
 
         // Map to response
-        MemberDetailsResponse response = mapToResponse(memberDTO);
+        MemberDetailsResponse response = mapToDetailsResponse(member);
 
         // Create entity model with HATEOAS links
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
@@ -374,34 +375,108 @@ class MemberController {
     }
 
     /**
-     * Maps MemberDetailsDTO to MemberDetailsResponse.
-     * <p>
-     * Note: This is a simple field-by-field mapping since the DTOs have identical structure.
-     * GuardianDTO and AddressResponse are shared across layers to eliminate duplication.
+     * Maps Member domain object to MemberDetailsResponse.
      *
-     * @param dto the application layer DTO
-     * @return the presentation layer response
+     * @param member the member domain object
+     * @return the member details response
      */
-    private MemberDetailsResponse mapToResponse(MemberDetailsDTO dto) {
+    private MemberDetailsResponse mapToDetailsResponse(Member member) {
+        // Map address, guardian, email and phone using null-safe methods
+        AddressResponse addressResponse = AddressResponse.from(member.getAddress());
+        GuardianDTO guardianDTO = GuardianDTO.from(member.getGuardian());
+        String email = member.getEmail().value();
+        String phone = member.getPhone().value();
+
+        // Map optional fields
+        String chipNumber = member.getChipNumber();
+        IdentityCardDto identityCardDto = mapToIdentityCardDto(member.getIdentityCard());
+        MedicalCourseDto medicalCourseDto = mapToMedicalCourseDto(member.getMedicalCourse());
+        TrainerLicenseDto trainerLicenseDto = mapToTrainerLicenseDto(member.getTrainerLicense());
+        DrivingLicenseGroup drivingLicenseGroup = member.getDrivingLicenseGroup();
+        String dietaryRestrictions = member.getDietaryRestrictions();
+
         return new MemberDetailsResponse(
-                dto.id(),
-                dto.registrationNumber(),
-                dto.firstName(),
-                dto.lastName(),
-                dto.dateOfBirth(),
-                dto.nationality(),
-                dto.gender(),
-                dto.email(),
-                dto.phone(),
-                dto.address(),
-                dto.guardian(),
-                dto.active(),
-                dto.chipNumber(),
-                dto.identityCard(),
-                dto.medicalCourse(),
-                dto.trainerLicense(),
-                dto.drivingLicenseGroup(),
-                dto.dietaryRestrictions()
+                member.getId().uuid(),
+                member.getRegistrationNumber().getValue(),
+                member.getFirstName(),
+                member.getLastName(),
+                member.getDateOfBirth(),
+                member.getNationality(),
+                member.getGender(),
+                email,
+                phone,
+                addressResponse,
+                guardianDTO,
+                member.isActive(),
+                chipNumber,
+                identityCardDto,
+                medicalCourseDto,
+                trainerLicenseDto,
+                drivingLicenseGroup,
+                dietaryRestrictions
+        );
+    }
+
+    /**
+     * Maps Member domain object to MemberSummaryResponse.
+     *
+     * @param member the member domain object
+     * @return the member summary response
+     */
+    private MemberSummaryResponse toSummaryResponse(Member member) {
+        return new MemberSummaryResponse(
+                member.getId().uuid(),
+                member.getFirstName(),
+                member.getLastName(),
+                member.getRegistrationNumber().getValue()
+        );
+    }
+
+    /**
+     * Maps IdentityCard domain object to IdentityCardDto.
+     *
+     * @param identityCard the identity card to map
+     * @return the identity card DTO, or null if identityCard is null
+     */
+    private IdentityCardDto mapToIdentityCardDto(IdentityCard identityCard) {
+        if (identityCard == null) {
+            return null;
+        }
+        return new IdentityCardDto(
+                identityCard.cardNumber(),
+                identityCard.validityDate()
+        );
+    }
+
+    /**
+     * Maps MedicalCourse domain object to MedicalCourseDto.
+     *
+     * @param medicalCourse the medical course to map
+     * @return the medical course DTO, or null if medicalCourse is null
+     */
+    private MedicalCourseDto mapToMedicalCourseDto(MedicalCourse medicalCourse) {
+        if (medicalCourse == null) {
+            return null;
+        }
+        return new MedicalCourseDto(
+                medicalCourse.completionDate(),
+                medicalCourse.validityDate()
+        );
+    }
+
+    /**
+     * Maps TrainerLicense domain object to TrainerLicenseDto.
+     *
+     * @param trainerLicense the trainer license to map
+     * @return the trainer license DTO, or null if trainerLicense is null
+     */
+    private TrainerLicenseDto mapToTrainerLicenseDto(TrainerLicense trainerLicense) {
+        if (trainerLicense == null) {
+            return null;
+        }
+        return new TrainerLicenseDto(
+                trainerLicense.licenseNumber(),
+                trainerLicense.validityDate()
         );
     }
 }

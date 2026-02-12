@@ -8,8 +8,6 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,14 +19,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Service for member management operations.
+ * Service for member update operations.
  *
- * <p>Handles member queries and updates, including:
- * <ul>
- *   <li>Retrieving individual member details</li>
- *   <li>Listing members with pagination</li>
- *   <li>Updating member information with role-based access control</li>
- * </ul>
+ * <p>Handles member updates with role-based access control.
  *
  * <p><b>Authorization Model:</b> Supports dual authorization:
  * <ul>
@@ -38,6 +31,9 @@ import java.util.UUID;
  *
  * <p><b>Field Access Control:</b> Non-admin users can only update contact information
  * (email, phone, address). Admin-only fields include personal details and documents.
+ *
+ * <p><b>Note:</b> Member read operations (getMember, listMembers) are handled directly
+ * in the controller using @Transactional and repository access for simplicity.
  */
 @Service
 @PrimaryPort
@@ -55,39 +51,6 @@ class ManagementService {
      */
     public ManagementService(MemberRepository memberRepository) {
         this.memberRepository = memberRepository;
-    }
-
-    /**
-     * Retrieves a member by their ID.
-     *
-     * @param memberId the member ID
-     * @return DTO containing complete member details
-     * @throws MemberNotFoundException if no member exists with the given ID
-     */
-    @Transactional(readOnly = true)
-    public MemberDetailsDTO getMember(UUID memberId) {
-        Optional<Member> member = memberRepository.findById(new UserId(memberId));
-
-        if (member.isEmpty()) {
-            throw new MemberNotFoundException(memberId);
-        }
-
-        return mapToDTO(member.get());
-    }
-
-    /**
-     * Lists all members with pagination and sorting.
-     *
-     * @param pageable pagination and sorting parameters
-     * @return page of member summaries with pagination metadata
-     */
-    @Transactional(readOnly = true)
-    public Page<MemberSummaryDTO> listMembers(Pageable pageable) {
-        // Fetch page from repository
-        Page<Member> memberPage = memberRepository.findAll(pageable);
-
-        // Map to DTOs
-        return memberPage.map(this::toSummaryDTO);
     }
 
     /**
@@ -424,109 +387,4 @@ class ManagementService {
         }
     }
 
-    /**
-     * Maps a Member domain object to MemberDetailsDTO.
-     *
-     * @param member the member to map
-     * @return the member details DTO
-     */
-    private MemberDetailsDTO mapToDTO(Member member) {
-        // Map address, guardian, email and phone using null-safe methods
-        AddressResponse addressResponse = AddressResponse.from(member.getAddress());
-        GuardianDTO guardianDTO = GuardianDTO.from(member.getGuardian());
-        String email = member.getEmail().value();
-        String phone = member.getPhone().value();
-
-        // Map optional fields using null-safe methods from MapperHelpers
-        String chipNumber = member.getChipNumber();
-        IdentityCardDto identityCardDto = mapToIdentityCardDto(member.getIdentityCard());
-        MedicalCourseDto medicalCourseDto = mapToMedicalCourseDto(member.getMedicalCourse());
-        TrainerLicenseDto trainerLicenseDto = mapToTrainerLicenseDto(member.getTrainerLicense());
-        DrivingLicenseGroup drivingLicenseGroup = member.getDrivingLicenseGroup();
-        String dietaryRestrictions = member.getDietaryRestrictions();
-
-        return new MemberDetailsDTO(
-                member.getId().uuid(),  // Extract UUID from UserId
-                member.getRegistrationNumber().getValue(),
-                member.getFirstName(),
-                member.getLastName(),
-                member.getDateOfBirth(),
-                member.getNationality(),
-                member.getGender(),
-                email,
-                phone,
-                addressResponse,
-                guardianDTO,
-                member.isActive(),
-                chipNumber,
-                identityCardDto,
-                medicalCourseDto,
-                trainerLicenseDto,
-                drivingLicenseGroup,
-                dietaryRestrictions
-        );
-    }
-
-    /**
-     * Maps IdentityCard domain object to IdentityCardDto.
-     *
-     * @param identityCard the identity card to map
-     * @return the identity card DTO, or null if identityCard is null
-     */
-    private IdentityCardDto mapToIdentityCardDto(IdentityCard identityCard) {
-        if (identityCard == null) {
-            return null;
-        }
-        return new IdentityCardDto(
-                identityCard.cardNumber(),
-                identityCard.validityDate()
-        );
-    }
-
-    /**
-     * Maps MedicalCourse domain object to MedicalCourseDto.
-     *
-     * @param medicalCourse the medical course to map
-     * @return the medical course DTO, or null if medicalCourse is null
-     */
-    private MedicalCourseDto mapToMedicalCourseDto(MedicalCourse medicalCourse) {
-        if (medicalCourse == null) {
-            return null;
-        }
-        return new MedicalCourseDto(
-                medicalCourse.completionDate(),
-                medicalCourse.validityDate() // Returns Optional<LocalDate>
-        );
-    }
-
-    /**
-     * Maps TrainerLicense domain object to TrainerLicenseDto.
-     *
-     * @param trainerLicense the trainer license to map
-     * @return the trainer license DTO, or null if trainerLicense is null
-     */
-    private TrainerLicenseDto mapToTrainerLicenseDto(TrainerLicense trainerLicense) {
-        if (trainerLicense == null) {
-            return null;
-        }
-        return new TrainerLicenseDto(
-                trainerLicense.licenseNumber(),
-                trainerLicense.validityDate()
-        );
-    }
-
-    /**
-     * Maps a Member domain object to MemberSummaryDTO.
-     *
-     * @param member the member to map
-     * @return the member summary DTO
-     */
-    private MemberSummaryDTO toSummaryDTO(Member member) {
-        return new MemberSummaryDTO(
-                member.getId().uuid(),  // Extract UUID from UserId
-                member.getFirstName(),
-                member.getLastName(),
-                member.getRegistrationNumber().getValue()
-        );
-    }
 }
