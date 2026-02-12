@@ -1,4 +1,4 @@
-package com.klabis.common.root;
+package com.klabis.common.ui;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.hateoas.EntityModel;

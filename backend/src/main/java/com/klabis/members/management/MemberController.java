@@ -1,6 +1,6 @@
 package com.klabis.members.management;
 
-import com.klabis.common.root.RootModel;
+import com.klabis.common.ui.RootModel;
 import com.klabis.members.Member;
 import com.klabis.users.Authority;
 import com.klabis.users.authorization.HasAuthority;

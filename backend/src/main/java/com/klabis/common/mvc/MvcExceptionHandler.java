@@ -1,5 +1,8 @@
-package com.klabis.common.exceptions;
+package com.klabis.common.mvc;
 
+import com.klabis.common.exceptions.AuthorizationException;
+import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.ResourceNotFoundException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.OptimisticLockingFailureException;

@@ -1,6 +1,6 @@
 package com.klabis.events.management;
 
-import com.klabis.common.root.RootModel;
+import com.klabis.common.ui.RootModel;
 import com.klabis.events.Event;
 import com.klabis.events.EventStatus;
 import com.klabis.users.Authority;
