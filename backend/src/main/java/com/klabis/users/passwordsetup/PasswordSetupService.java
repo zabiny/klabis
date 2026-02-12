@@ -316,7 +316,7 @@ public class PasswordSetupService {
      */
     private String buildSetupUrl(String plainToken) {
         return UriComponentsBuilder.fromHttpUrl(baseUrl)
-                .path("/auth/password-setup.html")
+                .path("/password-setup")
                 .queryParam("token", plainToken)
                 .build()
                 .toUriString();

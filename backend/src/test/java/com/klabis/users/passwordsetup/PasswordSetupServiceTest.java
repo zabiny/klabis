@@ -104,7 +104,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String firstName = "John";
             String email = "john.doe@example.com";
             String plainToken = UUID.randomUUID().toString();
-            String expectedUrl = "https://localhost:8443/auth/password-setup.html?token=" + plainToken;
+            String expectedUrl = "https://localhost:8443/password-setup?token=" + plainToken;
 
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
             when(templateRenderer.renderText(any(), any())).thenReturn("text body");
@@ -138,7 +138,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String firstName = "John";
             String email = "john.doe@example.com";
             String plainToken = "test-token-123";
-            String expectedUrl = "https://localhost:8443/auth/password-setup.html?token=" + plainToken;
+            String expectedUrl = "https://localhost:8443/password-setup?token=" + plainToken;
 
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>" + expectedUrl + "</html>");
             when(templateRenderer.renderText(any(), any())).thenReturn(expectedUrl);

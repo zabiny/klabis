@@ -15,6 +15,8 @@ import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 import {MembersPage} from "./pages/MembersPage.tsx";
 import {EventsPage} from "./pages/EventsPage.tsx";
 import {MemberFinancePage} from "./pages/FinancesPage.tsx";
+import PasswordSetupPage from "./pages/PasswordSetupPage";
+import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
@@ -50,7 +52,12 @@ function App() {
                 <ThemeProvider>
                     <AdminModeProvider>
                         <Routes>
+                            {/* Public routes - no authentication required */}
+                            <Route path="/password-setup" element={<PasswordSetupPage />} />
+                            <Route path="/password-setup/request" element={<PasswordExpiredPage />} />
                             <Route path="/login" element={<LoginPage/>}/>
+
+                            {/* Protected routes - authentication required */}
                             <Route path="/" element={
                                 <ProtectedRoute>
                                     <Layout/>

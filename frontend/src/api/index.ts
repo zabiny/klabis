@@ -21,3 +21,12 @@ export type MemberRegistrationForm = components["schemas"]["RegisterMemberReques
 
 export type Link = components["schemas"]["Link"];
 export {type HttpMethod} from 'openapi-typescript-helpers';
+
+// Re-export specific password setup types from schemas
+export type SetPasswordRequest = components["schemas"]["SetPasswordRequest"];
+export type PasswordSetupResponse = components["schemas"]["PasswordSetupResponse"];
+export type TokenRequestRequest = components["schemas"]["TokenRequestRequest"];
+export type TokenRequestResponse = components["schemas"]["TokenRequestResponse"];
+export type ValidateTokenResponse = components["schemas"]["ValidateTokenResponse"];
+export type ErrorResponse = components["schemas"]["ErrorResponse"];
+
