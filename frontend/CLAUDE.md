@@ -88,10 +88,13 @@ npm run test:coverage
 npm run refresh-backend-server-resources
 
 # This command:
-# 1. Runs production build (npm run build)
-# 2. Clears backend/src/main/resources/static/
-# 3. Copies dist/* to backend static resources
-# 4. Stages changes in git
+# 1. Runs all tests (npm run test) - MUST PASS before proceeding
+# 2. Runs production build (npm run build)
+# 3. Clears backend/src/main/resources/static/
+# 4. Copies dist/* to backend static resources
+# 5. Stages changes in git
+
+# Note: If tests fail, the deployment is aborted (build won't run)
 ```
 
 ## API Integration
