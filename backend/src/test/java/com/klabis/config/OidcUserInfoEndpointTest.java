@@ -94,10 +94,8 @@ class OidcUserInfoEndpointTest {
         assertThat(client.getScopes()).containsExactlyInAnyOrder("openid",
                 "profile",
                 "email",
-                "MEMBERS:CREATE",
-                "MEMBERS:UPDATE",
-                "MEMBERS:DELETE",
-                "MEMBERS:READ");
+                "MEMBERS",
+                "EVENTS");
         // Don't compare hashed password - BCrypt generates different hash each time
         assertThat(passwordEncoder.matches(CLIENT_SECRET, client.getClientSecret())).isTrue();
     }
@@ -302,7 +300,7 @@ class OidcUserInfoEndpointTest {
         MvcResult tokenResult = mockMvc.perform(
                         post("/oauth2/token")
                                 .param("grant_type", "client_credentials")
-                                .param("scope", "MEMBERS:READ")
+                                .param("scope", "MEMBERS")
                                 .with(httpBasic(CLIENT_ID, CLIENT_SECRET))
                 )
                 .andExpect(status().isOk())
