@@ -32,6 +32,12 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.accept.ContentNegotiationStrategy;
+import org.springframework.web.accept.HeaderContentNegotiationStrategy;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -195,6 +201,60 @@ public class SecurityConfiguration implements WebMvcConfigurer {
 
         return http.build();
 
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain spaFilterChain(HttpSecurity http) throws Exception {
+        // Custom matcher that only applies to HTML requests (text/html Accept header)
+        // This prevents conflicts with API endpoints that might match the same path patterns
+        RequestMatcher htmlRequestMatcher = createHtmlRequestMatcher();
+
+        http
+                .securityMatcher(htmlRequestMatcher)
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().permitAll()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(csrf -> csrf.disable());
+
+        return http.build();
+    }
+
+    /**
+     * Creates a RequestMatcher that matches:
+     * 1. SPA routes (paths without dots) that accept text/html
+     * 2. Static resources and specific files (unconditionally)
+     *
+     * This ensures API endpoints (which typically accept application/json or application/hal+json)
+     * are NOT matched by the SPA filter chain, even if they share similar path patterns.
+     */
+    @SuppressWarnings("removal")  // AntPathRequestMatcher is deprecated but no alternative available yet
+    private RequestMatcher createHtmlRequestMatcher() {
+        ContentNegotiationStrategy negotiationStrategy = new HeaderContentNegotiationStrategy();
+
+        // Matcher for SPA routes - only matches when client accepts text/html
+        MediaTypeRequestMatcher htmlMatcher = new MediaTypeRequestMatcher(
+                negotiationStrategy,
+                MediaType.TEXT_HTML
+        );
+        htmlMatcher.setIgnoredMediaTypes(java.util.Set.of(MediaType.ALL));
+
+        // Apply HTML matcher to SPA route patterns
+        RequestMatcher spaRoutesMatcher = new OrRequestMatcher(
+                new AntPathRequestMatcher("/"),
+                new AntPathRequestMatcher("/{path:[^\\.]*}"),
+                new AntPathRequestMatcher("/{path1}/{path2:[^\\.]*}"),
+                new AntPathRequestMatcher("/{path1}/{path2}/{path3:[^\\.]*}")
+        );
+
+        // Combine: (SPA routes AND accepts HTML) OR static resources
+        return new OrRequestMatcher(
+                request -> spaRoutesMatcher.matches(request) && htmlMatcher.matches(request),
+                new AntPathRequestMatcher("/static/**"),
+                new AntPathRequestMatcher("/index.html"),
+                new AntPathRequestMatcher("/favicon.ico")
+        );
     }
 
     @Bean
