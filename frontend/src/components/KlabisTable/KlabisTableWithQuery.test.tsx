@@ -27,6 +27,8 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             }
         })
         vi.clearAllMocks()
+        // Clear localStorage before each test
+        localStorage.clear()
         // Mock global fetch
         fetchSpy = vi.fn() as Mock
         ;(globalThis as any).fetch = fetchSpy
@@ -374,6 +376,82 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             })
 
             expect(fetchSpy).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    describe('Persisted rowsPerPage', () => {
+        it('persists rowsPerPage to localStorage when changed', async () => {
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+                .mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+
+            const user = userEvent.setup()
+
+            renderWithQuery(
+                <KlabisTableWithQuery link={mockHalLink}>
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTableWithQuery>
+            )
+
+            await waitFor(() => {
+                expect(screen.getByText('Alice')).toBeInTheDocument()
+            })
+
+            // Find and change rows per page dropdown
+            const select = screen.getByDisplayValue('10')
+            await user.selectOptions(select, '25')
+
+            // Verify localStorage was updated
+            await waitFor(() => {
+                expect(localStorage.getItem('klabis-table-rows-per-page')).toBe('25')
+            })
+
+            // Verify query was made with new page size
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalledWith(
+                    expect.stringContaining('size=25'),
+                    expect.any(Object)
+                )
+            })
+        })
+
+        it('loads rowsPerPage from localStorage on mount', async () => {
+            // Pre-populate localStorage
+            localStorage.setItem('klabis-table-rows-per-page', '50')
+
+            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+
+            renderWithQuery(
+                <KlabisTableWithQuery link={mockHalLink}>
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTableWithQuery>
+            )
+
+            // Verify query was made with persisted page size
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalledWith(
+                    expect.stringContaining('size=50'),
+                    expect.any(Object)
+                )
+            })
+        })
+
+        it('uses defaultRowsPerPage when localStorage is empty', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({content: mockMemberData, page: mockPageData}))
+
+            renderWithQuery(
+                <KlabisTableWithQuery link={mockHalLink} defaultRowsPerPage={25}>
+                    <TableCell column="name">Name</TableCell>
+                </KlabisTableWithQuery>
+            )
+
+            // Verify query was made with default page size
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalledWith(
+                    expect.stringContaining('size=25'),
+                    expect.any(Object)
+                )
+            })
         })
     })
 })

@@ -8,6 +8,7 @@
 import {type ReactElement, useMemo, useState} from 'react'
 import type {SortDirection} from '../../api'
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch'
+import {usePersistedState} from '../../hooks/usePersistedState'
 import {KlabisTable} from './KlabisTable'
 import type {TablePageData} from './types'
 
@@ -83,7 +84,8 @@ export function KlabisTableWithQuery<T extends Record<string, unknown> = any>({
                                                                               }: KlabisTableWithQueryProps<T>): ReactElement {
     // Pagination state
     const [page, setPage] = useState(0)
-    const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage)
+    // Persisted rows per page (remembers user's choice across page reloads)
+    const [rowsPerPage, setRowsPerPage] = usePersistedState('klabis-table-rows-per-page', defaultRowsPerPage)
 
     // Sort state
     const [sort, setSort] = useState(
