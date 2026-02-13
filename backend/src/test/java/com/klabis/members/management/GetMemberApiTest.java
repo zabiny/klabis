@@ -111,7 +111,6 @@ class GetMemberApiTest {
                             get("/api/members/{id}", memberId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isForbidden());
         }
 
@@ -124,7 +123,6 @@ class GetMemberApiTest {
                             get("/api/members/{id}", memberId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isUnauthorized());
         }
 
@@ -141,7 +139,7 @@ class GetMemberApiTest {
                             get("/api/members/{id}", memberId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andDo(MockMvcResultHandlers.print())
+
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.default.method").value("PATCH"));  // EDIT
         }
@@ -159,7 +157,7 @@ class GetMemberApiTest {
                             get("/api/members/{id}", memberId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andDo(MockMvcResultHandlers.print())
+
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.email").value("child@example.com"))
                     .andExpect(jsonPath("$.phone").value("+420777333444"))
@@ -197,7 +195,7 @@ class GetMemberApiTest {
                             get("/api/members/{id}", memberId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andDo(MockMvcResultHandlers.print())
+
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.email").value("eva.svobodova@example.com"))
                     .andExpect(jsonPath("$.phone").value("+421777888999"))
@@ -220,7 +218,7 @@ class GetMemberApiTest {
                             get("/api/members/{id}", memberId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andDo(MockMvcResultHandlers.print())
+
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.permissions").exists())
                     .andExpect(jsonPath("$._links.permissions.href").value(
@@ -240,7 +238,7 @@ class GetMemberApiTest {
                             get("/api/members/{id}", memberId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andDo(MockMvcResultHandlers.print())
+
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist());
         }

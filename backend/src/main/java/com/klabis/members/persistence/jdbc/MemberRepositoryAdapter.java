@@ -1,6 +1,5 @@
 package com.klabis.members.persistence.jdbc;
 
-import com.klabis.common.domain.AuditMetadata;
 import com.klabis.members.Member;
 import com.klabis.members.Members;
 import com.klabis.members.RegistrationNumber;
@@ -49,17 +48,8 @@ class MemberRepositoryAdapter implements Members, MemberRepository {
     @Override
     public Member save(Member member) {
         // Convert Member to MemberMemento for persistence
-        MemberMemento memento = MemberMemento.from(member);
-        MemberMemento saved = jdbcRepository.save(memento);
-
-        // Update Member's audit metadata from saved memento (if available)
-        AuditMetadata auditMetadata = saved.getAuditMetadata();
-        if (auditMetadata != null) {
-            member.updateAuditMetadata(auditMetadata);
-        }
-
-        // Return the same Member instance (now with updated audit metadata)
-        return member;
+        MemberMemento savedMemento = jdbcRepository.save(MemberMemento.from(member));
+        return savedMemento.toMember();
     }
 
     @Override
@@ -69,14 +59,9 @@ class MemberRepositoryAdapter implements Members, MemberRepository {
     }
 
     @Override
-    public Optional<Member> findByRegistrationId(RegistrationNumber registrationId) {
-        return jdbcRepository.findByRegistrationNumber(registrationId.getValue())
-                .map(MemberMemento::toMember);
-    }
-
-    @Override
     public Optional<Member> findByRegistrationNumber(RegistrationNumber registrationNumber) {
-        return findByRegistrationId(registrationNumber);
+        return jdbcRepository.findByRegistrationNumber(registrationNumber.getValue())
+                .map(MemberMemento::toMember);
     }
 
     @Override
