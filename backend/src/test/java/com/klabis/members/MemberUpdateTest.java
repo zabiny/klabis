@@ -295,6 +295,7 @@ class MemberUpdateTest {
                     null,
                     null,
                     null,
+                    null,
                     null
             );
 

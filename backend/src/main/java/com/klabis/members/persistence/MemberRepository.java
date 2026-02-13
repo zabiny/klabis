@@ -1,7 +1,6 @@
 package com.klabis.members.persistence;
 
 import com.klabis.members.Member;
-import com.klabis.members.RegistrationNumber;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 import org.jmolecules.ddd.annotation.Repository;
@@ -42,16 +41,6 @@ public interface MemberRepository {
      * @return an {@code Optional} containing the member if found, or an empty {@code Optional} if no such member exists
      */
     Optional<Member> findById(UserId memberId);
-
-    /**
-     * Retrieves a member by their registration ID.
-     * <p>
-     * Searches the repository for a member associated with the given registration ID.
-     *
-     * @param registrationId the registration ID associated with the member
-     * @return an {@code Optional} containing the member if found, or an empty {@code Optional} if no member exists with the given registration ID
-     */
-    Optional<Member> findByRegistrationId(RegistrationNumber registrationId);
 
     /**
      * Retrieves a member by their email address.

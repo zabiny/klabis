@@ -24,40 +24,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("MemberMemento Tests")
 class MemberMementoTest {
 
-    private Member createTestMember() {
+    private MemberTestDataBuilder buildTestMember() {
         LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
         EmailAddress email = EmailAddress.of("jan.novak@example.com");
         PhoneNumber phone = PhoneNumber.of("+420123456789");
         Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-        PersonalInformation personalInformation = PersonalInformation.of(
-                "Jan",
-                "Novák",
-                dateOfBirth,
-                "CZ",
-                Gender.MALE
-        );
 
-        Member member = Member.create(
-                registrationNumber,
-                personalInformation,
-                address,
-                email,
-                phone,
-                null // no guardian for adult
-        );
+        return MemberTestDataBuilder.aMember()
+                .withRegistrationNumber(registrationNumber)
+                .withAddress(address)
+                .withName("Jan", "Novák")
+                .withDateOfBirth(dateOfBirth)
+                .withGender(Gender.MALE)
+                .withNationality("CZ")
+                .withEmail(email)
+                .withPhone(phone)
+                .withAuditMetadata(new AuditMetadata(
+                        Instant.now(),
+                        "test-user",
+                        Instant.now(),
+                        "test-user",
+                        0L
+                ));
+    }
 
-        // Set audit metadata manually for testing
-        AuditMetadata auditMetadata = new AuditMetadata(
-                Instant.now(),
-                "test-user",
-                Instant.now(),
-                "test-user",
-                0L
-        );
-        member.updateAuditMetadata(auditMetadata);
-
-        return member;
+    private Member createTestMember() {
+        return buildTestMember().build();
     }
 
     private Member createMemberWithAllFields() {
@@ -66,13 +59,6 @@ class MemberMementoTest {
         PhoneNumber phone = PhoneNumber.of("+420111222333");
         Address address = Address.of("Dětská 1", "Brno", "60200", "CZ");
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
-        PersonalInformation personalInformation = PersonalInformation.of(
-                "Petra",
-                "Nováková",
-                dateOfBirth,
-                "CZ",
-                Gender.FEMALE
-        );
         GuardianInformation guardian = new GuardianInformation(
                 "Pavel",
                 "Novák",
@@ -87,22 +73,6 @@ class MemberMementoTest {
         );
         TrainerLicense trainerLicense = TrainerLicense.of("TRAINER001", LocalDate.now().plusYears(3));
 
-        Member member = Member.create(
-                registrationNumber,
-                personalInformation,
-                address,
-                email,
-                phone,
-                guardian
-        );
-
-        member.updateDocuments(identityCard, medicalCourse, trainerLicense);
-        member.updateMemberDetails(
-                null, null, null, null, null,
-                "CHIP123", DrivingLicenseGroup.A, "Vegetarian", null
-        );
-
-        // Set audit metadata
         AuditMetadata auditMetadata = new AuditMetadata(
                 Instant.now(),
                 "test-user",
@@ -110,9 +80,25 @@ class MemberMementoTest {
                 "test-user",
                 1L
         );
-        member.updateAuditMetadata(auditMetadata);
 
-        return member;
+        return MemberTestDataBuilder.aMember()
+                .withRegistrationNumber(registrationNumber)
+                .withAddress(address)
+                .withEmail(email)
+                .withPhone(phone)
+                .withAuditMetadata(auditMetadata)
+                .withGuardian(guardian)
+                .withName("Petra", "Nováková")
+                .withDateOfBirth(dateOfBirth)
+                .withGender(Gender.FEMALE)
+                .withIdentityCard(identityCard)
+                .withMedicalCourse(medicalCourse)
+                .withTrainerLicense(trainerLicense)
+                .withChipNumber("CHIP123")
+                .withDrivingLicenseGroup(DrivingLicenseGroup.A)
+                .withDietaryRestrictions("Vegetarian")
+                .build();
+
     }
 
     @Nested
@@ -461,8 +447,7 @@ class MemberMementoTest {
         @DisplayName("should return isNew=true for new memento")
         void shouldReturnIsNewTrueForNewMemento() {
             // Arrange
-            Member member = createTestMember();
-            member.updateAuditMetadata(null);
+            Member member = buildTestMember().withAuditMetadata(null).build();
             MemberMemento memento = MemberMemento.from(member);
 
             // Act

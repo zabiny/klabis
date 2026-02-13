@@ -343,7 +343,7 @@ class MemberJdbcRepositoryTest extends BaseJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findByRegistrationId() method")
+    @DisplayName("findByRegistrationNumber() method")
     class FindByRegistrationIdMethod {
 
         @Test
@@ -370,7 +370,7 @@ class MemberJdbcRepositoryTest extends BaseJdbcRepositoryTest {
             memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findByRegistrationId(regNum);
+            Optional<Member> foundMember = memberRepository.findByRegistrationNumber(regNum);
 
             // Then
             assertThat(foundMember).isPresent();
@@ -382,7 +382,7 @@ class MemberJdbcRepositoryTest extends BaseJdbcRepositoryTest {
         @DisplayName("should return empty when registration number not found")
         void shouldReturnEmptyWhenRegistrationNumberNotFound() {
             // When
-            Optional<Member> foundMember = memberRepository.findByRegistrationId(new RegistrationNumber("NON9999"));
+            Optional<Member> foundMember = memberRepository.findByRegistrationNumber(new RegistrationNumber("NON9999"));
 
             // Then
             assertThat(foundMember).isEmpty();

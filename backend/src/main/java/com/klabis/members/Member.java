@@ -192,7 +192,8 @@ public class Member {
             MedicalCourse medicalCourse,
             TrainerLicense trainerLicense,
             DrivingLicenseGroup drivingLicenseGroup,
-            String dietaryRestrictions) {
+            String dietaryRestrictions,
+            AuditMetadata auditMetadata) {
 
         Member member = new Member(
                 id,
@@ -210,6 +211,7 @@ public class Member {
                 drivingLicenseGroup,
                 dietaryRestrictions
         );
+        member.auditMetadata = auditMetadata;
         // No domain events for reconstructed entities
         return member;
     }
@@ -546,20 +548,6 @@ public class Member {
      */
     public UserId getId() {
         return this.id;
-    }
-
-    // ========== Memento Pattern Methods ==========
-
-    /**
-     * Updates audit metadata from the memento after save.
-     * <p>
-     * This method is called by the repository to update the Member's audit metadata
-     * after saving to the database.
-     *
-     * @param auditMetadata the audit metadata from the saved memento
-     */
-    public void updateAuditMetadata(AuditMetadata auditMetadata) {
-        this.auditMetadata = auditMetadata;
     }
 
     // ========== Command Handlers (Domain Methods) ==========

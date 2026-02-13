@@ -1,5 +1,6 @@
 package com.klabis.members;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.UserId;
 
 import java.time.LocalDate;
@@ -27,6 +28,7 @@ public class MemberTestDataBuilder {
     private TrainerLicense trainerLicense = null;
     private DrivingLicenseGroup drivingLicenseGroup = null;
     private String dietaryRestrictions = null;
+    private AuditMetadata auditMetadata = null;
 
     private MemberTestDataBuilder() {
     }
@@ -44,9 +46,13 @@ public class MemberTestDataBuilder {
         return this;
     }
 
-    public MemberTestDataBuilder withRegistrationNumber(String registrationNumber) {
-        this.registrationNumber = new RegistrationNumber(registrationNumber);
+    public MemberTestDataBuilder withRegistrationNumber(RegistrationNumber registrationNumber) {
+        this.registrationNumber = registrationNumber;
         return this;
+    }
+
+    public MemberTestDataBuilder withRegistrationNumber(String registrationNumber) {
+        return withRegistrationNumber(RegistrationNumber.of(registrationNumber));
     }
 
     public MemberTestDataBuilder withName(String firstName, String lastName) {
@@ -55,14 +61,22 @@ public class MemberTestDataBuilder {
         return this;
     }
 
+    public MemberTestDataBuilder withEmail(EmailAddress email) {
+        this.email = email;
+        return this;
+    }
+
     public MemberTestDataBuilder withEmail(String email) {
-        this.email = EmailAddress.of(email);
+        return withEmail(EmailAddress.of(email));
+    }
+
+    public MemberTestDataBuilder withPhone(PhoneNumber phone) {
+        this.phone = phone;
         return this;
     }
 
     public MemberTestDataBuilder withPhone(String phone) {
-        this.phone = PhoneNumber.of(phone);
-        return this;
+        return withPhone(PhoneNumber.of(phone));
     }
 
     public MemberTestDataBuilder withDateOfBirth(LocalDate dateOfBirth) {
@@ -130,6 +144,11 @@ public class MemberTestDataBuilder {
         return this;
     }
 
+    public MemberTestDataBuilder withAuditMetadata(AuditMetadata auditMetadata) {
+        this.auditMetadata = auditMetadata;
+        return this;
+    }
+
     public Member build() {
         return Member.reconstruct(new UserId(memberId),
                 registrationNumber,
@@ -144,7 +163,8 @@ public class MemberTestDataBuilder {
                 medicalCourse,
                 trainerLicense,
                 drivingLicenseGroup,
-                dietaryRestrictions
+                dietaryRestrictions,
+                null    // TODO: should be set if building "already saved" item
         );
     }
 

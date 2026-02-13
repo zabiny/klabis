@@ -408,18 +408,9 @@ class MemberMemento implements Persistable<UUID> {
                 medicalCourse,
                 trainerLicense,
                 this.drivingLicenseGroup,
-                this.dietaryRestrictions
+                this.dietaryRestrictions,
+                getAuditMetadata()
         );
-
-        // Update audit metadata
-        AuditMetadata auditMetadata = new AuditMetadata(
-                this.createdAt,
-                this.createdBy,
-                this.lastModifiedAt,
-                this.lastModifiedBy,
-                this.version
-        );
-        member.updateAuditMetadata(auditMetadata);
 
         // Store transient reference for domain event delegation
         this.member = member;
