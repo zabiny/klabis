@@ -5,8 +5,7 @@ import com.klabis.users.TokenHash;
 import com.klabis.users.UserId;
 import com.klabis.users.persistence.PasswordSetupTokenRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.jmolecules.ddd.annotation.Repository;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,14 +21,13 @@ import java.util.stream.StreamSupport;
  * <p>
  * This is necessary to avoid signature clashes when extending both CrudRepository and domain interfaces.
  */
-@Component
-@Transactional
 @SecondaryAdapter
-public class PasswordSetupTokenRepositoryAdapter implements PasswordSetupTokenRepository {
+@Repository
+class PasswordSetupTokenRepositoryAdapter implements PasswordSetupTokenRepository {
 
     private final PasswordSetupTokenJdbcRepository jdbcRepository;
 
-    public PasswordSetupTokenRepositoryAdapter(PasswordSetupTokenJdbcRepository jdbcRepository) {
+    PasswordSetupTokenRepositoryAdapter(PasswordSetupTokenJdbcRepository jdbcRepository) {
         this.jdbcRepository = jdbcRepository;
     }
 
@@ -45,11 +43,6 @@ public class PasswordSetupTokenRepositoryAdapter implements PasswordSetupTokenRe
         memento.setNewFlag(!exists);
 
         PasswordSetupTokenMemento saved = jdbcRepository.save(memento);
-
-        // Mark as persisted
-        token.markAsPersisted();
-
-        // Convert saved memento back to domain entity
         return saved.toPasswordSetupToken();
     }
 
@@ -69,14 +62,12 @@ public class PasswordSetupTokenRepositoryAdapter implements PasswordSetupTokenRe
     }
 
     @Override
-    @Transactional
     public void invalidateAllForUser(UserId userId) {
         // Delete all tokens for this user (simpler than marking as expired)
         jdbcRepository.deleteAllByUserId(userId.uuid());
     }
 
     @Override
-    @Transactional
     public int deleteExpiredTokens() {
         return jdbcRepository.deleteByExpiresAtBefore(Instant.now());
     }

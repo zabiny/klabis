@@ -150,7 +150,7 @@ public class MemberTestDataBuilder {
     }
 
     public Member build() {
-        return Member.reconstruct(new UserId(memberId),
+        Member result = Member.reconstruct(new UserId(memberId),
                 registrationNumber,
                 PersonalInformation.of(firstName, lastName, dateOfBirth, nationality, gender),
                 address,
@@ -164,8 +164,14 @@ public class MemberTestDataBuilder {
                 trainerLicense,
                 drivingLicenseGroup,
                 dietaryRestrictions,
-                null    // TODO: should be set if building "already saved" item
+                auditMetadata
         );
+        return result;
+    }
+
+    public Member.RegisterMember toRegisterMemberCommand() {
+        return new Member.RegisterMember(new UserId(this.memberId), this.registrationNumber, this.build()
+                .getPersonalInformation(), this.address, this.email, this.phone, this.guardian);
     }
 
     /**

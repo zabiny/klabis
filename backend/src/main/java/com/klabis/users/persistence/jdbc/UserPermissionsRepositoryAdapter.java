@@ -1,13 +1,11 @@
 package com.klabis.users.persistence.jdbc;
 
-import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.Authority;
 import com.klabis.users.UserId;
 import com.klabis.users.UserPermissions;
 import com.klabis.users.persistence.UserPermissionsRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
-import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Optional;
 
@@ -19,10 +17,9 @@ import java.util.Optional;
  * <p>
  * This is necessary to avoid signature clashes when extending both CrudRepository and domain interfaces.
  */
-@Repository
-@Transactional
 @SecondaryAdapter
-public class UserPermissionsRepositoryAdapter implements UserPermissionsRepository {
+@Repository
+class UserPermissionsRepositoryAdapter implements UserPermissionsRepository {
 
     private final UserPermissionsJdbcRepository jdbcRepository;
 
@@ -38,20 +35,8 @@ public class UserPermissionsRepositoryAdapter implements UserPermissionsReposito
         boolean exists = jdbcRepository.existsById(permissions.getUserId().uuid());
 
         // Convert UserPermissions to UserPermissionsMemento for persistence
-        UserPermissionsMemento memento = UserPermissionsMemento.from(permissions, !exists);
-        UserPermissionsMemento saved = jdbcRepository.save(memento);
-
-        // Update audit metadata from saved memento
-        AuditMetadata auditMetadata = saved.getAuditMetadata();
-        if (auditMetadata != null) {
-            permissions.updateAuditMetadata(auditMetadata);
-        }
-
-        // Mark as persisted
-        permissions.markAsPersisted();
-
-        // Return the same UserPermissions instance (now with updated audit metadata)
-        return permissions;
+        UserPermissionsMemento saved = jdbcRepository.save(UserPermissionsMemento.from(permissions, !exists));
+        return saved.toUserPermissions();
     }
 
     @Override

@@ -1,7 +1,6 @@
 package com.klabis.members.persistence.jdbc;
 
 import com.klabis.members.Member;
-import com.klabis.members.Members;
 import com.klabis.members.RegistrationNumber;
 import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.UserId;
@@ -15,13 +14,14 @@ import java.util.Optional;
 import java.util.stream.StreamSupport;
 
 /**
- * Adapter that bridges between Members public API, MemberRepository domain interface and MemberJdbcRepository.
+ * Adapter that bridges between MemberRepository domain interface and MemberJdbcRepository.
  * <p>
- * This adapter implements both:
+ * This adapter implements:
  * <ul>
- *   <li>{@link Members} - public API for other modules (read-only operations)</li>
- *   <li>{@link com.klabis.members.persistence.MemberRepository MemberRepository} - internal API for members module</li>
+ *   <li>{@link com.klabis.members.persistence.MemberRepository MemberRepository} - domain repository interface</li>
  * </ul>
+ * <p>
+ * MemberRepository extends {@link Members} public API, so this adapter indirectly implements both.
  * <p>
  * It handles conversion between Member entities and MemberMemento persistence objects.
  * <p>
@@ -30,7 +30,7 @@ import java.util.stream.StreamSupport;
  */
 @SecondaryAdapter
 @Repository
-class MemberRepositoryAdapter implements Members, MemberRepository {
+class MemberRepositoryAdapter implements MemberRepository {
 
     private final MemberJdbcRepository jdbcRepository;
 

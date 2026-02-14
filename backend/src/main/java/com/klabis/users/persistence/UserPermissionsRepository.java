@@ -4,7 +4,6 @@ import com.klabis.users.Authority;
 import com.klabis.users.UserId;
 import com.klabis.users.UserPermissions;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
-import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Optional;
 
@@ -30,7 +29,6 @@ import java.util.Optional;
  * @see UserId
  * @see Authority
  */
-@Repository
 @SecondaryPort
 public interface UserPermissionsRepository {
 

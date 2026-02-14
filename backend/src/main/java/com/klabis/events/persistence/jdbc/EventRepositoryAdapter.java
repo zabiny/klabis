@@ -1,39 +1,37 @@
 package com.klabis.events.persistence.jdbc;
 
+import com.klabis.common.pagination.TranslatedPageable;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.EventStatus;
-import com.klabis.events.Events;
 import com.klabis.events.persistence.EventRepository;
-import com.klabis.common.pagination.TranslatedPageable;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
+import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Adapter that bridges between Events public API, EventRepository domain interface and EventJdbcRepository.
+ * Adapter that bridges between EventRepository domain interface and EventJdbcRepository.
  * <p>
- * This adapter implements both:
+ * This adapter implements:
  * <ul>
- *   <li>{@link Events} - public API for other modules (read-only operations)</li>
- *   <li>{@link com.klabis.events.EventRepository EventRepository} - internal API for events module</li>
+ *   <li>{@link com.klabis.events.persistence.EventRepository EventRepository} - domain repository interface</li>
  * </ul>
+ * <p>
+ * EventRepository extends {@link com.klabis.events.Events Events} public API, so this adapter indirectly implements both.
  * <p>
  * It handles conversion between Event entities and EventMemento persistence objects.
  * <p>
  * Event publishing is handled automatically by Spring Modulith via the outbox pattern.
  * The EventMemento delegates @DomainEvents and @AfterDomainEventPublication to the Event entity.
  */
-@Component
-@Transactional
 @SecondaryAdapter
-class EventRepositoryAdapter implements Events, EventRepository {
+@Repository
+class EventRepositoryAdapter implements EventRepository {
 
     private final EventJdbcRepository jdbcRepository;
 
@@ -63,13 +61,8 @@ class EventRepositoryAdapter implements Events, EventRepository {
     @Override
     public Event save(Event event) {
         // Convert Event to EventMemento for persistence
-        EventMemento memento = EventMemento.from(event);
-        EventMemento saved = jdbcRepository.save(memento);
-
-        // TODO: Update Event's audit metadata from saved memento (once audit fields are added)
-
-        // Return the same Event instance
-        return event;
+        EventMemento saved = jdbcRepository.save(EventMemento.from(event));
+        return saved.toEvent();
     }
 
     @Override

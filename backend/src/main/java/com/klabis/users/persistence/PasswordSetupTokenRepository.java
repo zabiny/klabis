@@ -4,7 +4,6 @@ import com.klabis.users.PasswordSetupToken;
 import com.klabis.users.TokenHash;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
-import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +14,6 @@ import java.util.UUID;
  *
  * <p>Provides persistence operations for password setup tokens.
  */
-@Repository
 @SecondaryPort
 public interface PasswordSetupTokenRepository {
 

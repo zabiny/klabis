@@ -1,31 +1,28 @@
 package com.klabis.users.persistence.jdbc;
 
-import com.klabis.common.domain.AuditMetadata;
 import com.klabis.users.User;
-import com.klabis.users.Users;
 import com.klabis.users.UserId;
 import com.klabis.users.persistence.UserRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.jmolecules.ddd.annotation.Repository;
 
 import java.util.Optional;
 
 /**
- * Adapter that bridges between Users public API, UserRepository domain interface and UserJdbcRepository.
+ * Adapter that bridges between UserRepository domain interface and UserJdbcRepository.
  * <p>
- * This adapter implements both:
+ * This adapter implements:
  * <ul>
- *   <li>{@link Users} - public API for other modules (read-only operations)</li>
- *   <li>{@link com.klabis.users.persistence.UserRepository UserRepository} - internal API for users module</li>
+ *   <li>{@link com.klabis.users.persistence.UserRepository UserRepository} - domain repository interface</li>
  * </ul>
+ * <p>
+ * UserRepository extends {@link com.klabis.users.Users Users} public API, so this adapter indirectly implements both.
  * <p>
  * It handles conversion between User entities and UserMemento persistence objects.
  */
-@Component
-@Transactional
 @SecondaryAdapter
-class UserRepositoryAdapter implements Users, UserRepository {
+@Repository
+class UserRepositoryAdapter implements UserRepository {
 
     private final UserJdbcRepository jdbcRepository;
 
@@ -36,17 +33,8 @@ class UserRepositoryAdapter implements Users, UserRepository {
     @Override
     public User save(User user) {
         // Convert User to UserMemento for persistence
-        UserMemento memento = UserMemento.from(user);
-        UserMemento saved = jdbcRepository.save(memento);
-
-        // Update User's audit metadata from saved memento (if available)
-        AuditMetadata auditMetadata = saved.getAuditMetadata();
-        if (auditMetadata != null) {
-            user.updateAuditMetadata(auditMetadata);
-        }
-
-        // Return the same User instance (now with updated audit metadata)
-        return user;
+        UserMemento saved = jdbcRepository.save(UserMemento.from(user));
+        return saved.toUser();
     }
 
     @Override

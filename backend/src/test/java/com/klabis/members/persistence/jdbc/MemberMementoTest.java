@@ -178,21 +178,6 @@ class MemberMementoTest {
             assertThat(reconstructed.getCreatedBy()).isEqualTo("test-user");
             assertThat(reconstructed.getVersion()).isEqualTo(1L);
         }
-
-        @Test
-        @DisplayName("should store transient reference to member for domain events")
-        void shouldStoreTransientReferenceToMember() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act
-            MemberMemento memento = MemberMemento.from(member);
-
-            // Assert - member reference is stored for domain event delegation
-            // We can verify this indirectly by checking that domain events are accessible
-            assertThat(memento.getDomainEvents()).hasSize(1);
-            assertThat(memento.getDomainEvents().get(0)).isInstanceOf(MemberCreatedEvent.class);
-        }
     }
 
     @Nested
@@ -273,7 +258,14 @@ class MemberMementoTest {
         @DisplayName("should reconstruct member with null optional fields")
         void shouldReconstructMemberWithNullOptionalFields() {
             // Arrange
-            Member member = createTestMember(); // No guardian, no documents
+            Member member = buildTestMember()
+                    .withNoGuardian()
+                    .withIdentityCard(null)
+                    .withMedicalCourse(null)
+                    .withChipNumber(null)
+                    .withDrivingLicenseGroup(null)
+                    .withDietaryRestrictions(null)
+                    .build();
             MemberMemento memento = MemberMemento.from(member);
 
             // Act
@@ -373,7 +365,7 @@ class MemberMementoTest {
         @DisplayName("should delegate getDomainEvents to member")
         void shouldDelegateGetDomainEventsToMember() {
             // Arrange
-            Member member = createTestMember();
+            Member member = Member.register(buildTestMember().toRegisterMemberCommand());  // creates also event
             MemberMemento memento = MemberMemento.from(member);
 
             // Act
@@ -388,7 +380,7 @@ class MemberMementoTest {
         @DisplayName("should delegate clearDomainEvents to member")
         void shouldDelegateClearDomainEventsToMember() {
             // Arrange
-            Member member = createTestMember();
+            Member member = Member.register(buildTestMember().toRegisterMemberCommand());  // creates also event
             MemberMemento memento = MemberMemento.from(member);
 
             // Act

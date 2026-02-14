@@ -2,24 +2,23 @@ package com.klabis.users.persistence;
 
 import com.klabis.users.User;
 import com.klabis.users.UserId;
+import com.klabis.users.Users;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
-import org.jmolecules.ddd.annotation.Repository;
-
-import java.util.Optional;
 
 /**
  * Internal repository interface for User aggregate.
  * <p>
  * Defines methods to persist and retrieve User entities.
+ * <p>
+ * Extends {@link Users} public API with write operations (save, delete).
  *
  * @apiNote This is internal API for use within the users module only.
  * Other modules should use {@link com.klabis.users.Users Users} interface
  * for read operations and {@link com.klabis.users.UserService UserService}
  * for command operations.
  */
-@Repository
 @SecondaryPort
-public interface UserRepository {
+public interface UserRepository extends Users {
 
     /**
      * Save a user.
@@ -30,23 +29,9 @@ public interface UserRepository {
     User save(User user);
 
     /**
-     * Find user by ID.
-     *
-     * @param id user ID
-     * @return optional containing user if found
-     */
-    Optional<User> findById(UserId id);
-
-    /**
-     * Find user by username.
-     *
-     * @param username the username
-     * @return optional containing user if found
-     */
-    Optional<User> findByUsername(String username);
-
-    /**
      * Delete user by ID.
+     * <p>
+     * This is an internal method not exposed in the public Users API.
      *
      * @param id the user ID to delete
      */
@@ -54,9 +39,15 @@ public interface UserRepository {
 
     /**
      * Check if user exists by ID.
+     * <p>
+     * This is an internal method not exposed in the public Users API.
      *
      * @param id the user ID to check
      * @return true if user exists, false otherwise
      */
     boolean existsById(UserId id);
+
+    // Read methods inherited from Users public API:
+    // - Optional<User> findById(UserId id)
+    // - Optional<User> findByUsername(String username)
 }

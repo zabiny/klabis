@@ -216,6 +216,12 @@ public class Member {
         return member;
     }
 
+    public static Member register(RegisterMember command) {
+        return Member.create(
+                command.registrationNumber(), command.personalInformation(), command.address(), command.email(), command.phone(), command.guardian()
+        );
+    }
+
     /**
      * Static factory method to create a new Member with a specific ID.
      * <p>
@@ -291,7 +297,9 @@ public class Member {
      * @param guardian            guardian information (required for minors)
      * @return new Member instance
      * @throws IllegalArgumentException if business rules are violated
+     * @deprecated use @{@link Member#register(RegisterMember)}
      */
+    @Deprecated
     public static Member create(
             RegistrationNumber registrationNumber,
             PersonalInformation personalInformation,
@@ -507,18 +515,6 @@ public class Member {
      */
     protected void registerEvent(Object event) {
         this.domainEvents.add(event);
-    }
-
-    /**
-     * Get all domain events registered on this aggregate.
-     * <p>
-     * Note: @DomainEvents annotation is handled by MemberMemento for Spring Modulith.
-     * This method is package-private for delegation.
-     *
-     * @return unmodifiable list of domain events
-     */
-    List<Object> getDomainEventsList() {
-        return Collections.unmodifiableList(domainEvents);
     }
 
     /**
