@@ -36,6 +36,7 @@ rules:
     - "Follow TDD: write failing test, implement, refactor"
     - "Aim for >80% tests coverage coverage, 100% for domain logic"
     - "Use ubiquitous language (UserId, EmailAddress) not Java patterns (record, factory method)"
+    - "If tasks are created from github issue, add task to add label 'BackendCompleted' to that issue"
 
   design:
     - "Use Mermaid diagrams in design.md to visualize concepts if applicable"
