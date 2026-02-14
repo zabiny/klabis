@@ -68,20 +68,11 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 
 - DO NOT create comments describing what code is doing. Use comments sparingly - exclusively to document intention behind implementation and only if is it necessary.
 
-## OpenSpec Workflow
-
-When planning or implementing new features:
-
-- **Do NOT** change task descriptions in `tasks.md` - only add notes in braces `()` or subsections
-- Follow [Creating OpenSpec Tasks](./claude_refs/PLANNING_TASKS.md) when planning implementation todos
-- See individual component CLAUDE.md files for coding conventions
-
 ## IntelliJ HTTP Files
 
 When testing API endpoints with `.http` files:
 
 - Always use `intellij-http-files` skill when working with .http files
-- Follow additional instructions from [IntelliJ HTTP file usage](./claude_refs/HTTP_FILES_USAGE.md)
 
 **Example OAuth2 authenticated call:**
 

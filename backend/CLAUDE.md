@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Minimal required variables for development
-cd klabis-backend
+cd backend
 BOOTSTRAP_ADMIN_USERNAME='admin' \
 BOOTSTRAP_ADMIN_PASSWORD='admin123' \
 OAUTH2_CLIENT_SECRET='test-secret-123' \

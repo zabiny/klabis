@@ -21,7 +21,7 @@ The UI mockup is served directly by Spring Boot - **no separate frontend server 
 
 ```bash
 # Start the Spring Boot backend (serves both API and static UI files)
-cd klabis-backend
+cd backend
 BOOTSTRAP_ADMIN_USERNAME='admin' \
 BOOTSTRAP_ADMIN_PASSWORD='admin123' \
 OAUTH2_CLIENT_SECRET='test-secret-123' \
@@ -330,7 +330,7 @@ This UI mockup is **different** from the backend Java/Spring code:
 
 ```bash
 # 1. Start backend with required environment variables
-cd klabis-backend
+cd backend
 BOOTSTRAP_ADMIN_USERNAME='admin' \
 BOOTSTRAP_ADMIN_PASSWORD='admin123' \
 OAUTH2_CLIENT_SECRET='test-secret-123' \
@@ -365,8 +365,8 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ## Related Documentation
 
-- **Backend API**: See `klabis-backend/CLAUDE.md` for backend architecture
-- **API Documentation**: See `klabis-backend/docs/API.md` for endpoint details
+- **Backend API**: See `backend/CLAUDE.md` for backend architecture
+- **API Documentation**: See `backend/docs/API.md` for endpoint details
 - **OpenSpec Specs**: See `../../openspec/specs/` for feature specifications
 - **Integration Details**: See `BACKEND_INTEGRATION.md` in this directory
 
