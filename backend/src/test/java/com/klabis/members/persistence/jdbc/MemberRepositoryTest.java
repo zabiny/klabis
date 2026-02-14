@@ -1,19 +1,21 @@
 package com.klabis.members.persistence.jdbc;
 
-import com.klabis.common.BaseJdbcRepositoryTest;
 import com.klabis.members.*;
+import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.UserId;
-import org.junit.jupiter.api.BeforeEach;
+import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,33 +24,16 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Integration tests for Member aggregate with Spring Data JDBC.
- * <p>
- * Tests cover:
- * - CRUD operations (save, findById)
- * - Derived query methods (findByRegistrationId, findByEmail)
- * - Custom query methods (countByBirthYear)
- * - Pagination and sorting (findAll with Pageable)
- * - Optimistic locking (@Version)
- * - Auditing fields (@CreatedDate, @LastModifiedDate)
- * - Complex value objects (Address, GuardianInformation, IdentityCard, MedicalCourse, TrainerLicense)
- * <p>
- * Note: Spring Modulith test filtering disabled to force execution during development
- */
 @DisplayName("Member JDBC Repository Tests")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {"delete from members"})
-@Import(MemberRepositoryAdapter.class)
-class MemberJdbcRepositoryTest extends BaseJdbcRepositoryTest {
+@DataJdbcTest(includeFilters = @ComponentScan.Filter(
+        type = FilterType.ANNOTATION,
+        value = {Repository.class})  // jMolecules Repository annotation, used to load all repository adapters (for context caching)
+)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class MemberRepositoryTest {
 
     @Autowired
-    private MemberRepositoryAdapter memberRepository;
-
-    @BeforeEach
-    void setUp() {
-        // Each test runs in a transaction that is rolled back after completion,
-        // ensuring test isolation without manual cleanup
-    }
+    private MemberRepository memberRepository;
 
     @Nested
     @DisplayName("save() method")

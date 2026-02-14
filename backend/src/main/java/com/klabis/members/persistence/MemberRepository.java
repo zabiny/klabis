@@ -1,9 +1,9 @@
 package com.klabis.members.persistence;
 
 import com.klabis.members.Member;
+import com.klabis.members.Members;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
-import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -20,9 +20,8 @@ import java.util.Optional;
  * Other modules should use {@link com.klabis.members.Members Members}
  * interface for querying members.
  */
-@Repository
 @SecondaryPort
-public interface MemberRepository {
+public interface MemberRepository extends Members {
 
     /**
      * Saves a member to the repository.

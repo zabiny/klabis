@@ -8,8 +8,7 @@ import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,8 +29,7 @@ import java.util.stream.StreamSupport;
  * The MemberMemento delegates @DomainEvents and @AfterDomainEventPublication to the Member entity.
  */
 @SecondaryAdapter
-@Component
-@Transactional
+@Repository
 class MemberRepositoryAdapter implements Members, MemberRepository {
 
     private final MemberJdbcRepository jdbcRepository;
