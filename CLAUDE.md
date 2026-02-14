@@ -64,6 +64,10 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 - Ensures you're testing the correct running instance
 - Saves debugging time
 
+### Common best practises
+
+- DO NOT create comments describing what code is doing. Use comments sparingly - exclusively to document intention behind implementation and only if is it necessary.
+
 ## OpenSpec Workflow
 
 When planning or implementing new features:
@@ -104,4 +108,3 @@ Before starting work, check the appropriate CLAUDE.md:
 
 - **Specifications** → Reference `./openspec/` for change proposals
     - Feature specifications and design documents
-
