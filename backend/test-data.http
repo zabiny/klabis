@@ -22,6 +22,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   }
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Register member 2 - adult female
 POST {{host}}/api/members
 Content-Type: application/json
@@ -42,6 +48,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "country": "CZ"
   }
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Register member 3 - junior with guardian
 POST {{host}}/api/members
@@ -71,6 +83,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   }
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 1 - spring race
 POST {{host}}/api/events
 Content-Type: application/json
@@ -82,6 +100,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "location": "Brno",
   "organizer": "ZBM"
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Create event 2 - spring long distance
 POST {{host}}/api/events
@@ -95,6 +119,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "organizer": "ZBM"
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 3 - summer camp
 POST {{host}}/api/events
 Content-Type: application/json
@@ -107,6 +137,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "organizer": "ZBM"
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 4 - autumn relay
 POST {{host}}/api/events
 Content-Type: application/json
@@ -118,6 +154,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "location": "Dubnany",
   "organizer": "ZBM"
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Register member 4 - adult female, same year as member 1
 POST {{host}}/api/members
@@ -140,6 +182,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   }
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Register member 5 - adult male
 POST {{host}}/api/members
 Content-Type: application/json
@@ -160,6 +208,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "country": "CZ"
   }
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Register member 6 - junior male, same year as member 3
 POST {{host}}/api/members
@@ -189,6 +243,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   }
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Register member 7 - adult female, same year as member 2
 POST {{host}}/api/members
 Content-Type: application/json
@@ -209,6 +269,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "country": "CZ"
   }
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Register member 8 - junior female with guardian
 POST {{host}}/api/members
@@ -238,6 +304,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   }
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Register member 9 - adult male, same year as member 5
 POST {{host}}/api/members
 Content-Type: application/json
@@ -258,6 +330,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "country": "CZ"
   }
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Register member 10 - adult female
 POST {{host}}/api/members
@@ -280,6 +358,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   }
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 5 - winter training
 POST {{host}}/api/events
 Content-Type: application/json
@@ -291,6 +375,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "location": "Bile Karpaty",
   "organizer": "OKV"
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Create event 6 - spring night race
 POST {{host}}/api/events
@@ -304,6 +394,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "organizer": "SKP"
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 7 - spring middle distance
 POST {{host}}/api/events
 Content-Type: application/json
@@ -315,6 +411,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "location": "Tišnov",
   "organizer": "ZBM"
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Create event 8 - summer championship
 POST {{host}}/api/events
@@ -328,6 +430,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "organizer": "OOB"
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 9 - summer youth camp
 POST {{host}}/api/events
 Content-Type: application/json
@@ -339,6 +447,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "location": "Krkonose",
   "organizer": "TJL"
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Create event 10 - summer relay championship
 POST {{host}}/api/events
@@ -352,6 +466,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "organizer": "OOB"
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 11 - autumn sprint
 POST {{host}}/api/events
 Content-Type: application/json
@@ -363,6 +483,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "location": "Olomouc",
   "organizer": "SKO"
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Create event 12 - autumn forest race
 POST {{host}}/api/events
@@ -376,6 +502,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "organizer": "ZBM"
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 13 - autumn regional championship
 POST {{host}}/api/events
 Content-Type: application/json
@@ -387,6 +519,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "location": "Vyskov",
   "organizer": "SKV"
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
 
 ### Create event 14 - autumn night orienteering
 POST {{host}}/api/events
@@ -400,6 +538,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "organizer": "OKV"
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 15 - winter series start
 POST {{host}}/api/events
 Content-Type: application/json
@@ -412,6 +556,12 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "organizer": "ZBM"
 }
 
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}
+
 ### Create event 16 - winter championship qualification
 POST {{host}}/api/events
 Content-Type: application/json
@@ -423,3 +573,9 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
   "location": "Beskydy",
   "organizer": "TJF"
 }
+
+> {%
+    client.test("Request successful", function() {
+        client.assert(response.status >= 200 && response.status < 300, "Response status is not 2xx");
+    });
+%}

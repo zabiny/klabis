@@ -1,15 +1,18 @@
 package com.klabis.events.persistence.jdbc;
 
-import com.klabis.common.BaseJdbcRepositoryTest;
 import com.klabis.events.*;
 import com.klabis.events.persistence.EventRepository;
 import com.klabis.users.UserId;
+import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,17 +38,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Finding active events with date before (for auto-completion scheduler)
  * - Unique constraint on (event_id, member_id) in registrations
  */
-@Import({EventRepositoryAdapter.class})
 @DisplayName("Event JDBC Repository Tests")
+@DataJdbcTest(includeFilters = @ComponentScan.Filter(
+        type = FilterType.ANNOTATION,
+        value = {Repository.class}))
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
-        "delete from event_registrations",
-        "delete from events",
-        "delete from members",
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('11111111-1111-1111-1111-111111111111', 'TEST001', 'Test', 'Member1', '2000-01-01', 'CZ', 'MALE', 'test1@example.com', '+420111111111', 'Street 1', 'City 1', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('22222222-2222-2222-2222-222222222222', 'TEST002', 'Test', 'Member2', '2000-01-01', 'CZ', 'MALE', 'test2@example.com', '+420111111112', 'Street 2', 'City 2', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
         "INSERT INTO members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('33333333-3333-3333-3333-333333333333', 'TEST003', 'Test', 'Member3', '2000-01-01', 'CZ', 'MALE', 'test3@example.com', '+420111111113', 'Street 3', 'City 3', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)"
 })
-class EventJdbcRepositoryTest extends BaseJdbcRepositoryTest {
+class EventJdbcRepositoryTest {
 
     @Autowired
     private EventRepository eventRepository;

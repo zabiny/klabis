@@ -155,12 +155,11 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // Then
-            // Note: These assertions will fail until auditing is implemented
-            // For now, they verify that the fields exist
             assertThat(savedMember).isNotNull();
-            // TODO: Uncomment when auditing is implemented
-            // assertThat(savedMember.getCreatedAt()).isNotNull();
-            // assertThat(savedMember.getCreatedBy()).isNotNull();
+            assertThat(savedMember.getCreatedAt()).isNotNull();
+            assertThat(savedMember.getCreatedBy()).isNotNull();
+            assertThat(savedMember.getLastModifiedAt()).isNotNull();
+            assertThat(savedMember.getLastModifiedBy()).isNotNull();
         }
 
         @Test
@@ -188,12 +187,9 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // Then
-            // Note: This will fail until @Version field is added to Member entity
-            // For now, it verifies that the version field concept exists
             assertThat(savedMember).isNotNull();
-            // TODO: Uncomment when @Version is implemented
-            // assertThat(savedMember.getVersion()).isNotNull();
-            // assertThat(savedMember.getVersion()).isEqualTo(0L);
+            assertThat(savedMember.getVersion()).isNotNull();
+            assertThat(savedMember.getVersion()).isEqualTo(0L);
         }
 
         @Test
@@ -761,11 +757,9 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // Then
-            // Note: This will fail until @Version field is added
             assertThat(savedMember).isNotNull();
-            // TODO: Uncomment when @Version is implemented
-            // assertThat(savedMember.getVersion()).isNotNull();
-            // assertThat(savedMember.getVersion()).isEqualTo(0L);
+            assertThat(savedMember.getVersion()).isNotNull();
+            assertThat(savedMember.getVersion()).isEqualTo(0L);
         }
 
         @Test
@@ -800,10 +794,8 @@ class MemberRepositoryTest {
             Member savedUpdatedMember = memberRepository.save(savedMember);
 
             // Then
-            // Note: This will fail until @Version field is added
             assertThat(savedUpdatedMember).isNotNull();
-            // TODO: Uncomment when @Version is implemented
-            // assertThat(savedUpdatedMember.getVersion()).isGreaterThan(savedMember.getVersion());
+            assertThat(savedUpdatedMember.getVersion()).isGreaterThan(savedMember.getVersion());
         }
     }
 
@@ -836,10 +828,8 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // Then
-            // Note: This will fail until auditing is implemented
             assertThat(savedMember).isNotNull();
-            // TODO: Uncomment when auditing is implemented
-            // assertThat(savedMember.getCreatedAt()).isNotNull();
+            assertThat(savedMember.getCreatedAt()).isNotNull();
         }
 
         @Test
@@ -867,10 +857,8 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // Then
-            // Note: This will fail until auditing is implemented
             assertThat(savedMember).isNotNull();
-            // TODO: Uncomment when auditing is implemented
-            // assertThat(savedMember.getLastModifiedAt()).isNotNull();
+            assertThat(savedMember.getLastModifiedAt()).isNotNull();
         }
     }
 

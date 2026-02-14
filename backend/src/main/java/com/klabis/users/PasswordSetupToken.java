@@ -1,5 +1,6 @@
 package com.klabis.users;
 
+import com.klabis.common.domain.AuditMetadata;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -43,6 +44,7 @@ public class PasswordSetupToken {
     private final Instant expiresAt;
     private Instant usedAt;
     private String usedByIp;
+    private AuditMetadata auditMetadata;
     private boolean isNew = true;
 
     /**
@@ -103,13 +105,14 @@ public class PasswordSetupToken {
      * <p>This is used by the repository when loading tokens from the database.
      * The plain text token will not be available (it's never persisted).
      *
-     * @param id        token ID
-     * @param userId    user ID
-     * @param tokenHash hash of the token
-     * @param createdAt creation timestamp
-     * @param expiresAt expiration timestamp
-     * @param usedAt    usage timestamp (null if unused)
-     * @param usedByIp  IP address of usage (null if unused)
+     * @param id              token ID
+     * @param userId          user ID
+     * @param tokenHash       hash of the token
+     * @param createdAt       creation timestamp
+     * @param expiresAt       expiration timestamp
+     * @param usedAt          usage timestamp (null if unused)
+     * @param usedByIp        IP address of usage (null if unused)
+     * @param auditMetadata   audit metadata with createdAt, createdBy, lastModifiedAt, lastModifiedBy, version
      * @return reconstructed PasswordSetupToken
      */
     public static PasswordSetupToken reconstruct(
@@ -119,7 +122,8 @@ public class PasswordSetupToken {
             Instant createdAt,
             Instant expiresAt,
             Instant usedAt,
-            String usedByIp) {
+            String usedByIp,
+            AuditMetadata auditMetadata) {
 
         PasswordSetupToken token = new PasswordSetupToken(id, userId, tokenHash, createdAt, expiresAt);
 
@@ -128,6 +132,9 @@ public class PasswordSetupToken {
             token.usedAt = usedAt;
             token.usedByIp = usedByIp;
         }
+
+        // Set audit metadata
+        token.auditMetadata = auditMetadata;
 
         // Mark as persisted (loaded from database)
         token.isNew = false;
@@ -263,6 +270,26 @@ public class PasswordSetupToken {
 
     public String getUsedByIp() {
         return usedByIp;
+    }
+
+    public AuditMetadata getAuditMetadata() {
+        return auditMetadata;
+    }
+
+    public Instant getLastModifiedAt() {
+        return auditMetadata != null ? auditMetadata.lastModifiedAt() : null;
+    }
+
+    public String getCreatedBy() {
+        return auditMetadata != null ? auditMetadata.createdBy() : null;
+    }
+
+    public String getLastModifiedBy() {
+        return auditMetadata != null ? auditMetadata.lastModifiedBy() : null;
+    }
+
+    public Long getVersion() {
+        return auditMetadata != null ? auditMetadata.version() : null;
     }
 
     public LocalDateTime getCreatedAtLocal() {

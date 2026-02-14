@@ -194,7 +194,7 @@ class PasswordSetupTokenTest {
             java.time.Instant past = java.time.Instant.now().minus(java.time.Duration.ofHours(5));
             java.time.Instant expired = java.time.Instant.now().minus(java.time.Duration.ofHours(1));
 
-            PasswordSetupToken token = PasswordSetupToken.reconstruct(tokenId, userId, hash, past, expired, null, null);
+            PasswordSetupToken token = PasswordSetupToken.reconstruct(tokenId, userId, hash, past, expired, null, null, null);
 
             // When/Then
             assertThatThrownBy(() -> token.markAsUsed("192.168.1.100"))
@@ -241,7 +241,7 @@ class PasswordSetupTokenTest {
             java.time.Instant past = java.time.Instant.now().minus(java.time.Duration.ofHours(5));
             java.time.Instant expired = java.time.Instant.now().minus(java.time.Duration.ofHours(1));
 
-            PasswordSetupToken token = PasswordSetupToken.reconstruct(tokenId, userId, hash, past, expired, null, null);
+            PasswordSetupToken token = PasswordSetupToken.reconstruct(tokenId, userId, hash, past, expired, null, null, null);
 
             // Then
             assertThat(token.isExpired()).isTrue();
@@ -313,7 +313,7 @@ class PasswordSetupTokenTest {
             java.time.Instant past = java.time.Instant.now().minus(java.time.Duration.ofHours(5));
             java.time.Instant expired = java.time.Instant.now().minus(java.time.Duration.ofHours(1));
 
-            PasswordSetupToken token = PasswordSetupToken.reconstruct(tokenId, userId, hash, past, expired, null, null);
+            PasswordSetupToken token = PasswordSetupToken.reconstruct(tokenId, userId, hash, past, expired, null, null, null);
 
             // Then
             assertThat(token.isValid()).isFalse();
@@ -425,13 +425,14 @@ class PasswordSetupTokenTest {
             java.time.Instant now = java.time.Instant.now();
             java.time.Instant later = now.plus(java.time.Duration.ofHours(4));
 
-            PasswordSetupToken token1 = PasswordSetupToken.reconstruct(sameId, userId, hash, now, later, null, null);
-            PasswordSetupToken token2 = PasswordSetupToken.reconstruct(sameId, userId, hash, now, later, null, null);
+            PasswordSetupToken token1 = PasswordSetupToken.reconstruct(sameId, userId, hash, now, later, null, null, null);
+            PasswordSetupToken token2 = PasswordSetupToken.reconstruct(sameId, userId, hash, now, later, null, null, null);
             PasswordSetupToken token3 = PasswordSetupToken.reconstruct(UUID.randomUUID(),
                     userId,
                     hash,
                     now,
                     later,
+                    null,
                     null,
                     null);
 
@@ -450,8 +451,8 @@ class PasswordSetupTokenTest {
             java.time.Instant now = java.time.Instant.now();
             java.time.Instant later = now.plus(java.time.Duration.ofHours(4));
 
-            PasswordSetupToken token1 = PasswordSetupToken.reconstruct(sameId, userId, hash, now, later, null, null);
-            PasswordSetupToken token2 = PasswordSetupToken.reconstruct(sameId, userId, hash, now, later, null, null);
+            PasswordSetupToken token1 = PasswordSetupToken.reconstruct(sameId, userId, hash, now, later, null, null, null);
+            PasswordSetupToken token2 = PasswordSetupToken.reconstruct(sameId, userId, hash, now, later, null, null, null);
 
             // Then
             assertThat(token1.hashCode()).isEqualTo(token2.hashCode());
