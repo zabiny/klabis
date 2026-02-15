@@ -14,8 +14,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.*;
 
-import static com.klabis.common.ui.HalFormsSupport.affordIfAuthorized;
-import static com.klabis.common.ui.HalFormsSupport.linkToIfAuthorized;
+import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -86,8 +86,8 @@ class HalFormsExampleController {
         User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"));
 
         EntityModel<User> model = EntityModel.of(data)
-                .add(linkToIfAuthorized(methodOn(HalFormsExampleController.class).getUser(id)).withSelfRel()
-                        .andAffordances(affordIfAuthorized(methodOn(HalFormsExampleController.class).editUser(id,
+                .add(klabisLinkTo(methodOn(HalFormsExampleController.class).getUser(id)).withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(HalFormsExampleController.class).editUser(id,
                                 null))));
 
         return ResponseEntity.ok(model);

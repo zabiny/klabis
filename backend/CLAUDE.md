@@ -147,7 +147,7 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 #### Rules
 
-- NON-NEGOTIABLE: use HalFormsSupport#affordIfAuthorized and HalFormsSupport#linkToIfAuthorized to prepare HATEOAS navigation in controllers (never use WebMvcLinkBuilder#linkTo and WebMvcLinkBuilder#afford) methods. 
+- NON-NEGOTIABLE: use HalFormsSupport#klabisAfford and HalFormsSupport#klabisLinkTo to prepare HATEOAS navigation in controllers (never use WebMvcLinkBuilder#linkTo and WebMvcLinkBuilder#afford) methods. 
 
 #### Java Best Practices
 

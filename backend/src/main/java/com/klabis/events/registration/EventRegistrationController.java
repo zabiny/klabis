@@ -24,8 +24,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.affordIfAuthorized;
-import static com.klabis.common.ui.HalFormsSupport.linkToIfAuthorized;
+import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -81,7 +81,7 @@ class EventRegistrationController {
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
         addLinksForOwnRegistration(entityModel, eventId);
 
-        return ResponseEntity.created(linkToIfAuthorized(methodOn(EventRegistrationController.class).getOwnRegistration(eventId)).toUri())
+        return ResponseEntity.created(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId)).toUri())
                 .body(entityModel);
     }
 
@@ -137,9 +137,9 @@ class EventRegistrationController {
         // Build collection model with HATEOAS links
         CollectionModel<RegistrationDto> collectionModel = CollectionModel.of(
                 registrations,
-                linkToIfAuthorized(methodOn(EventRegistrationController.class).listRegistrations(eventId))
+                klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
                         .withSelfRel()
-                        .andAffordances(affordIfAuthorized(methodOn(EventRegistrationController.class).registerForEvent(eventId, null))),
+                        .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null))),
                 entityLinks.linkForItemResource(Event.class, eventId).withRel("event")
         );
 
@@ -182,8 +182,8 @@ class EventRegistrationController {
      * @param eventId     event ID
      */
     private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId) {
-        entityModel.add(linkToIfAuthorized(methodOn(EventRegistrationController.class).getOwnRegistration(eventId)).withSelfRel()
-                .andAffordances(affordIfAuthorized(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId)))
+        entityModel.add(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId)).withSelfRel()
+                .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId)))
         );
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }

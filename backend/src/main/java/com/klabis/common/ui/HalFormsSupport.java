@@ -50,13 +50,17 @@ public class HalFormsSupport {
                 .stream().filter(f -> MediaTypes.HAL_FORMS_JSON.equals(f.getMediaType())).findFirst();
     }
 
+    public static WebMvcLinkBuilder klabisLinkTo(Object invocation) {
+        return linkTo(invocation);
+    }
+
     /**
      * Returns affordance for target invocation
      *
      * @param invocation
      * @return
      */
-    public static List<Affordance> affordIfAuthorized(Object invocation) {
+    public static List<Affordance> klabisAfford(Object invocation) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
         Affordance result = afford(lastInvocationAware);
@@ -141,10 +145,6 @@ public class HalFormsSupport {
         } catch (Exception e) {
             throw new RuntimeException("Failed to extract models from affordance", e);
         }
-    }
-
-    public static WebMvcLinkBuilder linkToIfAuthorized(Object invocation) {
-        return linkTo(invocation);
     }
 
     /**

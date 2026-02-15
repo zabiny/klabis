@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.affordIfAuthorized;
-import static com.klabis.common.ui.HalFormsSupport.linkToIfAuthorized;
+import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -85,7 +85,7 @@ class EventController {
         addLinksForEvent(entityModel, eventDto);
 
         return ResponseEntity
-                .created(linkToIfAuthorized(methodOn(EventController.class).getEvent(eventId)).toUri())
+                .created(klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).toUri())
                 .body(entityModel);
     }
 
@@ -185,13 +185,13 @@ class EventController {
                 page,
                 dto -> {
                     EntityModel<EventSummaryDto> model = EntityModel.of(dto);
-                    model.add(linkToIfAuthorized(methodOn(EventController.class).getEvent(dto.id())).withSelfRel());
+                    model.add(klabisLinkTo(methodOn(EventController.class).getEvent(dto.id())).withSelfRel());
                     return model;
                 }
         );
 
-        pagedModel.add(linkToIfAuthorized(methodOn(EventController.class).listEvents(status, pageable)).withSelfRel()
-                .andAffordances(affordIfAuthorized(methodOn(EventController.class).createEvent(null)))
+        pagedModel.add(klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable)).withSelfRel()
+                .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)))
         );
 
         return ResponseEntity.ok(pagedModel);
@@ -314,22 +314,22 @@ class EventController {
         UUID eventId = eventDto.id();
         EventStatus status = eventDto.status();
 
-        Link selfLink = linkToIfAuthorized(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
+        Link selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
 
         // Status-specific affordances
         switch (status) {
             case DRAFT:
                 // DRAFT: can edit, publish, or cancel
-                selfLink = selfLink.andAffordances(affordIfAuthorized(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(affordIfAuthorized(methodOn(EventController.class).publishEvent(eventId)));
-                selfLink = selfLink.andAffordances(affordIfAuthorized(methodOn(EventController.class).cancelEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
                 break;
 
             case ACTIVE:
                 // ACTIVE: can edit, cancel, or finish
-                selfLink = selfLink.andAffordances(affordIfAuthorized(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(affordIfAuthorized(methodOn(EventController.class).cancelEvent(eventId)));
-                selfLink = selfLink.andAffordances(affordIfAuthorized(methodOn(EventController.class).finishEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).finishEvent(eventId)));
                 break;
 
             case FINISHED:
@@ -342,7 +342,7 @@ class EventController {
         entityModel.add(selfLink);
 
         // Collection link - always present
-        entityModel.add(linkToIfAuthorized(methodOn(EventController.class).listEvents(null, null)).withRel("collection"));
+        entityModel.add(klabisLinkTo(methodOn(EventController.class).listEvents(null, null)).withRel("collection"));
 
         // Registrations link - always present (links to event registration endpoint)
         entityModel.add(Link.of("/api/events/" + eventId + "/registrations").withRel("registrations"));
@@ -355,7 +355,7 @@ class EventsRootPostprocessor implements RepresentationModelProcessor<EntityMode
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        model.add(linkToIfAuthorized(methodOn(EventController.class).listEvents(null, Pageable.unpaged())).withRel("events"));
+        model.add(klabisLinkTo(methodOn(EventController.class).listEvents(null, Pageable.unpaged())).withRel("events"));
         return model;
     }
 }

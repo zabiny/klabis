@@ -38,8 +38,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.affordIfAuthorized;
-import static com.klabis.common.ui.HalFormsSupport.linkToIfAuthorized;
+import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -132,14 +132,14 @@ class MemberController {
 
         // Add self link with affordances
         entityModel.add(
-                linkToIfAuthorized(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel()
-                        .andAffordances(affordIfAuthorized(methodOn(MemberController.class).updateMember(updatedMemberId,
+                klabisLinkTo(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(updatedMemberId,
                                 null,
                                 null)))
         );
 
         // Add collection link
-        entityModel.add(linkToIfAuthorized(methodOn(MemberController.class).listMembers(
+        entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10)
         )).withRel("collection"));
 
@@ -182,14 +182,14 @@ class MemberController {
                 response -> {
                     EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
                     // Add self link to individual member
-                    model.add(linkToIfAuthorized(methodOn(MemberController.class).getMember(response.id())).withSelfRel());
+                    model.add(klabisLinkTo(methodOn(MemberController.class).getMember(response.id())).withSelfRel());
                     return model;
                 }
         );
 
         pagedModel.mapLink(IanaLinkRelations.SELF,
-                oldLink -> linkToIfAuthorized(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
-                        .andAffordances(affordIfAuthorized(methodOn(RegistrationController.class).registerMember(null)))
+                oldLink -> klabisLinkTo(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null)))
         );
 
         return ResponseEntity.ok(pagedModel);
@@ -248,12 +248,12 @@ class MemberController {
 
         // Add self link with affordances
         entityModel.add(
-                linkToIfAuthorized(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                        .andAffordances(affordIfAuthorized(methodOn(MemberController.class).updateMember(id, null, null)))
+                klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
         );
 
         // Add collection link
-        entityModel.add(linkToIfAuthorized(methodOn(MemberController.class).listMembers(
+        entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10)
         )).withRel("collection"));
 
@@ -267,7 +267,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        model.add(linkToIfAuthorized(methodOn(MemberController.class).listMembers(null)).withRel("members"));
+        model.add(klabisLinkTo(methodOn(MemberController.class).listMembers(null)).withRel("members"));
         return model;
     }
 }
