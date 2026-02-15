@@ -9,12 +9,29 @@ import java.lang.annotation.Target;
 @Target(ElementType.RECORD_COMPONENT)
 public @interface HalForms {
     enum Access {
-        READ_ONLY, WRITE_ONLY, NONE, READ_WRITE
+        /**
+         * property will be present and will have isReadOnly=true in HalForms metadata
+         */
+        READ_ONLY,
+        /**
+         * Property won't be present in HalForms metadata
+         */
+        NONE,
+        /**
+         * property will be present and will have isReadOnly=false in HalForms metadata
+         */
+        READ_WRITE,
+        /**
+         * property will have default behavior. Class property with setter will have isReadOnly=false, without setter will have isReadOnly=true. Record component will have isReadOnly=false.
+         */
+        DEFAULT
     }
 
     /**
      * Overrides readOnly value for property
      * @return
      */
-    Access access() default Access.READ_WRITE;
+    Access access() default Access.DEFAULT;
+
+    String formInputType() default "";
 }

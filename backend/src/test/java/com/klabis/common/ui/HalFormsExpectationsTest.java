@@ -1,5 +1,6 @@
 package com.klabis.common.ui;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -32,22 +33,49 @@ class HalFormsExpectationsTest {
 
     @WithMockUser(username = "Tester")
     @Test
+    @DisplayName("it should handle readOnly attribute for record (default as readWrite, customizable with @HalForms)")
     void shouldReturnExpectedFormsMetadata() throws Exception {
         mockMvc.perform(get("/api/testHalSupport")
                         .param("id", "2")
                         .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
-                .andExpect(jsonPath("$._templates.default.properties[2].readOnly").value(true))  // `id` is readonly
-                .andExpect(jsonPath("$._templates.default.properties[0].readOnly").doesNotExist())  // or is 'false' ... `age` is NOT readonly
-                .andExpect(jsonPath("$._templates.default.properties[1].readOnly").doesNotExist())  // or is 'false' ... `firstName` is NOT readonly
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'id')].readOnly").value(true))
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'firstName')].readOnly").doesNotExist())
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'lastName')].readOnly").doesNotExist())
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(username = "Tester")
+    @Test
+    @DisplayName("it should return expected type for DTOs")
+    void shouldReturnExpectedTypeForDtoAttribute() throws Exception {
+        mockMvc.perform(get("/api/testHalSupport")
+                        .param("id", "2")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'address')].type").value("Address"))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(username = "Tester")
+    @Test
+    @DisplayName("it should return expected type from @HalForms annotation if present")
+    void shouldReturnExpectedTypeForHalFormsAnnotated() throws Exception {
+        mockMvc.perform(get("/api/testHalSupport")
+                        .param("id", "2")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'age')].type").value("AgeOverride"))
                 .andExpect(status().isOk());
     }
 
 }
 
-record User(@HalForms(access = HalForms.Access.READ_ONLY) int id, String firstName, String lastName, int age) {
+record User(@HalForms(access = HalForms.Access.READ_ONLY) int id, String firstName, String lastName, @HalForms(formInputType = "AgeOverride") int age, Address address) {
 
 }
+
+record Address(String street, String city, String state, String zip) {}
 
 @RestController
 @RequestMapping("/api/testHalSupport")
@@ -55,7 +83,7 @@ class HalFormsExampleController {
 
     @GetMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<EntityModel<User>> getUser(@RequestParam int id) {
-        User data = new User(2, "Petr", "Palach", 21);
+        User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"));
 
         EntityModel<User> model = EntityModel.of(data)
                 .add(linkToIfAuthorized(methodOn(HalFormsExampleController.class).getUser(id)).withSelfRel()

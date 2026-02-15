@@ -1,5 +1,7 @@
 package com.klabis.common.ui;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.mediatype.AffordanceModelFactory;
@@ -11,8 +13,10 @@ import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
@@ -31,6 +35,14 @@ public class HalFormsSupport {
         Assert.isInstanceOf(LastInvocationAware.class, invocation);
 
         return DummyInvocationUtils.getLastInvocationAware(invocation);
+    }
+
+    private static boolean isAuthorizedForInvocation(MethodInvocation invocation) {
+//        AuthorizationManager<MethodInvocation> mgr = new PreAuthorizeAuthorizationManager();
+//        AuthorizationDecision decision =
+//                mgr.check(() -> SecurityContextHolder.getContext().getAuthentication(), invocation);
+//        return decision != null && decision.isGranted();
+        return true;
     }
 
     private static Optional<AffordanceModelFactory> getHalFormsModelFactory() {
@@ -71,7 +83,7 @@ public class HalFormsSupport {
 
                 // Check if it's a record
                 if (requestBodyType.isRecord()) {
-                    return createModifiedAffordance(affordance, requestBodyType);
+                    return createModifiedAffordance(affordance);
                 }
             }
         }
@@ -82,7 +94,7 @@ public class HalFormsSupport {
     /**
      * Creates new affordance using AffordanceModelFactory with modified InputPayloadMetadata
      */
-    private static Affordance createModifiedAffordance(Affordance original, Class<?> recordType) {
+    private static Affordance createModifiedAffordance(Affordance original) {
         Optional<AffordanceModelFactory> halFormsFactoryOpt = getHalFormsModelFactory();
 
         if (halFormsFactoryOpt.isEmpty()) {
@@ -102,7 +114,7 @@ public class HalFormsSupport {
 
             // For HAL-FORMS models, use our modified version
             if (model.getClass().getSimpleName().contains("HalForms")) {
-                ConfiguredAffordance configured = new HalFormsConfiguredAffordance(model, recordType);
+                ConfiguredAffordance configured = new HalFormsConfiguredAffordance(model);
                 AffordanceModel newModel = halFormsFactory.getAffordanceModel(configured);
                 newModels.put(mediaType, newModel);
             } else {
@@ -143,9 +155,9 @@ public class HalFormsSupport {
         private final AffordanceModel delegate;
         private final HalFormsInputPayloadMetadata modifiedInput;
 
-        public HalFormsConfiguredAffordance(AffordanceModel delegate, Class<?> recordType) {
+        public HalFormsConfiguredAffordance(AffordanceModel delegate) {
             this.delegate = delegate;
-            this.modifiedInput = new HalFormsInputPayloadMetadata(delegate.getInput(), recordType);
+            this.modifiedInput = new HalFormsInputPayloadMetadata(delegate.getInput());
         }
 
         @Override
@@ -183,86 +195,101 @@ public class HalFormsSupport {
      * InputPayloadMetadata wrapper that modifies PropertyMetadata based on @HalForms annotations
      */
     private static class HalFormsInputPayloadMetadata implements AffordanceModel.InputPayloadMetadata {
+        private static final Logger LOG = LoggerFactory.getLogger(KlabisHalFormsPropertyMetadataWrapper.class);
 
-        private final AffordanceModel.InputPayloadMetadata delegate;
-        private final Class<?> recordType;
+        private final AffordanceModel.InputPayloadMetadata inputPayloadMetadata;
 
-        public HalFormsInputPayloadMetadata(AffordanceModel.InputPayloadMetadata delegate, Class<?> recordType) {
-            this.delegate = delegate;
-            this.recordType = recordType;
+        public HalFormsInputPayloadMetadata(AffordanceModel.InputPayloadMetadata inputPayloadMetadata) {
+            this.inputPayloadMetadata = inputPayloadMetadata;
         }
 
         @Override
         public Stream<AffordanceModel.PropertyMetadata> stream() {
             // Modify property metadata stream based on @HalForms annotations
-            return delegate.stream().map(metadata -> {
-                String propertyName = metadata.getName();
+            return inputPayloadMetadata.stream()
+                    .map(this::wrapPropertyMetadata)
+                    .filter(this::isPropertyDisplayed);
+        }
 
-                // Find matching record component
-                RecordComponent[] components = recordType.getRecordComponents();
-                Optional<RecordComponent> component = Stream.of(components)
+        private AffordanceModel.PropertyMetadata wrapPropertyMetadata(AffordanceModel.PropertyMetadata metadata) {
+            boolean isPayloadClassRecord = inputPayloadMetadata.getType() != null && inputPayloadMetadata.getType()
+                    .isRecord();
+
+            return new KlabisHalFormsPropertyMetadataWrapper(metadata,
+                    getAnnotatedElementForProperty(inputPayloadMetadata, metadata).orElseThrow(),
+                    isPayloadClassRecord);
+        }
+
+        private boolean isPropertyDisplayed(AffordanceModel.PropertyMetadata propertyMetadata) {
+            if (propertyMetadata instanceof KlabisHalFormsPropertyMetadataWrapper wrapper) {
+                return wrapper.isDisplayed();
+            }
+            return true;
+        }
+
+        private static Optional<AnnotatedElement> getAnnotatedElementForProperty(AffordanceModel.PayloadMetadata payloadMetadata, AffordanceModel.PropertyMetadata delegate) {
+            String propertyName = delegate.getName();
+
+            Class<?> payloadClass = payloadMetadata.getType();
+            Assert.notNull(payloadClass, "payloadClass cannot be null");
+
+            if (payloadClass.isRecord()) {
+                RecordComponent[] components = payloadClass.getRecordComponents();
+                return Stream.of(components)
                         .filter(c -> c.getName().equals(propertyName))
+                        .map(AnnotatedElement.class::cast)
                         .findFirst();
+            }
 
-                // Determine the correct readOnly value
-                boolean readOnly;
+            try {
+                return Optional.of(payloadClass.getDeclaredField(propertyName));
+            } catch (NoSuchFieldException e) {
+                LOG.debug("Didn't find field %s on class %s".formatted(propertyName, payloadClass.getName()));
+            }
 
-                if (component.isPresent() && component.get().isAnnotationPresent(HalForms.class)) {
-                    // Component has @HalForms annotation, use its access value
-                    HalForms.Access access = component.get().getAnnotation(HalForms.class).access();
-
-                    readOnly = switch (access) {
-                        case READ_ONLY -> true;
-                        case WRITE_ONLY, NONE, READ_WRITE -> false;
-                    };
-                } else {
-                    // No annotation - for records, default to false (writable) instead of true (read-only)
-                    // Records are immutable in Java, but in HAL-FORMS we want them to be writable by default
-                    readOnly = false;
-                }
-
-                // Always return wrapper with determined readOnly value
-                return new HalFormsPropertyMetadataWrapper(metadata, readOnly);
-            });
+            return Optional.empty();
         }
 
         @Override
         public List<String> getI18nCodes() {
-            return delegate.getI18nCodes();
+            return inputPayloadMetadata.getI18nCodes();
         }
 
         @Override
         public AffordanceModel.InputPayloadMetadata withMediaTypes(List<MediaType> mediaTypes) {
-            return new HalFormsInputPayloadMetadata(delegate.withMediaTypes(mediaTypes), recordType);
+            return new HalFormsInputPayloadMetadata(inputPayloadMetadata.withMediaTypes(mediaTypes));
         }
 
         @Override
         public List<MediaType> getMediaTypes() {
-            return delegate.getMediaTypes();
+            return inputPayloadMetadata.getMediaTypes();
         }
 
         @Override
         public Class<?> getType() {
-            return delegate.getType();
+            return inputPayloadMetadata.getType();
         }
 
         @Override
         public <T extends AffordanceModel.Named> T customize(T target, java.util.function.Function<AffordanceModel.PropertyMetadata, T> customizer) {
-            return delegate.customize(target, customizer);
+            return inputPayloadMetadata.customize(target, customizer);
         }
     }
 
     /**
-     * PropertyMetadata wrapper that overrides isReadOnly()
+     * PropertyMetadata wrapper that overrides isReadOnly() and provides correct type for DTO properties
      */
-    private static class HalFormsPropertyMetadataWrapper implements AffordanceModel.PropertyMetadata {
+    private static class KlabisHalFormsPropertyMetadataWrapper implements AffordanceModel.PropertyMetadata {
 
         private final AffordanceModel.PropertyMetadata delegate;
-        private final boolean readOnlyOverride;
+        private final HalForms propertyAnnotation;
+        private final boolean defaultIsReadOnly;
 
-        public HalFormsPropertyMetadataWrapper(AffordanceModel.PropertyMetadata delegate, boolean readOnlyOverride) {
+        public KlabisHalFormsPropertyMetadataWrapper(AffordanceModel.PropertyMetadata delegate, AnnotatedElement propertyElement, boolean isRecord) {
             this.delegate = delegate;
-            this.readOnlyOverride = readOnlyOverride;
+            this.defaultIsReadOnly = isRecord ? false : delegate.isReadOnly();
+            this.propertyAnnotation = propertyElement.isAnnotationPresent(HalForms.class) ? propertyElement.getAnnotation(
+                    HalForms.class) : null;
         }
 
         @Override
@@ -277,7 +304,18 @@ public class HalFormsSupport {
 
         @Override
         public boolean isReadOnly() {
-            return readOnlyOverride;
+            if (propertyAnnotation != null) {
+                // Component has @HalForms annotation, use its access value
+                HalForms.Access access = propertyAnnotation.access();
+
+                return switch (access) {
+                    case READ_ONLY -> true;
+                    case NONE, READ_WRITE -> false;
+                    case DEFAULT -> defaultIsReadOnly;
+                };
+            }
+
+            return defaultIsReadOnly;
         }
 
         @Override
@@ -310,9 +348,25 @@ public class HalFormsSupport {
             return delegate.getMaxLength();
         }
 
+        public boolean isDisplayed() {
+            return propertyAnnotation == null || !HalForms.Access.NONE.equals(propertyAnnotation.access());
+        }
+
+        private Class<?> getEncosedClass() {
+            return delegate.getType().getRawClass();
+        }
+
         @Override
         public String getInputType() {
-            return delegate.getInputType();
+            if (propertyAnnotation != null && StringUtils.hasLength(propertyAnnotation.formInputType())) {
+                return propertyAnnotation.formInputType();
+            }
+
+            String result = delegate.getInputType();
+            if (result == null) {
+                result = getEncosedClass().getSimpleName();
+            }
+            return result;
         }
     }
 
