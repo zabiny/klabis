@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novinky - Klabis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest: #2d5a27;
+            --forest-light: #4a7c42;
+            --orange: #ff6b35;
+            --orange-light: #ff8c61;
+            --cream: #faf8f5;
+            --stone: #e8e4dc;
+        }
+        * { font-family: 'DM Sans', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .font-display { font-family: 'Outfit', sans-serif; }
+        .map-pattern {
+            background-image: radial-gradient(circle at 20% 30%, rgba(45, 90, 39, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+                linear-gradient(rgba(45, 90, 39, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(45, 90, 39, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        }
+        .nav-active {
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-light) 100%);
+            color: white;
+        }
+        .news-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .news-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(45, 90, 39, 0.15);
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone); }
+        ::-webkit-scrollbar-thumb { background: var(--forest-light); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--forest); }
+    </style>
+</head>
+<body class="bg-cream min-h-screen map-pattern">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-stone flex flex-col shadow-sm">
+            <div class="p-6 border-b border-stone">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-[#2d5a27] to-[#4a7c42] rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-display font-bold text-xl text-[#2d5a27]">Klabis</h1>
+                        <p class="text-xs text-gray-500">Členská sekce</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <a href="index.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                <a href="calendar.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="font-medium">Kalendář</span>
+                </a>
+                <a href="events.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    <span class="font-medium">Události</span>
+                </a>
+                <a href="members.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span class="font-medium">Členové</span>
+                </a>
+                <a href="trainings.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span class="font-medium">Tréninky</span>
+                </a>
+                <a href="groups.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span class="font-medium">Skupiny</span>
+                </a>
+                <a href="news.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all nav-active">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2H9m-6 0H5a2 2 0 00-2 2v8a2 2 0 002 2h2m-6 0H7m6 0h6M7 16h6M7 8h6"/>
+                    </svg>
+                    <span class="font-medium">Novinky</span>
+                </a>
+                <a href="profile.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span class="font-medium">Profil</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-stone">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-[#ff6b35] to-[#ff8c61] rounded-full flex items-center justify-center text-white font-semibold">JN</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-sm text-gray-900 truncate">Jan Novák</p>
+                        <p class="text-xs text-gray-500 truncate">jan.novak@email.cz</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1 overflow-y-auto">
+            <header class="bg-white border-b border-stone sticky top-0 z-10">
+                <div class="px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-2xl font-display font-bold text-gray-900">Novinky</h2>
+                            <p class="text-sm text-gray-500 mt-1">Aktuality a dění v klubu</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button class="flex items-center gap-2 px-4 py-2 bg-[#2d5a27] text-white text-sm font-medium rounded-lg hover:bg-[#4a7c42] transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Pidat novinku
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-8">
+                <!-- Featured news -->
+                <div class="mb-8">
+                    <div class="news-card bg-white rounded-xl overflow-hidden shadow-sm border border-stone cursor-pointer">
+                        <div class="h-64 bg-gradient-to-br from-[#2d5a27] to-[#4a7c42] relative">
+                            <span class="absolute top-4 left-4 px-3 py-1 bg-[#ff6b35] text-white text-sm font-medium rounded-full">Důležité</span>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-[#ff6b35] to-[#ff8c61] rounded-full flex items-center justify-center text-white font-semibold">MN</div>
+                                <div>
+                                    <p class="font-medium text-gray-900">Marie Nováková</p>
+                                    <p class="text-xs text-gray-500">12. únor 2025</p>
+                                </div>
+                            </div>
+                            <h3 class="font-display font-semibold text-2xl text-gray-900 mb-2">Výsledky zimního ligového závodu</h3>
+                            <p class="text-gray-600 mb-4">Gratulujeme všem účastníkům zimního ligového závodu v Lesním hřbitově! Výsledky jsou již k dispozici v sekci závodů. Děkujeme za skvělou organizaci a účast.</p>
+                            <div class="flex items-center gap-4 text-sm text-gray-500">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    24 komentářů
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364 0M21 12a9 9 0 11-18 0m-9 9 0 010 18"/>
+                                    </svg>
+                                    156 zobrazení
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- News grid -->
+                <h3 class="font-display font-semibold text-lg text-gray-900 mb-4">Další novinky</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- News 1 -->
+                    <article class="news-card bg-white rounded-xl overflow-hidden shadow-sm border border-stone">
+                        <div class="h-40 bg-gradient-to-br from-[#ff6b35] to-[#ff8c61]"></div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">TK</div>
+                                <div>
+                                    <p class="font-medium text-sm text-gray-900">Tomáš Král</p>
+                                    <p class="text-xs text-gray-500">10. únor 2025</p>
+                                </div>
+                            </div>
+                            <h4 class="font-display font-semibold text-gray-900 mb-2">Uzávěrka přihlášek do Jevišovky</h4>
+                            <p class="text-sm text-gray-600">Připomínáme, že přihlášky na jarní soustředění končí už 28. února! Nezapomeňte na včasnou registraci.</p>
+                        </div>
+                    </article>
+
+                    <!-- News 2 -->
+                    <article class="news-card bg-white rounded-xl overflow-hidden shadow-sm border border-stone">
+                        <div class="h-40 bg-gradient-to-br from-blue-500 to-blue-600"></div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">JČ</div>
+                                <div>
+                                    <p class="font-medium text-sm text-gray-900">Jana Černá</p>
+                                    <p class="text-xs text-gray-500">8. únor 2025</p>
+                                </div>
+                            </div>
+                            <h4 class="font-display font-semibold text-gray-900 mb-2">Noví členové v Dorostu</h4>
+                            <p class="text-sm text-gray-600">Vítáme nové tváře v tréninkové skupiné Dorost pod vedením Tomáše Drtilka. Vítejte!</p>
+                        </div>
+                    </article>
+
+                    <!-- News 3 -->
+                    <article class="news-card bg-white rounded-xl overflow-hidden shadow-sm border border-stone">
+                        <div class="h-40 bg-gradient-to-br from-purple-500 to-purple-600"></div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-sm font-medium">LP</div>
+                                <div>
+                                    <p class="font-medium text-sm text-gray-900">Lukáš Procházka</p>
+                                    <p class="text-xs text-gray-500">5. únor 2025</p>
+                                </div>
+                            </div>
+                            <h4 class="font-display font-semibold text-gray-900 mb-2">Fotogalerie z MČR</h4>
+                            <p class="text-sm text-gray-600">Fotky z mistrovství České republiky v sprintu jsou již k dispozici v naší galerii.</p>
+                        </div>
+                    </article>
+
+                    <!-- News 4 -->
+                    <article class="news-card bg-white rounded-xl overflow-hidden shadow-sm border border-stone">
+                        <div class="h-40 bg-gradient-to-br from-teal-500 to-teal-600"></div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center text-white text-sm font-medium">HN</div>
+                                <div>
+                                    <p class="font-medium text-sm text-gray-900">Hana Novotná</p>
+                                    <p class="text-xs text-gray-500">1. únor 2025</p>
+                                </div>
+                            </div>
+                            <h4 class="font-display font-semibold text-gray-900 mb-2">Plán jarních závodů</h4>
+                            <p class="text-sm text-gray-600">Zveřejnili jsme přehled závodů pro jarní sezónu. Termíny i místa konání naleznete v kalendáři.</p>
+                        </div>
+                    </article>
+
+                    <!-- News 5 -->
+                    <article class="news-card bg-white rounded-xl overflow-hidden shadow-sm border border-stone">
+                        <div class="h-40 bg-gradient-to-br from-pink-500 to-pink-600"></div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center text-white text-sm font-medium">MK</div>
+                                <div>
+                                    <p class="font-medium text-sm text-gray-900">Marie Králová</p>
+                                    <p class="text-xs text-gray-500">28. leden 2025</p>
+                                </div>
+                            </div>
+                            <h4 class="font-display font-semibold text-gray-900 mb-2">Děkujeme za rok 2024!</h4>
+                            <p class="text-sm text-gray-600">Podkovme se za úpěšný rok 2024 a díváme se do nových výzev v roce 2025. Děkujeme všem členům!</p>
+                        </div>
+                    </article>
+
+                    <!-- News 6 -->
+                    <article class="news-card bg-white rounded-xl overflow-hidden shadow-sm border border-stone">
+                        <div class="h-40 bg-gradient-to-br from-orange-500 to-orange-600"></div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-medium">PS</div>
+                                <div>
+                                    <p class="font-medium text-sm text-gray-900">Petr Svoboda</p>
+                                    <p class="text-xs text-gray-500">20. leden 2025</p>
+                                </div>
+                            </div>
+                            <h4 class="font-display font-semibold text-gray-900 mb-2">Nové vybavení gymnázia</h4>
+                            <p class="text-sm text-gray-600">Gymnázium má nové vybavení pro silový trénink. Můete využívat nová činka a stroje.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
