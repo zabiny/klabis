@@ -38,7 +38,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+import static com.klabis.common.ui.HalFormsSupport.affordIfAuthorized;
+import static com.klabis.common.ui.HalFormsSupport.linkToIfAuthorized;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * REST controller for Member resources.
@@ -128,17 +130,16 @@ class MemberController {
         // Create entity model with HATEOAS links
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
-        // Add self link
+        // Add self link with affordances
         entityModel.add(
-                linkTo(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel()
-                        // Add edit link (indicates the edit capability is available)
-                        .andAffordance(afford(methodOn(MemberController.class).updateMember(updatedMemberId,
+                linkToIfAuthorized(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel()
+                        .andAffordances(affordIfAuthorized(methodOn(MemberController.class).updateMember(updatedMemberId,
                                 null,
                                 null)))
         );
 
         // Add collection link
-        entityModel.add(linkTo(methodOn(MemberController.class).listMembers(
+        entityModel.add(linkToIfAuthorized(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10)
         )).withRel("collection"));
 
@@ -181,14 +182,14 @@ class MemberController {
                 response -> {
                     EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
                     // Add self link to individual member
-                    model.add(linkTo(methodOn(MemberController.class).getMember(response.id())).withSelfRel());
+                    model.add(linkToIfAuthorized(methodOn(MemberController.class).getMember(response.id())).withSelfRel());
                     return model;
                 }
         );
 
         pagedModel.mapLink(IanaLinkRelations.SELF,
-                oldLink -> linkTo(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
-                        .andAffordance(afford(methodOn(RegistrationController.class).registerMember(null)))
+                oldLink -> linkToIfAuthorized(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
+                        .andAffordances(affordIfAuthorized(methodOn(RegistrationController.class).registerMember(null)))
         );
 
         return ResponseEntity.ok(pagedModel);
@@ -245,15 +246,14 @@ class MemberController {
         // Create entity model with HATEOAS links
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
-        // Add self link
+        // Add self link with affordances
         entityModel.add(
-                linkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                        // Add edit link (indicates the edit capability is available)
-                        .andAffordance(afford(methodOn(MemberController.class).updateMember(id, null, null)))
+                linkToIfAuthorized(methodOn(MemberController.class).getMember(id)).withSelfRel()
+                        .andAffordances(affordIfAuthorized(methodOn(MemberController.class).updateMember(id, null, null)))
         );
 
         // Add collection link
-        entityModel.add(linkTo(methodOn(MemberController.class).listMembers(
+        entityModel.add(linkToIfAuthorized(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10)
         )).withRel("collection"));
 
@@ -267,7 +267,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        model.add(linkTo(methodOn(MemberController.class).listMembers(null)).withRel("members"));
+        model.add(linkToIfAuthorized(methodOn(MemberController.class).listMembers(null)).withRel("members"));
         return model;
     }
 }

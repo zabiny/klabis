@@ -11,7 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static com.klabis.common.ui.HalFormsSupport.linkToIfAuthorized;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -43,7 +43,7 @@ class MemberPermissionsLinkProcessor implements RepresentationModelProcessor<Ent
         }
 
         if (hasMembersPermissionsAuthority()) {
-            Link permissionsLink = linkTo(methodOn(PermissionController.class)
+            Link permissionsLink = linkToIfAuthorized(methodOn(PermissionController.class)
                     .getUserPermissions(memberId))
                     .withRel("permissions");
             model.add(permissionsLink);

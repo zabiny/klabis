@@ -20,7 +20,8 @@ import java.net.URI;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static com.klabis.common.ui.HalFormsSupport.affordIfAuthorized;
+import static com.klabis.common.ui.HalFormsSupport.linkToIfAuthorized;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -64,9 +65,10 @@ public class PermissionController {
 
         // Add conditional permissions link with affordance (only if authorized)
         if (hasMembersPermissionsAuthority()) {
-            Link permissionsLink = linkTo(methodOn(PermissionController.class)
+            Link permissionsLink = linkToIfAuthorized(methodOn(PermissionController.class)
                     .updatePermissions(id, null))
-                    .withRel("permissions");
+                    .withRel("permissions")
+                    .andAffordances(affordIfAuthorized(methodOn(PermissionController.class).updatePermissions(id, null)));
             model.add(permissionsLink);
         }
 
