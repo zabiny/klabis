@@ -1,7 +1,6 @@
 package com.klabis.calendar.api;
 
 import com.klabis.calendar.CalendarItem;
-import com.klabis.common.mvc.MvcComponent;
 import com.klabis.users.Authority;
 import com.klabis.users.authorization.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +36,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * Read operations are available to any authenticated member.
  */
 @RestController
-@MvcComponent
 @RequestMapping(value = "/api/calendar-items", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @Tag(name = "Calendar", description = "Calendar item management API")
 @PrimaryAdapter

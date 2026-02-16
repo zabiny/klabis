@@ -3,7 +3,6 @@ package com.klabis.calendar.api;
 import com.klabis.calendar.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.persistence.CalendarRepository;
-import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -15,16 +14,18 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service for calendar item management operations.
+ * Application service for calendar item management operations.
  * <p>
  * Handles manual calendar item creation, updates, deletion, and queries.
  * All mutation operations are transactional.
  * <p>
  * Event-linked calendar items (eventId != null) are read-only and managed
  * automatically through event handlers.
+ * <p>
+ * This is an application service (not a port), responsible for orchestrating
+ * use cases exposed through the REST API.
  */
 @Service
-@PrimaryPort
 class CalendarManagementService {
 
     private final CalendarRepository calendarRepository;

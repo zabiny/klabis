@@ -2,8 +2,6 @@ package com.klabis.calendar.application;
 
 import com.klabis.calendar.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
-import com.klabis.calendar.eventhandlers.EventData;
-import com.klabis.calendar.eventhandlers.EventDataProvider;
 import com.klabis.calendar.persistence.CalendarRepository;
 import com.klabis.events.EventId;
 import org.slf4j.Logger;
@@ -82,12 +80,12 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
      * <p>
      * Idempotent: if no calendar item exists for this event, logs warning and skips.
      *
-     * @param eventId      the event ID
-     * @param name         updated event name
-     * @param eventDate    updated event date
-     * @param location     updated location
-     * @param organizer    updated organizer
-     * @param websiteUrl   updated website URL (optional)
+     * @param eventId    the event ID
+     * @param name       updated event name
+     * @param eventDate  updated event date
+     * @param location   updated location
+     * @param organizer  updated organizer
+     * @param websiteUrl updated website URL (optional)
      */
     @Transactional
     public void handleEventUpdated(
@@ -103,7 +101,9 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         var calendarItemOpt = calendarRepository.findByEventId(eventId);
 
         if (calendarItemOpt.isEmpty()) {
-            log.warn("Calendar item not found for event {}. Cannot update. Event may have been updated before being published.", eventId);
+            log.warn(
+                    "Calendar item not found for event {}. Cannot update. Event may have been updated before being published.",
+                    eventId);
             return;
         }
 
@@ -142,7 +142,9 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         var calendarItemOpt = calendarRepository.findByEventId(eventId);
 
         if (calendarItemOpt.isEmpty()) {
-            log.warn("Calendar item not found for event {}. Cannot delete. Event may have been cancelled before being published.", eventId);
+            log.warn(
+                    "Calendar item not found for event {}. Cannot delete. Event may have been cancelled before being published.",
+                    eventId);
             return;
         }
 

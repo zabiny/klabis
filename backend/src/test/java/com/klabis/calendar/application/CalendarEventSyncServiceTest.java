@@ -2,8 +2,6 @@ package com.klabis.calendar.application;
 
 import com.klabis.calendar.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
-import com.klabis.calendar.eventhandlers.EventData;
-import com.klabis.calendar.eventhandlers.EventDataProvider;
 import com.klabis.calendar.persistence.CalendarRepository;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;

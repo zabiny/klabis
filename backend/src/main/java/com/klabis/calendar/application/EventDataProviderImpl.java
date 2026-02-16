@@ -1,4 +1,4 @@
-package com.klabis.calendar.eventhandlers;
+package com.klabis.calendar.application;
 
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
