@@ -46,25 +46,7 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### Testing
 
-**IntelliJ IDEA Run Configurations:**
-
-- `Klabis Backend` - Start server with dev profile
-- `Backend Tests` - Run complete test suite
-- Individual test classes can be run via right-click → Run
-
-```bash
-# Run all tests (spring.modulith.test.file-modification-detector=default is configured in build.gradle.kts)
-./gradlew test
-
-# Run single test class
-./gradlew test --tests "ClassName"
-
-# Run single test method
-./gradlew test --tests "ClassName.methodName"
-
-# Run tests with specific profile
-./gradlew test -Dspring.profiles.active=test
-```
+**IMPORTANT:** Always use the `test-runner` skill to execute tests. Never run `./gradlew test` directly.
 
 - `spring.modulith.test.file-modification-detector=default` is configured as system property in `build.gradle.kts` — no
   need to pass it manually
@@ -102,6 +84,7 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### Test-Driven Development
 
+- **Always use `test-runner` skill to run tests** — never invoke Gradle test commands directly
 - Prefer running single tests and not the whole test suite - for performance
 - Use `developer:tdd-best-practices` skill for TDD workflow guidance
 

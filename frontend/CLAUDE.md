@@ -60,19 +60,7 @@ npm run preview
 
 ### Testing
 
-```bash
-# Run tests once
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with UI
-npm run test:ui
-
-# Generate coverage report
-npm run test:coverage
-```
+**IMPORTANT:** Always use the `test-runner` skill to execute tests. Never run `npm test` directly.
 
 **Test Configuration:**
 
