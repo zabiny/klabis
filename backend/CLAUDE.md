@@ -102,10 +102,8 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### Test-Driven Development
 
-- Always write tests for new features
 - Prefer running single tests and not the whole test suite - for performance
-- Ensure code passes linting and type checking
-- Ensure all tests pass before committing
+- Use `developer:tdd-best-practices` skill for TDD workflow guidance
 
 ### Test Types & Locations
 
@@ -168,58 +166,6 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 - if tested class is set in Test's attribute, name such attribute as `testedSubject` 
 - attribute with mocked instance shall have `Mock` postfix in the name (for example `userDetailServiceMock`) 
-
-#### Decision-Making: Simple vs. Pure Solutions
-
-**CRITICAL**: When facing a trade-off between a simple/pragmatic solution and a "pure" (clean/architecturally ideal)
-solution:
-
-1. **Stop and ask the user** - Do not make the decision yourself
-2. **Prepare a clear summary** of both options:
-    - **Simple option**: What it is, pros/cons, implementation effort
-    - **Pure option**: What it is, pros/cons, implementation effort
-    - **Impact**: How each option affects maintainability, testability, architecture
-3. **Present as a structured choice** with clear headings
-4. **Wait for user decision** before proceeding
-
-**Example format:**
-
-```
-## Decision Required: [Feature Name]
-
-I need your decision on how to implement [feature]:
-
-### Option 1: Simple Solution
-- Description: [brief description]
-- Pros: [benefits]
-- Cons: [drawbacks]
-- Effort: [time and tokens estimate]
-- Impact: [architectural implications]
-
-### Option 2: Pure (Clean) Solution
-- Description: [brief description]
-- Pros: [benefits]
-- Cons: [drawbacks]
-- Effort: [time and tokens estimate]
-- Impact: [architectural implications]
-
-Which approach would you prefer?
-```
-
-**Examples of when to ask:**
-
-- Duplicating code vs. creating abstraction
-- Package-private vs. public visibility
-- Constructor vs. field injection
-- Simple validation vs. framework integration
-- Pragmatic workaround vs. proper architectural fix
-
-#### Domain Model Design
-
-- **Aggregates** encapsulate business rules and publish domain events
-- **Value Objects** are immutable (use Java Records)
-- **Domain Events** are immutable records published by aggregates
-- **Repository interfaces** in domain layer, implementations in infrastructure
 
 #### Security Considerations
 

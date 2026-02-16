@@ -84,6 +84,14 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 - `{{apiBaseUrl}}` - defined in `backend/http-client.env.json`
 - `AuthorizationCode` - OAuth2 configuration in `backend/http-client.env.json`
 
+## Backend Development
+
+For backend development, use the `backend-developer` agent which leverages specialized skills:
+- `developer:tdd-best-practices` - TDD workflow (RED-GREEN-REFACTOR)
+- `developer:spring-modulith` - DDD patterns and Spring Modulith architecture
+- `developer:spring-data-jdbc` - Repository and persistence patterns
+- `developer:backend-development` - HATEOAS and API patterns
+
 ## Component-Specific Instructions
 
 Before starting work, check the appropriate CLAUDE.md:
