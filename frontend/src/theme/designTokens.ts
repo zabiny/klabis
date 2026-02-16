@@ -120,11 +120,11 @@ export const formsSectionStyles = {
  * Modal Styles
  */
 export const modalStyles = {
-    /** Modal backdrop overlay - uses pointer-events to allow interaction with content beneath */
+    /** Modal backdrop overlay - blurred background behind modal */
     backdrop: 'fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-in fade-in duration-300 backdrop-blur-md',
 
-    /** Modal content container - with strong shadow and border for visual separation */
-    content: 'bg-surface w-full max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-2xl border border-gray-700/50 animate-in fade-in zoom-in-95 duration-300 relative z-51',
+    /** Modal content container - solid color background, no blur */
+    content: 'bg-surface w-full max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-2xl border border-border animate-in fade-in zoom-in-95 duration-300 relative z-51',
 }
 
 /**

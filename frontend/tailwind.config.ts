@@ -15,6 +15,11 @@ const config: Config = {
                     elevated: 'var(--color-bg-elevated)',
                     subtle: 'var(--color-bg-subtle)',
                 },
+                surface: {
+                    DEFAULT: 'var(--color-bg-elevated)',
+                    base: 'var(--color-bg-base)',
+                    raised: 'var(--color-bg-elevated)',
+                },
                 text: {
                     primary: 'var(--color-text-primary)',
                     secondary: 'var(--color-text-secondary)',
@@ -23,6 +28,7 @@ const config: Config = {
                 border: {
                     subtle: 'var(--color-border-subtle)',
                     DEFAULT: 'var(--color-border-default)',
+                    light: 'var(--color-border-subtle)',
                     strong: 'var(--color-border-strong)',
                 },
                 primary: {
