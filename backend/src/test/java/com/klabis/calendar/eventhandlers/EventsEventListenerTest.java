@@ -1,0 +1,121 @@
+package com.klabis.calendar.eventhandlers;
+
+import com.klabis.calendar.application.CalendarEventSyncPort;
+import com.klabis.events.EventCancelledEvent;
+import com.klabis.events.EventId;
+import com.klabis.events.EventPublishedEvent;
+import com.klabis.events.EventUpdatedEvent;
+import com.klabis.events.WebsiteUrl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.UUID;
+
+import static org.mockito.Mockito.verify;
+
+@DisplayName("EventsEventListener Unit Tests")
+@ExtendWith(MockitoExtension.class)
+class EventsEventListenerTest {
+
+    @Mock
+    private CalendarEventSyncPort calendarEventSyncPortMock;
+
+    private EventsEventListener testedSubject;
+
+    @BeforeEach
+    void setUp() {
+        testedSubject = new EventsEventListener(calendarEventSyncPortMock);
+    }
+
+    @Test
+    @DisplayName("should delegate to service when event is published")
+    void shouldDelegateToServiceWhenEventIsPublished() {
+        // Given
+        EventId eventId = EventId.of(UUID.randomUUID());
+        EventPublishedEvent event = new EventPublishedEvent(eventId, Instant.now());
+
+        // When
+        testedSubject.handle(event);
+
+        // Then
+        verify(calendarEventSyncPortMock).handleEventPublished(eventId);
+    }
+
+    @Test
+    @DisplayName("should delegate to service when event is updated")
+    void shouldDelegateToServiceWhenEventIsUpdated() {
+        // Given
+        EventId eventId = EventId.of(UUID.randomUUID());
+        EventUpdatedEvent event = new EventUpdatedEvent(
+                eventId,
+                "Updated Spring Boot Workshop",
+                LocalDate.of(2024, 3, 15),
+                "New Prague Center",
+                "OOB",
+                WebsiteUrl.of("https://example.com/updated"),
+                Instant.now()
+        );
+
+        // When
+        testedSubject.handle(event);
+
+        // Then
+        verify(calendarEventSyncPortMock).handleEventUpdated(
+                eventId,
+                "Updated Spring Boot Workshop",
+                LocalDate.of(2024, 3, 15),
+                "New Prague Center",
+                "OOB",
+                "https://example.com/updated"
+        );
+    }
+
+    @Test
+    @DisplayName("should delegate to service with null website URL when not present")
+    void shouldDelegateToServiceWithNullWebsiteUrl() {
+        // Given
+        EventId eventId = EventId.of(UUID.randomUUID());
+        EventUpdatedEvent event = new EventUpdatedEvent(
+                eventId,
+                "Java Meetup",
+                LocalDate.of(2024, 4, 20),
+                "Brno Tech Hub",
+                "OOB",
+                null,
+                Instant.now()
+        );
+
+        // When
+        testedSubject.handle(event);
+
+        // Then
+        verify(calendarEventSyncPortMock).handleEventUpdated(
+                eventId,
+                "Java Meetup",
+                LocalDate.of(2024, 4, 20),
+                "Brno Tech Hub",
+                "OOB",
+                null
+        );
+    }
+
+    @Test
+    @DisplayName("should delegate to service when event is cancelled")
+    void shouldDelegateToServiceWhenEventIsCancelled() {
+        // Given
+        EventId eventId = EventId.of(UUID.randomUUID());
+        EventCancelledEvent event = new EventCancelledEvent(eventId, Instant.now());
+
+        // When
+        testedSubject.handle(event);
+
+        // Then
+        verify(calendarEventSyncPortMock).handleEventCancelled(eventId);
+    }
+}
