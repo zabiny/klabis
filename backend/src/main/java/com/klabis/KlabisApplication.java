@@ -30,6 +30,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *   <li><b>members</b> - Member domain (aggregate root, registration, personal information)</li>
  *   <li><b>users</b> - User management (authentication, authorization, password setup)</li>
  *   <li><b>events</b> - Event organization (races, trainings, competitions)</li>
+ *   <li><b>calendar</b> - Calendar management (event-linked and manual calendar items)</li>
  *   <li><b>finances</b> - Financial management (fees, payments, accounting)</li>
  *   <li><b>config</b> - Shared configuration and infrastructure</li>
  * </ul>

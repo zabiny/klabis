@@ -63,19 +63,70 @@ business domains.
 
 - No dependencies on other bounded contexts
 
-### 3. Events Bounded Context (Future)
+### 3. Events Bounded Context
 
-**Purpose:** Domain events and event sourcing
+**Purpose:** Manages club orienteering events and member registrations
 
-**Status:** Planned implementation
+**Key Entities:**
 
-**Planned Features:**
+- Event (aggregate root)
+- EventId (value object)
+- EventRegistration (entity)
+- EventStatus (enum: DRAFT, ACTIVE, COMPLETED, CANCELLED)
+- WebsiteUrl (value object)
 
-- Event store for audit trail
-- Event replay capabilities
-- Temporal queries
+**Responsibilities:**
 
-### 4. Finances Bounded Context (Future)
+- Event creation and management (name, date, location, organizer)
+- Event lifecycle (draft → active → completed/cancelled)
+- Member registration for events
+- Event coordinator assignment
+- Website URL management
+
+**Domain Events:**
+
+- `EventPublishedEvent` - Published when event transitions to ACTIVE status
+- `EventUpdatedEvent` - Published when event details are updated
+- `EventCancelledEvent` - Published when event is cancelled
+
+**Dependencies:**
+
+- References Users context (event coordinator via UserId)
+- Publishes events consumed by Calendar context
+
+### 4. Calendar Bounded Context
+
+**Purpose:** Provides unified calendar view of events and manual calendar items
+
+**Key Entities:**
+
+- CalendarItem (aggregate root)
+- CalendarItemId (value object)
+
+**Responsibilities:**
+
+- Automatic calendar item creation from published events
+- Manual calendar item management (training sessions, non-event activities)
+- Date range queries for calendar display
+- Event synchronization (update/delete when source event changes)
+
+**Domain Events:**
+
+- None (consumer only, no events published)
+
+**Dependencies:**
+
+- Consumes events from Events context (EventPublishedEvent, EventUpdatedEvent, EventCancelledEvent)
+- References Events context (eventId foreign key for event-linked items)
+
+**Business Rules:**
+
+- Event-linked items are read-only (managed via event lifecycle)
+- Manual items can be created/updated/deleted by users with CALENDAR:MANAGE authority
+- Multi-day items supported (startDate/endDate can differ)
+- Date range queries use intersection logic (item spans any day in range)
+
+### 5. Finances Bounded Context (Future)
 
 **Purpose:** Financial transactions and billing
 
@@ -197,6 +248,108 @@ Member member = Member.create(
 3. Token validated via `verify()`
 4. Marked as used after password set
 5. Expired tokens cleaned up by scheduled job
+
+### Event Aggregate
+
+**Aggregate Root:** `Event`
+
+**Purpose:** Encapsulates orienteering event data and business rules
+
+**Key Invariants:**
+
+- Name, event date, location, and organizer are required
+- Website URL and event coordinator are optional
+- Events start in DRAFT status
+- Status transitions follow defined lifecycle: DRAFT → ACTIVE → COMPLETED/CANCELLED
+- Updates only allowed in DRAFT and ACTIVE status
+- Event date must be in the future when creating
+
+**Value Objects:**
+
+- `EventId` - UUID-based identifier
+- `WebsiteUrl` - Validated URL
+- `UserId` - Event coordinator reference
+
+**Entities:**
+
+- `EventRegistration` - Member registration for event
+
+**Domain Events:**
+
+- `EventPublishedEvent` - Published when event becomes ACTIVE
+- `EventUpdatedEvent` - Published when event details change
+- `EventCancelledEvent` - Published when event is cancelled
+
+**Example:**
+
+```java
+Event event = Event.create(
+    "Spring Cup 2026",
+    LocalDate.of(2026, 3, 20),
+    "Forest Park",
+    "OOB",
+    WebsiteUrl.of("https://example.com/spring-cup"),
+    coordinatorId
+);
+// Event starts in DRAFT status
+event.publish(); // Transitions to ACTIVE, publishes EventPublishedEvent
+```
+
+### CalendarItem Aggregate
+
+**Aggregate Root:** `CalendarItem`
+
+**Purpose:** Encapsulates calendar items (event-linked or manual)
+
+**Key Invariants:**
+
+- Name and description are required
+- Start date and end date are required (endDate >= startDate)
+- EventId is optional (null for manual items, non-null for event-linked)
+- Event-linked items are read-only (cannot be updated or deleted directly)
+- Manual items can be created/updated/deleted by authorized users
+
+**Value Objects:**
+
+- `CalendarItemId` - UUID-based identifier
+- `EventId` - Optional reference to source event
+
+**Domain Events:**
+
+- None (consumer only)
+
+**Business Rules:**
+
+- **Event-linked items**: Created automatically when event published, updated when event changes, deleted when event cancelled
+- **Manual items**: Created explicitly by users with CALENDAR:MANAGE authority, fully editable
+- **Multi-day support**: Items can span multiple days (startDate != endDate)
+- **Date range queries**: Use intersection logic to find items overlapping date range
+
+**Example:**
+
+```java
+// Event-linked item (created automatically by EventPublishedEventHandler)
+CalendarItem eventItem = CalendarItem.create(
+    "Spring Cup 2026",
+    "Forest Park - OOB\nhttps://example.com/spring-cup",
+    LocalDate.of(2026, 3, 20),
+    LocalDate.of(2026, 3, 20),
+    eventId  // Non-null for event-linked
+);
+
+// Manual item (created by user)
+CalendarItem manualItem = CalendarItem.create(
+    "Training Session",
+    "Monthly interval training",
+    LocalDate.of(2026, 3, 15),
+    LocalDate.of(2026, 3, 15),
+    null  // Null for manual items
+);
+
+// Updates only allowed for manual items
+manualItem.update("Updated Training", "New description", startDate, endDate);
+// eventItem.update(...) would throw CalendarItemReadOnlyException
+```
 
 ## Value Objects
 
@@ -381,6 +534,88 @@ public record MemberCreatedEvent(
 
 - Sends password setup email to member
 - Creates password setup token in Users context
+
+### EventPublishedEvent
+
+**Purpose:** Notification that an event has been published (DRAFT → ACTIVE transition)
+
+**Published by:** Events module (Event aggregate)
+
+**Consumed by:** Calendar module (EventPublishedEventHandler)
+
+**Payload:**
+
+```java
+public record EventPublishedEvent(
+    UUID eventId,
+    String name,
+    LocalDate eventDate,
+    String location,
+    String organizer,
+    String websiteUrl,  // May be null
+    Instant occurredOn
+) {
+    // ...
+}
+```
+
+**Side Effects:**
+
+- Creates corresponding CalendarItem in Calendar module
+- CalendarItem description built from: `location - organizer [+ websiteUrl if present]`
+
+### EventUpdatedEvent
+
+**Purpose:** Notification that an event's details have been updated
+
+**Published by:** Events module (Event aggregate)
+
+**Consumed by:** Calendar module (EventUpdatedEventHandler)
+
+**Payload:**
+
+```java
+public record EventUpdatedEvent(
+    UUID eventId,
+    String name,
+    LocalDate eventDate,
+    String location,
+    String organizer,
+    String websiteUrl,  // May be null
+    Instant occurredOn
+) {
+    // ...
+}
+```
+
+**Side Effects:**
+
+- Updates corresponding CalendarItem in Calendar module
+- If CalendarItem not found, logs warning (idempotent)
+
+### EventCancelledEvent
+
+**Purpose:** Notification that an event has been cancelled
+
+**Published by:** Events module (Event aggregate)
+
+**Consumed by:** Calendar module (EventCancelledEventHandler)
+
+**Payload:**
+
+```java
+public record EventCancelledEvent(
+    UUID eventId,
+    Instant occurredOn
+) {
+    // ...
+}
+```
+
+**Side Effects:**
+
+- Deletes corresponding CalendarItem from Calendar module
+- If CalendarItem not found, logs warning (idempotent)
 
 ## Business Rules
 

@@ -9,9 +9,12 @@ import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
 import {useHalPageData} from '../hooks/useHalPageData';
 
 interface CalendarItem {
-    start: string;
-    end: string;
-    note: string;
+    id: string;
+    name: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    eventId: string | null;
     _links: {
         event?: { href: string };
         self: { href: string };
@@ -56,7 +59,7 @@ const CalendarPage = () => {
     // Extract calendar items from resource data using type guard
     let calendarItems: CalendarItem[] = [];
     if (resourceData && hasCalendarItems(resourceData)) {
-        calendarItems = resourceData._embedded.calendarItems || [];
+        calendarItems = resourceData._embedded.calendarItemDtoList || [];
     }
 
     // Calculate month properties
@@ -96,8 +99,8 @@ const CalendarPage = () => {
     const getItemsForDay = (day: number): CalendarItem[] => {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         return calendarItems.filter(item => {
-            const startDate = new Date(item.start);
-            const endDate = new Date(item.end);
+            const startDate = new Date(item.startDate);
+            const endDate = new Date(item.endDate);
             const currentDay = new Date(dateStr);
             return currentDay >= startDate && currentDay <= endDate;
         });
@@ -174,9 +177,9 @@ const CalendarPage = () => {
                                                 key={itemIndex}
                                                 onClick={() => handleItemClick(item)}
                                                 className="text-xs bg-accent/15 text-accent p-1 rounded truncate cursor-pointer hover:bg-accent/25 transition-colors"
-                                                title={item.note}
+                                                title={`${item.name}\n${item.description}`}
                                             >
-                                                {item.note}
+                                                {item.name}
                                             </div>
                                         ))}
                                     </div>

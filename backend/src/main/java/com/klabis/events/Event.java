@@ -326,6 +326,9 @@ public class Event {
         this.organizer = organizer;
         this.websiteUrl = websiteUrl;
         this.eventCoordinatorId = eventCoordinatorId;
+
+        // Register domain event
+        registerEvent(EventUpdatedEvent.publish(this));
     }
 
     // ========== Registration Methods ==========

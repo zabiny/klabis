@@ -109,7 +109,7 @@ describe('CalendarPage Component', () => {
             self: {href: '/api/calendar'},
         },
         _embedded: {
-            calendarItems: items,
+            calendarItemDtoList: items,
         },
     });
 
@@ -219,11 +219,14 @@ describe('CalendarPage Component', () => {
         it('should display calendar items on their respective dates', () => {
             const items = [
                 {
-                    start: '2025-06-15',
-                    end: '2025-06-15',
-                    note: 'Team Meeting',
+                    id: '123e4567-e89b-12d3-a456-426614174000',
+                    name: 'Team Meeting',
+                    description: 'Monthly team sync',
+                    startDate: '2025-06-15',
+                    endDate: '2025-06-15',
+                    eventId: null,
                     _links: {
-                        self: {href: '/api/calendar/items/1'},
+                        self: {href: '/api/calendar-items/123e4567-e89b-12d3-a456-426614174000'},
                     },
                 },
             ];

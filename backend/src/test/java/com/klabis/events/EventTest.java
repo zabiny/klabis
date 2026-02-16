@@ -1156,6 +1156,77 @@ class EventTest {
         }
 
         @Test
+        @DisplayName("should register EventUpdatedEvent when event is updated")
+        void shouldRegisterEventUpdatedEventWhenUpdated() {
+            // Arrange
+            Event event = Event.create(
+                    "Original Event",
+                    LocalDate.of(2025, 7, 10),
+                    "Original Location",
+                    "Original Organizer",
+                    WebsiteUrl.of("https://original.com"),
+                    null
+            );
+            event.clearDomainEvents(); // Clear creation event
+
+            // Act
+            event.update(
+                    "Updated Event",
+                    LocalDate.of(2025, 7, 15),
+                    "Updated Location",
+                    "Updated Organizer",
+                    WebsiteUrl.of("https://updated.com"),
+                    null
+            );
+
+            // Assert
+            List<Object> domainEvents = event.getDomainEvents();
+            assertThat(domainEvents)
+                    .hasSize(1)
+                    .first()
+                    .isInstanceOf(EventUpdatedEvent.class);
+
+            EventUpdatedEvent updatedEvent = (EventUpdatedEvent) domainEvents.get(0);
+            assertThat(updatedEvent.eventId()).isEqualTo(event.getId());
+            assertThat(updatedEvent.name()).isEqualTo("Updated Event");
+            assertThat(updatedEvent.eventDate()).isEqualTo(LocalDate.of(2025, 7, 15));
+            assertThat(updatedEvent.location()).isEqualTo("Updated Location");
+            assertThat(updatedEvent.organizer()).isEqualTo("Updated Organizer");
+            assertThat(updatedEvent.websiteUrl()).isEqualTo(WebsiteUrl.of("https://updated.com"));
+            assertThat(updatedEvent.occurredAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should register EventUpdatedEvent with null websiteUrl")
+        void shouldRegisterEventUpdatedEventWithNullWebsiteUrl() {
+            // Arrange
+            Event event = Event.create(
+                    "Test Event",
+                    LocalDate.of(2025, 7, 10),
+                    "Test Location",
+                    "Test Organizer",
+                    WebsiteUrl.of("https://test.com"),
+                    null
+            );
+            event.clearDomainEvents();
+
+            // Act
+            event.update(
+                    "Updated Event",
+                    LocalDate.of(2025, 7, 15),
+                    "Updated Location",
+                    "Updated Organizer",
+                    null, // No website URL
+                    null
+            );
+
+            // Assert
+            List<Object> domainEvents = event.getDomainEvents();
+            EventUpdatedEvent updatedEvent = (EventUpdatedEvent) domainEvents.get(0);
+            assertThat(updatedEvent.websiteUrl()).isNull();
+        }
+
+        @Test
         @DisplayName("should accumulate multiple domain events")
         void shouldAccumulateMultipleDomainEvents() {
             // Arrange

@@ -92,12 +92,15 @@ export type EntityModel<T> = T & { _links: { [rel: string]: Link | Link[] } };
 // Type guards for HAL responses with specific structures
 
 // Check if response has templates
-// Calendar item specific embedded resource type
+// Calendar item specific embedded resource type (matches backend CalendarItemDto)
 export interface CalendarItemEmbedded extends HalEmbeddedResources {
-    calendarItems?: Array<{
-        start: string;
-        end: string;
-        note: string;
+    calendarItemDtoList?: Array<{
+        id: string;
+        name: string;
+        description: string;
+        startDate: string;
+        endDate: string;
+        eventId: string | null;
         _links: {
             event?: { href: string };
             self: { href: string };
@@ -105,9 +108,9 @@ export interface CalendarItemEmbedded extends HalEmbeddedResources {
     }>;
 }
 
-// Type guard for calendar items structure (fixes CalendarPage error)
+// Type guard for calendar items structure (matches backend response)
 export function hasCalendarItems(data: unknown): data is HalResponse & { _embedded: CalendarItemEmbedded } {
     return typeof data === 'object' && data !== null &&
         '_embedded' in data && typeof (data as any)._embedded === 'object' &&
-        'calendarItems' in (data as any)._embedded;
+        'calendarItemDtoList' in (data as any)._embedded;
 }

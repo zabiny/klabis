@@ -276,6 +276,46 @@ COMMENT ON COLUMN event_registrations.si_card_number IS 'SI (SportIdent) card nu
 COMMENT ON COLUMN event_registrations.registered_at IS 'Timestamp when member registered for the event';
 
 -- ============================================================================
+-- 8. CALENDAR_ITEMS TABLE
+-- Stores calendar items (manual and event-linked)
+-- ============================================================================
+
+CREATE TABLE calendar_items
+(
+    id               UUID PRIMARY KEY,
+    name             VARCHAR(200) NOT NULL,
+    description      TEXT         NOT NULL,
+    start_date       DATE         NOT NULL,
+    end_date         DATE         NOT NULL,
+    event_id         UUID         NULL REFERENCES events (id) ON DELETE SET NULL,
+
+    -- Audit fields
+    created_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by       VARCHAR(100) NOT NULL,
+    modified_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_by VARCHAR(100) NOT NULL,
+    version          BIGINT       NOT NULL DEFAULT 0
+);
+
+-- Indexes for calendar_items
+CREATE INDEX idx_calendar_items_date_range ON calendar_items (start_date, end_date);
+CREATE INDEX idx_calendar_items_event_id ON calendar_items (event_id);
+
+-- Comments for calendar_items
+COMMENT ON TABLE calendar_items IS 'Stores calendar items (manual and event-linked)';
+COMMENT ON COLUMN calendar_items.id IS 'Unique calendar item identifier (UUID)';
+COMMENT ON COLUMN calendar_items.name IS 'Calendar item name (event name for linked items)';
+COMMENT ON COLUMN calendar_items.description IS 'Calendar item description (location + organizer + website for linked items)';
+COMMENT ON COLUMN calendar_items.start_date IS 'Start date of the calendar item';
+COMMENT ON COLUMN calendar_items.end_date IS 'End date of the calendar item (same as start_date for single-day items)';
+COMMENT ON COLUMN calendar_items.event_id IS 'Reference to linked event (NULL for manual items, ON DELETE SET NULL)';
+COMMENT ON COLUMN calendar_items.created_at IS 'Timestamp when calendar item was created';
+COMMENT ON COLUMN calendar_items.created_by IS 'User who created the calendar item';
+COMMENT ON COLUMN calendar_items.modified_at IS 'Timestamp when calendar item was last modified';
+COMMENT ON COLUMN calendar_items.last_modified_by IS 'User who last modified the calendar item';
+COMMENT ON COLUMN calendar_items.version IS 'Optimistic locking version';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.

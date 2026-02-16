@@ -32,11 +32,14 @@ class AuthorityValidatorTest {
         @DisplayName("should accept all valid authorities")
         void shouldAcceptAllValidAuthorities() {
             Set<String> allAuthorities = Set.of(
+                    "CALENDAR:MANAGE",
                     "MEMBERS:CREATE",
                     "MEMBERS:READ",
                     "MEMBERS:UPDATE",
                     "MEMBERS:DELETE",
-                    "MEMBERS:PERMISSIONS"
+                    "MEMBERS:PERMISSIONS",
+                    "EVENTS:READ",
+                    "EVENTS:MANAGE"
             );
             AuthorityValidator.validate(allAuthorities);
         }

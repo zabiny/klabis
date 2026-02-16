@@ -36,6 +36,7 @@ curl -k -X POST https://localhost:8443/oauth2/token \
 - [Member Management](#member-management) - CRUD operations for members
 - [Password Setup Endpoints](#password-setup-endpoints) - User password setup flow
 - [User Permission Management](#user-permission-management) - Manage user authorities
+- [Calendar Management](#calendar-management) - Calendar items and event synchronization
 
 ## Overview
 
@@ -630,6 +631,274 @@ PUT /api/users/{id}/permissions
 - Only predefined authorities are accepted
 - The last user with `MEMBERS:PERMISSIONS` authority cannot have it removed (prevents lockout)
 - All permission changes are logged in the audit trail
+
+### Calendar Management
+
+The Calendar API provides unified view of events and manual calendar items. Event-linked items are automatically created/updated/deleted when events change. Manual items can be created by users with `CALENDAR:MANAGE` authority.
+
+#### List Calendar Items
+
+Retrieve calendar items with optional date range filtering and pagination.
+
+```bash
+GET /api/calendar-items?startDate={date}&endDate={date}&page=0&size=20&sort=startDate,asc
+```
+
+**Query Parameters:**
+
+- `startDate` (date, optional) - Start date for filtering (ISO 8601: YYYY-MM-DD). Requires `endDate`.
+- `endDate` (date, optional) - End date for filtering (ISO 8601: YYYY-MM-DD). Requires `startDate`.
+- `page` (integer, optional, default: 0) - Page number (zero-indexed)
+- `size` (integer, optional, default: 20) - Page size (max: 100)
+- `sort` (string, optional, default: startDate,asc) - Sort field and direction. Allowed fields: id, name, startDate, endDate
+
+**Authorization:** Requires authentication (any authenticated user)
+
+**Response:** 200 OK
+
+```json
+{
+  "_embedded": {
+    "calendarItemDtoList": [
+      {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "name": "Spring Cup 2026",
+        "description": "Forest Park - OOB\nhttps://example.com/spring-cup",
+        "startDate": "2026-03-20",
+        "endDate": "2026-03-20",
+        "eventId": "456e7890-e89b-12d3-a456-426614174000",
+        "_links": {
+          "self": { "href": "/api/calendar-items/123e4567-e89b-12d3-a456-426614174000" },
+          "event": { "href": "/api/events/456e7890-e89b-12d3-a456-426614174000" }
+        }
+      },
+      {
+        "id": "789e0123-e89b-12d3-a456-426614174000",
+        "name": "Training Session",
+        "description": "Monthly interval training",
+        "startDate": "2026-03-15",
+        "endDate": "2026-03-15",
+        "eventId": null,
+        "_links": {
+          "self": { "href": "/api/calendar-items/789e0123-e89b-12d3-a456-426614174000" }
+        }
+      }
+    ]
+  },
+  "_links": {
+    "self": { "href": "/api/calendar-items?startDate=2026-03-01&endDate=2026-03-31&page=0&size=20" },
+    "first": { "href": "/api/calendar-items?startDate=2026-03-01&endDate=2026-03-31&page=0&size=20" },
+    "last": { "href": "/api/calendar-items?startDate=2026-03-01&endDate=2026-03-31&page=0&size=20" }
+  },
+  "page": {
+    "size": 20,
+    "totalElements": 2,
+    "totalPages": 1,
+    "number": 0
+  }
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request` - Only one of startDate/endDate provided (both required)
+- `400 Bad Request` - Invalid sort field
+- `401 Unauthorized` - Authentication required
+
+**Notes:**
+
+- Date range filtering uses intersection logic: returns items where `(item.startDate <= endDate) AND (item.endDate >= startDate)`
+- Event-linked items include `event` link for navigation
+- Manual items (eventId = null) do not include `event` link
+
+#### Get Calendar Item
+
+Retrieve detailed calendar item information by ID.
+
+```bash
+GET /api/calendar-items/{id}
+```
+
+**Path Parameters:**
+
+- `id` (UUID, required) - Calendar item ID
+
+**Authorization:** Requires authentication (any authenticated user)
+
+**Response:** 200 OK
+
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Spring Cup 2026",
+  "description": "Forest Park - OOB\nhttps://example.com/spring-cup",
+  "startDate": "2026-03-20",
+  "endDate": "2026-03-20",
+  "eventId": "456e7890-e89b-12d3-a456-426614174000",
+  "_links": {
+    "self": { "href": "/api/calendar-items/123e4567-e89b-12d3-a456-426614174000" },
+    "event": { "href": "/api/events/456e7890-e89b-12d3-a456-426614174000" }
+  }
+}
+```
+
+**Error Responses:**
+
+- `401 Unauthorized` - Authentication required
+- `404 Not Found` - Calendar item not found
+
+#### Create Calendar Item
+
+Create a new manual calendar item. Only manual items can be created via API (event-linked items are created automatically).
+
+```bash
+POST /api/calendar-items
+```
+
+**Authorization:** Requires `CALENDAR:MANAGE` authority
+
+**Request Body:**
+
+```json
+{
+  "name": "Training Session",
+  "description": "Monthly interval training",
+  "startDate": "2026-03-15",
+  "endDate": "2026-03-15"
+}
+```
+
+**Validation Rules:**
+
+- `name` - Required, max 255 characters
+- `description` - Required, max 1000 characters
+- `startDate` - Required, ISO 8601 date format (YYYY-MM-DD)
+- `endDate` - Required, ISO 8601 date format (YYYY-MM-DD), must be >= startDate
+
+**Response:** 201 Created
+
+```json
+{
+  "id": "789e0123-e89b-12d3-a456-426614174000",
+  "name": "Training Session",
+  "description": "Monthly interval training",
+  "startDate": "2026-03-15",
+  "endDate": "2026-03-15",
+  "eventId": null,
+  "_links": {
+    "self": { "href": "/api/calendar-items/789e0123-e89b-12d3-a456-426614174000" }
+  }
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request` - Validation error (missing fields, invalid dates, endDate < startDate)
+- `401 Unauthorized` - Authentication required
+- `403 Forbidden` - Missing `CALENDAR:MANAGE` authority
+
+#### Update Calendar Item
+
+Update an existing manual calendar item. Event-linked items cannot be updated directly (managed via event lifecycle).
+
+```bash
+PUT /api/calendar-items/{id}
+```
+
+**Path Parameters:**
+
+- `id` (UUID, required) - Calendar item ID
+
+**Authorization:** Requires `CALENDAR:MANAGE` authority
+
+**Request Body:**
+
+```json
+{
+  "name": "Updated Training Session",
+  "description": "Weekly interval training",
+  "startDate": "2026-03-15",
+  "endDate": "2026-03-16"
+}
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "id": "789e0123-e89b-12d3-a456-426614174000",
+  "name": "Updated Training Session",
+  "description": "Weekly interval training",
+  "startDate": "2026-03-15",
+  "endDate": "2026-03-16",
+  "eventId": null,
+  "_links": {
+    "self": { "href": "/api/calendar-items/789e0123-e89b-12d3-a456-426614174000" }
+  }
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request` - Validation error
+- `401 Unauthorized` - Authentication required
+- `403 Forbidden` - Missing `CALENDAR:MANAGE` authority or attempting to update event-linked item
+- `404 Not Found` - Calendar item not found
+
+**Business Rules:**
+
+- Only manual items (eventId = null) can be updated
+- Attempting to update event-linked item returns 403 with `CalendarItemReadOnlyException`
+- Event-linked items automatically update when source event changes
+
+#### Delete Calendar Item
+
+Delete a manual calendar item. Event-linked items cannot be deleted directly (deleted automatically when source event is cancelled).
+
+```bash
+DELETE /api/calendar-items/{id}
+```
+
+**Path Parameters:**
+
+- `id` (UUID, required) - Calendar item ID
+
+**Authorization:** Requires `CALENDAR:MANAGE` authority
+
+**Response:** 204 No Content
+
+**Error Responses:**
+
+- `401 Unauthorized` - Authentication required
+- `403 Forbidden` - Missing `CALENDAR:MANAGE` authority or attempting to delete event-linked item
+- `404 Not Found` - Calendar item not found
+
+**Business Rules:**
+
+- Only manual items (eventId = null) can be deleted
+- Attempting to delete event-linked item returns 403 with `CalendarItemReadOnlyException`
+- Event-linked items automatically deleted when source event is cancelled
+
+#### Calendar Item Types
+
+**Event-linked Items:**
+
+- Created automatically when event published (DRAFT → ACTIVE)
+- Updated automatically when event details change
+- Deleted automatically when event cancelled
+- Read-only via API (cannot be updated/deleted directly)
+- Identified by non-null `eventId` field
+- Include `event` HATEOAS link for navigation
+- Description format: `{location} - {organizer}[\n{websiteUrl}]`
+
+**Manual Items:**
+
+- Created explicitly via POST /api/calendar-items
+- Fully editable via PUT /api/calendar-items/{id}
+- Deletable via DELETE /api/calendar-items/{id}
+- Identified by null `eventId` field
+- No `event` link in HATEOAS response
+- Description format: user-defined
 
 ## Rate Limiting
 

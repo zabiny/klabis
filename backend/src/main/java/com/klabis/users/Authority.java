@@ -22,6 +22,7 @@ import java.util.Set;
  * </ul>
  */
 public enum Authority {
+    CALENDAR_MANAGE("CALENDAR:MANAGE", Scope.CONTEXT_SPECIFIC),
     MEMBERS_CREATE("MEMBERS:CREATE", Scope.CONTEXT_SPECIFIC),
     MEMBERS_READ("MEMBERS:READ", Scope.CONTEXT_SPECIFIC),
     MEMBERS_UPDATE("MEMBERS:UPDATE", Scope.CONTEXT_SPECIFIC),
@@ -30,6 +31,7 @@ public enum Authority {
     EVENTS_READ("EVENTS:READ", Scope.GLOBAL),
     EVENTS_MANAGE("EVENTS:MANAGE", Scope.CONTEXT_SPECIFIC);
 
+    public static final String CALENDAR_SCOPE = "CALENDAR";
     public static final String MEMBERS_SCOPE = "MEMBERS";
     public static final String EVENTS_SCOPE = "EVENTS";
 

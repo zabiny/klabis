@@ -53,6 +53,25 @@ With the outbox pattern:
 │  Events: (none published)                                    │
 │  Dependencies: config                                        │
 └─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    events (Module)                           │
+│  Domain: Club events, event registrations                    │
+│  Events: EventPublishedEvent, EventUpdatedEvent,            │
+│          EventCancelledEvent                                │
+│  Dependencies: users (UserId), config                        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ EventPublishedEvent
+                              │ EventUpdatedEvent
+                              │ EventCancelledEvent
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    calendar (Module)                         │
+│  Domain: Calendar items (event-linked and manual)           │
+│  Events: (none published, consumer only)                    │
+│  Dependencies: events (EventId, domain events), config      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Event Publication Flow
@@ -107,12 +126,40 @@ sequenceDiagram
 - **Consumed by:** `members` module (`MemberCreatedEventHandler`)
 - **Side Effect:** Sends password setup email via email service
 
+**Event Published → Calendar Item Created**
+
+- **Event:** `EventPublishedEvent`
+- **Published by:** `events` module (when Event transitions to ACTIVE status)
+- **Consumed by:** `calendar` module (`EventPublishedEventHandler`)
+- **Side Effect:** Creates corresponding CalendarItem with event details
+- **Idempotency:** Checks if CalendarItem already exists for eventId before creating
+
+**Event Updated → Calendar Item Updated**
+
+- **Event:** `EventUpdatedEvent`
+- **Published by:** `events` module (when Event details change)
+- **Consumed by:** `calendar` module (`EventUpdatedEventHandler`)
+- **Side Effect:** Updates corresponding CalendarItem with new event details
+- **Idempotency:** Logs warning and ignores if CalendarItem not found (already deleted or never created)
+
+**Event Cancelled → Calendar Item Deleted**
+
+- **Event:** `EventCancelledEvent`
+- **Published by:** `events` module (when Event is cancelled)
+- **Consumed by:** `calendar` module (`EventCancelledEventHandler`)
+- **Side Effect:** Deletes corresponding CalendarItem from calendar
+- **Idempotency:** Logs warning and ignores if CalendarItem not found (already deleted)
+
 ### Module Dependencies
 
 ```
 members → users (reads User for password setup)
 members → config (configuration)
 users → config (configuration)
+events → users (UserId reference)
+events → config (configuration)
+calendar → events (EventId reference, domain events)
+calendar → config (configuration)
 common → shared by all modules
 ```
 
@@ -121,6 +168,77 @@ common → shared by all modules
 - No circular dependencies
 - Events are the only allowed cross-module communication
 - Direct method calls only within same module
+- Value object references (EventId, UserId) are allowed without creating dependencies
+
+## Calendar Synchronization Flow
+
+This diagram shows how the calendar module stays synchronized with events through domain events.
+
+```mermaid
+sequenceDiagram
+    participant EventController
+    participant EventRepository
+    participant Outbox
+    participant EventBus
+    participant CalendarHandler
+    participant CalendarRepository
+
+    Note over EventController,CalendarRepository: Event Published Flow
+
+    EventController->>EventRepository: event.publish()
+    EventRepository->>EventRepository: registerEvent(EventPublishedEvent)
+    EventRepository->>Outbox: Persist event (same transaction)
+    EventRepository->>EventRepository: COMMIT
+    EventRepository->>EventBus: Publish after commit
+    EventBus->>CalendarHandler: onEventPublished(event)
+    CalendarHandler->>CalendarHandler: Build CalendarItem from event
+    CalendarHandler->>CalendarRepository: Check if exists (idempotent)
+    alt Not exists
+        CalendarHandler->>CalendarRepository: save(calendarItem)
+    else Already exists
+        CalendarHandler->>CalendarHandler: Log and ignore
+    end
+
+    Note over EventController,CalendarRepository: Event Updated Flow
+
+    EventController->>EventRepository: event.update()
+    EventRepository->>EventRepository: registerEvent(EventUpdatedEvent)
+    EventRepository->>Outbox: Persist event (same transaction)
+    EventRepository->>EventRepository: COMMIT
+    EventRepository->>EventBus: Publish after commit
+    EventBus->>CalendarHandler: onEventUpdated(event)
+    CalendarHandler->>CalendarRepository: findByEventId(eventId)
+    alt CalendarItem found
+        CalendarHandler->>CalendarHandler: calendarItem.update()
+        CalendarHandler->>CalendarRepository: save(calendarItem)
+    else Not found
+        CalendarHandler->>CalendarHandler: Log warning and ignore
+    end
+
+    Note over EventController,CalendarRepository: Event Cancelled Flow
+
+    EventController->>EventRepository: event.cancel()
+    EventRepository->>EventRepository: registerEvent(EventCancelledEvent)
+    EventRepository->>Outbox: Persist event (same transaction)
+    EventRepository->>EventRepository: COMMIT
+    EventRepository->>EventBus: Publish after commit
+    EventBus->>CalendarHandler: onEventCancelled(event)
+    CalendarHandler->>CalendarRepository: findByEventId(eventId)
+    alt CalendarItem found
+        CalendarHandler->>CalendarRepository: delete(calendarItem)
+    else Not found
+        CalendarHandler->>CalendarHandler: Log warning and ignore
+    end
+```
+
+### Key Characteristics of Calendar Sync
+
+1. **Event-Driven**: Calendar module reacts to events, no direct coupling to Events module
+2. **Idempotent**: Handlers check for existence before creating/updating/deleting
+3. **Eventually Consistent**: Calendar items updated after transaction commits
+4. **Reliable**: Outbox pattern guarantees events will be processed
+5. **Autonomous**: Calendar module can rebuild entire state by replaying events
+6. **Read-Only for Events**: Event-linked calendar items cannot be modified via Calendar API
 
 ## Event Publication Configuration
 

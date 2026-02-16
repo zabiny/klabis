@@ -29,8 +29,8 @@ The system is organized around **bounded contexts** - distinct business domains 
 
 - **Members** - Member registration and management
 - **Users** - User authentication, password setup, account lifecycle
-- **Events** - Competitions, trainings and other events organized by club and member registrations to these events (
-  future)
+- **Events** - Competitions, trainings and other events organized by club and member registrations to these events
+- **Calendar** - Unified calendar view of events and manual calendar items with automatic event synchronization
 - **Finances** - Financial transactions and billing (future)
 - **Common Kernel** - Shared utilities and cross-cutting concerns
 
@@ -82,6 +82,12 @@ com.klabis/
 │   ├── management/       # Event management feature
 │   ├── registration/     # Event registration feature
 │   └── persistence/      # Repository interfaces + JDBC implementations
+├── calendar/             # Calendar bounded context
+│   ├── CalendarItem.java # Aggregate root
+│   ├── *.java            # Domain types at root (CalendarItemId, etc.)
+│   ├── api/              # Calendar management API (CalendarManagementService, CalendarController)
+│   ├── eventhandlers/    # Event consumers (EventPublishedEventHandler, EventUpdatedEventHandler, EventCancelledEventHandler)
+│   └── persistence/      # Repository interfaces + JDBC implementations
 ├── config/               # Spring configuration (Security, OAuth2, HATEOAS, Modulith)
 └── common/               # Shared kernel (email, rate limiting, utilities)
 ```
@@ -117,6 +123,27 @@ com.klabis/
 │  Dependencies: config                                        │
 │  Exposed to other modules: UserPermissions, UserPermissionsRepository (via NamedInterface) │
 └─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    events (Module)                           │
+│  Domain: Club events, event registrations                    │
+│  Events: EventPublishedEvent, EventUpdatedEvent,            │
+│          EventCancelledEvent                                │
+│  Dependencies: users (UserId), config                        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ EventPublishedEvent
+                              │ EventUpdatedEvent
+                              │ EventCancelledEvent
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    calendar (Module)                         │
+│  Domain: Calendar items (event-linked and manual)           │
+│  Events: None (consumer only)                               │
+│  Dependencies: events (EventId, domain events), config      │
+│  Consumes: EventPublishedEvent, EventUpdatedEvent,          │
+│            EventCancelledEvent                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 **Rules:**
@@ -137,6 +164,27 @@ com.klabis/
 - Published by: `members` module (when Member aggregate saved)
 - Consumed by: `members` module (`MemberCreatedEventHandler`)
 - Side Effect: Sends password setup email via email service
+
+**Event Published → Calendar Item Created**
+
+- Event: `EventPublishedEvent`
+- Published by: `events` module (when Event transitions to ACTIVE status)
+- Consumed by: `calendar` module (`EventPublishedEventHandler`)
+- Side Effect: Creates corresponding CalendarItem with event details
+
+**Event Updated → Calendar Item Updated**
+
+- Event: `EventUpdatedEvent`
+- Published by: `events` module (when Event details change)
+- Consumed by: `calendar` module (`EventUpdatedEventHandler`)
+- Side Effect: Updates corresponding CalendarItem with new event details
+
+**Event Cancelled → Calendar Item Deleted**
+
+- Event: `EventCancelledEvent`
+- Published by: `events` module (when Event is cancelled)
+- Consumed by: `calendar` module (`EventCancelledEventHandler`)
+- Side Effect: Deletes corresponding CalendarItem from calendar
 
 ## Clean Architecture Architecture
 

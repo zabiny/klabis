@@ -34,6 +34,10 @@ FROM users;
 DELETE
 FROM event_publication;
 
+-- Calendar items (references events)
+DELETE
+FROM calendar_items;
+
 -- Event registrations (references events and members)
 DELETE
 FROM event_registrations;
