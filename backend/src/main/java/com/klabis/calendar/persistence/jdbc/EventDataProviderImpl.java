@@ -1,5 +1,7 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.persistence.jdbc;
 
+import com.klabis.calendar.eventsintegration.EventData;
+import com.klabis.calendar.persistence.EventDataProvider;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.Events;

@@ -1,4 +1,4 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.eventsintegration;
 
 import com.klabis.events.WebsiteUrl;
 
@@ -16,7 +16,7 @@ import java.time.LocalDate;
  * @param organizer   event organizer
  * @param websiteUrl  event website URL (may be null)
  */
-record EventData(
+public record EventData(
         String name,
         LocalDate eventDate,
         String location,

@@ -1,4 +1,4 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.eventsintegration;
 
 import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;

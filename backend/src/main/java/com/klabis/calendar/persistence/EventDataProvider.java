@@ -1,5 +1,6 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.persistence;
 
+import com.klabis.calendar.eventsintegration.EventData;
 import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
@@ -14,7 +15,7 @@ import org.jmolecules.architecture.hexagonal.SecondaryPort;
  * EventPublishedEvent (which only contains event ID).
  */
 @SecondaryPort
-interface EventDataProvider {
+public interface EventDataProvider {
 
     /**
      * Fetches event data for the specified event ID.

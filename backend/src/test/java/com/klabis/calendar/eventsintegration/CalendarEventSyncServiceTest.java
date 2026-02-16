@@ -1,8 +1,9 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.eventsintegration;
 
 import com.klabis.calendar.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.persistence.CalendarRepository;
+import com.klabis.calendar.persistence.EventDataProvider;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import org.junit.jupiter.api.BeforeEach;

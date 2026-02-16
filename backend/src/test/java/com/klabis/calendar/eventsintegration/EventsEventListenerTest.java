@@ -1,11 +1,6 @@
-package com.klabis.calendar.eventhandlers;
+package com.klabis.calendar.eventsintegration;
 
-import com.klabis.calendar.application.CalendarEventSyncPort;
-import com.klabis.events.EventCancelledEvent;
-import com.klabis.events.EventId;
-import com.klabis.events.EventPublishedEvent;
-import com.klabis.events.EventUpdatedEvent;
-import com.klabis.events.WebsiteUrl;
+import com.klabis.events.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
