@@ -16,10 +16,8 @@ export const HalFormsCheckboxGroup = ({prop, errorText}: HalFormsInputProps): Re
     const {options, isLoading} = useHalFormOptions(prop.options)
 
     return (
-        <Field
-            name={prop.name}
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => (
+        <Field name={prop.name} validate={() => undefined}>
+            {({field, form}: FieldProps<unknown>) => (
                 <CheckboxGroup
                     label={prop.prompt || prop.name}
                     name={prop.name}
@@ -27,12 +25,12 @@ export const HalFormsCheckboxGroup = ({prop, errorText}: HalFormsInputProps): Re
                     disabled={prop.readOnly || isLoading || false}
                     error={errorText}
                     options={options}
-                    value={Array.isArray(fieldProps.field.value) ? fieldProps.field.value : []}
-                    onChange={(value: (string | number)[]) => fieldProps.form.setFieldValue(prop.name, value)}
+                    value={Array.isArray(field.value) ? field.value : []}
+                    onChange={(value: (string | number)[]) => form.setFieldValue(prop.name, value)}
                     direction="vertical"
                 />
             )}
-        />
+        </Field>
     )
 }
 

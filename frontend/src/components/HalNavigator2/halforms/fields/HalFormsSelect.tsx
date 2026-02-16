@@ -16,14 +16,12 @@ export const HalFormsSelect = ({prop, errorText}: HalFormsInputProps): ReactElem
     const {options, isLoading} = useHalFormOptions(prop.options)
 
     return (
-        <Field
-            name={prop.name}
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => {
-                const fieldValue = fieldProps.field.value as string | number | undefined;
+        <Field name={prop.name} validate={() => undefined}>
+            {({field}: FieldProps<unknown>) => {
+                const fieldValue = field.value as string | number | undefined;
                 return (
                     <SelectField
-                        {...fieldProps.field}
+                        {...field}
                         value={fieldValue}
                         label={prop.prompt || prop.name}
                         placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
@@ -35,7 +33,7 @@ export const HalFormsSelect = ({prop, errorText}: HalFormsInputProps): ReactElem
                     />
                 );
             }}
-        />
+        </Field>
     )
 }
 

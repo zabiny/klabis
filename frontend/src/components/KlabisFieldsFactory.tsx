@@ -55,19 +55,21 @@ const LegalGuardiansField: React.FC<HalFormsInputProps> = ({prop, subElementProp
     // WIP
 
     return <FormGroupWrapper label={prop.prompt || prop.name}>
-        <FieldArray name={prop.name} render={(arrayHelpers: FieldArrayRenderProps) => (
-            <div className="space-y-3">
-                {fieldValue.map((_, index) => (
-                    <div key={index} className="border border-gray-300 rounded p-3 space-y-3">
-                        <HalFormsInput {...subElementProps("[" + index + "].firstName", {prompt: "Jmeno"})} />
-                        <HalFormsInput {...subElementProps("[" + index + "].lastName", {prompt: "Prijmeni"})} />
-                        <ContactDtoField {...subElementProps("[" + index + "].contact", {prompt: "Kontakt"})} />
-                        <Button variant="danger" size="sm" onClick={() => arrayHelpers.remove(index)}>Odeber</Button>
-                    </div>
-                ))}
-                <Button variant="primary" size="sm" onClick={() => arrayHelpers.push({})}>Pridej</Button>
-            </div>
-        )}/>
+        <FieldArray name={prop.name}>
+            {(arrayHelpers: FieldArrayRenderProps) => (
+                <div className="space-y-3">
+                    {fieldValue.map((_, index) => (
+                        <div key={index} className="border border-gray-300 rounded p-3 space-y-3">
+                            <HalFormsInput {...subElementProps("[" + index + "].firstName", {prompt: "Jmeno"})} />
+                            <HalFormsInput {...subElementProps("[" + index + "].lastName", {prompt: "Prijmeni"})} />
+                            <ContactDtoField {...subElementProps("[" + index + "].contact", {prompt: "Kontakt"})} />
+                            <Button variant="danger" size="sm" onClick={() => arrayHelpers.remove(index)}>Odeber</Button>
+                        </div>
+                    ))}
+                    <Button variant="primary" size="sm" onClick={() => arrayHelpers.push({})}>Pridej</Button>
+                </div>
+            )}
+        </FieldArray>
     </FormGroupWrapper>;
 }
 

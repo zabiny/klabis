@@ -14,14 +14,12 @@ export const HalFormsInput = ({
                                   errorText,
                               }: HalFormsInputProps): ReactElement => {
     return (
-        <Field
-            name={prop.name}
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => {
-                const fieldValue = fieldProps.field.value as string | number | undefined;
+        <Field name={prop.name} validate={() => undefined}>
+            {({field}: FieldProps<unknown>) => {
+                const fieldValue = field.value as string | number | undefined;
                 return (
                     <TextField
-                        {...fieldProps.field}
+                        {...field}
                         value={fieldValue}
                         type={(prop.type as 'text' | 'email' | 'password' | 'number' | 'date' | 'datetime-local' | 'url' | 'tel') || 'text'}
                         label={prop.prompt || prop.name}
@@ -32,7 +30,7 @@ export const HalFormsInput = ({
                     />
                 );
             }}
-        />
+        </Field>
     )
 }
 

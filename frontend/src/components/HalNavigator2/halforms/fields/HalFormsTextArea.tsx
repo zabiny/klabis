@@ -13,14 +13,12 @@ export const HalFormsTextArea = ({
                                      errorText,
                                  }: HalFormsInputProps): ReactElement => {
     return (
-        <Field
-            name={prop.name}
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => {
-                const fieldValue = fieldProps.field.value as string | undefined;
+        <Field name={prop.name} validate={() => undefined}>
+            {({field}: FieldProps<unknown>) => {
+                const fieldValue = field.value as string | undefined;
                 return (
                     <TextAreaField
-                        {...fieldProps.field}
+                        {...field}
                         value={fieldValue}
                         label={prop.prompt || prop.name}
                         disabled={prop.readOnly || false}
@@ -31,7 +29,7 @@ export const HalFormsTextArea = ({
                     />
                 );
             }}
-        />
+        </Field>
     )
 }
 

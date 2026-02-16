@@ -81,25 +81,23 @@ export const HalFormsDateTime = ({
                                      errorText,
                                  }: HalFormsInputProps): ReactElement => {
     return (
-        <Field
-            name={prop.name}
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => {
-                const fieldValue = fieldProps.field.value as string | undefined;
+        <Field name={prop.name} validate={() => undefined}>
+            {({field}: FieldProps<unknown>) => {
+                const fieldValue = field.value as string | undefined;
                 const convertedValue = convertToDatetimeLocalFormat(fieldValue);
 
                 const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     const datetimeLocalValue = e.target.value;
                     // Convert back to ISO format with timezone before storing in Formik
                     const isoValue = convertToISODatetimeWithTimezone(datetimeLocalValue);
-                    fieldProps.field.onChange({
-                        target: {name: fieldProps.field.name, value: isoValue}
+                    field.onChange({
+                        target: {name: field.name, value: isoValue}
                     });
                 };
 
                 return (
                     <TextField
-                        {...fieldProps.field}
+                        {...field}
                         value={convertedValue}
                         onChange={handleChange}
                         type="datetime-local"
@@ -111,7 +109,7 @@ export const HalFormsDateTime = ({
                     />
                 );
             }}
-        />
+        </Field>
     )
 }
 

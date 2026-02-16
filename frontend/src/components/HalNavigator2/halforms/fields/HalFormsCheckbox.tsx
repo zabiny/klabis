@@ -10,22 +10,19 @@ import type {HalFormsInputProps} from '../types.ts'
  */
 export const HalFormsCheckbox = ({prop, errorText}: HalFormsInputProps): ReactElement => {
     return (
-        <Field
-            name={prop.name}
-            type="checkbox"
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => (
+        <Field name={prop.name} type="checkbox" validate={() => undefined}>
+            {({field, form}: FieldProps<unknown>) => (
                 <CheckboxField
                     name={prop.name}
                     label={prop.prompt || prop.name}
                     required={prop.required}
                     disabled={prop.readOnly || false}
                     error={errorText}
-                    checked={Boolean(fieldProps.field.value)}
-                    onChange={(checked: boolean) => fieldProps.form.setFieldValue(prop.name, checked)}
+                    checked={Boolean(field.value)}
+                    onChange={(checked: boolean) => form.setFieldValue(prop.name, checked)}
                 />
             )}
-        />
+        </Field>
     )
 }
 

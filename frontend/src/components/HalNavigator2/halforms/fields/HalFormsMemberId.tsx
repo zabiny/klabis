@@ -15,17 +15,15 @@ export const HalFormsMemberId = ({prop, errorText}: HalFormsInputProps): ReactEl
     const {options, isLoading} = useHalFormOptions(prop.options)
 
     return (
-        <Field
-            name={prop.name}
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => {
-                const fieldValue = fieldProps.field.value as string | number | undefined;
+        <Field name={prop.name} validate={() => undefined}>
+            {({field}: FieldProps<unknown>) => {
+                const fieldValue = field.value as string | number | undefined;
                 // Convert undefined/null to empty string so it matches placeholder's empty value
                 const selectValue = (fieldValue === undefined || fieldValue === null || fieldValue === '') ? '' : fieldValue;
                 const hasValue = selectValue !== '';
 
                 const handleClear = () => {
-                    fieldProps.field.onChange({
+                    field.onChange({
                         target: {
                             name: prop.name,
                             value: ''
@@ -36,7 +34,7 @@ export const HalFormsMemberId = ({prop, errorText}: HalFormsInputProps): ReactEl
                 return (
                     <div className="relative">
                         <SelectField
-                            {...fieldProps.field}
+                            {...field}
                             id={`field-${prop.name}`}
                             value={selectValue}
                             label={prop.prompt || prop.name}
@@ -75,7 +73,7 @@ export const HalFormsMemberId = ({prop, errorText}: HalFormsInputProps): ReactEl
                     </div>
                 );
             }}
-        />
+        </Field>
     )
 }
 

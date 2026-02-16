@@ -16,11 +16,9 @@ export const HalFormsRadio = ({prop, errorText}: HalFormsInputProps): ReactEleme
     const {options, isLoading} = useHalFormOptions(prop.options)
 
     return (
-        <Field
-            name={prop.name}
-            validate={() => undefined}
-            render={(fieldProps: FieldProps<unknown>) => {
-                const fieldValue = fieldProps.field.value as string | number | undefined;
+        <Field name={prop.name} validate={() => undefined}>
+            {({field, form}: FieldProps<unknown>) => {
+                const fieldValue = field.value as string | number | undefined;
                 return (
                     <RadioGroup
                         label={prop.prompt || prop.name}
@@ -30,12 +28,12 @@ export const HalFormsRadio = ({prop, errorText}: HalFormsInputProps): ReactEleme
                         error={errorText}
                         options={options}
                         value={fieldValue}
-                        onChange={(value: string | number) => fieldProps.form.setFieldValue(prop.name, value)}
+                        onChange={(value: string | number) => form.setFieldValue(prop.name, value)}
                         direction="vertical"
                     />
                 );
             }}
-        />
+        </Field>
     )
 }
 
