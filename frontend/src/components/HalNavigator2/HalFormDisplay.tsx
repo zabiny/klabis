@@ -8,7 +8,7 @@ import type {HalFormsTemplate} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {ErrorDisplay, Spinner} from '../UI';
 import {HalFormsForm, type RenderFormCallback} from './halforms';
-import {toFormValidationError} from '../../api/hateoas.ts';
+import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
@@ -134,6 +134,7 @@ export const HalFormDisplay = ({
                         onCancel={onClose}
                         isSubmitting={isSubmitting}
                         fieldsFactory={klabisFieldsFactory}
+                        serverValidationErrors={submitError && isFormValidationError(submitError) ? submitError.validationErrors : undefined}
                         {...(customLayout
                             ? (typeof customLayout === 'function'
                                 ? {renderForm: customLayout as RenderFormCallback}

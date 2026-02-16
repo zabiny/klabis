@@ -71,9 +71,16 @@ const LegalGuardiansField: React.FC<HalFormsInputProps> = ({prop, subElementProp
     </FormGroupWrapper>;
 }
 
+const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFormsInputProps => {
+    return {
+        ...prop,
+        prop: {...prop.prop, type: newType}
+    } as HalFormsInputProps;
+}
 
 export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
+        case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
         case "MemberId": {
             // Create a modified prop with remote options for member selection
             // HalFormsMemberId automatically adds a "clear selection" option
@@ -87,11 +94,11 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
             };
             return <HalFormsMemberId {...conf} prop={propWithOptions}/>;
         }
-        case "AddressApiDto":
+        case "AddressRequest":
             return <AddressDtoField {...conf}/>;
         case "ContactApiDto":
             return <ContactDtoField {...conf}/>;
-        case "LegalGuardiansApiDto":
+        case "GuardianDTO":
             return <LegalGuardiansField {...conf}/>;
         case "IdentityCardApiDto":
             return <IdentityCardApiDtoField {...conf}/>;

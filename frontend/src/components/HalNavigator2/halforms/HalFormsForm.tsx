@@ -140,7 +140,8 @@ interface HalFormsFormProps {
     submitButtonLabel?: string,
     fieldsFactory?: HalFormFieldFactory,
     isSubmitting?: boolean,
-    renderForm?: RenderFormCallback
+    renderForm?: RenderFormCallback,
+    serverValidationErrors?: Record<string, string>
 }
 
 // TODO: upravit HAL+FORMS: zobrazit "item" vzdy jako read only. Pokud je defalt template pro aktivni metodu, tak zobrazit tlacitko EDIT ktere prepne do editacniho rezimu. Pokud je default template pro GET metodu, tak jen pouzit policka s readonly pro lepsi zobrazeni. Na backendu pridat "default" affordanci pokud pro selflink zadna neexistuje (pouze pro ITEM).
@@ -157,7 +158,8 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                                                                 submitButtonLabel = "Odeslat",
                                                                                 isSubmitting: externalIsSubmitting = false,
                                                                                 renderForm,
-                                                                                children
+                                                                                children,
+                                                                                serverValidationErrors
                                                                             }) => {
 
     const initialValues = useMemo(
@@ -172,6 +174,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
     return (
         <Formik
             initialValues={initialValues}
+            initialErrors={serverValidationErrors}
             validationSchema={validationSchema}
             validateOnChange={false}
             validateOnBlur={true}
@@ -275,4 +278,5 @@ interface HalFormsFormContextType {
     renderField: FieldRenderFunc
 }
 
+export type {HalFormsFormProps};
 export {HalFormsForm, HalFormsFormContext};

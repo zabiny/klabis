@@ -30,7 +30,7 @@ function toFormValidationError(error: unknown): Error {
             const problemJson = JSON.parse(error.responseBody || '{}');
             return {
                 message: 'Form validation errors',
-                validationErrors: problemJson.fieldErrors || problemJson.errors || {},
+                validationErrors: problemJson.fieldErrors || problemJson.errors || {'error': problemJson.detail},
                 formData: {}  // We don't have formData in this context
             } as FormValidationError;
         } catch {
