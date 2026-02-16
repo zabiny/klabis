@@ -1,5 +1,8 @@
 package com.klabis.common.ui;
 
+import org.springframework.core.annotation.AliasFor;
+import org.springframework.hateoas.InputType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -7,6 +10,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.RECORD_COMPONENT)
+@InputType(value = "")
 public @interface HalForms {
     enum Access {
         /**
@@ -33,5 +37,6 @@ public @interface HalForms {
      */
     Access access() default Access.DEFAULT;
 
+    @AliasFor(annotation = InputType.class, attribute = "value", value = "value")
     String formInputType() default "";
 }
