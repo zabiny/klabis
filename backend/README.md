@@ -313,6 +313,11 @@ refactor(users): extract password validation to service
 - **OpenSpec Specifications:** `../openspec/`
 - **Frontend Repository:** (separate repository)
 
+## Related readings
+
+- [DDD with jMolecules](https://ersantana.com/Software-Architecture/jmolecules/jmolecules-ddd-annotations-guide)
+- [Hexagonal architecture with jMolecules](https://ersantana.com/Software-Architecture/jmolecules/jmolecules-hexagonal-architecture-guide)
+
 ## License
 
 Proprietary - Klabis Orienteering Club Management System
