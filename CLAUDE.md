@@ -67,6 +67,7 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 ### Common best practises
 
 - DO NOT create comments describing what code is doing. Use comments sparingly - exclusively to document intention behind implementation and only if is it necessary.
+- use `/mnt/ramdisk/klabis` folder when need to save temporary file 
 
 ## IntelliJ HTTP Files
 
