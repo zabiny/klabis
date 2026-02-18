@@ -15,7 +15,7 @@ rm -rf build/test-results/test
 
 # Build gradle command
 if [ -n "$TEST_FILTER" ]; then
-    ./gradlew test --tests "$TEST_FILTER" 2>&1 || true
+    ./gradlew test --no-daemon --tests "$TEST_FILTER" 2>&1 || true
 else
-    ./gradlew test 2>&1 || true
+    ./gradlew test --no-daemon 2>&1 || true
 fi

@@ -4,6 +4,7 @@ description: This skill should be used when the user asks to "run tests", "test 
 context: fork
 model: Haiku
 version: 0.2.0
+allowed-tools: Bash(./.claude/skills/test-runner/scripts/run-backend-tests.sh *), Bash(./.claude/skills/test-runner/scripts/run-frontend-tests.sh *)
 ---
 
 # Klabis Test Runner
