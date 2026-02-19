@@ -19,3 +19,36 @@ You are development lead. Your task is to compare github issue and actual implem
 5. suggest plan to complete issue implementation
 
 # Additional requirements:
+
+## GitHub Issues Workflow
+- **Keep issues business-focused** - Describe WHAT and WHY, not HOW (implementation details belong in code/docs)
+- **Split large issues** - Create child issues for subtasks, link to parent issue with comments
+- **Use label to mark backend implementation done** - Add label `BackendCompleted` to issue when backend development is completed (do not close it yet)
+- **Analysis documents** - Store temporary analysis in `/mnt/ramdisk/klabis/` before creating issues
+
+**Example linking pattern:**
+```bash
+# Parent issue comment
+- Child issue #264 - feat(oris): ORIS synchronizace
+- Child issue #265 - feat(cus): CUS synchronizace
+```
+
+## GitHub CLI Usage
+
+**Bash tool sandbox workaround:**
+- `gh` commands require `dangerouslyDisableSandbox: true` due to bwrap permission errors
+- Error: `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`
+
+**Issue creation with heredoc:**
+```bash
+gh issue create --title "Title" --body "$(cat <<'EOF'
+Multi-line body here...
+EOF
+)"
+```
+
+**Common commands:**
+- Create issue: `gh issue create --title "..." --body "..."`
+- Add comment: `gh issue comment <number> --body "..."`
+- Add label: `gh issue edit <number> --add-label "LabelName"`
+
