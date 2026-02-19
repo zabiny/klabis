@@ -179,11 +179,29 @@ def main():
     script_dir = Path(__file__).resolve().parent
     project_root = script_dir.parent.parent.parent.parent
 
+    # Special handling for compile-only mode - check if test results exist
     if test_type == "backend":
         results_dir = project_root / "backend" / "build" / "test-results" / "test"
+        if not results_dir.exists():
+            # Compile-only mode - report compilation status
+            report = format_report("BACKEND", 0, 0, 0, 0, [])
+            lines = report.split("\n")
+            lines.insert(3, "Mode: Compile-only (no tests executed)")
+            lines.insert(4, "")
+            print("\n".join(lines))
+            return
+
         report = parse_backend_xml(str(results_dir), full_output)
     elif test_type == "frontend":
         json_path = "/tmp/claude/vitest-results.json"
+        if not os.path.exists(json_path):
+            # No test results found
+            report = format_report("FRONTEND", 0, 0, 0, 0, [])
+            lines = report.split("\n")
+            lines.insert(3, "No test results found")
+            print("\n".join(lines))
+            return
+
         report = parse_frontend_json(json_path, full_output)
     else:
         print(f"Unknown test type: {test_type}")
