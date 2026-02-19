@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.ResponseEntity;
@@ -55,35 +54,17 @@ class RegistrationController {
     @Operation(
             summary = "Register a new member",
             description = "Creates a new member with personal information, contact details, and optional guardian information for minors. " +
-                          "Automatically generates a unique registration number in format XXXYYSS (club code, birth year, sequence). " +
-                          "Returns HATEOAS links for resource navigation."
+                          "Automatically generates a unique registration number in format XXXYYSS (club code, birth year, sequence)."
     )
     @ApiResponse(responseCode = "201", description = "Member successfully registered")
-    public ResponseEntity<EntityModel<MemberRegistrationResponse>> registerMember(
+    public ResponseEntity<Void> registerMember(
             @Parameter(description = "Member registration data including personal information, contacts, and optional guardian")
             @Valid @RequestBody RegisterMemberRequest request) {
 
-        // Call service directly with request object
         UUID memberId = registrationService.registerMember(request);
-
-        // Build response with HATEOAS links
-        MemberRegistrationResponse response = new MemberRegistrationResponse(
-                memberId,
-                request.firstName(),
-                request.lastName()
-        );
-
-        EntityModel<MemberRegistrationResponse> entityModel = EntityModel.of(response);
-
-        // Add hypermedia links
-        entityModel.add(
-                entityLinks.linkToItemResource(Member.class, memberId).withSelfRel()
-        );
-
-        // Return 201 Created with Location header
         return ResponseEntity
                 .created(entityLinks.linkToItemResource(Member.class, memberId).toUri())
-                .body(entityModel);
+                .build();
     }
 
 }

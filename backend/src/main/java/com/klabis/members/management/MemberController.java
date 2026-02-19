@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -106,43 +105,17 @@ class MemberController {
                           "users with MEMBERS:UPDATE authority can edit any member (all fields). " +
                           "Only provided fields are updated; null/missing fields keep existing values. " +
                           "Member-editable fields: email, phone, address, dietaryRestrictions. " +
-                          "Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup. " +
-                          "Returns HATEOAS links for resource navigation."
+                          "Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup."
     )
-    @ApiResponse(responseCode = "200", description = "Member updated successfully")
-    public ResponseEntity<EntityModel<MemberDetailsResponse>> updateMember(
+    @ApiResponse(responseCode = "204", description = "Member updated successfully")
+    public ResponseEntity<Void> updateMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
             @Valid @RequestBody UpdateMemberRequest request,
             Authentication auth) {
 
-        // Call service for update (authorization and field filtering done in service)
-        UUID updatedMemberId = managementService.updateMember(id, request);
-
-        // Load updated member directly from repository
-        Member updatedMember = memberRepository.findById(new UserId(updatedMemberId))
-                .orElseThrow(() -> new MemberNotFoundException(updatedMemberId));
-
-        // Map to response
-        MemberDetailsResponse response = memberMapper.toDetailsResponse(updatedMember);
-
-        // Create entity model with HATEOAS links
-        EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
-
-        // Add self link with affordances
-        entityModel.add(
-                klabisLinkTo(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(updatedMemberId,
-                                null,
-                                null)))
-        );
-
-        // Add collection link
-        entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(
-                org.springframework.data.domain.PageRequest.of(0, 10)
-        )).withRel("collection"));
-
-        return ResponseEntity.ok(entityModel);
+        managementService.updateMember(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -166,46 +139,20 @@ class MemberController {
             summary = "Terminate member membership",
             description = "Terminates a member's membership with a specified reason. " +
                           "Requires MEMBERS:UPDATE authority (admin-only). " +
-                          "Sets active status to false and records termination details including timestamp and user who performed termination. " +
-                          "Returns updated member resource with termination information."
+                          "Sets active status to false and records termination details including timestamp and user who performed termination."
     )
-    @ApiResponse(responseCode = "200", description = "Membership terminated successfully")
+    @ApiResponse(responseCode = "204", description = "Membership terminated successfully")
     @ApiResponse(responseCode = "400", description = "Invalid termination request (e.g., already terminated)")
     @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:UPDATE authority")
     @ApiResponse(responseCode = "404", description = "Member not found")
     @ApiResponse(responseCode = "409", description = "Conflict - concurrent modification detected")
-    public ResponseEntity<EntityModel<MemberDetailsResponse>> terminateMember(
+    public ResponseEntity<Void> terminateMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Termination request")
             @Valid @RequestBody TerminateMembershipRequest request) {
 
-        // Call service to terminate membership
-        UUID terminatedMemberId = managementService.terminateMember(id, request);
-
-        // Load updated member
-        Member terminatedMember = memberRepository.findById(new UserId(terminatedMemberId))
-                .orElseThrow(() -> new MemberNotFoundException(terminatedMemberId));
-
-        // Map to response
-        MemberDetailsResponse response = memberMapper.toDetailsResponse(terminatedMember);
-
-        // Create entity model with HATEOAS links
-        EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
-
-        // Add self link with affordances (update, no terminate)
-        entityModel.add(
-                klabisLinkTo(methodOn(MemberController.class).getMember(terminatedMemberId)).withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(terminatedMemberId,
-                                null,
-                                null)))
-        );
-
-        // Add collection link
-        entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(
-                org.springframework.data.domain.PageRequest.of(0, 10)
-        )).withRel("collection"));
-
-        return ResponseEntity.ok(entityModel);
+        managementService.terminateMember(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     /**
