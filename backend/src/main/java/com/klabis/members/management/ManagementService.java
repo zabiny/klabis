@@ -210,6 +210,12 @@ class ManagementService {
         if (request.drivingLicenseGroup().isPresent()) {
             throw new AdminFieldAccessException("drivingLicenseGroup");
         }
+        if (request.birthNumber().isPresent()) {
+            throw new AdminFieldAccessException("birthNumber");
+        }
+        if (request.bankAccountNumber().isPresent()) {
+            throw new AdminFieldAccessException("bankAccountNumber");
+        }
 
         log.debug("No admin-only fields in update request");
     }
@@ -233,7 +239,9 @@ class ManagementService {
                && request.medicalCourse().isEmpty()
                && request.trainerLicense().isEmpty()
                && request.drivingLicenseGroup().isEmpty()
-               && request.dietaryRestrictions().isEmpty();
+               && request.dietaryRestrictions().isEmpty()
+               && request.birthNumber().isEmpty()
+               && request.bankAccountNumber().isEmpty();
     }
 
     /**
@@ -298,7 +306,9 @@ class ManagementService {
                                                 || request.gender().isPresent()
                                                 || request.chipNumber().isPresent()
                                                 || request.drivingLicenseGroup().isPresent()
-                                                || request.dietaryRestrictions().isPresent();
+                                                || request.dietaryRestrictions().isPresent()
+                                                || request.birthNumber().isPresent()
+                                                || request.bankAccountNumber().isPresent();
 
         if (hasPersonalInformationUpdates) {
             // Build new PersonalInformation if any name/DOB/gender fields are provided
@@ -316,6 +326,32 @@ class ManagementService {
                         firstName, lastName, dateOfBirth, gender);
             }
 
+            // Create BirthNumber value object if provided
+            BirthNumber birthNumber = request.birthNumber()
+                    .filter(bn -> !bn.isBlank())
+                    .map(bn -> {
+                        try {
+                            return BirthNumber.of(bn);
+                        } catch (IllegalArgumentException e) {
+                            log.error("Invalid birth number: {}", e.getMessage());
+                            throw new IllegalArgumentException("Invalid birth number: " + e.getMessage(), e);
+                        }
+                    })
+                    .orElse(null);
+
+            // Create BankAccountNumber value object if provided
+            BankAccountNumber bankAccountNumber = request.bankAccountNumber()
+                    .filter(ban -> !ban.isBlank())
+                    .map(ban -> {
+                        try {
+                            return BankAccountNumber.of(ban);
+                        } catch (IllegalArgumentException e) {
+                            log.error("Invalid bank account number: {}", e.getMessage());
+                            throw new IllegalArgumentException("Invalid bank account number: " + e.getMessage(), e);
+                        }
+                    })
+                    .orElse(null);
+
             var command = new Member.UpdateMemberDetails(
                     personalInformation,
                     null, // address - already handled in contact updates
@@ -325,6 +361,8 @@ class ManagementService {
                     request.chipNumber().orElse(null),
                     request.drivingLicenseGroup().orElse(null),
                     request.dietaryRestrictions().orElse(null),
+                    birthNumber,
+                    bankAccountNumber,
                     null // gender - already handled in personalInformation
             );
             updatedMember.handle(command);

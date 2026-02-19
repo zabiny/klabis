@@ -1,11 +1,13 @@
 package com.klabis.calendar.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.config.encryption.EncryptionConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DisplayName("CalendarController API tests")
 @WebMvcTest(controllers = CalendarController.class)
+@Import(EncryptionConfiguration.class)
 class CalendarControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";

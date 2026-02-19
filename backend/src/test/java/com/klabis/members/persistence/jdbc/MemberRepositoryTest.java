@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         value = {Repository.class})  // jMolecules Repository annotation, used to load all repository adapters (for context caching)
 )
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 class MemberRepositoryTest {
 
     @Autowired
@@ -902,6 +904,298 @@ class MemberRepositoryTest {
             Optional<Member> foundMember = memberRepository.findById(savedUpdatedMember.getId());
             assertThat(foundMember).isPresent();
             assertThat(foundMember.get().getEmail().value()).isEqualTo("new@example.com");
+        }
+    }
+
+    @Nested
+    @DisplayName("Birth number and bank account")
+    class BirthNumberAndBankAccount {
+
+        @Test
+        @DisplayName("should save member with birth number for Czech nationality")
+        void shouldSaveMemberWithBirthNumberForCzechNationality() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Jan",
+                    "Novák",
+                    LocalDate.of(2005, 3, 15),
+                    "CZ",
+                    Gender.MALE
+            );
+            Address address = Address.of(
+                    "Hlavní 123",
+                    "Praha",
+                    "11000",
+                    "CZ"
+            );
+            BirthNumber birthNumber = BirthNumber.of("900101/1234");
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM0501"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("jan.novak@example.com"),
+                    new PhoneNumber("+420123456789"),
+                    null,
+                    birthNumber,
+                    null
+            );
+
+            // When
+            Member savedMember = memberRepository.save(member);
+
+            // Then
+            assertThat(savedMember).isNotNull();
+            assertThat(savedMember.getBirthNumber()).isNotNull();
+            assertThat(savedMember.getBirthNumber().value()).isEqualTo("900101/1234");
+        }
+
+        @Test
+        @DisplayName("should load member with birth number and decrypt correctly")
+        void shouldLoadMemberWithBirthNumberAndDecryptCorrectly() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Petra",
+                    "Svobodová",
+                    LocalDate.of(1995, 6, 20),
+                    "CZE",
+                    Gender.FEMALE
+            );
+            Address address = Address.of(
+                    "Dětská 1",
+                    "Brno",
+                    "60200",
+                    "CZ"
+            );
+            BirthNumber birthNumber = BirthNumber.of("950620/5678");
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM9501"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("petra.svobodova@example.com"),
+                    new PhoneNumber("+420987654321"),
+                    null,
+                    birthNumber,
+                    null
+            );
+
+            Member savedMember = memberRepository.save(member);
+
+            // When
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
+
+            // Then
+            assertThat(foundMember).isPresent();
+            assertThat(foundMember.get().getBirthNumber()).isNotNull();
+            assertThat(foundMember.get().getBirthNumber().value()).isEqualTo("950620/5678");
+        }
+
+        @Test
+        @DisplayName("should save member with IBAN bank account number")
+        void shouldSaveMemberWithIBANBankAccountNumber() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Karel",
+                    "Černý",
+                    LocalDate.of(2000, 1, 1),
+                    "CZ",
+                    Gender.MALE
+            );
+            Address address = Address.of(
+                    "Svobodova 3",
+                    "Ostrava",
+                    "70800",
+                    "CZ"
+            );
+            BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM0001"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("karel.cerny@example.com"),
+                    new PhoneNumber("+420111111111"),
+                    null,
+                    null,
+                    bankAccountNumber
+            );
+
+            // When
+            Member savedMember = memberRepository.save(member);
+
+            // Then
+            assertThat(savedMember).isNotNull();
+            assertThat(savedMember.getBankAccountNumber()).isNotNull();
+            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("CZ6508000000192000145399");
+            assertThat(savedMember.getBankAccountNumber().format()).isEqualTo(BankAccountNumber.AccountFormat.IBAN);
+        }
+
+        @Test
+        @DisplayName("should save member with domestic Czech bank account number")
+        void shouldSaveMemberWithDomesticBankAccountNumber() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Jana",
+                    "Procházková",
+                    LocalDate.of(2002, 5, 10),
+                    "CZ",
+                    Gender.FEMALE
+            );
+            Address address = Address.of(
+                    "Hlavní 5",
+                    "Plzeň",
+                    "30100",
+                    "CZ"
+            );
+            BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM0201"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("jana.prochazkova@example.com"),
+                    new PhoneNumber("+420222222222"),
+                    null,
+                    null,
+                    bankAccountNumber
+            );
+
+            // When
+            Member savedMember = memberRepository.save(member);
+
+            // Then
+            assertThat(savedMember).isNotNull();
+            assertThat(savedMember.getBankAccountNumber()).isNotNull();
+            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("123456/0300");
+            assertThat(savedMember.getBankAccountNumber().format()).isEqualTo(BankAccountNumber.AccountFormat.DOMESTIC);
+        }
+
+        @Test
+        @DisplayName("should save member with null birth number and bank account for backwards compatibility")
+        void shouldSaveMemberWithNullBirthNumberAndBankAccountForBackwardsCompatibility() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Martin",
+                    "Dvořák",
+                    LocalDate.of(2005, 3, 15),
+                    "CZ",
+                    Gender.MALE
+            );
+            Address address = Address.of(
+                    "Náměstí 1",
+                    "Liberec",
+                    "46001",
+                    "CZ"
+            );
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM0502"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("martin.dvorak@example.com"),
+                    new PhoneNumber("+420333333333"),
+                    null,
+                    null,
+                    null
+            );
+
+            // When
+            Member savedMember = memberRepository.save(member);
+
+            // Then
+            assertThat(savedMember).isNotNull();
+            assertThat(savedMember.getBirthNumber()).isNull();
+            assertThat(savedMember.getBankAccountNumber()).isNull();
+        }
+
+        @Test
+        @DisplayName("should load member with null birth number and bank account")
+        void shouldLoadMemberWithNullBirthNumberAndBankAccount() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Lucie",
+                    "Kučerová",
+                    LocalDate.of(2000, 8, 25),
+                    "CZ",
+                    Gender.FEMALE
+            );
+            Address address = Address.of(
+                    "Mládí 1",
+                    "Hradec Králové",
+                    "50002",
+                    "CZ"
+            );
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM1001"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("lucie.kucerova@example.com"),
+                    new PhoneNumber("+420444444444"),
+                    null,
+                    null,
+                    null
+            );
+
+            Member savedMember = memberRepository.save(member);
+
+            // When
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
+
+            // Then
+            assertThat(foundMember).isPresent();
+            assertThat(foundMember.get().getBirthNumber()).isNull();
+            assertThat(foundMember.get().getBankAccountNumber()).isNull();
+        }
+
+        @Test
+        @DisplayName("should save member with both birth number and bank account")
+        void shouldSaveMemberWithBothBirthNumberAndBankAccount() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Tomáš",
+                    "Beneš",
+                    LocalDate.of(2005, 3, 15),
+                    "CZ",
+                    Gender.MALE
+            );
+            Address address = Address.of(
+                    "Komenského 10",
+                    "Pardubice",
+                    "53002",
+                    "CZ"
+            );
+            BirthNumber birthNumber = BirthNumber.of("050315/1234");
+            BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM0503"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("tomas.benes@example.com"),
+                    new PhoneNumber("+420555555555"),
+                    null,
+                    birthNumber,
+                    bankAccountNumber
+            );
+
+            // When
+            Member savedMember = memberRepository.save(member);
+
+            // Then
+            assertThat(savedMember).isNotNull();
+            assertThat(savedMember.getBirthNumber()).isNotNull();
+            assertThat(savedMember.getBirthNumber().value()).isEqualTo("050315/1234");
+            assertThat(savedMember.getBankAccountNumber()).isNotNull();
+            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("CZ6508000000192000145399");
         }
     }
 }

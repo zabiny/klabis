@@ -118,6 +118,18 @@ class RegistrationService {
                 request.gender()
         );
 
+        // Create BirthNumber value object if provided
+        BirthNumber birthNumber = null;
+        if (request.birthNumber() != null && !request.birthNumber().isBlank()) {
+            birthNumber = BirthNumber.of(request.birthNumber());
+        }
+
+        // Create BankAccountNumber value object if provided
+        BankAccountNumber bankAccountNumber = null;
+        if (request.bankAccountNumber() != null && !request.bankAccountNumber().isBlank()) {
+            bankAccountNumber = BankAccountNumber.of(request.bankAccountNumber());
+        }
+
         // CRITICAL: Create User FIRST to obtain the shared UserId
         // This ensures Member ID = User ID for all members
         String placeholderPassword = UUID.randomUUID().toString();
@@ -151,7 +163,9 @@ class RegistrationService {
                 address,
                 email,
                 phone,
-                guardian
+                guardian,
+                birthNumber,
+                bankAccountNumber
         );
 
         // Persist Member

@@ -1,6 +1,7 @@
 package com.klabis.members.persistence.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.encryption.EncryptedString;
 import com.klabis.members.*;
 import com.klabis.users.UserId;
 import org.springframework.data.annotation.*;
@@ -126,6 +127,12 @@ class MemberMemento implements Persistable<UUID> {
 
     @Column("dietary_restrictions")
     private String dietaryRestrictions;
+
+    @Column("birth_number")
+    private EncryptedString birthNumber;
+
+    @Column("bank_account_number")
+    private String bankAccountNumber;
 
     // Audit fields
     @CreatedDate
@@ -300,6 +307,8 @@ class MemberMemento implements Persistable<UUID> {
     private static void copyOtherFields(Member member, MemberMemento memento) {
         memento.drivingLicenseGroup = member.getDrivingLicenseGroup();
         memento.dietaryRestrictions = member.getDietaryRestrictions();
+        memento.birthNumber = member.getBirthNumber() != null ? EncryptedString.of(member.getBirthNumber().value()) : null;
+        memento.bankAccountNumber = member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null;
     }
 
     /**
@@ -392,6 +401,14 @@ class MemberMemento implements Persistable<UUID> {
                 ? new RegistrationNumber(this.registrationNumber)
                 : null;
 
+        // Reconstruct BirthNumber
+        BirthNumber birthNumber = this.birthNumber != null ? BirthNumber.of(this.birthNumber.value()) : null;
+
+        // Reconstruct BankAccountNumber
+        BankAccountNumber bankAccountNumber = this.bankAccountNumber != null
+                ? BankAccountNumber.of(this.bankAccountNumber)
+                : null;
+
         // Create Member using reconstruct method (bypasses validation)
         UserId userId = this.id != null ? new UserId(this.id) : null;
         Member member = Member.reconstruct(
@@ -409,6 +426,8 @@ class MemberMemento implements Persistable<UUID> {
                 trainerLicense,
                 this.drivingLicenseGroup,
                 this.dietaryRestrictions,
+                birthNumber,
+                bankAccountNumber,
                 getAuditMetadata()
         );
 

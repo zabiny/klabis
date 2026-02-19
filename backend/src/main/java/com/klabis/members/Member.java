@@ -44,6 +44,8 @@ public class Member {
     private TrainerLicense trainerLicense;
     private DrivingLicenseGroup drivingLicenseGroup;
     private String dietaryRestrictions;
+    private BirthNumber birthNumber;
+    private BankAccountNumber bankAccountNumber;
 
     // Audit metadata
     private AuditMetadata auditMetadata;
@@ -66,7 +68,9 @@ public class Member {
             Address address,
             EmailAddress email,
             PhoneNumber phone,
-            GuardianInformation guardian
+            GuardianInformation guardian,
+            BirthNumber birthNumber,
+            BankAccountNumber bankAccountNumber
     ) {}
 
     /**
@@ -109,6 +113,8 @@ public class Member {
             String chipNumber,
             DrivingLicenseGroup drivingLicenseGroup,
             String dietaryRestrictions,
+            BirthNumber birthNumber,
+            BankAccountNumber bankAccountNumber,
             Gender gender
     ) {}
 
@@ -134,7 +140,9 @@ public class Member {
             MedicalCourse medicalCourse,
             TrainerLicense trainerLicense,
             DrivingLicenseGroup drivingLicenseGroup,
-            String dietaryRestrictions) {
+            String dietaryRestrictions,
+            BirthNumber birthNumber,
+            BankAccountNumber bankAccountNumber) {
 
         this.id = id;
         this.registrationNumber = registrationNumber;
@@ -150,6 +158,8 @@ public class Member {
         this.trainerLicense = trainerLicense;
         this.drivingLicenseGroup = drivingLicenseGroup;
         this.dietaryRestrictions = dietaryRestrictions;
+        this.birthNumber = birthNumber;
+        this.bankAccountNumber = bankAccountNumber;
     }
 
     /**
@@ -176,6 +186,8 @@ public class Member {
      * @param trainerLicense      member's trainer license (may be null)
      * @param drivingLicenseGroup member's driving license group (may be null)
      * @param dietaryRestrictions member's dietary restrictions (may be null)
+     * @param birthNumber         member's birth number (may be null)
+     * @param bankAccountNumber   member's bank account number (may be null)
      * @return reconstructed Member instance
      */
     public static Member reconstruct(
@@ -193,6 +205,8 @@ public class Member {
             TrainerLicense trainerLicense,
             DrivingLicenseGroup drivingLicenseGroup,
             String dietaryRestrictions,
+            BirthNumber birthNumber,
+            BankAccountNumber bankAccountNumber,
             AuditMetadata auditMetadata) {
 
         Member member = new Member(
@@ -209,7 +223,9 @@ public class Member {
                 medicalCourse,
                 trainerLicense,
                 drivingLicenseGroup,
-                dietaryRestrictions
+                dietaryRestrictions,
+                birthNumber,
+                bankAccountNumber
         );
         member.auditMetadata = auditMetadata;
         // No domain events for reconstructed entities
@@ -217,8 +233,16 @@ public class Member {
     }
 
     public static Member register(RegisterMember command) {
-        return Member.create(
-                command.registrationNumber(), command.personalInformation(), command.address(), command.email(), command.phone(), command.guardian()
+        return Member.createWithId(
+                command.id(),
+                command.registrationNumber(),
+                command.personalInformation(),
+                command.address(),
+                command.email(),
+                command.phone(),
+                command.guardian(),
+                command.birthNumber(),
+                command.bankAccountNumber()
         );
     }
 
@@ -235,6 +259,8 @@ public class Member {
      * @param email               member's email address (may be null if guardian has email)
      * @param phone               member's phone number (may be null if guardian has phone)
      * @param guardian            guardian information (required for minors)
+     * @param birthNumber         birth number (only for Czech nationals)
+     * @param bankAccountNumber   bank account number
      * @return new Member instance with the specified ID
      * @throws IllegalArgumentException if business rules are violated
      */
@@ -245,7 +271,9 @@ public class Member {
             Address address,
             EmailAddress email,
             PhoneNumber phone,
-            GuardianInformation guardian) {
+            GuardianInformation guardian,
+            BirthNumber birthNumber,
+            BankAccountNumber bankAccountNumber) {
 
         // Validate required fields
         Objects.requireNonNull(id, "Member ID is required");
@@ -258,6 +286,9 @@ public class Member {
 
         // Validate guardian for minors
         validateGuardianForMinors(personalInformation.getDateOfBirth(), guardian);
+
+        // Validate birth number nationality
+        validateBirthNumberNationality(personalInformation.getNationalityCode(), birthNumber);
 
         Member member = new Member(
                 id,
@@ -273,7 +304,9 @@ public class Member {
                 null, // medicalCourse
                 null, // trainerLicense
                 null, // drivingLicenseGroup
-                null  // dietaryRestrictions
+                null, // dietaryRestrictions
+                birthNumber,
+                bankAccountNumber
         );
 
         // Register domain event
@@ -333,7 +366,9 @@ public class Member {
                 null, // medicalCourse
                 null, // trainerLicense
                 null, // drivingLicenseGroup
-                null  // dietaryRestrictions
+                null, // dietaryRestrictions
+                null, // birthNumber
+                null  // bankAccountNumber
         );
 
         // Register domain event
@@ -404,6 +439,30 @@ public class Member {
         if (isMinor && guardian == null) {
             throw new BusinessRuleViolationException(
                     "Guardian is required for minors (under 18 years)"
+            ) {
+            };
+        }
+    }
+
+    /**
+     * Validates that birth number is only provided for Czech nationals.
+     *
+     * <p><b>Business Rule:</b> Birth number (rodné číslo) is a Czech-specific identifier
+     * and should only be stored for members with Czech nationality.
+     *
+     * @param nationalityCode the member's nationality code (ISO 3166-1)
+     * @param birthNumber     the birth number to validate (may be null)
+     * @throws IllegalArgumentException if birth number is provided for non-Czech nationality
+     */
+    private static void validateBirthNumberNationality(String nationalityCode, BirthNumber birthNumber) {
+        if (birthNumber == null) {
+            return;
+        }
+
+        boolean isCzech = "CZ".equals(nationalityCode) || "CZE".equals(nationalityCode);
+        if (!isCzech) {
+            throw new BusinessRuleViolationException(
+                    "Birth number is only allowed for Czech nationals"
             ) {
             };
         }
@@ -481,6 +540,14 @@ public class Member {
 
     public String getDietaryRestrictions() {
         return dietaryRestrictions;
+    }
+
+    public BirthNumber getBirthNumber() {
+        return birthNumber;
+    }
+
+    public BankAccountNumber getBankAccountNumber() {
+        return bankAccountNumber;
     }
 
     // Audit getters (delegate to AuditMetadata)
@@ -664,11 +731,18 @@ public class Member {
             validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
         }
 
+        // Validate birth number nationality if birth number is being updated
+        BirthNumber newBirthNumber = (command.birthNumber() != null) ? command.birthNumber() : this.birthNumber;
+        String nationalityCode = newPersonalInfo.getNationalityCode();
+        validateBirthNumberNationality(nationalityCode, newBirthNumber);
+
         String newChipNumber = (command.chipNumber() != null) ? command.chipNumber() : this.chipNumber;
         DrivingLicenseGroup newDrivingLicenseGroup =
                 (command.drivingLicenseGroup() != null) ? command.drivingLicenseGroup() : this.drivingLicenseGroup;
         String newDietaryRestrictions =
                 (command.dietaryRestrictions() != null) ? command.dietaryRestrictions() : this.dietaryRestrictions;
+        BankAccountNumber newBankAccountNumber =
+                (command.bankAccountNumber() != null) ? command.bankAccountNumber() : this.bankAccountNumber;
 
         // Modify fields in-place
         this.personalInformation = newPersonalInfo;
@@ -679,6 +753,8 @@ public class Member {
         this.chipNumber = newChipNumber;
         this.drivingLicenseGroup = newDrivingLicenseGroup;
         this.dietaryRestrictions = newDietaryRestrictions;
+        this.birthNumber = newBirthNumber;
+        this.bankAccountNumber = newBankAccountNumber;
     }
 
     /**
@@ -695,6 +771,8 @@ public class Member {
             String chipNumber,
             DrivingLicenseGroup drivingLicenseGroup,
             String dietaryRestrictions,
+            BirthNumber birthNumber,
+            BankAccountNumber bankAccountNumber,
             Gender gender) {
         handle(new UpdateMemberDetails(
                 personalInformation,
@@ -705,6 +783,8 @@ public class Member {
                 chipNumber,
                 drivingLicenseGroup,
                 dietaryRestrictions,
+                birthNumber,
+                bankAccountNumber,
                 gender
         ));
     }

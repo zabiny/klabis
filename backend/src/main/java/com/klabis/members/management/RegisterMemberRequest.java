@@ -55,6 +55,12 @@ record RegisterMemberRequest(
 
         @Schema(description = "Guardian information (required for minors under 18)")
         @Valid
-        GuardianDTO guardian
+        GuardianDTO guardian,
+
+        @Schema(description = "Birth number (rodné číslo) - only for Czech nationals, format RRMMDD/XXXX or RRMMDDXXXX", example = "900101/1234")
+        String birthNumber,
+
+        @Schema(description = "Bank account number (IBAN or domestic Czech format)", example = "CZ6508000000192000145399")
+        String bankAccountNumber
 ) {
 }

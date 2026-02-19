@@ -11,6 +11,7 @@
     <envs>
       <env name="BOOTSTRAP_ADMIN_PASSWORD" value="admin123" />
       <env name="OAUTH2_CLIENT_SECRET" value="test-secret-123" />
+      <env name="JASYPT_ENCRYPTOR_PASSWORD" value="encryptpass" />
     </envs>
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/backend/local.env" />

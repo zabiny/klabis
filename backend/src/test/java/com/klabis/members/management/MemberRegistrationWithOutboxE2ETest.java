@@ -113,7 +113,9 @@ class MemberRegistrationWithOutboxE2ETest {
                 "jan.novak@example.com",
                 "+420777123456",
                 address,
-                null  // No guardian required for adults
+                null,  // No guardian required for adults
+                null,  // birthNumber
+                null   // bankAccountNumber
         );
 
         // When: Registering the member via API

@@ -22,6 +22,8 @@ INSERT INTO members (
     postal_code,
     country,
     is_active,
+    birth_number,
+    bank_account_number,
     created_at,
     created_by,
     modified_at,
@@ -42,6 +44,8 @@ INSERT INTO members (
     '60200',
     'CZ',
     TRUE,
+    NULL,  -- birth_number (nullable)
+    NULL,  -- bank_account_number (nullable)
     CURRENT_TIMESTAMP,
     'test-setup',
     CURRENT_TIMESTAMP,

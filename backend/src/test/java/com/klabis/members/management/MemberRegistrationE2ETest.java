@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.Period;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,6 +48,7 @@ class MemberRegistrationE2ETest {
 
     private static final String ADMIN_USERNAME = "admin";
     private static final String MEMBERS_CREATE_AUTHORITY = "MEMBERS:CREATE";
+    private static final String MEMBERS_READ_AUTHORITY = "MEMBERS:READ";
 
     @Test
     @DisplayName("Complete registration flow for adult member without guardian")
@@ -123,7 +125,9 @@ class MemberRegistrationE2ETest {
                 "petra.novakova@example.com",
                 "+420111222333",
                 MemberManagementDtosTestDataBuilder.addressRequestWithStreetAndCity("Hlavní 789", "Ostrava"),
-                null  // No guardian - should fail domain validation
+                null,  // No guardian - should fail domain validation
+                null,  // birthNumber
+                null   // bankAccountNumber
         );
 
         // When/Then: Registration should fail
@@ -168,8 +172,9 @@ class MemberRegistrationE2ETest {
                 "jan1@example.com",
                 "+420777111111",
                 address1,
-                null
-        );
+                null,
+                null,
+                null);
 
         RegisterMemberRequest request2 = new RegisterMemberRequest(
                 "Petra",
@@ -180,8 +185,9 @@ class MemberRegistrationE2ETest {
                 "petra1@example.com",
                 "+420777222222",
                 address2,
-                null
-        );
+                null,
+                null,
+                null);
 
         // When: Registering both members
         MvcResult result1 = mockMvc.perform(
@@ -232,6 +238,8 @@ class MemberRegistrationE2ETest {
                 "jan.novak@example.com",
                 "+420777123456",
                 address,
+                null,
+                null,
                 null
         );
 
@@ -271,6 +279,8 @@ class MemberRegistrationE2ETest {
                 "jan.novak@example.com",
                 "+420777123456",
                 address,
+                null,
+                null,
                 null
         );
 
@@ -306,6 +316,8 @@ class MemberRegistrationE2ETest {
                 "jan@example.com",
                 "+420777123456",
                 address,
+                null,
+                null,
                 null
         );
 
@@ -318,6 +330,156 @@ class MemberRegistrationE2ETest {
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isString());
+    }
+
+    @Test
+    @DisplayName("Registration with birth number and bank account for Czech national should succeed")
+    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
+    void shouldRegisterCzechMemberWithBirthNumberAndBankAccount() throws Exception {
+        // Given: A Czech adult member with birth number and bank account
+        AddressRequest address = new AddressRequest(
+                "Hlavní 123",
+                "Praha",
+                "11000",
+                "CZ"
+        );
+
+        RegisterMemberRequest request = new RegisterMemberRequest(
+                "Jan",
+                "Novák",
+                LocalDate.of(1999, 1, 15),
+                "CZ",
+                Gender.MALE,
+                "jan.novak@example.com",
+                "+420777123456",
+                address,
+                null,
+                "900101/1234",
+                "CZ6508000000192000145399"
+        );
+
+        // When: Registering the member
+        MvcResult result = mockMvc.perform(
+                        post("/api/members")
+                                .contentType("application/json")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.id").isString())
+                .andExpect(jsonPath("$.firstName").value("Jan"))
+                .andExpect(jsonPath("$.lastName").value("Novák"))
+                .andReturn();
+
+        // Extract member ID from response
+        String responseJson = result.getResponse().getContentAsString();
+        String memberId = objectMapper.readTree(responseJson).get("id").asText();
+
+        // Then: Verify birth number and bank account are stored by retrieving the member
+        mockMvc.perform(
+                        get("/api/members/{id}", memberId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(memberId))
+                .andExpect(jsonPath("$.birthNumber").value("900101/1234"))
+                .andExpect(jsonPath("$.bankAccountNumber").value("CZ6508000000192000145399"));
+    }
+
+    @Test
+    @DisplayName("Registration with birth number for non-Czech national should fail")
+    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+    void shouldFailForNonCzechMemberWithBirthNumber() throws Exception {
+        // Given: A Slovak member with birth number (not allowed)
+        AddressRequest address = new AddressRequest(
+                "Main Street 123",
+                "Bratislava",
+                "81101",
+                "SK"
+        );
+
+        RegisterMemberRequest request = new RegisterMemberRequest(
+                "Eva",
+                "Svobodová",
+                LocalDate.of(1995, 3, 20),
+                "SK",
+                Gender.FEMALE,
+                "eva.svobodova@example.com",
+                "+421777888999",
+                address,
+                null,
+                "950320/1234",
+                null
+        );
+
+        // When/Then: Registration should fail with domain validation error
+        mockMvc.perform(
+                        post("/api/members")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").exists())
+                .andExpect(jsonPath("$.title").exists())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Birth number")));
+    }
+
+    @Test
+    @DisplayName("Registration with bank account only (without birth number) should succeed")
+    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
+    void shouldRegisterMemberWithBankAccountOnly() throws Exception {
+        // Given: A member with only bank account number
+        AddressRequest address = new AddressRequest(
+                "Hlavní 456",
+                "Brno",
+                "60000",
+                "CZ"
+        );
+
+        RegisterMemberRequest request = new RegisterMemberRequest(
+                "Petr",
+                "Svoboda",
+                LocalDate.of(1992, 5, 10),
+                "CZ",
+                Gender.MALE,
+                "petr.svoboda@example.com",
+                "+420777111222",
+                address,
+                null,
+                null,
+                "CZ6508000000192000145399"
+        );
+
+        // When: Registering the member
+        MvcResult result = mockMvc.perform(
+                        post("/api/members")
+                                .contentType("application/json")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isString())
+                .andReturn();
+
+        // Extract member ID from response
+        String responseJson = result.getResponse().getContentAsString();
+        String memberId = objectMapper.readTree(responseJson).get("id").asText();
+
+        // Then: Verify bank account is stored and birth number is not present
+        mockMvc.perform(
+                        get("/api/members/{id}", memberId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(memberId))
+                .andExpect(jsonPath("$.bankAccountNumber").value("CZ6508000000192000145399"))
+                .andExpect(jsonPath("$.birthNumber").doesNotExist());
     }
 
     private String extractMemberId(MvcResult result) throws Exception {

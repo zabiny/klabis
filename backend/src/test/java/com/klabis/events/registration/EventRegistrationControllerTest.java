@@ -1,12 +1,14 @@
 package com.klabis.events.registration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.config.encryption.EncryptionConfiguration;
 import com.klabis.events.Event;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.LinkRelation;
 import org.springframework.hateoas.MediaTypes;
@@ -32,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DisplayName("Event Registration Controller API Tests")
 @WebMvcTest(controllers = {EventRegistrationController.class})
+@Import(EncryptionConfiguration.class)
 class EventRegistrationControllerTest {
 
     private static final String MEMBER_1_ID = "11111111-1111-1111-1111-111111111111";

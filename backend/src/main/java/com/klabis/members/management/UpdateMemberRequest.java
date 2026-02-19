@@ -39,6 +39,8 @@ import java.util.Optional;
  * @param trainerLicense      Member's new trainer license information (optional, admin-only)
  * @param drivingLicenseGroup Member's new driving license group (optional, admin-only)
  * @param dietaryRestrictions Member's new dietary restrictions (optional, max 500 chars)
+ * @param birthNumber         Member's new birth number (optional, admin-only, Czech nationals only)
+ * @param bankAccountNumber   Member's new bank account number (optional, admin-only)
  */
 record UpdateMemberRequest(
         Optional<String> email,
@@ -69,6 +71,10 @@ record UpdateMemberRequest(
         Optional<DrivingLicenseGroup> drivingLicenseGroup,
 
         @ValidOptionalSize(max = 500, message = "Dietary restrictions must not exceed 500 characters")
-        Optional<String> dietaryRestrictions
+        Optional<String> dietaryRestrictions,
+
+        Optional<String> birthNumber,
+
+        Optional<String> bankAccountNumber
 ) {
 }

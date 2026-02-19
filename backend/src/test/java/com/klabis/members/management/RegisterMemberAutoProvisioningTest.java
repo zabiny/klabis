@@ -63,6 +63,8 @@ class RegisterMemberAutoProvisioningTest {
                 "test@example.com",
                 "+420777888888",
                 address,
+                null,
+                null,
                 null
         );
 
@@ -106,7 +108,7 @@ class RegisterMemberAutoProvisioningTest {
                 "integration@example.com",
                 "+420777999999",
                 address,
-                null
+                null, null, null
         );
 
         UUID memberId = memberService.registerMember(command);
@@ -145,7 +147,7 @@ class RegisterMemberAutoProvisioningTest {
                 "first@example.com",
                 "+420111111111",
                 address1,
-                null
+                null, null, null
         );
 
         RegisterMemberRequest command2 = new RegisterMemberRequest(
@@ -157,7 +159,7 @@ class RegisterMemberAutoProvisioningTest {
                 "second@example.com",
                 "+420222222222",
                 address2,
-                null
+                null, null, null
         );
 
         UserId memberId1 = new UserId(memberService.registerMember(command1));

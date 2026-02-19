@@ -296,7 +296,7 @@ class MemberUpdateTest {
                     null,
                     null,
                     null,
-                    null
+                    null, null, null
             );
 
             MedicalCourse medicalCourse = MedicalCourse.of(
@@ -329,7 +329,7 @@ class MemberUpdateTest {
             // Act
             member.updateMemberDetails(
                     null, null, null, null, null,
-                    null, null, null, Gender.FEMALE
+                    null, null, null, null, null, Gender.FEMALE
             );
 
             // Assert
@@ -346,7 +346,7 @@ class MemberUpdateTest {
             // Act
             member.updateMemberDetails(
                     null, null, null, null, null,
-                    "12345", null, null, null
+                    "12345", null, null, null, null, null
             );
 
             // Assert
@@ -362,7 +362,7 @@ class MemberUpdateTest {
             // Act
             member.updateMemberDetails(
                     null, null, null, null, null,
-                    null, DrivingLicenseGroup.A, null, null
+                    null, DrivingLicenseGroup.A, null, null, null, null
             );
 
             // Assert
@@ -378,7 +378,7 @@ class MemberUpdateTest {
             // Act
             member.updateMemberDetails(
                     null, null, null, null, null,
-                    null, null, "Vegetarian, no nuts", null
+                    null, null, "Vegetarian, no nuts", null, null, null
             );
 
             // Assert
@@ -394,7 +394,7 @@ class MemberUpdateTest {
             // Act
             member.updateMemberDetails(
                     null, null, null, null, null,
-                    "12345", DrivingLicenseGroup.A, "No dairy", Gender.FEMALE
+                    "12345", DrivingLicenseGroup.A, "No dairy", null, null, Gender.FEMALE
             );
 
             // Assert
@@ -423,7 +423,7 @@ class MemberUpdateTest {
             // Act
             member.updateMemberDetails(
                     newPersonalInfo, newAddress, newEmail, newPhone, null,
-                    "999", DrivingLicenseGroup.B, "No gluten", null
+                    "999", DrivingLicenseGroup.B, "No gluten", null, null, null
             );
 
             // Assert
@@ -468,7 +468,7 @@ class MemberUpdateTest {
             // Act
             minor.updateMemberDetails(
                     null, null, null, null, null,
-                    "123", null, "No nuts", null
+                    "123", null, "No nuts", null, null, null
             );
 
             // Assert
@@ -486,7 +486,7 @@ class MemberUpdateTest {
             // Act
             member.updateMemberDetails(
                     null, null, null, null, null,
-                    "12345", null, null, null
+                    "12345", null, null, null, null, null
             );
 
             // Assert - same instance is modified

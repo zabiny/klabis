@@ -46,6 +46,8 @@ class MemberControllerSecurityTest extends SecurityTestBase {
                 "jan@example.com",
                 "+420777123456",
                 address,
+                null,
+                null,
                 null
         );
     }

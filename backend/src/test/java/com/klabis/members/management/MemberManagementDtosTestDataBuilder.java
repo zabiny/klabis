@@ -52,7 +52,9 @@ final class MemberManagementDtosTestDataBuilder {
                 "petra.novakova@example.com",
                 "+420111222333",
                 defaultAddressRequest(),
-                defaultGuardianDto()
+                defaultGuardianDto(),
+                null,
+                null
         );
     }
 
@@ -87,6 +89,8 @@ final class MemberManagementDtosTestDataBuilder {
                 "jan.novak@example.com",
                 "+420777123456",
                 defaultAddressRequest(),
+                null,
+                null,
                 null
         );
     }

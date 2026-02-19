@@ -1,13 +1,11 @@
 package com.klabis.common.email;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * Configuration properties for email functionality.
  * Maps to klabis.email.* properties in application.yml
  */
-@Component
 @ConfigurationProperties(prefix = "klabis.email")
 public class EmailProperties {
 

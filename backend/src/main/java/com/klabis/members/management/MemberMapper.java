@@ -43,12 +43,41 @@ public interface MemberMapper {
      * @param member the source member domain object
      * @return mapped details response
      */
+    default MemberDetailsResponse toDetailsResponse(Member member) {
+        if (member == null) {
+            return null;
+        }
+        MemberDetailsResponse response = toDetailsResponseInternal(member);
+        return new MemberDetailsResponse(
+                response.id(),
+                response.registrationNumber(),
+                response.firstName(),
+                response.lastName(),
+                response.dateOfBirth(),
+                response.nationality(),
+                response.gender(),
+                member.getEmail() != null ? member.getEmail().value() : null,
+                member.getPhone() != null ? member.getPhone().value() : null,
+                response.address(),
+                response.guardian(),
+                response.active(),
+                response.chipNumber(),
+                response.identityCard(),
+                response.medicalCourse(),
+                response.trainerLicense(),
+                response.drivingLicenseGroup(),
+                response.dietaryRestrictions(),
+                member.getBirthNumber() != null ? member.getBirthNumber().value() : null,
+                member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null
+        );
+    }
+
     @Mapping(target = "id", source = "id.uuid")
-    @Mapping(target = "registrationNumber", source = "registrationNumber")
+    @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "address", source = "address")
     @Mapping(target = "guardian", source="guardian")
-    @Mapping(target = "email", source = "email")
-    @Mapping(target = "phone", source = "phone")
+    @Mapping(target = "email", ignore = true)
+    @Mapping(target = "phone", ignore = true)
     @Mapping(target = "firstName", source = "firstName")
     @Mapping(target = "lastName", source = "lastName")
     @Mapping(target = "dateOfBirth", source = "dateOfBirth")
@@ -61,23 +90,15 @@ public interface MemberMapper {
     @Mapping(target = "trainerLicense", source = "trainerLicense")
     @Mapping(target = "drivingLicenseGroup", source = "drivingLicenseGroup")
     @Mapping(target = "dietaryRestrictions", source = "dietaryRestrictions")
-    MemberDetailsResponse toDetailsResponse(Member member);
+    @Mapping(target = "birthNumber", ignore = true)
+    @Mapping(target = "bankAccountNumber", ignore = true)
+    MemberDetailsResponse toDetailsResponseInternal(Member member);
 
     AddressResponse addressToResponse(Address address);
 
-    default String emailToResponse(EmailAddress email) {
-        return email.value();
+    default GuardianDTO guardianToResponse(GuardianInformation guardianInformation) {
+        return GuardianDTO.from(guardianInformation);
     }
-
-    default String registrationNumberToString(RegistrationNumber registrationNumber) {
-        return registrationNumber.getValue();
-    }
-
-    default String phoneNumberToString(PhoneNumber phoneNumber) {
-        return phoneNumber.value();
-    }
-
-    GuardianDTO guardianToResponse(GuardianInformation guardianInformation);
 
     /**
      * Maps IdentityCard domain object to IdentityCardDto.

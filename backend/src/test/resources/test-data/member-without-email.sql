@@ -27,6 +27,8 @@ INSERT INTO members (
     guardian_email,
     guardian_phone,
     is_active,
+    birth_number,
+    bank_account_number,
     created_at,
     created_by,
     modified_at,
@@ -52,6 +54,8 @@ INSERT INTO members (
     'anna.mala@example.com',  -- Guardian has email
     '+420777888999',          -- Guardian has phone
     TRUE,
+    NULL,  -- birth_number (nullable)
+    NULL,  -- bank_account_number (nullable)
     CURRENT_TIMESTAMP,
     'test-setup',
     CURRENT_TIMESTAMP,

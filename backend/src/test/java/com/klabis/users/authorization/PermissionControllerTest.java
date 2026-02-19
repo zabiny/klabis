@@ -1,6 +1,7 @@
 package com.klabis.users.authorization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.config.encryption.EncryptionConfiguration;
 import com.klabis.users.Authority;
 import com.klabis.users.AuthorizationPolicy;
 import com.klabis.users.UserId;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -30,6 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PermissionController.class)
+@Import(EncryptionConfiguration.class)
 @DisplayName("PermissionController permissions endpoints tests")
 class PermissionControllerTest {
 

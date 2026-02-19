@@ -1,9 +1,9 @@
 package com.klabis.users.persistence.jdbc;
 
-import com.klabis.users.User;
 import com.klabis.users.AccountStatus;
-import com.klabis.users.UserId;
+import com.klabis.users.User;
 import com.klabis.users.UserAssert;
+import com.klabis.users.UserId;
 import com.klabis.users.persistence.UserRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -40,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         type = FilterType.ANNOTATION,
         value = {Repository.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 class UserJdbcRepositoryTest {
 
     @Autowired

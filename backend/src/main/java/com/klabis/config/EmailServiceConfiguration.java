@@ -1,5 +1,8 @@
-package com.klabis.common.email;
+package com.klabis.config;
 
+import com.klabis.common.email.EmailProperties;
+import com.klabis.common.email.EmailService;
+import com.klabis.common.email.LoggingEmailService;
 import com.klabis.common.email.infrastructure.JavaMailEmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

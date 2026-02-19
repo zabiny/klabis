@@ -14,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         type = FilterType.ANNOTATION,
         value = {Repository.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
         "INSERT INTO events (id, name, event_date, location, organizer, website_url, event_coordinator_id, status, created_at, created_by, modified_at, modified_by, version) VALUES ('11111111-1111-1111-1111-111111111111', 'Test Event 1', '2026-06-15', 'Prague', 'OOB', 'https://example.com', NULL, 'ACTIVE', CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
         "INSERT INTO events (id, name, event_date, location, organizer, website_url, event_coordinator_id, status, created_at, created_by, modified_at, modified_by, version) VALUES ('22222222-2222-2222-2222-222222222222', 'Test Event 2', '2026-07-20', 'Brno', 'PRG', 'https://example.com', NULL, 'ACTIVE', CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)"

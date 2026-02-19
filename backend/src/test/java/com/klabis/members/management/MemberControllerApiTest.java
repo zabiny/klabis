@@ -1,12 +1,14 @@
 package com.klabis.members.management;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.config.encryption.EncryptionConfiguration;
 import com.klabis.members.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.Link;
@@ -36,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
+@Import({EncryptionConfiguration.class, MemberMapperImpl.class})
 class MemberControllerApiTest {
 
     private static final String ADMIN_USERNAME = "admin";
@@ -82,6 +85,8 @@ class MemberControllerApiTest {
                     "jan.novak@example.com",
                     "+420777123456",
                     MemberManagementDtosTestDataBuilder.defaultAddressRequest(),
+                    null,
+                    null,
                     null
             );
 
@@ -118,7 +123,7 @@ class MemberControllerApiTest {
                     "petra.novakova@example.com",
                     "+420111222333",
                     MemberManagementDtosTestDataBuilder.addressRequestWithStreetAndCity("Hlavní 456", "Brno"),
-                    MemberManagementDtosTestDataBuilder.defaultGuardianDto()
+                    MemberManagementDtosTestDataBuilder.defaultGuardianDto(), null, null
             );
 
             when(registrationService.registerMember(any(RegisterMemberRequest.class))).thenReturn(memberId);
@@ -149,6 +154,8 @@ class MemberControllerApiTest {
                     "jan@example.com",
                     "+420777123456",
                     MemberManagementDtosTestDataBuilder.defaultAddressRequest(),
+                    null,
+                    null,
                     null
             );
 
@@ -184,7 +191,7 @@ class MemberControllerApiTest {
                     "invalid-email",
                     "+420777123456",
                     address,
-                    null
+                    null, null, null
             );
 
             mockMvc.perform(
@@ -219,7 +226,7 @@ class MemberControllerApiTest {
                     "jan@example.com",
                     "123",
                     address,
-                    null
+                    null, null, null
             );
 
             mockMvc.perform(
@@ -254,7 +261,7 @@ class MemberControllerApiTest {
                     "jan@example.com",
                     "+420777123456",
                     address,
-                    null
+                    null, null, null
             );
 
             mockMvc.perform(
@@ -289,7 +296,7 @@ class MemberControllerApiTest {
                     "",
                     "+420777123456",
                     address,
-                    null
+                    null, null, null
             );
 
             mockMvc.perform(
@@ -332,7 +339,7 @@ class MemberControllerApiTest {
                     "petra@example.com",
                     "+420111222333",
                     address,
-                    guardian
+                    guardian, null, null
             );
 
             mockMvc.perform(
@@ -368,7 +375,7 @@ class MemberControllerApiTest {
                     "jan.novak@example.com",
                     "+420777123456",
                     address,
-                    null
+                    null, null, null
             );
 
             when(registrationService.registerMember(any(RegisterMemberRequest.class))).thenReturn(memberId);
@@ -406,7 +413,7 @@ class MemberControllerApiTest {
                     "jan@example.com",
                     "+420777123456",
                     address,
-                    null
+                    null, null, null
             );
 
             mockMvc.perform(
@@ -441,7 +448,7 @@ class MemberControllerApiTest {
                     "jan@example.com",
                     "+420777123456",
                     address,
-                    null
+                    null, null, null
             );
 
             mockMvc.perform(
@@ -476,7 +483,7 @@ class MemberControllerApiTest {
                     "jan@example.com",
                     "+420777123456",
                     address,
-                    null
+                    null, null, null
             );
 
             mockMvc.perform(

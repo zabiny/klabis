@@ -28,6 +28,8 @@ public class MemberTestDataBuilder {
     private TrainerLicense trainerLicense = null;
     private DrivingLicenseGroup drivingLicenseGroup = null;
     private String dietaryRestrictions = null;
+    private BirthNumber birthNumber = null;
+    private BankAccountNumber bankAccountNumber = null;
     private AuditMetadata auditMetadata = null;
 
     private MemberTestDataBuilder() {
@@ -57,6 +59,16 @@ public class MemberTestDataBuilder {
 
     public MemberTestDataBuilder withName(String firstName, String lastName) {
         this.firstName = firstName;
+        this.lastName = lastName;
+        return this;
+    }
+
+    public MemberTestDataBuilder withFirstName(String firstName) {
+        this.firstName = firstName;
+        return this;
+    }
+
+    public MemberTestDataBuilder withLastName(String lastName) {
         this.lastName = lastName;
         return this;
     }
@@ -149,6 +161,24 @@ public class MemberTestDataBuilder {
         return this;
     }
 
+    public MemberTestDataBuilder withBirthNumber(BirthNumber birthNumber) {
+        this.birthNumber = birthNumber;
+        return this;
+    }
+
+    public MemberTestDataBuilder withBirthNumber(String birthNumber) {
+        return withBirthNumber(BirthNumber.of(birthNumber));
+    }
+
+    public MemberTestDataBuilder withBankAccountNumber(BankAccountNumber bankAccountNumber) {
+        this.bankAccountNumber = bankAccountNumber;
+        return this;
+    }
+
+    public MemberTestDataBuilder withBankAccountNumber(String bankAccountNumber) {
+        return withBankAccountNumber(BankAccountNumber.of(bankAccountNumber));
+    }
+
     public Member build() {
         Member result = Member.reconstruct(new UserId(memberId),
                 registrationNumber,
@@ -164,6 +194,8 @@ public class MemberTestDataBuilder {
                 trainerLicense,
                 drivingLicenseGroup,
                 dietaryRestrictions,
+                birthNumber,
+                bankAccountNumber,
                 auditMetadata
         );
         return result;
@@ -171,7 +203,7 @@ public class MemberTestDataBuilder {
 
     public Member.RegisterMember toRegisterMemberCommand() {
         return new Member.RegisterMember(new UserId(this.memberId), this.registrationNumber, this.build()
-                .getPersonalInformation(), this.address, this.email, this.phone, this.guardian);
+                .getPersonalInformation(), this.address, this.email, this.phone, this.guardian, birthNumber, bankAccountNumber);
     }
 
     /**

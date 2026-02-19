@@ -31,6 +31,8 @@ import java.util.UUID;
  * @param trainerLicense      Member's trainer license information (nullable)
  * @param drivingLicenseGroup Member's driving license group (nullable)
  * @param dietaryRestrictions Member's dietary restrictions (nullable, max 500 chars)
+ * @param birthNumber         Member's birth number (nullable, Czech nationals only)
+ * @param bankAccountNumber   Member's bank account number (nullable)
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 record MemberDetailsResponse(
@@ -52,6 +54,8 @@ record MemberDetailsResponse(
         MedicalCourseDto medicalCourse,
         TrainerLicenseDto trainerLicense,
         DrivingLicenseGroup drivingLicenseGroup,
-        String dietaryRestrictions
+        String dietaryRestrictions,
+        String birthNumber,
+        String bankAccountNumber
 ) {
 }

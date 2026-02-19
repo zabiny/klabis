@@ -1,7 +1,7 @@
 ### Create test data: 10 members and 16 events
 ### Uses "local" environment from http-client.env.json
 
-### Register member 1 - adult male
+### Register member 1 - adult male with birth number and bank account
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -19,7 +19,9 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "city": "Praha",
     "postalCode": "11000",
     "country": "CZ"
-  }
+  },
+  "birthNumber": "900315/1234",
+  "bankAccountNumber": "CZ6508000000192000145399"
 }
 
 > {%
@@ -28,7 +30,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 2 - adult female
+### Register member 2 - adult female with birth number only
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -46,7 +48,8 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "city": "Brno",
     "postalCode": "60200",
     "country": "CZ"
-  }
+  },
+  "birthNumber": "950722/5678"
 }
 
 > {%
@@ -55,7 +58,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 3 - junior with guardian
+### Register member 3 - junior with guardian and birth number
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -80,7 +83,8 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "lastName": "Dvorak",
     "email": "petr.dvorak@example.com",
     "phone": "+420604444444"
-  }
+  },
+  "birthNumber": "141108/9012"
 }
 
 > {%
@@ -161,7 +165,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 4 - adult female, same year as member 1
+### Register member 4 - adult female with bank account only
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -179,7 +183,8 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "city": "Ostrava",
     "postalCode": "70200",
     "country": "CZ"
-  }
+  },
+  "bankAccountNumber": "CZ1177944769160811049646"
 }
 
 > {%
@@ -188,7 +193,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 5 - adult male
+### Register member 5 - adult male with both birth number and bank account
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -206,7 +211,9 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "city": "Plzen",
     "postalCode": "30100",
     "country": "CZ"
-  }
+  },
+  "birthNumber": "881205/3456",
+  "bankAccountNumber": "CZ8037927226435888157787"
 }
 
 > {%
@@ -215,7 +222,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 6 - junior male, same year as member 3
+### Register member 6 - junior male with guardian (no birth number/bank account)
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -249,7 +256,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 7 - adult female, same year as member 2
+### Register member 7 - adult female (no optional fields)
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -276,7 +283,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 8 - junior female with guardian
+### Register member 8 - junior female with guardian and birth number
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -301,7 +308,8 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "lastName": "Novotny",
     "email": "martin.novotny@example.com",
     "phone": "+420612222223"
-  }
+  },
+  "birthNumber": "160618/7890"
 }
 
 > {%
@@ -310,7 +318,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 9 - adult male, same year as member 5
+### Register member 9 - adult male with birth number only
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -328,7 +336,8 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "city": "Ceske Budejovice",
     "postalCode": "37001",
     "country": "CZ"
-  }
+  },
+  "birthNumber": "880311/2345"
 }
 
 > {%
@@ -337,7 +346,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     });
 %}
 
-### Register member 10 - adult female
+### Register member 10 - adult female with both birth number and bank account (SK)
 POST {{host}}/api/members
 Content-Type: application/json
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
@@ -355,7 +364,9 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
     "city": "Pardubice",
     "postalCode": "53002",
     "country": "CZ"
-  }
+  },
+  "birthNumber": "920925/6789",
+  "bankAccountNumber": "SK1434075262501771260293"
 }
 
 > {%

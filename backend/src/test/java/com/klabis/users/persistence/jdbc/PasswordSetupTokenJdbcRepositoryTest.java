@@ -1,8 +1,8 @@
 package com.klabis.users.persistence.jdbc;
 
-import com.klabis.users.User;
 import com.klabis.users.PasswordSetupToken;
 import com.klabis.users.TokenHash;
+import com.klabis.users.User;
 import com.klabis.users.UserId;
 import com.klabis.users.persistence.PasswordSetupTokenRepository;
 import com.klabis.users.persistence.UserRepository;
@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         type = FilterType.ANNOTATION,
         value = {Repository.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 class PasswordSetupTokenJdbcRepositoryTest {
 
     @Autowired

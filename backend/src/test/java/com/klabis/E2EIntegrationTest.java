@@ -3,6 +3,7 @@ package com.klabis;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -20,6 +21,7 @@ import java.lang.annotation.Target;
  */
 @ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, verifyAutomatically = false)
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 // Because events are synchronized to transactions, triggering transaction must succeed and hence data will be saved into DB. We must cleanup these data manually
 @CleanupTestData
 @Retention(RetentionPolicy.RUNTIME)

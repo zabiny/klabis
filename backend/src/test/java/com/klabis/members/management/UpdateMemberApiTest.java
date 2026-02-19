@@ -1,6 +1,7 @@
 package com.klabis.members.management;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.config.encryption.EncryptionConfiguration;
 import com.klabis.members.*;
 import com.klabis.users.UserId;
 import org.junit.jupiter.api.DisplayName;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -33,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Update Member Controller API Tests")
 @WebMvcTest(controllers = MemberController.class)
+@Import({EncryptionConfiguration.class, MemberMapperImpl.class})
 class UpdateMemberApiTest {
 
     private static final String ADMIN_USERNAME = "admin";
@@ -69,6 +72,8 @@ class UpdateMemberApiTest {
             void shouldUpdateMemberEmailWhenAdmin() throws Exception {
                 UpdateMemberRequest request = new UpdateMemberRequest(
                         Optional.of("new.email@example.com"),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -123,6 +128,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -156,6 +163,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.of(newAddress),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -203,7 +212,9 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.of(DrivingLicenseGroup.B),
-                        Optional.of("Vegetarian")
+                        Optional.of("Vegetarian"),
+                        Optional.empty(),
+                        Optional.empty()
                 );
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
@@ -222,6 +233,118 @@ class UpdateMemberApiTest {
                         .andExpect(jsonPath("$.chipNumber").value("12345"))
                         .andExpect(jsonPath("$.drivingLicenseGroup").value("B"))
                         .andExpect(jsonPath("$.dietaryRestrictions").value("Vegetarian"));
+            }
+
+            @Test
+            @DisplayName("updating birth number and bank account should return 200")
+            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            void shouldUpdateBirthNumberAndBankAccountWhenAdmin() throws Exception {
+                UpdateMemberRequest request = new UpdateMemberRequest(
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of("900101/1234"),
+                        Optional.of("CZ6508000000192000145399")
+                );
+
+                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                        .thenReturn(testMemberId);
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                        .content(objectMapper.writeValueAsString(request))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.birthNumber").value("900101/1234"))
+                        .andExpect(jsonPath("$.bankAccountNumber").value("CZ6508000000192000145399"));
+            }
+
+            @Test
+            @DisplayName("updating only birth number should return 200")
+            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            void shouldUpdateOnlyBirthNumberWhenAdmin() throws Exception {
+                UpdateMemberRequest request = new UpdateMemberRequest(
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of("850520/9876"),
+                        Optional.empty()
+                );
+
+                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                        .thenReturn(testMemberId);
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                        .content(objectMapper.writeValueAsString(request))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.birthNumber").value("850520/9876"));
+            }
+
+            @Test
+            @DisplayName("updating only bank account number should return 200")
+            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            void shouldUpdateOnlyBankAccountNumberWhenAdmin() throws Exception {
+                UpdateMemberRequest request = new UpdateMemberRequest(
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of("CZ6508000000192000145399")
+                );
+
+                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                        .thenReturn(testMemberId);
+                when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(createUpdatedTestMember(request, testMemberId)));
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                        .content(objectMapper.writeValueAsString(request))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.bankAccountNumber").value("CZ6508000000192000145399"));
             }
 
             @Test
@@ -245,6 +368,8 @@ class UpdateMemberApiTest {
                         Optional.of(identityCard),
                         Optional.of(medicalCourse),
                         Optional.of(trainerLicense),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty()
                 );
@@ -283,7 +408,9 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
-                        Optional.of("No dairy")
+                        Optional.of("No dairy"),
+                        Optional.empty(),
+                        Optional.empty()
                 );
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
@@ -324,6 +451,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -350,6 +479,8 @@ class UpdateMemberApiTest {
                 UpdateMemberRequest request = new UpdateMemberRequest(
                         Optional.empty(),
                         Optional.of("+420987654321"),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -402,6 +533,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -438,7 +571,9 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
-                        Optional.of("Gluten-free, no nuts")
+                        Optional.of("Gluten-free, no nuts"),
+                        Optional.empty(),
+                        Optional.empty()
                 );
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
@@ -467,6 +602,8 @@ class UpdateMemberApiTest {
             void shouldReturn403WhenNonAdminEditsAnotherMember() throws Exception {
                 UpdateMemberRequest request = new UpdateMemberRequest(
                         Optional.of("hacker@example.com"),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -512,6 +649,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -534,6 +673,8 @@ class UpdateMemberApiTest {
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn400WhenUpdateIsEmpty() throws Exception {
                 UpdateMemberRequest request = new UpdateMemberRequest(
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -580,6 +721,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -604,6 +747,8 @@ class UpdateMemberApiTest {
                 UpdateMemberRequest request = new UpdateMemberRequest(
                         Optional.empty(),
                         Optional.of("123"),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -646,6 +791,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -678,7 +825,9 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
-                        Optional.of(tooLongRestrictions)
+                        Optional.of(tooLongRestrictions),
+                        Optional.empty(),
+                        Optional.empty()
                 );
 
                 mockMvc.perform(
@@ -714,6 +863,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -738,6 +889,8 @@ class UpdateMemberApiTest {
             void shouldReturn409WhenConcurrentUpdate() throws Exception {
                 UpdateMemberRequest request = new UpdateMemberRequest(
                         Optional.of("test@example.com"),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -788,6 +941,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -814,6 +969,8 @@ class UpdateMemberApiTest {
             void shouldIncludeCollectionLink() throws Exception {
                 UpdateMemberRequest request = new UpdateMemberRequest(
                         Optional.of("test@example.com"),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
@@ -862,6 +1019,8 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty()
                 );
 
@@ -899,7 +1058,9 @@ class UpdateMemberApiTest {
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
-                        Optional.of("Vegan")
+                        Optional.of("Vegan"),
+                        Optional.empty(),
+                        Optional.empty()
                 );
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
@@ -963,6 +1124,8 @@ class UpdateMemberApiTest {
         request.chipNumber().ifPresent(builder::withChipNumber);
         request.drivingLicenseGroup().ifPresent(builder::withDrivingLicenseGroup);
         request.dietaryRestrictions().ifPresent(builder::withDietaryRestrictions);
+        request.birthNumber().ifPresent(builder::withBirthNumber);
+        request.bankAccountNumber().ifPresent(builder::withBankAccountNumber);
 
         request.identityCard().ifPresent(dto ->
             builder.withIdentityCard(IdentityCard.of(dto.cardNumber(), dto.validityDate())));

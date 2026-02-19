@@ -72,6 +72,8 @@ class MemberMementoTest {
                 Optional.of(LocalDate.of(2025, 1, 15))
         );
         TrainerLicense trainerLicense = TrainerLicense.of("TRAINER001", LocalDate.now().plusYears(3));
+        BirthNumber birthNumber = BirthNumber.of("950301/1234");
+        BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
 
         AuditMetadata auditMetadata = new AuditMetadata(
                 Instant.now(),
@@ -97,6 +99,8 @@ class MemberMementoTest {
                 .withChipNumber("CHIP123")
                 .withDrivingLicenseGroup(DrivingLicenseGroup.A)
                 .withDietaryRestrictions("Vegetarian")
+                .withBirthNumber(birthNumber)
+                .withBankAccountNumber(bankAccountNumber)
                 .build();
 
     }
@@ -173,6 +177,12 @@ class MemberMementoTest {
             assertThat(reconstructed.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.A);
             assertThat(reconstructed.getDietaryRestrictions()).isEqualTo("Vegetarian");
 
+            // Assert - Birth number and bank account
+            assertThat(reconstructed.getBirthNumber()).isNotNull();
+            assertThat(reconstructed.getBirthNumber().value()).isEqualTo("950301/1234");
+            assertThat(reconstructed.getBankAccountNumber()).isNotNull();
+            assertThat(reconstructed.getBankAccountNumber().value()).isEqualTo("123456/0300");
+
             // Assert - Audit fields
             assertThat(reconstructed.getCreatedAt()).isNotNull();
             assertThat(reconstructed.getCreatedBy()).isEqualTo("test-user");
@@ -248,6 +258,12 @@ class MemberMementoTest {
             assertThat(reconstructed.getDietaryRestrictions()).isEqualTo("Vegetarian");
             assertThat(reconstructed.isActive()).isTrue();
 
+            // Assert - Birth number and bank account
+            assertThat(reconstructed.getBirthNumber()).isNotNull();
+            assertThat(reconstructed.getBirthNumber().value()).isEqualTo("950301/1234");
+            assertThat(reconstructed.getBankAccountNumber()).isNotNull();
+            assertThat(reconstructed.getBankAccountNumber().value()).isEqualTo("123456/0300");
+
             // Assert - Audit metadata
             assertThat(reconstructed.getCreatedAt()).isNotNull();
             assertThat(reconstructed.getCreatedBy()).isEqualTo("test-user");
@@ -279,6 +295,8 @@ class MemberMementoTest {
             assertThat(reconstructed.getChipNumber()).isNull();
             assertThat(reconstructed.getDrivingLicenseGroup()).isNull();
             assertThat(reconstructed.getDietaryRestrictions()).isNull();
+            assertThat(reconstructed.getBirthNumber()).isNull();
+            assertThat(reconstructed.getBankAccountNumber()).isNull();
         }
     }
 

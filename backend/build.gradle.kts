@@ -92,6 +92,9 @@ dependencies {
     // Caffeine cache for per-key rate limiting
     implementation("com.github.ben-manes.caffeine:caffeine")
 
+    // Apache Commons Validator for IBAN validation
+    implementation("commons-validator:commons-validator:1.7")
+
     // jMolecules: DDD and hexagonal architecture annotations
     implementation("org.jmolecules:jmolecules-ddd")
     implementation("org.jmolecules:jmolecules-hexagonal-architecture")

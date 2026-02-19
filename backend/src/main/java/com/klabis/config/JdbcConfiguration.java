@@ -1,14 +1,20 @@
 package com.klabis.config;
 
+import com.klabis.common.encryption.EncryptedString;
+import com.klabis.config.encryption.EncryptionConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.domain.AuditorAware;
+import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
 import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
 import org.springframework.data.jdbc.repository.config.EnableJdbcAuditing;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -25,7 +31,24 @@ import java.util.Optional;
 @Configuration
 @EnableJdbcRepositories(basePackages = {"com.klabis"})
 @EnableJdbcAuditing
+@Import(EncryptionConfiguration.class)
 public class JdbcConfiguration extends AbstractJdbcConfiguration {
+
+    private final Converter<EncryptedString, String> encryptedStringToStringConverter;
+    private final Converter<String, EncryptedString> stringToEncryptedStringConverter;
+
+    public JdbcConfiguration(Converter<EncryptedString, String> encryptedStringToStringConverter, Converter<String, EncryptedString> stringToEncryptedStringConverter) {
+        this.encryptedStringToStringConverter = encryptedStringToStringConverter;
+        this.stringToEncryptedStringConverter = stringToEncryptedStringConverter;
+    }
+
+    @Override
+    public JdbcCustomConversions jdbcCustomConversions() {
+        return new JdbcCustomConversions(List.of(
+                encryptedStringToStringConverter,
+                stringToEncryptedStringConverter
+        ));
+    }
 
     @Bean
     public AuditorAware<String> auditorProvider() {

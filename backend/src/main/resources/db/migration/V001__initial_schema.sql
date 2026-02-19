@@ -64,6 +64,10 @@ CREATE TABLE members
     driving_license_group VARCHAR(10),
     dietary_restrictions  VARCHAR(500),
 
+    -- Birth number and bank account (GDPR sensitive fields)
+    birth_number          VARCHAR(255),
+    bank_account_number   VARCHAR(50),
+
     -- Audit fields
     created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by            VARCHAR(100) NOT NULL,
@@ -97,6 +101,8 @@ COMMENT ON COLUMN members.trainer_license_number IS 'Trainer license number (nul
 COMMENT ON COLUMN members.trainer_license_validity_date IS 'Trainer license validity expiration date (nullable)';
 COMMENT ON COLUMN members.driving_license_group IS 'Driving license group/category (nullable, max 10 characters, e.g., BE, C1, C1E)';
 COMMENT ON COLUMN members.dietary_restrictions IS 'Dietary restrictions or food allergies (nullable, max 500 characters)';
+COMMENT ON COLUMN members.birth_number IS 'Czech birth number (rodné číslo), encrypted with Jasypt, format RRMMDD/XXXX (nullable, only for Czech nationals)';
+COMMENT ON COLUMN members.bank_account_number IS 'Bank account number in IBAN or domestic Czech format for expense reimbursement (nullable)';
 
 -- ============================================================================
 -- 2. USERS TABLE

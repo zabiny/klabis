@@ -1,5 +1,6 @@
 package com.klabis.members.management;
 
+import com.klabis.config.encryption.EncryptionConfiguration;
 import com.klabis.members.*;
 import com.klabis.users.UserId;
 import org.junit.jupiter.api.DisplayName;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -28,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Get Member Controller API Tests")
 @WebMvcTest(controllers = MemberController.class)
+@Import({EncryptionConfiguration.class, MemberMapperImpl.class})
 class GetMemberApiTest {
 
     @Autowired
@@ -282,6 +285,8 @@ class GetMemberApiTest {
                 address,
                 emailAddress,
                 phoneNumber,
+                null,
+                null,
                 null
         );
     }
@@ -314,7 +319,7 @@ class GetMemberApiTest {
                 address,
                 email,
                 phone,
-                guardian
+                guardian, null, null
         );
     }
 }

@@ -66,6 +66,8 @@ class GetMemberE2ETest {
                 "jan.novak@example.com",
                 "+420777888999",
                 address,
+                null,
+                null,
                 null
         );
 
@@ -141,8 +143,9 @@ class GetMemberE2ETest {
                 "petra.novakova@example.com",
                 "+420111222333",
                 address,
-                guardian
-        );
+                guardian,
+                null,
+                null);
 
         MvcResult createResult = mockMvc.perform(
                         post("/api/members")
@@ -218,6 +221,8 @@ class GetMemberE2ETest {
                 "eva.svobodova@example.com",
                 "+421777888999",
                 address,
+                null,
+                null,
                 null
         );
 
@@ -256,5 +261,115 @@ class GetMemberE2ETest {
                 .andExpect(jsonPath("$.address.country").value("SK"))
                 .andExpect(jsonPath("$.active").value(true));
         // Note: guardian field is null and not included in JSON due to @JsonInclude(NON_NULL)
+    }
+
+    @Test
+    @DisplayName("Complete flow: create member with birth number and bank account and retrieve by ID")
+    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
+    void shouldCreateMemberWithBirthNumberAndBankAccountAndRetrieveById() throws Exception {
+        // Given: Create a Czech member with birth number and bank account
+        AddressRequest address = new AddressRequest(
+                "Hlavní 789",
+                "Ostrava",
+                "70000",
+                "CZ"
+        );
+
+        RegisterMemberRequest createRequest = new RegisterMemberRequest(
+                "Jan",
+                "Dvořák",
+                LocalDate.of(1990, 3, 25),
+                "CZ",
+                Gender.MALE,
+                "jan.dvorak@example.com",
+                "+420777555666",
+                address,
+                null,
+                "900325/5678",
+                "CZ6508000000192000145399"
+        );
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/members")
+                                .contentType("application/json")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        // Extract member ID from response
+        String responseJson = createResult.getResponse().getContentAsString();
+        String memberId = objectMapper.readTree(responseJson).get("id").asText();
+
+        // When: Retrieve the member by ID
+        mockMvc.perform(
+                        get("/api/members/{id}", memberId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(jsonPath("$.id").value(memberId))
+                .andExpect(jsonPath("$.firstName").value("Jan"))
+                .andExpect(jsonPath("$.lastName").value("Dvořák"))
+                .andExpect(jsonPath("$.nationality").value("CZ"))
+                .andExpect(jsonPath("$.birthNumber").value("900325/5678"))
+                .andExpect(jsonPath("$.bankAccountNumber").value("CZ6508000000192000145399"));
+    }
+
+    @Test
+    @DisplayName("Complete flow: create member without birth number and bank account and retrieve by ID")
+    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
+    void shouldCreateMemberWithoutBirthNumberAndBankAccountAndRetrieveById() throws Exception {
+        // Given: Create a member without birth number and bank account
+        AddressRequest address = new AddressRequest(
+                "Street 456",
+                "Plzeň",
+                "30000",
+                "CZ"
+        );
+
+        RegisterMemberRequest createRequest = new RegisterMemberRequest(
+                "Marie",
+                "Kučerová",
+                LocalDate.of(1988, 7, 12),
+                "CZ",
+                Gender.FEMALE,
+                "marie.kucerova@example.com",
+                "+420777333444",
+                address,
+                null,
+                null,
+                null
+        );
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/members")
+                                .contentType("application/json")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .content(objectMapper.writeValueAsString(createRequest))
+                )
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        // Extract member ID from response
+        String responseJson = createResult.getResponse().getContentAsString();
+        String memberId = objectMapper.readTree(responseJson).get("id").asText();
+
+        // When: Retrieve the member by ID
+        mockMvc.perform(
+                        get("/api/members/{id}", memberId)
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(memberId))
+                .andExpect(jsonPath("$.firstName").value("Marie"))
+                .andExpect(jsonPath("$.lastName").value("Kučerová"))
+                .andExpect(jsonPath("$.birthNumber").doesNotExist())
+                .andExpect(jsonPath("$.bankAccountNumber").doesNotExist());
     }
 }

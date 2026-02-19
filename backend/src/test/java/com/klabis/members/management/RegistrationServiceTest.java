@@ -144,6 +144,8 @@ class RegistrationServiceTest {
                     "jan.novak@example.com",
                     "+420777888999",
                     address,
+                    null,
+                    null,
                     null
             );
 
@@ -203,6 +205,8 @@ class RegistrationServiceTest {
                     "eva@example.com",
                     "+421777888999",
                     address,
+                    null,
+                    null,
                     null
             );
 
@@ -251,7 +255,9 @@ class RegistrationServiceTest {
                     "child@example.com",
                     "+420777333444",
                     MemberManagementDtosTestDataBuilder.addressRequestWithStreetAndCity("Dětská 1", "Brno"),
-                    guardianDTO
+                    guardianDTO,
+                    null,
+                    null
             );
 
             when(membersMock.countByBirthYear(2010)).thenReturn(0);
@@ -295,6 +301,8 @@ class RegistrationServiceTest {
                     "adult@example.com",
                     "+420777555666",
                     address,
+                    null,
+                    null,
                     null
             );
 
@@ -336,6 +344,8 @@ class RegistrationServiceTest {
                     "test@example.com",
                     "+420777777777",
                     address,
+                    null,
+                    null,
                     null
             );
 
@@ -378,6 +388,8 @@ class RegistrationServiceTest {
                     "transaction@example.com",
                     "+420777000000",
                     address,
+                    null,
+                    null,
                     null
             );
 
@@ -394,6 +406,192 @@ class RegistrationServiceTest {
             // Then - verify member repository and user service were called
             verify(memberRepository).save(any(Member.class));
             verify(userService).createUserPendingActivation(any(UserCreationParams.class));
+        }
+
+        @Test
+        @DisplayName("should register member with birth number for Czech nationality")
+        void shouldRegisterMemberWithBirthNumberForCzechNationality() {
+            // Given
+            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
+            AddressRequest address = new AddressRequest(
+                    "Hlavní 123",
+                    "Praha",
+                    "11000",
+                    "CZ"
+            );
+            RegisterMemberRequest request = new RegisterMemberRequest(
+                    "Jan",
+                    "Novák",
+                    dateOfBirth,
+                    "CZ",
+                    Gender.MALE,
+                    "jan.novak@example.com",
+                    "+420777888999",
+                    address,
+                    null,
+                    "900101/1234",
+                    null
+            );
+
+            when(membersMock.countByBirthYear(2005)).thenReturn(0);
+
+            // Override default mock setup with specific values for this test
+            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+            mockUserCreation("$2a$10$hash", testSharedId);
+            mockMemberCreation(testSharedId);
+
+            // When
+            UUID memberId = service.registerMember(request);
+
+            // Then
+            assertThat(memberId).isEqualTo(testSharedId.uuid());
+
+            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+            verify(memberRepository).save(memberCaptor.capture());
+
+            Member savedMember = memberCaptor.getValue();
+            assertThat(savedMember.getBirthNumber()).isNotNull();
+            assertThat(savedMember.getBirthNumber().value()).isEqualTo("900101/1234");
+        }
+
+        @Test
+        @DisplayName("should register member with bank account number")
+        void shouldRegisterMemberWithBankAccountNumber() {
+            // Given
+            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
+            AddressRequest address = new AddressRequest(
+                    "Hlavní 123",
+                    "Praha",
+                    "11000",
+                    "CZ"
+            );
+            RegisterMemberRequest request = new RegisterMemberRequest(
+                    "Jan",
+                    "Novák",
+                    dateOfBirth,
+                    "CZ",
+                    Gender.MALE,
+                    "jan.novak@example.com",
+                    "+420777888999",
+                    address,
+                    null,
+                    null,
+                    "CZ6508000000192000145399"
+            );
+
+            when(membersMock.countByBirthYear(2005)).thenReturn(0);
+
+            // Override default mock setup with specific values for this test
+            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+            mockUserCreation("$2a$10$hash", testSharedId);
+            mockMemberCreation(testSharedId);
+
+            // When
+            UUID memberId = service.registerMember(request);
+
+            // Then
+            assertThat(memberId).isEqualTo(testSharedId.uuid());
+
+            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+            verify(memberRepository).save(memberCaptor.capture());
+
+            Member savedMember = memberCaptor.getValue();
+            assertThat(savedMember.getBankAccountNumber()).isNotNull();
+            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("CZ6508000000192000145399");
+        }
+
+        @Test
+        @DisplayName("should register member with both birth number and bank account")
+        void shouldRegisterMemberWithBothBirthNumberAndBankAccount() {
+            // Given
+            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
+            AddressRequest address = new AddressRequest(
+                    "Hlavní 123",
+                    "Praha",
+                    "11000",
+                    "CZ"
+            );
+            RegisterMemberRequest request = new RegisterMemberRequest(
+                    "Jan",
+                    "Novák",
+                    dateOfBirth,
+                    "CZ",
+                    Gender.MALE,
+                    "jan.novak@example.com",
+                    "+420777888999",
+                    address,
+                    null,
+                    "900101/1234",
+                    "123456/0300"
+            );
+
+            when(membersMock.countByBirthYear(2005)).thenReturn(0);
+
+            // Override default mock setup with specific values for this test
+            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+            mockUserCreation("$2a$10$hash", testSharedId);
+            mockMemberCreation(testSharedId);
+
+            // When
+            UUID memberId = service.registerMember(request);
+
+            // Then
+            assertThat(memberId).isEqualTo(testSharedId.uuid());
+
+            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+            verify(memberRepository).save(memberCaptor.capture());
+
+            Member savedMember = memberCaptor.getValue();
+            assertThat(savedMember.getBirthNumber()).isNotNull();
+            assertThat(savedMember.getBirthNumber().value()).isEqualTo("900101/1234");
+            assertThat(savedMember.getBankAccountNumber()).isNotNull();
+            assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("123456/0300");
+        }
+
+        @Test
+        @DisplayName("should register member with null birth number and bank account")
+        void shouldRegisterMemberWithNullBirthNumberAndBankAccount() {
+            // Given
+            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
+            AddressRequest address = new AddressRequest(
+                    "Hlavní 123",
+                    "Praha",
+                    "11000",
+                    "CZ"
+            );
+            RegisterMemberRequest request = new RegisterMemberRequest(
+                    "Jan",
+                    "Novák",
+                    dateOfBirth,
+                    "CZ",
+                    Gender.MALE,
+                    "jan.novak@example.com",
+                    "+420777888999",
+                    address,
+                    null,
+                    null,
+                    null
+            );
+
+            when(membersMock.countByBirthYear(2005)).thenReturn(0);
+
+            // Override default mock setup with specific values for this test
+            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+            mockUserCreation("$2a$10$hash", testSharedId);
+            mockMemberCreation(testSharedId);
+
+            // When
+            UUID memberId = service.registerMember(request);
+
+            // Then
+            assertThat(memberId).isEqualTo(testSharedId.uuid());
+
+            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+            verify(memberRepository).save(memberCaptor.capture());
+
+            Member savedMember = memberCaptor.getValue();
+            assertThat(savedMember.getBirthNumber()).isNull();
+            assertThat(savedMember.getBankAccountNumber()).isNull();
         }
     }
 }
