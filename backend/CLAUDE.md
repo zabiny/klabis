@@ -27,6 +27,7 @@ cd backend
 BOOTSTRAP_ADMIN_USERNAME='admin' \
 BOOTSTRAP_ADMIN_PASSWORD='admin123' \
 OAUTH2_CLIENT_SECRET='test-secret-123' \
+JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 ./gradlew bootRun
 ```
 
@@ -204,7 +205,9 @@ OAUTH2_CLIENT_SECRET='test-secret-123' \
 
 ### 3. Environment Variables
 
-Required: `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_PASSWORD`, `OAUTH2_CLIENT_SECRET` (see startup commands above).
+Required: `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_PASSWORD`, `OAUTH2_CLIENT_SECRET`, `JASYPT_ENCRYPTOR_PASSWORD` (see startup commands above).
+
+**JASYPT_ENCRYPTOR_PASSWORD:** Encryption key for GDPR-sensitive data (e.g., birth numbers). Use strong password in production. For development, any non-empty value works (e.g., `test-key-123`).
 
 ### 4. H2 Database
 

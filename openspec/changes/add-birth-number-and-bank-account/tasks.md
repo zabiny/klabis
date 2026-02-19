@@ -122,8 +122,8 @@
 ## 13. Integration Testing
 
 - [x] 13.1 Run full test suite (./gradlew test) and ensure all tests pass
-- [ ] 13.2 Test birth number encryption manually (inspect H2 database via H2 console)
-- [ ] 13.3 Test birth number decryption by retrieving member via API
+- [x] 13.2 Test birth number encryption manually (inspect H2 database via H2 console)
+- [x] 13.3 Test birth number decryption by retrieving member via API
 - [x] 13.4 Test IBAN validation with various formats (with/without spaces, invalid checksum)
 - [x] 13.5 Test domestic format validation (valid: "123456/0800", invalid: "123456/08")
 - [x] 13.6 Test bank account format auto-detection (IBAN vs domestic)
@@ -131,21 +131,21 @@
 
 ## 14. Documentation
 
-- [ ] 14.1 Update backend/CLAUDE.md with Jasypt configuration instructions (if needed)
-- [ ] 14.2 Add comments to BirthNumber explaining format and validation rules
-- [ ] 14.3 Add comments to BankAccountNumber explaining dual format support (IBAN and domestic)
-- [ ] 14.4 Document JASYPT_ENCRYPTOR_PASSWORD environment variable requirement
+- [x] 14.1 Update backend/CLAUDE.md with Jasypt configuration instructions (if needed)
+- [x] 14.2 Add comments to BirthNumber explaining format and validation rules
+- [x] 14.3 Add comments to BankAccountNumber explaining dual format support (IBAN and domestic)
+- [x] 14.4 Document JASYPT_ENCRYPTOR_PASSWORD environment variable requirement
 
 ## 15. Code Review and Cleanup
 
-- [ ] 15.1 Review all changes for KISS principle compliance
-- [ ] 15.2 Remove any unnecessary comments or dead code
-- [ ] 15.3 Check test coverage (>80% for all new code, 100% for domain logic)
-- [ ] 15.4 Run linter/formatter (if configured)
+- [x] 15.1 Review all changes for KISS principle compliance
+- [x] 15.2 Remove any unnecessary comments or dead code
+- [x] 15.3 Check test coverage (>80% for all new code, 100% for domain logic)
+- [x] 15.4 Run linter/formatter (if configured)
 
 ## 16. GitHub Issue Update
 
-- [ ] 16.1 Update issue #3 checklist - mark "Rodné číslo" as completed
-- [ ] 16.2 Update issue #3 checklist - mark "Číslo bankovního účtu" as completed
-- [ ] 16.3 Add comment to issue #3 with concise implementation summary
-- [ ] 16.4 Add label `BackendCompleted` to issue #3
+- [x] 16.1 Update issue #3 checklist - mark "Rodné číslo" as completed
+- [x] 16.2 Update issue #3 checklist - mark "Číslo bankovního účtu" as completed
+- [x] 16.3 Add comment to issue #3 with concise implementation summary
+- [x] 16.4 Add label `BackendCompleted` to issue #3
