@@ -129,7 +129,11 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 
 #### Rules
 
-- NON-NEGOTIABLE: use HalFormsSupport#klabisAfford and HalFormsSupport#klabisLinkTo to prepare HATEOAS navigation in controllers (never use WebMvcLinkBuilder#linkTo and WebMvcLinkBuilder#afford) methods. 
+- NON-NEGOTIABLE: use HalFormsSupport#klabisAfford and HalFormsSupport#klabisLinkTo to prepare HATEOAS navigation in controllers (never use WebMvcLinkBuilder#linkTo and WebMvcLinkBuilder#afford) methods.
+- **HATEOAS link/affordance rules**: Links ONLY for GET endpoints, affordances ONLY for POST/PUT/DELETE/PATCH endpoints
+- RepresentationModelProcessor must follow same HATEOAS rules as controllers (no links to POST endpoints)
+- klabisAfford handles authorization internally - don't duplicate authorization checks in controllers and processors
+- **Response bodies**: POST/PUT/PATCH/DELETE endpoints return 204 No Content (empty body) or 201 Created with Location header only 
 
 #### Java Best Practices
 
