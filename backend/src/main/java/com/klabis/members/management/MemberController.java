@@ -54,7 +54,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Tag(name = "Members ", description = "Member registration and management API")
 @ExposesResourceFor(Member.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
-@Import(MemberMapperImpl.class) // TODO: find out why this is needed
 class MemberController {
 
     private final ManagementService managementService;
@@ -134,6 +133,69 @@ class MemberController {
         entityModel.add(
                 klabisLinkTo(methodOn(MemberController.class).getMember(updatedMemberId)).withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(updatedMemberId,
+                                null,
+                                null)))
+        );
+
+        // Add collection link
+        entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(
+                org.springframework.data.domain.PageRequest.of(0, 10)
+        )).withRel("collection"));
+
+        return ResponseEntity.ok(entityModel);
+    }
+
+    /**
+     * Terminate a member's membership.
+     * <p>
+     * POST /api/members/{id}/terminate
+     * <p>
+     * Admin-only endpoint for terminating a member's membership.
+     * Requires MEMBERS:UPDATE authority.
+     * <p>
+     * Sets member's active status to false and records termination details.
+     * Publishes MemberTerminatedEvent for integration with other modules.
+     *
+     * @param id      member ID
+     * @param request termination request with reason and optional note
+     * @return 200 OK with updated member resource including termination details
+     */
+    @PostMapping(value = "/{id}/terminate", consumes = "application/json")
+    @PreAuthorize("hasAuthority('MEMBERS:UPDATE')")
+    @Operation(
+            summary = "Terminate member membership",
+            description = "Terminates a member's membership with a specified reason. " +
+                          "Requires MEMBERS:UPDATE authority (admin-only). " +
+                          "Sets active status to false and records termination details including timestamp and user who performed termination. " +
+                          "Returns updated member resource with termination information."
+    )
+    @ApiResponse(responseCode = "200", description = "Membership terminated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid termination request (e.g., already terminated)")
+    @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:UPDATE authority")
+    @ApiResponse(responseCode = "404", description = "Member not found")
+    @ApiResponse(responseCode = "409", description = "Conflict - concurrent modification detected")
+    public ResponseEntity<EntityModel<MemberDetailsResponse>> terminateMember(
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @Parameter(description = "Termination request")
+            @Valid @RequestBody TerminateMembershipRequest request) {
+
+        // Call service to terminate membership
+        UUID terminatedMemberId = managementService.terminateMember(id, request);
+
+        // Load updated member
+        Member terminatedMember = memberRepository.findById(new UserId(terminatedMemberId))
+                .orElseThrow(() -> new MemberNotFoundException(terminatedMemberId));
+
+        // Map to response
+        MemberDetailsResponse response = memberMapper.toDetailsResponse(terminatedMember);
+
+        // Create entity model with HATEOAS links
+        EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
+
+        // Add self link with affordances (update, no terminate)
+        entityModel.add(
+                klabisLinkTo(methodOn(MemberController.class).getMember(terminatedMemberId)).withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(terminatedMemberId,
                                 null,
                                 null)))
         );
@@ -247,10 +309,20 @@ class MemberController {
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
         // Add self link with affordances
-        entityModel.add(
-                klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
-        );
+        // Active members get both update and terminate affordances
+        // Terminated members only get update affordance
+        if (member.isActive()) {
+            entityModel.add(
+                    klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).terminateMember(id, null)))
+            );
+        } else {
+            entityModel.add(
+                    klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
+            );
+        }
 
         // Add collection link
         entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(

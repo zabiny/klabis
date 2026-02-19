@@ -134,6 +134,19 @@ class MemberMemento implements Persistable<UUID> {
     @Column("bank_account_number")
     private String bankAccountNumber;
 
+    // Termination fields
+    @Column("deactivation_reason")
+    private DeactivationReason deactivationReason;
+
+    @Column("deactivated_at")
+    private Instant deactivatedAt;
+
+    @Column("deactivation_note")
+    private String deactivationNote;
+
+    @Column("deactivated_by")
+    private String deactivatedBy;
+
     // Audit fields
     @CreatedDate
     @Column("created_at")
@@ -309,6 +322,10 @@ class MemberMemento implements Persistable<UUID> {
         memento.dietaryRestrictions = member.getDietaryRestrictions();
         memento.birthNumber = member.getBirthNumber() != null ? EncryptedString.of(member.getBirthNumber().value()) : null;
         memento.bankAccountNumber = member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null;
+        memento.deactivationReason = member.getDeactivationReason();
+        memento.deactivatedAt = member.getDeactivatedAt();
+        memento.deactivationNote = member.getDeactivationNote();
+        memento.deactivatedBy = member.getDeactivatedBy() != null ? member.getDeactivatedBy().uuid().toString() : null;
     }
 
     /**
@@ -428,6 +445,10 @@ class MemberMemento implements Persistable<UUID> {
                 this.dietaryRestrictions,
                 birthNumber,
                 bankAccountNumber,
+                this.deactivationReason,
+                this.deactivatedAt,
+                this.deactivationNote,
+                this.deactivatedBy,
                 getAuditMetadata()
         );
 

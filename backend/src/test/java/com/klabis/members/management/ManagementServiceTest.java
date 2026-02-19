@@ -3,6 +3,7 @@ package com.klabis.members.management;
 import com.klabis.members.*;
 import com.klabis.members.persistence.MemberRepository;
 import com.klabis.users.UserId;
+import com.klabis.users.UserService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -47,13 +48,16 @@ class ManagementServiceTest {
     @Mock
     private MemberRepository memberRepository;
 
+    @Mock
+    private UserService userService;
+
     private ManagementService service;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        service = new ManagementService(memberRepository);
+        service = new ManagementService(memberRepository, userService);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()

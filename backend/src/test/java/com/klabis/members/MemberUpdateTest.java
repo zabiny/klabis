@@ -296,7 +296,7 @@ class MemberUpdateTest {
                     null,
                     null,
                     null,
-                    null, null, null
+                    null, null, null, null, null, null, null
             );
 
             MedicalCourse medicalCourse = MedicalCourse.of(

@@ -2,8 +2,11 @@ package com.klabis.members.management;
 
 import com.klabis.members.*;
 import com.klabis.members.persistence.MemberRepository;
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.users.Authority;
 import com.klabis.users.UserId;
+import com.klabis.users.UserService;
+import com.klabis.users.User;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
@@ -43,14 +46,17 @@ class ManagementService {
     private static final String MEMBERS_UPDATE_AUTHORITY = Authority.MEMBERS_UPDATE.getValue();
 
     private final MemberRepository memberRepository;
+    private final UserService userService;
 
     /**
      * Constructs a new ManagementService.
      *
      * @param memberRepository the member repository for querying and persisting members
+     * @param userService the user service for user operations
      */
-    public ManagementService(MemberRepository memberRepository) {
+    public ManagementService(MemberRepository memberRepository, UserService userService) {
         this.memberRepository = memberRepository;
+        this.userService = userService;
     }
 
     /**
@@ -423,6 +429,80 @@ class ManagementService {
             log.error("Invalid phone number: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid phone: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Terminates a member's membership.
+     * <p>
+     * This method handles the complete termination workflow:
+     * <ol>
+     *   <li>Verifies user has MEMBERS:UPDATE authority (admin-only operation)</li>
+     *   <li>Loads the member from repository</li>
+     *   <li>Invokes domain command to terminate membership</li>
+     *   <li>Publishes domain event (MemberTerminatedEvent)</li>
+     *   <li>Saves updated member to repository</li>
+     * </ol>
+     *
+     * @param memberId the ID of the member to terminate
+     * @param request  the termination request containing reason and optional note
+     * @return the ID of the terminated member
+     * @throws InvalidUpdateException if user lacks MEMBERS:UPDATE permission
+     * @throws InvalidUpdateException if member not found
+     * @throws org.springframework.dao.OptimisticLockingFailureException if concurrent modification detected
+     */
+    @Transactional
+    public UUID terminateMember(UUID memberId, TerminateMembershipRequest request) {
+        // Get authentication context
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new InvalidUpdateException("User must be authenticated to terminate membership");
+        }
+
+        // Verify admin permission (termination is admin-only)
+        if (!hasAdminPermission(authentication)) {
+            log.warn("Unauthorized termination attempt by user: {}", authentication.getName());
+            throw new InvalidUpdateException("Only users with MEMBERS:UPDATE permission can terminate memberships");
+        }
+
+        // Load existing member
+        Member existingMember = memberRepository.findById(new UserId(memberId))
+                .orElseThrow(() -> new InvalidUpdateException(
+                        "Member not found with ID: " + memberId
+                ));
+
+        log.info("Processing membership termination: memberId={}, reason={}",
+                memberId, request.reason());
+
+        // Get authenticated user for audit trail
+        String username = authentication.getName();
+        Optional<User> authenticatedUser = userService.findUserByUsername(username);
+        if (authenticatedUser.isEmpty()) {
+            throw new InvalidUpdateException("Authenticated user not found: " + username);
+        }
+        UserId terminatedBy = authenticatedUser.get().getId();
+
+        // Create termination command
+        var command = new Member.TerminateMembership(
+                terminatedBy,
+                request.reason(),
+                request.note().orElse(null)
+        );
+
+        // Execute domain command (validates not already terminated)
+        try {
+            existingMember.handle(command);
+        } catch (BusinessRuleViolationException e) {
+            // Convert domain exception to application exception
+            throw new InvalidUpdateException(e.getMessage(), e);
+        }
+
+        // Save to repository (domain events published automatically)
+        Member savedMember = memberRepository.save(existingMember);
+
+        log.info("Membership terminated: memberId={}, terminatedAt={}, terminatedBy={}",
+                savedMember.getId(), savedMember.getDeactivatedAt(), terminatedBy);
+
+        return savedMember.getId().uuid();
     }
 
 }

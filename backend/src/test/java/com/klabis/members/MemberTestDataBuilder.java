@@ -32,6 +32,12 @@ public class MemberTestDataBuilder {
     private BankAccountNumber bankAccountNumber = null;
     private AuditMetadata auditMetadata = null;
 
+    // Termination fields
+    private DeactivationReason deactivationReason = null;
+    private java.time.Instant deactivatedAt = null;
+    private String deactivationNote = null;
+    private String deactivatedBy = null;
+
     private MemberTestDataBuilder() {
     }
 
@@ -179,6 +185,15 @@ public class MemberTestDataBuilder {
         return withBankAccountNumber(BankAccountNumber.of(bankAccountNumber));
     }
 
+    public MemberTestDataBuilder terminated(DeactivationReason reason, String note) {
+        this.isActive = false;
+        this.deactivationReason = reason;
+        this.deactivatedAt = java.time.Instant.now();
+        this.deactivationNote = note;
+        this.deactivatedBy = UUID.randomUUID().toString();
+        return this;
+    }
+
     public Member build() {
         Member result = Member.reconstruct(new UserId(memberId),
                 registrationNumber,
@@ -196,6 +211,10 @@ public class MemberTestDataBuilder {
                 dietaryRestrictions,
                 birthNumber,
                 bankAccountNumber,
+                deactivationReason,
+                deactivatedAt,
+                deactivationNote,
+                deactivatedBy,
                 auditMetadata
         );
         return result;

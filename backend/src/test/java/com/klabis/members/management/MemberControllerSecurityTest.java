@@ -196,4 +196,70 @@ class MemberControllerSecurityTest extends SecurityTestBase {
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("POST /api/members/{id}/terminate without authentication should return 401")
+    void shouldReturn401WhenTerminatingMemberUnauthenticated() throws Exception {
+        UUID memberId = UUID.randomUUID();
+        TerminateMembershipRequest request = new TerminateMembershipRequest(
+                com.klabis.members.DeactivationReason.ODHLASKA,
+                java.util.Optional.of("Test termination")
+        );
+
+        mockMvc.perform(
+                        post("/api/members/" + memberId + "/terminate")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.type").exists())
+                .andExpect(jsonPath("$.title").value("Unauthorized"))
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    @DisplayName("POST /api/members/{id}/terminate with wrong authority should return 403")
+    @WithMockUser(username = MEMBER_USERNAME, authorities = {"MEMBERS:READ"})
+    void shouldReturn403WhenTerminatingMemberWithoutUpdateAuthority() throws Exception {
+        UUID memberId = UUID.randomUUID();
+        TerminateMembershipRequest request = new TerminateMembershipRequest(
+                com.klabis.members.DeactivationReason.ODHLASKA,
+                java.util.Optional.of("Test termination")
+        );
+
+        mockMvc.perform(
+                        post("/api/members/" + memberId + "/terminate")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.type").exists())
+                .andExpect(jsonPath("$.title").value("Forbidden"))
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
+    @DisplayName("POST /api/members/{id}/terminate with MEMBERS:UPDATE authority should pass authorization")
+    @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+    void shouldPassAuthorizationWhenTerminatingMemberWithUpdateAuthority() throws Exception {
+        UUID memberId = UUID.randomUUID();
+        TerminateMembershipRequest request = new TerminateMembershipRequest(
+                com.klabis.members.DeactivationReason.ODHLASKA,
+                java.util.Optional.of("Test termination")
+        );
+
+        // This test validates that authorization passes - the endpoint returns
+        // 400 Bad Request for non-existent member IDs (service throws InvalidUpdateException)
+        // If authorization was denied, we'd get 403 before reaching the endpoint
+        mockMvc.perform(
+                        post("/api/members/" + memberId + "/terminate")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").exists())
+                .andExpect(jsonPath("$.title").value("Bad Request"));
+    }
 }

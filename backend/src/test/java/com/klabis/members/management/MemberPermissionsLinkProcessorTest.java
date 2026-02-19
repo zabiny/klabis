@@ -141,6 +141,10 @@ class MemberPermissionsLinkProcessorTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
                 null
         );
     }

@@ -68,6 +68,12 @@ CREATE TABLE members
     birth_number          VARCHAR(255),
     bank_account_number   VARCHAR(50),
 
+    -- Termination fields
+    deactivation_reason   VARCHAR(20),
+    deactivated_at        TIMESTAMP,
+    deactivation_note     VARCHAR(500),
+    deactivated_by        VARCHAR(100),
+
     -- Audit fields
     created_at            TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by            VARCHAR(100) NOT NULL,

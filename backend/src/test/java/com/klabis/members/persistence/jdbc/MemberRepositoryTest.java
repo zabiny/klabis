@@ -1198,4 +1198,105 @@ class MemberRepositoryTest {
             assertThat(savedMember.getBankAccountNumber().value()).isEqualTo("CZ6508000000192000145399");
         }
     }
+
+    @Nested
+    @DisplayName("Member termination")
+    class MemberTermination {
+
+        @Test
+        @DisplayName("should save and load terminated member with all termination fields")
+        void shouldSaveAndLoadTerminatedMember() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Jan",
+                    "Novák",
+                    LocalDate.of(2005, 3, 15),
+                    "CZ",
+                    Gender.MALE
+            );
+            Address address = Address.of(
+                    "Hlavní 123",
+                    "Praha",
+                    "11000",
+                    "CZ"
+            );
+            UserId adminUserId = new UserId(UUID.randomUUID());
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM0501"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("jan.novak@example.com"),
+                    new PhoneNumber("+420123456789"),
+                    null,
+                    null,
+                    null
+            );
+
+            // When - terminate the member
+            Member.TerminateMembership terminateCommand = new Member.TerminateMembership(
+                    adminUserId,
+                    DeactivationReason.ODHLASKA,
+                    "Member requested termination"
+            );
+            member.handle(terminateCommand);
+
+            // And save to database
+            Member savedMember = memberRepository.save(member);
+
+            // And load from database
+            Optional<Member> loadedMember = memberRepository.findById(savedMember.getId());
+
+            // Then - verify termination fields persisted correctly
+            assertThat(loadedMember).isPresent();
+            Member loaded = loadedMember.get();
+            assertThat(loaded.isActive()).isFalse();
+            assertThat(loaded.getDeactivationReason()).isEqualTo(DeactivationReason.ODHLASKA);
+            assertThat(loaded.getDeactivatedAt()).isNotNull();
+            assertThat(loaded.getDeactivationNote()).isEqualTo("Member requested termination");
+            assertThat(loaded.getDeactivatedBy()).isEqualTo(adminUserId);
+        }
+
+        @Test
+        @DisplayName("should save active member with null termination fields")
+        void shouldSaveActiveMemberWithNullTerminationFields() {
+            // Given
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Petra",
+                    "Svobodová",
+                    LocalDate.of(1995, 7, 20),
+                    "CZ",
+                    Gender.FEMALE
+            );
+            Address address = Address.of(
+                    "Nová 456",
+                    "Brno",
+                    "60200",
+                    "CZ"
+            );
+
+            Member member = Member.createWithId(
+                    new UserId(UUID.randomUUID()),
+                    new RegistrationNumber("ZBM9501"),
+                    personalInformation,
+                    address,
+                    new EmailAddress("petra.svobodova@example.com"),
+                    new PhoneNumber("+420987654321"),
+                    null,
+                    null,
+                    null
+            );
+
+            // When
+            Member savedMember = memberRepository.save(member);
+
+            // Then
+            assertThat(savedMember.isActive()).isTrue();
+            assertThat(savedMember.getDeactivationReason()).isNull();
+            assertThat(savedMember.getDeactivatedAt()).isNull();
+            assertThat(savedMember.getDeactivationNote()).isNull();
+            assertThat(savedMember.getDeactivatedBy()).isNull();
+        }
+    }
 }

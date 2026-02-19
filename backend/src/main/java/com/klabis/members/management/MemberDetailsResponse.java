@@ -1,9 +1,11 @@
 package com.klabis.members.management;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.klabis.members.DeactivationReason;
 import com.klabis.members.DrivingLicenseGroup;
 import com.klabis.members.Gender;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -33,6 +35,10 @@ import java.util.UUID;
  * @param dietaryRestrictions Member's dietary restrictions (nullable, max 500 chars)
  * @param birthNumber         Member's birth number (nullable, Czech nationals only)
  * @param bankAccountNumber   Member's bank account number (nullable)
+ * @param deactivationReason  Reason for membership deactivation (nullable, present only if active=false)
+ * @param deactivatedAt       Timestamp when membership was deactivated (nullable, present only if active=false)
+ * @param deactivatedBy       ID of user who deactivated the membership (nullable, present only if active=false)
+ * @param deactivationNote    Optional note about deactivation (nullable, present only if active=false)
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 record MemberDetailsResponse(
@@ -56,6 +62,10 @@ record MemberDetailsResponse(
         DrivingLicenseGroup drivingLicenseGroup,
         String dietaryRestrictions,
         String birthNumber,
-        String bankAccountNumber
+        String bankAccountNumber,
+        DeactivationReason deactivationReason,
+        Instant deactivatedAt,
+        String deactivatedBy,
+        String deactivationNote
 ) {
 }

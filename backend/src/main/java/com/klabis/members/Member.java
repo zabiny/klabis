@@ -47,6 +47,12 @@ public class Member {
     private BirthNumber birthNumber;
     private BankAccountNumber bankAccountNumber;
 
+    // Termination fields
+    private DeactivationReason deactivationReason;
+    private Instant deactivatedAt;
+    private String deactivationNote;
+    private String deactivatedBy;
+
     // Audit metadata
     private AuditMetadata auditMetadata;
 
@@ -118,6 +124,18 @@ public class Member {
             Gender gender
     ) {}
 
+    /**
+     * Command to terminate a member's membership.
+     * <p>
+     * This command is used by administrators to terminate a member's membership
+     * with a specific reason and optional note.
+     */
+    public record TerminateMembership(
+            UserId terminatedBy,
+            DeactivationReason reason,
+            String note
+    ) {}
+
     // ========== Constructors ==========
 
     /**
@@ -142,7 +160,11 @@ public class Member {
             DrivingLicenseGroup drivingLicenseGroup,
             String dietaryRestrictions,
             BirthNumber birthNumber,
-            BankAccountNumber bankAccountNumber) {
+            BankAccountNumber bankAccountNumber,
+            DeactivationReason deactivationReason,
+            Instant deactivatedAt,
+            String deactivationNote,
+            String deactivatedBy) {
 
         this.id = id;
         this.registrationNumber = registrationNumber;
@@ -160,6 +182,10 @@ public class Member {
         this.dietaryRestrictions = dietaryRestrictions;
         this.birthNumber = birthNumber;
         this.bankAccountNumber = bankAccountNumber;
+        this.deactivationReason = deactivationReason;
+        this.deactivatedAt = deactivatedAt;
+        this.deactivationNote = deactivationNote;
+        this.deactivatedBy = deactivatedBy;
     }
 
     /**
@@ -188,6 +214,10 @@ public class Member {
      * @param dietaryRestrictions member's dietary restrictions (may be null)
      * @param birthNumber         member's birth number (may be null)
      * @param bankAccountNumber   member's bank account number (may be null)
+     * @param deactivationReason  reason for deactivation (may be null)
+     * @param deactivatedAt       timestamp of deactivation (may be null)
+     * @param deactivationNote    optional deactivation note (may be null)
+     * @param deactivatedBy       user who deactivated (may be null)
      * @return reconstructed Member instance
      */
     public static Member reconstruct(
@@ -207,6 +237,10 @@ public class Member {
             String dietaryRestrictions,
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
+            DeactivationReason deactivationReason,
+            Instant deactivatedAt,
+            String deactivationNote,
+            String deactivatedBy,
             AuditMetadata auditMetadata) {
 
         Member member = new Member(
@@ -225,7 +259,11 @@ public class Member {
                 drivingLicenseGroup,
                 dietaryRestrictions,
                 birthNumber,
-                bankAccountNumber
+                bankAccountNumber,
+                deactivationReason,
+                deactivatedAt,
+                deactivationNote,
+                deactivatedBy
         );
         member.auditMetadata = auditMetadata;
         // No domain events for reconstructed entities
@@ -306,7 +344,11 @@ public class Member {
                 null, // drivingLicenseGroup
                 null, // dietaryRestrictions
                 birthNumber,
-                bankAccountNumber
+                bankAccountNumber,
+                null, // deactivationReason
+                null, // deactivatedAt
+                null, // deactivationNote
+                null  // deactivatedBy
         );
 
         // Register domain event
@@ -368,7 +410,11 @@ public class Member {
                 null, // drivingLicenseGroup
                 null, // dietaryRestrictions
                 null, // birthNumber
-                null  // bankAccountNumber
+                null, // bankAccountNumber
+                null, // deactivationReason
+                null, // deactivatedAt
+                null, // deactivationNote
+                null  // deactivatedBy
         );
 
         // Register domain event
@@ -548,6 +594,22 @@ public class Member {
 
     public BankAccountNumber getBankAccountNumber() {
         return bankAccountNumber;
+    }
+
+    public DeactivationReason getDeactivationReason() {
+        return deactivationReason;
+    }
+
+    public Instant getDeactivatedAt() {
+        return deactivatedAt;
+    }
+
+    public String getDeactivationNote() {
+        return deactivationNote;
+    }
+
+    public UserId getDeactivatedBy() {
+        return deactivatedBy != null ? new UserId(UUID.fromString(deactivatedBy)) : null;
     }
 
     // Audit getters (delegate to AuditMetadata)
@@ -755,6 +817,39 @@ public class Member {
         this.dietaryRestrictions = newDietaryRestrictions;
         this.birthNumber = newBirthNumber;
         this.bankAccountNumber = newBankAccountNumber;
+    }
+
+    /**
+     * Handles TerminateMembership command.
+     * <p>
+     * Terminates a member's membership with the specified reason.
+     * This method modifies the Member in-place (mutable pattern).
+     * <p>
+     * Enforces the business rule that an already terminated member cannot be terminated again.
+     *
+     * @param command the termination command
+     * @throws BusinessRuleViolationException if member is already terminated
+     */
+    public void handle(TerminateMembership command) {
+        // Validate not already terminated
+        if (!this.active) {
+            throw new BusinessRuleViolationException(
+                    "Member is already terminated and cannot be terminated again"
+            ) {};
+        }
+
+        // Validate termination reason
+        Objects.requireNonNull(command.reason(), "Termination reason is required");
+
+        // Modify fields in-place
+        this.active = false;
+        this.deactivationReason = command.reason();
+        this.deactivatedAt = Instant.now();
+        this.deactivationNote = command.note();
+        this.deactivatedBy = command.terminatedBy().uuid().toString();
+
+        // Register domain event
+        registerEvent(MemberTerminatedEvent.fromMember(this, command));
     }
 
     /**

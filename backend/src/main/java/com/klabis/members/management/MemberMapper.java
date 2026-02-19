@@ -68,7 +68,11 @@ public interface MemberMapper {
                 response.drivingLicenseGroup(),
                 response.dietaryRestrictions(),
                 member.getBirthNumber() != null ? member.getBirthNumber().value() : null,
-                member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null
+                member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null,
+                member.getDeactivationReason(),
+                member.getDeactivatedAt(),
+                member.getDeactivatedBy() != null ? member.getDeactivatedBy().uuid().toString() : null,
+                member.getDeactivationNote()
         );
     }
 
