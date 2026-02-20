@@ -125,6 +125,24 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 - Check schema constraints (column lengths, FK refs)
 - Use realistic test values (e.g., "OOB" not "Organizer A")
 
+**Root Navigation Postprocessors:**
+- Add module collection links to `/api` root via `RepresentationModelProcessor<EntityModel<RootModel>>`
+- Pattern: Create inner class in controller, annotate with `@Component`
+- Example: `CalendarRootPostprocessor` adds "calendar" rel for calendar items collection
+- Use `Pageable.unpaged()` for collection links (not `null`)
+
+**TestDataBuilder Pattern:**
+- Create test data builders in `src/test/java/` following existing patterns
+- Examples: `EventTestDataBuilder`, `MemberTestDataBuilder`, `CalendarItemTestDataBuilder`
+- Use fluent API with `withXxx()` methods and static factory `anXxx()`
+- Support both manual and specialized builds (e.g., `buildManual()`, `buildEventLinked()`)
+
+**Parameter Handling Pattern:**
+- Service layer: Use `@NonNull` for required business parameters (strict validation)
+- Controller layer: Handle default values before delegating to service
+- Example: Date range is required in service, but defaults to current month in controller
+- Keeps business logic clean while providing good UX
+
 ### Coding Conventions
 
 #### Rules

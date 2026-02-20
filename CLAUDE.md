@@ -67,7 +67,13 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 ### Common best practises
 
 - DO NOT create comments describing what code is doing. Use comments sparingly - exclusively to document intention behind implementation and only if is it necessary.
-- use `/mnt/ramdisk/klabis` folder when need to save temporary file 
+- use `/mnt/ramdisk/klabis` folder when need to save temporary file
+
+### Sandbox Issues
+
+- Direct `./gradlew` commands may fail with "bwrap: loopback: Failed RTM_NEWADDR"
+- Use `test-runner` skill instead of direct Gradle commands for testing
+- Gradle runs in sandbox mode by default - most operations work but some may be restricted 
 
 ## IntelliJ HTTP Files
 
