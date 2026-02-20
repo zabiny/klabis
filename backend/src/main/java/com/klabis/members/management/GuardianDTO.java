@@ -1,6 +1,6 @@
 package com.klabis.members.management;
 
-import com.klabis.members.GuardianInformation;
+import com.klabis.members.domain.GuardianInformation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -19,7 +19,7 @@ import jakarta.validation.constraints.Size;
  * - MemberDetailsResponse (presentation layer)
  */
 @Schema(description = "Guardian information for minors")
-record GuardianDTO(
+public record GuardianDTO(
         @Schema(description = "Guardian's first name", example = "Pavel", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Guardian first name is required")
         @Size(max = 100, message = "Guardian first name must not exceed 100 characters")

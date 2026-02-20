@@ -1,6 +1,6 @@
 package com.klabis.members.management;
 
-import com.klabis.members.IdentityCard;
+import com.klabis.members.domain.IdentityCard;
 
 import java.time.LocalDate;
 
@@ -15,7 +15,7 @@ import java.time.LocalDate;
  * @param cardNumber   identity card number
  * @param validityDate validity date of the card (ISO-8601 format)
  */
-record IdentityCardDto(
+public record IdentityCardDto(
         String cardNumber,
         LocalDate validityDate
 ) {

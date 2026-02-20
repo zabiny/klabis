@@ -1,7 +1,8 @@
 package com.klabis.config;
 
+import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
-import com.klabis.members.RegistrationNumber;
+import com.klabis.members.domain.RegistrationNumber;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -108,10 +109,10 @@ public class AuthorizationServerConfiguration {
 
                 // Add profile claims (given_name, family_name) for OIDC profile scope
                 if (RegistrationNumber.isRegistrationNumber(subject)) {
-                    members.findByRegistrationNumber(RegistrationNumber.of(subject))
+                    members.findByRegistrationNumber(subject)
                             .ifPresent(member -> {
-                                context.getClaims().claim("given_name", member.getFirstName());
-                                context.getClaims().claim("family_name", member.getLastName());
+                                context.getClaims().claim("given_name", member.firstName());
+                                context.getClaims().claim("family_name", member.lastName());
                                 context.getClaims().claim("preferred_username", subject);
                             });
                 }
@@ -159,7 +160,7 @@ public class AuthorizationServerConfiguration {
 
                 // Check if user has Member profile
                 if (RegistrationNumber.isRegistrationNumber(subject)) {
-                    members.findByRegistrationNumber(RegistrationNumber.of(subject))
+                    members.findByRegistrationNumber(subject)
                             .ifPresentOrElse(
                                     member -> {
                                         // User has Member profile - add is_member=true and member claims
@@ -192,11 +193,11 @@ public class AuthorizationServerConfiguration {
      * <p>
      * Note: user_name and is_member claims are added by oidcUserInfoMapper before calling this method.
      */
-    private void addProfileClaims(OidcUserInfo.Builder builder, Set<String> scopes, com.klabis.members.Member member) {
+    private void addProfileClaims(OidcUserInfo.Builder builder, Set<String> scopes, MemberDto member) {
         if (scopes.contains("profile")) {
-            builder.givenName(member.getFirstName())
-                   .familyName(member.getLastName())
-                   .claim("updated_at", member.getAuditMetadata().lastModifiedAt());
+            builder.givenName(member.firstName())
+                   .familyName(member.lastName())
+                   .claim("updated_at", member.lastModifiedAt());
         }
     }
 
@@ -209,9 +210,9 @@ public class AuthorizationServerConfiguration {
      * <p>
      * Omits email claims if Member has no email (null-safe).
      */
-    private void addEmailClaims(OidcUserInfo.Builder builder, Set<String> scopes, com.klabis.members.Member member) {
-        if (scopes.contains("email") && member.getEmail() != null) {
-            builder.email(member.getEmail().value())
+    private void addEmailClaims(OidcUserInfo.Builder builder, Set<String> scopes, MemberDto member) {
+        if (scopes.contains("email") && member.email() != null) {
+            builder.email(member.email())
                    .emailVerified(false);
         }
     }

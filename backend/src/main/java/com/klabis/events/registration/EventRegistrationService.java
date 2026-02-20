@@ -5,7 +5,7 @@ import com.klabis.events.EventId;
 import com.klabis.events.EventRegistration;
 import com.klabis.events.SiCardNumber;
 import com.klabis.events.persistence.EventRepository;
-import com.klabis.members.Member;
+import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
 import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
@@ -56,7 +56,7 @@ class EventRegistrationService {
         UserId memberId = getAuthenticatedMemberId();
 
         // Verify user has a member record - registration requires member profile
-        if (!members.findById(memberId).isPresent()) {
+        if (!members.findByUserId(memberId).isPresent()) {
             throw new MemberProfileRequiredException();
         }
 
@@ -189,13 +189,13 @@ class EventRegistrationService {
      */
     private RegistrationDto toRegistrationDto(EventRegistration registration) {
         // Lookup member details from members module
-        Member member = members.findById(registration.memberId())
+        MemberDto member = members.findByUserId(registration.memberId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Member not found for registration: " + registration.memberId()));
 
         return new RegistrationDto(
-                member.getFirstName(),
-                member.getLastName(),
+                member.firstName(),
+                member.lastName(),
                 registration.registeredAt()
         );
     }
@@ -208,13 +208,13 @@ class EventRegistrationService {
      */
     private OwnRegistrationDto toOwnRegistrationDto(EventRegistration registration) {
         // Lookup member details from members module
-        Member member = members.findById(registration.memberId())
+        MemberDto member = members.findByUserId(registration.memberId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Member not found for registration: " + registration.memberId()));
 
         return new OwnRegistrationDto(
-                member.getFirstName(),
-                member.getLastName(),
+                member.firstName(),
+                member.lastName(),
                 registration.siCardNumber().value(),
                 registration.registeredAt()
         );

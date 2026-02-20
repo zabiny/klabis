@@ -1,10 +1,13 @@
 package com.klabis.members.management;
 
-import com.klabis.members.Gender;
-import com.klabis.members.Member;
 import com.klabis.members.MemberAssert;
-import com.klabis.members.Members;
-import com.klabis.members.persistence.MemberRepository;
+import com.klabis.members.domain.Gender;
+import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.domain.Members;
+import com.klabis.members.infrastructure.restapi.AddressRequest;
+import com.klabis.members.infrastructure.restapi.MemberManagementDtosTestDataBuilder;
+import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import com.klabis.users.Authority;
 import com.klabis.users.UserCreationParams;
 import com.klabis.users.UserId;
@@ -32,7 +35,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link RegistrationService}.
+ * Unit tests for {@link RegistrationServiceImpl}.
  * <p>
  * Tests cover the member registration functionality including:
  * <ul>
@@ -67,7 +70,7 @@ class RegistrationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RegistrationService(
+        service = new RegistrationServiceImpl(
                 memberRepository,
                 userService,
                 passwordEncoder,

@@ -1,8 +1,12 @@
 package com.klabis.members.management;
 
-import com.klabis.members.management.InvalidUpdateException;
-import com.klabis.members.*;
-import com.klabis.members.persistence.MemberRepository;
+import com.klabis.members.MemberTerminatedEvent;
+import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.domain.Address;
+import com.klabis.members.domain.DeactivationReason;
+import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
 import com.klabis.users.UserId;
 import com.klabis.users.UserService;
 import org.junit.jupiter.api.*;
@@ -12,11 +16,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +45,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Membership Termination Integration Tests")
+@WithMockUser(username = "admin")
 class MemberTerminationIntegrationTest {
 
     @Mock
@@ -56,7 +61,7 @@ class MemberTerminationIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        service = new ManagementService(memberRepository, userService);
+        service = new ManagementServiceImpl(memberRepository, userService);
 
         testMemberId = UUID.randomUUID();
         adminUserId = UUID.randomUUID();
@@ -74,7 +79,7 @@ class MemberTerminationIntegrationTest {
 
         // Set up admin authentication
         UsernamePasswordAuthenticationToken adminAuth = new UsernamePasswordAuthenticationToken(
-                adminUserId.toString(),
+                "admin",
                 "password",
                 List.of(new SimpleGrantedAuthority("MEMBERS:UPDATE"))
         );
@@ -104,8 +109,13 @@ class MemberTerminationIntegrationTest {
             when(memberRepository.save(any(Member.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
-            // When
-            UUID resultId = service.terminateMember(testMemberId, request);
+            // When - create correct command object
+            var command = new Member.TerminateMembership(
+                    new UserId(adminUserId),
+                    request.reason(),
+                    request.note().orElse(null)
+            );
+            UUID resultId = service.terminateMember(testMemberId, command);
 
             // Then
             assertThat(resultId).isEqualTo(testMemberId);
@@ -135,8 +145,13 @@ class MemberTerminationIntegrationTest {
             when(memberRepository.save(any(Member.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
-            // When
-            UUID resultId = service.terminateMember(testMemberId, request);
+            // When - create correct command object
+            var command = new Member.TerminateMembership(
+                    new UserId(adminUserId),
+                    request.reason(),
+                    request.note().orElse(null)
+            );
+            UUID resultId = service.terminateMember(testMemberId, command);
 
             // Then
             assertThat(resultId).isEqualTo(testMemberId);
@@ -164,8 +179,13 @@ class MemberTerminationIntegrationTest {
             when(memberRepository.save(any(Member.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
-            // When
-            service.terminateMember(testMemberId, request);
+            // When - create correct command object
+            var command = new Member.TerminateMembership(
+                    new UserId(adminUserId),
+                    request.reason(),
+                    request.note().orElse(null)
+            );
+            service.terminateMember(testMemberId, command);
 
             // Then - verify domain event was registered via @DomainEvents
             ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
@@ -214,7 +234,13 @@ class MemberTerminationIntegrationTest {
                     .thenReturn(Optional.of(terminatedMember));
 
             // When & Then
-            assertThatThrownBy(() -> service.terminateMember(testMemberId, request))
+            // Create correct command object
+            var command = new Member.TerminateMembership(
+                    new UserId(adminUserId),
+                    request.reason(),
+                    request.note().orElse(null)
+            );
+            assertThatThrownBy(() -> service.terminateMember(testMemberId, command))
                     .isInstanceOf(InvalidUpdateException.class)
                     .hasMessageContaining("Member is already terminated");
 
@@ -241,7 +267,13 @@ class MemberTerminationIntegrationTest {
                     .thenThrow(new OptimisticLockingFailureException("Concurrent modification detected"));
 
             // When & Then
-            assertThatThrownBy(() -> service.terminateMember(testMemberId, request))
+            // Create correct command object
+            var command = new Member.TerminateMembership(
+                    new UserId(adminUserId),
+                    request.reason(),
+                    request.note().orElse(null)
+            );
+            assertThatThrownBy(() -> service.terminateMember(testMemberId, command))
                     .isInstanceOf(OptimisticLockingFailureException.class);
 
             verify(memberRepository).save(any(Member.class));
@@ -270,7 +302,13 @@ class MemberTerminationIntegrationTest {
             );
 
             // When & Then
-            assertThatThrownBy(() -> service.terminateMember(testMemberId, request))
+            // Create correct command object
+            var command = new Member.TerminateMembership(
+                    new UserId(adminUserId),
+                    request.reason(),
+                    request.note().orElse(null)
+            );
+            assertThatThrownBy(() -> service.terminateMember(testMemberId, command))
                     .isInstanceOf(InvalidUpdateException.class)
                     .hasMessageContaining("Only users with MEMBERS:UPDATE permission");
 
@@ -290,7 +328,13 @@ class MemberTerminationIntegrationTest {
             );
 
             // When & Then
-            assertThatThrownBy(() -> service.terminateMember(testMemberId, request))
+            // Create correct command object
+            var command = new Member.TerminateMembership(
+                    new UserId(adminUserId),
+                    request.reason(),
+                    request.note().orElse(null)
+            );
+            assertThatThrownBy(() -> service.terminateMember(testMemberId, command))
                     .isInstanceOf(InvalidUpdateException.class)
                     .hasMessageContaining("User must be authenticated");
 
@@ -317,7 +361,12 @@ class MemberTerminationIntegrationTest {
                     .thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> service.terminateMember(nonExistentId, request))
+            var command = new Member.TerminateMembership(
+                    new UserId(adminUserId),
+                    request.reason(),
+                    request.note().orElse(null)
+            );
+            assertThatThrownBy(() -> service.terminateMember(nonExistentId, command))
                     .isInstanceOf(InvalidUpdateException.class)
                     .hasMessageContaining("Member not found");
 

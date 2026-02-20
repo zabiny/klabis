@@ -17,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -45,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         value = {Repository.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, statements = "DELETE FROM password_setup_tokens")
 class PasswordSetupTokenJdbcRepositoryTest {
 
     @Autowired

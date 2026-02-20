@@ -5,8 +5,7 @@ import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.SiCardNumber;
 import com.klabis.events.persistence.EventRepository;
-import com.klabis.members.Member;
-import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
 import com.klabis.users.UserId;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,12 +91,9 @@ class EventRegistrationServiceTest {
             when(authentication.isAuthenticated()).thenReturn(true);
             when(authentication.getName()).thenReturn(memberId.toString());
 
-            // Setup Members mock to return Member using test data builder
-            // This uses a real Member instance (not mocked) to follow best practice:
-            // "Don't mock data objects" - use real instances instead
-            Member member = MemberTestDataBuilder.defaultMemberForMapping(memberId);
+            MemberDto member = new MemberDto("Test", "User", "test@email.cz");
 
-            when(members.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(members.findByUserId(any(UserId.class))).thenReturn(Optional.of(member));
         }
 
         @Test
@@ -278,17 +274,11 @@ class EventRegistrationServiceTest {
 
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(event));
 
-            // Mock member lookup for firstName/lastName
-            Member member1 = mock(Member.class);
-            when(member1.getFirstName()).thenReturn("John");
-            when(member1.getLastName()).thenReturn("Doe");
+            MemberDto member1 = new MemberDto("John", "Doe", "doe@email.com");
+            MemberDto member2 = new MemberDto("Jane", "Smith", "smith@email.com");
 
-            Member member2 = mock(Member.class);
-            when(member2.getFirstName()).thenReturn("Jane");
-            when(member2.getLastName()).thenReturn("Smith");
-
-            when(members.findById(new UserId(member1Id))).thenReturn(Optional.of(member1));
-            when(members.findById(new UserId(member2Id))).thenReturn(Optional.of(member2));
+            when(members.findByUserId(new UserId(member1Id))).thenReturn(Optional.of(member1));
+            when(members.findByUserId(new UserId(member2Id))).thenReturn(Optional.of(member2));
 
             // When
             List<RegistrationDto> registrations = service.listRegistrations(eventId);
@@ -363,10 +353,8 @@ class EventRegistrationServiceTest {
             // Given
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
 
-            Member member = mock(Member.class);
-            when(member.getFirstName()).thenReturn("John");
-            when(member.getLastName()).thenReturn("Doe");
-            when(members.findById(new UserId(memberId))).thenReturn(Optional.of(member));
+            MemberDto member = new MemberDto("John", "Doe", "doe@email.com");
+            when(members.findByUserId(new UserId(memberId))).thenReturn(Optional.of(member));
 
             // When
             OwnRegistrationDto registration = service.getOwnRegistration(eventId);

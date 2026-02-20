@@ -1,8 +1,10 @@
 package com.klabis.members.management;
 
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.members.Gender;
-import com.klabis.members.persistence.MemberRepository;
+import com.klabis.members.domain.Gender;
+import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.infrastructure.restapi.AddressRequest;
+import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import com.klabis.users.AccountStatus;
 import com.klabis.users.User;
 import com.klabis.users.UserId;

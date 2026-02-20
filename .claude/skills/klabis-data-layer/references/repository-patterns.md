@@ -172,8 +172,9 @@ public interface Members {
 Located in 'persistence' package, adds **write operations** for internal use.
 
 **Variant A: With Public API (extends public interface)**
+
 ```java
-package com.klabis.members.persistence;
+package com.klabis.members.infrastructure;
 
 @SecondaryPort
 public interface MemberRepository extends Members {
@@ -214,15 +215,16 @@ public interface PasswordSetupTokenRepository {
 Spring Data JDBC repository working with Memento:
 
 ```java
-package com.klabis.members.persistence.jdbc;
+package com.klabis.members.infrastructure.jdbc;
 
 @Repository
 interface MemberJdbcRepository extends
-    CrudRepository<MemberMemento, UUID>,
-    PagingAndSortingRepository<MemberMemento, UUID> {
+        CrudRepository<MemberMemento, UUID>,
+        PagingAndSortingRepository<MemberMemento, UUID> {
 
     // Derived query methods
     Optional<MemberMemento> findByRegistrationNumber(String registrationNumber);
+
     Optional<MemberMemento> findByEmailEqualsIgnoreCase(String email);
 
     // Custom @Query methods
@@ -243,7 +245,7 @@ interface MemberJdbcRepository extends
 Bridges domain repository and JDBC repository.
 
 ```java
-package com.klabis.members.persistence.jdbc;
+package com.klabis.members.infrastructure.jdbc;
 
 @SecondaryAdapter
 @Repository  // jMolecules @Repository

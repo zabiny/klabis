@@ -1,5 +1,6 @@
 package com.klabis.members;
 
+import com.klabis.members.domain.*;
 import org.assertj.core.api.AbstractAssert;
 
 import java.time.LocalDate;

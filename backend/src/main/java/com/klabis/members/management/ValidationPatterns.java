@@ -8,7 +8,7 @@ package com.klabis.members.management;
  * <p>
  * All patterns are designed to be used by both domain validators and Jakarta Validation annotations.
  */
-final class ValidationPatterns {
+public final class ValidationPatterns {
 
     private ValidationPatterns() {
         // Utility class - prevent instantiation

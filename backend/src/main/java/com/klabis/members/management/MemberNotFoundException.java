@@ -7,7 +7,7 @@ import java.util.UUID;
 /**
  * Exception thrown when a member cannot be found by their ID.
  */
-class MemberNotFoundException extends ResourceNotFoundException {
+public class MemberNotFoundException extends ResourceNotFoundException {
 
     private final UUID memberId;
 

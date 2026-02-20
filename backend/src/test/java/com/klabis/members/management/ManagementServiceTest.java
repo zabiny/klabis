@@ -1,7 +1,9 @@
 package com.klabis.members.management;
 
-import com.klabis.members.*;
-import com.klabis.members.persistence.MemberRepository;
+import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.domain.*;
+import com.klabis.members.infrastructure.restapi.AddressRequest;
+import com.klabis.members.infrastructure.restapi.UpdateMemberRequest;
 import com.klabis.users.UserId;
 import com.klabis.users.UserService;
 import org.junit.jupiter.api.*;
@@ -26,7 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link ManagementService}.
+ * Unit tests for {@link ManagementServiceImpl}.
  * <p>
  * Tests cover the member management functionality including:
  * <ul>
@@ -57,7 +59,7 @@ class ManagementServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ManagementService(memberRepository, userService);
+        service = new ManagementServiceImpl(memberRepository, userService);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()

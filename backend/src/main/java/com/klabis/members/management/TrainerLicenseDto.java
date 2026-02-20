@@ -1,6 +1,6 @@
 package com.klabis.members.management;
 
-import com.klabis.members.TrainerLicense;
+import com.klabis.members.domain.TrainerLicense;
 
 import java.time.LocalDate;
 
@@ -15,7 +15,7 @@ import java.time.LocalDate;
  * @param licenseNumber trainer license number
  * @param validityDate  validity date of the license (ISO-8601 format)
  */
-record TrainerLicenseDto(
+public record TrainerLicenseDto(
         String licenseNumber,
         LocalDate validityDate
 ) {

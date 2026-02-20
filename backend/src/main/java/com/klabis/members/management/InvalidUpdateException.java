@@ -1,6 +1,6 @@
 package com.klabis.members.management;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.InvalidDataException;
 
 /**
  * Exception thrown when an update request fails validation.
@@ -8,7 +8,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
  * This exception is thrown when the update data violates business rules
  * or validation constraints.
  */
-class InvalidUpdateException extends BusinessRuleViolationException {
+public class InvalidUpdateException extends InvalidDataException {
 
     public InvalidUpdateException(String message) {
         super(message);

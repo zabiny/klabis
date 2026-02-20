@@ -1,5 +1,6 @@
 package com.klabis.members;
 
+import com.klabis.members.domain.*;
 import com.klabis.users.UserId;
 import org.jmolecules.event.annotation.DomainEvent;
 

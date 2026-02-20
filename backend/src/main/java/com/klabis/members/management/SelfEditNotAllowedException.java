@@ -1,7 +1,7 @@
 package com.klabis.members.management;
 
 import com.klabis.common.exceptions.AuthorizationException;
-import com.klabis.members.RegistrationNumber;
+import com.klabis.members.domain.RegistrationNumber;
 
 /**
  * Exception thrown when a member attempts to edit another member's information.
@@ -9,7 +9,7 @@ import com.klabis.members.RegistrationNumber;
  * This exception is thrown when the authenticated user's email does not match
  * the email of the member they are attempting to update.
  */
-class SelfEditNotAllowedException extends AuthorizationException {
+public class SelfEditNotAllowedException extends AuthorizationException {
 
     private final RegistrationNumber authenticatedUser;
     private final RegistrationNumber targetMember;

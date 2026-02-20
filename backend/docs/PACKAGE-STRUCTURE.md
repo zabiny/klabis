@@ -337,41 +337,43 @@ public class MemberCreatedEventHandler {
 package com.klabis.members;
 
 public interface Members {
-    Optional<Member> findById(UserId id);
-    Optional<Member> findByEmail(String email);
-    // ... other read-only methods
+  Optional<Member> findById(UserId id);
+
+  Optional<Member> findByEmail(String email);
+  // ... other read-only methods
 }
 
 // Internal repository interface in persistence/ (within module only)
-package com.klabis.members.persistence;
+package com.klabis.members.infrastructure;
 
 /**
  * @apiNote This is internal API for use within the members module only.
  *          Other modules should use {@link Members} interface.
  */
 public interface MemberRepository {
-    Member save(Member member);  // Write operations hidden from other modules
-    Optional<Member> findById(UserId id);
-    // ... all operations
+  Member save(Member member);  // Write operations hidden from other modules
+
+  Optional<Member> findById(UserId id);
+  // ... all operations
 }
 
 // Spring Data JDBC repository in persistence/jdbc
-package com.klabis.members.persistence.jdbc;
+package com.klabis.members.infrastructure.jdbc;
 
 @Repository
 public interface MemberJdbcRepository extends CrudRepository<MemberMemento, UUID> {
-    // Spring Data JDBC methods (returns Mementos)
+  // Spring Data JDBC methods (returns Mementos)
 }
 
 // Adapter implements both public query API and internal repository
-package com.klabis.members.persistence.jdbc;
+package com.klabis.members.infrastructure.jdbc;
 
 @Component
 @Transactional
 class MemberRepositoryAdapter implements Members, MemberRepository {
-    // Converts between domain entities and mementos
-    // Public methods implement Members (read-only for external modules)
-    // All methods implement MemberRepository (internal)
+  // Converts between domain entities and mementos
+  // Public methods implement Members (read-only for external modules)
+  // All methods implement MemberRepository (internal)
 }
 ```
 

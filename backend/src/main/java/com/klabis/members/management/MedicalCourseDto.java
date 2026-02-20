@@ -1,6 +1,6 @@
 package com.klabis.members.management;
 
-import com.klabis.members.MedicalCourse;
+import com.klabis.members.domain.MedicalCourse;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -21,7 +21,7 @@ import java.util.Optional;
  * @param completionDate course completion date (ISO-8601 format)
  * @param validityDate   course validity date (ISO-8601 format, or null if indefinite)
  */
-record MedicalCourseDto(
+public record MedicalCourseDto(
         LocalDate completionDate,
         Optional<LocalDate> validityDate
 ) {

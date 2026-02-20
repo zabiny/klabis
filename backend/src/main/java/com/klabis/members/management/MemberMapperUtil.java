@@ -1,6 +1,7 @@
 package com.klabis.members.management;
 
-import com.klabis.members.*;
+import com.klabis.members.domain.*;
+import com.klabis.members.infrastructure.restapi.AddressResponse;
 import org.springframework.stereotype.Component;
 
 /**

@@ -1,5 +1,6 @@
 package com.klabis.members;
 
+import com.klabis.members.domain.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
