@@ -1,6 +1,5 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.config.encryption.EncryptionConfiguration;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
@@ -58,9 +57,6 @@ class MemberControllerApiTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @MockitoBean
     private ManagementService managementService;
@@ -388,19 +384,6 @@ class MemberControllerApiTest {
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldCreateMemberWithValidData() throws Exception {
             UUID memberId = UUID.randomUUID();
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    MemberManagementDtosTestDataBuilder.DEFAULT_ADULT_DATE_OF_BIRTH,
-                    "CZ",
-                    Gender.MALE,
-                    "jan.novak@example.com",
-                    "+420777123456",
-                    MemberManagementDtosTestDataBuilder.defaultAddressRequest(),
-                    null,
-                    null,
-                    null
-            );
 
             when(registrationService.registerMember(any(RegisterMemberRequest.class))).thenReturn(memberId);
             when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
@@ -410,7 +393,23 @@ class MemberControllerApiTest {
                             post("/api/members")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2000-06-15",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "jan.novak@example.com",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isCreated())
@@ -422,17 +421,6 @@ class MemberControllerApiTest {
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldCreateMinorWithGuardian() throws Exception {
             UUID memberId = UUID.randomUUID();
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Petra",
-                    "Nováková",
-                    LocalDate.of(2010, 6, 20),
-                    "CZ",
-                    Gender.FEMALE,
-                    "petra.novakova@example.com",
-                    "+420111222333",
-                    MemberManagementDtosTestDataBuilder.addressRequestWithStreetAndCity("Hlavní 456", "Brno"),
-                    MemberManagementDtosTestDataBuilder.defaultGuardianDto(), null, null
-            );
 
             when(registrationService.registerMember(any(RegisterMemberRequest.class))).thenReturn(memberId);
             when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
@@ -442,7 +430,30 @@ class MemberControllerApiTest {
                             post("/api/members")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Petra",
+                                                "lastName": "Nováková",
+                                                "dateOfBirth": "2010-06-20",
+                                                "nationality": "CZ",
+                                                "gender": "FEMALE",
+                                                "email": "petra.novakova@example.com",
+                                                "phone": "+420111222333",
+                                                "address": {
+                                                    "street": "Hlavní 456",
+                                                    "city": "Brno",
+                                                    "postalCode": "60000",
+                                                    "country": "CZ"
+                                                },
+                                                "guardian": {
+                                                    "firstName": "Guardian",
+                                                    "lastName": "Surname",
+                                                    "relationship": "PARENT",
+                                                    "email": "guardian@example.com",
+                                                    "phone": "+420123456789"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isCreated())
@@ -453,24 +464,26 @@ class MemberControllerApiTest {
         @DisplayName("with missing first name should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenFirstNameMissing() throws Exception {
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "",
-                    "Novák",
-                    MemberManagementDtosTestDataBuilder.DEFAULT_ADULT_DATE_OF_BIRTH,
-                    "CZ",
-                    Gender.MALE,
-                    "jan@example.com",
-                    "+420777123456",
-                    MemberManagementDtosTestDataBuilder.defaultAddressRequest(),
-                    null,
-                    null,
-                    null
-            );
-
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2000-06-15",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "jan@example.com",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -483,29 +496,26 @@ class MemberControllerApiTest {
         @DisplayName("with invalid email should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenEmailInvalid() throws Exception {
-            AddressRequest address = new AddressRequest(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 5, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "invalid-email",
-                    "+420777123456",
-                    address,
-                    null, null, null
-            );
-
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2005-05-15",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "invalid-email",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -518,29 +528,26 @@ class MemberControllerApiTest {
         @DisplayName("with invalid phone should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenPhoneInvalid() throws Exception {
-            AddressRequest address = new AddressRequest(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 5, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "jan@example.com",
-                    "123",
-                    address,
-                    null, null, null
-            );
-
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2005-05-15",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "jan@example.com",
+                                                "phone": "123",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -554,29 +561,28 @@ class MemberControllerApiTest {
         @DisplayName("with future date of birth should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenDateOfBirthInFuture() throws Exception {
-            AddressRequest address = new AddressRequest(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    LocalDate.now().plusDays(1),
-                    "CZ",
-                    Gender.MALE,
-                    "jan@example.com",
-                    "+420777123456",
-                    address,
-                    null, null, null
-            );
+            LocalDate futureDate = LocalDate.now().plusDays(1);
 
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "%s",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "jan@example.com",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """.formatted(futureDate))
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -589,29 +595,26 @@ class MemberControllerApiTest {
         @DisplayName("with missing email should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenEmailMissing() throws Exception {
-            AddressRequest address = new AddressRequest(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 5, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "",
-                    "+420777123456",
-                    address,
-                    null, null, null
-            );
-
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2005-05-15",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -624,37 +627,33 @@ class MemberControllerApiTest {
         @DisplayName("with invalid guardian should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenGuardianInvalid() throws Exception {
-            GuardianDTO guardian = new GuardianDTO(
-                    "",
-                    "Novák",
-                    "PARENT",
-                    "pavel.novak@example.com",
-                    "+420987654321"
-            );
-
-            AddressRequest address = new AddressRequest(
-                    "Hlavní 456",
-                    "Brno",
-                    "60000",
-                    "CZ"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Petra",
-                    "Nováková",
-                    LocalDate.of(2010, 6, 20),
-                    "CZ",
-                    Gender.FEMALE,
-                    "petra@example.com",
-                    "+420111222333",
-                    address,
-                    guardian, null, null
-            );
-
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Petra",
+                                                "lastName": "Nováková",
+                                                "dateOfBirth": "2010-06-20",
+                                                "nationality": "CZ",
+                                                "gender": "FEMALE",
+                                                "email": "petra@example.com",
+                                                "phone": "+420111222333",
+                                                "address": {
+                                                    "street": "Hlavní 456",
+                                                    "city": "Brno",
+                                                    "postalCode": "60000",
+                                                    "country": "CZ"
+                                                },
+                                                "guardian": {
+                                                    "firstName": "",
+                                                    "lastName": "Novák",
+                                                    "relationship": "PARENT",
+                                                    "email": "pavel.novak@example.com",
+                                                    "phone": "+420987654321"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -668,24 +667,6 @@ class MemberControllerApiTest {
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldCreateMemberWithValidAddressAndContacts() throws Exception {
             UUID memberId = UUID.randomUUID();
-            AddressRequest address = new AddressRequest(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 5, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "jan.novak@example.com",
-                    "+420777123456",
-                    address,
-                    null, null, null
-            );
 
             when(registrationService.registerMember(any(RegisterMemberRequest.class))).thenReturn(memberId);
             when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
@@ -695,7 +676,23 @@ class MemberControllerApiTest {
                             post("/api/members")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2005-05-15",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "jan.novak@example.com",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isCreated())
@@ -706,29 +703,26 @@ class MemberControllerApiTest {
         @DisplayName("with invalid nationality code should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenNationalityCodeInvalid() throws Exception {
-            AddressRequest address = new AddressRequest(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 5, 15),
-                    "CZECH",
-                    Gender.MALE,
-                    "jan@example.com",
-                    "+420777123456",
-                    address,
-                    null, null, null
-            );
-
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2005-05-15",
+                                                "nationality": "CZECH",
+                                                "gender": "MALE",
+                                                "email": "jan@example.com",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -742,29 +736,26 @@ class MemberControllerApiTest {
         @DisplayName("with invalid address missing fields should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenAddressMissingFields() throws Exception {
-            AddressRequest address = new AddressRequest(
-                    "",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 5, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "jan@example.com",
-                    "+420777123456",
-                    address,
-                    null, null, null
-            );
-
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2005-05-15",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "jan@example.com",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "CZ"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -777,29 +768,26 @@ class MemberControllerApiTest {
         @DisplayName("with invalid address country code format should return 400")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
         void shouldReturn400WhenAddressCountryInvalid() throws Exception {
-            AddressRequest address = new AddressRequest(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "X"
-            );
-
-            RegisterMemberRequest request = new RegisterMemberRequest(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 5, 15),
-                    "CZ",
-                    Gender.MALE,
-                    "jan@example.com",
-                    "+420777123456",
-                    address,
-                    null, null, null
-            );
-
             mockMvc.perform(
                             post("/api/members")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "firstName": "Jan",
+                                                "lastName": "Novák",
+                                                "dateOfBirth": "2005-05-15",
+                                                "nationality": "CZ",
+                                                "gender": "MALE",
+                                                "email": "jan@example.com",
+                                                "phone": "+420777123456",
+                                                "address": {
+                                                    "street": "Hlavní 123",
+                                                    "city": "Praha",
+                                                    "postalCode": "11000",
+                                                    "country": "X"
+                                                }
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
@@ -1011,11 +999,6 @@ class MemberControllerApiTest {
                     .terminated(DeactivationReason.ODHLASKA, "Member requested termination")
                     .build();
 
-            TerminateMembershipRequest request = new TerminateMembershipRequest(
-                    DeactivationReason.ODHLASKA,
-                    java.util.Optional.of("Member requested termination")
-            );
-
             when(managementService.terminateMember(eq(memberId), any(Member.TerminateMembership.class)))
                     .thenReturn(memberId);
             when(memberRepository.findById(new UserId(memberId)))
@@ -1028,7 +1011,12 @@ class MemberControllerApiTest {
                             post("/api/members/" + memberId + "/terminate")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "reason": "ODHLASKA",
+                                                "note": "Member requested termination"
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isNoContent());
@@ -1055,11 +1043,6 @@ class MemberControllerApiTest {
                     .terminated(DeactivationReason.PRESTUP, null)
                     .build();
 
-            TerminateMembershipRequest request = new TerminateMembershipRequest(
-                    DeactivationReason.PRESTUP,
-                    java.util.Optional.empty()
-            );
-
             when(managementService.terminateMember(eq(memberId), any(Member.TerminateMembership.class)))
                     .thenReturn(memberId);
             when(memberRepository.findById(new UserId(memberId)))
@@ -1072,7 +1055,11 @@ class MemberControllerApiTest {
                             post("/api/members/" + memberId + "/terminate")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "reason": "PRESTUP"
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isNoContent())
@@ -1196,10 +1183,6 @@ class MemberControllerApiTest {
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
 
             UUID memberId = UUID.randomUUID();
-            TerminateMembershipRequest request = new TerminateMembershipRequest(
-                    DeactivationReason.OTHER,
-                    java.util.Optional.of("Second termination attempt")
-            );
 
             when(managementService.terminateMember(eq(memberId), any(Member.TerminateMembership.class)))
                     .thenThrow(new InvalidUpdateException("Member is already terminated"));
@@ -1208,7 +1191,12 @@ class MemberControllerApiTest {
             mockMvc.perform(
                             post("/api/members/" + memberId + "/terminate")
                                     .contentType("application/json")
-                                    .content(objectMapper.writeValueAsString(request))
+                                    .content("""
+                                            {
+                                                "reason": "OTHER",
+                                                "note": "Second termination attempt"
+                                            }
+                                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())

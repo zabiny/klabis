@@ -1,6 +1,5 @@
 package com.klabis.members;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Member;
@@ -53,9 +52,6 @@ class MemberTerminationE2ETest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
     private MemberRepository memberRepository;
 
     private static final String ADMIN_USERNAME = "admin";
@@ -67,13 +63,26 @@ class MemberTerminationE2ETest {
     @WithMockUser(username = "admin", authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
     void shouldCompleteTerminationWorkflow() throws Exception {
         // Step 1: Register a new member
-        RegisterMemberRequest registerRequest = MemberManagementDtosTestDataBuilder.registerMemberRequestWithDateOfBirth(
-                LocalDate.of(1990, 5, 15));
-
         MvcResult registerResult = mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(registerRequest))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "1990-05-15",
+                                            "nationality": "CZ",
+                                            "gender": "MALE",
+                                            "email": "jan.novak@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 123",
+                                                "city": "Praha",
+                                                "postalCode": "11000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
@@ -92,16 +101,16 @@ class MemberTerminationE2ETest {
         assertThat(beforeTermination.get().getDeactivationReason()).isNull();
 
         // Step 3: Terminate the member
-        TerminateMembershipRequest terminateRequest = new TerminateMembershipRequest(
-                DeactivationReason.ODHLASKA,
-                java.util.Optional.of("Member requested termination")
-        );
-
         mockMvc.perform(
                         post("/api/members/" + memberId + "/terminate")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(terminateRequest))
+                                .content("""
+                                        {
+                                            "reason": "ODHLASKA",
+                                            "note": "Member requested termination"
+                                        }
+                                        """)
                 )
                 .andDo(print())
                 .andExpect(status().isNoContent());
@@ -125,14 +134,27 @@ class MemberTerminationE2ETest {
     @WithMockUser(username = "admin", authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
     void shouldRejectSecondTerminationAttempt() throws Exception {
         // Step 1: Register a new member
-        RegisterMemberRequest registerRequest = MemberManagementDtosTestDataBuilder.registerMemberRequestWithDateOfBirth(
-                LocalDate.of(1992, 3, 20));
-
         MvcResult registerResult = mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(registerRequest))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "1992-03-20",
+                                            "nationality": "CZ",
+                                            "gender": "MALE",
+                                            "email": "jan.novak@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 123",
+                                                "city": "Praha",
+                                                "postalCode": "11000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -144,29 +166,28 @@ class MemberTerminationE2ETest {
         UUID memberId = UUID.fromString(memberIdPath);
 
         // Step 2: Terminate the member
-        TerminateMembershipRequest firstTermination = new TerminateMembershipRequest(
-                DeactivationReason.PRESTUP,
-                java.util.Optional.empty()
-        );
-
         // First termination should succeed
         mockMvc.perform(
                         post("/api/members/" + memberId + "/terminate")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(firstTermination))
+                                .content("""
+                                        {
+                                            "reason": "PRESTUP"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isNoContent());
 
         // Step 3: Attempt second termination (should fail)
-        TerminateMembershipRequest secondTermination = new TerminateMembershipRequest(
-                DeactivationReason.OTHER,
-                java.util.Optional.of("Second attempt")
-        );
-
         mockMvc.perform(
                         post("/api/members/" + memberId + "/terminate")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(secondTermination))
+                                .content("""
+                                        {
+                                            "reason": "OTHER",
+                                            "note": "Second attempt"
+                                        }
+                                        """)
                 )
                 .andDo(print())
                 .andExpect(status().isBadRequest())
@@ -178,13 +199,26 @@ class MemberTerminationE2ETest {
     @WithMockUser(username = "admin", authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
     void shouldFilterTerminatedMembersFromListQuery() throws Exception {
         // Register member A
-        RegisterMemberRequest requestA = MemberManagementDtosTestDataBuilder.registerMemberRequestWithDateOfBirth(
-                LocalDate.of(1990, 1, 1));
-
         MvcResult resultA = mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(requestA))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "1990-01-01",
+                                            "nationality": "CZ",
+                                            "gender": "MALE",
+                                            "email": "jan.novak@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 123",
+                                                "city": "Praha",
+                                                "postalCode": "11000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -196,13 +230,26 @@ class MemberTerminationE2ETest {
         UUID memberIdA = UUID.fromString(memberIdPathA);
 
         // Register member B
-        RegisterMemberRequest requestB = MemberManagementDtosTestDataBuilder.registerMemberRequestWithDateOfBirth(
-                LocalDate.of(1991, 2, 2));
-
         MvcResult resultB = mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(requestB))
+                                .content("""
+                                        {
+                                            "firstName": "Petra",
+                                            "lastName": "Nováková",
+                                            "dateOfBirth": "1991-02-02",
+                                            "nationality": "CZ",
+                                            "gender": "FEMALE",
+                                            "email": "petra.novakova@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 456",
+                                                "city": "Brno",
+                                                "postalCode": "60000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -224,16 +271,15 @@ class MemberTerminationE2ETest {
                         2)));
 
         // Terminate member A
-        TerminateMembershipRequest terminateRequest = new TerminateMembershipRequest(
-                DeactivationReason.ODHLASKA,
-                java.util.Optional.of("Test termination")
-        );
-
-        // Terminate member A
         mockMvc.perform(
                         post("/api/members/" + memberIdA + "/terminate")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(terminateRequest))
+                                .content("""
+                                        {
+                                            "reason": "ODHLASKA",
+                                            "note": "Test termination"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isNoContent());
 

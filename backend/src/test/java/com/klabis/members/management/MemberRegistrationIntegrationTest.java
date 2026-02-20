@@ -1,6 +1,5 @@
 package com.klabis.members.management;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.infrastructure.restapi.AddressRequest;
@@ -38,9 +37,6 @@ class MemberRegistrationIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     private static final String ADMIN_USERNAME = "admin";
     private static final String MEMBERS_CREATE_AUTHORITY = "MEMBERS:CREATE";
     private static final String MEMBERS_READ_AUTHORITY = "MEMBERS:READ";
@@ -49,16 +45,28 @@ class MemberRegistrationIntegrationTest {
     @DisplayName("Registration of member should succeed")
     @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
     void shouldCompleteRegistrationFlowForAdult() throws Exception {
-        // Given: An adult member (18+ years old)
-        RegisterMemberRequest request = MemberManagementDtosTestDataBuilder.registerMemberRequestWithDateOfBirth(
-                LocalDate.of(1999, 1, 15));
-
         // When: Registering the member
         mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "1999-01-15",
+                                            "nationality": "CZ",
+                                            "gender": "MALE",
+                                            "email": "jan.novak@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 123",
+                                                "city": "Praha",
+                                                "postalCode": "11000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andExpect(status().isCreated())
                 .andExpect(header().string(HttpHeaders.LOCATION, Matchers.containsString("/api/members")));
@@ -68,54 +76,27 @@ class MemberRegistrationIntegrationTest {
     @DisplayName("Registration should generate unique registration numbers")
     @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
     void shouldGenerateUniqueRegistrationNumbers() throws Exception {
-        // Given: Two members born in the same year
-        LocalDate dateOfBirth = LocalDate.of(2005, 5, 15);
-
-        AddressRequest address1 = new AddressRequest(
-                "Street 1",
-                "City1",
-                "10000",
-                "CZ"
-        );
-
-        AddressRequest address2 = new AddressRequest(
-                "Street 2",
-                "City2",
-                "20000",
-                "CZ"
-        );
-
-        RegisterMemberRequest request1 = new RegisterMemberRequest(
-                "Jan",
-                "Novák",
-                dateOfBirth,
-                "CZ",
-                Gender.MALE,
-                "jan1@example.com",
-                "+420777111111",
-                address1,
-                null,
-                null,
-                null);
-
-        RegisterMemberRequest request2 = new RegisterMemberRequest(
-                "Petra",
-                "Nováková",
-                dateOfBirth,
-                "CZ",
-                Gender.FEMALE,
-                "petra1@example.com",
-                "+420777222222",
-                address2,
-                null,
-                null,
-                null);
-
         // When: Registering both members
         MvcResult result1 = mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(request1))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "2005-05-15",
+                                            "nationality": "CZ",
+                                            "gender": "MALE",
+                                            "email": "jan1@example.com",
+                                            "phone": "+420777111111",
+                                            "address": {
+                                                "street": "Street 1",
+                                                "city": "City1",
+                                                "postalCode": "10000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
@@ -124,7 +105,23 @@ class MemberRegistrationIntegrationTest {
         MvcResult result2 = mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(request2))
+                                .content("""
+                                        {
+                                            "firstName": "Petra",
+                                            "lastName": "Nováková",
+                                            "dateOfBirth": "2005-05-15",
+                                            "nationality": "CZ",
+                                            "gender": "FEMALE",
+                                            "email": "petra1@example.com",
+                                            "phone": "+420777222222",
+                                            "address": {
+                                                "street": "Street 2",
+                                                "city": "City2",
+                                                "postalCode": "20000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())

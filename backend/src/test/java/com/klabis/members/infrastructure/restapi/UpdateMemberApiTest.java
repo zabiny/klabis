@@ -1,6 +1,5 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.config.encryption.EncryptionConfiguration;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
@@ -55,9 +54,6 @@ class UpdateMemberApiTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockitoBean
     private ManagementService memberService;
 
@@ -90,31 +86,17 @@ class UpdateMemberApiTest {
             @DisplayName("updating member email should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateMemberEmailWhenAdmin() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("new.email@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "new.email@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -132,31 +114,17 @@ class UpdateMemberApiTest {
             @DisplayName("updating member phone should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateMemberPhoneWhenAdmin() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.of("+420777123456"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "phone": "+420777123456"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -174,38 +142,22 @@ class UpdateMemberApiTest {
             @DisplayName("updating member address should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateMemberAddressWhenAdmin() throws Exception {
-                AddressRequest newAddress = new AddressRequest(
-                        "New Street 123",
-                        "Prague",
-                        "11000",
-                        "CZ"
-                );
-
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of(newAddress),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "address": {
+                                                        "street": "New Street 123",
+                                                        "city": "Prague",
+                                                        "postalCode": "11000",
+                                                        "country": "CZ"
+                                                    }
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -227,31 +179,20 @@ class UpdateMemberApiTest {
             @DisplayName("updating admin-only fields should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateAdminOnlyFieldsWhenAdmin() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of(Gender.FEMALE),
-                        Optional.of("12345"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of(DrivingLicenseGroup.B),
-                        Optional.of("Vegetarian"),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "gender": "FEMALE",
+                                                    "chipNumber": "12345",
+                                                    "drivingLicenseGroup": "B",
+                                                    "dietaryRestrictions": "Vegetarian"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -270,31 +211,18 @@ class UpdateMemberApiTest {
             @DisplayName("updating birth number and bank account should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateBirthNumberAndBankAccountWhenAdmin() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("900101/1234"),
-                        Optional.of("CZ6508000000192000145399")
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "birthNumber": "900101/1234",
+                                                    "bankAccountNumber": "CZ6508000000192000145399"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -311,31 +239,17 @@ class UpdateMemberApiTest {
             @DisplayName("updating only birth number should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateOnlyBirthNumberWhenAdmin() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("850520/9876"),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "birthNumber": "850520/9876"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -352,31 +266,17 @@ class UpdateMemberApiTest {
             @DisplayName("updating only bank account number should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateOnlyBankAccountNumberWhenAdmin() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("CZ6508000000192000145399")
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "bankAccountNumber": "CZ6508000000192000145399"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -393,36 +293,32 @@ class UpdateMemberApiTest {
             @DisplayName("updating documents should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateDocumentsWhenAdmin() throws Exception {
-                IdentityCardDto identityCard = new IdentityCardDto("123456789", LocalDate.now().plusYears(5));
-                MedicalCourseDto medicalCourse = new MedicalCourseDto(LocalDate.of(2024, 1, 1),
-                        Optional.of(LocalDate.now().plusYears(2)));
-                TrainerLicenseDto trainerLicense = new TrainerLicenseDto("TRAINER123", LocalDate.now().plusYears(3));
-
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of(identityCard),
-                        Optional.of(medicalCourse),
-                        Optional.of(trainerLicense),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "identityCard": {
+                                                        "number": "123456789",
+                                                        "validUntil": "%s"
+                                                    },
+                                                    "medicalCourse": {
+                                                        "completedOn": "2024-01-01",
+                                                        "validUntil": "%s"
+                                                    },
+                                                    "trainerLicense": {
+                                                        "licenseNumber": "TRAINER123",
+                                                        "validUntil": "%s"
+                                                    }
+                                                }
+                                                """.formatted(
+                                                        LocalDate.now().plusYears(5),
+                                                        LocalDate.now().plusYears(2),
+                                                        LocalDate.now().plusYears(3)
+                                                ))
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -440,31 +336,18 @@ class UpdateMemberApiTest {
             @DisplayName("performing partial update should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldPerformPartialUpdateWhenAdmin() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("partial.update@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("No dairy"),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "partial.update@example.com",
+                                                    "dietaryRestrictions": "No dairy"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -486,31 +369,17 @@ class UpdateMemberApiTest {
             @DisplayName("updating own email should return 204 No Content")
             @WithMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnEmail() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("my.new.email@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "my.new.email@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -526,31 +395,17 @@ class UpdateMemberApiTest {
             @DisplayName("updating own phone should return 204 No Content")
             @WithMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnPhone() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.of("+420987654321"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "phone": "+420987654321"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -566,38 +421,22 @@ class UpdateMemberApiTest {
             @DisplayName("updating own address should return 204 No Content")
             @WithMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnAddress() throws Exception {
-                AddressRequest newAddress = new AddressRequest(
-                        "My New Address 456",
-                        "Brno",
-                        "60200",
-                        "CZ"
-                );
-
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of(newAddress),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "address": {
+                                                        "street": "My New Address 456",
+                                                        "city": "Brno",
+                                                        "postalCode": "60200",
+                                                        "country": "CZ"
+                                                    }
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -615,31 +454,17 @@ class UpdateMemberApiTest {
             @DisplayName("updating dietary restrictions should return 204 No Content")
             @WithMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateDietaryRestrictions() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("Gluten-free, no nuts"),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "dietaryRestrictions": "Gluten-free, no nuts"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -660,24 +485,6 @@ class UpdateMemberApiTest {
             @DisplayName("non-admin editing another member should return 403")
             @WithMockUser(username = "other.user@example.com", authorities = {})
             void shouldReturn403WhenNonAdminEditsAnotherMember() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("hacker@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenThrow(new SelfEditNotAllowedException(
                                 new RegistrationNumber("ZBM9090"), new RegistrationNumber("ZBM1234")));
@@ -685,7 +492,11 @@ class UpdateMemberApiTest {
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "hacker@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isForbidden())
@@ -696,28 +507,14 @@ class UpdateMemberApiTest {
             @Test
             @DisplayName("unauthenticated request should return 401")
             void shouldReturn401WhenUnauthenticated() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("test@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "test@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isUnauthorized());
@@ -732,31 +529,13 @@ class UpdateMemberApiTest {
             @DisplayName("empty update should return 400")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn400WhenUpdateIsEmpty() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenThrow(new InvalidUpdateException("Update request must contain at least one field"));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("{}")
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isBadRequest())
@@ -768,31 +547,17 @@ class UpdateMemberApiTest {
             @DisplayName("invalid email format should return 400")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn400WhenEmailInvalid() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("invalid-email"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenThrow(new InvalidUpdateException("Invalid email format: invalid-email"));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "invalid-email"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isBadRequest())
@@ -804,31 +569,17 @@ class UpdateMemberApiTest {
             @DisplayName("invalid phone format should return 400")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn400WhenPhoneInvalid() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.of("123"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenThrow(new InvalidUpdateException("Invalid phone format: 123"));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "phone": "123"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isBadRequest());
@@ -838,28 +589,14 @@ class UpdateMemberApiTest {
             @DisplayName("invalid chip number should return 400")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn400WhenChipNumberInvalid() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("ABC123"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "chipNumber": "ABC123"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isBadRequest())
@@ -872,28 +609,14 @@ class UpdateMemberApiTest {
             void shouldReturn400WhenDietaryRestrictionsTooLong() throws Exception {
                 String tooLongRestrictions = "A".repeat(501);
 
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of(tooLongRestrictions),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "dietaryRestrictions": "%s"
+                                                }
+                                                """.formatted(tooLongRestrictions))
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isBadRequest())
@@ -910,23 +633,6 @@ class UpdateMemberApiTest {
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn404WhenMemberNotFound() throws Exception {
                 UUID nonExistentId = UUID.randomUUID();
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("test@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenThrow(new MemberNotFoundException(nonExistentId));
@@ -934,7 +640,11 @@ class UpdateMemberApiTest {
                 mockMvc.perform(
                                 patch("/api/members/{id}", nonExistentId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "test@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNotFound())
@@ -947,31 +657,17 @@ class UpdateMemberApiTest {
             @DisplayName("concurrent update should return 409")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn409WhenConcurrentUpdate() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("test@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenThrow(new OptimisticLockingFailureException("Concurrent update for member - test purpose"));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "test@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isConflict())
@@ -988,24 +684,6 @@ class UpdateMemberApiTest {
             @DisplayName("PATCH should return 204 No Content (HATEOAS links available via GET)")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn204NoContentForPatchWithHalFormsAccept() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("test@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
@@ -1013,7 +691,11 @@ class UpdateMemberApiTest {
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
                                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "test@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -1023,24 +705,6 @@ class UpdateMemberApiTest {
             @DisplayName("response should include collection link")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldIncludeCollectionLink() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("test@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
@@ -1048,7 +712,11 @@ class UpdateMemberApiTest {
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
                                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "test@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -1058,24 +726,6 @@ class UpdateMemberApiTest {
             @DisplayName("response should include edit link")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldIncludeEditLink() throws Exception {
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("test@example.com"),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
@@ -1083,7 +733,11 @@ class UpdateMemberApiTest {
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
                                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "test@example.com"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
@@ -1093,26 +747,6 @@ class UpdateMemberApiTest {
             @DisplayName("PATCH with multiple fields should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn204NoContentWhenUpdatingMultipleFields() throws Exception {
-                AddressRequest newAddress = new AddressRequest("Updated 123", "Updated City", "10000", "CZ");
-
-                UpdateMemberRequest request = new UpdateMemberRequest(
-                        Optional.of("updated@example.com"),
-                        Optional.of("+420999888777"),
-                        Optional.of(newAddress),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("Vegan"),
-                        Optional.empty(),
-                        Optional.empty()
-                );
-
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
                         .thenReturn(testMemberId);
 
@@ -1120,7 +754,19 @@ class UpdateMemberApiTest {
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
                                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                        .content(objectMapper.writeValueAsString(request))
+                                        .content("""
+                                                {
+                                                    "email": "updated@example.com",
+                                                    "phone": "+420999888777",
+                                                    "address": {
+                                                        "street": "Updated 123",
+                                                        "city": "Updated City",
+                                                        "postalCode": "10000",
+                                                        "country": "CZ"
+                                                    },
+                                                    "dietaryRestrictions": "Vegan"
+                                                }
+                                                """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());

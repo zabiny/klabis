@@ -1,6 +1,5 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.members.domain.DeactivationReason;
@@ -27,41 +26,30 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestApplicationConfiguration.class)
 class MemberControllerSecurityTest extends SecurityTestBase {
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    private RegisterMemberRequest createValidMemberRequest() {
-        AddressRequest address = new AddressRequest(
-                "Hlavní 123",
-                "Praha",
-                "11000",
-                "CZ"
-        );
-
-        return new RegisterMemberRequest(
-                "Jan",
-                "Novák",
-                LocalDate.of(2005, 5, 15),
-                "CZ",
-                Gender.MALE,
-                "jan@example.com",
-                "+420777123456",
-                address,
-                null,
-                null,
-                null
-        );
-    }
-
     @Test
     @DisplayName("POST /api/members without authentication should return 401")
     void shouldReturn401WhenUnauthenticated() throws Exception {
-        RegisterMemberRequest request = createValidMemberRequest();
 
         mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(request))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "2005-05-15",
+                                            "nationality": "CZ",
+                                            "gender": "MALE",
+                                            "email": "jan@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 123",
+                                                "city": "Praha",
+                                                "postalCode": "11000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isUnauthorized())
@@ -74,12 +62,27 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     @DisplayName("POST /api/members with wrong authority should return 403")
     @WithMockUser(username = "ZBM0102", authorities = {"MEMBERS:READ"})
     void shouldReturn403WhenInsufficientAuthority() throws Exception {
-        RegisterMemberRequest request = createValidMemberRequest();
 
         mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(request))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "2005-05-15",
+                                            "nationality": "CZ",
+                                            "gender": "MALE",
+                                            "email": "jan@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 123",
+                                                "city": "Praha",
+                                                "postalCode": "11000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isForbidden())
@@ -92,12 +95,27 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     @DisplayName("POST /api/members with MEMBERS:CREATE authority should return 201")
     @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
     void shouldReturn201WhenAuthorized() throws Exception {
-        RegisterMemberRequest request = createValidMemberRequest();
 
         mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(request))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "2005-05-15",
+                                            "nationality": "CZ",
+                                            "gender": "MALE",
+                                            "email": "jan@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 123",
+                                                "city": "Praha",
+                                                "postalCode": "11000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isCreated())
@@ -198,15 +216,16 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     @DisplayName("POST /api/members/{id}/terminate without authentication should return 401")
     void shouldReturn401WhenTerminatingMemberUnauthenticated() throws Exception {
         UUID memberId = UUID.randomUUID();
-        TerminateMembershipRequest request = new TerminateMembershipRequest(
-                DeactivationReason.ODHLASKA,
-                java.util.Optional.of("Test termination")
-        );
 
         mockMvc.perform(
                         post("/api/members/" + memberId + "/terminate")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(request))
+                                .content("""
+                                        {
+                                            "reason": "ODHLASKA",
+                                            "note": "Test termination"
+                                        }
+                                        """)
                 )
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isUnauthorized())
@@ -220,15 +239,16 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     @WithMockUser(username = MEMBER_USERNAME, authorities = {"MEMBERS:READ"})
     void shouldReturn403WhenTerminatingMemberWithoutUpdateAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
-        TerminateMembershipRequest request = new TerminateMembershipRequest(
-                DeactivationReason.ODHLASKA,
-                java.util.Optional.of("Test termination")
-        );
 
         mockMvc.perform(
                         post("/api/members/" + memberId + "/terminate")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(request))
+                                .content("""
+                                        {
+                                            "reason": "ODHLASKA",
+                                            "note": "Test termination"
+                                        }
+                                        """)
                 )
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isForbidden())
@@ -242,10 +262,6 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
     void shouldPassAuthorizationWhenTerminatingMemberWithUpdateAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
-        TerminateMembershipRequest request = new TerminateMembershipRequest(
-                DeactivationReason.ODHLASKA,
-                java.util.Optional.of("Test termination")
-        );
 
         // This test validates that authorization passes - the endpoint returns
         // 400 Bad Request for non-existent member IDs (service throws InvalidUpdateException)
@@ -253,7 +269,12 @@ class MemberControllerSecurityTest extends SecurityTestBase {
         mockMvc.perform(
                         post("/api/members/" + memberId + "/terminate")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(request))
+                                .content("""
+                                        {
+                                            "reason": "ODHLASKA",
+                                            "note": "Test termination"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.type").exists())

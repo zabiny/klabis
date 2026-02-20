@@ -1,6 +1,5 @@
 package com.klabis.members;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.E2EIntegrationTest;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Gender;
@@ -87,9 +86,6 @@ class MemberLifecycleE2ETest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
     private MemberRepository memberRepository;
 
     private static final Pattern LOCATION_PATTERN = Pattern.compile("http://localhost/api/members/(.*)");
@@ -102,32 +98,27 @@ class MemberLifecycleE2ETest {
         // ========================================================================
         // STEP 1: Register member
         // ========================================================================
-        AddressRequest address = new AddressRequest(
-                "Hlavní 123",
-                "Praha",
-                "11000",
-                "CZ"
-        );
-
-        RegisterMemberRequest registerRequest = new RegisterMemberRequest(
-                "Jan",
-                "Novák",
-                LocalDate.of(2000, 1, 15),
-                "CZE",
-                Gender.MALE,
-                "jan.novak@example.com",
-                "+420777123456",
-                address,
-                null,
-                null,
-                null
-        );
-
         MvcResult registerResult = mockMvc.perform(
                         post("/api/members")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(registerRequest))
+                                .content("""
+                                        {
+                                            "firstName": "Jan",
+                                            "lastName": "Novák",
+                                            "dateOfBirth": "2000-01-15",
+                                            "nationality": "CZE",
+                                            "gender": "MALE",
+                                            "email": "jan.novak@example.com",
+                                            "phone": "+420777123456",
+                                            "address": {
+                                                "street": "Hlavní 123",
+                                                "city": "Praha",
+                                                "postalCode": "11000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -172,35 +163,21 @@ class MemberLifecycleE2ETest {
         // ========================================================================
         // STEP 3: Update member
         // ========================================================================
-        AddressRequest updatedAddress = new AddressRequest(
-                "Nová 456",
-                "Brno",
-                "60000",
-                "CZ"
-        );
-
-        UpdateMemberRequest updateRequest = new UpdateMemberRequest(
-                Optional.of("jan.novy@example.com"),
-                Optional.of("+420777999888"),
-                Optional.of(updatedAddress),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty()
-        );
-
         mockMvc.perform(
                         patch("/api/members/{id}", memberId)
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(updateRequest))
+                                .content("""
+                                        {
+                                            "email": "jan.novy@example.com",
+                                            "phone": "+420777999888",
+                                            "address": {
+                                                "street": "Nová 456",
+                                                "city": "Brno",
+                                                "postalCode": "60000",
+                                                "country": "CZ"
+                                            }
+                                        }
+                                        """)
                 )
                 .andExpect(status().isNoContent());
 
@@ -225,16 +202,16 @@ class MemberLifecycleE2ETest {
         // ========================================================================
         // STEP 5: Terminate member
         // ========================================================================
-        TerminateMembershipRequest terminateRequest = new TerminateMembershipRequest(
-                DeactivationReason.ODHLASKA,
-                Optional.of("Member requested termination")
-        );
-
         mockMvc.perform(
                         post("/api/members/{id}/terminate", memberId)
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(terminateRequest))
+                                .content("""
+                                        {
+                                            "reason": "ODHLASKA",
+                                            "note": "Member requested termination"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isNoContent());
 
@@ -286,7 +263,12 @@ class MemberLifecycleE2ETest {
                         post("/api/members/{id}/terminate", memberId)
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(terminateRequest))
+                                .content("""
+                                        {
+                                            "reason": "ODHLASKA",
+                                            "note": "Member requested termination"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already terminated")));
