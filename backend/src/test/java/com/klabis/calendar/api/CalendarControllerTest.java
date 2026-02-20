@@ -57,9 +57,9 @@ class CalendarControllerTest {
     class ListCalendarItemsTests {
 
         @Test
-        @DisplayName("should return 200 with paginated calendar items")
+        @DisplayName("should return 200 with paginated calendar items when dates provided")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
-        void shouldListCalendarItemsWithPagination() throws Exception {
+        void shouldListCalendarItemsWithDates() throws Exception {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
@@ -102,27 +102,37 @@ class CalendarControllerTest {
         }
 
         @Test
-        @DisplayName("should return 400 when only startDate is provided")
+        @DisplayName("should use current month as default when dates not provided")
         @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
-        void shouldReturn400WhenOnlyStartDateProvided() throws Exception {
-            mockMvc.perform(
-                            get("/api/calendar-items")
-                                    .param("startDate", "2026-03-01")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andExpect(status().isBadRequest());
-        }
+        void shouldUseCurrentMonthAsDefault() throws Exception {
+            LocalDate today = LocalDate.now();
+            LocalDate firstDay = today.withDayOfMonth(1);
+            LocalDate lastDay = today.withDayOfMonth(today.lengthOfMonth());
 
-        @Test
-        @DisplayName("should return 400 when only endDate is provided")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
-        void shouldReturn400WhenOnlyEndDateProvided() throws Exception {
+            CalendarItemDto dto = new CalendarItemDto(
+                    UUID.randomUUID(),
+                    "Current Month Event",
+                    "Event in current month",
+                    today,
+                    today,
+                    null
+            );
+
+            PageImpl<CalendarItemDto> page = new PageImpl<>(
+                    List.of(dto),
+                    PageRequest.of(0, 20),
+                    1
+            );
+
+            when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any())).thenReturn(page);
+
             mockMvc.perform(
                             get("/api/calendar-items")
-                                    .param("endDate", "2026-03-31")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[0].name").value("Current Month Event"))
+                    .andExpect(jsonPath("$.page.totalElements").value(1));
         }
 
         @Test

@@ -93,9 +93,9 @@ class CalendarControllerIntegrationTest {
     // These are tested in event-driven sync integration tests
 
     @Test
-    @DisplayName("should list calendar items with date range filtering")
+    @DisplayName("should list calendar items with provided date range")
     @WithMockUser(authorities = {MEMBERS_READ_AUTHORITY})
-    void shouldListCalendarItemsWithDateRangeFiltering() throws Exception {
+    void shouldListCalendarItemsWithProvidedDateRange() throws Exception {
         CalendarItem item1 = CalendarItem.create(
                 "March Training",
                 "Training in March",
@@ -121,6 +121,31 @@ class CalendarControllerIntegrationTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").exists())
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._templates.default.method").exists());
+    }
+
+    @Test
+    @DisplayName("should list calendar items for current month when dates not provided")
+    @WithMockUser(authorities = {MEMBERS_READ_AUTHORITY})
+    void shouldListCalendarItemsForCurrentMonthWhenDatesNotProvided() throws Exception {
+        LocalDate today = LocalDate.now();
+        CalendarItem item = CalendarItem.create(
+                "Current Month Training",
+                "Training this month",
+                today,
+                today
+        );
+
+        calendarRepository.save(item);
+
+        mockMvc.perform(
+                        get("/api/calendar-items")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page.totalElements").value(1))
+                .andExpect(jsonPath("$._embedded.calendarItemDtoList[0].name").value("Current Month Training"))
                 .andExpect(jsonPath("$._links.self.href").exists())
                 .andExpect(jsonPath("$._templates.default.method").exists());
     }

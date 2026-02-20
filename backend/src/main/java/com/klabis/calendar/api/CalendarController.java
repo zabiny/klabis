@@ -54,12 +54,14 @@ class CalendarController {
     }
 
     /**
-     * List calendar items with optional date range filtering.
+     * List calendar items with date range filtering.
      * <p>
      * GET /api/calendar-items?startDate={date}&endDate={date}&page=0&size=10
+     * <p>
+     * If startDate and endDate are not provided, defaults to current month.
      *
-     * @param startDate optional start date for filtering (inclusive)
-     * @param endDate   optional end date for filtering (inclusive)
+     * @param startDate start date for filtering (inclusive, defaults to first day of current month)
+     * @param endDate   end date for filtering (inclusive, defaults to last day of current month)
      * @param pageable  pagination and sorting parameters
      * @return paginated collection of calendar item summaries
      */
@@ -68,24 +70,27 @@ class CalendarController {
             summary = "List calendar items with pagination and date range filtering",
             description = """
                     Retrieves a paginated list of calendar items.
-                    Supports filtering by date range (both startDate and endDate required).
+                    Supports filtering by date range.
+                    If dates not provided, defaults to current month.
                     Default: page=0, size=20, sort=startDate,asc.
                     Allowed sort fields: id, name, startDate, endDate.
                     """
     )
     @ApiResponse(responseCode = "200", description = "Paginated list of calendar items retrieved successfully")
     public ResponseEntity<PagedModel<EntityModel<CalendarItemDto>>> listCalendarItems(
-            @Parameter(description = "Start date for filtering (optional, requires endDate)")
+            @Parameter(description = "Start date for filtering (defaults to first day of current month)")
             @RequestParam(required = false) LocalDate startDate,
-            @Parameter(description = "End date for filtering (optional, requires startDate)")
+            @Parameter(description = "End date for filtering (defaults to last day of current month)")
             @RequestParam(required = false) LocalDate endDate,
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
 
-        validateDateRangeParameters(startDate, endDate);
+        LocalDate effectiveStartDate = startDate != null ? startDate : getCurrentMonthFirstDay();
+        LocalDate effectiveEndDate = endDate != null ? endDate : getCurrentMonthLastDay();
+
         validateSortFields(pageable.getSort());
 
-        Page<CalendarItemDto> page = calendarManagementService.listCalendarItems(startDate, endDate, pageable);
+        Page<CalendarItemDto> page = calendarManagementService.listCalendarItems(effectiveStartDate, effectiveEndDate, pageable);
 
         PagedModel<EntityModel<CalendarItemDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,
@@ -96,7 +101,7 @@ class CalendarController {
                 }
         );
 
-        Link selfLink = klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(startDate, endDate, pageable))
+        Link selfLink = klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, pageable))
                 .withSelfRel()
                 .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null)));
 
@@ -223,16 +228,21 @@ class CalendarController {
     }
 
     /**
-     * Validates that date range parameters are either both present or both absent.
+     * Returns the first day of the current month.
      *
-     * @param startDate the start date
-     * @param endDate   the end date
-     * @throws InvalidCalendarQueryException if only one date is provided
+     * @return first day of current month
      */
-    private void validateDateRangeParameters(LocalDate startDate, LocalDate endDate) {
-        if ((startDate != null && endDate == null) || (startDate == null && endDate != null)) {
-            throw new InvalidCalendarQueryException("Both startDate and endDate must be provided for date range filtering");
-        }
+    private LocalDate getCurrentMonthFirstDay() {
+        return LocalDate.now().withDayOfMonth(1);
+    }
+
+    /**
+     * Returns the last day of the current month.
+     *
+     * @return last day of current month
+     */
+    private LocalDate getCurrentMonthLastDay() {
+        return LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
     }
 
     /**
@@ -283,6 +293,21 @@ class CalendarController {
         }
 
         // Collection link - always present
-        entityModel.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(null, null, null)).withRel("collection"));
+        entityModel.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(null, null, Pageable.unpaged())).withRel("collection"));
+    }
+}
+
+/**
+ * HATEOAS processor that adds calendar link to root navigation.
+ * <p>
+ * Adds link to calendar items collection at the API root for frontend navigation.
+ */
+@org.springframework.stereotype.Component
+class CalendarRootPostprocessor implements org.springframework.hateoas.server.RepresentationModelProcessor<org.springframework.hateoas.EntityModel<com.klabis.common.ui.RootModel>> {
+
+    @Override
+    public org.springframework.hateoas.EntityModel<com.klabis.common.ui.RootModel> process(org.springframework.hateoas.EntityModel<com.klabis.common.ui.RootModel> model) {
+        model.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(null, null, org.springframework.data.domain.Pageable.unpaged())).withRel("calendar"));
+        return model;
     }
 }

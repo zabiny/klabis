@@ -7,6 +7,7 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -35,25 +36,18 @@ class CalendarManagementService {
     }
 
     /**
-     * Lists calendar items with pagination and optional date range filtering.
+     * Lists calendar items with pagination and date range filtering.
      * <p>
-     * If startDate and endDate are provided, returns items that intersect
-     * with the specified date range. Otherwise, returns all items.
+     * Returns items that intersect with the specified date range.
      *
-     * @param startDate optional start date for filtering (inclusive)
-     * @param endDate   optional end date for filtering (inclusive)
+     * @param startDate start date for filtering (inclusive)
+     * @param endDate   end date for filtering (inclusive)
      * @param pageable  pagination and sorting parameters
      * @return page of calendar item DTOs
      */
     @Transactional(readOnly = true)
-    public Page<CalendarItemDto> listCalendarItems(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        List<CalendarItem> items;
-
-        if (startDate != null && endDate != null) {
-            items = calendarRepository.findByDateRange(startDate, endDate);
-        } else {
-            items = List.of();
-        }
+    public Page<CalendarItemDto> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Pageable pageable) {
+        List<CalendarItem> items = calendarRepository.findByDateRange(startDate, endDate);
 
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), items.size());
