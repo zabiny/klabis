@@ -123,6 +123,60 @@ Vygenerováno: 2026-02-20
 
 **Důvod:** Nový MemberLifecycleE2ETest pokrývá všechny scénáře fragmentovaných testů v jednom komplexním testu.
 
+### ✅ Fáze 4: Odstranit ObjectMapper z MockMvc API testů
+
+**Problém:** Testy používaly ObjectMapper k serializaci request body, což bylo zbytečně složité a méně čitelné.
+
+**Řešení:** Nahrazeno 68 volání `objectMapper.writeValueAsString()` JSON text bloky.
+
+**Upravené soubory (6):**
+1. `MemberControllerApiTest.java` - 15 nahrazení
+2. `UpdateMemberApiTest.java` - 32 nahrazení
+3. `MemberRegistrationIntegrationTest.java` - 4 nahrazení
+4. `MemberLifecycleE2ETest.java` - 4 nahrazení
+5. `MemberTerminationE2ETest.java` - 7 nahrazení
+6. `MemberControllerSecurityTest.java` - 6 nahrazení + odstraněna helper metoda
+
+**Příklad transformace:**
+
+**Před:**
+```java
+@Autowired
+private ObjectMapper objectMapper;
+
+UpdateMemberRequest request = new UpdateMemberRequest(
+    Optional.of("new.email@example.com"),
+    Optional.empty(),
+    Optional.empty(),
+    // ... 12 more Optional.empty() fields
+);
+
+mockMvc.perform(
+    patch("/api/members/{id}", testMemberId)
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(request))
+)
+```
+
+**Po:**
+```java
+mockMvc.perform(
+    patch("/api/members/{id}", testMemberId)
+        .contentType("application/json")
+        .content("""
+            {
+                "email": "new.email@example.com"
+            }
+            """)
+)
+```
+
+**Výsledky:**
+- ✅ Čitelnější test kód
+- ✅ JSON přímo viditelný v testu
+- ✅ Méně závislostí (ObjectMapper není potřeba)
+- ✅ Všech 80 testů projde
+
 ---
 
 ## Zachované assertions ze smazaných testů
@@ -187,16 +241,26 @@ Vygenerováno: 2026-02-20
 
 ---
 
-## Statistika
+## Celkový souhrn změn
+
+### Commit History
+
+1. **74d5a47** - test(members): merge MemberTerminationIntegrationTest into ManagementServiceTest
+2. **47ac28e** - test(members): add comprehensive E2E test for Member aggregate lifecycle
+3. **2ead31e** - test(members): remove fragmented E2E tests, keep MemberLifecycleE2ETest
+4. **50d4b0f** - refactor(tests): remove ObjectMapper from MockMvc API call tests
+
+### Statistika
 
 | Kategorie | Původní počet | Provedené úpravy | Aktuální stav |
 |-----------|---------------|-----------------|---------------|
 | Domain unit tests | 16 | 0 | ✅ 16 |
 | Application unit tests | 2 | +1 (merged) | ✅ 3 |
-| Controller tests | 3 | 0 | ✅ 3 |
+| Controller tests | 3 | +1 (refactored) | ✅ 3 |
 | Repository unit tests | 2 | 0 | ✅ 2 |
 | Integration tests | 4 | -1 (fixed) | ✅ 3 |
 | E2E tests | 4 | -2 (deleted) +1 (new) | ✅ 3 |
+| **Code Quality** | - | ObjectMapper removal (68) | ✅ Čistší kód |
 
 ---
 
