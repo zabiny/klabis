@@ -67,8 +67,9 @@ Vygenerováno: 2026-02-20
 
 | Třída | Popis | Aggregate lifecycle | Status |
 |-------|-------|-------------------|--------|
-| `MemberRegistrationE2ETest` | API → DB → Outbox → Email | ❌ **NEKOMPLETNÍ** - Jen registrace | ⚠️ **TODO v kódu** - Komentář uvádí kroky 5-10 chybí |
-| `GetMemberE2ETest` | Create → Get by ID | ❌ Není lifecycle test | ⚠️ **POZNÁMKA v kódu** - "refactor into WebMvcTest" |
+| ~~`MemberRegistrationE2ETest`~~ | ❌ **SMAZÁNO** - Fragmentovaný test | ❌ Pouze registrace | ⚠️ Byl nekompletní (TODO kroky 5-10) |
+| ~~`GetMemberE2ETest`~~ | ❌ **SMAZÁNO** - Fragmentovaný test | ❌ Pouze Create+Get | ⚠ Měl TODO na refaktoring |
+| `MemberLifecycleE2ETest` | ✅ **NOVÝ** - Kompletní lifecycle | ✅ **ANO** - Full Member lifecycle | **OK** - Register → Get → Update → Terminate |
 | `MemberTerminationE2ETest` | Register → Terminate → Verify | ✅ **ANO** - Register → Terminate workflow | **OK** - Plný lifecycle test |
 | `PasswordSetupFlowE2ETest` | Password reset flow | ❓ Nezjištěno | **OK** - Specifický flow |
 
@@ -92,29 +93,80 @@ Vygenerováno: 2026-02-20
 
 **Výsledek:** `ManagementServiceTest` nyní obsahuje 10 testů (2 původní update testy + 8 termination testů).
 
+### ✅ Fáze 2: Vytvořit E2E test pro plný Member lifecycle
+
+**Vytvořeno:** `MemberLifecycleE2ETest.java` s komplexním testem kompletního životního cyklu.
+
+**Kroky v testu:**
+1. **Register** member → POST /api/members → MemberCreatedEvent v outbox
+2. **Get** member → GET /api/members/{id} → ověření všech dat
+3. **Update** member → PATCH /api/members/{id} → změna kontaktů
+4. **Verify** update → GET /api/members/{id} → potvrzení změn
+5. **Terminate** member → POST /api/members/{id}/terminate → MemberTerminatedEvent v outbox
+6. **Verify** termination → GET /api/members/{id} → active=false, termination details
+7. **List** check → GET /api/members → soft delete verification
+8. **Duplicate** termination → 400 Bad Request ("already terminated")
+
+**Výsledek:** Jeden komplexní E2E test pokrývající celý lifecycle Member aggregate.
+
+### ✅ Fáze 3: Vyčistit fragmentované E2E testy
+
+**Smazáno:**
+- `GetMemberE2ETest.java` - 5 testů (pouze Create+Get scénáře)
+- `MemberRegistrationE2ETest.java` - 1 nekompletní test (TODO kroky 5-10)
+
+**Assertions zachovány** v novém MemberLifecycleE2ETest:
+- Všechny JSON path validace z GetMemberE2ETest
+- Location header validace
+- MemberCreatedEvent a MemberTerminatedEvent validace
+- Soft delete verifikace (terminated member v listu)
+
+**Důvod:** Nový MemberLifecycleE2ETest pokrývá všechny scénáře fragmentovaných testů v jednom komplexním testu.
+
 ---
 
-## Plánované změny
+## Zachované assertions ze smazaných testů
 
-### ⏳ Fáze 2: Vytvořit E2E test pro plný Member lifecycle
+### Z GetMemberE2ETest (6 testových metod)
 
-**Cíl:** Jeden komplexní E2E test pokrývající kompletní životní cyklus Member aggregate:
+#### shouldCreateMemberAndRetrieveById
+- POST /api/members returns 201 Created
+- Location header obsahuje member ID
+- GET /api/members/{id} returns 200 OK
+- Response contentType je HAL_FORMS_JSON
+- JSON path assertions: id, firstName, lastName, dateOfBirth, nationality, gender, email, phone, address (street, city, postalCode, country), active
+- Guardian field není přítomen pro dospělé (@JsonInclude(NON_NULL))
 
-1. **Register** member → vytvoření v DB
-2. **Setup password** → aktivace uživatele
-3. **Get** member → ověření dat
-4. **Update** member → změna dat
-5. **Terminate** member → deaktivace
-6. **Verify** termination → ověření stavu
+#### shouldCreateMemberWithGuardianAndRetrieveById
+- Vytvoření člena s guardianem
+- JSON assertions pro guardian: firstName, lastName, relationship, email, phone
 
-### ⏳ Fáze 3: Vyčistit fragmentované E2E testy
+#### shouldReturn404ForNonExistentMemberId
+- GET /api/members/{id} s neexistujícím UUID vrací 404
+- Error response obsahuje ID v detail field
 
-**E2E testy k odstranění:**
-- `GetMemberE2ETest` - refaktorovat do @WebMvcTest nebo začlenit do komplexního E2E
-- `MemberRegistrationE2ETest` - začlenit do komplexního E2E (využít existující assertions)
+#### shouldCreateAdultMemberAndVerifyAllDetails
+- Kompletní validace polí pro dospělého člena
 
-**Assertions k zachování:**
-(Shromážděny z existujících testů)
+#### shouldCreateMemberWithBirthNumberAndBankAccountAndRetrieveById
+- Validace birthNumber a bankAccountNumber fields
+
+#### shouldCreateMemberWithoutBirthNumberAndBankAccountAndRetrieveById
+- Validace že birthNumber a bankAccountNumber nejsou přítomny when null
+
+### Z MemberRegistrationE2ETest (1 testová metoda)
+
+#### shouldCompleteRegistrationFlowWithOutboxPattern
+- POST /api/members returns 201 Created
+- Location header exists
+- MemberCreatedEvent publikován do Spring Modulith outbox
+- Password setup email odeslán do 4 sekund (Awaitility)
+- Email recipient je správná adresa
+
+**Nekompletní kroky (TODO v původním testu):**
+- STEP 5-10: Nebyly implementovány v původním testu (nyní pokryty v MemberLifecycleE2ETest)
+
+---
 
 #### Z GetMemberE2ETest:
 - Ověření vytvoření member a získání přes GET /api/members/{id}
@@ -137,14 +189,14 @@ Vygenerováno: 2026-02-20
 
 ## Statistika
 
-| Kategorie | Původní počet | Počet úprav | Aktuální stav |
-|-----------|---------------|-------------|---------------|
+| Kategorie | Původní počet | Provedené úpravy | Aktuální stav |
+|-----------|---------------|-----------------|---------------|
 | Domain unit tests | 16 | 0 | ✅ 16 |
-| Application unit tests | 2 | +1 | ✅ 3 (merged) |
+| Application unit tests | 2 | +1 (merged) | ✅ 3 |
 | Controller tests | 3 | 0 | ✅ 3 |
 | Repository unit tests | 2 | 0 | ✅ 2 |
-| Integration tests | 4 | -1 | ⏳ 3 |
-| E2E tests | 4 | -2 (plán) | ⏳ 2 (po fázi 3) |
+| Integration tests | 4 | -1 (fixed) | ✅ 3 |
+| E2E tests | 4 | -2 (deleted) +1 (new) | ✅ 3 |
 
 ---
 
@@ -155,10 +207,10 @@ Vygenerováno: 2026-02-20
 - ⚠️ Integration tests: 1 test s matoucím názvem
 - ⚠️ E2E tests: Fragmentované, testují jen části lifecycle
 
-**Po změnách (cíl):**
+**Po změnách (aktuální stav):**
 - ✅ Unit tests: Správně organizované
-- ✅ Integration tests: Jasné názvy, správná anotace
-- ✅ E2E tests: 1 komplexní test per aggregate root (Member)
+- ✅ Integration tests: Jasné názvy, správné anotace (MemberTerminationIntegrationTest sloučen)
+- ✅ E2E tests: 1 komplexní test per aggregate root (MemberLifecycleE2ETest) + specifické flow testy
 
 **Soulad s definicemi:**
 
@@ -169,4 +221,4 @@ Vygenerováno: 2026-02-20
 | Unit test - Controller | @MvcWebTest with mocked service | ✅ MemberControllerApiTest |
 | Unit test - Repository | Repository adapter unit tests | ✅ MemberRepositoryTest |
 | Integration test | @ApplicationModuleTest, 1 happy + 1 error path | ✅ MemberRegistrationIntegrationTest |
-| E2E test | 1 test per aggregate, full lifecycle | ⏳ Fáze 2+3 |
+| E2E test | 1 test per aggregate, full lifecycle | ✅ MemberLifecycleE2ETest |
