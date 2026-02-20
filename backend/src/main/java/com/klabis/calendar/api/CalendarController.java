@@ -10,18 +10,18 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.*;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -44,70 +44,136 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class CalendarController {
 
     private final CalendarManagementService calendarManagementService;
-    private final PagedResourcesAssembler<CalendarItemDto> pagedResourcesAssembler;
 
-    public CalendarController(
-            CalendarManagementService calendarManagementService,
-            PagedResourcesAssembler<CalendarItemDto> pagedResourcesAssembler) {
+    public CalendarController(CalendarManagementService calendarManagementService) {
         this.calendarManagementService = calendarManagementService;
-        this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
     /**
      * List calendar items with date range filtering.
      * <p>
-     * GET /api/calendar-items?startDate={date}&endDate={date}&page=0&size=10
+     * GET /api/calendar-items?startDate={date}&endDate={date}&sort=startDate,asc
      * <p>
      * If startDate and endDate are not provided, defaults to current month.
+     * Maximum date range is 1 year (366 days).
      *
      * @param startDate start date for filtering (inclusive, defaults to first day of current month)
      * @param endDate   end date for filtering (inclusive, defaults to last day of current month)
-     * @param pageable  pagination and sorting parameters
-     * @return paginated collection of calendar item summaries
+     * @param sort      sorting parameters (default: startDate,asc)
+     * @return collection of calendar item summaries
      */
     @GetMapping
     @Operation(
-            summary = "List calendar items with pagination and date range filtering",
+            summary = "List calendar items with date range filtering",
             description = """
-                    Retrieves a paginated list of calendar items.
-                    Supports filtering by date range.
+                    Retrieves a list of calendar items filtered by date range.
                     If dates not provided, defaults to current month.
-                    Default: page=0, size=20, sort=startDate,asc.
-                    Allowed sort fields: id, name, startDate, endDate.
+                    Maximum date range is 1 year (366 days).
+                    Default sort: startDate,asc. Allowed fields: id, name, startDate, endDate.
                     """
     )
-    @ApiResponse(responseCode = "200", description = "Paginated list of calendar items retrieved successfully")
-    public ResponseEntity<PagedModel<EntityModel<CalendarItemDto>>> listCalendarItems(
-            @Parameter(description = "Start date for filtering (defaults to first day of current month)")
-            @RequestParam(required = false) LocalDate startDate,
-            @Parameter(description = "End date for filtering (defaults to last day of current month)")
-            @RequestParam(required = false) LocalDate endDate,
-            @Parameter(description = "Pagination parameters: page, size, sort")
-            @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
+    @ApiResponse(responseCode = "200", description = "List of calendar items retrieved successfully")
+    @ApiResponse(responseCode = "400", description = "Date range exceeds 366 days or invalid sort field")
+    public ResponseEntity<CollectionModel<EntityModel<CalendarItemDto>>> listCalendarItems(
+            @Parameter(description = "Start date for filtering (ISO DATE format, defaults to first day of current month)")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "End date for filtering (ISO DATE format, defaults to last day of current month)")
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @Parameter(description = "Sorting parameters (default: startDate,asc)")
+            @RequestParam(defaultValue = "startDate,asc") String sort) {
 
         LocalDate effectiveStartDate = startDate != null ? startDate : getCurrentMonthFirstDay();
         LocalDate effectiveEndDate = endDate != null ? endDate : getCurrentMonthLastDay();
 
-        validateSortFields(pageable.getSort());
+        Sort sortObj = parseAndValidateSort(sort);
 
-        Page<CalendarItemDto> page = calendarManagementService.listCalendarItems(effectiveStartDate, effectiveEndDate, pageable);
+        List<CalendarItemDto> items = calendarManagementService.listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj);
 
-        PagedModel<EntityModel<CalendarItemDto>> pagedModel = pagedResourcesAssembler.toModel(
-                page,
-                dto -> {
-                    EntityModel<CalendarItemDto> model = EntityModel.of(dto);
-                    model.add(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(dto.id())).withSelfRel());
-                    return model;
-                }
+        CollectionModel<EntityModel<CalendarItemDto>> collectionModel = CollectionModel.of(
+                items.stream()
+                        .map(dto -> {
+                            EntityModel<CalendarItemDto> model = EntityModel.of(dto);
+                            model.add(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(dto.id())).withSelfRel());
+                            return model;
+                        })
+                        .toList()
         );
 
-        Link selfLink = klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, pageable))
+        Link selfLink = klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort))
                 .withSelfRel()
                 .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null)));
 
-        pagedModel.mapLink(IanaLinkRelations.SELF, link -> selfLink);
+        collectionModel.add(selfLink);
 
-        return ResponseEntity.ok(pagedModel);
+        // Add next/prev month navigation links
+        addMonthNavigationLinks(collectionModel, effectiveStartDate, effectiveEndDate, sort);
+
+        return ResponseEntity.ok(collectionModel);
+    }
+
+    /**
+     * Adds next and prev month navigation links to the collection model.
+     *
+     * @param collectionModel the collection model to add links to
+     * @param currentStartDate current date range start
+     * @param currentEndDate   current date range end
+     * @param sort             sort parameter to preserve
+     */
+    private void addMonthNavigationLinks(CollectionModel<EntityModel<CalendarItemDto>> collectionModel,
+                                          LocalDate currentStartDate,
+                                          LocalDate currentEndDate,
+                                          String sort) {
+        // Add next month link
+        LocalDate nextMonthStart = currentStartDate.plusMonths(1).withDayOfMonth(1);
+        LocalDate nextMonthEnd = nextMonthStart.withDayOfMonth(nextMonthStart.lengthOfMonth());
+        collectionModel.add(
+                klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort))
+                        .withRel("next")
+        );
+
+        // Add prev month link
+        LocalDate prevMonthStart = currentStartDate.minusMonths(1).withDayOfMonth(1);
+        LocalDate prevMonthEnd = prevMonthStart.withDayOfMonth(prevMonthStart.lengthOfMonth());
+        collectionModel.add(
+                klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort))
+                        .withRel("prev")
+        );
+    }
+
+    /**
+     * Parses and validates sort parameter.
+     *
+     * @param sort sort parameter (format: "field,direction" or "field")
+     * @return Sort object
+     * @throws InvalidCalendarQueryException if sort field is invalid
+     */
+    private Sort parseAndValidateSort(String sort) {
+        final var allowedSortFields = java.util.Set.of("id", "name", "startDate", "endDate");
+
+        String[] parts = sort.split(",");
+        String field = parts[0].trim();
+        Sort.Direction direction = Sort.Direction.ASC;
+
+        if (parts.length > 1) {
+            String dir = parts[1].trim();
+            direction = switch (dir.toLowerCase()) {
+                case "desc" -> Sort.Direction.DESC;
+                case "asc" -> Sort.Direction.ASC;
+                default -> throw new InvalidCalendarQueryException(
+                        "Invalid sort direction: " + dir + ". Must be 'asc' or 'desc'"
+                );
+            };
+        }
+
+        if (!allowedSortFields.contains(field)) {
+            throw new InvalidCalendarQueryException(
+                    "Invalid sort field: " + field + ". Allowed fields: " + allowedSortFields
+            );
+        }
+
+        return Sort.by(direction, field);
     }
 
     /**
@@ -246,30 +312,6 @@ class CalendarController {
     }
 
     /**
-     * Validates that all sort fields are in the allowed list.
-     *
-     * @param sort the sort specification to validate
-     * @throws InvalidCalendarQueryException if any sort field is not allowed
-     */
-    private void validateSortFields(Sort sort) {
-        final var allowedSortFields = java.util.Set.of(
-                "id",
-                "name",
-                "startDate",
-                "endDate"
-        );
-
-        for (Sort.Order order : sort) {
-            if (!allowedSortFields.contains(order.getProperty())) {
-                throw new InvalidCalendarQueryException(
-                        "Invalid sort field: " + order.getProperty() +
-                        ". Allowed fields: " + allowedSortFields
-                );
-            }
-        }
-    }
-
-    /**
      * Add HATEOAS links to calendar item based on whether it's manually created or event-linked.
      *
      * @param entityModel      the entity model to add links to
@@ -293,7 +335,7 @@ class CalendarController {
         }
 
         // Collection link - always present
-        entityModel.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(null, null, Pageable.unpaged())).withRel("collection"));
+        entityModel.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(LocalDate.now().withDayOfMonth(1), LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()), "startDate,asc")).withRel("collection"));
     }
 }
 
@@ -307,7 +349,7 @@ class CalendarRootPostprocessor implements org.springframework.hateoas.server.Re
 
     @Override
     public org.springframework.hateoas.EntityModel<com.klabis.common.ui.RootModel> process(org.springframework.hateoas.EntityModel<com.klabis.common.ui.RootModel> model) {
-        model.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(null, null, org.springframework.data.domain.Pageable.unpaged())).withRel("calendar"));
+        model.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(LocalDate.now().withDayOfMonth(1), LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()), "startDate,asc")).withRel("calendar"));
         return model;
     }
 }

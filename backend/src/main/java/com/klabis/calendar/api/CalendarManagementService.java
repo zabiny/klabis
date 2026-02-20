@@ -4,13 +4,13 @@ import com.klabis.calendar.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.persistence.CalendarRepository;
 import org.jmolecules.ddd.annotation.Service;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,27 +35,77 @@ class CalendarManagementService {
         this.calendarRepository = calendarRepository;
     }
 
+    private static final int MAX_DATE_RANGE_DAYS = 366; // 1 year (including leap year)
+
     /**
-     * Lists calendar items with pagination and date range filtering.
+     * Lists calendar items with date range filtering.
      * <p>
-     * Returns items that intersect with the specified date range.
+     * Returns items that intersect with the specified date range, sorted according to the provided sort parameter.
+     * Maximum date range is 1 year (366 days).
      *
      * @param startDate start date for filtering (inclusive)
      * @param endDate   end date for filtering (inclusive)
-     * @param pageable  pagination and sorting parameters
-     * @return page of calendar item DTOs
+     * @param sort      sort specification
+     * @return list of calendar item DTOs
+     * @throws IllegalArgumentException if date range exceeds 366 days
      */
     @Transactional(readOnly = true)
-    public Page<CalendarItemDto> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Pageable pageable) {
+    public List<CalendarItemDto> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Sort sort) {
+        validateDateRange(startDate, endDate);
+
         List<CalendarItem> items = calendarRepository.findByDateRange(startDate, endDate);
 
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), items.size());
-        List<CalendarItemDto> pageContent = items.subList(start, end).stream()
+        // Apply sorting based on sort parameter
+        Comparator<CalendarItem> comparator;
+        if (sort.isSorted() && sort.iterator().hasNext()) {
+            Sort.Order order = sort.iterator().next();
+            comparator = getComparatorForField(order.getProperty());
+            if (order.isDescending()) {
+                comparator = comparator.reversed();
+            }
+        } else {
+            // Default sorting by startDate ascending
+            comparator = Comparator.comparing(CalendarItem::getStartDate);
+        }
+
+        return items.stream()
+                .sorted(comparator)
                 .map(this::mapToDto)
                 .toList();
+    }
 
-        return new PageImpl<>(pageContent, pageable, items.size());
+    /**
+     * Gets comparator for specified field name.
+     *
+     * @param field field name to sort by
+     * @return comparator for that field
+     */
+    private Comparator<CalendarItem> getComparatorForField(String field) {
+        return switch (field) {
+            case "id" -> Comparator.comparing(item -> item.getId().value());
+            case "name" -> Comparator.comparing(CalendarItem::getName);
+            case "startDate" -> Comparator.comparing(CalendarItem::getStartDate);
+            case "endDate" -> Comparator.comparing(CalendarItem::getEndDate);
+            default -> throw new IllegalArgumentException("Invalid sort field: " + field);
+        };
+    }
+
+    /**
+     * Validates that the date range is within acceptable limits.
+     *
+     * @param startDate start date
+     * @param endDate   end date
+     * @throws IllegalArgumentException if range exceeds 366 days
+     */
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate) + 1; // Include both start and end dates
+
+        if (daysBetween > MAX_DATE_RANGE_DAYS) {
+            throw new IllegalArgumentException(
+                    String.format("Date range must not exceed %d days. Requested range: %d days",
+                            MAX_DATE_RANGE_DAYS, daysBetween)
+            );
+        }
     }
 
     /**

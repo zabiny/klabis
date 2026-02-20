@@ -10,8 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -43,8 +42,8 @@ class CalendarManagementServiceTest {
     class ListCalendarItemsTests {
 
         @Test
-        @DisplayName("should return page of calendar items for given date range")
-        void shouldReturnPageOfCalendarItemsForDateRange() {
+        @DisplayName("should return list of calendar items for given date range")
+        void shouldReturnListOfCalendarItemsForDateRange() {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
@@ -63,46 +62,60 @@ class CalendarManagementServiceTest {
             when(calendarRepository.findByDateRange(startDate, endDate))
                     .thenReturn(List.of(item1, item2));
 
-            Page<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, PageRequest.of(0, 20));
+            List<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
 
-            assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getContent().get(0).name()).isEqualTo("March Training");
-            assertThat(result.getContent().get(1).name()).isEqualTo("March Event");
-            assertThat(result.getTotalElements()).isEqualTo(2);
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).name()).isEqualTo("March Training");
+            assertThat(result.get(1).name()).isEqualTo("March Event");
         }
 
         @Test
-        @DisplayName("should return empty page when no items found in date range")
-        void shouldReturnEmptyPageWhenNoItemsFound() {
+        @DisplayName("should return empty list when no items found in date range")
+        void shouldReturnEmptyListWhenNoItemsFound() {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
             when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
 
-            Page<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, PageRequest.of(0, 20));
+            List<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
 
-            assertThat(result.getContent()).isEmpty();
-            assertThat(result.getTotalElements()).isZero();
+            assertThat(result).isEmpty();
         }
 
         @Test
-        @DisplayName("should apply pagination correctly")
-        void shouldApplyPaginationCorrectly() {
-            LocalDate startDate = LocalDate.of(2026, 3, 1);
-            LocalDate endDate = LocalDate.of(2026, 3, 31);
+        @DisplayName("should accept date range of exactly 366 days")
+        void shouldAcceptDateRangeOfExactly366Days() {
+            LocalDate startDate = LocalDate.of(2024, 1, 1); // Leap year
+            LocalDate endDate = LocalDate.of(2024, 12, 31);
 
-            CalendarItem item1 = CalendarItemTestDataBuilder.aCalendarItem().withName("Item 1").buildManual();
-            CalendarItem item2 = CalendarItemTestDataBuilder.aCalendarItem().withName("Item 2").buildManual();
-            CalendarItem item3 = CalendarItemTestDataBuilder.aCalendarItem().withName("Item 3").buildManual();
+            when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
 
-            when(calendarRepository.findByDateRange(startDate, endDate))
-                    .thenReturn(List.of(item1, item2, item3));
+            List<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
 
-            Page<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, PageRequest.of(0, 2));
+            assertThat(result).isEmpty();
+        }
 
-            assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getTotalElements()).isEqualTo(3);
-            assertThat(result.getTotalPages()).isEqualTo(2);
+        @Test
+        @DisplayName("should throw exception when date range exceeds 366 days")
+        void shouldThrowExceptionWhenDateRangeExceeds366Days() {
+            LocalDate startDate = LocalDate.of(2024, 1, 1);
+            LocalDate endDate = LocalDate.of(2025, 1, 2); // 367 days in leap year
+
+            assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Date range must not exceed 366 days")
+                    .hasMessageContaining("368");
+        }
+
+        @Test
+        @DisplayName("should throw exception when date range exceeds 366 days in non-leap year")
+        void shouldThrowExceptionWhenDateRangeExceeds366DaysInNonLeapYear() {
+            LocalDate startDate = LocalDate.of(2025, 1, 1);
+            LocalDate endDate = LocalDate.of(2026, 1, 2); // 367 days
+
+            assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Date range must not exceed 366 days");
         }
     }
 

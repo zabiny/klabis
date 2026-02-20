@@ -87,7 +87,7 @@ class CalendarControllerTest {
                     2
             );
 
-            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(page);
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(dto1, dto2));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -98,7 +98,7 @@ class CalendarControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[0].name").value("Spring Training"))
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[1].name").value("Spring Cup 2026"))
-                    .andExpect(jsonPath("$.page.totalElements").value(2));
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList").isArray());
         }
 
         @Test
@@ -124,7 +124,7 @@ class CalendarControllerTest {
                     1
             );
 
-            when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any())).thenReturn(page);
+            when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any())).thenReturn(List.of(dto));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -132,7 +132,7 @@ class CalendarControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[0].name").value("Current Month Event"))
-                    .andExpect(jsonPath("$.page.totalElements").value(1));
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList").isArray());
         }
 
         @Test

@@ -120,7 +120,7 @@ class CalendarControllerIntegrationTest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.page").exists())
+                .andExpect(jsonPath("$._embedded.calendarItemDtoList").isArray())
                 .andExpect(jsonPath("$._links.self.href").exists())
                 .andExpect(jsonPath("$._templates.default.method").exists());
     }
@@ -144,7 +144,7 @@ class CalendarControllerIntegrationTest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.page.totalElements").value(1))
+                .andExpect(jsonPath("$._embedded.calendarItemDtoList").isArray())
                 .andExpect(jsonPath("$._embedded.calendarItemDtoList[0].name").value("Current Month Training"))
                 .andExpect(jsonPath("$._links.self.href").exists())
                 .andExpect(jsonPath("$._templates.default.method").exists());
@@ -216,4 +216,57 @@ class CalendarControllerIntegrationTest {
 
     // Note: Event-linked calendar item delete tests require actual events in database
     // These are tested in event-driven sync integration tests
+
+    @Test
+    @DisplayName("should include next and prev month navigation links with ISO DATE format")
+    @WithMockUser(authorities = {MEMBERS_READ_AUTHORITY})
+    void shouldIncludeNextAndPrevMonthNavigationLinks() throws Exception {
+        CalendarItem item = CalendarItem.create(
+                "March Event",
+                "Event in March",
+                LocalDate.of(2026, 3, 15),
+                LocalDate.of(2026, 3, 15)
+        );
+
+        calendarRepository.save(item);
+
+        mockMvc.perform(
+                        get("/api/calendar-items")
+                                .param("startDate", "2026-03-01")
+                                .param("endDate", "2026-03-31")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.next.href").exists())
+                .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.containsString("startDate=2026-04-01")))
+                .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.containsString("endDate=2026-04-30")))
+                .andExpect(jsonPath("$._links.prev.href").exists())
+                .andExpect(jsonPath("$._links.prev.href").value(org.hamcrest.Matchers.containsString("startDate=2026-02-01")))
+                .andExpect(jsonPath("$._links.prev.href").value(org.hamcrest.Matchers.containsString("endDate=2026-02-28")));
+    }
+
+    @Test
+    @DisplayName("should preserve sort parameter in navigation links")
+    @WithMockUser(authorities = {MEMBERS_READ_AUTHORITY})
+    void shouldPreserveSortParameterInNavigationLinks() throws Exception {
+        CalendarItem item = CalendarItem.create(
+                "March Event",
+                "Event in March",
+                LocalDate.of(2026, 3, 15),
+                LocalDate.of(2026, 3, 15)
+        );
+
+        calendarRepository.save(item);
+
+        mockMvc.perform(
+                        get("/api/calendar-items")
+                                .param("startDate", "2026-03-01")
+                                .param("endDate", "2026-03-31")
+                                .param("sort", "name,desc")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.containsString("sort=name%2Cdesc")))
+                .andExpect(jsonPath("$._links.prev.href").value(org.hamcrest.Matchers.containsString("sort=name%2Cdesc")));
+    }
 }

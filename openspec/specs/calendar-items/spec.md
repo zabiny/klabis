@@ -10,15 +10,51 @@ This specification defines requirements for managing calendar items. Calendar it
 
 The system SHALL allow authenticated members to retrieve a list of calendar items for a specified date range.
 
+#### Business Rules:
+
+- **Maximum Date Range**: Date range must not exceed 366 days (1 year, including leap year)
+- **Default Date Range**: If startDate and endDate are not provided, system defaults to current month
+- **Sorting**: Results are sortable by id, name, startDate, endDate (default: startDate,asc)
+- **No Pagination**: All items within date range are returned (no pagination)
+
 #### Scenario: List calendar items for month view
 
 - **GIVEN** authenticated user with ANY MEMBER role
 - **WHEN** user makes GET request to /api/calendar-items?startDate=2026-06-01&endDate=2026-06-30
 - **THEN** system returns HTTP 200 OK
 - **AND** response includes calendar items that intersect with the specified date range
-- **AND** response includes page metadata (size, totalElements, totalPages, number)
-- **AND** response includes HATEOAS pagination links (self, first, last, next if applicable)
+- **AND** response is sorted by startDate ascending (default)
+- **AND** response includes HATEOAS navigation links (self, next, prev)
 - **AND** Content-Type is application/prs.hal-forms+json
+
+#### Scenario: List calendar items with default date range
+
+- **GIVEN** authenticated user with ANY MEMBER role
+- **WHEN** user makes GET request to /api/calendar-items (no date parameters)
+- **THEN** system returns HTTP 200 OK
+- **AND** system uses current month as date range (first day to last day)
+- **AND** response includes calendar items for current month
+
+#### Scenario: List calendar items exceeds maximum range
+
+- **GIVEN** authenticated user with ANY MEMBER role
+- **WHEN** user makes GET request to /api/calendar-items with date range exceeding 366 days
+- **THEN** system returns HTTP 400 Bad Request
+- **AND** error message indicates "Date range must not exceed 366 days"
+
+#### Scenario: List calendar items includes sorting
+
+- **GIVEN** authenticated user with ANY MEMBER role
+- **WHEN** user makes GET request to /api/calendar-items?sort=name,desc
+- **THEN** system returns HTTP 200 OK
+- **AND** response includes calendar items sorted by name in descending order
+
+#### Scenario: Invalid sort field
+
+- **GIVEN** authenticated user with ANY MEMBER role
+- **WHEN** user makes GET request to /api/calendar-items?sort=invalidField,asc
+- **THEN** system returns HTTP 400 Bad Request
+- **AND** error message indicates "Invalid sort field" and lists allowed fields
 
 #### Scenario: List calendar items includes multi-day items
 
@@ -26,6 +62,21 @@ The system SHALL allow authenticated members to retrieve a list of calendar item
 - **WHEN** user makes GET request to /api/calendar-items?startDate=2026-06-01&endDate=2026-06-30
 - **THEN** system includes the item in response
 - **AND** item spans both May and June
+
+#### Scenario: Calendar response includes month navigation links
+
+- **GIVEN** authenticated user requests calendar items for June 2026
+- **WHEN** user makes GET request to /api/calendar-items?startDate=2026-06-01&endDate=2026-06-30
+- **THEN** response includes HATEOAS "next" link with startDate=2026-07-01&endDate=2026-07-31
+- **AND** response includes HATEOAS "prev" link with startDate=2026-05-01&endDate=2026-05-31
+- **AND** links maintain same sort parameter as original request
+
+#### Scenario: Month navigation preserves custom sort
+
+- **GIVEN** authenticated user requests calendar items with custom sort
+- **WHEN** user makes GET request to /api/calendar-items?startDate=2026-06-01&endDate=2026-06-30&sort=name,asc
+- **THEN** "next" link includes sort=name,asc parameter
+- **AND** "prev" link includes sort=name,asc parameter
 
 #### Scenario: Unauthenticated access to calendar items
 
