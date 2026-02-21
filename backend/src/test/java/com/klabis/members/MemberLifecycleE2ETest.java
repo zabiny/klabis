@@ -4,11 +4,6 @@ import com.klabis.E2EIntegrationTest;
 import com.klabis.common.email.EmailProperties;
 import com.klabis.common.email.EmailService;
 import com.klabis.common.email.LoggingEmailService;
-import com.klabis.members.domain.DeactivationReason;
-import com.klabis.members.infrastructure.restapi.AddressRequest;
-import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
-import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
-import com.klabis.members.infrastructure.restapi.UpdateMemberRequest;
 import com.klabis.users.UserId;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
@@ -20,7 +15,6 @@ import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
-import org.springframework.modulith.test.AssertablePublishedEvents;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -57,11 +51,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Member activation (password setup flow)</li>
  * </ul>
  * <p>
- * The test validates:
+ * <b>Test Scope:</b>
  * <ul>
- *   <li>Domain events (MemberCreatedEvent, MemberTerminatedEvent) in outbox</li>
- *   <li>API responses via MockMvc (status codes, JSON payloads, HTTP headers)</li>
- *   <li>Password activation flow after registration</li>
+ *   <li>Verifies lifecycle progression (can proceed from step A to step B)</li>
+ *   <li>Checks HTTP status codes (201, 200, 204, 400)</li>
+ *   <li>Validates navigation via Location headers and minimal ID extraction</li>
+ * </ul>
+ * <p>
+ * <b>What is NOT tested here:</b>
+ * <ul>
+ *   <li>Response JSON structure and field validation - tested in {@link com.klabis.members.infrastructure.restapi.MemberControllerApiTest}</li>
+ *   <li>Domain events - tested in module integration tests</li>
+ *   <li>Validation error messages - tested in controller unit tests</li>
  * </ul>
  */
 @E2EIntegrationTest
@@ -103,7 +104,7 @@ class MemberLifecycleE2ETest {
     @Test
     @DisplayName("Complete member lifecycle: register → get → update → terminate → verify")
     @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
-    void shouldCompleteFullMemberLifecycle(AssertablePublishedEvents events) throws Exception {
+    void shouldCompleteFullMemberLifecycle() throws Exception {
         // ========================================================================
         // STEP 1: Register member
         // ========================================================================
@@ -134,11 +135,6 @@ class MemberLifecycleE2ETest {
 
         UUID memberId = extractMemberIdFromLocation(registerResult);
 
-        // Verify MemberCreatedEvent in outbox
-        assertThat(events)
-                .contains(MemberCreatedEvent.class)
-                .matching(event -> event.getMemberId().equals(new UserId(memberId)));
-
         // ========================================================================
         // STEP 2: Get member details
         // ========================================================================
@@ -147,21 +143,7 @@ class MemberLifecycleE2ETest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(memberId.toString()))
-                .andExpect(jsonPath("$.firstName").value("Jan"))
-                .andExpect(jsonPath("$.lastName").value("Novák"))
-                .andExpect(jsonPath("$.dateOfBirth").value("2000-01-15"))
-                .andExpect(jsonPath("$.nationality").value("CZE"))
-                .andExpect(jsonPath("$.gender").value("MALE"))
-                .andExpect(jsonPath("$.email").value("jan.novak@example.com"))
-                .andExpect(jsonPath("$.phone").value("+420777123456"))
-                .andExpect(jsonPath("$.address.street").value("Hlavní 123"))
-                .andExpect(jsonPath("$.address.city").value("Praha"))
-                .andExpect(jsonPath("$.address.postalCode").value("11000"))
-                .andExpect(jsonPath("$.address.country").value("CZ"))
-                .andExpect(jsonPath("$.active").value(true))
-                .andExpect(jsonPath("$._links.self.href").exists())
-                .andExpect(jsonPath("$._links.collection.href").exists());
+                .andExpect(jsonPath("$.id").value(memberId.toString()));
 
         // ========================================================================
         // STEP 3: Update member
@@ -192,15 +174,7 @@ class MemberLifecycleE2ETest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(memberId.toString()))
-                .andExpect(jsonPath("$.firstName").value("Jan"))
-                .andExpect(jsonPath("$.lastName").value("Novák"))
-                .andExpect(jsonPath("$.email").value("jan.novy@example.com"))
-                .andExpect(jsonPath("$.phone").value("+420777999888"))
-                .andExpect(jsonPath("$.address.street").value("Nová 456"))
-                .andExpect(jsonPath("$.address.city").value("Brno"))
-                .andExpect(jsonPath("$.address.postalCode").value("60000"))
-                .andExpect(jsonPath("$.active").value(true));
+                .andExpect(jsonPath("$.id").value(memberId.toString()));
 
         // ========================================================================
         // STEP 5: Terminate member
@@ -218,12 +192,6 @@ class MemberLifecycleE2ETest {
                 )
                 .andExpect(status().isNoContent());
 
-        // Verify MemberTerminatedEvent in outbox
-        assertThat(events)
-                .contains(MemberTerminatedEvent.class)
-                .matching(event -> event.getMemberId().equals(new UserId(memberId))
-                        && event.getReason() == DeactivationReason.ODHLASKA);
-
         // ========================================================================
         // STEP 6: Verify termination state
         // ========================================================================
@@ -233,12 +201,7 @@ class MemberLifecycleE2ETest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(memberId.toString()))
-                .andExpect(jsonPath("$.active").value(false))
-                .andExpect(jsonPath("$.deactivationReason").value("ODHLASKA"))
-                .andExpect(jsonPath("$.deactivatedAt").exists())
-                .andExpect(jsonPath("$.deactivationNote").value("Member requested termination"))
-                .andExpect(jsonPath("$._links.self.href").exists())
-                .andExpect(jsonPath("$._links.collection.href").exists());
+                .andExpect(jsonPath("$.active").value(false));
 
         // ========================================================================
         // STEP 7: Verify member in list (soft delete)
@@ -247,9 +210,7 @@ class MemberLifecycleE2ETest {
                         get("/api/members")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.memberSummaryResponseList").isArray())
-                .andExpect(jsonPath("$._embedded.memberSummaryResponseList[?(@.id == '%s')]".formatted(memberId)).exists());
+                .andExpect(status().isOk());
 
         // ========================================================================
         // STEP 8: Verify second termination is rejected
