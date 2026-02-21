@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenSpec Critique Playground</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --surface3: #30363d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #7d8590;
+  --subtle: #484f58;
+  --accent: #388bfd;
+  --accent-dim: rgba(56,139,253,0.1);
+  --amber: #d29922;
+  --amber-dim: rgba(210,153,34,0.09);
+  --green: #2ea043;
+  --green-dim: rgba(46,160,67,0.09);
+  --red: #f85149;
+  --red-dim: rgba(248,81,73,0.09);
+  --purple: #8957e5;
+  --mono: 'SF Mono','Cascadia Code','Fira Code',Menlo,monospace;
+  --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.topbar-title { font-size: 13px; font-weight: 700; }
+.topbar-badge {
+  background: rgba(137,87,229,0.15);
+  color: var(--purple);
+  border: 1px solid rgba(137,87,229,0.3);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.topbar-sep { width: 1px; height: 16px; background: var(--border); }
+.topbar-hint { font-size: 11px; color: var(--muted); }
+.topbar-spacer { flex: 1; }
+
+.workspace { flex: 1; display: flex; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 248px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sidebar-header-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); flex: 1;
+}
+.change-sel {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.section-label {
+  padding: 8px 12px 3px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--subtle);
+}
+
+.file-tree { flex: 1; overflow-y: auto; padding: 2px 0 4px; }
+.file-tree::-webkit-scrollbar { width: 3px; }
+.file-tree::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+.tree-group { padding: 6px 10px 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--subtle); }
+.tree-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 10px 5px 14px; cursor: pointer; user-select: none;
+  transition: background 0.1s; border-left: 2px solid transparent;
+}
+.tree-item:hover { background: var(--surface2); }
+.tree-item.active { background: var(--accent-dim); border-left-color: var(--accent); }
+.tree-item.active .tree-name { color: var(--accent); }
+.tree-icon { font-size: 12px; flex-shrink: 0; }
+.tree-name { font-size: 12px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tree-badge {
+  font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 10px; flex-shrink: 0;
+}
+.badge-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(210,153,34,0.25); }
+.badge-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(46,160,67,0.25); }
+
+.sidebar-paste {
+  border-top: 1px solid var(--border);
+  padding: 8px 10px;
+}
+.paste-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--subtle); margin-bottom: 5px; }
+.paste-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  padding: 6px 8px;
+  font-size: 11px;
+  font-family: var(--mono);
+  resize: none;
+  outline: none;
+  height: 65px;
+  transition: border-color 0.12s;
+}
+.paste-input:focus { border-color: var(--accent); }
+.paste-input::placeholder { color: var(--subtle); }
+.btn-add-doc {
+  margin-top: 5px; width: 100%;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--muted); border-radius: 5px; padding: 4px 8px;
+  font-size: 11px; cursor: pointer; transition: all 0.12s;
+}
+.btn-add-doc:hover { color: var(--text); background: var(--surface3); }
+
+/* ── Editor ── */
+.editor { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.editor-tabs {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-end;
+  padding: 0 12px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.editor-tabs::-webkit-scrollbar { height: 2px; }
+.editor-tabs::-webkit-scrollbar-thumb { background: var(--surface3); }
+.tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 12px 6px;
+  font-size: 12px; color: var(--muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer; white-space: nowrap; transition: color 0.12s; user-select: none;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.tab-close { font-size: 10px; color: var(--subtle); padding: 0 2px; border-radius: 2px; }
+.tab-close:hover { color: var(--red); background: var(--red-dim); }
+.no-doc-hint { padding: 7px 12px; font-size: 12px; color: var(--subtle); }
+
+.editor-body { flex: 1; display: flex; overflow: hidden; }
+
+.doc-view {
+  flex: 1; overflow-y: auto; padding: 20px 28px; line-height: 1.65;
+}
+.doc-view::-webkit-scrollbar { width: 3px; }
+.doc-view::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+.doc-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; gap: 10px; color: var(--subtle);
+}
+.doc-empty-icon { font-size: 36px; }
+
+/* Markdown */
+.md h1 { font-size: 18px; font-weight: 700; margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.md h2 { font-size: 15px; font-weight: 600; margin: 20px 0 8px; }
+.md h3 { font-size: 13px; font-weight: 600; margin: 15px 0 6px; }
+.md h4 { font-size: 12px; font-weight: 600; margin: 12px 0 4px; color: var(--muted); }
+.md p { margin: 5px 0; }
+.md ul { margin: 5px 0 5px 16px; }
+.md li { margin: 3px 0; }
+.md code { background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-family: var(--mono); font-size: 11px; color: #79c0ff; }
+.md pre { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin: 10px 0; overflow-x: auto; }
+.md pre code { border: none; background: none; padding: 0; font-size: 11px; color: var(--text); }
+.md blockquote { border-left: 3px solid var(--border); padding-left: 12px; color: var(--muted); margin: 8px 0; }
+.md hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.md a { color: var(--accent); text-decoration: none; }
+.md a:hover { text-decoration: underline; }
+.md strong { font-weight: 600; }
+.md em { font-style: italic; }
+.task-item { display: flex; gap: 7px; align-items: baseline; margin: 3px 0; }
+.task-done { color: var(--muted); text-decoration: line-through; }
+.task-check { color: var(--green); font-size: 11px; }
+.task-open { color: var(--subtle); font-size: 11px; }
+
+/* ── Critique panel ── */
+.critique-panel {
+  width: 320px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  flex-shrink: 0; overflow: hidden;
+}
+.cp-header {
+  padding: 9px 12px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.cp-title { font-size: 12px; font-weight: 700; flex: 1; }
+.cp-doc-label { font-size: 10px; color: var(--subtle); font-family: var(--mono); }
+.btn-add-note {
+  background: rgba(46,160,67,0.15);
+  border: 1px solid rgba(46,160,67,0.3);
+  color: var(--green); border-radius: 5px; padding: 3px 10px;
+  font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.12s;
+}
+.btn-add-note:hover { background: rgba(46,160,67,0.25); }
+.btn-add-note:disabled { opacity: 0.35; cursor: default; }
+
+.cp-body { flex: 1; overflow-y: auto; padding: 8px; }
+.cp-body::-webkit-scrollbar { width: 3px; }
+.cp-body::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+.cp-empty { padding: 24px 10px; text-align: center; color: var(--subtle); font-size: 12px; line-height: 1.55; }
+
+.note-form {
+  background: var(--surface2);
+  border: 1px solid rgba(56,139,253,0.4);
+  border-radius: 7px; margin-bottom: 8px; padding: 10px;
+}
+.note-quote-preview {
+  background: rgba(56,139,253,0.06);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+  padding: 6px 9px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.note-form-ta {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 5px; color: var(--text); padding: 8px; font-size: 12px;
+  font-family: var(--sans); resize: vertical; outline: none; min-height: 60px;
+  margin-bottom: 8px; line-height: 1.5;
+}
+.note-form-ta:focus { border-color: var(--accent); }
+.note-form-row { display: flex; align-items: center; gap: 6px; }
+.tag-sel {
+  flex: 1; background: var(--surface3); border: 1px solid var(--border);
+  color: var(--text); border-radius: 4px; padding: 3px 7px;
+  font-size: 11px; outline: none; cursor: pointer;
+}
+.btn-save {
+  background: var(--accent); border: none; color: #fff;
+  border-radius: 5px; padding: 4px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
+}
+.btn-save:hover { opacity: 0.88; }
+.btn-cancel {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 5px; padding: 4px 9px; font-size: 11px; cursor: pointer;
+}
+.btn-cancel:hover { border-color: var(--muted); color: var(--text); }
+.form-hint { font-size: 10px; color: var(--subtle); margin-top: 5px; }
+
+.note-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; margin-bottom: 7px; overflow: hidden; transition: border-color 0.12s;
+}
+.note-card.included { border-color: rgba(46,160,67,0.35); }
+.note-card.excluded { opacity: 0.45; }
+.note-card-top { padding: 8px 10px 5px; display: flex; align-items: flex-start; gap: 8px; }
+.note-check { width: 14px; height: 14px; accent-color: var(--green); margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+.note-inner { flex: 1; min-width: 0; }
+.note-tag {
+  display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; border-radius: 3px; padding: 1px 5px; margin-bottom: 4px;
+}
+.tag-clarity { background: rgba(56,139,253,0.12); color: #79b8ff; }
+.tag-completeness { background: rgba(137,87,229,0.12); color: #b392f0; }
+.tag-structure { background: rgba(210,153,34,0.12); color: #e3b341; }
+.tag-accuracy { background: rgba(248,81,73,0.12); color: #ff7b72; }
+.tag-custom { background: rgba(46,160,67,0.12); color: #56d364; }
+.note-ta {
+  width: 100%; background: none; border: none; color: var(--text);
+  font-size: 12px; font-family: var(--sans); line-height: 1.5; resize: none; outline: none; min-height: 36px;
+}
+.note-body-rendered {
+  font-size: 12px; line-height: 1.5; width: 100%; cursor: text;
+}
+.note-body-rendered .note-quote-line {
+  display: block;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  border-left: 2px solid var(--accent);
+  padding-left: 7px;
+  margin: 1px 0;
+  background: rgba(56,139,253,0.05);
+  border-radius: 0 2px 2px 0;
+}
+.note-body-rendered .note-text-line {
+  display: block;
+  margin: 2px 0;
+}
+.note-del {
+  background: none; border: none; color: var(--subtle); cursor: pointer;
+  font-size: 12px; padding: 2px 4px; border-radius: 3px; flex-shrink: 0;
+}
+.note-del:hover { color: var(--red); background: var(--red-dim); }
+.note-card-foot { padding: 0 10px 8px; display: flex; align-items: center; gap: 6px; }
+.note-tag-sel { background: none; border: none; color: var(--muted); font-size: 11px; outline: none; cursor: pointer; flex: 1; }
+.note-incl-label { font-size: 10px; color: var(--subtle); }
+
+/* ── Prompt bar ── */
+.prompt-bar {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 10px 14px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 8px; max-height: 210px;
+}
+.prompt-bar-head { display: flex; align-items: center; gap: 8px; }
+.prompt-bar-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); flex: 1; }
+.prompt-stats { font-size: 11px; color: var(--subtle); }
+.btn-copy {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 5px; padding: 4px 12px; font-size: 11px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.12s;
+}
+.btn-copy:hover { background: var(--surface3); }
+.btn-copy.copied { background: var(--green-dim); border-color: rgba(46,160,67,0.4); color: var(--green); }
+.prompt-out {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 9px 12px; font-family: var(--mono); font-size: 11px; color: var(--text);
+  line-height: 1.6; overflow-y: auto; white-space: pre-wrap; flex: 1; min-height: 52px;
+}
+.prompt-out::-webkit-scrollbar { width: 3px; }
+.prompt-out::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+.prompt-placeholder-text { color: var(--subtle); font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-title">OpenSpec Critique</span>
+  <span class="topbar-badge">PLAYGROUND</span>
+  <div class="topbar-sep"></div>
+  <span class="topbar-hint">Select a change → open docs → add critique notes → copy prompt</span>
+  <div class="topbar-spacer"></div>
+</div>
+
+<div class="workspace">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-header-title">Change</span>
+    </div>
+    <div style="padding: 8px 10px; border-bottom: 1px solid var(--border);">
+      <select class="change-sel" id="changeSel" onchange="loadChange(this.value)">
+        <option value="">— select a change —</option>
+        <option value="member-termination">member-termination (active)</option>
+        <option value="custom">Custom / paste below</option>
+      </select>
+    </div>
+
+    <div class="section-label">Documents</div>
+    <div class="file-tree" id="fileTree">
+      <div style="padding: 16px 12px; text-align:center; color:var(--subtle); font-size:12px; line-height:1.55;">
+        Select a change above<br>or paste content below
+      </div>
+    </div>
+
+    <div class="sidebar-paste">
+      <div class="paste-label">Paste document</div>
+      <textarea class="paste-input" id="pasteArea"
+        placeholder="Paste proposal.md, design.md, tasks.md, spec.md…"></textarea>
+      <button class="btn-add-doc" onclick="addPastedDoc()">+ Add as document</button>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div class="editor">
+    <div class="editor-tabs" id="editorTabs">
+      <span class="no-doc-hint">No documents open</span>
+    </div>
+    <div class="editor-body">
+      <div class="doc-view" id="docView">
+        <div class="doc-empty">
+          <div class="doc-empty-icon">📄</div>
+          <div>Select a change and open a document</div>
+        </div>
+      </div>
+      <div class="critique-panel">
+        <div class="cp-header">
+          <div>
+            <div class="cp-title">Critique Notes</div>
+            <div class="cp-doc-label" id="cpDocLabel">—</div>
+          </div>
+          <button class="btn-add-note" id="addNoteBtn" onclick="showNoteForm()" disabled>+ Note</button>
+        </div>
+        <div class="cp-body" id="cpBody">
+          <div class="cp-empty">Open a document<br>to add critique notes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="prompt-bar">
+  <div class="prompt-bar-head">
+    <span class="prompt-bar-label">Generated Prompt</span>
+    <span class="prompt-stats" id="promptStats"></span>
+    <button class="btn-copy" id="copyBtn" onclick="copyPrompt()">⎘ Copy Prompt</button>
+  </div>
+  <div class="prompt-out" id="promptOut">
+    <span class="prompt-placeholder-text">Add critique notes and mark them as included to generate a prompt…</span>
+  </div>
+</div>
+
+<script>
+// ══ State ══════════════════════════════════════════════════════════════════
+const S = {
+  docs: [],
+  openTabs: [],
+  activeTab: null,
+  notes: {},          // docId -> [{id, text, tag, included}]
+  showForm: false,
+  pasteCount: 0,
+  noteCounter: 0,
+  currentChange: '',
+  pendingQuote: '',
+};
+
+// ══ Change data ════════════════════════════════════════════════════════════
+const CHANGES = {
+  'member-termination': {
+    label: 'member-termination',
+    path: 'openspec/changes/member-termination',
+    docs: [
+      {
+        id: 'mt-proposal', name: 'proposal.md', type: 'proposal', group: 'change/',
+        path: 'openspec/changes/member-termination/proposal.md',
+        content: `## Why
+
+Klabis v současnosti podporuje registraci a správu členů, ale chybí funkce pro řádné ukončení členství na základě odhlášky. Správci musí manuálně označit členy jako neaktivní bez evidence kdy a proč k ukončení došlo. To vede k nepřehledným záznamům a chybějící audit stopě.
+
+## What Changes
+
+- Přidání možnosti ukončit členství s důvodem (odhláška, přestup, jiný)
+- Automatické zaznamenání data a času ukončení
+- Evidence důvodu ukončení a volitelné poznámky
+- REST API endpoint pro provedení ukončení
+- Domain event pro integraci s dalšími moduly (Finance, ORIS, CUS, Groups)
+
+## Capabilities
+
+### New Capabilities
+- \`member-termination\`: Ukončení členství s důvodem, časovým údajem a auditací
+
+### Modified Capabilities
+- \`members\`: Rozšíření Member aggregate o pole pro terminaci (deactivationReason, deactivatedAt)
+
+## Impact
+
+**Affected Code:**
+- \`Member.java\` - přidání fieldů a domain command
+- \`MemberController.java\` - nový endpoint
+- \`MemberJdbcRepository.java\` - uložení nových fieldů
+- Database schema V001 - přidání sloupců do \`members\` tabulky
+
+**API Changes:**
+- Nový endpoint: \`POST /api/members/{id}/terminate\`
+- Response DTO rozšířeno o termination informace
+
+**Dependencies:**
+- Žádné nové externí závislosti
+
+**Systems:**
+- Members bounded context
+- Future integrations: Finance (issue #266), ORIS (#267), CUS (#268), Groups (#269)`
+      },
+      {
+        id: 'mt-design', name: 'design.md', type: 'design', group: 'change/',
+        path: 'openspec/changes/member-termination/design.md',
+        content: `## Context
+
+Klabis aktuálně podporuje životní cyklus člena od registrace až po aktivní členství. Member aggregate má \`active\` boolean field, ale chybí detailní evidence o ukončení členství.
+
+**Current state:**
+- \`Member.active\` boolean (true/false)
+- Žádná evidence kdy a proč bylo členství ukončeno
+- Žádný domain event pro integraci
+- Žádný API endpoint pro terminaci
+
+**Constraints:**
+- Spring Data JDBC vyžaduje explicitní persistenci všech fieldů
+- HATEOAS compliance povinná pro všechny endpointy
+- Domain events pro asynchronní integraci (Spring Modulith)
+
+## Goals / Non-Goals
+
+**Goals:**
+- Evidence ukončení členství s důvodem a časovým údajem
+- Domain command pro terminaci s validací
+- REST API endpoint pro provedení terminace
+- Domain event pro future integrace
+- Audit stopa pro reporting a compliance
+
+**Non-Goals:**
+- Kontrola finančního stavu před terminací (issue #266)
+- ORIS synchronizace při terminaci (issue #267)
+- CUS export filtering (issue #268)
+- Frontend UI changes (samostatný modul)
+
+## Decisions
+
+### 1. Membership Status Model
+
+**Decision:** Použít existující \`active\` boolean + přidat metadata (deactivationReason, deactivatedAt)
+
+**Rationale:**
+- Minimal change to existing schema
+- Backwards compatible with existing queries
+- Boolean \`active\` sufficient for current filtering needs
+
+**Alternatives considered:**
+- \`MembershipStatus\` enum (ACTIVE, INACTIVE, TERMINATED, TRANSFERRED) — **Rejected**: Over-engineering for current needs
+
+### 2. Deactivation Reason Enumeration
+
+**Decision:** Vytvořit \`DeactivationReason\` enum (ODHLASKA, PRESTUP, OTHER)
+
+\`\`\`java
+public enum DeactivationReason {
+    ODHLASKA,      // Člen podal odhlášku
+    PRESTUP,       // Přestup do jiného oddílu
+    OTHER          // Jiný důvod + volitelná poznámka
+}
+\`\`\`
+
+### 3. Domain Command Pattern
+
+**Decision:** Vytvořit \`TerminateMembership\` command record
+
+\`\`\`java
+public record TerminateMembership(
+    UserId terminatedBy,
+    DeactivationReason reason,
+    String note
+) {}
+\`\`\``
+      },
+      {
+        id: 'mt-tasks', name: 'tasks.md', type: 'tasks', group: 'change/',
+        path: 'openspec/changes/member-termination/tasks.md',
+        content: `## 1. Domain Model
+
+- [ ] 1.1 Create \`DeactivationReason\` enum (ODHLASKA, PRESTUP, OTHER)
+- [ ] 1.2 Add termination fields to \`Member\` aggregate (deactivationReason, deactivatedAt, deactivationNote, deactivatedBy)
+- [ ] 1.3 Create \`TerminateMembership\` command record
+- [ ] 1.4 Create \`MemberTerminatedEvent\` domain event
+- [ ] 1.5 Implement \`Member.handle(TerminateMembership)\` domain method with validation
+
+## 2. Database Layer
+
+- [ ] 2.1 Add migration script V001__add_member_termination_fields.sql with new columns
+- [ ] 2.2 Update \`MemberMemento\` to include termination fields
+- [ ] 2.3 Update \`MemberMemento.toMember()\` reconstruction to handle termination fields
+- [ ] 2.4 Verify Spring Data JDBC persists new fields correctly
+
+## 3. Unit Tests (Domain Layer)
+
+- [ ] 3.1 Write test for terminating active member successfully
+- [ ] 3.2 Write test for rejecting termination of already terminated member
+- [ ] 3.3 Write test for MemberTerminatedEvent publication
+- [ ] 3.4 Write test for validation (missing reason, invalid reason)
+
+## 4. Application Layer
+
+- [ ] 4.1 Create \`TerminateMembershipRequest\` DTO
+- [ ] 4.2 Create \`MembershipTerminationResponse\` DTO
+- [ ] 4.3 Implement \`ManagementService.terminateMember()\` method
+- [ ] 4.4 Add authorization check (MEMBERS:UPDATE permission)
+- [ ] 4.5 Add domain validation (check not already terminated)
+- [ ] 4.6 Add optimistic locking handling for concurrent terminations
+
+## 5. Integration Tests (Application Layer)
+
+- [ ] 5.1 Write test for successful termination flow
+- [ ] 5.2 Write test for terminating already terminated member (400 Bad Request)
+- [ ] 5.3 Write test for concurrent termination attempts (409 Conflict)
+- [ ] 5.4 Write test for unauthorized termination attempt (403 Forbidden)
+
+## 6. API Layer (Controller)
+
+- [ ] 6.1 Add \`POST /api/members/{id}/terminate\` endpoint to \`MemberController\`
+- [ ] 6.2 Add HATEOAS \`terminate\` link to active member resources
+- [ ] 6.3 Remove \`terminate\` link from terminated member resources
+- [ ] 6.4 Update \`MemberDetailsResponse\` to include termination fields
+- [ ] 6.5 Update \`MemberMapper\` to map termination fields to DTOs
+
+## 7. Controller Tests
+
+- [ ] 7.1 Write test for successful termination returns 200 OK
+- [ ] 7.2 Write test for response includes termination details
+- [ ] 7.3 Write test for response includes HATEOAS links
+- [ ] 7.4 Write test for unauthorized termination returns 403
+- [ ] 7.5 Write test for invalid request returns 400
+
+## 8. HATEOAS Affordances
+
+- [ ] 8.1 Add terminate affordance to HAL+FORMS template for active members
+- [ ] 8.2 Remove terminate affordance from terminated member templates
+- [ ] 8.3 Verify \`self\` link is present on all responses
+
+## 9. Domain Event Integration
+
+- [ ] 9.1 Write test for MemberTerminatedEvent is published on successful termination
+- [ ] 9.2 Verify event contains all required fields
+- [ ] 9.3 Add test stub for future event listeners (Finance, ORIS, CUS, Groups)
+
+## 10. E2E Tests
+
+- [ ] 10.1 Write E2E test for complete termination workflow
+- [ ] 10.3 Write E2E test for terminated member in list query
+
+## 11. Documentation
+
+- [ ] 11.1 Update OpenAPI specification for terminate endpoint
+- [ ] 11.2 Add example request/response to API documentation
+- [ ] 11.3 Document deactivation reason enum values`
+      },
+      {
+        id: 'mt-spec-termination', name: 'specs/member-termination/spec.md', type: 'spec', group: 'specs/',
+        path: 'openspec/changes/member-termination/specs/member-termination/spec.md',
+        content: `# Member Termination Specification
+
+## Purpose
+
+This specification defines requirements for terminating club membership based on resignation request. It encompasses the complete termination workflow including reason tracking, timestamp recording, and audit trail creation.
+
+## ADDED Requirements
+
+### Requirement: Membership Termination Request
+
+The system SHALL accept membership termination requests with reason and optional note. Termination takes effect immediately upon request.
+
+#### Scenario: Valid termination request
+
+- **WHEN** authenticated user with MEMBERS:UPDATE permission submits POST request to /api/members/{id}/terminate
+- **AND** request contains valid deactivation reason (ODHLASKA, PRESTUP, OTHER)
+- **THEN** membership termination is processed immediately
+- **AND** HTTP 200 OK status is returned
+- **AND** response includes updated member resource with termination details
+- **AND** deactivatedAt is set to current timestamp
+
+#### Scenario: Missing required reason field
+
+- **WHEN** authenticated user submits termination request without reason field
+- **THEN** HTTP 400 Bad Request is returned
+- **AND** no changes are made to the member
+
+#### Scenario: Invalid deactivation reason
+
+- **WHEN** authenticated user submits termination request with invalid reason value
+- **THEN** HTTP 400 Bad Request is returned
+- **AND** error message lists valid reason values (ODHLASKA, PRESTUP, OTHER)
+
+#### Scenario: Unauthorized user attempts termination
+
+- **WHEN** authenticated user without MEMBERS:UPDATE permission attempts to terminate membership
+- **THEN** HTTP 403 Forbidden is returned
+
+### Requirement: Membership Status Update
+
+The system SHALL update member status from active to inactive upon successful termination.
+
+#### Scenario: Member status changes to inactive
+
+- **WHEN** membership termination is processed successfully
+- **THEN** member active status is set to false
+- **AND** deactivation reason is stored
+- **AND** deactivation timestamp is stored
+- **AND** deactivation note is stored if provided
+- **AND** terminator user ID is stored
+
+#### Scenario: Already terminated member termination attempt
+
+- **WHEN** user attempts to terminate a member that is already inactive
+- **THEN** HTTP 400 Bad Request is returned
+- **AND** no changes are made to the member
+
+#### Scenario: Concurrent termination attempts
+
+- **WHEN** two users attempt to terminate the same member simultaneously
+- **THEN** the first termination succeeds
+- **AND** the second termination receives HTTP 409 Conflict
+
+### Requirement: Termination Response Format
+
+#### Scenario: Response includes hypermedia links
+
+- **WHEN** membership termination succeeds
+- **THEN** response includes \`self\` link to the updated member resource
+- **AND** response includes \`collection\` link to members list
+- **AND** response does NOT include \`terminate\` link (member already terminated)
+
+### Requirement: Domain Event Publishing
+
+#### Scenario: MemberTerminatedEvent is published
+
+- **WHEN** membership termination is successfully committed to database
+- **THEN** MemberTerminatedEvent is published
+- **AND** event contains memberId, deactivationReason, deactivatedAt, terminatedBy`
+      },
+      {
+        id: 'mt-spec-members', name: 'specs/members/spec.md (delta)', type: 'delta', group: 'specs/',
+        path: 'openspec/changes/member-termination/specs/members/spec.md',
+        content: `# Members Specification Delta
+
+## MODIFIED Requirements
+
+### Requirement: Get Member by ID
+
+The system SHALL provide a REST API endpoint to retrieve complete details of a specific member by their unique identifier, including termination details if membership has been terminated.
+
+#### Scenario: Retrieve existing active member by ID
+
+- **WHEN** an authenticated user with MEMBERS:READ permission makes a GET request to /api/members/{id}
+- **AND** the member is active
+- **THEN** the system SHALL return HTTP 200 OK
+- **AND** response includes all member details including:
+    - Active status: true
+    - Deactivation reason: null
+    - Deactivated at: null
+- **AND** the response SHALL include HATEOAS links:
+    - \`self\`, \`collection\`, \`edit\`
+    - \`terminate\` — Link to terminate membership (if user has MEMBERS:UPDATE permission and member is active)
+
+#### Scenario: Retrieve existing terminated member by ID
+
+- **WHEN** an authenticated user with MEMBERS:READ permission makes a GET request to /api/members/{id}
+- **AND** the member is terminated (inactive)
+- **THEN** the system SHALL return HTTP 200 OK
+- **AND** response includes termination fields:
+    - Active status: false
+    - deactivationReason: ODHLASKA / PRESTUP / OTHER
+    - deactivatedAt: ISO-8601 datetime
+    - deactivationNote: optional string
+    - deactivatedBy: UserId
+- **AND** response does NOT include \`terminate\` link`
+      },
+    ]
+  }
+};
+
+// ══ Load change ════════════════════════════════════════════════════════════
+function loadChange(changeId) {
+  S.currentChange = changeId;
+  S.docs = [];
+  S.openTabs = [];
+  S.activeTab = null;
+  S.showForm = false;
+
+  if (changeId && CHANGES[changeId]) {
+    S.docs = CHANGES[changeId].docs.map(d => ({ ...d }));
+  }
+
+  renderTree();
+  renderTabs();
+  renderDoc();
+  renderCritique();
+}
+
+// ══ Paste doc ══════════════════════════════════════════════════════════════
+function addPastedDoc() {
+  const ta = document.getElementById('pasteArea');
+  const content = ta.value.trim();
+  if (!content) return;
+
+  const firstLine = content.split('\n')[0].replace(/^#+\s*/, '').trim() || 'document';
+  const slug = firstLine.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 32);
+  S.pasteCount++;
+  const id = 'paste-' + S.pasteCount;
+  S.docs.push({
+    id, name: slug + '.md', type: 'pasted', group: 'pasted/',
+    path: slug + '.md', content
+  });
+  ta.value = '';
+  renderTree();
+  openTab(id);
+}
+
+// ══ Tree ═══════════════════════════════════════════════════════════════════
+function renderTree() {
+  const el = document.getElementById('fileTree');
+  if (S.docs.length === 0) {
+    el.innerHTML = '<div style="padding:16px 12px;text-align:center;color:var(--subtle);font-size:12px;line-height:1.55;">Select a change above<br>or paste content below</div>';
+    return;
+  }
+
+  const groups = {};
+  S.docs.forEach(d => {
+    if (!groups[d.group]) groups[d.group] = [];
+    groups[d.group].push(d);
+  });
+
+  let html = '';
+  for (const [g, docs] of Object.entries(groups)) {
+    html += '<div class="tree-group">' + esc(g) + '</div>';
+    docs.forEach(d => {
+      const all = (S.notes[d.id] || []).length;
+      const inc = (S.notes[d.id] || []).filter(n => n.included).length;
+      html += '<div class="tree-item ' + (S.activeTab === d.id ? 'active' : '') + '" onclick="openTab(\'' + d.id + '\')">' +
+        '<span class="tree-icon">' + typeIcon(d.type) + '</span>' +
+        '<span class="tree-name">' + esc(d.name) + '</span>' +
+        (all > 0 ? '<span class="tree-badge ' + (inc > 0 ? 'badge-green' : 'badge-amber') + '">' + inc + '/' + all + '</span>' : '') +
+        '</div>';
+    });
+  }
+  el.innerHTML = html;
+}
+
+function typeIcon(t) {
+  return { proposal: '💡', design: '🎨', tasks: '✅', spec: '📋', delta: '📝', pasted: '📌' }[t] || '📄';
+}
+
+// ══ Tabs ═══════════════════════════════════════════════════════════════════
+function openTab(id) {
+  if (!S.openTabs.includes(id)) S.openTabs.push(id);
+  S.activeTab = id;
+  S.showForm = false;
+  renderTabs(); renderDoc(); renderCritique(); renderTree();
+}
+
+function closeTab(id, ev) {
+  ev.stopPropagation();
+  S.openTabs = S.openTabs.filter(x => x !== id);
+  if (S.activeTab === id) S.activeTab = S.openTabs[S.openTabs.length - 1] || null;
+  renderTabs(); renderDoc(); renderCritique(); renderTree();
+}
+
+function renderTabs() {
+  const el = document.getElementById('editorTabs');
+  if (S.openTabs.length === 0) {
+    el.innerHTML = '<span class="no-doc-hint">No documents open</span>';
+    return;
+  }
+  el.innerHTML = S.openTabs.map(id => {
+    const d = S.docs.find(x => x.id === id);
+    if (!d) return '';
+    return '<div class="tab ' + (S.activeTab === id ? 'active' : '') + '" onclick="openTab(\'' + id + '\')">' +
+      esc(d.name) +
+      '<span class="tab-close" onclick="closeTab(\'' + id + '\', event)">✕</span>' +
+      '</div>';
+  }).join('');
+}
+
+// ══ Doc rendering ══════════════════════════════════════════════════════════
+function renderDoc() {
+  const el = document.getElementById('docView');
+  if (!S.activeTab) {
+    el.innerHTML = '<div class="doc-empty"><div class="doc-empty-icon">📄</div><div>Select a change and open a document</div></div>';
+    return;
+  }
+  const doc = S.docs.find(d => d.id === S.activeTab);
+  if (!doc) return;
+  el.innerHTML = '<div class="md">' + parseMarkdown(doc.content) + '</div>';
+}
+
+function parseMarkdown(md) {
+  const lines = md.split('\n');
+  let out = '';
+  let inCode = false;
+  let codeLines = [];
+
+  for (const raw of lines) {
+    if (raw.startsWith('```')) {
+      if (inCode) {
+        out += '<pre><code>' + esc(codeLines.join('\n')) + '</code></pre>';
+        codeLines = []; inCode = false;
+      } else { inCode = true; }
+      continue;
+    }
+    if (inCode) { codeLines.push(raw); continue; }
+
+    if (/^#### /.test(raw))     { out += '<h4>' + fmt(raw.slice(5)) + '</h4>'; }
+    else if (/^### /.test(raw)) { out += '<h3>' + fmt(raw.slice(4)) + '</h3>'; }
+    else if (/^## /.test(raw))  { out += '<h2>' + fmt(raw.slice(3)) + '</h2>'; }
+    else if (/^# /.test(raw))   { out += '<h1>' + fmt(raw.slice(2)) + '</h1>'; }
+    else if (/^> /.test(raw))   { out += '<blockquote>' + fmt(raw.slice(2)) + '</blockquote>'; }
+    else if (/^-{3,}$/.test(raw.trim())) { out += '<hr>'; }
+    else if (/^- \[x\] /i.test(raw)) {
+      out += '<div class="task-item"><span class="task-check">✓</span><span class="task-done">' + fmt(raw.slice(6)) + '</span></div>';
+    }
+    else if (/^- \[ \] /.test(raw)) {
+      out += '<div class="task-item"><span class="task-open">○</span><span>' + fmt(raw.slice(6)) + '</span></div>';
+    }
+    else if (/^(\s*)[-*] /.test(raw)) {
+      const indent = (raw.match(/^(\s*)/)||['',''])[1].length;
+      out += '<div style="margin: 3px 0 3px ' + (indent * 8 + 14) + 'px">• ' + fmt(raw.replace(/^\s*[-*] /, '')) + '</div>';
+    }
+    else if (raw.trim() === '') { out += '<div style="height:5px"></div>'; }
+    else { out += '<p>' + fmt(raw) + '</p>'; }
+  }
+  return out;
+}
+
+function fmt(s) {
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  return s;
+}
+
+function esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══ Critique ════════════════════════════════════════════════════════════════
+function renderCritique() {
+  const label = document.getElementById('cpDocLabel');
+  const btn = document.getElementById('addNoteBtn');
+  const body = document.getElementById('cpBody');
+
+  if (!S.activeTab) {
+    label.textContent = '—'; btn.disabled = true;
+    body.innerHTML = '<div class="cp-empty">Open a document<br>to add critique notes</div>';
+    return;
+  }
+
+  const doc = S.docs.find(d => d.id === S.activeTab);
+  label.textContent = doc ? doc.name : '';
+  btn.disabled = false;
+
+  const notes = S.notes[S.activeTab] || [];
+  let html = '';
+
+  if (S.showForm) {
+    const hasQuote = !!S.pendingQuote;
+    html += '<div class="note-form">' +
+      (hasQuote ? '<div class="note-quote-preview">' + esc(S.pendingQuote.replace(/\n\n$/, '')) + '</div>' : '') +
+      '<textarea class="note-form-ta" id="noteFormTa" ' +
+      'placeholder="' + (hasQuote ? 'Add your critique of the quoted text\u2026' : 'What should change? What\'s unclear or missing?') + '" ' +
+      'onkeydown="if(event.ctrlKey&&event.key===\'Enter\')saveNote()"></textarea>' +
+      '<div class="note-form-row">' +
+      '<select class="tag-sel" id="noteFormTag">' +
+      '<option value="clarity">Clarity</option>' +
+      '<option value="completeness">Completeness</option>' +
+      '<option value="structure">Structure</option>' +
+      '<option value="accuracy">Accuracy</option>' +
+      '<option value="custom">Custom</option>' +
+      '</select>' +
+      '<button class="btn-save" onclick="saveNote()">Save</button>' +
+      '<button class="btn-cancel" onclick="cancelNote()">Cancel</button>' +
+      '</div>' +
+      '<div class="form-hint">Ctrl+Enter to save</div>' +
+      '</div>';
+  }
+
+  if (notes.length === 0 && !S.showForm) {
+    html += '<div class="cp-empty">No notes yet.<br>Click "+ Note" to add feedback.</div>';
+  }
+
+  notes.forEach(n => {
+    html += '<div class="note-card ' + (n.included ? 'included' : 'excluded') + '">' +
+      '<div class="note-card-top">' +
+      '<input type="checkbox" class="note-check" ' + (n.included ? 'checked' : '') +
+        ' onchange="toggleNote(' + n.id + ')">' +
+      '<div class="note-inner">' +
+        '<span class="note-tag tag-' + n.tag + '">' + n.tag + '</span>' +
+        '<div class="note-body-rendered" onclick="switchToEdit(this)" title="Click to edit">' + renderNoteBody(n.text) + '</div>' +
+        '<textarea class="note-ta" style="display:none" ' +
+          'onblur="commitNoteEdit(' + n.id + ', this)" ' +
+          'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">' +
+          esc(n.text) +
+        '</textarea>' +
+      '</div>' +
+      '<button class="note-del" onclick="deleteNote(' + n.id + ')" title="Remove">✕</button>' +
+      '</div>' +
+      '<div class="note-card-foot">' +
+        '<select class="note-tag-sel" onchange="updateNoteTag(' + n.id + ', this.value)">' +
+          ['clarity','completeness','structure','accuracy','custom'].map(t =>
+            '<option value="' + t + '"' + (n.tag === t ? ' selected' : '') + '>' + cap(t) + '</option>').join('') +
+        '</select>' +
+        '<span class="note-incl-label">' + (n.included ? '✓ included' : '— excluded') + '</span>' +
+      '</div>' +
+      '</div>';
+  });
+
+  body.innerHTML = html;
+  if (S.showForm) {
+    setTimeout(() => {
+      const ta = document.getElementById('noteFormTa');
+      if (ta) { ta.focus(); ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+    }, 40);
+  }
+}
+
+function showNoteForm() {
+  const sel = window.getSelection();
+  const docView = document.getElementById('docView');
+  S.pendingQuote = '';
+  if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+    const range = sel.getRangeAt(0);
+    if (docView.contains(range.commonAncestorContainer)) {
+      const text = sel.toString().trim();
+      if (text) {
+        S.pendingQuote = text.split('\n').map(l => '> ' + l).join('\n') + '\n\n';
+      }
+    }
+  }
+  S.showForm = true;
+  renderCritique();
+}
+function cancelNote() { S.showForm = false; renderCritique(); }
+
+function saveNote() {
+  const ta = document.getElementById('noteFormTa');
+  const sel = document.getElementById('noteFormTag');
+  const body = ta?.value.trim();
+  if (!body || !S.activeTab) return;
+  const text = S.pendingQuote ? S.pendingQuote + body : body;
+  S.pendingQuote = '';
+  if (!S.notes[S.activeTab]) S.notes[S.activeTab] = [];
+  S.notes[S.activeTab].push({ id: ++S.noteCounter, text, tag: sel?.value || 'clarity', included: true });
+  S.showForm = false;
+  renderCritique(); renderTree(); updatePrompt();
+}
+
+function deleteNote(id) {
+  if (!S.activeTab) return;
+  S.notes[S.activeTab] = (S.notes[S.activeTab] || []).filter(n => n.id !== id);
+  renderCritique(); renderTree(); updatePrompt();
+}
+
+function toggleNote(id) {
+  const n = (S.notes[S.activeTab] || []).find(x => x.id === id);
+  if (n) { n.included = !n.included; renderCritique(); renderTree(); updatePrompt(); }
+}
+
+function updateNoteText(id, text) {
+  const n = (S.notes[S.activeTab] || []).find(x => x.id === id);
+  if (n) { n.text = text; updatePrompt(); }
+}
+
+function updateNoteTag(id, tag) {
+  const n = (S.notes[S.activeTab] || []).find(x => x.id === id);
+  if (n) { n.tag = tag; renderCritique(); updatePrompt(); }
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function renderNoteBody(text) {
+  return text.split('\n').map(line => {
+    if (line.startsWith('> ')) {
+      return '<span class="note-quote-line">' + esc(line.slice(2)) + '</span>';
+    }
+    if (line.trim() === '') return '<span style="display:block;height:4px"></span>';
+    return '<span class="note-text-line">' + esc(line) + '</span>';
+  }).join('');
+}
+
+function switchToEdit(renderedEl) {
+  const inner = renderedEl.closest('.note-inner');
+  const ta = inner.querySelector('.note-ta');
+  if (!ta) return;
+  renderedEl.style.display = 'none';
+  ta.style.display = 'block';
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
+function commitNoteEdit(id, ta) {
+  updateNoteText(id, ta.value);
+  const inner = ta.closest('.note-inner');
+  const rendered = inner.querySelector('.note-body-rendered');
+  const n = (S.notes[S.activeTab] || []).find(x => x.id === id);
+  if (rendered && n) {
+    rendered.innerHTML = renderNoteBody(n.text);
+    rendered.style.display = '';
+    ta.style.display = 'none';
+  }
+}
+
+// ══ Prompt ════════════════════════════════════════════════════════════════
+function updatePrompt() {
+  const out = document.getElementById('promptOut');
+  const stats = document.getElementById('promptStats');
+
+  const sections = [];
+  let totalNotes = 0;
+  let totalDocs = 0;
+
+  for (const doc of S.docs) {
+    const included = (S.notes[doc.id] || []).filter(n => n.included && n.text.trim());
+    if (included.length === 0) continue;
+    totalDocs++;
+    totalNotes += included.length;
+    const noteLines = included.map((n, i) =>
+      (i + 1) + '. [' + cap(n.tag) + '] ' + n.text.trim()
+    ).join('\n\n');
+    sections.push('### ' + doc.name + '\nPath: ' + doc.path + '\n\n' + noteLines);
+  }
+
+  if (sections.length === 0) {
+    out.textContent = '';
+    const span = document.createElement('span');
+    span.className = 'prompt-placeholder-text';
+    span.textContent = 'Add critique notes and mark them as included to generate a prompt\u2026';
+    out.appendChild(span);
+    stats.textContent = '';
+    return;
+  }
+
+  stats.textContent = totalNotes + ' note' + (totalNotes !== 1 ? 's' : '') + ' \u00b7 ' + totalDocs + ' doc' + (totalDocs !== 1 ? 's' : '');
+
+  const changeName = S.currentChange || 'this OpenSpec change';
+  const prompt = 'Please update the following OpenSpec documents in the "' + changeName + '" change based on the critique notes below.\n\n' +
+    'Apply each note while preserving the existing structure and style of the document. Keep all sections not mentioned. Ensure consistency across all modified documents.\n\n' +
+    '---\n\n## Documents to Update\n\n' +
+    sections.join('\n\n---\n\n') +
+    '\n\n---\n\nAfter all changes are applied, verify that the documents remain internally consistent.';
+
+  out.textContent = prompt;
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptOut').textContent;
+  if (!text || !text.trim()) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.classList.add('copied');
+    btn.textContent = '\u2713 Copied!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = '\u2398 Copy Prompt';
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>
