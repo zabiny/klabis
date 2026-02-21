@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.klabis.members.MemberTestDataBuilder.aMember;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -638,27 +639,17 @@ class MemberTest {
     }
 
     private Member createTestMember() {
-        LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
-        EmailAddress email = EmailAddress.of("jan.novak@example.com");
-        PhoneNumber phone = PhoneNumber.of("+420123456789");
-        Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
-        RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-        PersonalInformation personalInformation = PersonalInformation.of(
-                "Jan",
-                "Novák",
-                dateOfBirth,
-                "CZ",
-                Gender.MALE
-        );
-
-        return Member.create(
-                registrationNumber,
-                personalInformation,
-                address,
-                email,
-                phone,
-                null // no guardian for adult
-        );
+        return aMember()
+                .withRegistrationNumber("ZBM9001")
+                .withName("Jan", "Novák")
+                .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                .withNationality("CZ")
+                .withGender(Gender.MALE)
+                .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                .withEmail("jan.novak@example.com")
+                .withPhone("+420123456789")
+                .withNoGuardian()
+                .build();
     }
 
     @Nested
@@ -1055,13 +1046,6 @@ class MemberTest {
         void shouldPreserveGuardianWhenUpdatingOtherFields() {
             // Arrange - Create member with guardian
             LocalDate minorDob = LocalDate.now().minusYears(10);
-            PersonalInformation minorInfo = PersonalInformation.of(
-                    "Anna",
-                    "Nováková",
-                    minorDob,
-                    "CZ",
-                    Gender.FEMALE
-            );
             GuardianInformation guardian = new GuardianInformation(
                     "Jan",
                     "Novák",
@@ -1069,14 +1053,18 @@ class MemberTest {
                     EmailAddress.of("jan.novak@example.com"),
                     PhoneNumber.of("+420111111111")
             );
-            Member minor = Member.create(
-                    new RegistrationNumber("ZBM9002"),
-                    minorInfo,
-                    createTestMember().getAddress(),
-                    createTestMember().getEmail(),
-                    createTestMember().getPhone(),
-                    guardian
-            );
+
+            Member minor = aMember()
+                    .withRegistrationNumber("ZBM9002")
+                    .withName("Anna", "Nováková")
+                    .withDateOfBirth(minorDob)
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(createTestMember().getAddress())
+                    .withEmail(createTestMember().getEmail())
+                    .withPhone(createTestMember().getPhone())
+                    .withGuardian(guardian)
+                    .build();
 
             // Act
             minor.updateMemberDetails(
@@ -1112,27 +1100,17 @@ class MemberTest {
     class HandleTerminateMembership {
 
         private Member createActiveMember() {
-            LocalDate dateOfBirth = LocalDate.of(1990, 5, 15);
-            EmailAddress email = EmailAddress.of("jan.novak@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420123456789");
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9001");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    dateOfBirth,
-                    "CZ",
-                    Gender.MALE
-            );
-
-            return Member.create(
-                    registrationNumber,
-                    personalInformation,
-                    address,
-                    email,
-                    phone,
-                    null
-            );
+            return aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
         }
 
         @Test
@@ -1187,10 +1165,10 @@ class MemberTest {
             // Act
             activeMember.handle(command);
 
-            // Assert - should have MemberCreatedEvent (from creation) + MemberTerminatedEvent
+            // Assert - should have MemberTerminatedEvent
             assertThat(activeMember.getDomainEvents())
-                    .hasSize(2)
-                    .anyMatch(event -> event instanceof MemberTerminatedEvent);
+                    .hasSize(1)
+                    .allMatch(event -> event instanceof MemberTerminatedEvent);
         }
 
         @Test

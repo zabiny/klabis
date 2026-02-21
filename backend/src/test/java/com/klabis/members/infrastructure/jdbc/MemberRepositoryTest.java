@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.klabis.members.MemberTestDataBuilder.aMember;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Member JDBC Repository Tests")
@@ -45,27 +46,17 @@ class MemberRepositoryTest {
         @DisplayName("should save new member with all required fields")
         void shouldSaveNewMember() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 3, 15),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of(
-                    "Hlavní 123",
-                    "Praha",
-                    "11000",
-                    "CZ"
-            );
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0501"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("jan.novak@example.com"),
-                    new PhoneNumber("+420123456789"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0501")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -91,13 +82,6 @@ class MemberRepositoryTest {
         @DisplayName("should save member with guardian information")
         void shouldSaveMemberWithGuardian() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Petra",
-                    "Nováková",
-                    LocalDate.of(2010, 6, 20),
-                    "CZ",
-                    Gender.FEMALE
-            );
             GuardianInformation guardian = new GuardianInformation(
                     "Pavel",
                     "Novák",
@@ -105,20 +89,17 @@ class MemberRepositoryTest {
                     EmailAddress.of("pavel.novak@example.com"),
                     PhoneNumber.of("+420987654321")
             );
-            Address address = Address.of(
-                    "Dětská 1",
-                    "Brno",
-                    "60200",
-                    "CZ"
-            );
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM1001"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("petra.novakova@example.com"),
-                    new PhoneNumber("+420111222333"),
-                    guardian
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM1001")
+                    .withName("Petra", "Nováková")
+                    .withDateOfBirth(LocalDate.of(2010, 6, 20))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(Address.of("Dětská 1", "Brno", "60200", "CZ"))
+                    .withEmail("petra.novakova@example.com")
+                    .withPhone("+420111222333")
+                    .withGuardian(guardian)
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -136,22 +117,17 @@ class MemberRepositoryTest {
         @DisplayName("should populate createdAt and createdBy on save")
         void shouldPopulateCreatedAtAndCreatedByOnSave() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Test",
-                    "User",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Test 5", "Ostrava", "70800", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0001"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("test@example.com"),
-                    new PhoneNumber("+420111111111"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0001")
+                    .withName("Test", "User")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 5", "Ostrava", "70800", "CZ"))
+                    .withEmail("test@example.com")
+                    .withPhone("+420111111111")
+                    .withNoGuardian()
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -168,22 +144,17 @@ class MemberRepositoryTest {
         @DisplayName("should set version to zero on new member")
         void shouldSetVersionToZeroOnNewMember() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Version",
-                    "Test",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Test 1", "Praha", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0002"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("version@example.com"),
-                    new PhoneNumber("+420111111112"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0002")
+                    .withName("Version", "Test")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("version@example.com")
+                    .withPhone("+420111111112")
+                    .withNoGuardian()
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -198,14 +169,6 @@ class MemberRepositoryTest {
         @DisplayName("should save member with all optional fields")
         void shouldSaveMemberWithAllOptionalFields() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Complete",
-                    "Member",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Test 1", "Praha", "11000", "CZ");
             GuardianInformation guardian = new GuardianInformation(
                     "Guardian",
                     "Name",
@@ -213,14 +176,17 @@ class MemberRepositoryTest {
                     EmailAddress.of("guardian@example.com"),
                     PhoneNumber.of("+420111111113")
             );
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0003"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("complete@example.com"),
-                    new PhoneNumber("+420111111114"),
-                    guardian
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0003")
+                    .withName("Complete", "Member")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("complete@example.com")
+                    .withPhone("+420111111114")
+                    .withGuardian(guardian)
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -240,22 +206,17 @@ class MemberRepositoryTest {
         @DisplayName("should find member by id")
         void shouldFindMemberById() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 3, 15),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0501"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("jan.novak@example.com"),
-                    new PhoneNumber("+420123456789"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0501")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
             Member savedMember = memberRepository.save(member);
 
             // When
@@ -285,13 +246,6 @@ class MemberRepositoryTest {
         @DisplayName("should load all member fields correctly")
         void shouldLoadAllMemberFieldsCorrectly() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Full",
-                    "Load",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
             GuardianInformation guardian = new GuardianInformation(
                     "Guard",
                     "Guardian",
@@ -299,15 +253,17 @@ class MemberRepositoryTest {
                     EmailAddress.of("guard@example.com"),
                     PhoneNumber.of("+420111111115")
             );
-            Address address = Address.of("Test 1", "Test", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0004"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("full@example.com"),
-                    new PhoneNumber("+420111111116"),
-                    guardian
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0004")
+                    .withName("Full", "Load")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Test", "11000", "CZ"))
+                    .withEmail("full@example.com")
+                    .withPhone("+420111111116")
+                    .withGuardian(guardian)
+                    .build();
             Member savedMember = memberRepository.save(member);
 
             // When
@@ -333,23 +289,18 @@ class MemberRepositoryTest {
         @DisplayName("should find member by registration number")
         void shouldFindMemberByRegistrationNumber() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 3, 15),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
             RegistrationNumber regNum = new RegistrationNumber("ZBM0501");
-            Member member = Member.create(
-                    regNum,
-                    personalInformation,
-                    address,
-                    new EmailAddress("jan.novak@example.com"),
-                    new PhoneNumber("+420123456789"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber(regNum)
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
             memberRepository.save(member);
 
             // When
@@ -380,22 +331,17 @@ class MemberRepositoryTest {
         @DisplayName("should find member by email")
         void shouldFindMemberByEmail() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 3, 15),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0501"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("jan.novak@example.com"),
-                    new PhoneNumber("+420123456789"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0501")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
             memberRepository.save(member);
 
             // When
@@ -421,22 +367,17 @@ class MemberRepositoryTest {
         @DisplayName("should be case-insensitive for email")
         void shouldBeCaseInsensitiveForEmail() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Test",
-                    "User",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Test 1", "Test", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0503"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("test@example.com"),
-                    new PhoneNumber("+420111111118"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0503")
+                    .withName("Test", "User")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Test", "11000", "CZ"))
+                    .withEmail("test@example.com")
+                    .withPhone("+420111111118")
+                    .withNoGuardian()
+                    .build();
             memberRepository.save(member);
 
             // When - search with uppercase
@@ -457,56 +398,41 @@ class MemberRepositoryTest {
         @DisplayName("should count members by birth year correctly")
         void shouldCountMembersByBirthYear() {
             // Given
-            Address address1 = Address.of("Test1 1", "Praha", "11000", "CZ");
-            PersonalInformation personalInfo1 = PersonalInformation.of(
-                    "Jan",
-                    "Test1",
-                    LocalDate.of(2005, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Member member1 = Member.create(
-                    new RegistrationNumber("ZBM0501"),
-                    personalInfo1,
-                    address1,
-                    new EmailAddress("test1@example.com"),
-                    new PhoneNumber("+420111111119"),
-                    null
-            );
+            Member member1 = aMember()
+                    .withRegistrationNumber("ZBM0501")
+                    .withName("Jan", "Test1")
+                    .withDateOfBirth(LocalDate.of(2005, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test1 1", "Praha", "11000", "CZ"))
+                    .withEmail("test1@example.com")
+                    .withPhone("+420111111119")
+                    .withNoGuardian()
+                    .build();
 
-            Address address2 = Address.of("Test2 2", "Brno", "60200", "CZ");
-            PersonalInformation personalInfo2 = PersonalInformation.of(
-                    "Petra",
-                    "Test2",
-                    LocalDate.of(2005, 12, 31),
-                    "CZ",
-                    Gender.FEMALE
-            );
-            Member member2 = Member.create(
-                    new RegistrationNumber("ZBM0502"),
-                    personalInfo2,
-                    address2,
-                    new EmailAddress("test2@example.com"),
-                    new PhoneNumber("+420111111120"),
-                    null
-            );
+            Member member2 = aMember()
+                    .withRegistrationNumber("ZBM0502")
+                    .withName("Petra", "Test2")
+                    .withDateOfBirth(LocalDate.of(2005, 12, 31))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(Address.of("Test2 2", "Brno", "60200", "CZ"))
+                    .withEmail("test2@example.com")
+                    .withPhone("+420111111120")
+                    .withNoGuardian()
+                    .build();
 
-            Address address3 = Address.of("Test3 3", "Ostrava", "70800", "CZ");
-            PersonalInformation personalInfo3 = PersonalInformation.of(
-                    "Karel",
-                    "Test3",
-                    LocalDate.of(2006, 6, 15),
-                    "CZ",
-                    Gender.MALE
-            );
-            Member member3 = Member.create(
-                    new RegistrationNumber("ZBM0601"),
-                    personalInfo3,
-                    address3,
-                    new EmailAddress("test3@example.com"),
-                    new PhoneNumber("+420111111121"),
-                    null
-            );
+            Member member3 = aMember()
+                    .withRegistrationNumber("ZBM0601")
+                    .withName("Karel", "Test3")
+                    .withDateOfBirth(LocalDate.of(2006, 6, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test3 3", "Ostrava", "70800", "CZ"))
+                    .withEmail("test3@example.com")
+                    .withPhone("+420111111121")
+                    .withNoGuardian()
+                    .build();
 
             memberRepository.save(member1);
             memberRepository.save(member2);
@@ -543,22 +469,17 @@ class MemberRepositoryTest {
         void shouldReturnPaginatedMembers() {
             // Given - create 5 members
             for (int i = 1; i <= 5; i++) {
-                PersonalInformation personalInfo = PersonalInformation.of(
-                        "FirstName" + i,
-                        "LastName" + i,
-                        LocalDate.of(2000 + i, 1, 1),
-                        "CZ",
-                        Gender.MALE
-                );
-                Address address = Address.of("Street " + i, "City", "11000", "CZ");
-                Member member = Member.create(
-                        new RegistrationNumber("ZBM000" + i),
-                        personalInfo,
-                        address,
-                        new EmailAddress("user" + i + "@example.com"),
-                        new PhoneNumber("+420111111" + String.format("%03d", i)),
-                        null
-                );
+                Member member = aMember()
+                        .withRegistrationNumber("ZBM000" + i)
+                        .withName("FirstName" + i, "LastName" + i)
+                        .withDateOfBirth(LocalDate.of(2000 + i, 1, 1))
+                        .withNationality("CZ")
+                        .withGender(Gender.MALE)
+                        .withAddress(Address.of("Street " + i, "City", "11000", "CZ"))
+                        .withEmail("user" + i + "@example.com")
+                        .withPhone("+420111111" + String.format("%03d", i))
+                        .withNoGuardian()
+                        .build();
                 memberRepository.save(member);
             }
 
@@ -578,56 +499,41 @@ class MemberRepositoryTest {
         @DisplayName("should sort members by last name")
         void shouldSortMembersByLastName() {
             // Given
-            PersonalInformation personalInfo1 = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 1, 15),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address1 = Address.of("Hlavní 1", "Praha", "11000", "CZ");
-            Member member1 = Member.create(
-                    new RegistrationNumber("ZBM0501"),
-                    personalInfo1,
-                    address1,
-                    new EmailAddress("jan@example.com"),
-                    new PhoneNumber("+420111111122"),
-                    null
-            );
+            Member member1 = aMember()
+                    .withRegistrationNumber("ZBM0501")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2005, 1, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
+                    .withEmail("jan@example.com")
+                    .withPhone("+420111111122")
+                    .withNoGuardian()
+                    .build();
 
-            PersonalInformation personalInfo2 = PersonalInformation.of(
-                    "Petra",
-                    "Svobodová",
-                    LocalDate.of(2002, 6, 20),
-                    "CZ",
-                    Gender.FEMALE
-            );
-            Address address2 = Address.of("Dětská 2", "Brno", "60200", "CZ");
-            Member member2 = Member.create(
-                    new RegistrationNumber("ZBM0201"),
-                    personalInfo2,
-                    address2,
-                    new EmailAddress("petra@example.com"),
-                    new PhoneNumber("+420111111123"),
-                    null
-            );
+            Member member2 = aMember()
+                    .withRegistrationNumber("ZBM0201")
+                    .withName("Petra", "Svobodová")
+                    .withDateOfBirth(LocalDate.of(2002, 6, 20))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(Address.of("Dětská 2", "Brno", "60200", "CZ"))
+                    .withEmail("petra@example.com")
+                    .withPhone("+420111111123")
+                    .withNoGuardian()
+                    .build();
 
-            PersonalInformation personalInfo3 = PersonalInformation.of(
-                    "Karel",
-                    "Černý",
-                    LocalDate.of(2000, 12, 31),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address3 = Address.of("Svobodova 3", "Ostrava", "70800", "CZ");
-            Member member3 = Member.create(
-                    new RegistrationNumber("ZBM0001"),
-                    personalInfo3,
-                    address3,
-                    new EmailAddress("karel@example.com"),
-                    new PhoneNumber("+420111111124"),
-                    null
-            );
+            Member member3 = aMember()
+                    .withRegistrationNumber("ZBM0001")
+                    .withName("Karel", "Černý")
+                    .withDateOfBirth(LocalDate.of(2000, 12, 31))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Svobodova 3", "Ostrava", "70800", "CZ"))
+                    .withEmail("karel@example.com")
+                    .withPhone("+420111111124")
+                    .withNoGuardian()
+                    .build();
 
             memberRepository.save(member1);
             memberRepository.save(member2);
@@ -664,30 +570,18 @@ class MemberRepositoryTest {
         @DisplayName("should return all members without pagination")
         void shouldReturnAllMembersWithoutPagination() {
             // Given
-            PersonalInformation personalInfo1 = PersonalInformation.of(
-                    "Jan",
-                    "Novák",
-                    LocalDate.of(2005, 1, 15),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address1 = Address.of("Hlavní 1", "Praha", "11000", "CZ");
-            Member member1 = Member.create(
-                    new RegistrationNumber("ZBM0501"),
-                    personalInfo1,
-                    address1,
-                    new EmailAddress("jan@example.com"),
-                    new PhoneNumber("+420111111125"),
-                    null
-            );
+            Member member1 = aMember()
+                    .withRegistrationNumber("ZBM0501")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2005, 1, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
+                    .withEmail("jan@example.com")
+                    .withPhone("+420111111125")
+                    .withNoGuardian()
+                    .build();
 
-            PersonalInformation personalInfo2 = PersonalInformation.of(
-                    "Petra",
-                    "Nováková",
-                    LocalDate.of(2010, 6, 20),
-                    "CZ",
-                    Gender.FEMALE
-            );
             GuardianInformation guardian = new GuardianInformation(
                     "Pavel",
                     "Novák",
@@ -695,15 +589,17 @@ class MemberRepositoryTest {
                     EmailAddress.of("pavel@example.com"),
                     PhoneNumber.of("+420987654321")
             );
-            Address address2 = Address.of("Dětská 2", "Brno", "60200", "CZ");
-            Member member2 = Member.create(
-                    new RegistrationNumber("ZBM1001"),
-                    personalInfo2,
-                    address2,
-                    new EmailAddress("petra@example.com"),
-                    new PhoneNumber("+420111111126"),
-                    guardian
-            );
+            Member member2 = aMember()
+                    .withRegistrationNumber("ZBM1001")
+                    .withName("Petra", "Nováková")
+                    .withDateOfBirth(LocalDate.of(2010, 6, 20))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(Address.of("Dětská 2", "Brno", "60200", "CZ"))
+                    .withEmail("petra@example.com")
+                    .withPhone("+420111111126")
+                    .withGuardian(guardian)
+                    .build();
 
             memberRepository.save(member1);
             memberRepository.save(member2);
@@ -738,22 +634,17 @@ class MemberRepositoryTest {
         @DisplayName("should set version on save")
         void shouldSetVersionOnSave() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Version",
-                    "Test",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Test 1", "Praha", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0005"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("version@example.com"),
-                    new PhoneNumber("+420111111127"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0005")
+                    .withName("Version", "Test")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("version@example.com")
+                    .withPhone("+420111111127")
+                    .withNoGuardian()
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -768,22 +659,17 @@ class MemberRepositoryTest {
         @DisplayName("should increment version on update")
         void shouldIncrementVersionOnUpdate() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Update",
-                    "Test",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Test 1", "Praha", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0006"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("update@example.com"),
-                    new PhoneNumber("+420111111128"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0006")
+                    .withName("Update", "Test")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("update@example.com")
+                    .withPhone("+420111111128")
+                    .withNoGuardian()
+                    .build();
             Member savedMember = memberRepository.save(member);
 
             // When - update member
@@ -809,22 +695,17 @@ class MemberRepositoryTest {
         @DisplayName("should populate createdAt on save")
         void shouldPopulateCreatedAtOnSave() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Audit",
-                    "Test",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Test 1", "Praha", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0007"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("audit@example.com"),
-                    new PhoneNumber("+420111111129"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0007")
+                    .withName("Audit", "Test")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("audit@example.com")
+                    .withPhone("+420111111129")
+                    .withNoGuardian()
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -838,22 +719,17 @@ class MemberRepositoryTest {
         @DisplayName("should populate modifiedAt on save")
         void shouldPopulateModifiedAtOnSave() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Modified",
-                    "Test",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Test 1", "Praha", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0008"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("modified@example.com"),
-                    new PhoneNumber("+420111111130"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0008")
+                    .withName("Modified", "Test")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("modified@example.com")
+                    .withPhone("+420111111130")
+                    .withNoGuardian()
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -872,22 +748,17 @@ class MemberRepositoryTest {
         @DisplayName("should update member contact information")
         void shouldUpdateMemberContactInformation() {
             // Given
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Contact",
-                    "Update",
-                    LocalDate.of(2000, 1, 1),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address address = Address.of("Old Street 1", "Old City", "11000", "CZ");
-            Member member = Member.create(
-                    new RegistrationNumber("ZBM0009"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("old@example.com"),
-                    new PhoneNumber("+420111111131"),
-                    null
-            );
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM0009")
+                    .withName("Contact", "Update")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Old Street 1", "Old City", "11000", "CZ"))
+                    .withEmail("old@example.com")
+                    .withPhone("+420111111131")
+                    .withNoGuardian()
+                    .build();
             Member savedMember = memberRepository.save(member);
 
             // When - update contact info (modifies member in-place)

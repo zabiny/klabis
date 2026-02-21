@@ -1,12 +1,14 @@
 package com.klabis.users.passwordsetup;
 
 import com.klabis.members.domain.*;
+import com.klabis.members.MemberTestDataBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
+import static com.klabis.members.MemberTestDataBuilder.aMember;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("PasswordComplexityValidator tests")
@@ -807,28 +809,17 @@ class PasswordComplexityValidatorTest {
         // Helper methods
 
         private Member createTestMember(String firstName, String lastName, String registrationNumber) {
-            PersonalInformation personalInfo = PersonalInformation.of(
-                    firstName,
-                    lastName,
-                    LocalDate.of(1990, 1, 1),
-                    "IT",
-                    Gender.MALE
-            );
-            Address address = Address.of(
-                    "Via Roma 123",
-                    "Milano",
-                    "20100",
-                    "IT"
-            );
-
-            return Member.create(
-                    new RegistrationNumber(registrationNumber),
-                    personalInfo,
-                    address,
-                    new EmailAddress("test@example.com"),
-                    new PhoneNumber("+420777888999"),
-                    null
-            );
+            return aMember()
+                    .withRegistrationNumber(registrationNumber)
+                    .withName(firstName, lastName)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withNationality("IT")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Via Roma 123", "Milano", "20100", "IT"))
+                    .withEmail("test@example.com")
+                    .withPhone("+420777888999")
+                    .withNoGuardian()
+                    .build();
         }
     }
 }
