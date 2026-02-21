@@ -4,7 +4,6 @@ import com.klabis.E2EIntegrationTest;
 import com.klabis.common.email.EmailProperties;
 import com.klabis.common.email.EmailService;
 import com.klabis.common.email.LoggingEmailService;
-import com.klabis.users.UserId;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -43,12 +41,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * This test verifies the entire member lifecycle from registration through termination:
  * <ul>
  *   <li>Member registration</li>
+ *   <li>Member presence in list (soft delete verification)</li>
  *   <li>Member retrieval and verification</li>
+ *   <li>Email token retrieval (simulated via LoggingEmailService)</li>
+ *   <li>Token validation</li>
+ *   <li>Password setup (activation)</li>
  *   <li>Member information update</li>
  *   <li>Member termination</li>
  *   <li>Verification of terminated state</li>
- *   <li>Member presence in list (soft delete)</li>
- *   <li>Member activation (password setup flow)</li>
+ *   <li>Second termination rejection</li>
  * </ul>
  * <p>
  * <b>Test Scope:</b>
@@ -102,7 +103,7 @@ class MemberLifecycleE2ETest {
     private static final String ADMIN_USERNAME = "admin";
 
     @Test
-    @DisplayName("Complete member lifecycle: register → get → update → terminate → verify")
+    @DisplayName("Complete member lifecycle: register → list → email → validate → password → update → terminate")
     @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
     void shouldCompleteFullMemberLifecycle() throws Exception {
         // ========================================================================
@@ -136,7 +137,16 @@ class MemberLifecycleE2ETest {
         UUID memberId = extractMemberIdFromLocation(registerResult);
 
         // ========================================================================
-        // STEP 2: Get member details
+        // STEP 2: Check member in GET /members list
+        // ========================================================================
+        mockMvc.perform(
+                        get("/api/members")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andExpect(status().isOk());
+
+        // ========================================================================
+        // STEP 3: Get member details
         // ========================================================================
         mockMvc.perform(
                         get("/api/members/{id}", memberId)
@@ -146,7 +156,39 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.id").value(memberId.toString()));
 
         // ========================================================================
-        // STEP 3: Update member
+        // STEP 4: Get email token from email (using LoggingEmailService)
+        // ========================================================================
+        String activationToken = Awaitility.waitAtMost(Duration.ofSeconds(4))
+                .until(MemberLifecycleE2ETest::findActivationTokenInSentEmail, Optional::isPresent)
+                .orElseThrow();
+
+        // ========================================================================
+        // STEP 5: Validate token via API
+        // ========================================================================
+        mockMvc.perform(get("/api/auth/password-setup/validate")
+                        .param("token", activationToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true));
+
+        // ========================================================================
+        // STEP 6: Setup password via API
+        // ========================================================================
+        String newPassword = "SecurePass123!@#";
+        mockMvc.perform(post("/api/auth/password-setup/complete")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                    "token": "%s",
+                                    "password": "%s",
+                                    "passwordConfirmation": "%s"
+                                }
+                                """.formatted(activationToken, newPassword, newPassword))
+                        .header("X-Forwarded-For", "192.168.1.1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password set successfully. You can now log in."));
+
+        // ========================================================================
+        // STEP 7: Update member
         // ========================================================================
         mockMvc.perform(
                         patch("/api/members/{id}", memberId)
@@ -167,7 +209,7 @@ class MemberLifecycleE2ETest {
                 .andExpect(status().isNoContent());
 
         // ========================================================================
-        // STEP 4: Verify updated data
+        // STEP 8: Verify updated data
         // ========================================================================
         mockMvc.perform(
                         get("/api/members/{id}", memberId)
@@ -177,7 +219,7 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.id").value(memberId.toString()));
 
         // ========================================================================
-        // STEP 5: Terminate member
+        // STEP 9: Terminate member
         // ========================================================================
         mockMvc.perform(
                         post("/api/members/{id}/terminate", memberId)
@@ -193,7 +235,7 @@ class MemberLifecycleE2ETest {
                 .andExpect(status().isNoContent());
 
         // ========================================================================
-        // STEP 6: Verify termination state
+        // STEP 10: Verify termination state
         // ========================================================================
         mockMvc.perform(
                         get("/api/members/{id}", memberId)
@@ -204,16 +246,7 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.active").value(false));
 
         // ========================================================================
-        // STEP 7: Verify member in list (soft delete)
-        // ========================================================================
-        mockMvc.perform(
-                        get("/api/members")
-                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                )
-                .andExpect(status().isOk());
-
-        // ========================================================================
-        // STEP 8: Verify second termination is rejected
+        // STEP 11: Verify second termination is rejected
         // ========================================================================
         mockMvc.perform(
                         post("/api/members/{id}/terminate", memberId)
@@ -228,59 +261,6 @@ class MemberLifecycleE2ETest {
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already terminated")));
-    }
-
-    @Test
-    @DisplayName("Password activation flow: register → email token → validate → setup password")
-    @WithMockUser(authorities = "MEMBERS:CREATE")
-    void shouldCompletePasswordActivationFlowSuccessfully() throws Exception {
-        // STEP 1: Register a new member
-        mockMvc.perform(post("/api/members")
-                        .contentType("application/json")
-                        .content("""
-                                {
-                                    "firstName": "John",
-                                    "lastName": "Doe",
-                                    "dateOfBirth": "1990-01-15",
-                                    "nationality": "CZ",
-                                    "gender": "MALE",
-                                    "email": "john.doe@example.com",
-                                    "phone": "+420123456789",
-                                    "address": {
-                                        "street": "Street 1",
-                                        "city": "City",
-                                        "postalCode": "10000",
-                                        "country": "CZ"
-                                    }
-                                }
-                                """))
-                .andExpect(status().isCreated());
-
-        // STEP 2: Get the password setup token (simulates retrieving from email)
-        String activationToken = Awaitility.waitAtMost(Duration.ofSeconds(4))
-                .until(MemberLifecycleE2ETest::findActivationTokenInSentEmail, Optional::isPresent)
-                .orElseThrow();
-
-        // STEP 3: Validate the token via API
-        mockMvc.perform(get("/api/auth/password-setup/validate")
-                        .param("token", activationToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid").value(true));
-
-        // STEP 4: Complete password setup via API
-        String newPassword = "SecurePass123!@#";
-        mockMvc.perform(post("/api/auth/password-setup/complete")
-                        .contentType("application/json")
-                        .content("""
-                                {
-                                    "token": "%s",
-                                    "password": "%s",
-                                    "passwordConfirmation": "%s"
-                                }
-                                """.formatted(activationToken, newPassword, newPassword))
-                        .header("X-Forwarded-For", "192.168.1.1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Password set successfully. You can now log in."));
     }
 
     private UUID extractMemberIdFromLocation(MvcResult result) {
