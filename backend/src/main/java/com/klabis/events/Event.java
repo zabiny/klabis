@@ -1,12 +1,12 @@
 package com.klabis.events;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
-import org.springframework.data.domain.DomainEvents;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,7 +32,7 @@ import java.util.*;
  * - Domain events are published via Spring Modulith's transactional outbox pattern
  */
 @AggregateRoot
-public class Event {
+public class Event extends KlabisAggregateRoot<EventId> {
 
     @Identity
     private final EventId id;
@@ -50,12 +50,6 @@ public class Event {
     // Event registrations
     private final List<EventRegistration> registrations = new ArrayList<>();
 
-    // Audit metadata
-    private AuditMetadata auditMetadata;
-
-    // Domain events list (published synchronously in same thread, no concurrent access)
-    private final List<Object> domainEvents = new ArrayList<>();
-
     /**
      * Private constructor for creating new Event instances.
      * <p>
@@ -70,7 +64,8 @@ public class Event {
             String organizer,
             WebsiteUrl websiteUrl,
             UserId eventCoordinatorId,
-            EventStatus status) {
+            EventStatus status,
+            AuditMetadata auditMetadata) {
 
         this.id = id;
         this.name = name;
@@ -80,6 +75,7 @@ public class Event {
         this.websiteUrl = websiteUrl;
         this.eventCoordinatorId = eventCoordinatorId;
         this.status = status;
+        updateAuditMetadata(auditMetadata);
     }
 
     /**
@@ -119,10 +115,10 @@ public class Event {
                 organizer,
                 websiteUrl,
                 eventCoordinatorId,
-                status
+                status,
+                auditMetadata
         );
         event.registrations.addAll(registrations);
-        event.auditMetadata = auditMetadata;
         // No domain events for reconstructed entities
         return event;
     }
@@ -164,7 +160,8 @@ public class Event {
                 organizer,
                 websiteUrl,
                 eventCoordinatorId,
-                EventStatus.DRAFT
+                EventStatus.DRAFT,
+                AuditMetadata.create("system")
         );
 
         // Register domain event
@@ -201,6 +198,7 @@ public class Event {
 
     // ========== Getters ==========
 
+    @Override
     public EventId getId() {
         return id;
     }
@@ -417,48 +415,6 @@ public class Event {
         return Collections.unmodifiableList(registrations);
     }
 
-    // ========== Domain Events ==========
-
-    /**
-     * Register a domain event to be published.
-     *
-     * @param event the domain event to register
-     */
-    protected void registerEvent(Object event) {
-        this.domainEvents.add(event);
-    }
-
-    /**
-     * Get all domain events registered on this aggregate.
-     * <p>
-     * Public accessor that returns the domain events list.
-     * Annotated with @DomainEvents for Spring Modulith automatic event publishing.
-     *
-     * @return unmodifiable list of domain events
-     */
-    @DomainEvents
-    public List<Object> getDomainEvents() {
-        return Collections.unmodifiableList(domainEvents);
-    }
-
-    /**
-     * Get all domain events (for memento delegation).
-     * <p>
-     * Public method for infrastructure layer to access domain events.
-     *
-     * @return list of domain events
-     */
-    public List<Object> domainEvents() {
-        return Collections.unmodifiableList(domainEvents);
-    }
-
-    /**
-     * Clear all domain events (typically called after publishing).
-     */
-    public void clearDomainEvents() {
-        this.domainEvents.clear();
-    }
-
     // ========== Audit Metadata Methods ==========
 
     /**
@@ -469,57 +425,6 @@ public class Event {
      */
     public void addRegistration(EventRegistration registration) {
         this.registrations.add(registration);
-    }
-
-    /**
-     * Gets the creation timestamp of this event.
-     *
-     * @return creation timestamp, or null if not set
-     */
-    public Instant getCreatedAt() {
-        return auditMetadata != null ? auditMetadata.createdAt() : null;
-    }
-
-    /**
-     * Gets the user who created this event.
-     *
-     * @return creator user identifier, or null if not set
-     */
-    public String getCreatedBy() {
-        return auditMetadata != null ? auditMetadata.createdBy() : null;
-    }
-
-    /**
-     * Gets the last modification timestamp of this event.
-     *
-     * @return last modification timestamp, or null if not set
-     */
-    public Instant getLastModifiedAt() {
-        return auditMetadata != null ? auditMetadata.lastModifiedAt() : null;
-    }
-
-    /**
-     * Gets the user who last modified this event.
-     *
-     * @return last modifier user identifier, or null if not set
-     */
-    public String getLastModifiedBy() {
-        return auditMetadata != null ? auditMetadata.lastModifiedBy() : null;
-    }
-
-    // ========== Object Methods ==========
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Event event = (Event) o;
-        return Objects.equals(id, event.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     @Override

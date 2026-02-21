@@ -1,13 +1,13 @@
 package com.klabis.members.domain;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberTerminatedEvent;
 import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
-import org.springframework.data.domain.DomainEvents;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,7 +27,7 @@ import java.util.*;
  * - Guardian required for minors (<18 years)
  */
 @AggregateRoot
-public class Member {
+public class Member extends KlabisAggregateRoot<UserId> {
 
     @Identity
     private final UserId id;
@@ -54,12 +54,6 @@ public class Member {
     private Instant deactivatedAt;
     private String deactivationNote;
     private String deactivatedBy;
-
-    // Audit metadata
-    private AuditMetadata auditMetadata;
-
-    // Domain events list (published synchronously in same thread, no concurrent access)
-    private final List<Object> domainEvents = new ArrayList<>();
 
     // ========== Command Records ==========
 
@@ -261,7 +255,7 @@ public class Member {
                 deactivationNote,
                 deactivatedBy
         );
-        member.auditMetadata = auditMetadata;
+        member.updateAuditMetadata(auditMetadata);
         // No domain events for reconstructed entities
         return member;
     }
@@ -404,6 +398,11 @@ public class Member {
 
     // ========== Getters ==========
 
+    @Override
+    public UserId getId() {
+        return this.id;
+    }
+
     public RegistrationNumber getRegistrationNumber() {
         return this.registrationNumber;
     }
@@ -498,69 +497,6 @@ public class Member {
 
     public UserId getDeactivatedBy() {
         return deactivatedBy != null ? new UserId(UUID.fromString(deactivatedBy)) : null;
-    }
-
-    // Audit getters (delegate to AuditMetadata)
-    public Instant getCreatedAt() {
-        return auditMetadata != null ? auditMetadata.createdAt() : null;
-    }
-
-    public Instant getLastModifiedAt() {
-        return auditMetadata != null ? auditMetadata.lastModifiedAt() : null;
-    }
-
-    public String getCreatedBy() {
-        return auditMetadata != null ? auditMetadata.createdBy() : null;
-    }
-
-    public String getLastModifiedBy() {
-        return auditMetadata != null ? auditMetadata.lastModifiedBy() : null;
-    }
-
-    public Long getVersion() {
-        return auditMetadata != null ? auditMetadata.version() : null;
-    }
-
-    public AuditMetadata getAuditMetadata() {
-        return auditMetadata;
-    }
-
-    /**
-     * Register a domain event to be published.
-     *
-     * @param event the domain event to register
-     */
-    protected void registerEvent(Object event) {
-        this.domainEvents.add(event);
-    }
-
-    /**
-     * Get all domain events registered on this aggregate.
-     * <p>
-     * Public accessor that returns the domain events list.
-     * Annotated with @DomainEvents for Spring Modulith automatic event publishing.
-     *
-     * @return unmodifiable list of domain events
-     */
-    @DomainEvents
-    public List<Object> getDomainEvents() {
-        return Collections.unmodifiableList(domainEvents);
-    }
-
-    /**
-     * Clear all domain events (typically called after publishing).
-     */
-    public void clearDomainEvents() {
-        this.domainEvents.clear();
-    }
-
-    /**
-     * Get the member's unique identifier.
-     *
-     * @return the member's ID as a UserId value object
-     */
-    public UserId getId() {
-        return this.id;
     }
 
     // ========== Command Handlers (Domain Methods) ==========
@@ -719,20 +655,6 @@ public class Member {
 
         // Register domain event
         registerEvent(MemberTerminatedEvent.fromMember(this, command));
-    }
-
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Member member = (Member) o;
-        return Objects.equals(getId(), member.getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getId());
     }
 
     @Override

@@ -1,12 +1,12 @@
 package com.klabis.users;
 
-import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.users.persistence.jdbc.UserMemento;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
-import java.time.Instant;
-import java.util.*;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * User aggregate root.
@@ -36,7 +36,7 @@ import java.util.*;
  * @see UserMemento
  */
 @AggregateRoot
-public class User {
+public class User extends KlabisAggregateRoot<UserId> {
 
     @Identity
     private UserId id;
@@ -47,9 +47,6 @@ public class User {
 
     private AccountStatus accountStatus;
 
-    // Audit metadata
-    private AuditMetadata auditMetadata;
-
     // Spring Security fields
     private boolean accountNonExpired = true;
 
@@ -58,9 +55,6 @@ public class User {
     private boolean credentialsNonExpired = true;
 
     private boolean enabled = true;
-
-    // Domain events list (manual management instead of AbstractAggregateRoot)
-    private final List<Object> domainEvents = new ArrayList<>();
 
     // ========== Command Records ==========
 
@@ -372,7 +366,7 @@ public class User {
         );
 
         // Copy audit metadata
-        activated.auditMetadata = this.auditMetadata;
+        activated.updateAuditMetadata(this.getAuditMetadata());
 
         return activated;
     }
@@ -401,6 +395,7 @@ public class User {
      *
      * @return UserId value object
      */
+    @Override
     public UserId getId() {
         return id;
     }
@@ -431,81 +426,6 @@ public class User {
 
     public boolean isEnabled() {
         return enabled;
-    }
-
-    // Public getters for audit fields (used by tests and monitoring)
-    public Instant getCreatedAt() {
-        return auditMetadata != null ? auditMetadata.createdAt() : null;
-    }
-
-    public Instant getLastModifiedAt() {
-        return auditMetadata != null ? auditMetadata.lastModifiedAt() : null;
-    }
-
-    public Long getVersion() {
-        return auditMetadata != null ? auditMetadata.version() : null;
-    }
-
-    public String getCreatedBy() {
-        return auditMetadata != null ? auditMetadata.createdBy() : null;
-    }
-
-    public String getLastModifiedBy() {
-        return auditMetadata != null ? auditMetadata.lastModifiedBy() : null;
-    }
-
-    /**
-     * Updates the audit metadata from the persistence layer.
-     * <p>
-     * Called by repository after save to populate audit fields
-     * (createdAt, lastModifiedAt, version) that are set by the database.
-     *
-     * @param auditMetadata the audit metadata to apply
-     */
-    public void updateAuditMetadata(AuditMetadata auditMetadata) {
-        this.auditMetadata = auditMetadata;
-    }
-
-    /**
-     * Returns the domain events for this aggregate.
-     * <p>
-     * Used by UserMemento for event delegation to Spring Modulith.
-     *
-     * @return list of domain events
-     */
-    public List<Object> getDomainEvents() {
-        return Collections.unmodifiableList(domainEvents);
-    }
-
-    /**
-     * Clears the domain events for this aggregate.
-     * <p>
-     * Used by UserMemento for event delegation to Spring Modulith.
-     */
-    public void clearDomainEvents() {
-        domainEvents.clear();
-    }
-
-    /**
-     * Registers a domain event.
-     *
-     * @param event the event to register
-     */
-    protected void registerEvent(Object event) {
-        domainEvents.add(event);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return Objects.equals(id, user.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     @Override

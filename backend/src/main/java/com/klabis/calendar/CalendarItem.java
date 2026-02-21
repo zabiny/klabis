@@ -1,6 +1,7 @@
 package com.klabis.calendar;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -27,7 +28,7 @@ import java.util.Objects;
  * - Value objects are maintained as fields for domain logic
  */
 @AggregateRoot
-public class CalendarItem {
+public class CalendarItem extends KlabisAggregateRoot<CalendarItemId> {
 
     @Identity
     private final CalendarItemId id;
@@ -40,8 +41,7 @@ public class CalendarItem {
     @Association
     private EventId eventId;
 
-    private AuditMetadata auditMetadata;
-
+    
     /**
      * Private constructor for creating new CalendarItem instances.
      * <p>
@@ -54,7 +54,8 @@ public class CalendarItem {
             String description,
             LocalDate startDate,
             LocalDate endDate,
-            EventId eventId) {
+            EventId eventId,
+            AuditMetadata auditMetadata) {
 
         this.id = id;
         this.name = name;
@@ -62,6 +63,7 @@ public class CalendarItem {
         this.startDate = startDate;
         this.endDate = endDate;
         this.eventId = eventId;
+        updateAuditMetadata(auditMetadata);
     }
 
     /**
@@ -95,9 +97,9 @@ public class CalendarItem {
                 description,
                 startDate,
                 endDate,
-                eventId
+                eventId,
+                auditMetadata
         );
-        calendarItem.auditMetadata = auditMetadata;
         return calendarItem;
     }
 
@@ -132,7 +134,8 @@ public class CalendarItem {
                 description,
                 startDate,
                 endDate,
-                null
+                null,
+                AuditMetadata.create("system")
         );
     }
 
@@ -195,7 +198,7 @@ public class CalendarItem {
     }
 
     public AuditMetadata getAuditMetadata() {
-        return auditMetadata;
+        return super.getAuditMetadata();
     }
 
     // ========== Domain Methods ==========

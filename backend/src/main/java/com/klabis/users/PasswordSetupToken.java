@@ -1,6 +1,7 @@
 package com.klabis.users;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -34,7 +35,7 @@ import java.util.UUID;
  * <p>Factory method: {@link #generateFor(User, Duration)}
  */
 @AggregateRoot
-public class PasswordSetupToken {
+public class PasswordSetupToken extends KlabisAggregateRoot<UUID> {
 
     @Identity
     private final UUID id;
@@ -44,19 +45,19 @@ public class PasswordSetupToken {
     private final Instant expiresAt;
     private Instant usedAt;
     private String usedByIp;
-    private AuditMetadata auditMetadata;
     private boolean isNew = true;
 
     /**
      * Private constructor. Use factory method {@link #generateFor(User, Duration)} to create instances.
      *
-     * @param id        unique token identifier
-     * @param userId    user ID requiring password setup
-     * @param tokenHash SHA-256 hash of the random token
-     * @param createdAt token creation timestamp
-     * @param expiresAt token expiration timestamp
+     * @param id            unique token identifier
+     * @param userId        user ID requiring password setup
+     * @param tokenHash     SHA-256 hash of the random token
+     * @param createdAt     token creation timestamp
+     * @param expiresAt     token expiration timestamp
+     * @param auditMetadata audit metadata
      */
-    private PasswordSetupToken(UUID id, UserId userId, TokenHash tokenHash, Instant createdAt, Instant expiresAt) {
+    private PasswordSetupToken(UUID id, UserId userId, TokenHash tokenHash, Instant createdAt, Instant expiresAt, AuditMetadata auditMetadata) {
         this.id = Objects.requireNonNull(id, "Token ID is required");
         this.userId = Objects.requireNonNull(userId, "User ID is required");
         this.tokenHash = Objects.requireNonNull(tokenHash, "Token hash is required");
@@ -66,6 +67,8 @@ public class PasswordSetupToken {
         if (expiresAt.isBefore(createdAt)) {
             throw new IllegalArgumentException("Expiration time must be after creation time");
         }
+
+        updateAuditMetadata(auditMetadata);
     }
 
     /**
@@ -93,7 +96,7 @@ public class PasswordSetupToken {
         String plainToken = UUID.randomUUID().toString();
         TokenHash hash = TokenHash.hash(plainToken);
 
-        PasswordSetupToken token = new PasswordSetupToken(tokenId, userId, hash, now, expiration);
+        PasswordSetupToken token = new PasswordSetupToken(tokenId, userId, hash, now, expiration, AuditMetadata.create("system"));
         token.plainToken = plainToken; // Store temporarily for email sending
 
         return token;
@@ -125,16 +128,13 @@ public class PasswordSetupToken {
             String usedByIp,
             AuditMetadata auditMetadata) {
 
-        PasswordSetupToken token = new PasswordSetupToken(id, userId, tokenHash, createdAt, expiresAt);
+        PasswordSetupToken token = new PasswordSetupToken(id, userId, tokenHash, createdAt, expiresAt, auditMetadata);
 
         // Set used status if token was used
         if (usedAt != null && usedByIp != null) {
             token.usedAt = usedAt;
             token.usedByIp = usedByIp;
         }
-
-        // Set audit metadata
-        token.auditMetadata = auditMetadata;
 
         // Mark as persisted (loaded from database)
         token.isNew = false;
@@ -273,23 +273,23 @@ public class PasswordSetupToken {
     }
 
     public AuditMetadata getAuditMetadata() {
-        return auditMetadata;
+        return super.getAuditMetadata();
     }
 
     public Instant getLastModifiedAt() {
-        return auditMetadata != null ? auditMetadata.lastModifiedAt() : null;
+        return super.getLastModifiedAt();
     }
 
     public String getCreatedBy() {
-        return auditMetadata != null ? auditMetadata.createdBy() : null;
+        return super.getCreatedBy();
     }
 
     public String getLastModifiedBy() {
-        return auditMetadata != null ? auditMetadata.lastModifiedBy() : null;
+        return super.getLastModifiedBy();
     }
 
     public Long getVersion() {
-        return auditMetadata != null ? auditMetadata.version() : null;
+        return super.getVersion();
     }
 
     public LocalDateTime getCreatedAtLocal() {

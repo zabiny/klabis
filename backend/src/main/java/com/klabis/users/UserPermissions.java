@@ -1,6 +1,7 @@
 package com.klabis.users;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.domain.KlabisAggregateRoot;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -35,15 +36,17 @@ import java.util.Set;
  * @see AuthorizationPolicy
  */
 @AggregateRoot
-public class UserPermissions {
+public class UserPermissions extends KlabisAggregateRoot<UserId> {
+
+    @Override
+    public UserId getId() {
+        return userId;
+    }
 
     @Identity
     private final UserId userId;
 
     private Set<Authority> directAuthorities;
-
-    // Audit metadata
-    private AuditMetadata auditMetadata;
 
     // Optimistic locking
     private Long version;
@@ -77,13 +80,15 @@ public class UserPermissions {
      *
      * @param userId            the unique user identifier
      * @param directAuthorities the set of direct authorities
+     * @param auditMetadata      the audit metadata
      */
-    private UserPermissions(UserId userId, Set<Authority> directAuthorities) {
+    private UserPermissions(UserId userId, Set<Authority> directAuthorities, AuditMetadata auditMetadata) {
         Assert.notNull(userId, "UserId must not be null");
         Assert.notNull(directAuthorities, "Direct authorities must not be null");
 
         this.userId = userId;
         this.directAuthorities = new HashSet<>(directAuthorities);
+        updateAuditMetadata(auditMetadata);
     }
 
     /**
@@ -94,7 +99,7 @@ public class UserPermissions {
      * @return a new UserPermissions instance
      */
     public static UserPermissions create(UserId userId, Set<Authority> directAuthorities) {
-        return new UserPermissions(userId, directAuthorities);
+        return new UserPermissions(userId, directAuthorities, AuditMetadata.create("system"));
     }
 
     /**
@@ -106,7 +111,7 @@ public class UserPermissions {
      * @return a new UserPermissions instance with empty authorities
      */
     public static UserPermissions empty(UserId userId) {
-        return new UserPermissions(userId, Set.of());
+        return new UserPermissions(userId, Set.of(), AuditMetadata.create("system"));
     }
 
     /**
@@ -169,27 +174,7 @@ public class UserPermissions {
         this.isNew = false;
     }
 
-    /**
-     * Gets the audit metadata.
-     *
-     * @return the audit metadata
-     */
-    public AuditMetadata getAuditMetadata() {
-        return auditMetadata;
-    }
-
-    /**
-     * Updates the audit metadata from the persistence layer.
-     * <p>
-     * Called by repository after save to populate audit fields
-     * (createdAt, lastModifiedAt, version) that are set by the database.
-     *
-     * @param auditMetadata the audit metadata to apply
-     */
-    public void updateAuditMetadata(AuditMetadata auditMetadata) {
-        this.auditMetadata = auditMetadata;
-    }
-
+    
     /**
      * Checks if the user has a specific direct authority.
      *

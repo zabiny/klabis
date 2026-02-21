@@ -201,7 +201,7 @@ class EventMemento implements Persistable<UUID> {
      */
     @org.springframework.data.domain.DomainEvents
     List<Object> domainEvents() {
-        return event != null ? event.domainEvents() : List.of();
+        return event != null ? event.getDomainEvents() : List.of();
     }
 
     /**
