@@ -679,11 +679,11 @@ class MemberRepositoryTest {
 
             // When - update member
             Address newAddress = Address.of("New Street 1", "New City", "11000", "CZ");
-            savedMember.updateContactInformation(
+            savedMember.handle(new Member.UpdateContactInformation(
                     savedMember.getEmail(),
                     savedMember.getPhone(),
                     newAddress
-            );
+            ));
             Member savedUpdatedMember = memberRepository.save(savedMember);
 
             // Then
@@ -769,11 +769,11 @@ class MemberRepositoryTest {
             // When - update contact info (modifies member in-place)
             Address newAddress = Address.of("New Street 1", "New City", "11000", "CZ");
             EmailAddress newEmail = EmailAddress.of("new@example.com");
-            savedMember.updateContactInformation(
+            savedMember.handle(new Member.UpdateContactInformation(
                     newEmail,
                     savedMember.getPhone(),
                     newAddress
-            );
+            ));
             Member savedUpdatedMember = memberRepository.save(savedMember);
 
             // Then

@@ -526,8 +526,8 @@ class MemberTest {
     }
 
     @Nested
-    @DisplayName("updateContactInformation() method")
-    class UpdateContactInformationMethod {
+    @DisplayName("UpdateContactInformation command")
+    class UpdateContactInformationCommand {
 
         @Test
         @DisplayName("should update email when provided")
@@ -537,7 +537,7 @@ class MemberTest {
             EmailAddress newEmail = EmailAddress.of("new.email@example.com");
 
             // Act - modifies member in-place, returns void
-            member.updateContactInformation(newEmail, null, null);
+            member.handle(new Member.UpdateContactInformation(newEmail, null, null));
 
             // Assert
             MemberAssert.assertThat(member)
@@ -554,7 +554,7 @@ class MemberTest {
             PhoneNumber newPhone = PhoneNumber.of("+420987654321");
 
             // Act
-            member.updateContactInformation(null, newPhone, null);
+            member.handle(new Member.UpdateContactInformation(null, newPhone, null));
 
             // Assert
             assertThat(member.getPhone().value()).isEqualTo("+420987654321");
@@ -569,7 +569,7 @@ class MemberTest {
             Address newAddress = Address.of("Nová 456", "Brno", "60200", "CZ");
 
             // Act
-            member.updateContactInformation(null, null, newAddress);
+            member.handle(new Member.UpdateContactInformation(null, null, newAddress));
 
             // Assert
             assertThat(member.getAddress().street()).isEqualTo("Nová 456");
@@ -587,7 +587,7 @@ class MemberTest {
             Address newAddress = Address.of("Nová 456", "Brno", "60200", "CZ");
 
             // Act
-            member.updateContactInformation(newEmail, newPhone, newAddress);
+            member.handle(new Member.UpdateContactInformation(newEmail, newPhone, newAddress));
 
             // Assert
             assertThat(member.getEmail().value()).isEqualTo("new.email@example.com");
@@ -603,7 +603,7 @@ class MemberTest {
             EmailAddress newEmail = EmailAddress.of("new.email@example.com");
 
             // Act
-            member.updateContactInformation(newEmail, null, null);
+            member.handle(new Member.UpdateContactInformation(newEmail, null, null));
 
             // Assert - same instance is modified
             assertThat(member.getEmail().value()).isEqualTo("new.email@example.com");
@@ -621,7 +621,7 @@ class MemberTest {
             LocalDate originalDob = member.getDateOfBirth();
 
             // Act
-            member.updateContactInformation(EmailAddress.of("new@example.com"), null, null);
+            member.handle(new Member.UpdateContactInformation(EmailAddress.of("new@example.com"), null, null));
 
             // Assert
             assertThat(member.getId()).isEqualTo(originalId);
@@ -638,7 +638,7 @@ class MemberTest {
             Member member = createTestMember();
 
             // Act - null means "keep existing value", not "remove"
-            member.updateContactInformation(null, null, null);
+            member.handle(new Member.UpdateContactInformation(null, null, null));
 
             // Assert - Email is preserved, not removed
             assertThat(member.getEmail()).isNotNull();
@@ -649,8 +649,8 @@ class MemberTest {
     }
 
     @Nested
-    @DisplayName("updateDocuments() method")
-    class UpdateDocumentsMethod {
+    @DisplayName("UpdateDocuments command")
+    class UpdateDocumentsCommand {
 
         @Test
         @DisplayName("should update identity card when provided")
@@ -663,7 +663,7 @@ class MemberTest {
             );
 
             // Act
-            member.updateDocuments(identityCard, null, null);
+            member.handle(new Member.UpdateDocuments(identityCard, null, null));
 
             // Assert
             assertThat(member.getIdentityCard()).isNotNull();
@@ -681,7 +681,7 @@ class MemberTest {
             );
 
             // Act
-            member.updateDocuments(null, medicalCourse, null);
+            member.handle(new Member.UpdateDocuments(null, medicalCourse, null));
 
             // Assert
             assertThat(member.getMedicalCourse()).isNotNull();
@@ -700,7 +700,7 @@ class MemberTest {
             );
 
             // Act
-            member.updateDocuments(null, null, trainerLicense);
+            member.handle(new Member.UpdateDocuments(null, null, trainerLicense));
 
             // Assert
             assertThat(member.getTrainerLicense()).isNotNull();
@@ -726,7 +726,7 @@ class MemberTest {
             );
 
             // Act
-            member.updateDocuments(identityCard, medicalCourse, trainerLicense);
+            member.handle(new Member.UpdateDocuments(identityCard, medicalCourse, trainerLicense));
 
             // Assert
             assertThat(member.getIdentityCard()).isNotNull();
@@ -745,7 +745,7 @@ class MemberTest {
             );
 
             // Act
-            member.updateDocuments(identityCard, null, null);
+            member.handle(new Member.UpdateDocuments(identityCard, null, null));
 
             // Assert - same instance is modified
             assertThat(member.getIdentityCard()).isNotNull();
@@ -768,7 +768,7 @@ class MemberTest {
 
             // Act - Update a different document (medical course, not identity card)
             // This should NOT trigger validation of the existing identity card
-            memberWithDoc.updateDocuments(null, medicalCourse, null);
+            memberWithDoc.handle(new Member.UpdateDocuments(null, medicalCourse, null));
 
             // Assert - Medical course is updated, identity card is unchanged
             assertThat(memberWithDoc.getMedicalCourse()).isNotNull();
@@ -779,8 +779,8 @@ class MemberTest {
     }
 
     @Nested
-    @DisplayName("updateMemberDetails() method")
-    class UpdatePersonalDetailsMethod {
+    @DisplayName("UpdateMemberDetails command")
+    class UpdateMemberDetailsCommand {
 
         @Test
         @DisplayName("should update gender when provided")
@@ -789,10 +789,10 @@ class MemberTest {
             Member member = createTestMember();
 
             // Act
-            member.updateMemberDetails(
+            member.handle(new Member.UpdateMemberDetails(
                     null, null, null, null, null,
                     null, null, null, null, null, Gender.FEMALE
-            );
+            ));
 
             // Assert
             assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
@@ -806,10 +806,10 @@ class MemberTest {
             Member member = createTestMember();
 
             // Act
-            member.updateMemberDetails(
+            member.handle(new Member.UpdateMemberDetails(
                     null, null, null, null, null,
                     "12345", null, null, null, null, null
-            );
+            ));
 
             // Assert
             assertThat(member.getChipNumber()).isEqualTo("12345");
@@ -822,10 +822,10 @@ class MemberTest {
             Member member = createTestMember();
 
             // Act
-            member.updateMemberDetails(
+            member.handle(new Member.UpdateMemberDetails(
                     null, null, null, null, null,
                     null, DrivingLicenseGroup.A, null, null, null, null
-            );
+            ));
 
             // Assert
             assertThat(member.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.A);
@@ -838,10 +838,10 @@ class MemberTest {
             Member member = createTestMember();
 
             // Act
-            member.updateMemberDetails(
+            member.handle(new Member.UpdateMemberDetails(
                     null, null, null, null, null,
                     null, null, "Vegetarian, no nuts", null, null, null
-            );
+            ));
 
             // Assert
             assertThat(member.getDietaryRestrictions()).isEqualTo("Vegetarian, no nuts");
@@ -854,10 +854,10 @@ class MemberTest {
             Member member = createTestMember();
 
             // Act
-            member.updateMemberDetails(
+            member.handle(new Member.UpdateMemberDetails(
                     null, null, null, null, null,
                     "12345", DrivingLicenseGroup.A, "No dairy", null, null, Gender.FEMALE
-            );
+            ));
 
             // Assert
             assertThat(member.getChipNumber()).isEqualTo("12345");
@@ -883,10 +883,10 @@ class MemberTest {
             PhoneNumber newPhone = PhoneNumber.of("+420555555555");
 
             // Act
-            member.updateMemberDetails(
+            member.handle(new Member.UpdateMemberDetails(
                     newPersonalInfo, newAddress, newEmail, newPhone, null,
                     "999", DrivingLicenseGroup.B, "No gluten", null, null, null
-            );
+            ));
 
             // Assert
             assertThat(member.getFirstName()).isEqualTo("Petr");
@@ -925,10 +925,10 @@ class MemberTest {
                     .build();
 
             // Act
-            minor.updateMemberDetails(
+            minor.handle(new Member.UpdateMemberDetails(
                     null, null, null, null, null,
                     "123", null, "No nuts", null, null, null
-            );
+            ));
 
             // Assert
             assertThat(minor.getGuardian()).isNotNull();
@@ -943,10 +943,10 @@ class MemberTest {
             Member member = createTestMember();
 
             // Act
-            member.updateMemberDetails(
+            member.handle(new Member.UpdateMemberDetails(
                     null, null, null, null, null,
                     "12345", null, null, null, null, null
-            );
+            ));
 
             // Assert - same instance is modified
             assertThat(member.getChipNumber()).isEqualTo("12345");

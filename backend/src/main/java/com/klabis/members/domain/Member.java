@@ -592,14 +592,6 @@ public class Member {
         this.address = newAddress;
     }
 
-    /**
-     * @deprecated Use {@link #handle(UpdateContactInformation)} instead.
-     * This method is kept for backward compatibility during migration.
-     */
-    @Deprecated(since = "2.0", forRemoval = true)
-    public void updateContactInformation(EmailAddress email, PhoneNumber phone, Address address) {
-        handle(new UpdateContactInformation(email, phone, address));
-    }
 
     /**
      * Handles UpdateDocuments command.
@@ -625,17 +617,6 @@ public class Member {
         }
     }
 
-    /**
-     * @deprecated Use {@link #handle(UpdateDocuments)} instead.
-     * This method is kept for backward compatibility during migration.
-     */
-    @Deprecated(since = "2.0", forRemoval = true)
-    public void updateDocuments(
-            IdentityCard identityCard,
-            MedicalCourse medicalCourse,
-            TrainerLicense trainerLicense) {
-        handle(new UpdateDocuments(identityCard, medicalCourse, trainerLicense));
-    }
 
     /**
      * Handles UpdateMemberDetails command.
@@ -740,37 +721,6 @@ public class Member {
         registerEvent(MemberTerminatedEvent.fromMember(this, command));
     }
 
-    /**
-     * @deprecated Use {@link #handle(UpdateMemberDetails)} instead.
-     * This method is kept for backward compatibility during migration.
-     */
-    @Deprecated(since = "2.0", forRemoval = true)
-    public void updateMemberDetails(
-            PersonalInformation personalInformation,
-            Address address,
-            EmailAddress email,
-            PhoneNumber phone,
-            GuardianInformation guardian,
-            String chipNumber,
-            DrivingLicenseGroup drivingLicenseGroup,
-            String dietaryRestrictions,
-            BirthNumber birthNumber,
-            BankAccountNumber bankAccountNumber,
-            Gender gender) {
-        handle(new UpdateMemberDetails(
-                personalInformation,
-                address,
-                email,
-                phone,
-                guardian,
-                chipNumber,
-                drivingLicenseGroup,
-                dietaryRestrictions,
-                birthNumber,
-                bankAccountNumber,
-                gender
-        ));
-    }
 
     @Override
     public boolean equals(Object o) {
