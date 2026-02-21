@@ -4,6 +4,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberTerminatedEvent;
+import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -757,23 +758,8 @@ class MemberTest {
             LocalDate futureDate = LocalDate.now().plusYears(5);
             IdentityCard validIdentityCard = IdentityCard.of("VALID123", futureDate);
 
-            Member memberWithDoc = Member.reconstruct(
-                    createTestMember().getId(),
-                    createTestMember().getRegistrationNumber(),
-                    createTestMember().getPersonalInformation(),
-                    createTestMember().getAddress(),
-                    createTestMember().getEmail(),
-                    createTestMember().getPhone(),
-                    createTestMember().getGuardian(),
-                    createTestMember().isActive(),
-                    createTestMember().getChipNumber(),
-                    validIdentityCard,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null, null, null, null, null, null, null
-            );
+            Member memberWithDoc = MemberTestDataBuilder.aMember()
+                    .withIdentityCard(validIdentityCard).build();
 
             MedicalCourse medicalCourse = MedicalCourse.of(
                     LocalDate.of(2023, 1, 15),
