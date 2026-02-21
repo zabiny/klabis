@@ -1,9 +1,12 @@
 package com.klabis.members;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.E2EIntegrationTest;
 import com.klabis.common.email.EmailProperties;
 import com.klabis.common.email.EmailService;
 import com.klabis.common.email.LoggingEmailService;
+import com.klabis.members.domain.RegistrationNumber;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +17,7 @@ import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
-import org.springframework.modulith.test.Scenario;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.convention.TestBean;
@@ -23,15 +26,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -143,17 +146,21 @@ class MemberLifecycleE2ETest {
                         get("/api/members")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.memberSummaryResponseList").isArray())
+                .andExpect(jsonPath("$._embedded.memberSummaryResponseList[?(@.id == '%s')]".formatted(memberId)).exists());
 
         // ========================================================================
         // STEP 3: Get member details
         // ========================================================================
-        mockMvc.perform(
+        MvcResult memberDetailsResult = mockMvc.perform(
                         get("/api/members/{id}", memberId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(memberId.toString()));
+                .andExpect(jsonPath("$.id").value(memberId.toString()))
+                .andReturn();
+        final RegistrationNumber userRegistrationNumber = getRegistrationNumberFromMemberDetailResponse(memberDetailsResult.getResponse().getContentAsString());
 
         // ========================================================================
         // STEP 4: Get email token from email (using LoggingEmailService)
@@ -186,6 +193,16 @@ class MemberLifecycleE2ETest {
                         .header("X-Forwarded-For", "192.168.1.1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Password set successfully. You can now log in."));
+
+        // ========================================================================
+        // STEP 8: New member can fetch data
+        // ========================================================================
+        mockMvc.perform(get("/api/members")
+                        .contentType("application/json")
+                        .with(user(userRegistrationNumber.toString()).authorities(new SimpleGrantedAuthority("MEMBERS:READ"))))
+                .andExpect(status().isOk());
+
+
 
         // ========================================================================
         // STEP 7: Update member
@@ -246,7 +263,16 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.active").value(false));
 
         // ========================================================================
-        // STEP 11: Verify second termination is rejected
+        // STEP 11: New member cannot fetch data
+        // ========================================================================
+        mockMvc.perform(get("/api/members")
+                        .contentType("application/json")
+                        .with(user(userRegistrationNumber.toString()).authorities(new SimpleGrantedAuthority("MEMBERS:READ"))))
+                .andExpect(status().isForbidden());
+
+
+        // ========================================================================
+        // STEP 12: Verify second termination is rejected
         // ========================================================================
         mockMvc.perform(
                         post("/api/members/{id}/terminate", memberId)
@@ -261,6 +287,7 @@ class MemberLifecycleE2ETest {
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already terminated")));
+
     }
 
     private UUID extractMemberIdFromLocation(MvcResult result) {
@@ -272,6 +299,16 @@ class MemberLifecycleE2ETest {
             return UUID.fromString(matcher.group(1));
         } else {
             throw new IllegalArgumentException("Unexpected Location header format: " + locationHeader);
+        }
+    }
+
+    private RegistrationNumber getRegistrationNumberFromMemberDetailResponse(String memberDetailResponse) {
+        try {
+            Map<String, Object> attributes = new ObjectMapper().readValue(memberDetailResponse, Map.class);
+            String registrationNumberValue = (String) attributes.get("registrationNumber");
+            return RegistrationNumber.of(registrationNumberValue);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 

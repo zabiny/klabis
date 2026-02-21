@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.jdbc;
 
 import com.klabis.members.MemberAssert;
+import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.Repository;
@@ -17,6 +18,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,7 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         type = FilterType.ANNOTATION,
         value = {Repository.class})  // jMolecules Repository annotation, used to load all repository adapters (for context caching)
 )
+@Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM members")
 @ActiveProfiles("test")
 class MemberRepositoryTest {
 
@@ -801,17 +806,18 @@ class MemberRepositoryTest {
             );
             BirthNumber birthNumber = BirthNumber.of("900101/1234");
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM0501"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("jan.novak@example.com"),
-                    new PhoneNumber("+420123456789"),
-                    null,
-                    birthNumber,
-                    null
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM0501")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withBirthNumber("900101/1234")
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -841,17 +847,18 @@ class MemberRepositoryTest {
             );
             BirthNumber birthNumber = BirthNumber.of("950620/5678");
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM9501"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("petra.svobodova@example.com"),
-                    new PhoneNumber("+420987654321"),
-                    null,
-                    birthNumber,
-                    null
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM9501")
+                    .withName("Petra", "Svobodová")
+                    .withDateOfBirth(LocalDate.of(1995, 6, 20))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(address)
+                    .withEmail("petra.svobodova@example.com")
+                    .withPhone("+420987654321")
+                    .withBirthNumber("950620/5678")
+                    .build();
 
             Member savedMember = memberRepository.save(member);
 
@@ -883,17 +890,18 @@ class MemberRepositoryTest {
             );
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM0001"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("karel.cerny@example.com"),
-                    new PhoneNumber("+420111111111"),
-                    null,
-                    null,
-                    bankAccountNumber
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM0001")
+                    .withName("Karel", "Černý")
+                    .withDateOfBirth(LocalDate.of(1980, 1, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withEmail("karel.cerny@example.com")
+                    .withPhone("+420111111111")
+                    .withBankAccountNumber("CZ6508000000192000145399")
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -924,17 +932,18 @@ class MemberRepositoryTest {
             );
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM0201"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("jana.prochazkova@example.com"),
-                    new PhoneNumber("+420222222222"),
-                    null,
-                    null,
-                    bankAccountNumber
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM0201")
+                    .withName("Jana", "Procházková")
+                    .withDateOfBirth(LocalDate.of(1992, 2, 10))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(address)
+                    .withEmail("jana.prochazkova@example.com")
+                    .withPhone("+420222222222")
+                    .withBankAccountNumber("123456/0300")
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -964,17 +973,17 @@ class MemberRepositoryTest {
                     "CZ"
             );
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM0502"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("martin.dvorak@example.com"),
-                    new PhoneNumber("+420333333333"),
-                    null,
-                    null,
-                    null
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM0502")
+                    .withName("Martin", "Dvořák")
+                    .withDateOfBirth(LocalDate.of(1985, 5, 2))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withEmail("martin.dvorak@example.com")
+                    .withPhone("+420333333333")
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -1003,17 +1012,17 @@ class MemberRepositoryTest {
                     "CZ"
             );
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM1001"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("lucie.kucerova@example.com"),
-                    new PhoneNumber("+420444444444"),
-                    null,
-                    null,
-                    null
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM1001")
+                    .withName("Lucie", "Kučerová")
+                    .withDateOfBirth(LocalDate.of(1990, 10, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(address)
+                    .withEmail("lucie.kucerova@example.com")
+                    .withPhone("+420444444444")
+                    .build();
 
             Member savedMember = memberRepository.save(member);
 
@@ -1046,17 +1055,19 @@ class MemberRepositoryTest {
             BirthNumber birthNumber = BirthNumber.of("050315/1234");
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM0503"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("tomas.benes@example.com"),
-                    new PhoneNumber("+420555555555"),
-                    null,
-                    birthNumber,
-                    bankAccountNumber
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM0503")
+                    .withName("Tomáš", "Beneš")
+                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withEmail("tomas.benes@example.com")
+                    .withPhone("+420555555555")
+                    .withBirthNumber("050315/1234")
+                    .withBankAccountNumber("CZ6508000000192000145399")
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);
@@ -1093,17 +1104,17 @@ class MemberRepositoryTest {
             );
             UserId adminUserId = new UserId(UUID.randomUUID());
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM0501"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("jan.novak@example.com"),
-                    new PhoneNumber("+420123456789"),
-                    null,
-                    null,
-                    null
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM0501")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(2005, 3, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .build();
 
             // When - terminate the member
             Member.TerminateMembership terminateCommand = new Member.TerminateMembership(
@@ -1147,17 +1158,17 @@ class MemberRepositoryTest {
                     "CZ"
             );
 
-            Member member = Member.createWithId(
-                    new UserId(UUID.randomUUID()),
-                    new RegistrationNumber("ZBM9501"),
-                    personalInformation,
-                    address,
-                    new EmailAddress("petra.svobodova@example.com"),
-                    new PhoneNumber("+420987654321"),
-                    null,
-                    null,
-                    null
-            );
+            Member member = MemberTestDataBuilder.aMember()
+                    .withId(UUID.randomUUID())
+                    .withRegistrationNumber("ZBM9501")
+                    .withName("Petra", "Svobodová")
+                    .withDateOfBirth(LocalDate.of(1995, 7, 20))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(address)
+                    .withEmail("petra.svobodova@example.com")
+                    .withPhone("+420987654321")
+                    .build();
 
             // When
             Member savedMember = memberRepository.save(member);

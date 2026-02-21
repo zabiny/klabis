@@ -3,7 +3,10 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.config.encryption.EncryptionConfiguration;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
-import com.klabis.members.management.*;
+import com.klabis.members.management.InvalidUpdateException;
+import com.klabis.members.management.ManagementService;
+import com.klabis.members.management.RegistrationService;
+import com.klabis.members.management.ValidationPatterns;
 import com.klabis.users.User;
 import com.klabis.users.UserId;
 import com.klabis.users.UserService;
@@ -326,17 +329,17 @@ class MemberControllerApiTest {
         EmailAddress emailAddress = EmailAddress.of(email);
         PhoneNumber phoneNumber = PhoneNumber.of(phone);
 
-        return Member.createWithId(
-                new UserId(id),
-                new RegistrationNumber(regNumber),
-                personalInfo,
-                address,
-                emailAddress,
-                phoneNumber,
-                null,
-                null,
-                null
-        );
+        return MemberTestDataBuilder.aMember()
+                .withId(id)
+                .withRegistrationNumber(regNumber)
+                .withName("Jan", "Novák")
+                .withDateOfBirth(LocalDate.of(2005, 6, 15))
+                .withNationality(countryCode)
+                .withGender(Gender.MALE)
+                .withAddress(address)
+                .withEmail(email)
+                .withPhone(phone)
+                .build();
     }
 
     private Member createTestMemberWithGuardian(UUID id) {
@@ -360,15 +363,18 @@ class MemberControllerApiTest {
                 PhoneNumber.of("+420777111222")
         );
 
-        return Member.createWithId(
-                new UserId(id),
-                new RegistrationNumber("ZBM1501"),
-                personalInfo,
-                address,
-                email,
-                phone,
-                guardian, null, null
-        );
+        return MemberTestDataBuilder.aMember()
+                .withId(id)
+                .withRegistrationNumber("ZBM1501")
+                .withName("Child", "Member")
+                .withDateOfBirth(LocalDate.of(2015, 1, 10))
+                .withNationality("CZ")
+                .withGender(Gender.MALE)
+                .withAddress(address)
+                .withEmail("child@example.com")
+                .withPhone("+420111222333")
+                .withGuardian(guardian)
+                .build();
     }
 
     @Nested

@@ -141,7 +141,7 @@ class RegistrationServiceImpl implements RegistrationService {
                 sharedId);
 
         // Create Member using the SAME UserId (shared ID)
-        Member member = Member.createWithId(
+        Member.RegisterMember command = new Member.RegisterMember(
                 sharedId,  // Pass the shared ID from User
                 registrationNumber,
                 personalInformation,
@@ -152,6 +152,7 @@ class RegistrationServiceImpl implements RegistrationService {
                 birthNumber,
                 bankAccountNumber
         );
+        Member member = Member.register(command);
 
         // Persist Member
         Member savedMember = memberRepository.save(member);

@@ -222,8 +222,16 @@ public class MemberTestDataBuilder {
     }
 
     public Member.RegisterMember toRegisterMemberCommand() {
-        return new Member.RegisterMember(new UserId(this.memberId), this.registrationNumber, this.build()
-                .getPersonalInformation(), this.address, this.email, this.phone, this.guardian, birthNumber, bankAccountNumber);
+        return new Member.RegisterMember(new UserId(this.memberId),
+                this.registrationNumber,
+                this.build()
+                        .getPersonalInformation(),
+                this.address,
+                this.email,
+                this.phone,
+                this.guardian,
+                birthNumber,
+                bankAccountNumber);
     }
 
     /**

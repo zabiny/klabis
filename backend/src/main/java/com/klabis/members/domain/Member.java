@@ -140,12 +140,6 @@ public class Member {
 
     // ========== Constructors ==========
 
-    /**
-     * Private constructor for creating new Member instances.
-     * <p>
-     * This constructor is used by the static factory methods (create, reconstruct, createWithId)
-     * to ensure business invariants are validated during construction.
-     */
     private Member(
             UserId id,
             RegistrationNumber registrationNumber,
@@ -195,7 +189,7 @@ public class Member {
      * This bypasses validation since the data was already validated when originally stored.
      * <p>
      * This method is public only for infrastructure/persistence layer usage.
-     * Use {@link #create()} for creating new members.
+     * Use {@link #register(RegisterMember)} for creating new members.
      * <p>
      * <b>IMPORTANT:</b> This method is used by MemberMemento.toMember() to reconstruct
      * members after loading from the database.
@@ -273,7 +267,22 @@ public class Member {
     }
 
     public static Member register(RegisterMember command) {
-        return Member.createWithId(
+        // Validate required fields
+        Objects.requireNonNull(command.id(), "Member ID is required");
+        Objects.requireNonNull(command.registrationNumber(), "Registration number is required");
+        Objects.requireNonNull(command.personalInformation(), "Personal information is required");
+        Objects.requireNonNull(command.address(), "Address is required");
+
+        // Validate contact information
+        validateContactInformation(command.email(), command.phone(), command.guardian());
+
+        // Validate guardian for minors
+        validateGuardianForMinors(command.personalInformation().getDateOfBirth(), command.guardian());
+
+        // Validate birth number nationality
+        validateBirthNumberNationality(command.personalInformation().getNationalityCode(), command.birthNumber());
+
+        Member member = new Member(
                 command.id(),
                 command.registrationNumber(),
                 command.personalInformation(),
@@ -281,138 +290,15 @@ public class Member {
                 command.email(),
                 command.phone(),
                 command.guardian(),
+                true, // new members are active by default
+                null, // chipNumber
+                null, // identityCard
+                null, // medicalCourse
+                null, // trainerLicense
+                null, // drivingLicenseGroup
+                null, // dietaryRestrictions
                 command.birthNumber(),
-                command.bankAccountNumber()
-        );
-    }
-
-    /**
-     * Static factory method to create a new Member with a specific ID.
-     * <p>
-     * This method is used when the Member ID needs to be shared with another aggregate
-     * (e.g., User aggregate) to ensure both aggregates use the same identifier.
-     *
-     * @param id                  member's unique identifier (typically shared with User)
-     * @param registrationNumber  unique registration number
-     * @param personalInformation member's personal information
-     * @param address             member's address
-     * @param email               member's email address (may be null if guardian has email)
-     * @param phone               member's phone number (may be null if guardian has phone)
-     * @param guardian            guardian information (required for minors)
-     * @param birthNumber         birth number (only for Czech nationals)
-     * @param bankAccountNumber   bank account number
-     * @return new Member instance with the specified ID
-     * @throws IllegalArgumentException if business rules are violated
-     */
-    public static Member createWithId(
-            UserId id,
-            RegistrationNumber registrationNumber,
-            PersonalInformation personalInformation,
-            Address address,
-            EmailAddress email,
-            PhoneNumber phone,
-            GuardianInformation guardian,
-            BirthNumber birthNumber,
-            BankAccountNumber bankAccountNumber) {
-
-        // Validate required fields
-        Objects.requireNonNull(id, "Member ID is required");
-        Objects.requireNonNull(registrationNumber, "Registration number is required");
-        Objects.requireNonNull(personalInformation, "Personal information is required");
-        Objects.requireNonNull(address, "Address is required");
-
-        // Validate contact information
-        validateContactInformation(email, phone, guardian);
-
-        // Validate guardian for minors
-        validateGuardianForMinors(personalInformation.getDateOfBirth(), guardian);
-
-        // Validate birth number nationality
-        validateBirthNumberNationality(personalInformation.getNationalityCode(), birthNumber);
-
-        Member member = new Member(
-                id,
-                registrationNumber,
-                personalInformation,
-                address,
-                email,
-                phone,
-                guardian,
-                true, // new members are active by default
-                null, // chipNumber
-                null, // identityCard
-                null, // medicalCourse
-                null, // trainerLicense
-                null, // drivingLicenseGroup
-                null, // dietaryRestrictions
-                birthNumber,
-                bankAccountNumber,
-                null, // deactivationReason
-                null, // deactivatedAt
-                null, // deactivationNote
-                null  // deactivatedBy
-        );
-
-        // Register domain event
-        member.registerEvent(MemberCreatedEvent.fromMember(member));
-
-        return member;
-    }
-
-    /**
-     * Static factory method to create a new Member.
-     * <p>
-     * This method generates a new random UUID for the Member ID.
-     * Use {@link #createWithId(UserId, RegistrationNumber, PersonalInformation, Address, EmailAddress, PhoneNumber, GuardianInformation)}
-     * when you need to specify the ID (e.g., to share with User aggregate).
-     *
-     * @param registrationNumber  unique registration number
-     * @param personalInformation member's personal information
-     * @param address             member's address
-     * @param email               member's email address (may be null if guardian has email)
-     * @param phone               member's phone number (may be null if guardian has phone)
-     * @param guardian            guardian information (required for minors)
-     * @return new Member instance
-     * @throws IllegalArgumentException if business rules are violated
-     * @deprecated use @{@link Member#register(RegisterMember)}
-     */
-    @Deprecated
-    public static Member create(
-            RegistrationNumber registrationNumber,
-            PersonalInformation personalInformation,
-            Address address,
-            EmailAddress email,
-            PhoneNumber phone,
-            GuardianInformation guardian) {
-
-        // Validate required fields
-        Objects.requireNonNull(registrationNumber, "Registration number is required");
-        Objects.requireNonNull(personalInformation, "Personal information is required");
-        Objects.requireNonNull(address, "Address is required");
-
-        // Validate contact information
-        validateContactInformation(email, phone, guardian);
-
-        // Validate guardian for minors
-        validateGuardianForMinors(personalInformation.getDateOfBirth(), guardian);
-
-        Member member = new Member(
-                new UserId(UUID.randomUUID()),
-                registrationNumber,
-                personalInformation,
-                address,
-                email,
-                phone,
-                guardian,
-                true, // new members are active by default
-                null, // chipNumber
-                null, // identityCard
-                null, // medicalCourse
-                null, // trainerLicense
-                null, // drivingLicenseGroup
-                null, // dietaryRestrictions
-                null, // birthNumber
-                null, // bankAccountNumber
+                command.bankAccountNumber(),
                 null, // deactivationReason
                 null, // deactivatedAt
                 null, // deactivationNote

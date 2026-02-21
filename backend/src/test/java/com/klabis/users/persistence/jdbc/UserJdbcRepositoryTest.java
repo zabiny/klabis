@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -40,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
         type = FilterType.ANNOTATION,
         value = {Repository.class}))
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM users")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 class UserJdbcRepositoryTest {

@@ -1,5 +1,6 @@
 package com.klabis.users.persistence.jdbc;
 
+import com.klabis.CleanupTestData;
 import com.klabis.users.PasswordSetupToken;
 import com.klabis.users.TokenHash;
 import com.klabis.users.User;
@@ -16,8 +17,8 @@ import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -46,7 +47,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         value = {Repository.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, statements = "DELETE FROM password_setup_tokens")
+@CleanupTestData
+//@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = "DELETE FROM password_setup_tokens")
 class PasswordSetupTokenJdbcRepositoryTest {
 
     @Autowired
@@ -54,6 +56,9 @@ class PasswordSetupTokenJdbcRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
@@ -77,6 +82,11 @@ class PasswordSetupTokenJdbcRepositoryTest {
         @DisplayName("should save new token with all fields")
         void shouldSaveNewToken() {
             // Given
+            jdbcTemplate.queryForList("SELECT * FROM users")
+                    .stream()
+                    .map(e -> e.toString())
+                    .forEach(System.out::println);
+
             User user = createTestUser("ZBM9001");
             PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
 
