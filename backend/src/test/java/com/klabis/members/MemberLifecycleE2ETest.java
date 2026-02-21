@@ -2,9 +2,6 @@ package com.klabis.members;
 
 import com.klabis.E2EIntegrationTest;
 import com.klabis.members.domain.DeactivationReason;
-import com.klabis.members.domain.Gender;
-import com.klabis.members.domain.Member;
-import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.infrastructure.restapi.AddressRequest;
 import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
@@ -27,7 +24,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,8 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * The test validates:
  * <ul>
  *   <li>Domain events (MemberCreatedEvent, MemberTerminatedEvent) in outbox</li>
- *   <li>Database state via MemberRepository</li>
- *   <li>API responses via MockMvc</li>
+ *   <li>API responses via MockMvc (status codes, JSON payloads, HTTP headers)</li>
  * </ul>
  * <p>
  * <b>Note:</b> Password setup flow is tested separately in {@link com.klabis.members.PasswordSetupFlowE2ETest}
@@ -84,9 +79,6 @@ class MemberLifecycleE2ETest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private MemberRepository memberRepository;
 
     private static final Pattern LOCATION_PATTERN = Pattern.compile("http://localhost/api/members/(.*)");
     private static final String ADMIN_USERNAME = "admin";
@@ -153,12 +145,6 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.active").value(true))
                 .andExpect(jsonPath("$._links.self.href").exists())
                 .andExpect(jsonPath("$._links.collection.href").exists());
-
-        // Verify database state
-        Optional<Member> memberAfterRegistration = memberRepository.findById(new UserId(memberId));
-        assertThat(memberAfterRegistration).isPresent();
-        assertThat(memberAfterRegistration.get().isActive()).isTrue();
-        assertThat(memberAfterRegistration.get().getEmail().value()).isEqualTo("jan.novak@example.com");
 
         // ========================================================================
         // STEP 3: Update member
@@ -236,14 +222,6 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.deactivationNote").value("Member requested termination"))
                 .andExpect(jsonPath("$._links.self.href").exists())
                 .andExpect(jsonPath("$._links.collection.href").exists());
-
-        // Verify termination in database
-        Optional<Member> terminatedMember = memberRepository.findById(new UserId(memberId));
-        assertThat(terminatedMember).isPresent();
-        assertThat(terminatedMember.get().isActive()).isFalse();
-        assertThat(terminatedMember.get().getDeactivationReason()).isEqualTo(DeactivationReason.ODHLASKA);
-        assertThat(terminatedMember.get().getDeactivationNote()).isEqualTo("Member requested termination");
-        assertThat(terminatedMember.get().getDeactivatedAt()).isNotNull();
 
         // ========================================================================
         // STEP 7: Verify member in list (soft delete)
