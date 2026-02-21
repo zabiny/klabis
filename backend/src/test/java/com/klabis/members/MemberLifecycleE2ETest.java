@@ -1,12 +1,16 @@
 package com.klabis.members;
 
 import com.klabis.E2EIntegrationTest;
+import com.klabis.common.email.EmailProperties;
+import com.klabis.common.email.EmailService;
+import com.klabis.common.email.LoggingEmailService;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.infrastructure.restapi.AddressRequest;
 import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
 import com.klabis.members.infrastructure.restapi.UpdateMemberRequest;
 import com.klabis.users.UserId;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +21,17 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.modulith.test.AssertablePublishedEvents;
+import org.springframework.modulith.test.Scenario;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,22 +54,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Member termination</li>
  *   <li>Verification of terminated state</li>
  *   <li>Member presence in list (soft delete)</li>
+ *   <li>Member activation (password setup flow)</li>
  * </ul>
  * <p>
  * The test validates:
  * <ul>
  *   <li>Domain events (MemberCreatedEvent, MemberTerminatedEvent) in outbox</li>
  *   <li>API responses via MockMvc (status codes, JSON payloads, HTTP headers)</li>
+ *   <li>Password activation flow after registration</li>
  * </ul>
- * <p>
- * <b>Note:</b> Password setup flow is tested separately in {@link com.klabis.members.PasswordSetupFlowE2ETest}
- * to keep test responsibilities focused and maintainable.
  */
 @E2EIntegrationTest
 @ActiveProfiles("test")
 @Sql(scripts = "/sql/test-member-lifecycle-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @DisplayName("Member Lifecycle E2E Test")
 class MemberLifecycleE2ETest {
+
+    private static final LoggingEmailService LOGGING_EMAIL_SERVICE = new LoggingEmailService(
+            EmailProperties.enabledEmail("noreply@klabis.zabiny.club"));
+
+    static EmailService emailServiceStub() {
+        return LOGGING_EMAIL_SERVICE;
+    }
+
+    @TestBean
+    private EmailService emailServiceStub;
 
     /**
      * Test configuration to use synchronous task executor.
@@ -252,6 +269,59 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already terminated")));
     }
 
+    @Test
+    @DisplayName("Password activation flow: register → email token → validate → setup password")
+    @WithMockUser(authorities = "MEMBERS:CREATE")
+    void shouldCompletePasswordActivationFlowSuccessfully() throws Exception {
+        // STEP 1: Register a new member
+        mockMvc.perform(post("/api/members")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                    "firstName": "John",
+                                    "lastName": "Doe",
+                                    "dateOfBirth": "1990-01-15",
+                                    "nationality": "CZ",
+                                    "gender": "MALE",
+                                    "email": "john.doe@example.com",
+                                    "phone": "+420123456789",
+                                    "address": {
+                                        "street": "Street 1",
+                                        "city": "City",
+                                        "postalCode": "10000",
+                                        "country": "CZ"
+                                    }
+                                }
+                                """))
+                .andExpect(status().isCreated());
+
+        // STEP 2: Get the password setup token (simulates retrieving from email)
+        String activationToken = Awaitility.waitAtMost(Duration.ofSeconds(4))
+                .until(MemberLifecycleE2ETest::findActivationTokenInSentEmail, Optional::isPresent)
+                .orElseThrow();
+
+        // STEP 3: Validate the token via API
+        mockMvc.perform(get("/api/auth/password-setup/validate")
+                        .param("token", activationToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true));
+
+        // STEP 4: Complete password setup via API
+        String newPassword = "SecurePass123!@#";
+        mockMvc.perform(post("/api/auth/password-setup/complete")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                    "token": "%s",
+                                    "password": "%s",
+                                    "passwordConfirmation": "%s"
+                                }
+                                """.formatted(activationToken, newPassword, newPassword))
+                        .header("X-Forwarded-For", "192.168.1.1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password set successfully. You can now log in."));
+    }
+
     private UUID extractMemberIdFromLocation(MvcResult result) {
         String locationHeader = result.getResponse().getHeader(HttpHeaders.LOCATION);
         assertThat(locationHeader).isNotNull();
@@ -262,5 +332,15 @@ class MemberLifecycleE2ETest {
         } else {
             throw new IllegalArgumentException("Unexpected Location header format: " + locationHeader);
         }
+    }
+
+    private static Optional<String> findActivationTokenInSentEmail() {
+        return LOGGING_EMAIL_SERVICE.getLastEmailSent().map(email -> {
+            Pattern passwordTokenUrl = Pattern.compile(
+                    "token=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})");
+            Matcher matcher = passwordTokenUrl.matcher(email.htmlBody());
+            assertThat(matcher.find()).isTrue();
+            return matcher.group(1);
+        });
     }
 }
