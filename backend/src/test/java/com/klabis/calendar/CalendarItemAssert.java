@@ -1,5 +1,7 @@
 package com.klabis.calendar;
 
+import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.CalendarItemId;
 import com.klabis.events.EventId;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.InstanceOfAssertFactory;

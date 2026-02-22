@@ -1,5 +1,7 @@
 package com.klabis.calendar;
 
+import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.CalendarItemId;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.EventId;
 
