@@ -65,12 +65,6 @@ public class User extends KlabisAggregateRoot<UserId> {
     }
 
     /**
-     * Command to create a new user pending activation.
-     */
-    public record CreatePendingActivation(String username, String passwordHash) {
-    }
-
-    /**
      * Command to create a new user pending activation with email for password setup.
      */
     public record CreatePendingActivationWithEmail(String username, String passwordHash, String email) {
@@ -192,17 +186,6 @@ public class User extends KlabisAggregateRoot<UserId> {
         user.registerEvent(UserCreatedEvent.fromUser(user));
 
         return user;
-    }
-
-    /**
-     * Static factory method to create a new User with pending activation using a command.
-     *
-     * @param command the CreatePendingActivation command
-     * @return new User instance with PENDING_ACTIVATION status, not enabled
-     * @throws IllegalArgumentException if business rules are violated
-     */
-    public static User createPendingActivation(CreatePendingActivation command) {
-        return createPendingActivation(command.username(), command.passwordHash());
     }
 
     /**
