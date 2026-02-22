@@ -52,15 +52,8 @@ public class AuthorizationServerConfiguration {
 
     private final AuthorizationServerCustomizer authorizationServerCustomizer;
 
-    private final AuthorizationServerCustomizer EMPTY_CUSTOMIZER = new  AuthorizationServerCustomizer() {
-    };
-
-    public AuthorizationServerConfiguration() {
-        this.authorizationServerCustomizer = EMPTY_CUSTOMIZER;
-    }
-
     public AuthorizationServerConfiguration(ObjectProvider<AuthorizationServerCustomizer> authorizationServerCustomizerProvider) {
-        this.authorizationServerCustomizer = authorizationServerCustomizerProvider.getIfAvailable(() -> EMPTY_CUSTOMIZER);
+        this.authorizationServerCustomizer = authorizationServerCustomizerProvider.getIfAvailable(() -> AuthorizationServerCustomizer.EMPTY_CUSTOMIZER);
     }
 
     /**
