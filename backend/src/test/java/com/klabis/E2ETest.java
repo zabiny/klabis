@@ -27,6 +27,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Import(TestApplicationConfiguration.class)
-public @interface E2EIntegrationTest {
+public @interface E2ETest {
 
 }

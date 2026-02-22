@@ -2,7 +2,7 @@ package com.klabis.members;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.E2EIntegrationTest;
+import com.klabis.E2ETest;
 import com.klabis.common.email.EmailProperties;
 import com.klabis.common.email.EmailService;
 import com.klabis.common.email.LoggingEmailService;
@@ -69,7 +69,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Validation error messages - tested in controller unit tests</li>
  * </ul>
  */
-@E2EIntegrationTest
+@E2ETest
 @ActiveProfiles("test")
 @Sql(scripts = "/sql/test-member-lifecycle-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @DisplayName("Member Lifecycle E2E Test")

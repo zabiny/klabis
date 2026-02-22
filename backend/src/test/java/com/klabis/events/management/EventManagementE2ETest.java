@@ -1,7 +1,7 @@
 package com.klabis.events.management;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.E2EIntegrationTest;
+import com.klabis.E2ETest;
 import com.klabis.common.SecurityTestBase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Event listing with pagination and filtering
  * - HATEOAS link generation based on status
  */
-@E2EIntegrationTest
+@E2ETest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Event Management E2E Tests")
