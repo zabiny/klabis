@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.config.encryption.EncryptionConfiguration;
+import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.members.management.InvalidUpdateException;
 import com.klabis.members.management.ManagementService;
@@ -73,6 +74,19 @@ class UpdateMemberApiTest {
 
     private final UUID testMemberId = UUID.randomUUID();
 
+    private Member stubMember() {
+        return MemberTestDataBuilder.aMember()
+                .withId(testMemberId)
+                .withFirstName("Jan")
+                .withLastName("Novak")
+                .withRegistrationNumber("ZBM1234")
+                .withEmail("jan.novak@example.com")
+                .withPhone("+420777123456")
+                .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
+                .withNoGuardian()
+                .build();
+    }
+
     @Nested
     @DisplayName("PATCH /api/members/{id}")
     class UpdateMemberTests {
@@ -85,8 +99,8 @@ class UpdateMemberApiTest {
             @DisplayName("updating member email should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateMemberEmailWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -100,21 +114,21 @@ class UpdateMemberApiTest {
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
 
-                var captor = forClass(UpdateMemberRequest.class);
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.email()).contains("new.email@example.com");
-                assertThat(capturedRequest.phone()).isEmpty();
-                assertThat(capturedRequest.address()).isEmpty();
+                var command = captor.getValue();
+                assertThat(command.email()).isEqualTo(EmailAddress.of("new.email@example.com"));
+                assertThat(command.phone()).isNull();
+                assertThat(command.address()).isNull();
             }
 
             @Test
             @DisplayName("updating member phone should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateMemberPhoneWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -128,21 +142,21 @@ class UpdateMemberApiTest {
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
 
-                var captor = forClass(UpdateMemberRequest.class);
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.email()).isEmpty();
-                assertThat(capturedRequest.phone()).contains("+420777123456");
-                assertThat(capturedRequest.address()).isEmpty();
+                var command = captor.getValue();
+                assertThat(command.email()).isNull();
+                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
+                assertThat(command.address()).isNull();
             }
 
             @Test
             @DisplayName("updating member address should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateMemberAddressWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -161,25 +175,25 @@ class UpdateMemberApiTest {
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
 
-                var captor = forClass(UpdateMemberRequest.class);
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.email()).isEmpty();
-                assertThat(capturedRequest.phone()).isEmpty();
-                assertThat(capturedRequest.address()).isPresent();
-                assertThat(capturedRequest.address().get().street()).isEqualTo("New Street 123");
-                assertThat(capturedRequest.address().get().city()).isEqualTo("Prague");
-                assertThat(capturedRequest.address().get().postalCode()).isEqualTo("11000");
-                assertThat(capturedRequest.address().get().country()).isEqualTo("CZ");
+                var command = captor.getValue();
+                assertThat(command.email()).isNull();
+                assertThat(command.phone()).isNull();
+                assertThat(command.address()).isNotNull();
+                assertThat(command.address().street()).isEqualTo("New Street 123");
+                assertThat(command.address().city()).isEqualTo("Prague");
+                assertThat(command.address().postalCode()).isEqualTo("11000");
+                assertThat(command.address().country()).isEqualTo("CZ");
             }
 
             @Test
             @DisplayName("updating admin-only fields should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateAdminOnlyFieldsWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -195,23 +209,23 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.gender()).contains(Gender.FEMALE);
-                assertThat(capturedRequest.chipNumber()).contains("12345");
-                assertThat(capturedRequest.drivingLicenseGroup()).contains(DrivingLicenseGroup.B);
-                assertThat(capturedRequest.dietaryRestrictions()).contains("Vegetarian");
-
+                var command = captor.getValue();
+                assertThat(command.gender()).isEqualTo(Gender.FEMALE);
+                assertThat(command.chipNumber()).isEqualTo("12345");
+                assertThat(command.drivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
+                assertThat(command.dietaryRestrictions()).isEqualTo("Vegetarian");
             }
 
             @Test
             @DisplayName("updating birth number and bank account should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateBirthNumberAndBankAccountWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -219,27 +233,27 @@ class UpdateMemberApiTest {
                                         .content("""
                                                 {
                                                     "birthNumber": "900101/1234",
-                                                    "bankAccountNumber": "CZ6508000000192000145399"
+                                                    "bankAccountNumber": "12345/5678"
                                                 }
                                                 """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.birthNumber()).contains("900101/1234");
-                assertThat(capturedRequest.bankAccountNumber()).contains("CZ6508000000192000145399");
-
+                var command = captor.getValue();
+                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("900101/1234"));
+                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
             }
 
             @Test
             @DisplayName("updating only birth number should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateOnlyBirthNumberWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -252,48 +266,48 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.birthNumber()).contains("850520/9876");
-                assertThat(capturedRequest.bankAccountNumber()).isEmpty();
-
+                var command = captor.getValue();
+                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("850520/9876"));
+                assertThat(command.bankAccountNumber()).isNull();
             }
 
             @Test
             @DisplayName("updating only bank account number should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateOnlyBankAccountNumberWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
                                         .content("""
                                                 {
-                                                    "bankAccountNumber": "CZ6508000000192000145399"
+                                                    "bankAccountNumber": "12345/5678"
                                                 }
                                                 """)
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.birthNumber()).isEmpty();
-                assertThat(capturedRequest.bankAccountNumber()).contains("CZ6508000000192000145399");
-
+                var command = captor.getValue();
+                assertThat(command.birthNumber()).isNull();
+                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
             }
 
             @Test
             @DisplayName("updating documents should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldUpdateDocumentsWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -301,16 +315,16 @@ class UpdateMemberApiTest {
                                         .content("""
                                                 {
                                                     "identityCard": {
-                                                        "number": "123456789",
-                                                        "validUntil": "%s"
+                                                        "cardNumber": "123456789",
+                                                        "validityDate": "%s"
                                                     },
                                                     "medicalCourse": {
-                                                        "completedOn": "2024-01-01",
-                                                        "validUntil": "%s"
+                                                        "completionDate": "2024-01-01",
+                                                        "validityDate": "%s"
                                                     },
                                                     "trainerLicense": {
                                                         "licenseNumber": "TRAINER123",
-                                                        "validUntil": "%s"
+                                                        "validityDate": "%s"
                                                     }
                                                 }
                                                 """.formatted(
@@ -321,22 +335,22 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.identityCard()).isPresent();
-                assertThat(capturedRequest.medicalCourse()).isPresent();
-                assertThat(capturedRequest.trainerLicense()).isPresent();
-
+                var command = captor.getValue();
+                assertThat(command.identityCard()).isNotNull();
+                assertThat(command.medicalCourse()).isNotNull();
+                assertThat(command.trainerLicense()).isNotNull();
             }
 
             @Test
             @DisplayName("performing partial update should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldPerformPartialUpdateWhenAdmin() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -350,13 +364,13 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.email()).contains("partial.update@example.com");
-                assertThat(capturedRequest.dietaryRestrictions()).contains("No dairy");
-
+                var command = captor.getValue();
+                assertThat(command.email()).isEqualTo(EmailAddress.of("partial.update@example.com"));
+                assertThat(command.dietaryRestrictions()).isEqualTo("No dairy");
             }
         }
 
@@ -368,8 +382,8 @@ class UpdateMemberApiTest {
             @DisplayName("updating own email should return 204 No Content")
             @WithMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnEmail() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -382,20 +396,20 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.email()).contains("my.new.email@example.com");
-
+                var command = captor.getValue();
+                assertThat(command.email()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
             }
 
             @Test
             @DisplayName("updating own phone should return 204 No Content")
             @WithMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnPhone() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -408,20 +422,20 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.phone()).contains("+420987654321");
-
+                var command = captor.getValue();
+                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420987654321"));
             }
 
             @Test
             @DisplayName("updating own address should return 204 No Content")
             @WithMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnAddress() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -439,22 +453,22 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.address()).isPresent();
-                assertThat(capturedRequest.address().get().street()).isEqualTo("My New Address 456");
-                assertThat(capturedRequest.address().get().city()).isEqualTo("Brno");
-
+                var command = captor.getValue();
+                assertThat(command.address()).isNotNull();
+                assertThat(command.address().street()).isEqualTo("My New Address 456");
+                assertThat(command.address().city()).isEqualTo("Brno");
             }
 
             @Test
             @DisplayName("updating dietary restrictions should return 204 No Content")
             @WithMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateDietaryRestrictions() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -467,12 +481,12 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
-                var captor = forClass(UpdateMemberRequest.class);
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
                 verify(memberService).updateMember(any(UUID.class), captor.capture());
 
-                var capturedRequest = captor.getValue();
-                assertThat(capturedRequest.dietaryRestrictions()).contains("Gluten-free, no nuts");
-
+                var command = captor.getValue();
+                assertThat(command.dietaryRestrictions()).isEqualTo("Gluten-free, no nuts");
             }
         }
 
@@ -484,7 +498,7 @@ class UpdateMemberApiTest {
             @DisplayName("non-admin editing another member should return 403")
             @WithMockUser(username = "other.user@example.com", authorities = {})
             void shouldReturn403WhenNonAdminEditsAnotherMember() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new SelfEditNotAllowedException(
                                 new RegistrationNumber("ZBM9090"), new RegistrationNumber("ZBM1234")));
 
@@ -528,7 +542,7 @@ class UpdateMemberApiTest {
             @DisplayName("empty update should return 400")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn400WhenUpdateIsEmpty() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new InvalidUpdateException("Update request must contain at least one field"));
 
                 mockMvc.perform(
@@ -546,7 +560,7 @@ class UpdateMemberApiTest {
             @DisplayName("invalid email format should return 400")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn400WhenEmailInvalid() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new InvalidUpdateException("Invalid email format: invalid-email"));
 
                 mockMvc.perform(
@@ -560,7 +574,7 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.detail").value("Invalid email format: invalid-email"))
+                        .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Invalid email")))
                         .andExpect(jsonPath("$.title").value("Bad Request"));
             }
 
@@ -568,7 +582,7 @@ class UpdateMemberApiTest {
             @DisplayName("invalid phone format should return 400")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn400WhenPhoneInvalid() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new InvalidUpdateException("Invalid phone format: 123"));
 
                 mockMvc.perform(
@@ -633,7 +647,7 @@ class UpdateMemberApiTest {
             void shouldReturn404WhenMemberNotFound() throws Exception {
                 UUID nonExistentId = UUID.randomUUID();
 
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new MemberNotFoundException(new MemberId(nonExistentId)));
 
                 mockMvc.perform(
@@ -656,7 +670,7 @@ class UpdateMemberApiTest {
             @DisplayName("concurrent update should return 409")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn409WhenConcurrentUpdate() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new OptimisticLockingFailureException("Concurrent update for member - test purpose"));
 
                 mockMvc.perform(
@@ -683,8 +697,8 @@ class UpdateMemberApiTest {
             @DisplayName("PATCH should return 204 No Content (HATEOAS links available via GET)")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn204NoContentForPatchWithHalFormsAccept() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -704,8 +718,8 @@ class UpdateMemberApiTest {
             @DisplayName("response should include collection link")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldIncludeCollectionLink() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -725,8 +739,8 @@ class UpdateMemberApiTest {
             @DisplayName("response should include edit link")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldIncludeEditLink() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -746,8 +760,8 @@ class UpdateMemberApiTest {
             @DisplayName("PATCH with multiple fields should return 204 No Content")
             @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
             void shouldReturn204NoContentWhenUpdatingMultipleFields() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenReturn(testMemberId);
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)

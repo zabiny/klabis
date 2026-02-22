@@ -1006,7 +1006,7 @@ class MemberControllerApiTest {
                     .build();
 
             when(managementService.terminateMember(eq(memberId), any(Member.TerminateMembership.class)))
-                    .thenReturn(memberId);
+                    .thenReturn(terminatedMember);
             when(memberRepository.findById(new UserId(memberId)))
                     .thenReturn(java.util.Optional.of(terminatedMember));
             when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
@@ -1050,7 +1050,7 @@ class MemberControllerApiTest {
                     .build();
 
             when(managementService.terminateMember(eq(memberId), any(Member.TerminateMembership.class)))
-                    .thenReturn(memberId);
+                    .thenReturn(terminatedMember);
             when(memberRepository.findById(new UserId(memberId)))
                     .thenReturn(java.util.Optional.of(terminatedMember));
             when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))

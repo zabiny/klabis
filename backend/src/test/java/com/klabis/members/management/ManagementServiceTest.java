@@ -3,9 +3,7 @@ package com.klabis.members.management;
 import com.klabis.members.MemberTerminatedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
-import com.klabis.members.infrastructure.restapi.AddressRequest;
 import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
-import com.klabis.members.infrastructure.restapi.UpdateMemberRequest;
 import com.klabis.users.UserId;
 import com.klabis.users.UserService;
 import org.junit.jupiter.api.*;
@@ -17,11 +15,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,26 +29,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Unit tests for {@link ManagementServiceImpl}.
- * <p>
- * Tests cover the member management functionality including:
- * <ul>
- *   <li>Retrieving member details</li>
- *   <li>Updating member information with authorization checks</li>
- *   <li>Listing members with pagination</li>
- *   <li>Admin vs. non-admin permission handling</li>
- *   <li>Self-edit capabilities and restrictions</li>
- *   <li>Membership termination with domain events</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ManagementService Unit Tests")
 class ManagementServiceTest {
-
-    @Mock
-    private Authentication authentication;
 
     @Mock
     private MemberRepository memberRepository;
@@ -60,13 +40,13 @@ class ManagementServiceTest {
     @Mock
     private UserService userService;
 
-    private ManagementService service;
+    private ManagementService testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        service = new ManagementServiceImpl(memberRepository, userService);
+        testedSubject = new ManagementServiceImpl(memberRepository, userService);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -82,94 +62,70 @@ class ManagementServiceTest {
     }
 
     @Nested
-    @DisplayName("Member Update Tests")
-    class MemberUpdateTests {
-
-        @BeforeEach
-        void setUpNested() {
-            // Set up admin authentication with MEMBERS:UPDATE authority
-            UsernamePasswordAuthenticationToken adminAuth = new UsernamePasswordAuthenticationToken(
-                    "admin",
-                    "password",
-                    List.of(new SimpleGrantedAuthority("MEMBERS:UPDATE"))
-            );
-            SecurityContextHolder.getContext().setAuthentication(adminAuth);
-        }
-
-        @AfterEach
-        void tearDownNested() {
-            // Clear security context
-            SecurityContextHolder.clearContext();
-        }
+    @DisplayName("Member Update — Admin")
+    class AdminMemberUpdateTests {
 
         @Test
-        @DisplayName("should update member with birth number for Czech national")
-        void shouldUpdateMemberWithBirthNumberForCzechNational() {
-            // Given
-            UpdateMemberRequest request = new UpdateMemberRequest(
-                    Optional.<String>empty(),     // email
-                    Optional.<String>empty(),     // phone
-                    Optional.<AddressRequest>empty(),  // address
-                    Optional.<String>empty(),     // firstName
-                    Optional.<String>empty(),     // lastName
-                    Optional.<LocalDate>empty(),  // dateOfBirth
-                    Optional.<Gender>empty(),     // gender
-                    Optional.<String>empty(),     // chipNumber
-                    Optional.<IdentityCardDto>empty(), // identityCard
-                    Optional.<MedicalCourseDto>empty(), // medicalCourse
-                    Optional.<TrainerLicenseDto>empty(), // trainerLicense
-                    Optional.<DrivingLicenseGroup>empty(), // drivingLicenseGroup
-                    Optional.<String>empty(),     // dietaryRestrictions
-                    Optional.<String>of("900101/1234"), // birthNumber
-                    Optional.<String>empty()      // bankAccountNumber
+        @DisplayName("should update member birth number via admin command")
+        void shouldUpdateMemberWithBirthNumberViaAdminCommand() {
+            var command = new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null,
+                    BankAccountNumber.of("12345/5678"),
+                    null, null, null, null, null, null,
+                    null, null, null, null,
+                    BirthNumber.of("900101/1234")
             );
 
             when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testMember));
-            when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            // When
-            UUID updatedId = service.updateMember(testMemberId, request);
+            Member result = testedSubject.updateMember(testMemberId, command);
 
-            // Then
-            assertThat(updatedId).isEqualTo(testMemberId);
+            assertThat(result.getId().uuid()).isEqualTo(testMemberId);
             verify(memberRepository).save(any(Member.class));
         }
 
         @Test
-        @DisplayName("should update member with IBAN bank account number")
-        void shouldUpdateMemberWithIBANBankAccountNumber() {
-            // Given - use a valid domestic format account number instead of invalid IBAN
-            UpdateMemberRequest request = new UpdateMemberRequest(
-                    Optional.<String>empty(),     // email
-                    Optional.<String>empty(),     // phone
-                    Optional.<AddressRequest>empty(),  // address
-                    Optional.<String>empty(),     // firstName
-                    Optional.<String>empty(),     // lastName
-                    Optional.<LocalDate>empty(),  // dateOfBirth
-                    Optional.<Gender>empty(),     // gender
-                    Optional.<String>empty(),     // chipNumber
-                    Optional.<IdentityCardDto>empty(), // identityCard
-                    Optional.<MedicalCourseDto>empty(), // medicalCourse
-                    Optional.<TrainerLicenseDto>empty(), // trainerLicense
-                    Optional.<DrivingLicenseGroup>empty(), // drivingLicenseGroup
-                    Optional.<String>empty(),     // dietaryRestrictions
-                    Optional.<String>empty(),     // birthNumber
-                    Optional.<String>of("12345/5678") // bankAccountNumber (valid domestic format)
+        @DisplayName("should update member bank account number via admin command")
+        void shouldUpdateMemberWithBankAccountNumberViaAdminCommand() {
+            var command = new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null,
+                    BankAccountNumber.of("12345/5678"),
+                    null, null, null, null, null, null,
+                    null, null, null, null, null
             );
 
             when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testMember));
-            when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            // When
-            UUID updatedId = service.updateMember(testMemberId, request);
+            Member result = testedSubject.updateMember(testMemberId, command);
 
-            // Then
-            assertThat(updatedId).isEqualTo(testMemberId);
+            assertThat(result.getId().uuid()).isEqualTo(testMemberId);
             verify(memberRepository).save(any(Member.class));
         }
     }
 
-    // Private helper methods are removed as authentication is now handled with @BeforeEach
+    @Nested
+    @DisplayName("Member Update — Self")
+    class SelfMemberUpdateTests {
+
+        @Test
+        @DisplayName("should update member contact info via self-update command")
+        void shouldUpdateMemberContactInfoViaSelfUpdateCommand() {
+            var command = new Member.SelfUpdate(
+                    EmailAddress.of("new@example.com"),
+                    null, null, null, null, null, null, null, null, null, null, null
+            );
+
+            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testMember));
+            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Member result = testedSubject.updateMember(testMemberId, command);
+
+            assertThat(result.getId().uuid()).isEqualTo(testMemberId);
+            verify(memberRepository).save(any(Member.class));
+        }
+    }
 
     @Nested
     @DisplayName("Member Termination Tests")
@@ -192,10 +148,8 @@ class ManagementServiceTest {
                     .withNoGuardian()
                     .build();
 
-            // Set up admin authentication
             UsernamePasswordAuthenticationToken adminAuth = new UsernamePasswordAuthenticationToken(
-                    "admin",
-                    "password",
+                    "admin", "password",
                     List.of(new SimpleGrantedAuthority("MEMBERS:UPDATE"))
             );
             SecurityContextHolder.getContext().setAuthentication(adminAuth);
@@ -213,103 +167,79 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should terminate active member with ODHLASKA reason")
             void shouldTerminateActiveMemberWithOdhlaskaReason() {
-                // Given
                 var request = new TerminateMembershipRequest(
                         DeactivationReason.ODHLASKA,
                         Optional.of("Member requested resignation")
                 );
 
-                when(memberRepository.findById(new UserId(testMemberId)))
-                        .thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class)))
-                        .thenAnswer(invocation -> invocation.getArgument(0));
+                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                // When - create correct command object
                 var command = new Member.TerminateMembership(
-                        new UserId(adminUserId),
-                        request.reason(),
-                        request.note().orElse(null)
+                        new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                UUID resultId = service.terminateMember(testMemberId, command);
+                Member result = testedSubject.terminateMember(testMemberId, command);
 
-                // Then
-                assertThat(resultId).isEqualTo(testMemberId);
+                assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
-                ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-                verify(memberRepository).save(memberCaptor.capture());
+                ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
+                verify(memberRepository).save(captor.capture());
 
-                Member savedMember = memberCaptor.getValue();
-                assertThat(savedMember.isActive()).isFalse();
-                assertThat(savedMember.getDeactivationReason()).isEqualTo(DeactivationReason.ODHLASKA);
-                assertThat(savedMember.getDeactivatedAt()).isNotNull();
-                assertThat(savedMember.getDeactivationNote()).isEqualTo("Member requested resignation");
-                assertThat(savedMember.getDeactivatedBy().uuid()).isEqualTo(adminUserId);
+                Member saved = captor.getValue();
+                assertThat(saved.isActive()).isFalse();
+                assertThat(saved.getDeactivationReason()).isEqualTo(DeactivationReason.ODHLASKA);
+                assertThat(saved.getDeactivatedAt()).isNotNull();
+                assertThat(saved.getDeactivationNote()).isEqualTo("Member requested resignation");
+                assertThat(saved.getDeactivatedBy().uuid()).isEqualTo(adminUserId);
             }
 
             @Test
             @DisplayName("should terminate active member without note")
             void shouldTerminateActiveMemberWithoutNote() {
-                // Given
                 var request = new TerminateMembershipRequest(
-                        DeactivationReason.PRESTUP,
-                        Optional.empty()
+                        DeactivationReason.PRESTUP, Optional.empty()
                 );
 
-                when(memberRepository.findById(new UserId(testMemberId)))
-                        .thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class)))
-                        .thenAnswer(invocation -> invocation.getArgument(0));
+                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                // When - create correct command object
                 var command = new Member.TerminateMembership(
-                        new UserId(adminUserId),
-                        request.reason(),
-                        request.note().orElse(null)
+                        new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                UUID resultId = service.terminateMember(testMemberId, command);
+                Member result = testedSubject.terminateMember(testMemberId, command);
 
-                // Then
-                assertThat(resultId).isEqualTo(testMemberId);
+                assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
-                ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-                verify(memberRepository).save(memberCaptor.capture());
+                ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
+                verify(memberRepository).save(captor.capture());
 
-                Member savedMember = memberCaptor.getValue();
-                assertThat(savedMember.isActive()).isFalse();
-                assertThat(savedMember.getDeactivationReason()).isEqualTo(DeactivationReason.PRESTUP);
-                assertThat(savedMember.getDeactivationNote()).isNull();
+                assertThat(captor.getValue().isActive()).isFalse();
+                assertThat(captor.getValue().getDeactivationReason()).isEqualTo(DeactivationReason.PRESTUP);
+                assertThat(captor.getValue().getDeactivationNote()).isNull();
             }
 
             @Test
             @DisplayName("should publish MemberTerminatedEvent on successful termination")
             void shouldPublishMemberTerminatedEventOnSuccessfulTermination() {
-                // Given
                 var request = new TerminateMembershipRequest(
-                        DeactivationReason.OTHER,
-                        Optional.of("Administrative decision")
+                        DeactivationReason.OTHER, Optional.of("Administrative decision")
                 );
 
-                when(memberRepository.findById(new UserId(testMemberId)))
-                        .thenReturn(Optional.of(testActiveMember));
-                when(memberRepository.save(any(Member.class)))
-                        .thenAnswer(invocation -> invocation.getArgument(0));
+                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                // When - create correct command object
                 var command = new Member.TerminateMembership(
-                        new UserId(adminUserId),
-                        request.reason(),
-                        request.note().orElse(null)
+                        new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                service.terminateMember(testMemberId, command);
+                testedSubject.terminateMember(testMemberId, command);
 
-                // Then - verify domain event was registered via @DomainEvents
-                ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-                verify(memberRepository).save(memberCaptor.capture());
+                ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
+                verify(memberRepository).save(captor.capture());
 
-                Member savedMember = memberCaptor.getValue();
-                assertThat(savedMember.getDomainEvents()).hasSize(1);
+                Member saved = captor.getValue();
+                assertThat(saved.getDomainEvents()).hasSize(1);
 
-                Object event = savedMember.getDomainEvents().get(0);
+                Object event = saved.getDomainEvents().get(0);
                 assertThat(event).isInstanceOf(MemberTerminatedEvent.class);
 
                 MemberTerminatedEvent terminationEvent = (MemberTerminatedEvent) event;
@@ -327,7 +257,6 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should reject termination of already terminated member")
             void shouldRejectTerminationOfAlreadyTerminatedMember() {
-                // Given - create already terminated member
                 Member terminatedMember = MemberTestDataBuilder.aMember()
                         .withId(testMemberId)
                         .withFirstName("Bob")
@@ -340,22 +269,12 @@ class ManagementServiceTest {
                         .terminated(DeactivationReason.ODHLASKA, "Previous termination")
                         .build();
 
-                var request = new TerminateMembershipRequest(
-                        DeactivationReason.OTHER,
-                        Optional.of("Second termination attempt")
-                );
+                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(terminatedMember));
 
-                when(memberRepository.findById(new UserId(testMemberId)))
-                        .thenReturn(Optional.of(terminatedMember));
-
-                // When & Then
-                // Create correct command object
                 var command = new Member.TerminateMembership(
-                        new UserId(adminUserId),
-                        request.reason(),
-                        request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.OTHER, "Second termination attempt"
                 );
-                assertThatThrownBy(() -> service.terminateMember(testMemberId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member is already terminated");
 
@@ -370,25 +289,14 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should handle concurrent termination attempts with optimistic locking")
             void shouldHandleConcurrentTerminationAttempts() {
-                // Given
-                var request = new TerminateMembershipRequest(
-                        DeactivationReason.PRESTUP,
-                        Optional.empty()
-                );
-
-                when(memberRepository.findById(new UserId(testMemberId)))
-                        .thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class)))
                         .thenThrow(new OptimisticLockingFailureException("Concurrent modification detected"));
 
-                // When & Then
-                // Create correct command object
                 var command = new Member.TerminateMembership(
-                        new UserId(adminUserId),
-                        request.reason(),
-                        request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.PRESTUP, null
                 );
-                assertThatThrownBy(() -> service.terminateMember(testMemberId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
                         .isInstanceOf(OptimisticLockingFailureException.class);
 
                 verify(memberRepository).save(any(Member.class));
@@ -402,28 +310,16 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should reject termination by non-admin user")
             void shouldRejectTerminationByNonAdminUser() {
-                // Given - set up non-admin authentication
-                UUID regularUserId = UUID.randomUUID();
                 UsernamePasswordAuthenticationToken userAuth = new UsernamePasswordAuthenticationToken(
-                        regularUserId.toString(),
-                        "password",
+                        UUID.randomUUID().toString(), "password",
                         List.of(new SimpleGrantedAuthority("MEMBERS:READ"))
                 );
                 SecurityContextHolder.getContext().setAuthentication(userAuth);
 
-                var request = new TerminateMembershipRequest(
-                        DeactivationReason.ODHLASKA,
-                        Optional.empty()
-                );
-
-                // When & Then
-                // Create correct command object
                 var command = new Member.TerminateMembership(
-                        new UserId(adminUserId),
-                        request.reason(),
-                        request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.ODHLASKA, null
                 );
-                assertThatThrownBy(() -> service.terminateMember(testMemberId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Only users with MEMBERS:UPDATE permission");
 
@@ -434,22 +330,12 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should reject termination without authentication")
             void shouldRejectTerminationWithoutAuthentication() {
-                // Given - clear security context
                 SecurityContextHolder.clearContext();
 
-                var request = new TerminateMembershipRequest(
-                        DeactivationReason.ODHLASKA,
-                        Optional.empty()
-                );
-
-                // When & Then
-                // Create correct command object
                 var command = new Member.TerminateMembership(
-                        new UserId(adminUserId),
-                        request.reason(),
-                        request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.ODHLASKA, null
                 );
-                assertThatThrownBy(() -> service.terminateMember(testMemberId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("User must be authenticated");
 
@@ -465,23 +351,14 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should throw exception when terminating non-existent member")
             void shouldThrowExceptionWhenTerminatingNonExistentMember() {
-                // Given
                 UUID nonExistentId = UUID.randomUUID();
-                var request = new TerminateMembershipRequest(
-                        DeactivationReason.ODHLASKA,
-                        Optional.empty()
-                );
 
-                when(memberRepository.findById(new UserId(nonExistentId)))
-                        .thenReturn(Optional.empty());
+                when(memberRepository.findById(new UserId(nonExistentId))).thenReturn(Optional.empty());
 
-                // When & Then
                 var command = new Member.TerminateMembership(
-                        new UserId(adminUserId),
-                        request.reason(),
-                        request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.ODHLASKA, null
                 );
-                assertThatThrownBy(() -> service.terminateMember(nonExistentId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(nonExistentId, command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member not found");
 

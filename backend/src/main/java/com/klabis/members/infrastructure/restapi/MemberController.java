@@ -1,9 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.ui.RootModel;
-import com.klabis.members.domain.Member;
-import com.klabis.members.domain.MemberId;
-import com.klabis.members.domain.Members;
+import com.klabis.members.domain.*;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.MemberNotFoundException;
 import com.klabis.users.Authority;
@@ -124,7 +122,8 @@ class MemberController {
             @Valid @RequestBody UpdateMemberRequest request,
             Authentication auth) {
 
-        managementService.updateMember(id, request);
+        var command = UpdateMemberRequestMapper.toAdminCommand(request);
+        managementService.updateMember(id, command);
         return ResponseEntity.noContent().build();
     }
 
