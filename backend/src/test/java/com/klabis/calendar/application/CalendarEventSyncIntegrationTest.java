@@ -11,9 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.PublishedEvents;
 import org.springframework.modulith.test.Scenario;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlConfig;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -39,13 +40,11 @@ import static org.mockito.Mockito.when;
  * - Idempotent behavior (no duplicate calendar items)
  */
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-//@ActiveProfiles("test")
-@TestPropertySource(properties = {"jasypt.encryptor.password=example"})
-@Transactional
+@ActiveProfiles("test")
 @DisplayName("Calendar Event Synchronization Integration Tests")
 class CalendarEventSyncIntegrationTest {
 
-    private static final EventId EVENT_ID = new EventId(UUID.fromString("f1d7fcda-024e-42ad-9c08-fc20d07a166d"));
+    final EventId EVENT_ID = new EventId(UUID.fromString("f1d7fcda-024e-42ad-9c08-fc20d07a166d"));
 
     @Autowired
     private CalendarRepository calendarRepository;
@@ -53,22 +52,20 @@ class CalendarEventSyncIntegrationTest {
     @MockitoBean
     private EventDataProvider eventDataProviderMock;
 
-    // data as they stand in the DB from @Sql annotation on class
-    private final EventData INITIAL_EVENT_DATA = new EventData(
-            "Spring Boot Workshop",
-            LocalDate.of(2024, 3, 15),
-            "Prague CC",
-            "OOB",
-            WebsiteUrl.of("https://example.com/workshop")
-    );
-
     @Test
     @DisplayName("should create calendar item when EventPublishedEvent arrives")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
     void shouldCreateCalendarItemWhenEventIsPublished(Scenario scenario, PublishedEvents events) {
         // Given: Event data
         final EventId eventId = EVENT_ID;
 
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(INITIAL_EVENT_DATA);
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+                "Spring Boot Workshop",
+                LocalDate.of(2024, 3, 15),
+                "Prague CC",
+                "OOB",
+                WebsiteUrl.of("https://example.com/workshop")
+        ));
 
         // When & Then: CalendarItem should be created automatically
         scenario.publish(new EventPublishedEvent(eventId))
@@ -86,40 +83,49 @@ class CalendarEventSyncIntegrationTest {
 
     @Test
     @DisplayName("should update calendar item when EventUpdatedEvent arrives")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
+    @Sql(config = @SqlConfig(separator = ";"), statements = "INSERT INTO calendar_items (id, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version) VALUES ('4d5db31b-01f8-4e1d-b529-1b3b17eca5e0', 'Test', 'Something', CURRENT_DATE, CURRENT_DATE, 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)")
     void shouldUpdateCalendarItemWhenEventIsUpdated(Scenario scenario) {
         // Given: An existing calendar item
-        final EventId eventId = new EventId(UUID.fromString("4d5db31b-01f8-4e1d-b529-1b3b17eca5e0"));
-
-        // First, create the calendar item
-        calendarRepository.save(CalendarItem.createForEvent("Test", "Something", LocalDate.now(), eventId));
+        final EventId eventId = EVENT_ID;
 
         // When: Event is updated
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(INITIAL_EVENT_DATA);
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+                "Updated Workshop",
+                LocalDate.of(2024, 5, 21),
+                "New Loc",
+                "NewOrg",
+                WebsiteUrl.of("https://new-url.com")
+        ));
         scenario.publish(new EventUpdatedEvent(
                         eventId,
                         "Updated Workshop",
-                        LocalDate.of(2024, 5, 15),
+                        LocalDate.of(2024, 5, 21),
                         "New Loc",
                         "NewOrg",
                         WebsiteUrl.of("https://new-url.com"),
                         java.time.Instant.now()
-                )).andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).orElse(null))
+                ))
+                .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).orElse(null),
+                        item -> "Updated Workshop".equalsIgnoreCase(item.getName()))
                 .andVerify(updatedItem -> {
                     assertThat(updatedItem.getName()).isEqualTo("Updated Workshop");
                     assertThat(updatedItem.getDescription())
                             .isEqualTo("New Loc - NewOrg\nhttps://new-url.com");
-                    assertThat(updatedItem.getStartDate()).isEqualTo(LocalDate.of(2024, 5, 15));
-                    assertThat(updatedItem.getEndDate()).isEqualTo(LocalDate.of(2024, 5, 15));
+                    assertThat(updatedItem.getStartDate()).isEqualTo(LocalDate.of(2024, 5, 21));
+                    assertThat(updatedItem.getEndDate()).isEqualTo(LocalDate.of(2024, 5, 21));
                 });
     }
 
     @Test
     @DisplayName("should delete calendar item when EventCancelledEvent arrives")
+    @Sql(statements = "INSERT INTO calendar_items (id, name, description, start_date, end_date, event_id, created_at, created_by, modified_at, last_modified_by, version) VALUES ('d3cc82a1-2342-4d8a-a819-8c38f56e226d', 'Test', 'Something', CURRENT_DATE, CURRENT_DATE, 'f1d7fcda-024e-42ad-9c08-fc20d07a166d', CURRENT_TIMESTAMP, 'test-setup', CURRENT_TIMESTAMP, 'test-setup', 0)")
+    @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
     void shouldDeleteCalendarItemWhenEventIsCancelled(Scenario scenario) {
         // Given: An existing calendar item
         final EventId eventId = EVENT_ID;
 
-        final CalendarItemId calendarItemId = calendarRepository.save(CalendarItem.createForEvent("Test", "Something", LocalDate.now(), eventId)).getId();
+        final CalendarItemId calendarItemId = calendarRepository.findByEventId(eventId).orElseThrow().getId();
 
         // When: Event is cancelled
         scenario.publish(new EventCancelledEvent(eventId))
