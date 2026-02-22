@@ -148,6 +148,69 @@ class CalendarControllerTest {
                     )
                     .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @DisplayName("should include next and prev month navigation links with ISO DATE format")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        void shouldIncludeNextAndPrevMonthNavigationLinks() throws Exception {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+
+            CalendarItemDto dto = new CalendarItemDto(
+                    UUID.randomUUID(),
+                    "March Event",
+                    "Event in March",
+                    LocalDate.of(2026, 3, 15),
+                    LocalDate.of(2026, 3, 15),
+                    null
+            );
+
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(dto));
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.next.href").exists())
+                    .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.containsString("startDate=2026-04-01")))
+                    .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.containsString("endDate=2026-04-30")))
+                    .andExpect(jsonPath("$._links.prev.href").exists())
+                    .andExpect(jsonPath("$._links.prev.href").value(org.hamcrest.Matchers.containsString("startDate=2026-02-01")))
+                    .andExpect(jsonPath("$._links.prev.href").value(org.hamcrest.Matchers.containsString("endDate=2026-02-28")));
+        }
+
+        @Test
+        @DisplayName("should preserve sort parameter in navigation links")
+        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        void shouldPreserveSortParameterInNavigationLinks() throws Exception {
+            LocalDate startDate = LocalDate.of(2026, 3, 1);
+            LocalDate endDate = LocalDate.of(2026, 3, 31);
+
+            CalendarItemDto dto = new CalendarItemDto(
+                    UUID.randomUUID(),
+                    "March Event",
+                    "Event in March",
+                    LocalDate.of(2026, 3, 15),
+                    LocalDate.of(2026, 3, 15),
+                    null
+            );
+
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(dto));
+
+            mockMvc.perform(
+                            get("/api/calendar-items")
+                                    .param("startDate", "2026-03-01")
+                                    .param("endDate", "2026-03-31")
+                                    .param("sort", "name,desc")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.next.href").value(org.hamcrest.Matchers.containsString("sort=name%2Cdesc")))
+                    .andExpect(jsonPath("$._links.prev.href").value(org.hamcrest.Matchers.containsString("sort=name%2Cdesc")));
+        }
     }
 
     @Nested
@@ -180,7 +243,9 @@ class CalendarControllerTest {
                     .andExpect(jsonPath("$.description").value("Weekly training session"))
                     .andExpect(jsonPath("$.eventId").isEmpty())
                     .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.collection.href").exists());
+                    .andExpect(jsonPath("$._links.collection.href").exists())
+                    .andExpect(jsonPath("$._templates.default.method").exists())
+                    .andExpect(jsonPath("$._templates.deleteCalendarItem.method").exists());
         }
 
         @Test
@@ -265,6 +330,7 @@ class CalendarControllerTest {
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"))
+                    .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/calendar-items/" + calendarItemId)))
                     .andExpect(jsonPath("$.id").value(calendarItemId.toString()))
                     .andExpect(jsonPath("$.name").value("Training Session"))
                     .andExpect(jsonPath("$.eventId").isEmpty())
@@ -348,7 +414,8 @@ class CalendarControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(calendarItemId.toString()))
                     .andExpect(jsonPath("$.name").value("Updated Training Session"))
-                    .andExpect(jsonPath("$._links.self.href").exists());
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._templates.default.method").exists());
         }
 
         @Test

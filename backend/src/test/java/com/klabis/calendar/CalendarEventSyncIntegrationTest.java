@@ -1,5 +1,6 @@
 package com.klabis.calendar;
 
+import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.calendar.persistence.CalendarRepository;
 import com.klabis.events.Event;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = {TestApplicationConfiguration.class})
 @ActiveProfiles("test")
 @EnableScenarios
+@CleanupTestData
 @DisplayName("Calendar Event Synchronization Integration Tests")
 class CalendarEventSyncIntegrationTest {
 

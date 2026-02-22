@@ -1,5 +1,6 @@
 package com.klabis.calendar.persistence.jdbc;
 
+import com.klabis.CleanupTestData;
 import com.klabis.calendar.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.persistence.CalendarRepository;
@@ -40,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         value = {Repository.class}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
+@CleanupTestData
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
         "INSERT INTO events (id, name, event_date, location, organizer, website_url, event_coordinator_id, status, created_at, created_by, modified_at, modified_by, version) VALUES ('11111111-1111-1111-1111-111111111111', 'Test Event 1', '2026-06-15', 'Prague', 'OOB', 'https://example.com', NULL, 'ACTIVE', CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
         "INSERT INTO events (id, name, event_date, location, organizer, website_url, event_coordinator_id, status, created_at, created_by, modified_at, modified_by, version) VALUES ('22222222-2222-2222-2222-222222222222', 'Test Event 2', '2026-07-20', 'Brno', 'PRG', 'https://example.com', NULL, 'ACTIVE', CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)"
