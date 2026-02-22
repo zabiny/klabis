@@ -1,7 +1,7 @@
 package com.klabis.events.registration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.config.encryption.EncryptionConfiguration;
+import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.events.Event;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

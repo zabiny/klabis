@@ -1,7 +1,7 @@
 package com.klabis.users.authorization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.config.encryption.EncryptionConfiguration;
+import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.users.Authority;
 import com.klabis.users.AuthorizationPolicy;
 import com.klabis.users.UserId;

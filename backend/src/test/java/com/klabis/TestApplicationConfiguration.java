@@ -2,8 +2,8 @@ package com.klabis;
 
 import com.klabis.config.TestSslConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Test application configuration.
@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Import;
  */
 @TestConfiguration
 @Import({TestSslConfiguration.class})
-@ComponentScan("com.klabis.config")
+@ActiveProfiles("test")
+@CleanupTestData    // tests are sharing single H2 - need to find out why so we can remove this cleanup (it deletes also bootstrap data what can cause issues somewhere)
 public class TestApplicationConfiguration {
 }

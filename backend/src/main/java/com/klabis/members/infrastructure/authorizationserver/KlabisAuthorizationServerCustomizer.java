@@ -1,6 +1,6 @@
 package com.klabis.members.infrastructure.authorizationserver;
 
-import com.klabis.config.AuthorizationServerCustomizer;
+import com.klabis.common.security.AuthorizationServerCustomizer;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;

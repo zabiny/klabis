@@ -1,7 +1,7 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.config.encryption.EncryptionConfiguration;
+import com.klabis.common.encryption.EncryptionConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

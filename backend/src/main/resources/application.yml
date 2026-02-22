@@ -65,7 +65,7 @@ spring:
         issuer: ${OAUTH2_ISSUER:https://localhost:8443}
         # OAuth2 client registration is now managed by BootstrapDataLoader
         # which reads credentials from environment variables for better security
-        # See: com.klabis.config.BootstrapDataLoader
+        # See: com.klabis.common.bootstrap.BootstrapDataLoader
 
   # Cache configuration for rate limiting
   cache:

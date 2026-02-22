@@ -1,6 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.config.encryption.EncryptionConfiguration;
+import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.members.management.InvalidUpdateException;

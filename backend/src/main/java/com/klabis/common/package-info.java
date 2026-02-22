@@ -16,5 +16,7 @@
  * <p>This approach allows common types (EmailService, Auditable, etc.) to be used across
  * all modules without "non-exposed type" violations.
  */
+@ApplicationModule(type = ApplicationModule.Type.OPEN)
 package com.klabis.common;
 
+import org.springframework.modulith.ApplicationModule;

@@ -40,7 +40,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @Modulithic(
         systemName = "Klabis Membership Management",
-        sharedModules = {"config", "users"}  // Always included in module tests (users because of UserDetailsService implementation)
+        sharedModules = {"common", "users"}  // Always included in module tests (users because of UserDetailsService implementation)
 )
 @SpringBootApplication
 @EnableAspectJAutoProxy

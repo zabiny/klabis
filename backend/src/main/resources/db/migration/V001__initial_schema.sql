@@ -332,5 +332,5 @@ COMMENT ON COLUMN calendar_items.version IS 'Optimistic locking version';
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.
 -- This prevents credentials from being exposed in version control.
--- See: com.klabis.config.BootstrapDataLoader
+-- See: com.klabis.common.bootstrap.BootstrapDataLoader
 -- ============================================================================
