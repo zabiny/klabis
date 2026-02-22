@@ -42,6 +42,16 @@ Examples of good success criteria:
 If success criteria aren't clear from the conversation, ask the user explicitly:
 > "What would tell you this task is done correctly?"
 
+### Phase 3 - crosscheck existing OpenSpec specification
+
+Read related specifications in openspec folder. Then:
+
+1. **Identify specification conflicts** - find if any specification requirements would require changes
+by current task
+
+If current task involves changing specification (it's not refactoring without changes to functionality), recommend user to either update task expectations to not change functionality or create openspec proposal instead of task. Do not create task file until task is purely refactoring without application functional changes. 
+
+
 ### Phase 3 — Write the task file
 
 Once requirements and success criteria are clear, create a file in the `tasks/` folder (in project root).
