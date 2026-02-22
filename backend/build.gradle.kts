@@ -150,6 +150,6 @@ openApi {
     outputFileName.set("klabis-full.json")
     waitTimeInSeconds.set(30)
     customBootRun {
-        args.set(listOf("--server.ssl.enabled=false", "--server.port=8080"))
+        args.set(listOf("--server.ssl.enabled=false", "--server.port=8080", "--jasypt.encryptor.password=something"))
     }
 }

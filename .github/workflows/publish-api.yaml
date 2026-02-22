@@ -5,7 +5,7 @@ on:
     branches:
       - main 
     paths:
-      - 'klabis-api-spec.yaml'
+      - 'docs/openapi/klabis-full.json'
 jobs:
   publish-changes:
     runs-on: ubuntu-latest
@@ -17,7 +17,7 @@ jobs:
         uses: Legion2/swagger-ui-action@v1
         with:
           output: swagger-ui
-          spec-file: klabis-api-spec.yaml
+          spec-file: docs/openapi/klabis-full.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to Cloudflare Pages
