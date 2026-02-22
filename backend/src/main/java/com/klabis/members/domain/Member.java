@@ -12,7 +12,8 @@ import org.jmolecules.ddd.annotation.Identity;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.*;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Member aggregate root.
@@ -31,7 +32,7 @@ public class Member extends KlabisAggregateRoot<UserId> {
 
     @Identity
     private final UserId id;
-    private RegistrationNumber registrationNumber;
+    private final RegistrationNumber registrationNumber;
 
     // Value objects
     private PersonalInformation personalInformation;
