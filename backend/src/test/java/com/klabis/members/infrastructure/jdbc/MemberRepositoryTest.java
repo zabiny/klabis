@@ -225,7 +225,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getUserId());
 
             // Then
             assertThat(foundMember).isPresent();
@@ -272,7 +272,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getUserId());
 
             // Then
             assertThat(foundMember).isPresent();
@@ -777,7 +777,7 @@ class MemberRepositoryTest {
             Member savedUpdatedMember = memberRepository.save(savedMember);
 
             // Then
-            Optional<Member> foundMember = memberRepository.findById(savedUpdatedMember.getId());
+            Optional<Member> foundMember = memberRepository.findById(savedUpdatedMember.getUserId());
             assertThat(foundMember).isPresent();
             assertThat(foundMember.get().getEmail().value()).isEqualTo("new@example.com");
         }
@@ -863,7 +863,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getUserId());
 
             // Then
             assertThat(foundMember).isPresent();
@@ -1027,7 +1027,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getUserId());
 
             // Then
             assertThat(foundMember).isPresent();
@@ -1128,7 +1128,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // And load from database
-            Optional<Member> loadedMember = memberRepository.findById(savedMember.getId());
+            Optional<Member> loadedMember = memberRepository.findById(savedMember.getUserId());
 
             // Then - verify termination fields persisted correctly
             assertThat(loadedMember).isPresent();

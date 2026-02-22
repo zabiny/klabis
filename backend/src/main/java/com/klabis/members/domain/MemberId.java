@@ -17,4 +17,8 @@ public record MemberId(UUID value) implements Identifier {
     public static MemberId fromUserId(UserId userId) {
         return new MemberId(userId.uuid());
     }
+
+    public UUID uuid() {
+        return this.value;
+    }
 }

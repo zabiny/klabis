@@ -31,7 +31,7 @@ public interface MemberMapper {
      * @param member the source member domain object
      * @return mapped summary response
      */
-    @Mapping(target = "id", source = "id.uuid")
+    @Mapping(target = "id", source = "userId.uuid")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     MemberSummaryResponse toSummaryResponse(Member member);
 
@@ -80,7 +80,7 @@ public interface MemberMapper {
         );
     }
 
-    @Mapping(target = "id", source = "id.uuid")
+    @Mapping(target = "id", source = "userId.uuid")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "address", source = "address")
     @Mapping(target = "guardian", source="guardian")

@@ -160,7 +160,7 @@ class RegistrationServiceImpl implements RegistrationService {
         log.debug("Member created with shared ID: {}", savedMember.getId());
 
         // Verify invariant: Member ID must equal User ID
-        if (!savedMember.getId().equals(sharedId)) {
+        if (!savedMember.getId().uuid().equals(sharedId.uuid())) {
             String errorMsg = String.format(
                     "Critical invariant violation: Member ID (%s) != User ID (%s)",
                     savedMember.getId(), sharedId

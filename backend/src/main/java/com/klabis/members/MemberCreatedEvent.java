@@ -1,7 +1,6 @@
 package com.klabis.members;
 
 import com.klabis.members.domain.*;
-import com.klabis.users.UserId;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -36,7 +35,7 @@ import java.util.UUID;
 public class MemberCreatedEvent {
 
     private final UUID eventId;
-    private final UserId memberId;
+    private final MemberId memberId;
     private final RegistrationNumber registrationNumber;
     private final String firstName;
     private final String lastName;
@@ -65,7 +64,7 @@ public class MemberCreatedEvent {
      * @param guardian           the guardian information (may be null for adults)
      */
     public MemberCreatedEvent(
-            UserId memberId,
+            MemberId memberId,
             RegistrationNumber registrationNumber,
             String firstName,
             String lastName,
@@ -113,7 +112,7 @@ public class MemberCreatedEvent {
      */
     public MemberCreatedEvent(
             UUID eventId,
-            UserId memberId,
+            MemberId memberId,
             RegistrationNumber registrationNumber,
             String firstName,
             String lastName,
@@ -149,7 +148,7 @@ public class MemberCreatedEvent {
      */
     public static MemberCreatedEvent fromMember(Member member) {
         return new MemberCreatedEvent(
-                member.getId(),
+                member.getId(),  // TODO: change to MemberId
                 member.getRegistrationNumber(),
                 member.getFirstName(),
                 member.getLastName(),
@@ -175,7 +174,7 @@ public class MemberCreatedEvent {
         return eventId;
     }
 
-    public UserId getMemberId() {
+    public MemberId getMemberId() {
         return memberId;
     }
 

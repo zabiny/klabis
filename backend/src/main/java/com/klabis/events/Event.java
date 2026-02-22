@@ -8,9 +8,11 @@ import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Event aggregate root.
@@ -32,7 +34,7 @@ import java.util.*;
  * - Domain events are published via Spring Modulith's transactional outbox pattern
  */
 @AggregateRoot
-public class Event extends KlabisAggregateRoot<EventId> {
+public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     @Identity
     private final EventId id;

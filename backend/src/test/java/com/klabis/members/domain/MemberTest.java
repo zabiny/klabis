@@ -614,7 +614,7 @@ class MemberTest {
         void shouldPreserveOtherFields() {
             // Arrange
             Member member = createTestMember();
-            UserId originalId = member.getId();
+            UserId originalId = member.getUserId();
             RegistrationNumber originalRegNum = member.getRegistrationNumber();
             String originalFirstName = member.getFirstName();
             String originalLastName = member.getLastName();

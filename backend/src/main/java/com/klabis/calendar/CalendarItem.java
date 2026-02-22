@@ -28,7 +28,7 @@ import java.util.Objects;
  * - Value objects are maintained as fields for domain logic
  */
 @AggregateRoot
-public class CalendarItem extends KlabisAggregateRoot<CalendarItemId> {
+public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItemId> {
 
     @Identity
     private final CalendarItemId id;

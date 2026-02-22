@@ -36,7 +36,7 @@ import java.util.Set;
  * @see AuthorizationPolicy
  */
 @AggregateRoot
-public class UserPermissions extends KlabisAggregateRoot<UserId> {
+public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId> {
 
     @Override
     public UserId getId() {

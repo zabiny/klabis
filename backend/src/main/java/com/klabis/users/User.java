@@ -36,7 +36,7 @@ import java.util.UUID;
  * @see UserMemento
  */
 @AggregateRoot
-public class User extends KlabisAggregateRoot<UserId> {
+public class User extends KlabisAggregateRoot<User, UserId> {
 
     @Identity
     private UserId id;

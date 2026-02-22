@@ -5,7 +5,7 @@ import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.persistence.CalendarRepository;
 import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
-import org.jmolecules.ddd.annotation.Repository;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;

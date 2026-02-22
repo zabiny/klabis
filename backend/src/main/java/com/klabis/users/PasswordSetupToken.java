@@ -35,7 +35,7 @@ import java.util.UUID;
  * <p>Factory method: {@link #generateFor(User, Duration)}
  */
 @AggregateRoot
-public class PasswordSetupToken extends KlabisAggregateRoot<UUID> {
+public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, UUID> {
 
     @Identity
     private final UUID id;

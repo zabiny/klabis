@@ -28,10 +28,10 @@ import java.util.UUID;
  * - Guardian required for minors (<18 years)
  */
 @AggregateRoot
-public class Member extends KlabisAggregateRoot<UserId> {
+public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
     @Identity
-    private final UserId id;
+    private final MemberId id;
     private final RegistrationNumber registrationNumber;
 
     // Value objects
@@ -157,7 +157,7 @@ public class Member extends KlabisAggregateRoot<UserId> {
             String deactivationNote,
             String deactivatedBy) {
 
-        this.id = id;
+        this.id = MemberId.fromUserId(id);
         this.registrationNumber = registrationNumber;
         this.personalInformation = personalInformation;
         this.address = address;
@@ -400,8 +400,12 @@ public class Member extends KlabisAggregateRoot<UserId> {
     // ========== Getters ==========
 
     @Override
-    public UserId getId() {
+    public MemberId getId() {
         return this.id;
+    }
+
+    public UserId getUserId() {
+        return this.id.toUserId();
     }
 
     public RegistrationNumber getRegistrationNumber() {

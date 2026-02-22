@@ -4,7 +4,6 @@ import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.domain.DomainEvents;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,7 +26,7 @@ import java.util.Objects;
  *
  * @param <ID> the type of the aggregate's identifier (e.g., UserId, EventId, UUID)
  */
-public abstract class KlabisAggregateRoot<ID> extends AbstractAggregateRoot<KlabisAggregateRoot<ID>> {
+public abstract class KlabisAggregateRoot<A extends KlabisAggregateRoot<A, ID>, ID> extends AbstractAggregateRoot<A> {
 
     private AuditMetadata auditMetadata;
 
@@ -132,7 +131,7 @@ public abstract class KlabisAggregateRoot<ID> extends AbstractAggregateRoot<Klab
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        KlabisAggregateRoot<?> that = (KlabisAggregateRoot<?>) o;
+        KlabisAggregateRoot<?, ?> that = (KlabisAggregateRoot<?, ?>) o;
         return Objects.equals(getId(), that.getId());
     }
 

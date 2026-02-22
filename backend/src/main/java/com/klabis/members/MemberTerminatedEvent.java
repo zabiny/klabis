@@ -108,7 +108,7 @@ public class MemberTerminatedEvent {
      */
     public static MemberTerminatedEvent fromMember(Member member, Member.TerminateMembership command) {
         return new MemberTerminatedEvent(
-                member.getId(),
+                member.getId().toUserId(),  // change to MemberId
                 member.getRegistrationNumber(),
                 command.reason(),
                 member.getDeactivatedAt(),
