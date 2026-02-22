@@ -99,7 +99,7 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
      * @return a new UserPermissions instance
      */
     public static UserPermissions create(UserId userId, Set<Authority> directAuthorities) {
-        return new UserPermissions(userId, directAuthorities, AuditMetadata.create("system"));
+        return new UserPermissions(userId, directAuthorities, null);
     }
 
     /**
@@ -111,7 +111,7 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
      * @return a new UserPermissions instance with empty authorities
      */
     public static UserPermissions empty(UserId userId) {
-        return new UserPermissions(userId, Set.of(), AuditMetadata.create("system"));
+        return new UserPermissions(userId, Set.of(), null);
     }
 
     /**

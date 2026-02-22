@@ -96,7 +96,7 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
         String plainToken = UUID.randomUUID().toString();
         TokenHash hash = TokenHash.hash(plainToken);
 
-        PasswordSetupToken token = new PasswordSetupToken(tokenId, userId, hash, now, expiration, AuditMetadata.create("system"));
+        PasswordSetupToken token = new PasswordSetupToken(tokenId, userId, hash, now, expiration, null);
         token.plainToken = plainToken; // Store temporarily for email sending
 
         return token;

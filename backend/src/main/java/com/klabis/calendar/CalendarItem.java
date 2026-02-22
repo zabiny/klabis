@@ -135,7 +135,7 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
                 startDate,
                 endDate,
                 null,
-                AuditMetadata.create("system")
+                null
         );
     }
 

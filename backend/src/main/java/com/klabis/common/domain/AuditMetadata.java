@@ -29,11 +29,6 @@ public record AuditMetadata(
         Objects.requireNonNull(createdAt, "createdAt cannot be null");
     }
 
-    public static AuditMetadata create(String createdBy) {
-        Instant createdAt = Instant.now();
-        return new AuditMetadata(createdAt, createdBy, createdAt, createdBy, 0L);
-    }
-
     /**
      * Creates a new AuditMetadata with updated modification timestamp.
      *

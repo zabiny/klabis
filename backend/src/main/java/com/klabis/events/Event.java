@@ -163,7 +163,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 websiteUrl,
                 eventCoordinatorId,
                 EventStatus.DRAFT,
-                AuditMetadata.create("system")
+                null
         );
 
         // Register domain event
