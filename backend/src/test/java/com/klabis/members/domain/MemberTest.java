@@ -1102,4 +1102,261 @@ class MemberTest {
                     .isLessThanOrEqualTo(afterTermination);
         }
     }
+
+    @Nested
+    @DisplayName("handle(SelfUpdate) command")
+    class HandleSelfUpdate {
+
+        private Member createAdultMember() {
+            return aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
+        }
+
+        @Test
+        @DisplayName("should update email when provided")
+        void shouldUpdateEmailWhenProvided() {
+            Member member = createAdultMember();
+            EmailAddress newEmail = EmailAddress.of("new@example.com");
+
+            member.handle(new Member.SelfUpdate(
+                    newEmail, null, null, null, null, null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getEmail()).isEqualTo(newEmail);
+            assertThat(member.getPhone().value()).isEqualTo("+420123456789");
+        }
+
+        @Test
+        @DisplayName("should update phone when provided")
+        void shouldUpdatePhoneWhenProvided() {
+            Member member = createAdultMember();
+            PhoneNumber newPhone = PhoneNumber.of("+420999888777");
+
+            member.handle(new Member.SelfUpdate(
+                    null, newPhone, null, null, null, null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getPhone()).isEqualTo(newPhone);
+            assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
+        }
+
+        @Test
+        @DisplayName("should update address when provided")
+        void shouldUpdateAddressWhenProvided() {
+            Member member = createAdultMember();
+            Address newAddress = Address.of("Nová 1", "Brno", "60200", "CZ");
+
+            member.handle(new Member.SelfUpdate(
+                    null, null, newAddress, null, null, null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getAddress().street()).isEqualTo("Nová 1");
+        }
+
+        @Test
+        @DisplayName("should update chip number when provided")
+        void shouldUpdateChipNumberWhenProvided() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.SelfUpdate(
+                    null, null, null, "99887", null, null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getChipNumber()).isEqualTo("99887");
+        }
+
+        @Test
+        @DisplayName("should update nationality when provided")
+        void shouldUpdateNationalityWhenProvided() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.SelfUpdate(
+                    null, null, null, null, "SK", null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getNationality()).isEqualTo("SK");
+        }
+
+        @Test
+        @DisplayName("should update dietary restrictions when provided")
+        void shouldUpdateDietaryRestrictionsWhenProvided() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.SelfUpdate(
+                    null, null, null, null, null, null,
+                    null, null, null, null, "Vegan", null
+            ));
+
+            assertThat(member.getDietaryRestrictions()).isEqualTo("Vegan");
+        }
+
+        @Test
+        @DisplayName("should not change firstName lastName dateOfBirth or gender")
+        void shouldNotChangeAdminOnlyFields() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.SelfUpdate(
+                    EmailAddress.of("changed@example.com"), null, null, null, null, null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getFirstName()).isEqualTo("Jan");
+            assertThat(member.getLastName()).isEqualTo("Novák");
+            assertThat(member.getDateOfBirth()).isEqualTo(LocalDate.of(1990, 5, 15));
+            assertThat(member.getGender()).isEqualTo(Gender.MALE);
+        }
+
+        @Test
+        @DisplayName("should preserve existing values when null is passed")
+        void shouldPreserveExistingValuesWhenNullPassed() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.SelfUpdate(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
+            assertThat(member.getPhone().value()).isEqualTo("+420123456789");
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(UpdateMemberByAdmin) command")
+    class HandleUpdateMemberByAdmin {
+
+        private Member createAdultMember() {
+            return aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
+        }
+
+        @Test
+        @DisplayName("should update firstName when provided")
+        void shouldUpdateFirstNameWhenProvided() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    "Petr", null, null, null, null
+            ));
+
+            assertThat(member.getFirstName()).isEqualTo("Petr");
+            assertThat(member.getLastName()).isEqualTo("Novák");
+        }
+
+        @Test
+        @DisplayName("should update lastName when provided")
+        void shouldUpdateLastNameWhenProvided() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, "Svoboda", null, null, null
+            ));
+
+            assertThat(member.getLastName()).isEqualTo("Svoboda");
+            assertThat(member.getFirstName()).isEqualTo("Jan");
+        }
+
+        @Test
+        @DisplayName("should update dateOfBirth when provided")
+        void shouldUpdateDateOfBirthWhenProvided() {
+            Member member = createAdultMember();
+            LocalDate newDob = LocalDate.of(1985, 3, 20);
+
+            member.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, null, newDob, null, null
+            ));
+
+            assertThat(member.getDateOfBirth()).isEqualTo(newDob);
+        }
+
+        @Test
+        @DisplayName("should update gender when provided")
+        void shouldUpdateGenderWhenProvided() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, null, null, Gender.FEMALE, null
+            ));
+
+            assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
+        }
+
+        @Test
+        @DisplayName("should update all self-editable fields when provided")
+        void shouldUpdateAllSelfEditableFields() {
+            Member member = createAdultMember();
+            EmailAddress newEmail = EmailAddress.of("admin.set@example.com");
+            PhoneNumber newPhone = PhoneNumber.of("+420111222333");
+
+            member.handle(new Member.UpdateMemberByAdmin(
+                    newEmail, newPhone, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, null, null, null, null
+            ));
+
+            assertThat(member.getEmail()).isEqualTo(newEmail);
+            assertThat(member.getPhone()).isEqualTo(newPhone);
+        }
+
+        @Test
+        @DisplayName("should preserve unchanged fields when updating only admin-only fields")
+        void shouldPreserveUnchangedFieldsWhenUpdatingAdminOnlyFields() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    "Petr", "Svoboda", null, null, null
+            ));
+
+            assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
+            assertThat(member.getPhone().value()).isEqualTo("+420123456789");
+            assertThat(member.getAddress().street()).isEqualTo("Hlavní 123");
+        }
+
+        @Test
+        @DisplayName("should reject dateOfBirth update that makes member a minor without providing a guardian")
+        void shouldRejectDateOfBirthUpdateThatMakesMemberMinorWithoutGuardian() {
+            Member member = createAdultMember();
+            LocalDate minorDateOfBirth = LocalDate.now().minusYears(10);
+
+            assertThatThrownBy(() -> member.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, null, minorDateOfBirth, null, null
+            ))).isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Guardian is required for minors");
+        }
+    }
 }

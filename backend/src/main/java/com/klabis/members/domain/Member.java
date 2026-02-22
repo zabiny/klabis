@@ -122,6 +122,54 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     ) {}
 
     /**
+     * Command for a member editing their own profile.
+     * <p>
+     * Contains only fields that a member is permitted to change on their own account.
+     * Fields set to null retain the current value (PATCH semantics).
+     */
+    public record SelfUpdate(
+            EmailAddress email,
+            PhoneNumber phone,
+            Address address,
+            String chipNumber,
+            String nationality,
+            BankAccountNumber bankAccountNumber,
+            IdentityCard identityCard,
+            DrivingLicenseGroup drivingLicenseGroup,
+            MedicalCourse medicalCourse,
+            TrainerLicense trainerLicense,
+            String dietaryRestrictions,
+            GuardianInformation guardian
+    ) {}
+
+    /**
+     * Command for an administrator updating any member's profile.
+     * <p>
+     * Includes all self-editable fields plus fields that are restricted to admins:
+     * firstName, lastName, dateOfBirth, gender, and birthNumber.
+     * Fields set to null retain the current value (PATCH semantics).
+     */
+    public record UpdateMemberByAdmin(
+            EmailAddress email,
+            PhoneNumber phone,
+            Address address,
+            String chipNumber,
+            String nationality,
+            BankAccountNumber bankAccountNumber,
+            IdentityCard identityCard,
+            DrivingLicenseGroup drivingLicenseGroup,
+            MedicalCourse medicalCourse,
+            TrainerLicense trainerLicense,
+            String dietaryRestrictions,
+            GuardianInformation guardian,
+            String firstName,
+            String lastName,
+            LocalDate dateOfBirth,
+            Gender gender,
+            BirthNumber birthNumber
+    ) {}
+
+    /**
      * Command to terminate a member's membership.
      * <p>
      * This command is used by administrators to terminate a member's membership
@@ -627,6 +675,101 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.dietaryRestrictions = newDietaryRestrictions;
         this.birthNumber = newBirthNumber;
         this.bankAccountNumber = newBankAccountNumber;
+    }
+
+    /**
+     * Handles SelfUpdate command.
+     * <p>
+     * Applies changes to the subset of fields a member is allowed to edit on their own account.
+     * Personal information fields (firstName, lastName, dateOfBirth, gender) and birthNumber
+     * are intentionally excluded — those require admin authority.
+     *
+     * @param command the self-update command
+     * @throws IllegalArgumentException if resulting contact information is invalid
+     */
+    public void handle(SelfUpdate command) {
+        EmailAddress newEmail = command.email() != null ? command.email() : this.email;
+        PhoneNumber newPhone = command.phone() != null ? command.phone() : this.phone;
+        Address newAddress = command.address() != null ? command.address() : this.address;
+        GuardianInformation newGuardian = command.guardian() != null ? command.guardian() : this.guardian;
+
+        validateContactInformation(newEmail, newPhone, newGuardian);
+
+        String newNationality = command.nationality() != null
+                ? command.nationality()
+                : this.personalInformation.getNationalityCode();
+        PersonalInformation newPersonalInfo = PersonalInformation.of(
+                this.personalInformation.getFirstName(),
+                this.personalInformation.getLastName(),
+                this.personalInformation.getDateOfBirth(),
+                newNationality,
+                this.personalInformation.getGender()
+        );
+
+        this.email = newEmail;
+        this.phone = newPhone;
+        this.address = newAddress;
+        this.guardian = newGuardian;
+        this.personalInformation = newPersonalInfo;
+
+        if (command.chipNumber() != null) this.chipNumber = command.chipNumber();
+        if (command.bankAccountNumber() != null) this.bankAccountNumber = command.bankAccountNumber();
+        if (command.identityCard() != null) this.identityCard = command.identityCard();
+        if (command.drivingLicenseGroup() != null) this.drivingLicenseGroup = command.drivingLicenseGroup();
+        if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
+        if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
+        if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
+    }
+
+    /**
+     * Handles UpdateMemberByAdmin command.
+     * <p>
+     * Applies changes to all member fields, including those restricted to administrators
+     * (firstName, lastName, dateOfBirth, gender, birthNumber).
+     * Validates birth number against the resulting nationality.
+     *
+     * @param command the admin update command
+     * @throws IllegalArgumentException if validation fails
+     */
+    public void handle(UpdateMemberByAdmin command) {
+        EmailAddress newEmail = command.email() != null ? command.email() : this.email;
+        PhoneNumber newPhone = command.phone() != null ? command.phone() : this.phone;
+        Address newAddress = command.address() != null ? command.address() : this.address;
+        GuardianInformation newGuardian = command.guardian() != null ? command.guardian() : this.guardian;
+
+        validateContactInformation(newEmail, newPhone, newGuardian);
+
+        String newFirstName = command.firstName() != null ? command.firstName() : this.personalInformation.getFirstName();
+        String newLastName = command.lastName() != null ? command.lastName() : this.personalInformation.getLastName();
+        LocalDate newDateOfBirth = command.dateOfBirth() != null ? command.dateOfBirth() : this.personalInformation.getDateOfBirth();
+        Gender newGender = command.gender() != null ? command.gender() : this.personalInformation.getGender();
+        String newNationality = command.nationality() != null ? command.nationality() : this.personalInformation.getNationalityCode();
+
+        PersonalInformation newPersonalInfo = PersonalInformation.of(
+                newFirstName, newLastName, newDateOfBirth, newNationality, newGender
+        );
+
+        BirthNumber newBirthNumber = command.birthNumber() != null ? command.birthNumber() : this.birthNumber;
+        validateBirthNumberNationality(newNationality, newBirthNumber);
+
+        if (command.guardian() != null || !newPersonalInfo.getDateOfBirth().equals(this.personalInformation.getDateOfBirth())) {
+            validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
+        }
+
+        this.email = newEmail;
+        this.phone = newPhone;
+        this.address = newAddress;
+        this.guardian = newGuardian;
+        this.personalInformation = newPersonalInfo;
+        this.birthNumber = newBirthNumber;
+
+        if (command.chipNumber() != null) this.chipNumber = command.chipNumber();
+        if (command.bankAccountNumber() != null) this.bankAccountNumber = command.bankAccountNumber();
+        if (command.identityCard() != null) this.identityCard = command.identityCard();
+        if (command.drivingLicenseGroup() != null) this.drivingLicenseGroup = command.drivingLicenseGroup();
+        if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
+        if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
+        if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
     }
 
     /**
