@@ -209,6 +209,118 @@ class UserTest {
     }
 
     @Nested
+    @DisplayName("createdUser(username) method")
+    class CreatedUserWithUsernameOnly {
+
+        @Test
+        @DisplayName("should create user with PENDING_ACTIVATION status")
+        void shouldCreateUserWithPendingActivationStatus() {
+            User user = User.createdUser(UserTestDataConstants.DEFAULT_MEMBER_USERNAME);
+
+            UserAssert.assertThat(user)
+                    .hasAccountStatus(AccountStatus.PENDING_ACTIVATION);
+        }
+
+        @Test
+        @DisplayName("should generate a non-blank placeholder password hash internally")
+        void shouldGenerateNonBlankPasswordHash() {
+            User user = User.createdUser(UserTestDataConstants.DEFAULT_MEMBER_USERNAME);
+
+            assertThat(user.getPasswordHash()).isNotBlank();
+        }
+
+        @Test
+        @DisplayName("should not be enabled until password is set")
+        void shouldNotBeEnabled() {
+            User user = User.createdUser(UserTestDataConstants.DEFAULT_MEMBER_USERNAME);
+
+            assertThat(user.isEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should publish UserCreatedEvent")
+        void shouldPublishUserCreatedEvent() {
+            User user = User.createdUser(UserTestDataConstants.DEFAULT_MEMBER_USERNAME);
+
+            assertThat(user.getDomainEvents()).hasSize(1)
+                    .first()
+                    .isInstanceOf(UserCreatedEvent.class);
+        }
+
+        @Test
+        @DisplayName("should require username")
+        void shouldRequireUsername() {
+            assertThatThrownBy(() -> User.createdUser(null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("createdUser(username, passwordHash) method")
+    class CreatedUserWithPasswordHash {
+
+        @Test
+        @DisplayName("should create user with ACTIVE status")
+        void shouldCreateUserWithActiveStatus() {
+            User user = User.createdUser(
+                    UserTestDataConstants.DEFAULT_ADMIN_USERNAME,
+                    UserTestDataConstants.DEFAULT_PASSWORD_HASH
+            );
+
+            UserAssert.assertThat(user)
+                    .hasAccountStatus(AccountStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("should store the provided password hash")
+        void shouldStoreProvidedPasswordHash() {
+            User user = User.createdUser(
+                    UserTestDataConstants.DEFAULT_ADMIN_USERNAME,
+                    UserTestDataConstants.DEFAULT_PASSWORD_HASH
+            );
+
+            UserAssert.assertThat(user)
+                    .hasPasswordHash(UserTestDataConstants.DEFAULT_PASSWORD_HASH);
+        }
+
+        @Test
+        @DisplayName("should be enabled immediately")
+        void shouldBeEnabled() {
+            User user = User.createdUser(
+                    UserTestDataConstants.DEFAULT_ADMIN_USERNAME,
+                    UserTestDataConstants.DEFAULT_PASSWORD_HASH
+            );
+
+            assertThat(user.isEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should not publish UserCreatedEvent")
+        void shouldNotPublishUserCreatedEvent() {
+            User user = User.createdUser(
+                    UserTestDataConstants.DEFAULT_ADMIN_USERNAME,
+                    UserTestDataConstants.DEFAULT_PASSWORD_HASH
+            );
+
+            assertThat(user.getDomainEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should require username")
+        void shouldRequireUsername() {
+            assertThatThrownBy(() -> User.createdUser(null, UserTestDataConstants.DEFAULT_PASSWORD_HASH))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("should require password hash")
+        void shouldRequirePasswordHash() {
+            assertThatThrownBy(() -> User.createdUser(UserTestDataConstants.DEFAULT_ADMIN_USERNAME, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("Equality methods")
     class EqualityMethods {
 

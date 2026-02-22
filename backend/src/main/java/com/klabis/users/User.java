@@ -278,6 +278,63 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     }
 
     /**
+     * Creates a new user who needs to set their password via a password setup flow.
+     *
+     * <p>A random placeholder password hash is generated internally so the account cannot
+     * be used until the user completes the password setup. Publishes {@link UserCreatedEvent}
+     * with {@link AccountStatus#PENDING_ACTIVATION} to trigger the password setup email.
+     *
+     * @param username registration number (username)
+     * @return new User with PENDING_ACTIVATION status and a random placeholder password hash
+     */
+    public static User createdUser(String username) {
+        Objects.requireNonNull(username, "Username is required");
+
+        String placeholderHash = UUID.randomUUID().toString();
+
+        User user = new User(
+                new UserId(UUID.randomUUID()),
+                username,
+                placeholderHash,
+                AccountStatus.PENDING_ACTIVATION,
+                true,
+                true,
+                true,
+                false
+        );
+
+        user.registerEvent(UserCreatedEvent.fromUser(user));
+
+        return user;
+    }
+
+    /**
+     * Creates a new user with an immediately active account and a pre-encoded password.
+     *
+     * <p>No {@link UserCreatedEvent} is published because the account is ready for use
+     * and no password setup flow should be triggered.
+     *
+     * @param username     registration number (username)
+     * @param passwordHash BCrypt-hashed password
+     * @return new User with ACTIVE status and the provided password hash
+     */
+    public static User createdUser(String username, String passwordHash) {
+        Objects.requireNonNull(username, "Username is required");
+        validateRequired(passwordHash, "Password hash");
+
+        return new User(
+                new UserId(UUID.randomUUID()),
+                username,
+                passwordHash,
+                AccountStatus.ACTIVE,
+                true,
+                true,
+                true,
+                true
+        );
+    }
+
+    /**
      * Reconstructs a User instance from persisted data (for repository load operations).
      * <p>
      * This method bypasses validation to allow reconstruction of users from the database.
