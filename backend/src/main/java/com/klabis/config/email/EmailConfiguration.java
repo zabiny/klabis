@@ -1,9 +1,10 @@
-package com.klabis.config;
+package com.klabis.config.email;
 
 import com.klabis.common.email.EmailProperties;
 import com.klabis.common.email.EmailService;
+import com.klabis.common.email.JavaMailEmailService;
 import com.klabis.common.email.LoggingEmailService;
-import com.klabis.common.email.infrastructure.JavaMailEmailService;
+import com.klabis.common.templating.ThymeleafTemplateRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -11,12 +12,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.thymeleaf.TemplateEngine;
 
 @Configuration
 @EnableConfigurationProperties(EmailProperties.class)
-class EmailServiceConfiguration {
+public class EmailConfiguration {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EmailServiceConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EmailConfiguration.class);
 
     @Bean
     public EmailService emailService(EmailProperties emailProperties, ObjectProvider<JavaMailSender> javaMailSenderProvider) {
@@ -34,6 +36,12 @@ class EmailServiceConfiguration {
             LOG.info("JavaMailSender has been initialized, returning JavaMailEmailService");
             return new JavaMailEmailService(sender, emailProperties);
         }
+    }
+
+    // TODO: migrate to TemplateRenderer interface only
+    @Bean
+    ThymeleafTemplateRenderer templateRenderer(TemplateEngine templateEngine) {
+        return new ThymeleafTemplateRenderer(templateEngine);
     }
 
 }

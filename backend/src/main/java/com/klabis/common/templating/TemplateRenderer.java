@@ -1,4 +1,4 @@
-package com.klabis.common.email.infrastructure;
+package com.klabis.common.templating;
 
 public interface TemplateRenderer {
     String render(Template template);

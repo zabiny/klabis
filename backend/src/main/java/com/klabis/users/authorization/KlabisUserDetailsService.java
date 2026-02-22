@@ -1,4 +1,4 @@
-package com.klabis.config;
+package com.klabis.users.authorization;
 
 import com.klabis.users.Authority;
 import com.klabis.users.User;

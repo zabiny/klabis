@@ -1,9 +1,8 @@
-package com.klabis.common.email.infrastructure;
+package com.klabis.common.templating;
 
 import com.klabis.common.email.EmailTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
@@ -15,7 +14,6 @@ import java.util.Map;
  * <p>Supports both HTML and plain-text template rendering.
  * Template files should be located in src/main/resources/templates/email/
  */
-@Component
 public class ThymeleafTemplateRenderer implements TemplateRenderer {
 
     private static final Logger log = LoggerFactory.getLogger(ThymeleafTemplateRenderer.class);

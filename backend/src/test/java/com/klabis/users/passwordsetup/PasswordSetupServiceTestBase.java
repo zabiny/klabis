@@ -1,8 +1,8 @@
 package com.klabis.users.passwordsetup;
 
 import com.klabis.common.email.EmailService;
-import com.klabis.common.email.infrastructure.ThymeleafTemplateRenderer;
 import com.klabis.common.ratelimit.PerKeyRateLimiter;
+import com.klabis.common.templating.ThymeleafTemplateRenderer;
 import com.klabis.users.persistence.PasswordSetupTokenRepository;
 import com.klabis.users.persistence.UserRepository;
 import org.junit.jupiter.api.extension.ExtendWith;

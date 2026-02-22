@@ -1,7 +1,5 @@
 package com.klabis.common.email;
 
-import org.jmolecules.architecture.hexagonal.SecondaryPort;
-
 /**
  * Service for sending emails.
  *
@@ -11,7 +9,6 @@ import org.jmolecules.architecture.hexagonal.SecondaryPort;
  * <p>Implementations should handle failures gracefully and log errors without throwing exceptions,
  * to ensure email failures don't break business operations.
  */
-@SecondaryPort
 public interface EmailService {
 
     /**

@@ -1,17 +1,11 @@
-package com.klabis.common.email.infrastructure;
+package com.klabis.common.email;
 
-import com.klabis.common.email.EmailMessage;
-import com.klabis.common.email.EmailProperties;
-import com.klabis.common.email.EmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.stereotype.Service;
 
 /**
  * Email service implementation using Spring's JavaMailSender.
@@ -21,9 +15,6 @@ import org.springframework.stereotype.Service;
  *
  * <p>Enabled only when klabis.email.enabled=true in configuration.
  */
-@Service
-@ConditionalOnProperty(prefix = "klabis.email", name = "enabled", havingValue = "true", matchIfMissing = true)
-@SecondaryAdapter
 public class JavaMailEmailService implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(JavaMailEmailService.class);

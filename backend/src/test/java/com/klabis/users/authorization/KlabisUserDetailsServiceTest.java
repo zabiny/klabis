@@ -1,4 +1,4 @@
-package com.klabis.config;
+package com.klabis.users.authorization;
 
 import com.klabis.users.*;
 import com.klabis.users.persistence.UserPermissionsRepository;

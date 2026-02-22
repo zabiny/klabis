@@ -2,7 +2,6 @@ package com.klabis.config;
 
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
-import com.klabis.members.domain.RegistrationNumber;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -108,14 +107,12 @@ public class AuthorizationServerConfiguration {
                 context.getClaims().claim("user_name", subject);
 
                 // Add profile claims (given_name, family_name) for OIDC profile scope
-                if (RegistrationNumber.isRegistrationNumber(subject)) {
-                    members.findByRegistrationNumber(subject)
-                            .ifPresent(member -> {
-                                context.getClaims().claim("given_name", member.firstName());
-                                context.getClaims().claim("family_name", member.lastName());
-                                context.getClaims().claim("preferred_username", subject);
-                            });
-                }
+                members.findByRegistrationNumber(subject)
+                        .ifPresent(member -> {
+                            context.getClaims().claim("given_name", member.firstName());
+                            context.getClaims().claim("family_name", member.lastName());
+                            context.getClaims().claim("preferred_username", subject);
+                        });
             }
         };
     }
@@ -158,25 +155,16 @@ public class AuthorizationServerConfiguration {
                 // Always add user_name claim (username from authentication)
                 builder.claim("user_name", subject);
 
-                // Check if user has Member profile
-                if (RegistrationNumber.isRegistrationNumber(subject)) {
-                    members.findByRegistrationNumber(subject)
-                            .ifPresentOrElse(
-                                    member -> {
-                                        // User has Member profile - add is_member=true and member claims
-                                        builder.claim("is_member", true);
-                                        addProfileClaims(builder, scopes, member);
-                                        addEmailClaims(builder, scopes, member);
-                                    },
-                                    () -> {
-                                        // Username looks like registration number but no Member found
-                                        builder.claim("is_member", false);
-                                    }
-                            );
-                } else {
-                    // Username format is not registration number (e.g., admin)
+                members.findByRegistrationNumber(subject).ifPresentOrElse(memberDto -> {
+                    // User has Member profile - add is_member=true and member claims
+                    builder.claim("is_member", true);
+                    addProfileClaims(builder, scopes, memberDto);
+                    addEmailClaims(builder, scopes, memberDto);
+                }, () -> {
+                    // user without member
                     builder.claim("is_member", false);
-                }
+                });
+
             }
 
             return builder.build();

@@ -1,13 +1,11 @@
 package com.klabis.common.email;
 
 import org.apache.commons.lang3.StringUtils;
-import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-@SecondaryAdapter
 public class LoggingEmailService implements EmailService {
 
     private final EmailProperties emailProperties;

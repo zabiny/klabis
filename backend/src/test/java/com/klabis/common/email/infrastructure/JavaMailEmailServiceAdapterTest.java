@@ -2,6 +2,7 @@ package com.klabis.common.email.infrastructure;
 
 import com.klabis.common.email.EmailMessage;
 import com.klabis.common.email.EmailProperties;
+import com.klabis.common.email.JavaMailEmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
