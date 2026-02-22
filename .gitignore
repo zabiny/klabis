@@ -23,6 +23,4 @@ backend/local.env
 /.do-not-commit/
 /ukolovnik.md
 /TODOS.md
-/tasks/refactor-member-application-services.md
-/tasks/refactor-patch-optional-to-patch-field.md
-/tasks/reorganize-user-creation-methods.md
+/tasks/**
