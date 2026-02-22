@@ -17,7 +17,7 @@ You are a **task processor and orchestrator**. Your goal is to implement all tas
 
 ### Step 1 — Build the task queue
 
-1. List all files in `tasks/` (excluding `tasks/completed/`) that have `**Status:** READY_FOR_IMPLEMENTATION`.
+1. List all files in `tasks/` (excluding `tasks/completed/`).
 2. Sort them alphabetically by filename — this is the processing order.
 3. Show the user the full queue:
    ```
