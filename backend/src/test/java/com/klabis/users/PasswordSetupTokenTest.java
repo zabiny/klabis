@@ -28,7 +28,7 @@ class PasswordSetupTokenTest {
             Duration validity = Duration.ofHours(4);
 
             // When
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, validity);
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), validity);
 
             // Then
             assertThat(token).isNotNull();
@@ -51,8 +51,8 @@ class PasswordSetupTokenTest {
             Duration validity = Duration.ofHours(4);
 
             // When
-            PasswordSetupToken token1 = PasswordSetupToken.generateFor(user, validity);
-            PasswordSetupToken token2 = PasswordSetupToken.generateFor(user, validity);
+            PasswordSetupToken token1 = PasswordSetupToken.generateFor(user.getId(), validity);
+            PasswordSetupToken token2 = PasswordSetupToken.generateFor(user.getId(), validity);
 
             // Then
             assertThat(token1.getId()).isNotEqualTo(token2.getId());
@@ -67,7 +67,7 @@ class PasswordSetupTokenTest {
             Duration validity = Duration.ofHours(4);
 
             // When
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, validity);
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), validity);
 
             // Then
             assertThat(token.getExpiresAt())
@@ -82,7 +82,7 @@ class PasswordSetupTokenTest {
             Duration oneSecond = Duration.ofSeconds(1);
 
             // When
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, oneSecond);
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), oneSecond);
 
             // Then
             assertThat(token.isExpired()).isFalse(); // Should still be valid immediately
@@ -97,7 +97,7 @@ class PasswordSetupTokenTest {
             Duration oneWeek = Duration.ofDays(7);
 
             // When
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, oneWeek);
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), oneWeek);
 
             // Then
             assertThat(token.isExpired()).isFalse();
@@ -118,7 +118,7 @@ class PasswordSetupTokenTest {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
 
-            assertThatThrownBy(() -> PasswordSetupToken.generateFor(user, null))
+            assertThatThrownBy(() -> PasswordSetupToken.generateFor(user.getId(), null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Validity period is required");
         }
@@ -129,7 +129,7 @@ class PasswordSetupTokenTest {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
 
-            assertThatThrownBy(() -> PasswordSetupToken.generateFor(user, Duration.ZERO))
+            assertThatThrownBy(() -> PasswordSetupToken.generateFor(user.getId(), Duration.ZERO))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Validity period must be positive");
         }
@@ -140,7 +140,7 @@ class PasswordSetupTokenTest {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
 
-            assertThatThrownBy(() -> PasswordSetupToken.generateFor(user, Duration.ofHours(-1)))
+            assertThatThrownBy(() -> PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(-1)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Validity period must be positive");
         }
@@ -155,7 +155,7 @@ class PasswordSetupTokenTest {
         void shouldMarkTokenAsUsed() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             String ipAddress = "192.168.1.100";
 
             // When
@@ -173,7 +173,7 @@ class PasswordSetupTokenTest {
         void shouldRejectMarkingAlreadyUsedToken() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
 
             // When/Then
@@ -207,7 +207,7 @@ class PasswordSetupTokenTest {
         void shouldRejectMarkingTokenAsUsedWithNullIp() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             assertThatThrownBy(() -> token.markAsUsed(null))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -219,7 +219,7 @@ class PasswordSetupTokenTest {
         void shouldRejectMarkingTokenAsUsedWithEmptyIp() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             assertThatThrownBy(() -> token.markAsUsed(""))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -253,7 +253,7 @@ class PasswordSetupTokenTest {
         void shouldDetectNonExpiredToken() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // Then
             assertThat(token.isExpired()).isFalse();
@@ -269,7 +269,7 @@ class PasswordSetupTokenTest {
         void shouldDetectUsedToken() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
 
             // Then
@@ -281,7 +281,7 @@ class PasswordSetupTokenTest {
         void shouldDetectUnusedToken() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // Then
             assertThat(token.isUsed()).isFalse();
@@ -297,7 +297,7 @@ class PasswordSetupTokenTest {
         void shouldValidateTokenWhenNotExpiredAndNotUsed() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // Then
             assertThat(token.isValid()).isTrue();
@@ -324,7 +324,7 @@ class PasswordSetupTokenTest {
         void shouldNotValidateTokenWhenUsed() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
 
             // Then
@@ -341,7 +341,7 @@ class PasswordSetupTokenTest {
         void shouldVerifyMatchingToken() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             String plainToken = token.getPlainText();
 
             // When/Then
@@ -353,7 +353,7 @@ class PasswordSetupTokenTest {
         void shouldNotVerifyNonMatchingToken() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When/Then
             assertThat(token.verify("wrong-token")).isFalse();
@@ -364,7 +364,7 @@ class PasswordSetupTokenTest {
         void shouldNotVerifyNullToken() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When/Then
             assertThat(token.verify(null)).isFalse();
@@ -380,7 +380,7 @@ class PasswordSetupTokenTest {
         void shouldProvidePlainTextTokenForEmail() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // Then
             assertThat(token.getPlainText()).isNotNull();
@@ -398,7 +398,7 @@ class PasswordSetupTokenTest {
         void shouldProvideLocalDatetimeVariants() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When/Then
             assertThat(token.getCreatedAtLocal()).isNotNull();
@@ -463,7 +463,7 @@ class PasswordSetupTokenTest {
         void shouldHaveMeaningfulToString() {
             // Given
             User user = User.create(USER_NAME, PASSWORD_HASH);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When
             String toString = token.toString();

@@ -1,9 +1,9 @@
 package com.klabis.users.passwordsetup;
 
 import com.klabis.common.email.EmailMessage;
-import com.klabis.users.User;
 import com.klabis.users.PasswordSetupToken;
 import com.klabis.users.TokenHash;
+import com.klabis.users.User;
 import com.klabis.users.testdata.UserTestDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -172,7 +172,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String plainToken = "valid-token-123";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User user = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
             when(userRepository.findById(token.getUserId())).thenReturn(Optional.of(user));
@@ -209,7 +209,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String plainToken = "expired-token";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User user = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofMillis(1)); // Very short expiry
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofMillis(1)); // Very short expiry
             // Wait for token to expire
             try {
                 Thread.sleep(10);
@@ -232,7 +232,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String plainToken = "used-token";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User user = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.1");
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
@@ -250,7 +250,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String plainToken = "valid-token";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User user = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
             when(userRepository.findById(token.getUserId())).thenReturn(Optional.empty());
@@ -268,7 +268,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String plainToken = "valid-token";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User activeUser = UserTestDataBuilder.aMemberUser().build();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(activeUser, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(activeUser.getId(), Duration.ofHours(4));
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
             when(userRepository.findById(token.getUserId())).thenReturn(Optional.of(activeUser));
@@ -293,7 +293,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String ipAddress = "192.168.1.1";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User pendingUser = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser.getId(), Duration.ofHours(4));
             String encodedPassword = "$2a$10$encodedPassword";
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
@@ -327,7 +327,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String plainToken = "valid-token";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User pendingUser = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser.getId(), Duration.ofHours(4));
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
             when(userRepository.findById(token.getUserId())).thenReturn(Optional.of(pendingUser));
@@ -352,7 +352,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String weakPassword = "weak";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User pendingUser = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser.getId(), Duration.ofHours(4));
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
             when(userRepository.findById(token.getUserId())).thenReturn(Optional.of(pendingUser));
@@ -380,7 +380,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String plainToken = "expired-token";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User pendingUser = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser, Duration.ofMillis(1));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser.getId(), Duration.ofMillis(1));
             // Wait for token to expire
             try {
                 Thread.sleep(10);
@@ -410,7 +410,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String ipAddress = "192.168.1.100";
             TokenHash tokenHash = TokenHash.hash(plainToken);
             User pendingUser = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser.getId(), Duration.ofHours(4));
             String encodedPassword = "$2a$10$encodedPassword";
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));

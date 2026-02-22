@@ -88,7 +88,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
                     .forEach(System.out::println);
 
             User user = createTestUser("ZBM9001");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When
             PasswordSetupToken saved = tokenRepository.save(token);
@@ -108,7 +108,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldSaveTokenWithUsedStatus() {
             // Given
             User user = createTestUser("ZBM9002");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
 
             // When
@@ -125,7 +125,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldPopulateCreatedAtOnSave() {
             // Given
             User user = createTestUser("ZBM9003");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When
             PasswordSetupToken saved = tokenRepository.save(token);
@@ -145,7 +145,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldFindTokenById() {
             // Given
             User user = createTestUser("ZBM9004");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             PasswordSetupToken saved = tokenRepository.save(token);
 
             // When
@@ -175,7 +175,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldLoadTokenHashCorrectly() {
             // Given
             User user = createTestUser("ZBM9005");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             PasswordSetupToken saved = tokenRepository.save(token);
             TokenHash originalHash = token.getTokenHash();
 
@@ -198,7 +198,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldFindTokenByHash() {
             // Given
             User user = createTestUser("ZBM9006");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             tokenRepository.save(token);
             TokenHash tokenHash = token.getTokenHash();
 
@@ -233,7 +233,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldFindActiveTokensForUser() {
             // Given
             User user = createTestUser("ZBM9007");
-            PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             tokenRepository.save(activeToken);
 
             // When
@@ -273,7 +273,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldNotFindUsedTokens() {
             // Given
             User user = createTestUser("ZBM9009");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
             tokenRepository.save(token);
 
@@ -304,11 +304,11 @@ class PasswordSetupTokenJdbcRepositoryTest {
             User user = createTestUser("ZBM9011");
 
             // Active token
-            PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             tokenRepository.save(activeToken);
 
             // Used token
-            PasswordSetupToken usedToken = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken usedToken = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             usedToken.markAsUsed("192.168.1.100");
             tokenRepository.save(usedToken);
 
@@ -340,8 +340,8 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldDeleteAllTokensForUser() {
             // Given
             User user = createTestUser("ZBM9012");
-            PasswordSetupToken token1 = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
-            PasswordSetupToken token2 = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token1 = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
+            PasswordSetupToken token2 = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             tokenRepository.save(token1);
             tokenRepository.save(token2);
 
@@ -359,8 +359,8 @@ class PasswordSetupTokenJdbcRepositoryTest {
             // Given
             User user1 = createTestUser("ZBM9013");
             User user2 = createTestUser("ZBM9014");
-            PasswordSetupToken token1 = PasswordSetupToken.generateFor(user1, Duration.ofHours(4));
-            PasswordSetupToken token2 = PasswordSetupToken.generateFor(user2, Duration.ofHours(4));
+            PasswordSetupToken token1 = PasswordSetupToken.generateFor(user1.getId(), Duration.ofHours(4));
+            PasswordSetupToken token2 = PasswordSetupToken.generateFor(user2.getId(), Duration.ofHours(4));
             tokenRepository.save(token1);
             tokenRepository.save(token2);
 
@@ -408,7 +408,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldNotDeleteActiveTokens() {
             // Given
             User user = createTestUser("ZBM9016");
-            PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             tokenRepository.save(activeToken);
 
             // When
@@ -439,7 +439,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
             tokenRepository.save(expiredToken2);
 
             // Active token
-            PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             tokenRepository.save(activeToken);
 
             // When
@@ -460,8 +460,8 @@ class PasswordSetupTokenJdbcRepositoryTest {
             // Given
             User user1 = createTestUser("ZBM9018");
             User user2 = createTestUser("ZBM9019");
-            PasswordSetupToken token1 = PasswordSetupToken.generateFor(user1, Duration.ofHours(4));
-            PasswordSetupToken token2 = PasswordSetupToken.generateFor(user2, Duration.ofHours(4));
+            PasswordSetupToken token1 = PasswordSetupToken.generateFor(user1.getId(), Duration.ofHours(4));
+            PasswordSetupToken token2 = PasswordSetupToken.generateFor(user2.getId(), Duration.ofHours(4));
             tokenRepository.save(token1);
             tokenRepository.save(token2);
 
@@ -492,7 +492,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldPersistCreatedAtCorrectly() {
             // Given
             User user = createTestUser("ZBM9020");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             Instant originalCreatedAt = token.getCreatedAt();
 
             // When
@@ -512,7 +512,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldPersistExpiresAtCorrectly() {
             // Given
             User user = createTestUser("ZBM9021");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             Instant originalExpiresAt = token.getExpiresAt();
 
             // When
@@ -532,7 +532,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
         void shouldPersistUsedAtCorrectlyWhenMarkedAsUsed() {
             // Given
             User user = createTestUser("ZBM9022");
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, Duration.ofHours(4));
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
             Instant originalUsedAt = token.getUsedAt();
 
@@ -555,7 +555,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
             // Given
             User user = createTestUser("ZBM9023");
             Duration validity = Duration.ofHours(4);
-            PasswordSetupToken token = PasswordSetupToken.generateFor(user, validity);
+            PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), validity);
 
             // When
             PasswordSetupToken saved = tokenRepository.save(token);

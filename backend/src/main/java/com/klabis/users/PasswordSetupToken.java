@@ -32,7 +32,7 @@ import java.util.UUID;
  *   <li>Token hash is immutable (once created, the hash never changes)</li>
  * </ul>
  *
- * <p>Factory method: {@link #generateFor(User, Duration)}
+ * <p>Factory method: {@link #generateFor(UserId, Duration)}
  */
 @AggregateRoot
 public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, UUID> {
@@ -48,7 +48,7 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
     private boolean isNew = true;
 
     /**
-     * Private constructor. Use factory method {@link #generateFor(User, Duration)} to create instances.
+     * Private constructor. Use factory method {@link #generateFor(UserId, Duration)} to create instances.
      *
      * @param id            unique token identifier
      * @param userId        user ID requiring password setup
@@ -74,13 +74,13 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
     /**
      * Factory method to generate a new password setup token for a user.
      *
-     * @param user           the user requiring password setup
+     * @param userId           the user requiring password setup
      * @param validityPeriod how long until the token expires
      * @return new PasswordSetupToken with random UUID token
      * @throws IllegalArgumentException if user or validityPeriod is null
      */
-    public static PasswordSetupToken generateFor(User user, Duration validityPeriod) {
-        Assert.notNull(user, "User is required");
+    public static PasswordSetupToken generateFor(UserId userId, Duration validityPeriod) {
+        Assert.notNull(userId, "User is required");
         Assert.notNull(validityPeriod, "Validity period is required");
 
         if (validityPeriod.isNegative() || validityPeriod.isZero()) {
@@ -88,7 +88,6 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
         }
 
         UUID tokenId = UUID.randomUUID();
-        UserId userId = user.getId();
         Instant now = Instant.now();
         Instant expiration = now.plus(validityPeriod);
 
@@ -150,7 +149,7 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
     /**
      * Gets the plain text token (for email sending only).
      *
-     * <p>This is only available immediately after token generation via {@link #generateFor(User, Duration)}.
+     * <p>This is only available immediately after token generation via {@link #generateFor(UserId, Duration)}.
      * After persistence and retrieval, this field will be null.
      *
      * @return plain text token, or null if not available

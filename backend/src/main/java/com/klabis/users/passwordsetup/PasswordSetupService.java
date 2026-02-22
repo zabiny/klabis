@@ -103,7 +103,7 @@ public class PasswordSetupService {
 
         // Generate new token
         Duration validity = Duration.ofHours(tokenExpirationHours);
-        PasswordSetupToken token = PasswordSetupToken.generateFor(user, validity);
+        PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), validity);
         tokenRepository.save(token);
 
         return new GeneratedTokenResult(token, token.getPlainText());
