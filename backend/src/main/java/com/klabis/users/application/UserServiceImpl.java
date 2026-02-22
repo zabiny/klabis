@@ -48,12 +48,11 @@ class UserServiceImpl implements UserService {
             String passwordHash,
             Set<Authority> authorities) {
 
-        // Delegate to new method without email
         UserCreationParams params = UserCreationParams.builder()
                 .username(username)
                 .passwordHash(passwordHash)
                 .authorities(authorities)
-                .build();  // email is null
+                .build();
 
         return createUserPendingActivation(params);
     }
@@ -63,7 +62,6 @@ class UserServiceImpl implements UserService {
         log.debug("Creating user pending activation: username={}, authorities={}",
                 params.username(), params.authorities());
 
-        // Create user with PENDING_ACTIVATION status
         User user;
         if (params.getEmail().isPresent()) {
             user = User.createPendingActivationWithEmail(
@@ -78,11 +76,42 @@ class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
         UserId userId = savedUser.getId();
 
-        // Create permissions with granted authorities
         UserPermissions permissions = UserPermissions.create(userId, params.authorities());
         userPermissionsRepository.save(permissions);
 
         log.info("Created user pending activation: userId={}, username={}", userId, params.username());
+        return userId;
+    }
+
+    @Override
+    public UserId createUser(String username, String email, Set<Authority> authorities) {
+        log.debug("Creating user pending password setup: username={}, email={}", username, email);
+
+        User user = User.createdUserWithEmail(username, email);
+
+        User savedUser = userRepository.save(user);
+        UserId userId = savedUser.getId();
+
+        UserPermissions permissions = UserPermissions.create(userId, authorities);
+        userPermissionsRepository.save(permissions);
+
+        log.info("Created user pending password setup: userId={}, username={}", userId, username);
+        return userId;
+    }
+
+    @Override
+    public UserId createActiveUser(String username, String passwordHash, Set<Authority> authorities) {
+        log.debug("Creating active user: username={}", username);
+
+        User user = User.createdUser(username, passwordHash);
+
+        User savedUser = userRepository.save(user);
+        UserId userId = savedUser.getId();
+
+        UserPermissions permissions = UserPermissions.create(userId, authorities);
+        userPermissionsRepository.save(permissions);
+
+        log.info("Created active user: userId={}", userId);
         return userId;
     }
 

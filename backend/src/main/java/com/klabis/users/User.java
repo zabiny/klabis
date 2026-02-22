@@ -134,7 +134,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
             String passwordHash) {
 
         Objects.requireNonNull(username, "User name is required");
-        validateRequired(passwordHash, "Password hash");
+        validateRequired(passwordHash);
 
         User user = new User(
                 new UserId(UUID.randomUUID()),
@@ -168,7 +168,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
             AccountStatus accountStatus) {
 
         Objects.requireNonNull(userName, "Registration number is required");
-        validateRequired(passwordHash, "Password hash");
+        validateRequired(passwordHash);
         Objects.requireNonNull(accountStatus, "Account status is required");
 
         User user = new User(
@@ -204,7 +204,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
             String passwordHash) {
 
         Objects.requireNonNull(userName, "User name is required");
-        validateRequired(passwordHash, "Password hash");
+        validateRequired(passwordHash);
 
         User user = new User(
                 new UserId(UUID.randomUUID()),
@@ -257,7 +257,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
             String email) {
 
         Objects.requireNonNull(userName, "User name is required");
-        validateRequired(passwordHash, "Password hash");
+        validateRequired(passwordHash);
         Objects.requireNonNull(email, "Email is required");
 
         User user = new User(
@@ -309,6 +309,40 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     }
 
     /**
+     * Creates a new user who needs to set their password via a password setup flow,
+     * with an email included in the event for password setup coordination.
+     *
+     * <p>A random placeholder password hash is generated internally so the account cannot
+     * be used until the user completes the password setup. Publishes {@link UserCreatedEvent}
+     * with {@link AccountStatus#PENDING_ACTIVATION} and the email to trigger the password setup email.
+     *
+     * @param username registration number (username)
+     * @param email    email address for password setup (PII from Member context)
+     * @return new User with PENDING_ACTIVATION status and a random placeholder password hash
+     */
+    public static User createdUserWithEmail(String username, String email) {
+        Objects.requireNonNull(username, "Username is required");
+        Objects.requireNonNull(email, "Email is required");
+
+        String placeholderHash = UUID.randomUUID().toString();
+
+        User user = new User(
+                new UserId(UUID.randomUUID()),
+                username,
+                placeholderHash,
+                AccountStatus.PENDING_ACTIVATION,
+                true,
+                true,
+                true,
+                false
+        );
+
+        user.registerEvent(UserCreatedEvent.fromUserWithEmail(user, email));
+
+        return user;
+    }
+
+    /**
      * Creates a new user with an immediately active account and a pre-encoded password.
      *
      * <p>No {@link UserCreatedEvent} is published because the account is ready for use
@@ -320,7 +354,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      */
     public static User createdUser(String username, String passwordHash) {
         Objects.requireNonNull(username, "Username is required");
-        validateRequired(passwordHash, "Password hash");
+        validateRequired(passwordHash);
 
         return new User(
                 new UserId(UUID.randomUUID()),
@@ -373,16 +407,6 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     }
 
     /**
-     * Activates this user account with a new password using a command.
-     *
-     * @param command the ActivateWithPassword command
-     * @return new User instance with ACTIVE status and enabled=true
-     */
-    public User activateWithPassword(ActivateWithPassword command) {
-        return activateWithPassword(command.newPasswordHash());
-    }
-
-    /**
      * Activates this user account with a new password.
      *
      * <p>Returns a new User instance with ACTIVE status and the new password hash.
@@ -411,9 +435,9 @@ public class User extends KlabisAggregateRoot<User, UserId> {
         return activated;
     }
 
-    private static void validateRequired(String value, String fieldName) {
+    private static void validateRequired(String value) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " is required");
+            throw new IllegalArgumentException("Password hash is required");
         }
     }
 
