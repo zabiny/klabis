@@ -114,8 +114,11 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 - Location: `src/test/java/com/klabis/{module}/*E2ETest.java`
 - Use `@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES)` (usually with
   `@AutoConfigureMockMvc`)
-- Test complete user journeys across modules
-- Example: `MemberRegistrationE2ETest`, `PasswordSetupFlowE2ETest`
+- Test complete user journeys across modules or aggregate root lifecycle
+- Example: `MemberLifecycleE2ETest`
+- **Scope:** Verify lifecycle PROGRESSION only — status codes and minimal navigation checks
+- **Not in E2E:** Response JSON structure (→ controller unit tests), domain events (→ integration tests)
+- **Never inject repositories** in E2E tests — too low-level; verify state only through API responses
 
 ### Integration Test Best Practices
 
