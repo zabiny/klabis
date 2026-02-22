@@ -1,7 +1,8 @@
-package com.klabis.common.mvc;
+package com.klabis.config.mvc;
 
 
 import com.klabis.common.logging.RequestLoggingFilter;
+import com.klabis.common.mvc.MvcComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;

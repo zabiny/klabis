@@ -1,11 +1,11 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.config.encryption.EncryptionConfiguration;
-import com.klabis.members.domain.DrivingLicenseGroup;
-import com.klabis.members.domain.Gender;
-import com.klabis.members.domain.Members;
-import com.klabis.members.domain.RegistrationNumber;
-import com.klabis.members.management.*;
+import com.klabis.members.domain.*;
+import com.klabis.members.management.InvalidUpdateException;
+import com.klabis.members.management.ManagementService;
+import com.klabis.members.management.MemberNotFoundException;
+import com.klabis.members.management.SelfEditNotAllowedException;
 import com.klabis.users.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -635,7 +634,7 @@ class UpdateMemberApiTest {
                 UUID nonExistentId = UUID.randomUUID();
 
                 when(memberService.updateMember(any(UUID.class), any(UpdateMemberRequest.class)))
-                        .thenThrow(new MemberNotFoundException(nonExistentId));
+                        .thenThrow(new MemberNotFoundException(new MemberId(nonExistentId)));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", nonExistentId)

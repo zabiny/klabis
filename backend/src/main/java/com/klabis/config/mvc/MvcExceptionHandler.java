@@ -1,4 +1,4 @@
-package com.klabis.common.mvc;
+package com.klabis.config.mvc;
 
 import com.klabis.common.exceptions.AuthorizationException;
 import com.klabis.common.exceptions.BusinessRuleViolationException;

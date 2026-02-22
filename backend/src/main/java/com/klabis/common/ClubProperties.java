@@ -1,4 +1,4 @@
-package com.klabis.config;
+package com.klabis.common;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

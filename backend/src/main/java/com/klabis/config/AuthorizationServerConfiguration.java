@@ -1,7 +1,6 @@
 package com.klabis.config;
 
-import com.klabis.members.MemberDto;
-import com.klabis.members.Members;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,6 +50,19 @@ public class AuthorizationServerConfiguration {
     @Value("${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}")
     private String issuer;
 
+    private final AuthorizationServerCustomizer authorizationServerCustomizer;
+
+    private final AuthorizationServerCustomizer EMPTY_CUSTOMIZER = new  AuthorizationServerCustomizer() {
+    };
+
+    public AuthorizationServerConfiguration() {
+        this.authorizationServerCustomizer = EMPTY_CUSTOMIZER;
+    }
+
+    public AuthorizationServerConfiguration(ObjectProvider<AuthorizationServerCustomizer> authorizationServerCustomizerProvider) {
+        this.authorizationServerCustomizer = authorizationServerCustomizerProvider.getIfAvailable(() -> EMPTY_CUSTOMIZER);
+    }
+
     /**
      * JDBC-based registered client repository.
      * Clients are loaded from database and initialized by BootstrapDataLoader.
@@ -83,7 +95,7 @@ public class AuthorizationServerConfiguration {
     }
 
     @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(Members members) {
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
         return context -> {
             if (context.getTokenType().getValue().equals("access_token")) {
                 // For client_credentials grant, use authorized scopes as authorities
@@ -107,12 +119,7 @@ public class AuthorizationServerConfiguration {
                 context.getClaims().claim("user_name", subject);
 
                 // Add profile claims (given_name, family_name) for OIDC profile scope
-                members.findByRegistrationNumber(subject)
-                        .ifPresent(member -> {
-                            context.getClaims().claim("given_name", member.firstName());
-                            context.getClaims().claim("family_name", member.lastName());
-                            context.getClaims().claim("preferred_username", subject);
-                        });
+                authorizationServerCustomizer.customizeIdTokenClaims(subject, context.getClaims());
             }
         };
     }
@@ -131,8 +138,7 @@ public class AuthorizationServerConfiguration {
      * <p>
      * For admin users who don't have a linked Member entity, only sub is returned.
      */
-    private Function<OidcUserInfoAuthenticationContext, OidcUserInfo> oidcUserInfoMapper(
-            Members members) {
+    private Function<OidcUserInfoAuthenticationContext, OidcUserInfo> oidcUserInfoMapper() {
         return context -> {
             // Task 2.1: Extract authorized scopes from context
             Set<String> scopes = context.getAuthorization().getAuthorizedScopes();
@@ -155,67 +161,24 @@ public class AuthorizationServerConfiguration {
                 // Always add user_name claim (username from authentication)
                 builder.claim("user_name", subject);
 
-                members.findByRegistrationNumber(subject).ifPresentOrElse(memberDto -> {
-                    // User has Member profile - add is_member=true and member claims
-                    builder.claim("is_member", true);
-                    addProfileClaims(builder, scopes, memberDto);
-                    addEmailClaims(builder, scopes, memberDto);
-                }, () -> {
-                    // user without member
-                    builder.claim("is_member", false);
-                });
-
+                authorizationServerCustomizer.customizeOidcUserInfo(subject, scopes, builder);
             }
 
             return builder.build();
         };
     }
 
-    /**
-     * Adds OIDC profile scope claims to UserInfo response for members.
-     * <p>
-     * Maps Member data to OIDC claims:
-     * - given_name (first name)
-     * - family_name (last name)
-     * - updated_at (profile last modification timestamp)
-     * <p>
-     * Note: user_name and is_member claims are added by oidcUserInfoMapper before calling this method.
-     */
-    private void addProfileClaims(OidcUserInfo.Builder builder, Set<String> scopes, MemberDto member) {
-        if (scopes.contains("profile")) {
-            builder.givenName(member.firstName())
-                   .familyName(member.lastName())
-                   .claim("updated_at", member.lastModifiedAt());
-        }
-    }
-
-    /**
-     * Adds OIDC email scope claims to UserInfo response.
-     * <p>
-     * Task 2.5-2.6: Maps Member email to standard OIDC claims:
-     * - email (member's email address)
-     * - email_verified (always false until email verification is implemented)
-     * <p>
-     * Omits email claims if Member has no email (null-safe).
-     */
-    private void addEmailClaims(OidcUserInfo.Builder builder, Set<String> scopes, MemberDto member) {
-        if (scopes.contains("email") && member.email() != null) {
-            builder.email(member.email())
-                   .emailVerified(false);
-        }
-    }
 
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http,
-            Members members,
             CorsConfigurationSource corsConfigurationSource) throws Exception {
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
                 .oidc(oidc -> oidc
                         .userInfoEndpoint(userInfo -> userInfo
-                                .userInfoMapper(oidcUserInfoMapper(members))
+                                .userInfoMapper(oidcUserInfoMapper())
                         )
                 );
 

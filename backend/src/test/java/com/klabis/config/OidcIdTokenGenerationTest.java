@@ -1,12 +1,10 @@
 package com.klabis.config;
 
-import com.klabis.members.Members;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 /**
  * Unit test for OpenID Connect ID token generation configuration.
@@ -45,10 +43,9 @@ class OidcIdTokenGenerationTest {
     void shouldProvideJwtCustomizer() {
         // Given: AuthorizationServerConfiguration has been instantiated
         AuthorizationServerConfiguration config = new AuthorizationServerConfiguration();
-        Members members = mock(Members.class);
 
         // Then: jwtCustomizer bean can be created (it will add ID token claims)
-        var customizer = config.jwtCustomizer(members);
+        var customizer = config.jwtCustomizer();
         assertThat(customizer).isNotNull();
     }
 }

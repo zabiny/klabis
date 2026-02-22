@@ -28,7 +28,11 @@ class MembersImpl implements Members {
 
     @Override
     public Optional<MemberDto> findByRegistrationNumber(String registrationNumber) {
-        return memberRepository.findByRegistrationNumber(RegistrationNumber.of(registrationNumber)).map(this::fromMember);
+        if (RegistrationNumber.isRegistrationNumber(registrationNumber)) {
+            return memberRepository.findByRegistrationNumber(RegistrationNumber.of(registrationNumber)).map(this::fromMember);
+        } else {
+            return Optional.empty();
+        }
     }
 
     private MemberDto fromMember(Member member) {

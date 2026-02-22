@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.ui.RootModel;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberId;
 import com.klabis.members.domain.Members;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.MemberNotFoundException;
@@ -272,7 +273,7 @@ class MemberController {
 
         // Load member directly from repository
         Member member = memberRepository.findById(new UserId(id))
-                .orElseThrow(() -> new MemberNotFoundException(id));
+                .orElseThrow(() -> new MemberNotFoundException(new MemberId(id)));
 
         // Map to response
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
