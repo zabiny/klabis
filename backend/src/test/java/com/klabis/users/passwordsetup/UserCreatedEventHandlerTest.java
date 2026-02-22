@@ -57,7 +57,7 @@ class UserCreatedEventHandlerTest {
                     email
             );
 
-            User mockUser = User.createPendingActivation(username, "$2a$10$hashed");
+            User mockUser = User.createdUser(username);
             try {
                 var idField = User.class.getDeclaredField("id");
                 idField.setAccessible(true);
@@ -176,7 +176,7 @@ class UserCreatedEventHandlerTest {
                     email
             );
 
-            User mockUser = User.createPendingActivation(username, "$2a$10$hashed");
+            User mockUser = User.createdUser(username);
             try {
                 var idField = User.class.getDeclaredField("id");
                 idField.setAccessible(true);
@@ -210,7 +210,7 @@ class UserCreatedEventHandlerTest {
         void shouldUseFactoryMethodWhenEmailPresent() {
             // This test verifies the correct event creation path
             UserCreatedEvent event = UserCreatedEvent.fromUserWithEmail(
-                    User.createPendingActivation(username, "$2a$10$hashed"),
+                    User.createdUser(username),
                     email
             );
 

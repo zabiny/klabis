@@ -1,7 +1,8 @@
 package com.klabis.users.testdata;
 
-import com.klabis.users.User;
 import com.klabis.users.AccountStatus;
+import com.klabis.users.User;
+import com.klabis.users.UserId;
 
 /**
  * Test data builders for User domain objects.
@@ -21,42 +22,42 @@ public class UserTestData {
      * Creates an active admin user.
      */
     public static User adminUser() {
-        return User.create("admin", DEFAULT_PASSWORD_HASH);
+        return User.createdUser("admin", DEFAULT_PASSWORD_HASH);
     }
 
     /**
      * Creates an admin user with specified username.
      */
     public static User adminUser(String username) {
-        return User.create(username, DEFAULT_PASSWORD_HASH);
+        return User.createdUser(username, DEFAULT_PASSWORD_HASH);
     }
 
     /**
      * Creates a regular member user.
      */
     public static User memberUser() {
-        return User.create("ZBM0101", DEFAULT_PASSWORD_HASH);
+        return User.createdUser("ZBM0101", DEFAULT_PASSWORD_HASH);
     }
 
     /**
      * Creates a member user with specified username.
      */
     public static User memberUser(String username) {
-        return User.create(username, DEFAULT_PASSWORD_HASH);
+        return User.createdUser(username, DEFAULT_PASSWORD_HASH);
     }
 
     /**
      * Creates a pending activation user (inactive, requires password setup).
      */
     public static User pendingUser() {
-        return User.createPendingActivation("ZBM0201", DEFAULT_PASSWORD_HASH);
+        return User.createdUser("ZBM0201");
     }
 
     /**
      * Creates a pending user with specified username.
      */
     public static User pendingUser(String username) {
-        return User.createPendingActivation(username, DEFAULT_PASSWORD_HASH);
+        return User.createdUser(username);
     }
 
     /**
@@ -91,13 +92,25 @@ public class UserTestData {
 
         public User build() {
             if (accountStatus == AccountStatus.PENDING_ACTIVATION) {
-                return User.createPendingActivation(username, passwordHash);
+                return User.createdUser(username);
             }
-            return User.create(username, passwordHash, accountStatus);
+            if (accountStatus == AccountStatus.ACTIVE) {
+                return User.createdUser(username, passwordHash);
+            }
+            return User.reconstruct(
+                    new UserId(java.util.UUID.randomUUID()),
+                    username,
+                    passwordHash,
+                    accountStatus,
+                    true,
+                    true,
+                    true,
+                    false
+            );
         }
 
         public User buildPending() {
-            return User.createPendingActivation(username, passwordHash);
+            return User.createdUser(username);
         }
     }
 }

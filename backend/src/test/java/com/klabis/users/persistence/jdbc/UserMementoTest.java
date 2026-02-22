@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UserMementoTest {
 
     private User createTestUser() {
-        return User.create(
+        return User.createdUser(
                 "ZBM9001",
                 "$2a$10$hashvalue"
         );
@@ -46,7 +46,7 @@ class UserMementoTest {
     }
 
     private User createTestUserWithAllFields() {
-        return User.create(
+        return User.createdUser(
                 "ZBM9002",
                 "$2a$10$hashvalue"
         );
@@ -95,10 +95,7 @@ class UserMementoTest {
         @DisplayName("should create memento from user with PENDING_ACTIVATION status")
         void shouldCreateMementoFromUserWithPendingActivationStatus() {
             // Arrange
-            User user = User.createPendingActivation(
-                    "ZBM9003",
-                    "$2a$10$temphash"
-            );
+            User user = User.createdUser("ZBM9003");
 
             // Act
             UserMemento memento = UserMemento.from(user);
@@ -196,10 +193,7 @@ class UserMementoTest {
         @DisplayName("should reconstruct user with PENDING_ACTIVATION status")
         void shouldReconstructUserWithPendingActivationStatus() {
             // Arrange
-            User originalUser = User.createPendingActivation(
-                    "ZBM9003",
-                    "$2a$10$temphash"
-            );
+            User originalUser = User.createdUser("ZBM9003");
             UserMemento memento = UserMemento.from(originalUser);
 
             // Act
@@ -312,8 +306,8 @@ class UserMementoTest {
         @Test
         @DisplayName("should delegate getDomainEvents to user")
         void shouldDelegateGetDomainEventsToUser() {
-            // Arrange
-            User user = createTestUser();
+            // Arrange - pending user registers UserCreatedEvent on creation
+            User user = User.createdUser("ZBM9001");
             UserMemento memento = UserMemento.from(user);
 
             // Act

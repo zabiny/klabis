@@ -4,14 +4,12 @@ import com.klabis.members.domain.*;
 import com.klabis.members.infrastructure.restapi.AddressRequest;
 import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import com.klabis.users.Authority;
-import com.klabis.users.UserCreationParams;
 import com.klabis.users.UserId;
 import com.klabis.users.UserService;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -41,47 +39,37 @@ class RegistrationServiceImpl implements RegistrationService {
     private final MemberRepository memberRepository;
     private final UserService userService;
     private final RegistrationNumberGenerator registrationNumberGenerator;
-    private final PasswordEncoder passwordEncoder;
 
     /**
      * Constructs a new RegistrationService.
      *
      * @param memberRepository the member repository for persisting members
      * @param userService      the user service for creating users and permissions
-     * @param passwordEncoder  the password encoder for hashing passwords
      * @param clubCode         the club code used for registration number generation
      */
     public RegistrationServiceImpl(
             MemberRepository memberRepository,
             UserService userService,
-            PasswordEncoder passwordEncoder,
             Members members,
             @Value("${klabis.club.code}") String clubCode) {
         this.memberRepository = memberRepository;
         this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
         this.registrationNumberGenerator = new RegistrationNumberGenerator(clubCode, members);
     }
 
     @Transactional
     @Override
     public UUID registerMember(RegisterMemberRequest request) {
-        // Generate unique registration number
         RegistrationNumber registrationNumber = registrationNumberGenerator.generate(request.dateOfBirth());
 
-        // Create Address value object
         Address address = createAddress(request.address());
 
-        // Create EmailAddress and PhoneNumber value objects
         EmailAddress email = createEmailAddress(request.email());
         PhoneNumber phone = createPhoneNumber(request.phone());
 
-        // Convert guardian DTO to domain object if present
         GuardianInformation guardian = null;
         if (request.guardian() != null) {
             GuardianDTO dto = request.guardian();
-
-            // Create EmailAddress and PhoneNumber value objects for guardian
             EmailAddress guardianEmail = createEmailAddress(dto.email());
             PhoneNumber guardianPhone = createPhoneNumber(dto.phone());
 
@@ -94,7 +82,6 @@ class RegistrationServiceImpl implements RegistrationService {
             );
         }
 
-        // Create PersonalInformation value object
         PersonalInformation personalInformation = PersonalInformation.of(
                 request.firstName(),
                 request.lastName(),
@@ -103,46 +90,27 @@ class RegistrationServiceImpl implements RegistrationService {
                 request.gender()
         );
 
-        // Create BirthNumber value object if provided
         BirthNumber birthNumber = null;
         if (request.birthNumber() != null && !request.birthNumber().isBlank()) {
             birthNumber = BirthNumber.of(request.birthNumber());
         }
 
-        // Create BankAccountNumber value object if provided
         BankAccountNumber bankAccountNumber = null;
         if (request.bankAccountNumber() != null && !request.bankAccountNumber().isBlank()) {
             bankAccountNumber = BankAccountNumber.of(request.bankAccountNumber());
         }
 
-        // CRITICAL: Create User FIRST to obtain the shared UserId
-        // This ensures Member ID = User ID for all members
-        String placeholderPassword = UUID.randomUUID().toString();
-        String passwordHash = passwordEncoder.encode(placeholderPassword);
-
-        // Create user with pending activation status and default authority
-        // Pass email to UserCreationParams for cross-module password setup coordination
-        // UserService handles User + UserPermissions creation in a single transaction
-        UserCreationParams params = UserCreationParams.builder()
-                .username(registrationNumber.getValue())
-                .passwordHash(passwordHash)
-                .authorities(Authority.getStandardUserAuthorities())  // Default authority for new members
-                .email(email.value())  // PII from Member request for password setup
-                .build();
-
-        UserId sharedId = userService.createUserPendingActivation(params);
-
-        // Critical assertion: User ID must never be null after creation
-        assert sharedId != null : "User ID must not be null after creation";
+        UserId sharedId = userService.createUser(
+                registrationNumber.getValue(),
+                email.value(),
+                Authority.getStandardUserAuthorities()
+        );
 
         log.debug("User created with shared ID: {} for username: {}",
                 sharedId, registrationNumber.getValue());
-        log.debug("UserPermissions created for user: {} with authority: MEMBERS_READ",
-                sharedId);
 
-        // Create Member using the SAME UserId (shared ID)
         Member.RegisterMember command = new Member.RegisterMember(
-                sharedId,  // Pass the shared ID from User
+                sharedId,
                 registrationNumber,
                 personalInformation,
                 address,
@@ -154,25 +122,11 @@ class RegistrationServiceImpl implements RegistrationService {
         );
         Member member = Member.register(command);
 
-        // Persist Member
         Member savedMember = memberRepository.save(member);
 
         log.debug("Member created with shared ID: {}", savedMember.getId());
 
-        // Verify invariant: Member ID must equal User ID
-        if (!savedMember.getId().uuid().equals(sharedId.uuid())) {
-            String errorMsg = String.format(
-                    "Critical invariant violation: Member ID (%s) != User ID (%s)",
-                    savedMember.getId(), sharedId
-            );
-            log.error(errorMsg);
-            throw new IllegalStateException(errorMsg);
-        }
-
-        // MemberCreatedEvent will be published after transaction commit
-        // MemberCreatedEventHandler will send password setup email asynchronously
-
-        return sharedId.uuid();  // Return the shared ID
+        return sharedId.uuid();
     }
 
     // ========== Helper Methods ==========

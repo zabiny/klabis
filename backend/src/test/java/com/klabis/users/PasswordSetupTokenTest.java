@@ -24,7 +24,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should generate token for user with validity period")
         void shouldGenerateTokenForUserWithValidityPeriod() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             Duration validity = Duration.ofHours(4);
 
             // When
@@ -47,7 +47,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should generate unique token IDs")
         void shouldGenerateUniqueTokenIds() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             Duration validity = Duration.ofHours(4);
 
             // When
@@ -63,7 +63,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should calculate correct expiration time")
         void shouldCalculateCorrectExpirationTime() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             Duration validity = Duration.ofHours(4);
 
             // When
@@ -78,7 +78,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should handle very short validity period")
         void shouldHandleVeryShortValidityPeriod() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             Duration oneSecond = Duration.ofSeconds(1);
 
             // When
@@ -93,7 +93,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should handle very long validity period")
         void shouldHandleVeryLongValidityPeriod() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             Duration oneWeek = Duration.ofDays(7);
 
             // When
@@ -116,7 +116,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should reject null validity period")
         void shouldRejectNullValidityPeriod() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
 
             assertThatThrownBy(() -> PasswordSetupToken.generateFor(user.getId(), null))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -127,7 +127,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should reject zero validity period")
         void shouldRejectZeroValidityPeriod() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
 
             assertThatThrownBy(() -> PasswordSetupToken.generateFor(user.getId(), Duration.ZERO))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -138,7 +138,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should reject negative validity period")
         void shouldRejectNegativeValidityPeriod() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
 
             assertThatThrownBy(() -> PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(-1)))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -154,7 +154,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should mark token as used")
         void shouldMarkTokenAsUsed() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             String ipAddress = "192.168.1.100";
 
@@ -172,7 +172,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should reject marking already used token")
         void shouldRejectMarkingAlreadyUsedToken() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
 
@@ -186,7 +186,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should reject marking expired token as used")
         void shouldRejectMarkingExpiredTokenAsUsed() {
             // Given - create expired token (in the past)
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             UUID tokenId = UUID.randomUUID();
             UserId userId = user.getId();
             TokenHash hash = TokenHash.hash("test-token");
@@ -206,7 +206,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should reject marking token as used with null IP")
         void shouldRejectMarkingTokenAsUsedWithNullIp() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             assertThatThrownBy(() -> token.markAsUsed(null))
@@ -218,7 +218,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should reject marking token as used with empty IP")
         void shouldRejectMarkingTokenAsUsedWithEmptyIp() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             assertThatThrownBy(() -> token.markAsUsed(""))
@@ -252,7 +252,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should detect non-expired token")
         void shouldDetectNonExpiredToken() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // Then
@@ -268,7 +268,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should detect used token")
         void shouldDetectUsedToken() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
 
@@ -280,7 +280,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should detect unused token")
         void shouldDetectUnusedToken() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // Then
@@ -296,7 +296,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should validate token when not expired and not used")
         void shouldValidateTokenWhenNotExpiredAndNotUsed() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // Then
@@ -323,7 +323,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should not validate token when used")
         void shouldNotValidateTokenWhenUsed() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             token.markAsUsed("192.168.1.100");
 
@@ -340,7 +340,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should verify matching token")
         void shouldVerifyMatchingToken() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
             String plainToken = token.getPlainText();
 
@@ -352,7 +352,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should not verify non-matching token")
         void shouldNotVerifyNonMatchingToken() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When/Then
@@ -363,7 +363,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should not verify null token")
         void shouldNotVerifyNullToken() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When/Then
@@ -379,7 +379,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should provide plain text token for email")
         void shouldProvidePlainTextTokenForEmail() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // Then
@@ -397,7 +397,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should provide local datetime variants")
         void shouldProvideLocalDatetimeVariants() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When/Then
@@ -462,7 +462,7 @@ class PasswordSetupTokenTest {
         @DisplayName("should have meaningful toString")
         void shouldHaveMeaningfulToString() {
             // Given
-            User user = User.create(USER_NAME, PASSWORD_HASH);
+            User user = User.createdUser(USER_NAME, PASSWORD_HASH);
             PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));
 
             // When

@@ -67,7 +67,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
     }
 
     private User createTestUser(String username) {
-        User user = User.create(
+        User user = User.createdUser(
                 username,
                 "$2a$10$hashvalue"
         );

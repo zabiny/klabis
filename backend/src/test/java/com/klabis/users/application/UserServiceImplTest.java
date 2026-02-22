@@ -16,7 +16,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,232 +54,6 @@ class UserServiceImplTest {
     }
 
     @Nested
-    @DisplayName("createUserPendingActivation() method")
-    class CreateUserPendingActivationMethod {
-
-        @Test
-        @DisplayName("should create user with PENDING_ACTIVATION status and grant authorities")
-        void shouldCreateUserWithPendingActivationAndAuthorities() {
-            // Given
-            User pendingUser = userWithId(User.createPendingActivation(testUsername, testPasswordHash), testUserId);
-
-            when(userRepository.save(any(User.class))).thenReturn(pendingUser);
-            when(userPermissionsRepository.save(any(UserPermissions.class)))
-                    .thenReturn(UserPermissions.create(testUserId, testAuthorities));
-
-            // When
-            UserId result = testedSubject.createUserPendingActivation(
-                    testUsername,
-                    testPasswordHash,
-                    testAuthorities
-            );
-
-            // Then
-            assertThat(result).isEqualTo(testUserId);
-
-            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-            verify(userRepository).save(userCaptor.capture());
-            assertThat(userCaptor.getValue().getUsername()).isEqualTo(testUsername);
-            assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
-            assertThat(userCaptor.getValue().isEnabled()).isFalse();
-
-            ArgumentCaptor<UserPermissions> permissionsCaptor = ArgumentCaptor.forClass(UserPermissions.class);
-            verify(userPermissionsRepository).save(permissionsCaptor.capture());
-            assertThat(permissionsCaptor.getValue().getUserId()).isEqualTo(testUserId);
-            assertThat(permissionsCaptor.getValue().getDirectAuthorities()).isEqualTo(testAuthorities);
-        }
-
-        @Test
-        @DisplayName("should create user with empty authorities set")
-        void shouldCreateUserWithEmptyAuthorities() {
-            // Given
-            User pendingUser = userWithId(User.createPendingActivation(testUsername, testPasswordHash), testUserId);
-
-            when(userRepository.save(any(User.class))).thenReturn(pendingUser);
-            when(userPermissionsRepository.save(any(UserPermissions.class)))
-                    .thenReturn(UserPermissions.empty(testUserId));
-
-            // When
-            UserId result = testedSubject.createUserPendingActivation(
-                    testUsername,
-                    testPasswordHash,
-                    Set.of()
-            );
-
-            // Then
-            assertThat(result).isEqualTo(testUserId);
-            verify(userPermissionsRepository).save(any(UserPermissions.class));
-        }
-
-        @Test
-        @DisplayName("should propagate exception when username is null")
-        void shouldThrowExceptionWhenUsernameIsNull() {
-            // When/Then - Delegation creates UserCreationParams which throws NullPointerException
-            assertThatThrownBy(() ->
-                    testedSubject.createUserPendingActivation(null, testPasswordHash, testAuthorities)
-            ).isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("Username");
-        }
-
-        @Test
-        @DisplayName("should propagate exception when passwordHash is null")
-        void shouldThrowExceptionWhenPasswordHashIsNull() {
-            // When/Then - Delegation creates UserCreationParams which throws NullPointerException
-            assertThatThrownBy(() ->
-                    testedSubject.createUserPendingActivation(testUsername, null, testAuthorities)
-            ).isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining("Password hash");
-        }
-
-        @Test
-        @DisplayName("should execute in single transaction")
-        void shouldExecuteInSingleTransaction() {
-            User pendingUser = userWithId(User.createPendingActivation(testUsername, testPasswordHash), testUserId);
-
-            when(userRepository.save(any(User.class))).thenReturn(pendingUser);
-            when(userPermissionsRepository.save(any(UserPermissions.class)))
-                    .thenReturn(UserPermissions.create(testUserId, testAuthorities));
-
-            testedSubject.createUserPendingActivation(testUsername, testPasswordHash, testAuthorities);
-
-            // Verify both repositories were called in sequence
-            verify(userRepository).save(any(User.class));
-            verify(userPermissionsRepository).save(any(UserPermissions.class));
-        }
-    }
-
-    @Nested
-    @DisplayName("createUserPendingActivation(UserCreationParams) method")
-    class CreateUserPendingActivationWithParamsMethod {
-
-        @Test
-        @DisplayName("should create user with UserCreationParams without email")
-        void shouldCreateUserWithParamsWithoutEmail() {
-            // Given
-            UserCreationParams params = UserCreationParams.builder()
-                    .username(testUsername)
-                    .passwordHash(testPasswordHash)
-                    .authorities(testAuthorities)
-                    .build();
-
-            User pendingUser = userWithId(User.createPendingActivation(testUsername, testPasswordHash), testUserId);
-
-            when(userRepository.save(any(User.class))).thenReturn(pendingUser);
-            when(userPermissionsRepository.save(any(UserPermissions.class)))
-                    .thenReturn(UserPermissions.create(testUserId, testAuthorities));
-
-            // When
-            UserId result = testedSubject.createUserPendingActivation(params);
-
-            // Then
-            assertThat(result).isEqualTo(testUserId);
-
-            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-            verify(userRepository).save(userCaptor.capture());
-            assertThat(userCaptor.getValue().getUsername()).isEqualTo(testUsername);
-            assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
-
-            ArgumentCaptor<UserPermissions> permissionsCaptor = ArgumentCaptor.forClass(UserPermissions.class);
-            verify(userPermissionsRepository).save(permissionsCaptor.capture());
-            assertThat(permissionsCaptor.getValue().getUserId()).isEqualTo(testUserId);
-        }
-
-        @Test
-        @DisplayName("should create user with UserCreationParams containing email")
-        void shouldCreateUserWithParamsContainingEmail() {
-            // Given
-            String email = "user@example.com";
-            UserCreationParams params = UserCreationParams.builder()
-                    .username(testUsername)
-                    .passwordHash(testPasswordHash)
-                    .authorities(testAuthorities)
-                    .email(email)
-                    .build();
-
-            User pendingUser = userWithId(
-                    User.createPendingActivationWithEmail(testUsername, testPasswordHash, email),
-                    testUserId
-            );
-
-            when(userRepository.save(any(User.class))).thenReturn(pendingUser);
-            when(userPermissionsRepository.save(any(UserPermissions.class)))
-                    .thenReturn(UserPermissions.create(testUserId, testAuthorities));
-
-            // When
-            UserId result = testedSubject.createUserPendingActivation(params);
-
-            // Then
-            assertThat(result).isEqualTo(testUserId);
-
-            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-            verify(userRepository).save(userCaptor.capture());
-
-            User savedUser = userCaptor.getValue();
-            assertThat(savedUser.getDomainEvents()).hasSize(1);
-            UserCreatedEvent event = (UserCreatedEvent) savedUser.getDomainEvents().get(0);
-            assertThat(event.getEmail()).contains(email);
-        }
-
-        @Test
-        @DisplayName("should verify UserCreatedEvent email is absent when not provided")
-        void shouldVerifyUserCreatedEventEmailIsAbsentWhenNotProvided() {
-            // Given
-            UserCreationParams params = UserCreationParams.builder()
-                    .username(testUsername)
-                    .passwordHash(testPasswordHash)
-                    .authorities(testAuthorities)
-                    .build();
-
-            User pendingUser = userWithId(User.createPendingActivation(testUsername, testPasswordHash), testUserId);
-
-            when(userRepository.save(any(User.class))).thenReturn(pendingUser);
-            when(userPermissionsRepository.save(any(UserPermissions.class)))
-                    .thenReturn(UserPermissions.create(testUserId, testAuthorities));
-
-            // When
-            testedSubject.createUserPendingActivation(params);
-
-            // Then
-            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-            verify(userRepository).save(userCaptor.capture());
-
-            User savedUser = userCaptor.getValue();
-            UserCreatedEvent event = (UserCreatedEvent) savedUser.getDomainEvents().get(0);
-            assertThat(event.getEmail()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should grant all authorities from params")
-        void shouldGrantAllAuthoritiesFromParams() {
-            // Given
-            Set<Authority> authorities = Set.of(
-                    Authority.MEMBERS_READ,
-                    Authority.MEMBERS_CREATE,
-                    Authority.MEMBERS_UPDATE
-            );
-            UserCreationParams params = UserCreationParams.builder()
-                    .username(testUsername)
-                    .passwordHash(testPasswordHash)
-                    .authorities(authorities)
-                    .build();
-
-            User pendingUser = userWithId(User.createPendingActivation(testUsername, testPasswordHash), testUserId);
-
-            when(userRepository.save(any(User.class))).thenReturn(pendingUser);
-            when(userPermissionsRepository.save(any(UserPermissions.class)))
-                    .thenReturn(UserPermissions.create(testUserId, authorities));
-
-            // When
-            testedSubject.createUserPendingActivation(params);
-
-            // Then
-            ArgumentCaptor<UserPermissions> permissionsCaptor = ArgumentCaptor.forClass(UserPermissions.class);
-            verify(userPermissionsRepository).save(permissionsCaptor.capture());
-            assertThat(permissionsCaptor.getValue().getDirectAuthorities()).isEqualTo(authorities);
-        }
-    }
-
-    @Nested
     @DisplayName("createUser(username, email, authorities) method")
     class CreateUserWithEmailMethod {
 
@@ -290,7 +63,7 @@ class UserServiceImplTest {
             // Given
             String email = "user@example.com";
             User pendingUser = userWithId(
-                    User.createPendingActivationWithEmail(testUsername, "$2a$10$placeholder", email),
+                    User.createdUserWithEmail(testUsername, email),
                     testUserId
             );
 
@@ -317,7 +90,7 @@ class UserServiceImplTest {
             // Given
             String email = "user@example.com";
             User pendingUser = userWithId(
-                    User.createPendingActivationWithEmail(testUsername, "$2a$10$placeholder", email),
+                    User.createdUserWithEmail(testUsername, email),
                     testUserId
             );
 
@@ -343,7 +116,7 @@ class UserServiceImplTest {
             // Given
             String email = "user@example.com";
             User pendingUser = userWithId(
-                    User.createPendingActivationWithEmail(testUsername, "$2a$10$placeholder", email),
+                    User.createdUserWithEmail(testUsername, email),
                     testUserId
             );
 
@@ -435,7 +208,7 @@ class UserServiceImplTest {
         @DisplayName("should return existing user when found")
         void shouldReturnUserWhenFound() {
             // Given
-            User existingUser = User.create(testUsername, testPasswordHash);
+            User existingUser = User.createdUser(testUsername, testPasswordHash);
             when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(existingUser));
 
             // When

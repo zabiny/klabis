@@ -43,47 +43,6 @@ class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserId createUserPendingActivation(
-            String username,
-            String passwordHash,
-            Set<Authority> authorities) {
-
-        UserCreationParams params = UserCreationParams.builder()
-                .username(username)
-                .passwordHash(passwordHash)
-                .authorities(authorities)
-                .build();
-
-        return createUserPendingActivation(params);
-    }
-
-    @Override
-    public UserId createUserPendingActivation(UserCreationParams params) {
-        log.debug("Creating user pending activation: username={}, authorities={}",
-                params.username(), params.authorities());
-
-        User user;
-        if (params.getEmail().isPresent()) {
-            user = User.createPendingActivationWithEmail(
-                    params.username(),
-                    params.passwordHash(),
-                    params.getEmail().get()
-            );
-        } else {
-            user = User.createPendingActivation(params.username(), params.passwordHash());
-        }
-
-        User savedUser = userRepository.save(user);
-        UserId userId = savedUser.getId();
-
-        UserPermissions permissions = UserPermissions.create(userId, params.authorities());
-        userPermissionsRepository.save(permissions);
-
-        log.info("Created user pending activation: userId={}, username={}", userId, params.username());
-        return userId;
-    }
-
-    @Override
     public UserId createUser(String username, String email, Set<Authority> authorities) {
         log.debug("Creating user pending password setup: username={}, email={}", username, email);
 

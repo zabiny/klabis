@@ -127,23 +127,25 @@ public class UserTestDataBuilder {
 
     /**
      * Builds and returns a User instance with the configured values.
-     * <p>
-     * Selects the appropriate User factory method based on status:
-     * <ul>
-     *   <li>PENDING_ACTIVATION: Uses {@link User#createPendingActivation(String, String)}</li>
-     *   <li>ACTIVE: Uses 2-parameter {@link User#create(String, String)}</li>
-     *   <li>Other statuses (SUSPENDED, etc.): Uses 3-parameter {@link User#create(String, String, AccountStatus)}</li>
-     * </ul>
      *
      * @return a new User instance
      */
     public User build() {
         if (status == AccountStatus.PENDING_ACTIVATION) {
-            return User.createPendingActivation(username, passwordHash);
-        } else if (status == AccountStatus.ACTIVE) {
-            return User.create(username, passwordHash);
-        } else {
-            return User.create(username, passwordHash, status);
+            return User.createdUser(username);
         }
+        if (status == AccountStatus.ACTIVE) {
+            return User.createdUser(username, passwordHash);
+        }
+        return User.reconstruct(
+                new com.klabis.users.UserId(java.util.UUID.randomUUID()),
+                username,
+                passwordHash,
+                status,
+                true,
+                true,
+                true,
+                false
+        );
     }
 }

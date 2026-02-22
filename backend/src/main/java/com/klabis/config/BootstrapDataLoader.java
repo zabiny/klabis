@@ -1,12 +1,12 @@
 package com.klabis.config;
 
 import com.klabis.users.Authority;
+import com.klabis.users.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.env.Environment;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -43,22 +42,23 @@ public class BootstrapDataLoader implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(BootstrapDataLoader.class);
 
-    private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
     private final Environment environment;
     private final RegisteredClientRepository registeredClientRepository;
+    private final UserService userService;
 
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
     private static final String DEFAULT_OAUTH2_CLIENT_ID = "klabis-web";
 
     public BootstrapDataLoader(
-            JdbcTemplate jdbcTemplate,
             PasswordEncoder passwordEncoder,
-            Environment environment, RegisteredClientRepository registeredClientRepository) {
-        this.jdbcTemplate = jdbcTemplate;
+            Environment environment,
+            RegisteredClientRepository registeredClientRepository,
+            UserService userService) {
         this.passwordEncoder = passwordEncoder;
         this.environment = environment;
         this.registeredClientRepository = registeredClientRepository;
+        this.userService = userService;
     }
 
     @Override
@@ -86,19 +86,13 @@ public class BootstrapDataLoader implements ApplicationRunner {
     }
 
     private boolean bootstrapDataExists() {
-        // Check if admin user already exists
-        Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM users WHERE user_name = ?",
-                Integer.class,
-                environment.getProperty("bootstrap.admin.username", DEFAULT_ADMIN_USERNAME)
-        );
-        return count != null && count > 0;
+        String username = environment.getProperty("bootstrap.admin.username", DEFAULT_ADMIN_USERNAME);
+        return userService.findUserByUsername(username).isPresent();
     }
 
     private void createBootstrapAdminUser() {
         String username = environment.getProperty("bootstrap.admin.username", DEFAULT_ADMIN_USERNAME);
         String password = environment.getProperty("bootstrap.admin.password");
-        String userId = environment.getProperty("bootstrap.admin.id", UUID.randomUUID().toString());
 
         // Generate secure random password if not provided
         if (password == null || password.isBlank()) {
@@ -113,30 +107,11 @@ public class BootstrapDataLoader implements ApplicationRunner {
 
         String passwordHash = passwordEncoder.encode(password);
 
-        // Authorities for admin user (all permissions)
-        Authority[] authorities = Authority.values();
+        Set<Authority> authorities = Set.of(Authority.values());
 
-        // Insert admin user WITHOUT authorities column
-        jdbcTemplate.update(
-                "INSERT INTO users (id, user_name, password_hash, account_status, account_non_expired, account_non_locked, credentials_non_expired, enabled) " +
-                "VALUES (?, ?, ?, 'ACTIVE', TRUE, TRUE, TRUE, TRUE)",
-                userId,
-                username,
-                passwordHash
-        );
+        userService.createActiveUser(username, passwordHash, authorities);
 
-        // Insert authorities into new user_permissions table as JSON array
-        String authoritiesJson = Arrays.stream(authorities)
-                .map(Authority::getValue)
-                .collect(java.util.stream.Collectors.joining("\",\"", "[\"", "\"]"));
-
-        jdbcTemplate.update(
-                "INSERT INTO user_permissions (user_id, authorities) VALUES (?, ?)",
-                userId,
-                authoritiesJson
-        );
-
-        log.info("Created bootstrap admin user: {} with authorities: {}", username, authoritiesJson);
+        log.info("Created bootstrap admin user: {} with all authorities", username);
     }
 
     private void createOAuth2Clients() {

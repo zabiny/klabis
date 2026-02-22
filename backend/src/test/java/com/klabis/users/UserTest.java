@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class UserTest {
 
     @Nested
-    @DisplayName("create() method")
+    @DisplayName("createdUser(username, passwordHash) factory validation")
     class CreateMethod {
 
         @Test
@@ -62,15 +62,15 @@ class UserTest {
         @Test
         @DisplayName("should reject null user name")
         void shouldRejectNullUserName() {
-            assertThatThrownBy(() -> User.create(null, UserTestDataConstants.DEFAULT_PASSWORD_HASH))
+            assertThatThrownBy(() -> User.createdUser(null, UserTestDataConstants.DEFAULT_PASSWORD_HASH))
                     .isInstanceOf(NullPointerException.class)
-                    .hasMessage("User name is required");
+                    .hasMessage("Username is required");
         }
 
         @Test
         @DisplayName("should reject null password hash")
         void shouldRejectNullPasswordHash() {
-            assertThatThrownBy(() -> User.create(UserTestDataConstants.DEFAULT_ADMIN_USERNAME, null))
+            assertThatThrownBy(() -> User.createdUser(UserTestDataConstants.DEFAULT_ADMIN_USERNAME, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Password hash is required");
         }
@@ -78,7 +78,7 @@ class UserTest {
         @Test
         @DisplayName("should reject empty password hash")
         void shouldRejectEmptyPasswordHash() {
-            assertThatThrownBy(() -> User.create(UserTestDataConstants.DEFAULT_ADMIN_USERNAME, "  "))
+            assertThatThrownBy(() -> User.createdUser(UserTestDataConstants.DEFAULT_ADMIN_USERNAME, "  "))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Password hash is required");
         }
@@ -120,8 +120,8 @@ class UserTest {
     }
 
     @Nested
-    @DisplayName("createPendingActivation() method")
-    class CreatePendingActivationMethod {
+    @DisplayName("createdUser(username) with PENDING_ACTIVATION status")
+    class CreateWithPendingActivationMethod {
 
         @Test
         @DisplayName("should create user with pending activation")
@@ -133,28 +133,15 @@ class UserTest {
             UserAssert.assertThat(user)
                     .hasIdNotNull()
                     .hasUsername(UserTestDataConstants.DEFAULT_MEMBER_USERNAME)
-                    .hasPasswordHash(UserTestDataConstants.DEFAULT_PASSWORD_HASH)
                     .isPendingActivationUser();
         }
 
         @Test
-        @DisplayName("should require user name for pending activation")
+        @DisplayName("should require user name")
         void shouldRequireRegistrationNumberForPendingActivation() {
-            assertThatThrownBy(() -> User.createPendingActivation(null, UserTestDataConstants.DEFAULT_PASSWORD_HASH))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("User name is required");
+            assertThatThrownBy(() -> User.createdUser(null))
+                    .isInstanceOf(NullPointerException.class);
         }
-
-        @Test
-        @DisplayName("should require password hash for pending activation")
-        void shouldRequirePasswordHashForPendingActivation() {
-            assertThatThrownBy(() -> User.createPendingActivation(UserTestDataConstants.DEFAULT_MEMBER_USERNAME, null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Password hash is required");
-        }
-
-        // REMOVED: pending activation authorities test
-        // Authorities are no longer part of User entity
     }
 
     @Nested

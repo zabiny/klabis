@@ -59,18 +59,6 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     // ========== Command Records ==========
 
     /**
-     * Command to create a new active user.
-     */
-    public record CreateUser(String username, String passwordHash) {
-    }
-
-    /**
-     * Command to create a new user pending activation with email for password setup.
-     */
-    public record CreatePendingActivationWithEmail(String username, String passwordHash, String email) {
-    }
-
-    /**
      * Command to activate a user with a new password.
      */
     public record ActivateWithPassword(String newPasswordHash) {
@@ -88,8 +76,8 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     /**
      * Constructor for creating new User instances via factory methods.
      * <p>
-     * This constructor is used by the static factory methods (create, createPendingActivation)
-     * to ensure business invariants are validated during construction.
+     * This constructor is used by the static factory methods to ensure business invariants
+     * are validated during construction.
      */
     private User(
             UserId id,
@@ -108,173 +96,6 @@ public class User extends KlabisAggregateRoot<User, UserId> {
         this.accountNonLocked = accountNonLocked;
         this.credentialsNonExpired = credentialsNonExpired;
         this.enabled = enabled;
-    }
-
-    /**
-     * Static factory method to create a new User using a command.
-     *
-     * @param command the CreateUser command
-     * @return new User instance with ACTIVE status
-     * @throws IllegalArgumentException if business rules are violated
-     */
-    public static User create(CreateUser command) {
-        return create(command.username(), command.passwordHash());
-    }
-
-    /**
-     * Static factory method to create a new User.
-     *
-     * @param username     username (registration number)
-     * @param passwordHash BCrypt-hashed password
-     * @return new User instance with ACTIVE status
-     * @throws IllegalArgumentException if business rules are violated
-     */
-    public static User create(
-            String username,
-            String passwordHash) {
-
-        Objects.requireNonNull(username, "User name is required");
-        validateRequired(passwordHash);
-
-        User user = new User(
-                new UserId(UUID.randomUUID()),
-                username,
-                passwordHash,
-                AccountStatus.ACTIVE,
-                true, // accountNonExpired
-                true, // accountNonLocked
-                true, // credentialsNonExpired
-                true  // enabled
-        );
-
-        // Register domain event
-        user.registerEvent(UserCreatedEvent.fromUser(user));
-
-        return user;
-    }
-
-    /**
-     * Static factory method to create a new User with custom account settings.
-     *
-     * @param userName      registration number as string (username)
-     * @param passwordHash  BCrypt-hashed password
-     * @param accountStatus account status
-     * @return new User instance
-     * @throws IllegalArgumentException if business rules are violated
-     */
-    public static User create(
-            String userName,
-            String passwordHash,
-            AccountStatus accountStatus) {
-
-        Objects.requireNonNull(userName, "Registration number is required");
-        validateRequired(passwordHash);
-        Objects.requireNonNull(accountStatus, "Account status is required");
-
-        User user = new User(
-                new UserId(UUID.randomUUID()),
-                userName,
-                passwordHash,
-                accountStatus,
-                true, // accountNonExpired
-                true, // accountNonLocked
-                true, // credentialsNonExpired
-                true  // enabled
-        );
-
-        // Register domain event
-        user.registerEvent(UserCreatedEvent.fromUser(user));
-
-        return user;
-    }
-
-    /**
-     * Static factory method to create a new User with pending activation.
-     *
-     * <p>This is used during member registration when a password setup token will be generated.
-     * The user account is created but cannot be used until the user sets their password via email link.
-     *
-     * @param userName     registration number as string (username)
-     * @param passwordHash BCrypt-hashed password (temporary, will be replaced)
-     * @return new User instance with PENDING_ACTIVATION status, not enabled
-     * @throws IllegalArgumentException if business rules are violated
-     */
-    public static User createPendingActivation(
-            String userName,
-            String passwordHash) {
-
-        Objects.requireNonNull(userName, "User name is required");
-        validateRequired(passwordHash);
-
-        User user = new User(
-                new UserId(UUID.randomUUID()),
-                userName,
-                passwordHash,
-                AccountStatus.PENDING_ACTIVATION,
-                true, // accountNonExpired
-                true, // accountNonLocked
-                true, // credentialsNonExpired
-                false // enabled = false until activated with password
-        );
-
-        // Register domain event
-        user.registerEvent(UserCreatedEvent.fromUser(user));
-
-        return user;
-    }
-
-    /**
-     * Static factory method to create a new User with pending activation and email using a command.
-     *
-     * @param command the CreatePendingActivationWithEmail command
-     * @return new User instance with PENDING_ACTIVATION status and UserCreatedEvent containing email
-     * @throws IllegalArgumentException if business rules are violated
-     */
-    public static User createPendingActivationWithEmail(CreatePendingActivationWithEmail command) {
-        return createPendingActivationWithEmail(
-                command.username(),
-                command.passwordHash(),
-                command.email()
-        );
-    }
-
-    /**
-     * Static factory method to create a new User with pending activation and email for password setup.
-     *
-     * <p>This is used during member registration when an email will be sent for password setup.
-     * The user account is created but cannot be used until the user sets their password via email link.
-     * The email is included in the UserCreatedEvent for cross-module password setup coordination.
-     *
-     * @param userName     registration number as string (username)
-     * @param passwordHash BCrypt-hashed password (temporary, will be replaced)
-     * @param email        email address for password setup (PII from Member context)
-     * @return new User instance with PENDING_ACTIVATION status and UserCreatedEvent containing email
-     * @throws IllegalArgumentException if business rules are violated
-     */
-    public static User createPendingActivationWithEmail(
-            String userName,
-            String passwordHash,
-            String email) {
-
-        Objects.requireNonNull(userName, "User name is required");
-        validateRequired(passwordHash);
-        Objects.requireNonNull(email, "Email is required");
-
-        User user = new User(
-                new UserId(UUID.randomUUID()),
-                userName,
-                passwordHash,
-                AccountStatus.PENDING_ACTIVATION,
-                true, // accountNonExpired
-                true, // accountNonLocked
-                true, // credentialsNonExpired
-                false // enabled = false until activated with password
-        );
-
-        // Register domain event with email
-        user.registerEvent(UserCreatedEvent.fromUserWithEmail(user, email));
-
-        return user;
     }
 
     /**

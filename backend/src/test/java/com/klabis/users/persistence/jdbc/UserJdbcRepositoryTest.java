@@ -63,7 +63,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should save new user with all fields")
         void shouldSaveNewUser() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9001",
                     "$2a$10$hashvalue"
             );
@@ -84,7 +84,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should save user with multiple roles")
         void shouldSaveUserWithMultipleRoles() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9002",
                     "$2a$10$hashvalue"
             );
@@ -100,7 +100,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should save user with multiple authorities")
         void shouldSaveUserWithMultipleAuthorities() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9003",
                     "$2a$10$hashvalue"
             );
@@ -116,10 +116,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should save user with PENDING_ACTIVATION status")
         void shouldSaveUserWithPendingActivationStatus() {
             // Given
-            User user = User.createPendingActivation(
-                    "ZBM9004",
-                    "$2a$10$tempHash"
-            );
+            User user = User.createdUser("ZBM9004");
 
             // When
             User saved = userRepository.save(user);
@@ -139,7 +136,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should find user by id")
         void shouldFindUserById() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9005",
                     "$2a$10$hashvalue"
             );
@@ -172,7 +169,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should load roles collection correctly")
         void shouldLoadRolesCollection() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9006",
                     "$2a$10$hashvalue"
             );
@@ -189,7 +186,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should load authorities JSON correctly")
         void shouldLoadAuthoritiesJson() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9007",
                     "$2a$10$hashvalue"
             );
@@ -211,7 +208,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should find user by username")
         void shouldFindUserByUsername() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9008",
                     "$2a$10$hashvalue"
             );
@@ -239,7 +236,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should be case-sensitive")
         void shouldBeCaseSensitive() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9009",
                     "$2a$10$hashvalue"
             );
@@ -261,7 +258,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should set version on save")
         void shouldSetVersionOnSave() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9015",
                     "$2a$10$hashvalue"
             );
@@ -279,7 +276,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should increment version on update")
         void shouldIncrementVersionOnUpdate() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9016",
                     "$2a$10$hashvalue"
             );
@@ -304,7 +301,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should populate createdAt on save")
         void shouldPopulateCreatedAtOnSave() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9017",
                     "$2a$10$hashvalue"
             );
@@ -321,7 +318,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should populate modifiedAt on save")
         void shouldPopulateModifiedAtOnSave() {
             // Given
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9018",
                     "$2a$10$hashvalue"
             );
@@ -338,7 +335,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should update modifiedAt on update")
         void shouldUpdateModifiedAtOnUpdate() throws InterruptedException {
             // Given - Save initial user
-            User user = User.create(
+            User user = User.createdUser(
                     "ZBM9019",
                     "$2a$10$hashvalue"
             );
@@ -366,10 +363,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should activate pending user with new password")
         void shouldActivatePendingUserWithNewPassword() {
             // Given - Create pending activation user
-            User pendingUser = User.createPendingActivation(
-                    "ZBM9020",
-                    "$2a$10$tempHash"
-            );
+            User pendingUser = User.createdUser("ZBM9020");
             User saved = userRepository.save(pendingUser);
 
             // When - Activate with new password

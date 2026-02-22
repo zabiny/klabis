@@ -9,7 +9,6 @@ import com.klabis.members.infrastructure.restapi.AddressRequest;
 import com.klabis.members.infrastructure.restapi.MemberManagementDtosTestDataBuilder;
 import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import com.klabis.users.Authority;
-import com.klabis.users.UserCreationParams;
 import com.klabis.users.UserId;
 import com.klabis.users.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +21,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -60,20 +58,15 @@ class RegistrationServiceTest {
     @Mock
     private UserService userService;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
     private RegistrationService service;
 
     private static final String CLUB_CODE = "ZBM";
-    private static final String DEFAULT_HASHED_PASSWORD = "$2a$10$hashedPassword";
 
     @BeforeEach
     void setUp() {
         service = new RegistrationServiceImpl(
                 memberRepository,
                 userService,
-                passwordEncoder,
                 membersMock,
                 CLUB_CODE
         );
@@ -81,7 +74,7 @@ class RegistrationServiceTest {
         // Setup default mock behavior that can be overridden in individual tests
         // Use a fixed shared ID for all tests by default
         UserId defaultSharedId = new UserId(UUID.fromString("12345678-1234-1234-1234-123456789012"));
-        mockUserCreation(DEFAULT_HASHED_PASSWORD, defaultSharedId);
+        mockUserCreation(defaultSharedId);
         mockMemberCreation(defaultSharedId);
     }
 
@@ -111,16 +104,8 @@ class RegistrationServiceTest {
      * @param hashedPassword the hashed password to return
      * @param sharedId       the shared ID to use for both User and Member
      */
-    private void mockUserCreation(String hashedPassword, UserId sharedId) {
-        // Mock both old method signature (3 params) and new one (1 UserCreationParams)
-        when(userService.createUserPendingActivation(
-                anyString(),
-                anyString(),
-                any(Set.class)
-        )).thenReturn(sharedId);
-        when(userService.createUserPendingActivation(any(UserCreationParams.class)))
-                .thenReturn(sharedId);
-        when(passwordEncoder.encode(anyString())).thenReturn(hashedPassword);
+    private void mockUserCreation(UserId sharedId) {
+        when(userService.createUser(anyString(), anyString(), any(Set.class))).thenReturn(sharedId);
     }
 
     @Nested
@@ -173,15 +158,15 @@ class RegistrationServiceTest {
                     .hasGender(Gender.MALE);
             assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0500");
 
-            // Verify user creation via UserService with UserCreationParams
-            ArgumentCaptor<UserCreationParams> paramsCaptor = ArgumentCaptor.forClass(UserCreationParams.class);
-            verify(userService).createUserPendingActivation(paramsCaptor.capture());
+            // Verify user creation via UserService with correct arguments
+            ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<String> emailCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<Set> authoritiesCaptor = ArgumentCaptor.forClass(Set.class);
+            verify(userService).createUser(usernameCaptor.capture(), emailCaptor.capture(), authoritiesCaptor.capture());
 
-            UserCreationParams params = paramsCaptor.getValue();
-            assertThat(params.username()).isEqualTo("ZBM0500");
-            assertThat(params.passwordHash()).isEqualTo(DEFAULT_HASHED_PASSWORD);
-            assertThat(params.authorities()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
-            assertThat(params.getEmail()).contains("jan.novak@example.com");
+            assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0500");
+            assertThat(emailCaptor.getValue()).isEqualTo("jan.novak@example.com");
+            assertThat(authoritiesCaptor.getValue()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
 
             // CRITICAL: Verify Member ID equals the shared ID returned by UserService
             UserId defaultSharedId = new UserId(UUID.fromString("12345678-1234-1234-1234-123456789012"));
@@ -217,23 +202,21 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("87654321-4321-4321-4321-210987654321"));
-            mockUserCreation("$2a$10$encodedPassword", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
             service.registerMember(request);
 
             // Then
-            verify(passwordEncoder).encode(anyString());
+            ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<String> emailCaptor = ArgumentCaptor.forClass(String.class);
+            ArgumentCaptor<Set> authoritiesCaptor = ArgumentCaptor.forClass(Set.class);
+            verify(userService).createUser(usernameCaptor.capture(), emailCaptor.capture(), authoritiesCaptor.capture());
 
-            ArgumentCaptor<UserCreationParams> paramsCaptor = ArgumentCaptor.forClass(UserCreationParams.class);
-            verify(userService).createUserPendingActivation(paramsCaptor.capture());
-
-            UserCreationParams params = paramsCaptor.getValue();
-            assertThat(params.username()).isEqualTo("ZBM0501");
-            assertThat(params.passwordHash()).isEqualTo("$2a$10$encodedPassword");
-            assertThat(params.authorities()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
-            assertThat(params.getEmail()).contains("eva@example.com");
+            assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0501");
+            assertThat(emailCaptor.getValue()).isEqualTo("eva@example.com");
+            assertThat(authoritiesCaptor.getValue()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
         }
 
         @Test
@@ -267,7 +250,7 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            mockUserCreation("$2a$10$hash", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
@@ -313,7 +296,7 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            mockUserCreation("$2a$10$hash", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
@@ -357,7 +340,7 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            mockUserCreation("$2a$10$hash", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
@@ -400,7 +383,7 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            mockUserCreation("$2a$10$hash", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
@@ -408,7 +391,7 @@ class RegistrationServiceTest {
 
             // Then - verify member repository and user service were called
             verify(memberRepository).save(any(Member.class));
-            verify(userService).createUserPendingActivation(any(UserCreationParams.class));
+            verify(userService).createUser(anyString(), anyString(), any(Set.class));
         }
 
         @Test
@@ -440,7 +423,7 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            mockUserCreation("$2a$10$hash", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
@@ -486,7 +469,7 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            mockUserCreation("$2a$10$hash", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
@@ -532,7 +515,7 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            mockUserCreation("$2a$10$hash", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
@@ -580,7 +563,7 @@ class RegistrationServiceTest {
 
             // Override default mock setup with specific values for this test
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            mockUserCreation("$2a$10$hash", testSharedId);
+            mockUserCreation(testSharedId);
             mockMemberCreation(testSharedId);
 
             // When
