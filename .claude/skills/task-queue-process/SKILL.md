@@ -109,7 +109,20 @@ If tests fail:
 
 Repeat until all tests pass. If after 3 attempts tests still fail, pause and report the problem to the user.
 
-#### 4d. Commit on success
+#### 4d. Execute code review
+
+Run code review agent with emphasis on:
+- identify dead code after the changes
+- project best practises
+
+If critical or high priority issues are reported:
+1. Report critical and high priority issues to the user
+2. Resume the same specialist agent (use the `resume` parameter with agent ID)
+3. Share critical and high priority code review issues
+4. Ask it to fix the issues
+5. Re-run tests (return to 4b). Skip another code review (4d). 
+
+#### 4e. Commit on success
 
 When all tests pass, commit the changes using the `commit` skill:
 
