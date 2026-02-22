@@ -169,7 +169,9 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 - **Refactor methods with more than 4 parameters** by introducing parameter objects, request models, or splitting the
   method
 - use jMolecules annotations for "Ports and Adapters" (hexagonal) architecture
-- use `@MvcComponent` annotation on components from presentation layer 
+- use `@MvcComponent` annotation on components from presentation layer
+- **`reconstruct()` method is for persistence layer ONLY** — use it only in JDBC/Memento classes to load aggregates
+  from DB.  
 
 #### Naming conventions
 

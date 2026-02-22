@@ -1,7 +1,6 @@
 package com.klabis.calendar.eventsintegration;
 
 import com.klabis.calendar.CalendarItem;
-import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.persistence.CalendarRepository;
 import com.klabis.calendar.persistence.EventDataProvider;
 import com.klabis.events.EventId;
@@ -60,15 +59,12 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         // Build description: location + " - " + organizer + [newline + websiteUrl if present]
         String description = buildDescription(eventData);
 
-        // Create calendar item
-        CalendarItem calendarItem = CalendarItem.reconstruct(
-                CalendarItemId.generate(),
+        // Create event-linked calendar item using business factory method
+        CalendarItem calendarItem = CalendarItem.createForEvent(
                 eventData.name(),
                 description,
                 eventData.eventDate(),
-                eventData.eventDate(), // For events, start and end date are the same
-                eventId,
-                null // Audit metadata will be set by repository
+                eventId
         );
 
         calendarRepository.save(calendarItem);
@@ -113,18 +109,10 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         // Build updated description
         String description = buildDescription(location, organizer, websiteUrl);
 
-        // Update calendar item
-        CalendarItem updatedItem = CalendarItem.reconstruct(
-                calendarItem.getId(),
-                name,
-                description,
-                eventDate,
-                eventDate, // For events, start and end date are the same
-                eventId,
-                calendarItem.getAuditMetadata()
-        );
+        // Synchronize calendar item with updated event data using domain method
+        calendarItem.synchronizeFromEvent(name, description, eventDate);
 
-        calendarRepository.save(updatedItem);
+        calendarRepository.save(calendarItem);
 
         log.info("Calendar item updated successfully for event: {}", eventId);
     }

@@ -139,6 +139,45 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
         );
     }
 
+    /**
+     * Static factory method to create a new event-linked CalendarItem.
+     * <p>
+     * Creates a new calendar item synchronized from an Event (eventId != null) with a generated ID.
+     * Event-linked items are read-only and can only be updated through event synchronization.
+     *
+     * @param name        calendar item name (required)
+     * @param description calendar item description (required)
+     * @param eventDate   event date (used for both start and end date)
+     * @param eventId     linked event ID (required)
+     * @return new CalendarItem instance
+     * @throws IllegalArgumentException if business rules are violated
+     */
+    public static CalendarItem createForEvent(
+            String name,
+            String description,
+            LocalDate eventDate,
+            EventId eventId) {
+
+        validateName(name);
+        validateDescription(description);
+        validateStartDate(eventDate);
+        validateDateRange(eventDate, eventDate);
+
+        if (eventId == null) {
+            throw new IllegalArgumentException("Event ID is required for event-linked calendar items");
+        }
+
+        return new CalendarItem(
+                CalendarItemId.generate(),
+                name,
+                description,
+                eventDate,
+                eventDate,
+                eventId,
+                null
+        );
+    }
+
     // ========== Validation Methods ==========
 
     private static void validateName(String name) {
@@ -237,6 +276,33 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
         this.description = description;
         this.startDate = startDate;
         this.endDate = endDate;
+    }
+
+    /**
+     * Synchronizes this event-linked calendar item with updated event data.
+     * <p>
+     * This method is used only by event synchronization infrastructure.
+     * This bypasses the manual update protection for event-linked items.
+     *
+     * @param name        new calendar item name (required)
+     * @param description new calendar item description (required)
+     * @param eventDate   new event date (required)
+     * @throws IllegalArgumentException if validation fails
+     */
+    public void synchronizeFromEvent(
+            String name,
+            String description,
+            LocalDate eventDate) {
+
+        validateName(name);
+        validateDescription(description);
+        validateStartDate(eventDate);
+        validateDateRange(eventDate, eventDate);
+
+        this.name = name;
+        this.description = description;
+        this.startDate = eventDate;
+        this.endDate = eventDate;
     }
 
     /**

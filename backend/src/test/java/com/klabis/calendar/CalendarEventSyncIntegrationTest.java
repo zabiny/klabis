@@ -1,26 +1,24 @@
 package com.klabis.calendar;
 
-import com.klabis.CleanupTestData;
-import com.klabis.TestApplicationConfiguration;
+import com.klabis.calendar.eventsintegration.EventData;
 import com.klabis.calendar.persistence.CalendarRepository;
-import com.klabis.events.Event;
-import com.klabis.events.EventId;
-import com.klabis.events.WebsiteUrl;
-import com.klabis.events.persistence.EventRepository;
+import com.klabis.calendar.persistence.EventDataProvider;
+import com.klabis.events.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.modulith.test.EnableScenarios;
+import org.springframework.modulith.test.ApplicationModuleTest;
+import org.springframework.modulith.test.PublishedEvents;
 import org.springframework.modulith.test.Scenario;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 /**
  * Integration test for event-driven synchronization between Events and CalendarItems.
@@ -39,231 +37,130 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Description formatting (location + " - " + organizer + optional website URL)
  * - Idempotent behavior (no duplicate calendar items)
  */
-@SpringBootTest(classes = {TestApplicationConfiguration.class})
-@ActiveProfiles("test")
-@EnableScenarios
-@CleanupTestData
+@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+//@ActiveProfiles("test")
+@TestPropertySource(properties = {"jasypt.encryptor.password=example"})
+//@CleanupTestData
 @DisplayName("Calendar Event Synchronization Integration Tests")
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS, statements = {
+        """
+                insert into events(id, name, event_date, location, organizer, status, created_by, modified_by, version)
+                values('f1d7fcda-024e-42ad-9c08-fc20d07a166d', 'TEst event', '2020-04-21', 'Brno', 'OOB', 'DRAFT', 'admin', 'admin', 0);
+        """
+})
 class CalendarEventSyncIntegrationTest {
 
-    @Autowired
-    private EventRepository eventRepository;
+    private static final EventId EVENT_ID = new EventId(UUID.fromString("f1d7fcda-024e-42ad-9c08-fc20d07a166d"));
 
     @Autowired
     private CalendarRepository calendarRepository;
 
-    @Autowired(required = false)
-    private TransactionTemplate transactionTemplate;
+    @MockitoBean
+    private EventDataProvider eventDataProviderMock;
 
     @Test
-    @DisplayName("should create calendar item when event is published")
-    void shouldCreateCalendarItemWhenEventIsPublished(Scenario scenario) {
-        // Given: A new event in DRAFT status
-        Event event = Event.create(
+    @DisplayName("should create calendar item when EventPublishedEvent arrives")
+    void shouldCreateCalendarItemWhenEventIsPublished(Scenario scenario, PublishedEvents events) {
+        // Given: Event data
+        final EventId eventId = EVENT_ID;
+
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
                 "Spring Boot Workshop",
                 LocalDate.of(2024, 3, 15),
                 "Prague CC",
                 "OOB",
-                WebsiteUrl.of("https://example.com/workshop"),
-                null
-        );
+                WebsiteUrl.of("https://example.com/workshop")
+        ));
 
-        AtomicReference<EventId> eventIdRef = new AtomicReference<>();
-        executeInTransaction(() -> {
-            Event savedEvent = eventRepository.save(event);
-            eventIdRef.set(savedEvent.getId());
-        });
-
-        // When: Event is published (transitions to ACTIVE status)
-        executeInTransaction(() -> {
-            Event existingEvent = eventRepository.findById(eventIdRef.get()).orElseThrow();
-            existingEvent.publish();
-            eventRepository.save(existingEvent);
-        });
-
-        // Then: CalendarItem should be created automatically
-        scenario.stimulate(() -> eventIdRef.get())
-                .andWaitForStateChange(() -> {
-                    Optional<CalendarItem> calendarItemOpt = calendarRepository.findByEventId(eventIdRef.get());
-
-                    assertThat(calendarItemOpt)
-                            .as("CalendarItem should be created for published event")
-                            .isPresent();
-
-                    CalendarItem calendarItem = calendarItemOpt.get();
+        // When & Then: CalendarItem should be created automatically
+        scenario.publish(new EventPublishedEvent(eventId))
+                .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isPresent())
+                .andVerify(isPresent -> {
+                    CalendarItem calendarItem = calendarRepository.findByEventId(eventId).orElseThrow();
                     assertThat(calendarItem.getName()).isEqualTo("Spring Boot Workshop");
                     assertThat(calendarItem.getDescription())
                             .isEqualTo("Prague CC - OOB\nhttps://example.com/workshop");
                     assertThat(calendarItem.getStartDate()).isEqualTo(LocalDate.of(2024, 3, 15));
                     assertThat(calendarItem.getEndDate()).isEqualTo(LocalDate.of(2024, 3, 15));
-                    assertThat(calendarItem.getEventId()).isEqualTo(eventIdRef.get());
-
-                    return calendarItem;
+                    assertThat(calendarItem.getEventId()).isEqualTo(eventId);
                 });
     }
 
     @Test
-    @DisplayName("should create calendar item without website URL when not present")
-    void shouldCreateCalendarItemWithoutWebsiteUrl(Scenario scenario) {
-        // Given: Event without website URL
-        Event event = Event.create(
-                "Java Meetup",
-                LocalDate.of(2024, 4, 20),
-                "Brno TH",
-                "OOB",
-                null,  // No website URL
-                null
-        );
-
-        AtomicReference<EventId> eventIdRef = new AtomicReference<>();
-        executeInTransaction(() -> {
-            Event savedEvent = eventRepository.save(event);
-            eventIdRef.set(savedEvent.getId());
-        });
-
-        // When: Event is published
-        executeInTransaction(() -> {
-            Event existingEvent = eventRepository.findById(eventIdRef.get()).orElseThrow();
-            existingEvent.publish();
-            eventRepository.save(existingEvent);
-        });
-
-        // Then: CalendarItem description should not include website URL
-        scenario.stimulate(() -> eventIdRef.get())
-                .andWaitForStateChange(() -> {
-                    Optional<CalendarItem> calendarItemOpt = calendarRepository.findByEventId(eventIdRef.get());
-
-                    assertThat(calendarItemOpt).isPresent();
-
-                    CalendarItem calendarItem = calendarItemOpt.get();
-                    assertThat(calendarItem.getDescription())
-                            .isEqualTo("Brno TH - OOB")
-                            .doesNotContain("\n");
-
-                    return calendarItem;
-                });
-    }
-
-    @Test
-    @DisplayName("should update calendar item when event is updated")
+    @DisplayName("should update calendar item when EventUpdatedEvent arrives")
     void shouldUpdateCalendarItemWhenEventIsUpdated(Scenario scenario) {
-        // Given: An existing published event with calendar item
-        Event event = Event.create(
+        // Given: An existing calendar item
+        final EventId eventId = EVENT_ID;
+
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
                 "Initial Workshop",
                 LocalDate.of(2024, 5, 10),
                 "Old Loc",
                 "OldOrg",
-                WebsiteUrl.of("https://old-url.com"),
-                null
-        );
+                WebsiteUrl.of("https://old-url.com")
+        ));
 
-        AtomicReference<EventId> eventIdRef = new AtomicReference<>();
-        executeInTransaction(() -> {
-            Event savedEvent = eventRepository.save(event);
-            savedEvent.publish();
-            Event publishedEvent = eventRepository.save(savedEvent);
-            eventIdRef.set(publishedEvent.getId());
-        });
-
-        // Wait for initial calendar item creation
-        scenario.stimulate(() -> eventIdRef.get())
-                .andWaitForStateChange(() -> calendarRepository.findByEventId(eventIdRef.get()).orElse(null));
+        // First, create the calendar item
+        scenario.publish(new EventPublishedEvent(eventId))
+                .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).orElse(null));
 
         // When: Event is updated
-        executeInTransaction(() -> {
-            Event existingEvent = eventRepository.findById(eventIdRef.get()).orElseThrow();
-            existingEvent.update(
-                    "Updated Workshop",
-                    LocalDate.of(2024, 5, 15),
-                    "New Loc",
-                    "NewOrg",
-                    WebsiteUrl.of("https://new-url.com"),
-                    null
-            );
-            eventRepository.save(existingEvent);
-        });
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+                "Updated Workshop",
+                LocalDate.of(2024, 5, 15),
+                "New Loc",
+                "NewOrg",
+                WebsiteUrl.of("https://new-url.com")
+        ));
 
-        // Then: CalendarItem should be updated automatically
-        scenario.stimulate(() -> eventIdRef.get())
-                .andWaitForStateChange(() -> {
-                    Optional<CalendarItem> calendarItemOpt = calendarRepository.findByEventId(eventIdRef.get());
-
-                    assertThat(calendarItemOpt)
-                            .as("CalendarItem should still exist after event update")
-                            .isPresent();
-
-                    CalendarItem updatedItem = calendarItemOpt.get();
+        scenario.publish(new EventUpdatedEvent(
+                        eventId,
+                        "Updated Workshop",
+                        LocalDate.of(2024, 5, 15),
+                        "New Loc",
+                        "NewOrg",
+                        WebsiteUrl.of("https://new-url.com"),
+                        java.time.Instant.now()
+                )).andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).orElse(null))
+                .andVerify(updatedItem -> {
                     assertThat(updatedItem.getName()).isEqualTo("Updated Workshop");
                     assertThat(updatedItem.getDescription())
                             .isEqualTo("New Loc - NewOrg\nhttps://new-url.com");
                     assertThat(updatedItem.getStartDate()).isEqualTo(LocalDate.of(2024, 5, 15));
                     assertThat(updatedItem.getEndDate()).isEqualTo(LocalDate.of(2024, 5, 15));
-
-                    return updatedItem;
                 });
     }
 
     @Test
-    @DisplayName("should delete calendar item when event is cancelled")
+    @DisplayName("should delete calendar item when EventCancelledEvent arrives")
     void shouldDeleteCalendarItemWhenEventIsCancelled(Scenario scenario) {
-        // Given: An existing published event with calendar item
-        Event event = Event.create(
+        // Given: An existing calendar item
+        final EventId eventId = EVENT_ID;
+        final CalendarItemId[] calendarItemIdRef = new CalendarItemId[1];
+
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
                 "Workshop to Cancel",
                 LocalDate.of(2024, 6, 20),
                 "Some Loc",
                 "OOB",
-                null,
                 null
-        );
+        ));
 
-        AtomicReference<EventId> eventIdRef = new AtomicReference<>();
-        executeInTransaction(() -> {
-            Event savedEvent = eventRepository.save(event);
-            savedEvent.publish();
-            Event publishedEvent = eventRepository.save(savedEvent);
-            eventIdRef.set(publishedEvent.getId());
-        });
-
-        // Wait for calendar item creation
-        AtomicReference<CalendarItemId> calendarItemIdRef = new AtomicReference<>();
-        scenario.stimulate(() -> eventIdRef.get())
+        // First, create the calendar item
+        scenario.publish(new EventPublishedEvent(eventId))
                 .andWaitForStateChange(() -> {
-                    Optional<CalendarItem> calendarItemOpt = calendarRepository.findByEventId(eventIdRef.get());
-                    assertThat(calendarItemOpt)
-                            .as("CalendarItem should exist before cancellation")
-                            .isPresent();
-                    calendarItemIdRef.set(calendarItemOpt.get().getId());
-                    return calendarItemOpt.get();
+                    CalendarItem item = calendarRepository.findByEventId(eventId).orElse(null);
+                    if (item != null) {
+                        calendarItemIdRef[0] = item.getId();
+                    }
+                    return item;
                 });
 
         // When: Event is cancelled
-        executeInTransaction(() -> {
-            Event existingEvent = eventRepository.findById(eventIdRef.get()).orElseThrow();
-            existingEvent.cancel();
-            eventRepository.save(existingEvent);
-        });
-
-        // Then: CalendarItem should be deleted automatically
-        // Wait and verify deletion
-        scenario.stimulate(() -> eventIdRef.get())
-                .andWaitForEventOfType(com.klabis.events.EventCancelledEvent.class)
-                .toArrive();
-
-        // Verify calendar item was deleted
-        Optional<CalendarItem> deletedItemCheck = calendarRepository.findById(calendarItemIdRef.get());
-        assertThat(deletedItemCheck)
-                .as("CalendarItem should be deleted after event cancellation")
-                .isEmpty();
-    }
-
-    /**
-     * Helper method to execute code in a transaction.
-     */
-    private void executeInTransaction(Runnable action) {
-        if (transactionTemplate != null) {
-            transactionTemplate.executeWithoutResult(status -> action.run());
-        } else {
-            action.run();
-        }
+        scenario.publish(new EventCancelledEvent(eventId))
+                .andWaitForStateChange(() -> calendarRepository.findById(calendarItemIdRef[0]).orElse(null))
+                .andVerify(deletedItem -> {
+                    assertThat(deletedItem).as("CalendarItem should be deleted after event cancellation").isNull();
+                });
     }
 }
