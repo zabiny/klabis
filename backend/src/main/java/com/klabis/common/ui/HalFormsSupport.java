@@ -365,9 +365,12 @@ public class HalFormsSupport {
             String result = delegate.getInputType();
             if (result == null) {
                 result = getEncosedClass().getSimpleName();
-            } else if ("Optional".equalsIgnoreCase(result)) {
+            }
+
+            if (Optional.class.getSimpleName().equalsIgnoreCase(result)) {
                 result = delegate.getType().getGeneric(0).getRawClass().getSimpleName();
             }
+
             return result;
         }
     }

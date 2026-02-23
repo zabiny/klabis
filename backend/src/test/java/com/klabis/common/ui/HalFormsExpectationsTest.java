@@ -14,6 +14,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -59,6 +61,19 @@ class HalFormsExpectationsTest {
 
     @WithMockUser(username = "Tester")
     @Test
+    @DisplayName("it should return expected type for Optional attributes")
+    void shouldReturnExpectedTypeForOptionalAttribute() throws Exception {
+        mockMvc.perform(get("/api/testHalSupport")
+                        .param("id", "2")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'dietary')].type").value("String"))
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'postalAddress')].type").value("Address"))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(username = "Tester")
+    @Test
     @DisplayName("it should return expected type from @HalForms annotation if present")
     void shouldReturnExpectedTypeForHalFormsAnnotated() throws Exception {
         mockMvc.perform(get("/api/testHalSupport")
@@ -71,7 +86,7 @@ class HalFormsExpectationsTest {
 
 }
 
-record User(@HalForms(access = HalForms.Access.READ_ONLY) int id, String firstName, String lastName, @HalForms(formInputType = "AgeOverride") int age, Address address) {
+record User(@HalForms(access = HalForms.Access.READ_ONLY) int id, String firstName, String lastName, @HalForms(formInputType = "AgeOverride") int age, Address address, Optional<String> dietary, Optional<Address> postalAddress) {
 
 }
 
@@ -83,7 +98,7 @@ class HalFormsExampleController {
 
     @GetMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<EntityModel<User>> getUser(@RequestParam int id) {
-        User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"));
+        User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"), Optional.of("Vegetarian"), Optional.empty());
 
         EntityModel<User> model = EntityModel.of(data)
                 .add(klabisLinkTo(methodOn(HalFormsExampleController.class).getUser(id)).withSelfRel()
