@@ -6,14 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.events.CompletedEventPublications;
 import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.modulith.test.EnableScenarios;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -46,10 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see ApplicationModuleTest
  */
 @Slf4j
-@SpringBootTest
-@EnableScenarios
+@ApplicationModuleTest
 @ActiveProfiles("test")
-@Import({TestApplicationConfiguration.class})
 @DisplayName("Framework: Spring Modulith Event Processing")
 class ModularEventsTest {
 

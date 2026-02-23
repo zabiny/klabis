@@ -104,6 +104,10 @@ public class AuthorizationServerConfiguration {
                                     .map(auth -> auth.getAuthority())
                                     .collect(Collectors.toCollection(ArrayList::new)));
                 }
+
+                authorizationServerCustomizer.customizeAccessTokenClaims(context.getPrincipal().getName(),
+                        context.getClaims(),
+                        context.getAuthorizationGrantType());
             } else if (context.getTokenType().getValue().equals("id_token")) {
                 // ID Token claims for OpenID Connect
                 // Note: Standard claims (sub, iss, aud, exp, iat, auth_time) are handled
@@ -112,7 +116,9 @@ public class AuthorizationServerConfiguration {
                 context.getClaims().claim("user_name", subject);
 
                 // Add profile claims (given_name, family_name) for OIDC profile scope
-                authorizationServerCustomizer.customizeIdTokenClaims(subject, context.getClaims());
+                authorizationServerCustomizer.customizeIdTokenClaims(subject,
+                        context.getClaims(),
+                        context.getAuthorizationGrantType());
             }
         };
     }

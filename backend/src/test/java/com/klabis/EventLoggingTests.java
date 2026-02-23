@@ -8,12 +8,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.modulith.test.EnableScenarios;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -53,10 +50,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see ApplicationModuleTest
  */
 @Slf4j
-@SpringBootTest
-@EnableScenarios
+@ApplicationModuleTest
 @ActiveProfiles("test")
-@Import({TestApplicationConfiguration.class})
 @DisplayName("Framework: Event Lifecycle Logging")
 @ExtendWith(OutputCaptureExtension.class)
 class EventLoggingTests {

@@ -36,6 +36,6 @@ class MembersImpl implements Members {
     }
 
     private MemberDto fromMember(Member member) {
-        return new MemberDto(member.getFirstName(), member.getLastName(), member.getEmail().value(), LocalDateTime.ofInstant(member.getLastModifiedAt(), ZoneId.of("Europe/Prague")));
+        return new MemberDto(member.getId().uuid(), member.getFirstName(), member.getLastName(), member.getEmail().value(), LocalDateTime.ofInstant(member.getLastModifiedAt(), ZoneId.of("Europe/Prague")));
     }
 }

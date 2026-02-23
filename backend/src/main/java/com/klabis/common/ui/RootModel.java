@@ -1,4 +1,8 @@
 package com.klabis.common.ui;
 
-public record RootModel() {
+import com.klabis.common.users.UserId;
+
+import java.util.UUID;
+
+public record RootModel(UserId userId, UUID memberId) {
 }

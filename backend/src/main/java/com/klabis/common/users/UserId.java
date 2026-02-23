@@ -28,6 +28,10 @@ public record UserId(UUID uuid) implements Identifier {
         }
     }
 
+    public static UserId newId() {
+        return new UserId(UUID.randomUUID());
+    }
+
     /**
      * Creates a UserId from a string representation of a UUID.
      *

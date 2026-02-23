@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,16 +39,23 @@ public class KlabisUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userService.findUserByUsername(username)
+        return loadKlabisUserDetails(username)
+                .map(KlabisUserDetails::getSpringSecurityUserDetails)
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "User not found with username: " + username
                 ));
+    }
 
-        // Load UserPermissions - treat missing as empty authorities
-        UserPermissions permissions = permissionsRepository.findById(user.getId())
-                .orElse(UserPermissions.empty(user.getId()));
+    public Optional<KlabisUserDetails> loadKlabisUserDetails(String username) {
+        return userService.findUserByUsername(username)
+                .map(user -> {
+                    // Load UserPermissions - treat missing as empty authorities
+                    UserPermissions permissions = permissionsRepository.findById(user.getId())
+                            .orElse(UserPermissions.empty(user.getId()));
 
-        return new KlabisUserDetails(user, permissions).getSpringSecurityUserDetails();
+                    return new KlabisUserDetails(user, permissions);
+
+                });
     }
 
     /**
@@ -55,8 +63,11 @@ public class KlabisUserDetailsService implements UserDetailsService {
      * <p>
      * Combines authentication data from {@link User} entity
      * with authorization data from {@link UserPermissions} aggregate.
+     * <p>
+     * Public visibility allows external code (e.g., JWT customizers) to access
+     * the underlying User entity for type-safe operations like adding user_id claims.
      */
-    static class KlabisUserDetails implements UserDetails {
+    public static class KlabisUserDetails implements UserDetails {
 
         private final User user;
         private final UserPermissions permissions;

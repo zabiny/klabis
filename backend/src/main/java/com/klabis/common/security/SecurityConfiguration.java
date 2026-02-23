@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -23,12 +24,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -39,6 +36,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.accept.ContentNegotiationStrategy;
 import org.springframework.web.accept.HeaderContentNegotiationStrategy;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.security.KeyPair;
@@ -80,6 +78,12 @@ public class SecurityConfiguration implements WebMvcConfigurer {
 
     @Value("${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}")
     private String issuer;
+
+    private final CurrentUserArgumentResolver currentUserArgumentResolver;
+
+    public SecurityConfiguration(CurrentUserArgumentResolver currentUserArgumentResolver) {
+        this.currentUserArgumentResolver = currentUserArgumentResolver;
+    }
 
     @Bean
     public AuthenticationManager authenticationManager(
@@ -136,14 +140,8 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthoritiesClaimName("authorities");
-        authoritiesConverter.setAuthorityPrefix("");
-
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        return converter;
+    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter() {
+        return new KlabisJwtAuthenticationConverter();
     }
 
     @Bean
@@ -306,5 +304,10 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                 .csrf(csrf -> csrf.disable());
 
         return http.build();
+    }
+
+    @Override
+    public void addArgumentResolvers(java.util.List<HandlerMethodArgumentResolver> resolvers) {
+        resolvers.add(currentUserArgumentResolver);
     }
 }

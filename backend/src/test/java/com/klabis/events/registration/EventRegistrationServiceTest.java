@@ -91,7 +91,7 @@ class EventRegistrationServiceTest {
             when(authentication.isAuthenticated()).thenReturn(true);
             when(authentication.getName()).thenReturn(memberId.toString());
 
-            MemberDto member = new MemberDto("Test", "User", "test@email.cz");
+            MemberDto member = new MemberDto(memberId, "Test", "User", "test@email.cz");
 
             when(members.findByUserId(any(UserId.class))).thenReturn(Optional.of(member));
         }
@@ -274,8 +274,8 @@ class EventRegistrationServiceTest {
 
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(event));
 
-            MemberDto member1 = new MemberDto("John", "Doe", "doe@email.com");
-            MemberDto member2 = new MemberDto("Jane", "Smith", "smith@email.com");
+            MemberDto member1 = new MemberDto(member1Id, "John", "Doe", "doe@email.com");
+            MemberDto member2 = new MemberDto(member2Id, "Jane", "Smith", "smith@email.com");
 
             when(members.findByUserId(new UserId(member1Id))).thenReturn(Optional.of(member1));
             when(members.findByUserId(new UserId(member2Id))).thenReturn(Optional.of(member2));
@@ -353,7 +353,7 @@ class EventRegistrationServiceTest {
             // Given
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
 
-            MemberDto member = new MemberDto("John", "Doe", "doe@email.com");
+            MemberDto member = new MemberDto(memberId, "John", "Doe", "doe@email.com");
             when(members.findByUserId(new UserId(memberId))).thenReturn(Optional.of(member));
 
             // When

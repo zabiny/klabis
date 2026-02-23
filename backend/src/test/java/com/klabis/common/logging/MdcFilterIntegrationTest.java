@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p><b>NOTE:</b> Tests infrastructure behavior (MDC lifecycle), not business logic.
  */
-@ApplicationModuleTest(module = "members", mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, verifyAutomatically = false)
+@ApplicationModuleTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Framework: MDC Filter Lifecycle")

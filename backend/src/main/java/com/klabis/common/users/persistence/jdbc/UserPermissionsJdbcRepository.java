@@ -11,7 +11,7 @@ import java.util.UUID;
  * Spring Data JDBC repository for UserPermissions aggregate using Memento pattern.
  * <p>
  * This repository manages {@link UserPermissionsMemento} instances, which act as persistence adapters for the
- * pure domain {@link com.klabis.users.model.UserPermissions} entity.
+ * pure domain {@link com.klabis.common.users.UserPermissions} entity.
  * <p>
  * The memento pattern ensures:
  * - UserPermissions entity remains a pure domain object without Spring annotations

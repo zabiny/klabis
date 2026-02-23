@@ -1,8 +1,10 @@
 package com.klabis.members.infrastructure.authorizationserver;
 
 import com.klabis.common.security.AuthorizationServerCustomizer;
+import com.klabis.common.users.authorization.KlabisUserDetailsService;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.stereotype.Component;
@@ -12,20 +14,44 @@ import java.util.Set;
 @Component
 class KlabisAuthorizationServerCustomizer implements AuthorizationServerCustomizer {
     private final Members members;
+    private final KlabisUserDetailsService klabisUserDetailsService;
 
-    KlabisAuthorizationServerCustomizer(Members members) {
+    KlabisAuthorizationServerCustomizer(Members members, KlabisUserDetailsService klabisUserDetailsService) {
         this.members = members;
+        this.klabisUserDetailsService = klabisUserDetailsService;
     }
 
     @Override
-    public void customizeIdTokenClaims(String userName, JwtClaimsSet.Builder claimsBuilder) {
-        // Add profile claims (given_name, family_name) for OIDC profile scope
-        members.findByRegistrationNumber(userName)
-                .ifPresent(member -> {
-                    claimsBuilder.claim("given_name", member.firstName());
-                    claimsBuilder.claim("family_name", member.lastName());
-                    claimsBuilder.claim("preferred_username", userName);
-                });
+    public void customizeAccessTokenClaims(String userName, JwtClaimsSet.Builder claimsBuilder, AuthorizationGrantType grantType) {
+        if (!AuthorizationGrantType.CLIENT_CREDENTIALS.equals(grantType)) {
+            // Add user_id claim for type-safe access to UserId in controllers/services
+            klabisUserDetailsService.loadKlabisUserDetails(userName)
+                    .ifPresent(klabisUserDetails -> {
+                        claimsBuilder.claim("user_id", klabisUserDetails.getUser().getId().uuid().toString());
+                    });
+
+            members.findByRegistrationNumber(userName).ifPresent(memberDto -> {
+                claimsBuilder.claim("member_id", memberDto.memberId().toString());
+            });
+        }
+    }
+
+    @Override
+    public void customizeIdTokenClaims(String userName, JwtClaimsSet.Builder claimsBuilder, AuthorizationGrantType grantType) {
+        if (!AuthorizationGrantType.CLIENT_CREDENTIALS.equals(grantType)) {
+            // Add user_id claim for type-safe access to UserId in controllers/services
+            klabisUserDetailsService.loadKlabisUserDetails(userName)
+                    .ifPresent(klabisUserDetails -> {
+                        claimsBuilder.claim("user_id", klabisUserDetails.getUser().getId().uuid().toString());
+                    });
+
+            members.findByRegistrationNumber(userName).ifPresent(memberDto -> {
+                claimsBuilder.claim("member_id", memberDto.memberId().toString());
+                claimsBuilder.claim("given_name", memberDto.firstName());
+                claimsBuilder.claim("family_name", memberDto.lastName());
+                claimsBuilder.claim("preferred_username", userName);
+            });
+        }
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.common.ui.RootModel;
+import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.hateoas.EntityModel;
@@ -14,7 +15,7 @@ class CalendarRootPostprocessorTest {
     @DisplayName("should add calendar link to root model")
     void shouldAddCalendarLinkToRootModel() {
         CalendarRootPostprocessor testedSubject = new CalendarRootPostprocessor();
-        EntityModel<RootModel> rootModel = EntityModel.of(new RootModel());
+        EntityModel<RootModel> rootModel = EntityModel.of(new RootModel(UserId.newId(), null));
 
         EntityModel<RootModel> result = testedSubject.process(rootModel);
 
