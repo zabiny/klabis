@@ -1,5 +1,6 @@
 package com.klabis.events.registration;
 
+import com.klabis.common.users.UserId;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.EventRegistration;
@@ -7,7 +8,6 @@ import com.klabis.events.SiCardNumber;
 import com.klabis.events.persistence.EventRepository;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
-import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.security.core.Authentication;

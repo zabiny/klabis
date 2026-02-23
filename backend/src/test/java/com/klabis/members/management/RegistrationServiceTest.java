@@ -1,5 +1,8 @@
 package com.klabis.members.management;
 
+import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
+import com.klabis.common.users.UserService;
 import com.klabis.members.MemberAssert;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
@@ -8,9 +11,6 @@ import com.klabis.members.domain.Members;
 import com.klabis.members.infrastructure.restapi.AddressRequest;
 import com.klabis.members.infrastructure.restapi.MemberManagementDtosTestDataBuilder;
 import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
-import com.klabis.users.Authority;
-import com.klabis.users.UserId;
-import com.klabis.users.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

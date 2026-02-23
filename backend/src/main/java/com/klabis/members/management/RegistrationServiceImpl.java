@@ -1,11 +1,11 @@
 package com.klabis.members.management;
 
+import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
+import com.klabis.common.users.UserService;
 import com.klabis.members.domain.*;
 import com.klabis.members.infrastructure.restapi.AddressRequest;
 import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
-import com.klabis.users.Authority;
-import com.klabis.users.UserId;
-import com.klabis.users.UserService;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

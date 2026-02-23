@@ -1,9 +1,9 @@
 package com.klabis.members;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.RegistrationNumber;
-import com.klabis.users.UserId;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;

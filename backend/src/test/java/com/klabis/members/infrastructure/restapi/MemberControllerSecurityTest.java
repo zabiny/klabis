@@ -2,18 +2,14 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
-import com.klabis.members.domain.DeactivationReason;
-import com.klabis.members.domain.Gender;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -21,7 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("Member Controller Security Tests")
-@ApplicationModuleTest(extraIncludes = {"users", "common"}, mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
+@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
 // need users for Security configuration, common for EmailService
 @Import(TestApplicationConfiguration.class)
 class MemberControllerSecurityTest extends SecurityTestBase {

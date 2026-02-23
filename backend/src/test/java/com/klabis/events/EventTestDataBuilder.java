@@ -1,7 +1,7 @@
 package com.klabis.events;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.users.UserId;
+import com.klabis.common.users.UserId;
 
 import java.time.LocalDate;
 import java.util.ArrayList;

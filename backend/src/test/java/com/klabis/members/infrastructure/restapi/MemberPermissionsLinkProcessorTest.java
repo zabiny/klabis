@@ -1,6 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.users.authorization.PermissionController;
+import com.klabis.common.users.authorization.PermissionController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -3,7 +3,7 @@ package com.klabis.events;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.users.UserId;
+import com.klabis.common.users.UserId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;

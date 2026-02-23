@@ -1,14 +1,14 @@
 package com.klabis.members.management;
 
 import com.klabis.TestApplicationConfiguration;
+import com.klabis.common.users.AccountStatus;
+import com.klabis.common.users.User;
+import com.klabis.common.users.UserId;
+import com.klabis.common.users.persistence.UserRepository;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.infrastructure.restapi.AddressRequest;
 import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
-import com.klabis.users.AccountStatus;
-import com.klabis.users.User;
-import com.klabis.users.UserId;
-import com.klabis.users.persistence.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The RegistrationService creates both Member and User aggregates in a single transaction,
  * ensuring Member ID equals User ID.
  */
-@ApplicationModuleTest(extraIncludes = {"users", "common"})
+@ApplicationModuleTest
 @ActiveProfiles("test")
 @DisplayName("Member Auto-Provisioning Integration Tests")
 @Import(TestApplicationConfiguration.class)

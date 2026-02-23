@@ -1,16 +1,16 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.users.User;
+import com.klabis.common.users.UserId;
+import com.klabis.common.users.UserService;
+import com.klabis.common.users.testdata.UserTestDataBuilder;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.members.management.InvalidUpdateException;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.RegistrationService;
 import com.klabis.members.management.ValidationPatterns;
-import com.klabis.users.User;
-import com.klabis.users.UserId;
-import com.klabis.users.UserService;
-import com.klabis.users.testdata.UserTestDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

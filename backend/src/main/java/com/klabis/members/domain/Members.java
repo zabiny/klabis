@@ -1,6 +1,6 @@
 package com.klabis.members.domain;
 
-import com.klabis.users.UserId;
+import com.klabis.common.users.UserId;
 import org.jmolecules.architecture.hexagonal.Port;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

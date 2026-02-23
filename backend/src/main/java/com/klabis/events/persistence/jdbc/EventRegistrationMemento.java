@@ -1,8 +1,8 @@
 package com.klabis.events.persistence.jdbc;
 
+import com.klabis.common.users.UserId;
 import com.klabis.events.EventRegistration;
 import com.klabis.events.SiCardNumber;
-import com.klabis.users.UserId;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.util.Assert;

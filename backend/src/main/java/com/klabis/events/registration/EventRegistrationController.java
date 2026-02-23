@@ -1,8 +1,8 @@
 package com.klabis.events.registration;
 
+import com.klabis.common.users.Authority;
 import com.klabis.events.Event;
 import com.klabis.events.EventRegistration;
-import com.klabis.users.Authority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -2,8 +2,8 @@ package com.klabis.members.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.encryption.EncryptedString;
+import com.klabis.common.users.UserId;
 import com.klabis.members.domain.*;
-import com.klabis.users.UserId;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.AfterDomainEventPublication;
 import org.springframework.data.domain.DomainEvents;

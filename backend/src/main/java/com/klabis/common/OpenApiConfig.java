@@ -1,6 +1,6 @@
 package com.klabis.common;
 
-import com.klabis.users.Authority;
+import com.klabis.common.users.Authority;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Contact;

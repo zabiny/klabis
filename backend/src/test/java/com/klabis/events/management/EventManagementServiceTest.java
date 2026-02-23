@@ -1,12 +1,12 @@
 package com.klabis.events.management;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.users.UserId;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.EventStatus;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.persistence.EventRepository;
-import com.klabis.users.UserId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

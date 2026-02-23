@@ -1,6 +1,6 @@
 package com.klabis.members.domain;
 
-import com.klabis.users.UserId;
+import com.klabis.common.users.UserId;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.jmolecules.ddd.types.Identifier;
 

@@ -1,7 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.users.authorization.PermissionController;
+import com.klabis.common.users.authorization.PermissionController;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.RepresentationModelProcessor;

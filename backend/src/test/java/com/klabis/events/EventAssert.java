@@ -1,6 +1,6 @@
 package com.klabis.events;
 
-import com.klabis.users.UserId;
+import com.klabis.common.users.UserId;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactory;

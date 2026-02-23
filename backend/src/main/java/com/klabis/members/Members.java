@@ -1,6 +1,6 @@
 package com.klabis.members;
 
-import com.klabis.users.UserId;
+import com.klabis.common.users.UserId;
 
 import java.util.Optional;
 

@@ -1,13 +1,9 @@
 package com.klabis.members;
 
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.members.domain.DeactivationReason;
+import com.klabis.common.users.UserId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
-import com.klabis.members.infrastructure.restapi.MemberManagementDtosTestDataBuilder;
-import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
-import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
-import com.klabis.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +16,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 

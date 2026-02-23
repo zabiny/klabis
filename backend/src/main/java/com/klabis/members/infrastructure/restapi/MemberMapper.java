@@ -1,11 +1,11 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.domain.*;
 import com.klabis.members.management.GuardianDTO;
 import com.klabis.members.management.IdentityCardDto;
 import com.klabis.members.management.MedicalCourseDto;
 import com.klabis.members.management.TrainerLicenseDto;
-import com.klabis.users.UserId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;

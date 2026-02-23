@@ -1,11 +1,11 @@
 package com.klabis.members.management;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
+import com.klabis.common.users.UserService;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
-import com.klabis.users.Authority;
-import com.klabis.users.UserId;
-import com.klabis.users.UserService;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;

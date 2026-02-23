@@ -1,9 +1,9 @@
 package com.klabis.members.infrastructure.jdbc;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
-import com.klabis.users.UserId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

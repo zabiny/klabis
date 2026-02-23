@@ -1,14 +1,16 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.ui.RootModel;
-import com.klabis.members.domain.*;
+import com.klabis.common.users.Authority;
+import com.klabis.common.users.User;
+import com.klabis.common.users.UserId;
+import com.klabis.common.users.UserService;
+import com.klabis.common.users.authorization.HasAuthority;
+import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberId;
+import com.klabis.members.domain.Members;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.MemberNotFoundException;
-import com.klabis.users.Authority;
-import com.klabis.users.User;
-import com.klabis.users.UserId;
-import com.klabis.users.UserService;
-import com.klabis.users.authorization.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -164,10 +165,9 @@ class MemberController {
 
         // Get authenticated user for audit trail
         String username = auth.getName();
-        Optional<User> authenticatedUser = userService.findUserByUsername(username);
-        UserId terminatedBy = authenticatedUser
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + username))
-                .getId();
+        UserId terminatedBy = userService.findUserByUsername(username)
+                .map(User::getId)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + username));
 
         // Map request to domain command
         var command = new Member.TerminateMembership(

@@ -1,11 +1,11 @@
 package com.klabis.members.management;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
-import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.Service;
 
 import java.time.LocalDateTime;

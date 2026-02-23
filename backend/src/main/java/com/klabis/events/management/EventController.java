@@ -1,10 +1,10 @@
 package com.klabis.events.management;
 
 import com.klabis.common.ui.RootModel;
+import com.klabis.common.users.Authority;
+import com.klabis.common.users.authorization.HasAuthority;
 import com.klabis.events.Event;
 import com.klabis.events.EventStatus;
-import com.klabis.users.Authority;
-import com.klabis.users.authorization.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

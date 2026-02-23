@@ -1,11 +1,11 @@
 package com.klabis.members.management;
 
+import com.klabis.common.users.UserId;
+import com.klabis.common.users.UserService;
 import com.klabis.members.MemberTerminatedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
-import com.klabis.users.UserId;
-import com.klabis.users.UserService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,9 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)

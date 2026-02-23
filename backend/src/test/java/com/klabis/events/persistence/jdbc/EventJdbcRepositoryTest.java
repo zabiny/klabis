@@ -1,9 +1,9 @@
 package com.klabis.events.persistence.jdbc;
 
 import com.klabis.CleanupTestData;
+import com.klabis.common.users.UserId;
 import com.klabis.events.*;
 import com.klabis.events.persistence.EventRepository;
-import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

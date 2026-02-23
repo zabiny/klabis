@@ -1,9 +1,9 @@
 package com.klabis.members.infrastructure.jdbc;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
-import com.klabis.users.UserId;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,11 +1,11 @@
 package com.klabis;
 
-import com.klabis.users.User;
-import com.klabis.users.authentication.TestTransactionHelper;
-import com.klabis.users.AccountStatus;
-import com.klabis.users.UserId;
-import com.klabis.users.persistence.UserRepository;
-import com.klabis.users.testdata.UserTestDataBuilder;
+import com.klabis.common.users.AccountStatus;
+import com.klabis.common.users.User;
+import com.klabis.common.users.UserId;
+import com.klabis.common.users.authentication.TestTransactionHelper;
+import com.klabis.common.users.persistence.UserRepository;
+import com.klabis.common.users.testdata.UserTestDataBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,8 +1,8 @@
 package com.klabis.members;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.users.UserId;
 import com.klabis.members.domain.*;
-import com.klabis.users.UserId;
 
 import java.time.LocalDate;
 import java.util.UUID;

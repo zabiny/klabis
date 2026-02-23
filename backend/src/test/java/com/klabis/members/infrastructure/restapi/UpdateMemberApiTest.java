@@ -1,13 +1,13 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.users.UserService;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.members.management.InvalidUpdateException;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.MemberNotFoundException;
 import com.klabis.members.management.SelfEditNotAllowedException;
-import com.klabis.users.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
