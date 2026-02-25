@@ -3,13 +3,12 @@ package com.klabis.common.security;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUserData;
-import com.klabis.members.domain.MemberId;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;

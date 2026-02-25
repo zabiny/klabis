@@ -3,7 +3,7 @@ package com.klabis.common.security;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUserData;
-import com.klabis.members.domain.MemberId;
+import com.klabis.members.MemberId;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 

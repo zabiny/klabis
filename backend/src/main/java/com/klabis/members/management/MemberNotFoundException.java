@@ -1,7 +1,7 @@
 package com.klabis.members.management;
 
 import com.klabis.common.exceptions.ResourceNotFoundException;
-import com.klabis.members.domain.MemberId;
+import com.klabis.members.MemberId;
 
 /**
  * Exception thrown when a member cannot be found by their ID.

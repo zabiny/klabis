@@ -6,6 +6,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,7 @@ class EventRegistrationControllerTest {
 
             doThrow(new DuplicateRegistrationException(UUID.fromString(MEMBER_1_ID), eventId))
                     .when(registrationServiceMock)
-                    .registerMember(eq(eventId), any(UserId.class), any(RegisterForEventCommand.class));
+                    .registerMember(eq(eventId), any(MemberId.class), any(RegisterForEventCommand.class));
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)

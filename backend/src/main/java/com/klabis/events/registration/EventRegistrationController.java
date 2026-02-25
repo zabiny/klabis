@@ -5,6 +5,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.events.Event;
 import com.klabis.events.EventRegistration;
 import com.klabis.members.CurrentUser;
+import com.klabis.members.CurrentUserData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -72,19 +73,22 @@ class EventRegistrationController {
     public ResponseEntity<EntityModel<OwnRegistrationDto>> registerForEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @Parameter(description = "Registration data") @Valid @RequestBody RegisterForEventCommand command,
-            @CurrentUser UserId currentUserId) {
+            @CurrentUser CurrentUserData currentUser) {
 
         // Register member
-        registrationService.registerMember(eventId, currentUserId, command);
+        if (currentUser.memberId() == null) {
+            throw new MemberProfileRequiredException();
+        }
+        registrationService.registerMember(eventId, currentUser.memberId(), command);
 
         // Get registration details
-        OwnRegistrationDto registration = registrationService.getOwnRegistration(eventId, currentUserId);
+        OwnRegistrationDto registration = registrationService.getOwnRegistration(eventId, currentUser.userId());
 
         // Build entity model with HATEOAS links
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
-        addLinksForOwnRegistration(entityModel, eventId, currentUserId);
+        addLinksForOwnRegistration(entityModel, eventId, currentUser.userId());
 
-        return ResponseEntity.created(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, currentUserId)).toUri())
+        return ResponseEntity.created(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, currentUser.userId())).toUri())
                 .body(entityModel);
     }
 

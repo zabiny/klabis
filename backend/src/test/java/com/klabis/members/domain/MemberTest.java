@@ -2,10 +2,7 @@ package com.klabis.members.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
-import com.klabis.members.MemberAssert;
-import com.klabis.members.MemberCreatedEvent;
-import com.klabis.members.MemberTerminatedEvent;
-import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

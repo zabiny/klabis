@@ -7,6 +7,7 @@ import com.klabis.events.EventId;
 import com.klabis.events.SiCardNumber;
 import com.klabis.events.persistence.EventRepository;
 import com.klabis.members.MemberDto;
+import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +41,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("EventRegistrationService Unit Tests")
 class EventRegistrationServiceTest {
 
-    private static final UserId TEST_MEMBER_ID = UserId.newId();
+    private static final UserId TEST_USER_ID = UserId.newId();
+    private static final MemberId TEST_MEMBER_ID = MemberId.fromUserId(TEST_USER_ID);
 
     @Mock
     private EventRepository eventRepository;
@@ -76,7 +78,7 @@ class EventRegistrationServiceTest {
             );
             activeEvent.publish(); // Make it ACTIVE
 
-            MemberDto member = new MemberDto(TEST_MEMBER_ID.uuid(), "Test", "User", "test@email.cz");
+            MemberDto member = new MemberDto(TEST_USER_ID.uuid(), "Test", "User", "test@email.cz");
             when(members.findByUserId(any(UserId.class))).thenReturn(Optional.of(member));
         }
 
@@ -105,7 +107,7 @@ class EventRegistrationServiceTest {
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
 
             // Register member first time
-            activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
+            activeEvent.registerMember(TEST_USER_ID, SiCardNumber.of("123456"));
 
             // When/Then - second registration should fail
             assertThatThrownBy(() -> service.registerMember(eventId, TEST_MEMBER_ID, command))
@@ -175,7 +177,7 @@ class EventRegistrationServiceTest {
                     null
             );
             activeEvent.publish();
-            activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
+            activeEvent.registerMember(TEST_USER_ID, SiCardNumber.of("123456"));
         }
 
         @Test
@@ -187,7 +189,7 @@ class EventRegistrationServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(activeEvent);
 
             // When
-            service.unregisterMember(eventId, TEST_MEMBER_ID, currentDate);
+            service.unregisterMember(eventId, TEST_USER_ID, currentDate);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -202,7 +204,7 @@ class EventRegistrationServiceTest {
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
 
             // When/Then
-            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID, eventDate))
+            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_USER_ID, eventDate))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
 
@@ -217,7 +219,7 @@ class EventRegistrationServiceTest {
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
 
             // When/Then
-            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID, afterEventDate))
+            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_USER_ID, afterEventDate))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
 
@@ -314,7 +316,7 @@ class EventRegistrationServiceTest {
                     null
             );
             activeEvent.publish();
-            activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
+            activeEvent.registerMember(TEST_USER_ID, SiCardNumber.of("123456"));
         }
 
         @Test
@@ -323,11 +325,11 @@ class EventRegistrationServiceTest {
             // Given
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
 
-            MemberDto member = new MemberDto(TEST_MEMBER_ID.uuid(), "John", "Doe", "doe@email.com");
-            when(members.findByUserId(TEST_MEMBER_ID)).thenReturn(Optional.of(member));
+            MemberDto member = new MemberDto(TEST_USER_ID.uuid(), "John", "Doe", "doe@email.com");
+            when(members.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(member));
 
             // When
-            OwnRegistrationDto registration = service.getOwnRegistration(eventId, TEST_MEMBER_ID);
+            OwnRegistrationDto registration = service.getOwnRegistration(eventId, TEST_USER_ID);
 
             // Then
             assertThat(registration).isNotNull();
@@ -353,7 +355,7 @@ class EventRegistrationServiceTest {
             when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(eventWithoutRegistration));
 
             // When/Then
-            assertThatThrownBy(() -> service.getOwnRegistration(eventId, TEST_MEMBER_ID))
+            assertThatThrownBy(() -> service.getOwnRegistration(eventId, TEST_USER_ID))
                     .isInstanceOf(RegistrationNotFoundException.class)
                     .hasMessageContaining("not registered");
         }

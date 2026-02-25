@@ -5,7 +5,7 @@ import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
-import com.klabis.members.domain.MemberId;
+import com.klabis.members.MemberId;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.support.WebDataBinderFactory;

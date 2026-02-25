@@ -19,9 +19,11 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
 
     public SecurityContext createSecurityContext(WithKlabisMockUser withUser) {
         final String userName = StringUtils.defaultIfBlank(withUser.username(), "ZBM8001");
+
         final UUID userId = UUID.fromString(StringUtils.defaultIfBlank(withUser.userId(),
-                "92093b28-24c0-41d7-a297-38bf33ddff9e"));
-        final UUID memberId = StringUtils.isBlank(withUser.memberId()) ? null : UUID.fromString(withUser.memberId());
+                StringUtils.defaultIfBlank(withUser.memberId(), UUID.randomUUID().toString())));
+
+        final UUID memberId = StringUtils.isBlank(withUser.memberId()) ? userId : UUID.fromString(withUser.memberId());
 
         KlabisJwtAuthenticationToken authentication = KlabisAuthenticationFactory.createAuthenticationToken(JwtParams.jwtTokenParams(
                 userName,

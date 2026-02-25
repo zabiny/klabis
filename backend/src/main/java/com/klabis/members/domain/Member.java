@@ -5,6 +5,7 @@ import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberCreatedEvent;
+import com.klabis.members.MemberId;
 import com.klabis.members.MemberTerminatedEvent;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;

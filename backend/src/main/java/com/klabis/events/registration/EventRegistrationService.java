@@ -7,10 +7,12 @@ import com.klabis.events.EventRegistration;
 import com.klabis.events.SiCardNumber;
 import com.klabis.events.persistence.EventRepository;
 import com.klabis.members.MemberDto;
+import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -43,30 +45,30 @@ class EventRegistrationService {
      * Register the authenticated member for an event.
      *
      * @param eventId event ID
-     * @param memberId authenticated member's user ID
+     * @param memberId authenticated member ID
      * @param command registration command with SI card number
      * @throws EventNotFoundException         if event not found
      * @throws DuplicateRegistrationException if member already registered
      * @throws IllegalStateException          if event is not ACTIVE
      */
     @Transactional
-    public void registerMember(UUID eventId, UserId memberId, RegisterForEventCommand command) {
-        // Verify user has a member record - registration requires member profile
-        if (!members.findByUserId(memberId).isPresent()) {
-            throw new MemberProfileRequiredException();
-        }
+    public void registerMember(UUID eventId, MemberId memberId, RegisterForEventCommand command) {
+        Assert.notNull(eventId, "Event id must not be null");
+        Assert.notNull(memberId, "Member id must not be null");
+
+        UserId userId = memberId.toUserId();
 
         // Load event
         Event event = eventRepository.findById(new EventId(eventId))
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
         // Check for duplicate registration
-        if (event.findRegistration(memberId).isPresent()) {
+        if (event.findRegistration(userId).isPresent()) {
             throw new DuplicateRegistrationException(memberId.uuid(), eventId);
         }
 
         // Register member (domain logic validates ACTIVE status)
-        event.registerMember(memberId, SiCardNumber.of(command.siCardNumber()));
+        event.registerMember(userId, SiCardNumber.of(command.siCardNumber()));
 
         // Save event
         eventRepository.save(event);

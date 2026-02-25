@@ -51,7 +51,8 @@ class EventRegistrationE2ETest {
     private ObjectMapper objectMapper;
 
     private static final String ADMIN_USERNAME = "admin";
-    private static final UUID TEST_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final String TEST_MEMBER_ID_STRING = "11111111-1111-1111-1111-111111111111";
+    private static final UUID TEST_MEMBER_ID = UUID.fromString(TEST_MEMBER_ID_STRING);
 
     RequestPostProcessor eventsManageUserAuthentication() {
         return KlabisMvcRequestBuilders.klabisAuthentication(
@@ -76,7 +77,7 @@ class EventRegistrationE2ETest {
                                 .content(objectMapper.writeValueAsString(registerCommand))
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -94,7 +95,7 @@ class EventRegistrationE2ETest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -111,7 +112,7 @@ class EventRegistrationE2ETest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -128,7 +129,7 @@ class EventRegistrationE2ETest {
                                 .contentType("application/json")
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -141,7 +142,7 @@ class EventRegistrationE2ETest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -169,7 +170,7 @@ class EventRegistrationE2ETest {
                         .content(objectMapper.writeValueAsString(registerCommand))
                         .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                 JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                new UserId(TEST_USER_ID))
+                                                new UserId(TEST_MEMBER_ID))
                                         .withAuthorities(Authority.EVENTS_MANAGE)
                         ))
         ).andExpect(status().isCreated());
@@ -181,7 +182,7 @@ class EventRegistrationE2ETest {
                                 .content(objectMapper.writeValueAsString(registerCommand))
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -204,7 +205,7 @@ class EventRegistrationE2ETest {
                                 .content(objectMapper.writeValueAsString(registerCommand))
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -226,7 +227,7 @@ class EventRegistrationE2ETest {
                         .content(objectMapper.writeValueAsString(registerCommand1))
                         .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                 JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                new UserId(TEST_USER_ID))
+                                                new UserId(TEST_MEMBER_ID))
                         ))
         ).andExpect(status().isCreated());
 
@@ -248,7 +249,7 @@ class EventRegistrationE2ETest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                 ))
                 )
                 .andDo(print())
@@ -268,7 +269,7 @@ class EventRegistrationE2ETest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                 ))
                 )
                 .andDo(print())
@@ -280,7 +281,7 @@ class EventRegistrationE2ETest {
 
     @Test
     @DisplayName("Unregistration should fail on or after event date")
-    @WithKlabisMockUser(memberId = "41910cb9-f508-4796-bda6-c0b4723341d2")
+    @WithKlabisMockUser(memberId = TEST_MEMBER_ID_STRING)
     void shouldFailUnregistrationOnOrAfterEventDate() throws Exception {
         // Given: Create a PUBLISHED event in the past
         String eventId = createPublishedEvent("Past Event", LocalDate.now().minusDays(10));
@@ -314,7 +315,7 @@ class EventRegistrationE2ETest {
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(KlabisMvcRequestBuilders.klabisAuthentication(
                                         JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_USER_ID))
+                                                        new UserId(TEST_MEMBER_ID))
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )

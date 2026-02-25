@@ -1,4 +1,4 @@
-package com.klabis.members.domain;
+package com.klabis.members;
 
 import com.klabis.common.users.UserId;
 import org.jmolecules.ddd.annotation.ValueObject;
