@@ -3,10 +3,12 @@ package com.klabis.members;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.E2ETest;
+import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.email.EmailProperties;
 import com.klabis.common.email.EmailService;
 import com.klabis.common.email.LoggingEmailService;
-import com.klabis.members.domain.RegistrationNumber;
+import com.klabis.common.users.Authority;
+import com.klabis.members.domain.MemberId;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,14 +19,13 @@ import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -32,8 +33,9 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.klabis.common.security.JwtParams.jwtTokenParams;
+import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisAuthentication;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -107,7 +109,7 @@ class MemberLifecycleE2ETest {
 
     @Test
     @DisplayName("Complete member lifecycle: register → list → email → validate → password → update → terminate")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE, Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE, Authority.MEMBERS_DELETE})
     void shouldCompleteFullMemberLifecycle() throws Exception {
         // ========================================================================
         // STEP 1: Register member
@@ -160,7 +162,7 @@ class MemberLifecycleE2ETest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(memberId.toString()))
                 .andReturn();
-        final RegistrationNumber userRegistrationNumber = getRegistrationNumberFromMemberDetailResponse(memberDetailsResult.getResponse().getContentAsString());
+        final CurrentUserData registeredMemberUserData = createCurrentUserDataFromMemberResponse(memberDetailsResult);
 
         // ========================================================================
         // STEP 4: Get email token from email (using LoggingEmailService)
@@ -199,7 +201,7 @@ class MemberLifecycleE2ETest {
         // ========================================================================
         mockMvc.perform(get("/api/members")
                         .contentType("application/json")
-                        .with(user(userRegistrationNumber.toString()).authorities(new SimpleGrantedAuthority("MEMBERS:READ"))))
+                        .with(klabisAuthentication(jwtTokenParams(registeredMemberUserData).withAuthorities(Authority.MEMBERS_READ))))
                 .andExpect(status().isOk());
 
 
@@ -267,7 +269,7 @@ class MemberLifecycleE2ETest {
         // ========================================================================
         mockMvc.perform(get("/api/members")
                         .contentType("application/json")
-                        .with(user(userRegistrationNumber.toString()).authorities(new SimpleGrantedAuthority("MEMBERS:READ"))))
+                        .with(klabisAuthentication(jwtTokenParams(registeredMemberUserData).withAuthorities(Authority.MEMBERS_READ))))
                 .andExpect(status().isForbidden());
 
 
@@ -302,11 +304,16 @@ class MemberLifecycleE2ETest {
         }
     }
 
-    private RegistrationNumber getRegistrationNumberFromMemberDetailResponse(String memberDetailResponse) {
+    private CurrentUserData createCurrentUserDataFromMemberResponse(MvcResult result) throws UnsupportedEncodingException {
+        return createCurrentUserDataFromMemberResponse(result.getResponse().getContentAsString());
+    }
+
+    private CurrentUserData createCurrentUserDataFromMemberResponse(String memberDetailResponse) {
         try {
             Map<String, Object> attributes = new ObjectMapper().readValue(memberDetailResponse, Map.class);
             String registrationNumberValue = (String) attributes.get("registrationNumber");
-            return RegistrationNumber.of(registrationNumberValue);
+            MemberId memberId = new MemberId(UUID.fromString((String) attributes.get("id")));
+            return new CurrentUserData(registrationNumberValue, memberId.toUserId(), memberId);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

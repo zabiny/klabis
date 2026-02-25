@@ -1,8 +1,11 @@
 package com.klabis.events.registration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.common.HateoasTestingSupport;
+import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.events.Event;
+import com.klabis.common.security.SecurityConfiguration;
+import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,25 +19,26 @@ import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("Event Registration Controller API Tests")
 @WebMvcTest(controllers = {EventRegistrationController.class})
-@Import(EncryptionConfiguration.class)
+@Import({EncryptionConfiguration.class, SecurityConfiguration.class})
 class EventRegistrationControllerTest {
 
     private static final String MEMBER_1_ID = "11111111-1111-1111-1111-111111111111";
@@ -46,13 +50,17 @@ class EventRegistrationControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private EventRegistrationService registrationServiceMock;
-
-    @MockitoBean
     private UserDetailsService userDetailsServiceMock;
 
-    @MockitoBean
+    @TestBean
     private EntityLinks entityLinksMock;
+
+    @MockitoBean
+    private EventRegistrationService registrationServiceMock;
+
+    static EntityLinks entityLinksMock() {
+        return HateoasTestingSupport.createModuleEntityLinks(EventRegistrationController.class);
+    }
 
     @Nested
     @DisplayName("POST /api/events/{id}/registrations")
@@ -60,7 +68,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 201 Created")
-        @WithMockUser(username = MEMBER_1_ID)
+        @WithKlabisMockUser(userId = MEMBER_1_ID)
         void shouldRegisterMemberForEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             RegisterForEventCommand command = new RegisterForEventCommand("123456");
@@ -72,8 +80,7 @@ class EventRegistrationControllerTest {
                     Instant.now()
             );
 
-            when(registrationServiceMock.getOwnRegistration(eventId)).thenReturn(registration);
-            when(entityLinksMock.linkForItemResource(Event.class, eventId)).thenReturn(eventLinkBuilder(eventId));
+            when(registrationServiceMock.getOwnRegistration(eq(eventId), any(UserId.class))).thenReturn(registration);
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)
@@ -96,13 +103,14 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 409 Conflict for duplicate registration")
-        @WithMockUser(username = MEMBER_1_ID)
+        @WithKlabisMockUser(userId = MEMBER_1_ID)
         void shouldReturn409ForDuplicateRegistration() throws Exception {
             UUID eventId = UUID.randomUUID();
             RegisterForEventCommand command = new RegisterForEventCommand("123456");
 
             doThrow(new DuplicateRegistrationException(UUID.fromString(MEMBER_1_ID), eventId))
-                    .when(registrationServiceMock).registerMember(eq(eventId), any(RegisterForEventCommand.class));
+                    .when(registrationServiceMock)
+                    .registerMember(eq(eventId), any(UserId.class), any(RegisterForEventCommand.class));
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)
@@ -135,15 +143,29 @@ class EventRegistrationControllerTest {
     class UnregisterFromEventTests {
 
         @Test
-        @DisplayName("should return 204 No Content")
-        @WithMockUser(username = MEMBER_1_ID)
+        @DisplayName("should return 204 No Content when service doesn't throw an exception")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldUnregisterMemberFromEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
+            final UserId userId = UserId.fromString(MEMBER_1_ID);
 
-            mockMvc.perform(
-                            delete("/api/events/{eventId}/registrations", eventId)
-                    )
+            mockMvc.perform(delete("/api/events/{eventId}/registrations", eventId))
                     .andExpect(status().isNoContent());
+
+            verify(registrationServiceMock, never()).unregisterMember(eventId, userId, LocalDate.now());
+        }
+
+        @Test
+        @DisplayName("should return 404 Not Found when service throws EventNotFoundException")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldRespond404WhenEventNotFoundException() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            doThrow(new EventNotFoundException(eventId)).when(registrationServiceMock)
+                    .unregisterMember(any(), any(), any());
+
+            mockMvc.perform(delete("/api/events/{eventId}/registrations", eventId))
+                    .andExpect(status().isNotFound());
         }
 
         @Test
@@ -173,7 +195,6 @@ class EventRegistrationControllerTest {
             );
 
             when(registrationServiceMock.listRegistrations(eventId)).thenReturn(registrations);
-            when(entityLinksMock.linkForItemResource(Event.class, eventId)).thenReturn(eventLinkBuilder(eventId));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations", eventId)
@@ -194,9 +215,11 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return full registration with SI card")
-        @WithMockUser(username = MEMBER_1_ID)
+        @WithKlabisMockUser(userId = MEMBER_1_ID)
         void shouldReturnOwnRegistrationWithSiCard() throws Exception {
-            UUID eventId = UUID.randomUUID();
+            final UUID eventId = UUID.randomUUID();
+            final UserId  userId = UserId.fromString(MEMBER_1_ID);
+
             OwnRegistrationDto registration = new OwnRegistrationDto(
                     "John",
                     "Doe",
@@ -204,8 +227,7 @@ class EventRegistrationControllerTest {
                     Instant.now()
             );
 
-            when(registrationServiceMock.getOwnRegistration(eventId)).thenReturn(registration);
-            when(entityLinksMock.linkForItemResource(Event.class, eventId)).thenReturn(eventLinkBuilder(eventId));
+            when(registrationServiceMock.getOwnRegistration(eventId, userId)).thenReturn(registration);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/me", eventId)
@@ -222,11 +244,11 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 404 when not registered")
-        @WithMockUser(username = MEMBER_1_ID)
+        @WithKlabisMockUser(userId = MEMBER_1_ID)
         void shouldReturn404WhenNotRegistered() throws Exception {
             UUID eventId = UUID.randomUUID();
 
-            when(registrationServiceMock.getOwnRegistration(eventId))
+            when(registrationServiceMock.getOwnRegistration(eq(eventId), any(UserId.class)))
                     .thenThrow(new RegistrationNotFoundException(UUID.fromString(MEMBER_1_ID), eventId));
 
             mockMvc.perform(

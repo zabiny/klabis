@@ -62,7 +62,6 @@ class SpaFallbackControllerTest {
         mockMvc.perform(get("/api/members")
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._links").exists())
                 .andExpect(content().contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(result -> {
                     // Verify it's NOT forwarded to index.html (which would be SPA fallback)

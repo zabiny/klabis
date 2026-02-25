@@ -8,11 +8,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
-import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
-import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
@@ -90,18 +89,16 @@ public class AuthorizationServerConfiguration {
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
         return context -> {
-            if (context.getTokenType().getValue().equals("access_token")) {
+            if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
                 // For client_credentials grant, use authorized scopes as authorities
-                if (context.getAuthorizationGrantType().getValue().equals("client_credentials")) {
+                if (AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) {
                     var authorizedScopes = context.getAuthorizedScopes();
-                    context.getClaims().claim("authorities", new HashSet<>(authorizedScopes));
+                    context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES, new HashSet<>(authorizedScopes));
                 } else {
                     // For user-based grants (authorization_code, etc.), use user authorities
-                    context.getClaims().claim("user_name",
-                            context.getPrincipal().getName());
-                    context.getClaims().claim("authorities",
+                    context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES,
                             context.getPrincipal().getAuthorities().stream()
-                                    .map(auth -> auth.getAuthority())
+                                    .map(GrantedAuthority::getAuthority)
                                     .collect(Collectors.toCollection(ArrayList::new)));
                 }
 
@@ -110,12 +107,9 @@ public class AuthorizationServerConfiguration {
                         context.getAuthorizationGrantType());
             } else if (context.getTokenType().getValue().equals("id_token")) {
                 // ID Token claims for OpenID Connect
-                // Note: Standard claims (sub, iss, aud, exp, iat, auth_time) are handled
-                // automatically by Spring Authorization Server. We only add custom claims here.
                 String subject = context.getPrincipal().getName();
-                context.getClaims().claim("user_name", subject);
 
-                // Add profile claims (given_name, family_name) for OIDC profile scope
+                // Add profile claims (user_name, given_name, family_name) for OIDC profile scope
                 authorizationServerCustomizer.customizeIdTokenClaims(subject,
                         context.getClaims(),
                         context.getAuthorizationGrantType());

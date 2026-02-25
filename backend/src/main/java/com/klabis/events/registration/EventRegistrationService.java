@@ -10,8 +10,6 @@ import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jmolecules.ddd.annotation.Service;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -45,16 +43,14 @@ class EventRegistrationService {
      * Register the authenticated member for an event.
      *
      * @param eventId event ID
+     * @param memberId authenticated member's user ID
      * @param command registration command with SI card number
      * @throws EventNotFoundException         if event not found
      * @throws DuplicateRegistrationException if member already registered
      * @throws IllegalStateException          if event is not ACTIVE
      */
     @Transactional
-    public void registerMember(UUID eventId, RegisterForEventCommand command) {
-        // Get authenticated member ID
-        UserId memberId = getAuthenticatedMemberId();
-
+    public void registerMember(UUID eventId, UserId memberId, RegisterForEventCommand command) {
         // Verify user has a member record - registration requires member profile
         if (!members.findByUserId(memberId).isPresent()) {
             throw new MemberProfileRequiredException();
@@ -80,16 +76,14 @@ class EventRegistrationService {
      * Unregister the authenticated member from an event.
      *
      * @param eventId     event ID
+     * @param memberId authenticated member's user ID
      * @param currentDate current date for validation
      * @throws EventNotFoundException        if event not found
      * @throws RegistrationNotFoundException if member not registered
      * @throws IllegalStateException         if current date is on or after event date
      */
     @Transactional
-    public void unregisterMember(UUID eventId, LocalDate currentDate) {
-        // Get authenticated member ID
-        UserId memberId = getAuthenticatedMemberId();
-
+    public void unregisterMember(UUID eventId, UserId memberId, LocalDate currentDate) {
         // Load event
         Event event = eventRepository.findById(new EventId(eventId))
                 .orElseThrow(() -> new EventNotFoundException(eventId));
@@ -129,15 +123,13 @@ class EventRegistrationService {
      * Get the authenticated member's own registration (with SI card number).
      *
      * @param eventId event ID
+     * @param memberId authenticated member's user ID
      * @return own registration DTO with SI card number
      * @throws EventNotFoundException        if event not found
      * @throws RegistrationNotFoundException if member not registered
      */
     @Transactional(readOnly = true)
-    public OwnRegistrationDto getOwnRegistration(UUID eventId) {
-        // Get authenticated member ID
-        UserId memberId = getAuthenticatedMemberId();
-
+    public OwnRegistrationDto getOwnRegistration(UUID eventId, UserId memberId) {
         // Load event
         Event event = eventRepository.findById(new EventId(eventId))
                 .orElseThrow(() -> new EventNotFoundException(eventId));
@@ -151,35 +143,6 @@ class EventRegistrationService {
     }
 
     // ========== Helper Methods ==========
-
-    /**
-     * Get the authenticated member's user ID from SecurityContext.
-     *
-     * @return authenticated member's UserId
-     * @throws IllegalStateException if not authenticated or user ID is invalid
-     */
-    private UserId getAuthenticatedMemberId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("User must be authenticated");
-        }
-
-        String username = authentication.getName();
-        if (username == null || username.isBlank()) {
-            throw new IllegalStateException("Username not found in authentication");
-        }
-
-        // NOTE: Authentication principal is User UUID, not username (User.userName)
-        // See: /openspec/changes/events-management/specs/users/spec.md - "Authentication Principal"
-        // See: /openspec/changes/events-management/design.md - "Decision 7: Authentication Principal and Username Resolution"
-        // Users without member records will get IllegalStateException when member lookup fails
-        try {
-            return UserId.fromString(username);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException("Invalid user ID in authentication: " + username, e);
-        }
-    }
 
     /**
      * Map EventRegistration to RegistrationDto (without SI card number).

@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.authorizationserver;
 
 import com.klabis.common.security.AuthorizationServerCustomizer;
+import com.klabis.common.security.KlabisOAuth2ClaimNames;
 import com.klabis.common.users.authorization.KlabisUserDetailsService;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
@@ -23,15 +24,17 @@ class KlabisAuthorizationServerCustomizer implements AuthorizationServerCustomiz
 
     @Override
     public void customizeAccessTokenClaims(String userName, JwtClaimsSet.Builder claimsBuilder, AuthorizationGrantType grantType) {
+        claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_USER_NAME, userName);
+
         if (!AuthorizationGrantType.CLIENT_CREDENTIALS.equals(grantType)) {
             // Add user_id claim for type-safe access to UserId in controllers/services
             klabisUserDetailsService.loadKlabisUserDetails(userName)
                     .ifPresent(klabisUserDetails -> {
-                        claimsBuilder.claim("user_id", klabisUserDetails.getUser().getId().uuid().toString());
+                        claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_USER_ID, klabisUserDetails.getUser().getId().uuid().toString());
                     });
 
             members.findByRegistrationNumber(userName).ifPresent(memberDto -> {
-                claimsBuilder.claim("member_id", memberDto.memberId().toString());
+                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_MEMBER_ID, memberDto.memberId().toString());
             });
         }
     }
@@ -39,17 +42,19 @@ class KlabisAuthorizationServerCustomizer implements AuthorizationServerCustomiz
     @Override
     public void customizeIdTokenClaims(String userName, JwtClaimsSet.Builder claimsBuilder, AuthorizationGrantType grantType) {
         if (!AuthorizationGrantType.CLIENT_CREDENTIALS.equals(grantType)) {
+            claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_USER_NAME, userName);
+
             // Add user_id claim for type-safe access to UserId in controllers/services
             klabisUserDetailsService.loadKlabisUserDetails(userName)
                     .ifPresent(klabisUserDetails -> {
-                        claimsBuilder.claim("user_id", klabisUserDetails.getUser().getId().uuid().toString());
+                        claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_USER_ID, klabisUserDetails.getUser().getId().uuid().toString());
                     });
 
             members.findByRegistrationNumber(userName).ifPresent(memberDto -> {
-                claimsBuilder.claim("member_id", memberDto.memberId().toString());
-                claimsBuilder.claim("given_name", memberDto.firstName());
-                claimsBuilder.claim("family_name", memberDto.lastName());
-                claimsBuilder.claim("preferred_username", userName);
+                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_MEMBER_ID, memberDto.memberId().toString());
+                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_GIVEN_NAME, memberDto.firstName());
+                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_FAMILY_NAME, memberDto.lastName());
+                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_PREFERRED_USER_NAME, userName);
             });
         }
     }
@@ -58,12 +63,12 @@ class KlabisAuthorizationServerCustomizer implements AuthorizationServerCustomiz
     public void customizeOidcUserInfo(String userName, Set<String> scopes, OidcUserInfo.Builder builder) {
         members.findByRegistrationNumber(userName).ifPresentOrElse(memberDto -> {
             // User has Member profile - add is_member=true and member claims
-            builder.claim("is_member", true);
+            builder.claim(KlabisOAuth2ClaimNames.USER_INFO_IS_MEMBER, true);
             addProfileClaims(builder, scopes, memberDto);
             addEmailClaims(builder, scopes, memberDto);
         }, () -> {
             // user without member
-            builder.claim("is_member", false);
+            builder.claim(KlabisOAuth2ClaimNames.USER_INFO_IS_MEMBER, false);
         });
 
     }
@@ -83,7 +88,7 @@ class KlabisAuthorizationServerCustomizer implements AuthorizationServerCustomiz
         if (scopes.contains("profile")) {
             builder.givenName(member.firstName())
                     .familyName(member.lastName())
-                    .claim("updated_at", member.lastModifiedAt());
+                    .updatedAt(member.lastModifiedAt().toString());
         }
     }
 

@@ -32,6 +32,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("ManagementService Unit Tests")
 class ManagementServiceTest {
 
+    private static final UserId TEST_CURRENT_USER_ID = UserId.newId();
+
     @Mock
     private MemberRepository memberRepository;
 
@@ -44,7 +46,7 @@ class ManagementServiceTest {
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementServiceImpl(memberRepository, userService);
+        testedSubject = new ManagementServiceImpl(memberRepository);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -176,7 +178,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(testMemberId, command);
+                Member result = testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -204,7 +206,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(testMemberId, command);
+                Member result = testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -229,7 +231,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                testedSubject.terminateMember(testMemberId, command);
+                testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command);
 
                 ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
                 verify(memberRepository).save(captor.capture());
@@ -272,7 +274,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.OTHER, "Second termination attempt"
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member is already terminated");
 
@@ -294,53 +296,13 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.PRESTUP, null
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command))
                         .isInstanceOf(OptimisticLockingFailureException.class);
 
                 verify(memberRepository).save(any(Member.class));
             }
         }
 
-        @Nested
-        @DisplayName("Authorization Tests")
-        class AuthorizationTests {
-
-            @Test
-            @DisplayName("should reject termination by non-admin user")
-            void shouldRejectTerminationByNonAdminUser() {
-                UsernamePasswordAuthenticationToken userAuth = new UsernamePasswordAuthenticationToken(
-                        UUID.randomUUID().toString(), "password",
-                        List.of(new SimpleGrantedAuthority("MEMBERS:READ"))
-                );
-                SecurityContextHolder.getContext().setAuthentication(userAuth);
-
-                var command = new Member.TerminateMembership(
-                        new UserId(adminUserId), DeactivationReason.ODHLASKA, null
-                );
-                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
-                        .isInstanceOf(InvalidUpdateException.class)
-                        .hasMessageContaining("Only users with MEMBERS:UPDATE permission");
-
-                verify(memberRepository, never()).findById(any());
-                verify(memberRepository, never()).save(any(Member.class));
-            }
-
-            @Test
-            @DisplayName("should reject termination without authentication")
-            void shouldRejectTerminationWithoutAuthentication() {
-                SecurityContextHolder.clearContext();
-
-                var command = new Member.TerminateMembership(
-                        new UserId(adminUserId), DeactivationReason.ODHLASKA, null
-                );
-                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
-                        .isInstanceOf(InvalidUpdateException.class)
-                        .hasMessageContaining("User must be authenticated");
-
-                verify(memberRepository, never()).findById(any());
-                verify(memberRepository, never()).save(any(Member.class));
-            }
-        }
 
         @Nested
         @DisplayName("Member Not Found Tests")
@@ -356,7 +318,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.ODHLASKA, null
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(nonExistentId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(nonExistentId, TEST_CURRENT_USER_ID, command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member not found");
 

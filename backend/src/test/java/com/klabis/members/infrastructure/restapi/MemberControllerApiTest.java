@@ -1,6 +1,9 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.security.SecurityConfiguration;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.User;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
@@ -25,7 +28,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
@@ -50,13 +52,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
-@Import({EncryptionConfiguration.class, MemberMapperImpl.class})
+@Import({EncryptionConfiguration.class, MemberMapperImpl.class, SecurityConfiguration.class})
 class MemberControllerApiTest {
 
     private static final String ADMIN_USERNAME = "ZBM0001";
     private static final String MEMBER_USERNAME = "ZBM0101";
-    private static final String MEMBERS_READ_AUTHORITY = "MEMBERS:READ";
-    private static final String MEMBERS_CREATE_AUTHORITY = "MEMBERS:CREATE";
 
     @Autowired
     private MockMvc mockMvc;
@@ -92,7 +92,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return 200 with member details")
-        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturnMemberDetailsWhenFound() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -141,7 +141,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return 404 when member not found")
-        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturn404WhenMemberNotFound() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
             when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.empty());
@@ -158,7 +158,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return 403 when user lacks MEMBERS:READ authority")
-        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:CREATE"})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn403WhenUnauthorized() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -183,7 +183,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should include edit link when user has MEMBERS:UPDATE authority")
-        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ", "MEMBERS:UPDATE"})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
         void shouldIncludeEditLinkWhenUserHasUpdateAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
@@ -201,7 +201,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return guardian information when present")
-        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturnGuardianInformationWhenPresent() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -215,7 +215,7 @@ class MemberControllerApiTest {
 
             mockMvc.perform(
                             get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
 
                     .andExpect(status().isOk())
@@ -233,7 +233,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return single email and phone with address")
-        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturnSingleEmailAndPhoneWithAddress() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = createTestMember(
@@ -253,7 +253,7 @@ class MemberControllerApiTest {
 
             mockMvc.perform(
                             get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
 
                     .andExpect(status().isOk())
@@ -267,7 +267,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should include permissions link when user has MEMBERS:PERMISSIONS authority")
-        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ", "MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_PERMISSIONS})
         void shouldIncludePermissionsLinkWhenUserHasMembersPermissionsAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
@@ -287,7 +287,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should not include permissions link when user lacks MEMBERS:PERMISSIONS authority")
-        @WithMockUser(username = "ZBM0001", authorities = {"MEMBERS:READ"})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldNotIncludePermissionsLinkWhenUserLacksMembersPermissionsAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
@@ -372,7 +372,7 @@ class MemberControllerApiTest {
                 .withGender(Gender.MALE)
                 .withAddress(address)
                 .withEmail("child@example.com")
-                .withPhone("+420111222333")
+                .withPhone("+420777333444")
                 .withGuardian(guardian)
                 .build();
     }
@@ -387,7 +387,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with valid data should return 201 with HATEOAS links")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
         void shouldCreateMemberWithValidData() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -424,7 +424,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with minor should accept guardian")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldCreateMinorWithGuardian() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -468,7 +468,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with missing first name should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenFirstNameMissing() throws Exception {
             mockMvc.perform(
                             post("/api/members")
@@ -500,7 +500,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid email should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenEmailInvalid() throws Exception {
             mockMvc.perform(
                             post("/api/members")
@@ -532,7 +532,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid phone should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenPhoneInvalid() throws Exception {
             mockMvc.perform(
                             post("/api/members")
@@ -565,7 +565,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with future date of birth should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenDateOfBirthInFuture() throws Exception {
             LocalDate futureDate = LocalDate.now().plusDays(1);
 
@@ -599,7 +599,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with missing email should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenEmailMissing() throws Exception {
             mockMvc.perform(
                             post("/api/members")
@@ -631,7 +631,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid guardian should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenGuardianInvalid() throws Exception {
             mockMvc.perform(
                             post("/api/members")
@@ -670,7 +670,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with valid address and contacts should succeed")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldCreateMemberWithValidAddressAndContacts() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -707,7 +707,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid nationality code should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenNationalityCodeInvalid() throws Exception {
             mockMvc.perform(
                             post("/api/members")
@@ -740,7 +740,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid address missing fields should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenAddressMissingFields() throws Exception {
             mockMvc.perform(
                             post("/api/members")
@@ -772,7 +772,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid address country code format should return 400")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenAddressCountryInvalid() throws Exception {
             mockMvc.perform(
                             post("/api/members")
@@ -809,7 +809,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return 200 with empty collection when no members exist")
-        @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturnEmptyCollectionWhenNoMembers() throws Exception {
             when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(new PageImpl<>(
                     List.of()));
@@ -826,7 +826,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return collection of member summaries with HATEOAS links")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE, Authority.MEMBERS_READ})
         void shouldReturnMemberCollectionWithHateoasLinks() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
@@ -847,7 +847,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return paginated results")
-        @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturnPaginatedResults() throws Exception {
             when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
@@ -869,7 +869,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return sorted results")
-        @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturnSortedResults() throws Exception {
             when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
@@ -887,7 +887,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return 400 when sort field invalid")
-        @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn400WhenSortFieldInvalid() throws Exception {
             mockMvc.perform(
                             get("/api/members")
@@ -904,7 +904,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should handle multi-field sort")
-        @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldHandleMultiFieldSort() throws Exception {
             when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
@@ -923,7 +923,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should use default pagination when no parameters provided")
-        @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldUseDefaultPaginationWhenNoParams() throws Exception {
             when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
@@ -941,7 +941,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should include pagination links")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE, Authority.MEMBERS_READ})
         void shouldIncludePaginationLinks() throws Exception {
             List<Member> members = List.of(
                     createTestMember(UUID.randomUUID(), "Member0", "Test0", "ZBM0001"),
@@ -969,11 +969,9 @@ class MemberControllerApiTest {
     @DisplayName("POST /api/members/{id}/terminate")
     class TerminateMemberTests {
 
-        private static final String MEMBERS_UPDATE_AUTHORITY = "MEMBERS:UPDATE";
-
         @Test
         @DisplayName("successful termination should return 200 OK with termination details")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_UPDATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
         void shouldTerminateMemberSuccessfully() throws Exception {
             // Arrange
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
@@ -1005,7 +1003,7 @@ class MemberControllerApiTest {
                     .terminated(DeactivationReason.ODHLASKA, "Member requested termination")
                     .build();
 
-            when(managementService.terminateMember(eq(memberId), any(Member.TerminateMembership.class)))
+            when(managementService.terminateMember(eq(memberId), any(UserId.class), any(Member.TerminateMembership.class)))
                     .thenReturn(terminatedMember);
             when(memberRepository.findById(new UserId(memberId)))
                     .thenReturn(java.util.Optional.of(terminatedMember));
@@ -1016,7 +1014,6 @@ class MemberControllerApiTest {
             mockMvc.perform(
                             post("/api/members/" + memberId + "/terminate")
                                     .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
                                             {
                                                 "reason": "ODHLASKA",
@@ -1030,7 +1027,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("termination without note should return 204 NO_CONTENT with Location header pointing to list of members")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_UPDATE_AUTHORITY})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
         void shouldTerminateMemberWithoutNote() throws Exception {
             // Arrange
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
@@ -1049,7 +1046,7 @@ class MemberControllerApiTest {
                     .terminated(DeactivationReason.PRESTUP, null)
                     .build();
 
-            when(managementService.terminateMember(eq(memberId), any(Member.TerminateMembership.class)))
+            when(managementService.terminateMember(eq(memberId), any(UserId.class), any(Member.TerminateMembership.class)))
                     .thenReturn(terminatedMember);
             when(memberRepository.findById(new UserId(memberId)))
                     .thenReturn(java.util.Optional.of(terminatedMember));
@@ -1074,7 +1071,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("active member GET response should include terminate affordance")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_UPDATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE, Authority.MEMBERS_READ})
         void shouldIncludeTerminateAffordanceForActiveMember() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
@@ -1111,7 +1108,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("terminated member GET response should not include terminate affordance")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_UPDATE_AUTHORITY, MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE, Authority.MEMBERS_READ})
         void shouldNotIncludeTerminateAffordanceForTerminatedMember() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
@@ -1149,7 +1146,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("self link should always be present on member responses")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldAlwaysIncludeSelfLink() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
@@ -1183,14 +1180,14 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("termination of already terminated member should return 400 Bad Request")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_UPDATE_AUTHORITY})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
         void shouldReturn400WhenTerminatingAlreadyTerminatedMember() throws Exception {
             // Arrange
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
 
             UUID memberId = UUID.randomUUID();
 
-            when(managementService.terminateMember(eq(memberId), any(Member.TerminateMembership.class)))
+            when(managementService.terminateMember(eq(memberId), any(UserId.class), any(Member.TerminateMembership.class)))
                     .thenThrow(new InvalidUpdateException("Member is already terminated"));
 
             // Act & Assert
@@ -1213,7 +1210,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("termination with invalid reason should return 400 Bad Request")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_UPDATE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
         void shouldReturn400WhenTerminationReasonInvalid() throws Exception {
             // Arrange - note: validation happens at request level via @Valid
             // This test verifies the controller handles invalid requests properly

@@ -2,16 +2,20 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
+import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.util.UUID;
 
+import static com.klabis.common.security.JwtParams.jwtTokenParams;
+import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisAuthentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -56,7 +60,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("POST /api/members with wrong authority should return 403")
-    @WithMockUser(username = "ZBM0102", authorities = {"MEMBERS:READ"})
+    @WithKlabisMockUser(username = "ZBM0102", authorities = {Authority.MEMBERS_READ})
     void shouldReturn403WhenInsufficientAuthority() throws Exception {
 
         mockMvc.perform(
@@ -89,7 +93,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("POST /api/members with MEMBERS:CREATE authority should return 201")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+    @WithKlabisMockUser(authorities =  {Authority.MEMBERS_CREATE})
     void shouldReturn201WhenAuthorized() throws Exception {
 
         mockMvc.perform(
@@ -135,7 +139,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("GET /api/members/{id} with wrong authority should return 403")
-    @WithMockUser(username = "ZBM0102", authorities = {"SOME:OTHER"})
+    @WithKlabisMockUser(username = "ZBM0102", authorities = {})
     void shouldReturn403WhenGettingMemberWithoutReadAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
 
@@ -151,7 +155,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("GET /api/members/{id} with MEMBERS:READ authority should pass authorization")
-    @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+    @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
     void shouldPassAuthorizationWhenGettingMemberWithReadAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
 
@@ -183,10 +187,12 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("GET /api/members with wrong authority should return 403")
-    @WithMockUser(username = "ZBM0102", authorities = {"SOME:OTHER"})
+    @WithKlabisMockUser(username = "ZBM0102", authorities = {})
     void shouldReturn403WhenListingMembersWithoutReadAuthority() throws Exception {
         mockMvc.perform(
                         get("/api/members")
+                                .with(klabisAuthentication(jwtTokenParams("ZBM0102", new UserId(UUID.randomUUID()))
+                                        .withAuthorities(Authority.MEMBERS_CREATE)))
                                 .contentType("application/json")
                 )
                 .andDo(MockMvcResultHandlers.print())
@@ -198,7 +204,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("GET /api/members with MEMBERS:READ authority should return 200")
-    @WithMockUser(username = MEMBER_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+    @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
     void shouldReturn200WhenListingMembersWithReadAuthority() throws Exception {
         mockMvc.perform(
                         get("/api/members")
@@ -232,7 +238,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("POST /api/members/{id}/terminate with wrong authority should return 403")
-    @WithMockUser(username = MEMBER_USERNAME, authorities = {"MEMBERS:READ"})
+    @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
     void shouldReturn403WhenTerminatingMemberWithoutUpdateAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
 
@@ -255,7 +261,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("POST /api/members/{id}/terminate with MEMBERS:UPDATE authority should pass authorization")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
     void shouldPassAuthorizationWhenTerminatingMemberWithUpdateAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
 

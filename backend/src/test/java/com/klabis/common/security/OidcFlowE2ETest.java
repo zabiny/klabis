@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenClaimNames;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -180,10 +181,10 @@ class OidcFlowE2ETest {
         String payload = new String(Base64.getUrlDecoder().decode(idTokenParts[1]));
         Map<String, Object> idTokenClaims = objectMapper.readValue(payload, Map.class);
 
-        assertThat(idTokenClaims.get("sub")).isEqualTo(ADMIN_USERNAME);
-        assertThat(idTokenClaims.get("iss")).isEqualTo(ISSUER);
-        assertThat(idTokenClaims.get("user_name")).isEqualTo(ADMIN_USERNAME);
-        assertThat(idTokenClaims).containsKeys("sub", "iss", "aud", "exp", "iat");
+        assertThat(idTokenClaims.get(OAuth2TokenClaimNames.SUB)).isEqualTo(ADMIN_USERNAME);
+        assertThat(idTokenClaims.get(OAuth2TokenClaimNames.ISS)).isEqualTo(ISSUER);
+        assertThat(idTokenClaims.get(KlabisOAuth2ClaimNames.CLAIM_USER_NAME)).isEqualTo(ADMIN_USERNAME);
+        assertThat(idTokenClaims).containsKeys(OAuth2TokenClaimNames.SUB, OAuth2TokenClaimNames.ISS, OAuth2TokenClaimNames.AUD, OAuth2TokenClaimNames.EXP, OAuth2TokenClaimNames.IAT);
 
         // STEP 4: Call UserInfo endpoint with access token
         mockMvc.perform(

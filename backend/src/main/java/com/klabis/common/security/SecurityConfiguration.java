@@ -44,6 +44,7 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -79,10 +80,9 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     @Value("${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}")
     private String issuer;
 
-    private final CurrentUserArgumentResolver currentUserArgumentResolver;
-
-    public SecurityConfiguration(CurrentUserArgumentResolver currentUserArgumentResolver) {
-        this.currentUserArgumentResolver = currentUserArgumentResolver;
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+        WebMvcConfigurer.super.addArgumentResolvers(resolvers);
     }
 
     @Bean
@@ -223,7 +223,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
      * Creates a RequestMatcher that matches:
      * 1. SPA routes (paths without dots) that accept text/html
      * 2. Static resources and specific files (unconditionally)
-     *
+     * <p>
      * This ensures API endpoints (which typically accept application/json or application/hal+json)
      * are NOT matched by the SPA filter chain, even if they share similar path patterns.
      */
@@ -306,8 +306,4 @@ public class SecurityConfiguration implements WebMvcConfigurer {
         return http.build();
     }
 
-    @Override
-    public void addArgumentResolvers(java.util.List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.add(currentUserArgumentResolver);
-    }
 }

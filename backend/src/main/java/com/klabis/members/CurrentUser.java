@@ -1,4 +1,4 @@
-package com.klabis.common.security;
+package com.klabis.members;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * Annotation for injecting the authenticated user's identifiers into controller parameters.
  * <p>
  * Use this annotation on controller method parameters to automatically inject
- * UserId or MemberId UUID without manual SecurityContextHolder access.
+ * UserId without manual SecurityContextHolder access.
  * <p>
  * Example usage:
  * <pre>{@code
@@ -24,10 +24,9 @@ import java.lang.annotation.Target;
  * <p>
  * Supported parameter types:
  * - {@link com.klabis.common.users.UserId} - injects the authenticated user's ID
- * - {@link java.util.UUID} - injects the member's ID UUID (throws if user has no Member profile)
+ * - {@link CurrentUserData} - injects user data including memberId (if available)
  * <p>
- * Note: For type-safe MemberId injection in members module, use {@code MemberId.fromUserId(userId)}
- * or convert the UUID manually. This design avoids module dependency from common to members.
+ * Note: MemberId is accessible via {@link CurrentUserData#memberId()} when the user has a Member profile.
  */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)

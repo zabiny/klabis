@@ -1,13 +1,15 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.users.UserService;
+import com.klabis.common.users.Authority;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.members.management.InvalidUpdateException;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.MemberNotFoundException;
 import com.klabis.members.management.SelfEditNotAllowedException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,8 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
@@ -29,8 +32,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -63,16 +65,17 @@ class UpdateMemberApiTest {
     @MockitoBean
     private MemberMapper memberMapper;
 
-    @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
+    @TestBean
     private UserDetailsService userDetailsService;
 
     @MockitoBean
     private PagedResourcesAssembler<?> pagedResourcesAssembler;
 
     private final UUID testMemberId = UUID.randomUUID();
+
+    static UserDetailsService userDetailsService() {
+        return new InMemoryUserDetailsManager();
+    }
 
     private Member stubMember() {
         return MemberTestDataBuilder.aMember()
@@ -97,7 +100,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating member email should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldUpdateMemberEmailWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -125,7 +128,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating member phone should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldUpdateMemberPhoneWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -153,7 +156,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating member address should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldUpdateMemberAddressWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -190,7 +193,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating admin-only fields should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldUpdateAdminOnlyFieldsWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -221,8 +224,34 @@ class UpdateMemberApiTest {
             }
 
             @Test
+            @DisplayName("updating admin-only fields without MEMBERS:UPDATE authority should return 403")
+            @Disabled("Added as new test, probably would rather like 403 if someone attempts to edit (To be changed in prod code)")
+            @WithKlabisMockUser(authorities = {})
+            void shouldRejectUpdateAdminOnlyFieldsWithoutAdmin() throws Exception {
+                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "gender": "FEMALE",
+                                                    "chipNumber": "12345",
+                                                    "drivingLicenseGroup": "B",
+                                                    "dietaryRestrictions": "Vegetarian"
+                                                }
+                                                """)
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isForbidden());
+
+                verify(memberService, never()).updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class));
+            }
+
+            @Test
             @DisplayName("updating birth number and bank account should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldUpdateBirthNumberAndBankAccountWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -250,7 +279,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating only birth number should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldUpdateOnlyBirthNumberWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -277,7 +306,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating only bank account number should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldUpdateOnlyBankAccountNumberWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -304,7 +333,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating documents should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldUpdateDocumentsWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -347,7 +376,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("performing partial update should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldPerformPartialUpdateWhenAdmin() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -380,7 +409,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating own email should return 204 No Content")
-            @WithMockUser(username = MEMBER_EMAIL, authorities = {})
+            @WithKlabisMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnEmail() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -406,7 +435,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating own phone should return 204 No Content")
-            @WithMockUser(username = MEMBER_EMAIL, authorities = {})
+            @WithKlabisMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnPhone() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -432,7 +461,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating own address should return 204 No Content")
-            @WithMockUser(username = MEMBER_EMAIL, authorities = {})
+            @WithKlabisMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateOwnAddress() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -465,7 +494,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating dietary restrictions should return 204 No Content")
-            @WithMockUser(username = MEMBER_EMAIL, authorities = {})
+            @WithKlabisMockUser(username = MEMBER_EMAIL, authorities = {})
             void shouldAllowMemberToUpdateDietaryRestrictions() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -488,7 +517,30 @@ class UpdateMemberApiTest {
                 var command = captor.getValue();
                 assertThat(command.dietaryRestrictions()).isEqualTo("Gluten-free, no nuts");
             }
+
+            @Test
+            @DisplayName("updating items editable only by member himself without beeing that member should return 403 Forbidden")
+            @WithKlabisMockUser(userId = "729d897a-5676-431f-b22f-ad935af525ce", authorities = {})
+            @Disabled("Added as new test, probably would rather like 403 if someone attempts to edit (To be changed in prod code)")
+            void shouldRejectToUpdateSelfEditInformationToOtherMembers() throws Exception {
+                mockMvc.perform(
+                                patch("/api/members/{id}", "16a9dfbb-145d-4587-b5b5-31383c1d4215")
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "dietaryRestrictions": "Gluten-free, no nuts",
+                                                    "email": "test@email.com",
+                                                    "phone": "+420 123 456 789"
+                                                }
+                                                """)
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isForbidden());
+
+                verify(memberService, never()).updateMember(any(UUID.class), any(Member.SelfUpdate.class));
+            }
         }
+
 
         @Nested
         @DisplayName("Authorization")
@@ -496,7 +548,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("non-admin editing another member should return 403")
-            @WithMockUser(username = "other.user@example.com", authorities = {})
+            @WithKlabisMockUser(username = "other.user@example.com", authorities = {})
             void shouldReturn403WhenNonAdminEditsAnotherMember() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new SelfEditNotAllowedException(
@@ -540,7 +592,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("empty update should return 400")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn400WhenUpdateIsEmpty() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new InvalidUpdateException("Update request must contain at least one field"));
@@ -558,7 +610,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("invalid email format should return 400")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn400WhenEmailInvalid() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new InvalidUpdateException("Invalid email format: invalid-email"));
@@ -580,7 +632,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("invalid phone format should return 400")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn400WhenPhoneInvalid() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new InvalidUpdateException("Invalid phone format: 123"));
@@ -600,7 +652,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("invalid chip number should return 400")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn400WhenChipNumberInvalid() throws Exception {
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
@@ -618,7 +670,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("dietary restrictions too long should return 400")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn400WhenDietaryRestrictionsTooLong() throws Exception {
                 String tooLongRestrictions = "A".repeat(501);
 
@@ -643,7 +695,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("non-existent member should return 404")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn404WhenMemberNotFound() throws Exception {
                 UUID nonExistentId = UUID.randomUUID();
 
@@ -668,7 +720,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("concurrent update should return 409")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn409WhenConcurrentUpdate() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenThrow(new OptimisticLockingFailureException("Concurrent update for member - test purpose"));
@@ -695,7 +747,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("PATCH should return 204 No Content (HATEOAS links available via GET)")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn204NoContentForPatchWithHalFormsAccept() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -716,7 +768,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("response should include collection link")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldIncludeCollectionLink() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -737,7 +789,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("response should include edit link")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldIncludeEditLink() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());
@@ -758,7 +810,7 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("PATCH with multiple fields should return 204 No Content")
-            @WithMockUser(username = ADMIN_USERNAME, authorities = {"MEMBERS:UPDATE"})
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
             void shouldReturn204NoContentWhenUpdatingMultipleFields() throws Exception {
                 when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
                         .thenReturn(stubMember());

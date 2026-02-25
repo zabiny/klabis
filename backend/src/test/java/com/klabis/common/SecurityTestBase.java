@@ -21,6 +21,4 @@ public abstract class SecurityTestBase {
     protected static final String ADMIN_ROLE = "ADMIN";
 
     protected static final String MEMBER_USERNAME = "ZBM0101";
-    protected static final String MEMBERS_READ_AUTHORITY = "MEMBERS:READ";
-    protected static final String MEMBERS_CREATE_AUTHORITY = "MEMBERS:CREATE";
 }

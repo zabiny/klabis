@@ -1,6 +1,8 @@
 package com.klabis.members;
 
 import com.klabis.TestApplicationConfiguration;
+import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
@@ -11,7 +13,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -41,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Import(TestApplicationConfiguration.class)
 @DisplayName("Member Termination E2E Tests")
+@WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_CREATE, Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE, Authority.MEMBERS_DELETE})
 class MemberTerminationE2ETest {
 
     @Autowired
@@ -55,7 +57,6 @@ class MemberTerminationE2ETest {
 
     @Test
     @DisplayName("Complete termination workflow: register → get → terminate → verify")
-    @WithMockUser(username = "admin", authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
     void shouldCompleteTerminationWorkflow() throws Exception {
         // Step 1: Register a new member
         MvcResult registerResult = mockMvc.perform(
@@ -126,7 +127,6 @@ class MemberTerminationE2ETest {
 
     @Test
     @DisplayName("Termination workflow: should reject second termination attempt")
-    @WithMockUser(username = "admin", authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
     void shouldRejectSecondTerminationAttempt() throws Exception {
         // Step 1: Register a new member
         MvcResult registerResult = mockMvc.perform(
@@ -191,7 +191,6 @@ class MemberTerminationE2ETest {
 
     @Test
     @DisplayName("Termination workflow: terminated member should not appear in active list query")
-    @WithMockUser(username = "admin", authorities = {"MEMBERS:CREATE", "MEMBERS:READ", "MEMBERS:UPDATE", "MEMBERS:DELETE"})
     void shouldFilterTerminatedMembersFromListQuery() throws Exception {
         // Register member A
         MvcResult resultA = mockMvc.perform(

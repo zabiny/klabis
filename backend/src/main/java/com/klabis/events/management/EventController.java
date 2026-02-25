@@ -46,7 +46,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @PrimaryAdapter
 @ExposesResourceFor(Event.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
-class EventController {
+public class EventController {
 
     private final EventManagementService eventManagementService;
     private final PagedResourcesAssembler<EventSummaryDto> pagedResourcesAssembler;

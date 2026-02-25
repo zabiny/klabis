@@ -2,10 +2,9 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.User;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import com.klabis.common.users.authorization.HasAuthority;
+import com.klabis.members.CurrentUser;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberId;
 import com.klabis.members.domain.Members;
@@ -34,7 +33,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
@@ -65,19 +63,16 @@ class MemberController {
     private final Members memberRepository;
     private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
-    private final UserService userService;
 
     public MemberController(
             ManagementService managementService,
             Members memberRepository,
             PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
-            MemberMapper memberMapper,
-            UserService userService) {
+            MemberMapper memberMapper) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.memberMapper = memberMapper;
-        this.userService = userService;
     }
 
     /**
@@ -120,8 +115,7 @@ class MemberController {
     public ResponseEntity<Void> updateMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
-            @Valid @RequestBody UpdateMemberRequest request,
-            Authentication auth) {
+            @Valid @RequestBody UpdateMemberRequest request) {
 
         var command = UpdateMemberRequestMapper.toAdminCommand(request);
         managementService.updateMember(id, command);
@@ -161,22 +155,16 @@ class MemberController {
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Termination request")
             @Valid @RequestBody TerminateMembershipRequest request,
-            Authentication auth) {
+            @CurrentUser UserId currentUserId) {
 
-        // Get authenticated user for audit trail
-        String username = auth.getName();
-        UserId terminatedBy = userService.findUserByUsername(username)
-                .map(User::getId)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + username));
-
-        // Map request to domain command
+        // Map request to domain command with authenticated user for audit trail
         var command = new Member.TerminateMembership(
-                terminatedBy,
+                currentUserId,
                 request.reason(),
                 request.note().orElse(null)
         );
 
-        managementService.terminateMember(id, command);
+        managementService.terminateMember(id, currentUserId, command);
         return ResponseEntity.noContent().location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri()).build();
     }
 
@@ -286,12 +274,12 @@ class MemberController {
         if (member.isActive()) {
             entityModel.add(
                     klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null)))
             );
         } else {
             entityModel.add(
                     klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null)))
             );
         }
 

@@ -1,7 +1,11 @@
-package com.klabis.common.security;
+package com.klabis.members.infrastructure.authorizationserver;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.users.UserId;
+import com.klabis.members.CurrentUser;
+import com.klabis.members.CurrentUserData;
+import com.klabis.members.domain.MemberId;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -9,17 +13,14 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import java.util.UUID;
-
 @MvcComponent
 class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return parameter.hasParameterAnnotation(CurrentUser.class)
-               && (parameter.getParameterType().equals(UserId.class) || (parameter.getParameterType()
-                .equals(CurrentUserData.class))
-                   || parameter.getParameterType().equals(UUID.class));
+               && (parameter.getParameterType().equals(UserId.class) || parameter.getParameterType()
+                .equals(CurrentUserData.class));
     }
 
     @Override
@@ -38,14 +39,8 @@ class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
             return token.getUserId();
         }
 
-        if (parameterType.equals(UUID.class)) {
-            return token.getMemberIdUuid()
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Authenticated user has no Member profile"));
-        }
-
         if (parameterType.equals(CurrentUserData.class)) {
-            return new CurrentUserData(token.getUsername(), token.getUserId(), token.getMemberIdUuid().orElse(null));
+            return new CurrentUserData(token.getUsername(), token.getUserId(), token.getMemberIdUuid().map(MemberId::new).orElse(null));
         }
 
         throw new IllegalArgumentException(
