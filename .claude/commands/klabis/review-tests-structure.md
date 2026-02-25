@@ -4,7 +4,7 @@ description: Reviews HATEOAS links for best practises (link to GET api only, aff
 category: Klabis
 tags: [klabis, review]
 allowed-tools: Read(./*), Glob(./*), Grep(./*)
---- 
+---
 
 Review backend tests for alignment with following tests structure. Show list of all test classes with target test category and suggestions for improvements or cleanups.  
 
