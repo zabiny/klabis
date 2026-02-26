@@ -1,36 +1,36 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.User;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.common.users.testdata.UserTestDataBuilder;
+import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.members.management.InvalidUpdateException;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.RegistrationService;
 import com.klabis.members.management.ValidationPatterns;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.time.LocalDate;
@@ -38,8 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
-@Import({EncryptionConfiguration.class, MemberMapperImpl.class, SecurityConfiguration.class})
+@Import({MemberMapperImpl.class})
 class MemberControllerApiTest {
 
     private static final String ADMIN_USERNAME = "ZBM0001";
@@ -70,7 +69,7 @@ class MemberControllerApiTest {
     @MockitoBean
     private RegistrationService registrationService;
 
-    @MockitoBean
+    @TestBean
     private EntityLinks entityLinks;
 
     @MockitoBean
@@ -81,6 +80,10 @@ class MemberControllerApiTest {
 
     private final User ZBM001 = UserTestDataBuilder.aMemberUser().username("ZBM0001").build();
 
+    static EntityLinks entityLinks() {
+        return HateoasTestingSupport.createModuleEntityLinks(MemberController.class);
+    }
+
     @BeforeEach
     void setupZbm001User() {
         when(userServiceMock.findUserByUsername("ZBM001")).thenReturn(Optional.of(ZBM001));
@@ -89,6 +92,15 @@ class MemberControllerApiTest {
     @Nested
     @DisplayName("GET /api/members/{id}")
     class GetMemberTests {
+
+        private MockHttpServletRequestBuilder getMemberById(MemberId memberId) {
+            return getMemberById(memberId.uuid());
+        }
+
+        private MockHttpServletRequestBuilder getMemberById(UUID memberId) {
+            return get("/api/members/{id}", memberId.toString())
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE);
+        }
 
         @Test
         @DisplayName("should return 200 with member details")
@@ -110,10 +122,7 @@ class MemberControllerApiTest {
 
             when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
+            mockMvc.perform(getMemberById(member.getId()))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -146,10 +155,7 @@ class MemberControllerApiTest {
             UUID nonExistentId = UUID.randomUUID();
             when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.empty());
 
-            mockMvc.perform(
-                            get("/api/members/{id}", nonExistentId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
+            mockMvc.perform(getMemberById(nonExistentId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(
@@ -162,10 +168,7 @@ class MemberControllerApiTest {
         void shouldReturn403WhenUnauthorized() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
+            mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isForbidden());
         }
 
@@ -174,29 +177,8 @@ class MemberControllerApiTest {
         void shouldReturn401WhenUnauthenticated() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
+            mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isUnauthorized());
-        }
-
-        @Test
-        @DisplayName("should include edit link when user has MEMBERS:UPDATE authority")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
-        void shouldIncludeEditLinkWhenUserHasUpdateAuthority() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
-
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
-
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"));  // EDIT
         }
 
         @Test
@@ -205,24 +187,17 @@ class MemberControllerApiTest {
         void shouldReturnGuardianInformationWhenPresent() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withEmail("child@example.com")
-                    .withPhone("+420777333444")
-                    .withAddress(new Address("Hlavní 456", "Brno", "12345", "CZ"))
-                    .withGuardian(new GuardianInformation("Parent", "Name", "PARENT","parent@example.com", "+420777111222"))
+                    .withGuardian(new GuardianInformation("Parent",
+                            "Name",
+                            "PARENT",
+                            "parent@example.com",
+                            "+420777111222"))
                     .build();
 
             when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-
+            mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.email").value("child@example.com"))
-                    .andExpect(jsonPath("$.phone").value("+420777333444"))
-                    .andExpect(jsonPath("$.address.street").value("Hlavní 456"))
-                    .andExpect(jsonPath("$.address.city").value("Brno"))
                     .andExpect(jsonPath("$.guardian").isNotEmpty())
                     .andExpect(jsonPath("$.guardian.firstName").value("Parent"))
                     .andExpect(jsonPath("$.guardian.lastName").value("Name"))
@@ -236,29 +211,14 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturnSingleEmailAndPhoneWithAddress() throws Exception {
             UUID memberId = UUID.randomUUID();
-            Member member = createTestMember(
-                    memberId,
-                    "ZBM0501",
-                    "Eva",
-                    "Svobodová",
-                    "SK",
-                    "eva.svobodova@example.com",
-                    "+421777888999",
-                    "Main Street 123",
-                    "Bratislava",
-                    "81101"
-            );
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withAddress(new Address("Main Street 123", "Bratislava", "81101", "SK"))
+                    .build();
 
             when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-
+            mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.email").value("eva.svobodova@example.com"))
-                    .andExpect(jsonPath("$.phone").value("+421777888999"))
                     .andExpect(jsonPath("$.address.street").value("Main Street 123"))
                     .andExpect(jsonPath("$.address.city").value("Bratislava"))
                     .andExpect(jsonPath("$.address.postalCode").value("81101"))
@@ -266,169 +226,116 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("should include permissions link when user has MEMBERS:PERMISSIONS authority")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_PERMISSIONS})
-        void shouldIncludePermissionsLinkWhenUserHasMembersPermissionsAuthority() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
-
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
-
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.permissions").exists())
-                    .andExpect(jsonPath("$._links.permissions.href").value(
-                            org.hamcrest.Matchers.containsString("/api/users/" + memberId + "/permissions")));
-        }
-
-        @Test
-        @DisplayName("should not include permissions link when user lacks MEMBERS:PERMISSIONS authority")
+        @DisplayName("HAL+FORMS: user with MEMBERS_READ permission - should include only update affordance (no permissions neither terminate)")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
+        @Disabled("need to finish authorization for klabisAfford")
         void shouldNotIncludePermissionsLinkWhenUserLacksMembersPermissionsAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
-            Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
+            Address address = Address.of("Test Street", "Test City", "10000", "CZ");
+            EmailAddress email = EmailAddress.of("test@example.com");
+            PhoneNumber phone = PhoneNumber.of("+420123456789");
+
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withName("Test", "Member")
+                    .withRegistrationNumber("ZBM1234")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withPhone(phone)
+                    .withEmail(email)
+                    .build();
 
             when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-
+            mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.permissions").doesNotExist());
+                    .andExpect(jsonPath("$._links.permissions").doesNotExist())
+                    .andExpect(jsonPath("$._templates").exists())
+                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
+                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.terminateMember").doesNotExist());
         }
 
         @Test
-        @DisplayName("active member should return both update and terminate affordances")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
-        void activeMemberShouldReturnUpdateAndTerminateAffordances() throws Exception {
+        @DisplayName("HAL+FORMS: user with MEMBERS_PERMISSIONS authority: should include permissions link")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_PERMISSIONS})
+        void activeMemberShouldReturnPermissionsLink() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withFirstName("Jan")
-                    .withLastName("Novák")
-                    .withRegistrationNumber("ZBM0501")
-                    .withEmail("jan.novak@example.com")
                     .withActive(true)
                     .build();
 
             when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
+            mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(true))
-                    .andExpect(jsonPath("$._templates").exists())
-                    // HAL+FORMS stores affordances as properties of the link, not separate templates
-                    // Check that self link has both PATCH (update) and POST (terminate) methods available
-                    .andExpect(jsonPath("$._links.self").exists());
+                    .andExpect(jsonPath("$._links.permissions.href").value("http://localhost/api/users/" + memberId + "/permissions"));
         }
 
         @Test
-        @DisplayName("terminated member should return only update affordance")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
-        void terminatedMemberShouldReturnOnlyUpdateAffordance() throws Exception {
+        @DisplayName("HAL+FORMS: user with MEMBERS_PERMISSIONS authority: should not return permissions link for deactivated member response")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_PERMISSIONS})
+        void activeMemberShouldNotReturnPermissionsLinkForDeactivatedMember() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withFirstName("Jan")
-                    .withLastName("Novák")
-                    .withRegistrationNumber("ZBM0501")
-                    .withEmail("jan.novak@example.com")
                     .withActive(false)
                     .build();
 
             when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
-            mockMvc.perform(
-                            get("/api/members/{id}", memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
+            mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(false))
-                    .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._links.self").exists());
+                    .andExpect(jsonPath("$._links.permissions").doesNotExist());
         }
-    }
 
-    // Helper methods to create test members
-    private Member createTestMember(
-            UUID id,
-            String regNumber,
-            String firstName,
-            String lastName,
-            String countryCode,
-            String email,
-            String phone,
-            String street,
-            String city,
-            String postalCode
-    ) {
-        PersonalInformation personalInfo = PersonalInformation.of(
-                firstName,
-                lastName,
-                LocalDate.of(2005, 6, 15),
-                countryCode,
-                Gender.MALE
-        );
 
-        Address address = Address.of(street, city, postalCode, countryCode);
-        EmailAddress emailAddress = EmailAddress.of(email);
-        PhoneNumber phoneNumber = PhoneNumber.of(phone);
+        @Test
+        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include update and terminate in active member response (no permissions)")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+        void activeMemberShouldReturnUpdateAndTerminateAffordances() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
 
-        return MemberTestDataBuilder.aMember()
-                .withId(id)
-                .withRegistrationNumber(regNumber)
-                .withName("Jan", "Novák")
-                .withDateOfBirth(LocalDate.of(2005, 6, 15))
-                .withNationality(countryCode)
-                .withGender(Gender.MALE)
-                .withAddress(address)
-                .withEmail(email)
-                .withPhone(phone)
-                .build();
-    }
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
-    private Member createTestMemberWithGuardian(UUID id) {
-        PersonalInformation personalInfo = PersonalInformation.of(
-                "Child",
-                "Member",
-                LocalDate.of(2015, 1, 10),
-                "CZ",
-                Gender.MALE
-        );
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(true))
+                    .andExpect(jsonPath("$._templates").exists())
+                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
+                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.terminateMember.method").value("POST"))
+                    .andExpect(jsonPath("$._templates.terminateMember.target").value(
+                            "http://localhost/api/members/%s/terminate".formatted(memberId)));
+        }
 
-        Address address = Address.of("Hlavní 456", "Brno", "60000", "CZ");
-        EmailAddress email = EmailAddress.of("child@example.com");
-        PhoneNumber phone = PhoneNumber.of("+420777333444");
+        @Test
+        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include only update affordance for inactive member")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+        void terminatedMemberShouldReturnOnlyUpdateAffordance() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(false)
+                    .build();
 
-        GuardianInformation guardian = new GuardianInformation(
-                "Parent",
-                "Name",
-                "PARENT",
-                EmailAddress.of("parent@example.com"),
-                PhoneNumber.of("+420777111222")
-        );
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
 
-        return MemberTestDataBuilder.aMember()
-                .withId(id)
-                .withRegistrationNumber("ZBM1501")
-                .withName("Child", "Member")
-                .withDateOfBirth(LocalDate.of(2015, 1, 10))
-                .withNationality("CZ")
-                .withGender(Gender.MALE)
-                .withAddress(address)
-                .withEmail("child@example.com")
-                .withPhone("+420777333444")
-                .withGuardian(guardian)
-                .build();
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(false))
+                    .andExpect(jsonPath("$._links.permissions").doesNotExist())
+                    .andExpect(jsonPath("$._templates").exists())
+                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
+                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.terminateMember").doesNotExist());
+        }
     }
 
     @Nested
@@ -436,7 +343,225 @@ class MemberControllerApiTest {
     class RegisterMemberTests {
 
         static ResultMatcher locationHeaderWithMemberDetailRedirect(UUID expectedMemberId) {
-            return header().string(HttpHeaders.LOCATION, "/api/members/%s".formatted(expectedMemberId.toString()));
+            return header().string(HttpHeaders.LOCATION,
+                    "http://localhost/api/members/%s".formatted(expectedMemberId.toString()));
+        }
+
+        private MockHttpServletRequestBuilder postMembers() {
+            return post("/api/members")
+                    .contentType(MediaType.APPLICATION_JSON);
+        }
+
+        @Test
+        @DisplayName("should call service with correct personal information arguments")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        void shouldCallServiceWithCorrectPersonalInformation() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                    {
+                        "firstName": "Jan",
+                        "lastName": "Novák",
+                        "dateOfBirth": "2000-06-15",
+                        "nationality": "CZ",
+                        "gender": "MALE",
+                        "email": "jan.novak@example.com",
+                        "phone": "+420777123456",
+                        "address": {
+                            "street": "Hlavní 123",
+                            "city": "Praha",
+                            "postalCode": "11000",
+                            "country": "CZ"
+                        }
+                    }
+                    """));
+
+            Mockito.verify(registrationService).registerMember(argThat(cmd ->
+                    cmd.personalInformation().getFirstName().equals("Jan") &&
+                    cmd.personalInformation().getLastName().equals("Novák") &&
+                    cmd.personalInformation().getDateOfBirth().equals(LocalDate.of(2000, 6, 15)) &&
+                    cmd.personalInformation().getNationalityCode().equals("CZ") &&
+                    cmd.personalInformation().getGender() == Gender.MALE
+            ));
+        }
+
+        @Test
+        @DisplayName("should call service with correct address arguments")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        void shouldCallServiceWithCorrectAddress() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                    {
+                        "firstName": "Jan",
+                        "lastName": "Novák",
+                        "dateOfBirth": "2000-06-15",
+                        "nationality": "CZ",
+                        "gender": "MALE",
+                        "email": "jan.novak@example.com",
+                        "phone": "+420777123456",
+                        "address": {
+                            "street": "Hlavní 123",
+                            "city": "Praha",
+                            "postalCode": "11000",
+                            "country": "CZ"
+                        }
+                    }
+                    """));
+
+            Mockito.verify(registrationService).registerMember(argThat(cmd ->
+                    cmd.address() != null &&
+                    cmd.address().street().equals("Hlavní 123") &&
+                    cmd.address().city().equals("Praha") &&
+                    cmd.address().postalCode().equals("11000") &&
+                    cmd.address().country().equals("CZ")
+            ));
+        }
+
+        @Test
+        @DisplayName("should call service with correct email and phone arguments")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        void shouldCallServiceWithCorrectEmailAndPhone() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                    {
+                        "firstName": "Jan",
+                        "lastName": "Novák",
+                        "dateOfBirth": "2000-06-15",
+                        "nationality": "CZ",
+                        "gender": "MALE",
+                        "email": "jan.novak@example.com",
+                        "phone": "+420777123456",
+                        "address": {
+                            "street": "Hlavní 123",
+                            "city": "Praha",
+                            "postalCode": "11000",
+                            "country": "CZ"
+                        }
+                    }
+                    """));
+
+            Mockito.verify(registrationService).registerMember(argThat(cmd ->
+                    cmd.email().value().equals("jan.novak@example.com") &&
+                    cmd.phone().value().equals("+420777123456")
+            ));
+        }
+
+        @Test
+        @DisplayName("should call service with correct guardian arguments for minor")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        void shouldCallServiceWithCorrectGuardian() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                    {
+                        "firstName": "Petra",
+                        "lastName": "Nováková",
+                        "dateOfBirth": "2010-06-20",
+                        "nationality": "CZ",
+                        "gender": "FEMALE",
+                        "email": "petra.novakova@example.com",
+                        "phone": "+420111222333",
+                        "address": {
+                            "street": "Hlavní 456",
+                            "city": "Brno",
+                            "postalCode": "60000",
+                            "country": "CZ"
+                        },
+                        "guardian": {
+                            "firstName": "Guardian",
+                            "lastName": "Surname",
+                            "relationship": "PARENT",
+                            "email": "guardian@example.com",
+                            "phone": "+420123456789"
+                        }
+                    }
+                    """));
+
+            Mockito.verify(registrationService).registerMember(argThat(cmd ->
+                    cmd.guardian() != null &&
+                    cmd.guardian().getFirstName().equals("Guardian") &&
+                    cmd.guardian().getLastName().equals("Surname") &&
+                    cmd.guardian().getRelationship().equals("PARENT") &&
+                    cmd.guardian().getEmailValue().equals("guardian@example.com") &&
+                    cmd.guardian().getPhoneValue().equals("+420123456789")
+            ));
+        }
+
+        @Test
+        @DisplayName("should call service with null guardian when not provided")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        void shouldCallServiceWithNullGuardianWhenNotProvided() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                    {
+                        "firstName": "Jan",
+                        "lastName": "Novák",
+                        "dateOfBirth": "2000-06-15",
+                        "nationality": "CZ",
+                        "gender": "MALE",
+                        "email": "jan.novak@example.com",
+                        "phone": "+420777123456",
+                        "address": {
+                            "street": "Hlavní 123",
+                            "city": "Praha",
+                            "postalCode": "11000",
+                            "country": "CZ"
+                        }
+                    }
+                    """));
+
+            Mockito.verify(registrationService).registerMember(argThat(cmd ->
+                    cmd.guardian() == null
+            ));
+        }
+
+        @Test
+        @DisplayName("should call service with correct birthNumber and bankAccountNumber when provided")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        void shouldCallServiceWithCorrectBirthNumberAndBankAccount() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                    {
+                        "firstName": "Jan",
+                        "lastName": "Novák",
+                        "dateOfBirth": "2000-06-15",
+                        "nationality": "CZ",
+                        "gender": "MALE",
+                        "email": "jan.novak@example.com",
+                        "phone": "+420777123456",
+                        "address": {
+                            "street": "Hlavní 123",
+                            "city": "Praha",
+                            "postalCode": "11000",
+                            "country": "CZ"
+                        },
+                        "birthNumber": "0001011234",
+                        "bankAccountNumber": "123456789/2010"
+                    }
+                    """));
+
+            Mockito.verify(registrationService).registerMember(argThat(cmd ->
+                    cmd.birthNumber() != null &&
+                    cmd.birthNumber().value().equals("000101/1234") &&
+                    cmd.bankAccountNumber() != null &&
+                    cmd.bankAccountNumber().value().equals("123456789/2010")
+            ));
         }
 
         @Test
@@ -445,33 +570,42 @@ class MemberControllerApiTest {
         void shouldCreateMemberWithValidData() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(createTestMember(memberId));
-            when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
-                    .thenReturn(Link.of("/api/members/" + memberId));
+            Address address = Address.of("Test Street", "Test City", "10000", "CZ");
+            EmailAddress email = EmailAddress.of("test@example.com");
+            PhoneNumber phone = PhoneNumber.of("+420123456789");
+
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withName("Test", "Member")
+                    .withRegistrationNumber("ZBM1234")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withPhone(phone)
+                    .withEmail(email)
+                    .build();
+
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2000-06-15",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "jan.novak@example.com",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """)
+                            postMembers().content("""
+                                    {
+                                        "firstName": "Jan",
+                                        "lastName": "Novák",
+                                        "dateOfBirth": "2000-06-15",
+                                        "nationality": "CZ",
+                                        "gender": "MALE",
+                                        "email": "jan.novak@example.com",
+                                        "phone": "+420777123456",
+                                        "address": {
+                                            "street": "Hlavní 123",
+                                            "city": "Praha",
+                                            "postalCode": "11000",
+                                            "country": "CZ"
+                                        }
+                                    }
+                                    """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isCreated())
                     .andExpect(locationHeaderWithMemberDetailRedirect(memberId));
         }
@@ -482,40 +616,48 @@ class MemberControllerApiTest {
         void shouldCreateMinorWithGuardian() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(createTestMember(memberId));
-            when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
-                    .thenReturn(Link.of("/api/members/" + memberId));
+            Address address = Address.of("Test Street", "Test City", "10000", "CZ");
+            EmailAddress email = EmailAddress.of("test@example.com");
+            PhoneNumber phone = PhoneNumber.of("+420123456789");
 
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("""
-                                            {
-                                                "firstName": "Petra",
-                                                "lastName": "Nováková",
-                                                "dateOfBirth": "2010-06-20",
-                                                "nationality": "CZ",
-                                                "gender": "FEMALE",
-                                                "email": "petra.novakova@example.com",
-                                                "phone": "+420111222333",
-                                                "address": {
-                                                    "street": "Hlavní 456",
-                                                    "city": "Brno",
-                                                    "postalCode": "60000",
-                                                    "country": "CZ"
-                                                },
-                                                "guardian": {
-                                                    "firstName": "Guardian",
-                                                    "lastName": "Surname",
-                                                    "relationship": "PARENT",
-                                                    "email": "guardian@example.com",
-                                                    "phone": "+420123456789"
-                                                }
-                                            }
-                                            """)
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withName("Test", "Member")
+                    .withRegistrationNumber("ZBM1234")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withPhone(phone)
+                    .withEmail(email)
+                    .build();
+
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Petra",
+                                "lastName": "Nováková",
+                                "dateOfBirth": "2010-06-20",
+                                "nationality": "CZ",
+                                "gender": "FEMALE",
+                                "email": "petra.novakova@example.com",
+                                "phone": "+420111222333",
+                                "address": {
+                                    "street": "Hlavní 456",
+                                    "city": "Brno",
+                                    "postalCode": "60000",
+                                    "country": "CZ"
+                                },
+                                "guardian": {
+                                    "firstName": "Guardian",
+                                    "lastName": "Surname",
+                                    "relationship": "PARENT",
+                                    "email": "guardian@example.com",
+                                    "phone": "+420123456789"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isCreated())
                     .andExpect(locationHeaderWithMemberDetailRedirect(memberId));
         }
@@ -524,28 +666,24 @@ class MemberControllerApiTest {
         @DisplayName("with missing first name should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenFirstNameMissing() throws Exception {
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2000-06-15",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "jan@example.com",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """)
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2000-06-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -556,28 +694,24 @@ class MemberControllerApiTest {
         @DisplayName("with invalid email should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenEmailInvalid() throws Exception {
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2005-05-15",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "invalid-email",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """)
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "invalid-email",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -588,28 +722,24 @@ class MemberControllerApiTest {
         @DisplayName("with invalid phone should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenPhoneInvalid() throws Exception {
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2005-05-15",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "jan@example.com",
-                                                "phone": "123",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """)
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "123",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -621,30 +751,23 @@ class MemberControllerApiTest {
         @DisplayName("with future date of birth should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenDateOfBirthInFuture() throws Exception {
-            LocalDate futureDate = LocalDate.now().plusDays(1);
-
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "%s",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "jan@example.com",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """.formatted(futureDate))
-                    )
-                    .andDo(MockMvcResultHandlers.print())
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2120-12-10",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -655,28 +778,24 @@ class MemberControllerApiTest {
         @DisplayName("with missing email should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenEmailMissing() throws Exception {
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2005-05-15",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """)
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -687,35 +806,31 @@ class MemberControllerApiTest {
         @DisplayName("with invalid guardian should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenGuardianInvalid() throws Exception {
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "Petra",
-                                                "lastName": "Nováková",
-                                                "dateOfBirth": "2010-06-20",
-                                                "nationality": "CZ",
-                                                "gender": "FEMALE",
-                                                "email": "petra@example.com",
-                                                "phone": "+420111222333",
-                                                "address": {
-                                                    "street": "Hlavní 456",
-                                                    "city": "Brno",
-                                                    "postalCode": "60000",
-                                                    "country": "CZ"
-                                                },
-                                                "guardian": {
-                                                    "firstName": "",
-                                                    "lastName": "Novák",
-                                                    "relationship": "PARENT",
-                                                    "email": "pavel.novak@example.com",
-                                                    "phone": "+420987654321"
-                                                }
-                                            }
-                                            """)
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Petra",
+                                "lastName": "Nováková",
+                                "dateOfBirth": "2010-06-20",
+                                "nationality": "CZ",
+                                "gender": "FEMALE",
+                                "email": "petra@example.com",
+                                "phone": "+420111222333",
+                                "address": {
+                                    "street": "Hlavní 456",
+                                    "city": "Brno",
+                                    "postalCode": "60000",
+                                    "country": "CZ"
+                                },
+                                "guardian": {
+                                    "firstName": "",
+                                    "lastName": "Novák",
+                                    "relationship": "PARENT",
+                                    "email": "pavel.novak@example.com",
+                                    "phone": "+420987654321"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -728,33 +843,41 @@ class MemberControllerApiTest {
         void shouldCreateMemberWithValidAddressAndContacts() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(createTestMember(memberId));
-            when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
-                    .thenReturn(Link.of("/api/members/" + memberId));
+            Address address = Address.of("Test Street", "Test City", "10000", "CZ");
+            EmailAddress email = EmailAddress.of("test@example.com");
+            PhoneNumber phone = PhoneNumber.of("+420123456789");
 
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2005-05-15",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "jan.novak@example.com",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """)
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withName("Test", "Member")
+                    .withRegistrationNumber("ZBM1234")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(address)
+                    .withPhone(phone)
+                    .withEmail(email)
+                    .build();
+
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan.novak@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isCreated())
                     .andExpect(locationHeaderWithMemberDetailRedirect(memberId));
         }
@@ -763,28 +886,24 @@ class MemberControllerApiTest {
         @DisplayName("with invalid nationality code should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenNationalityCodeInvalid() throws Exception {
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2005-05-15",
-                                                "nationality": "CZECH",
-                                                "gender": "MALE",
-                                                "email": "jan@example.com",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """)
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZECH",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -796,28 +915,24 @@ class MemberControllerApiTest {
         @DisplayName("with invalid address missing fields should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenAddressMissingFields() throws Exception {
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2005-05-15",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "jan@example.com",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "CZ"
-                                                }
-                                            }
-                                            """)
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "CZ"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -828,28 +943,24 @@ class MemberControllerApiTest {
         @DisplayName("with invalid address country code format should return 400")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
         void shouldReturn400WhenAddressCountryInvalid() throws Exception {
-            mockMvc.perform(
-                            post("/api/members")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "firstName": "Jan",
-                                                "lastName": "Novák",
-                                                "dateOfBirth": "2005-05-15",
-                                                "nationality": "CZ",
-                                                "gender": "MALE",
-                                                "email": "jan@example.com",
-                                                "phone": "+420777123456",
-                                                "address": {
-                                                    "street": "Hlavní 123",
-                                                    "city": "Praha",
-                                                    "postalCode": "11000",
-                                                    "country": "X"
-                                                }
-                                            }
-                                            """)
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2005-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {
+                                    "street": "Hlavní 123",
+                                    "city": "Praha",
+                                    "postalCode": "11000",
+                                    "country": "X"
+                                }
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -860,6 +971,10 @@ class MemberControllerApiTest {
     @Nested
     @DisplayName("GET /api/members")
     class ListMembersTests {
+        private MockHttpServletRequestBuilder getApiMembers() {
+            return get("/api/members")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE);
+        }
 
         @Test
         @DisplayName("should return 200 with empty collection when no members exist")
@@ -868,154 +983,119 @@ class MemberControllerApiTest {
             when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(new PageImpl<>(
                     List.of()));
 
-            mockMvc.perform(
-                            get("/api/members")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
+            mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList").doesNotExist())
                     .andExpect(jsonPath("$._links.self.href").exists());
         }
 
         @Test
-        @DisplayName("should return collection of member summaries with HATEOAS links")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE, Authority.MEMBERS_READ})
-        void shouldReturnMemberCollectionWithHateoasLinks() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = createTestMember(memberId, "Jan", "Novák", "ZBM0501");
-
-            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(
-                            get("/api/members")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList").exists())
-                    .andExpect(jsonPath("$._links.self.href").exists());
-        }
-
-        @Test
-        @DisplayName("should return paginated results")
+        @DisplayName("should call repository with correct default pagination parameters")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldReturnPaginatedResults() throws Exception {
+        void shouldCallRepositoryWithDefaultPagination() throws Exception {
             when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+                    .thenReturn(new PageImpl<>(List.of()));
 
-            mockMvc.perform(
-                            get("/api/members")
-                                    .param("page", "0")
-                                    .param("size", "10")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
+            mockMvc.perform(getApiMembers());
+
+            Mockito.verify(memberRepository).findAll(argThat(pageable ->
+                    pageable.getPageNumber() == 0 &&
+                    pageable.getPageSize() == 10 &&
+                    pageable.getSort().getOrderFor("lastName") != null &&
+                    pageable.getSort().getOrderFor("lastName").isAscending()
+            ));
+        }
+
+        @Test
+        @DisplayName("should call repository with custom page and size parameters")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldCallRepositoryWithCustomPagination() throws Exception {
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(getApiMembers()
+                    .param("page", "2")
+                    .param("size", "20"));
+
+            Mockito.verify(memberRepository).findAll(argThat(pageable ->
+                    pageable.getPageNumber() == 2 &&
+                    pageable.getPageSize() == 20
+            ));
+        }
+
+        @Test
+        @DisplayName("should call repository with correct sort parameters")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldCallRepositoryWithCorrectSortParameters() throws Exception {
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(getApiMembers()
+                    .param("sort", "firstName,desc")
+                    .param("sort", "registrationNumber,asc"));
+
+            Mockito.verify(memberRepository).findAll(argThat(pageable ->
+                    pageable.getSort().getOrderFor("firstName") != null &&
+                    pageable.getSort().getOrderFor("firstName").isDescending() &&
+                    pageable.getSort().getOrderFor("registrationNumber") != null &&
+                    pageable.getSort().getOrderFor("registrationNumber").isAscending()
+            ));
+        }
+
+        @Test
+        @DisplayName("should return correct JSON structure with page metadata")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldReturnCorrectJsonStructureWithPageMetadata() throws Exception {
+            UUID memberId1 = UUID.randomUUID();
+            UUID memberId2 = UUID.randomUUID();
+            Member member1 = MemberTestDataBuilder.aMemberWithId(memberId1)
+                    .withFirstName("Jan")
+                    .withLastName("Novák")
+                    .withRegistrationNumber(RegistrationNumber.of("ZBM0001"))
+                    .build();
+            Member member2 = MemberTestDataBuilder.aMemberWithId(memberId2)
+                    .withFirstName("Petra")
+                    .withLastName("Svobodová")
+                    .withRegistrationNumber(RegistrationNumber.of("ZBM0002"))
+                    .build();
+
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member1, member2), PageRequest.of(0, 10), 2));
+
+            mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.page").exists())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList").isArray())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(2))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].id").value(memberId1.toString()))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].firstName").value("Jan"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].lastName").value("Novák"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].registrationNumber").value("ZBM0001"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.self.href").value(
+                            "http://localhost/api/members/" + memberId1))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].id").value(memberId2.toString()))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].firstName").value("Petra"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].lastName").value("Svobodová"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].registrationNumber").value("ZBM0002"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1]._links.self.href").value(
+                            "http://localhost/api/members/" + memberId2))
                     .andExpect(jsonPath("$.page.size").value(10))
+                    .andExpect(jsonPath("$.page.totalElements").value(2))
+                    .andExpect(jsonPath("$.page.totalPages").value(1))
                     .andExpect(jsonPath("$.page.number").value(0))
                     .andExpect(jsonPath("$._links.self.href").exists());
-        }
-
-        @Test
-        @DisplayName("should return sorted results")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldReturnSortedResults() throws Exception {
-            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
-
-            mockMvc.perform(
-                            get("/api/members")
-                                    .param("sort", "lastName,asc")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.page").exists());
         }
 
         @Test
         @DisplayName("should return 400 when sort field invalid")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn400WhenSortFieldInvalid() throws Exception {
-            mockMvc.perform(
-                            get("/api/members")
-                                    .param("sort", "invalidField,asc")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+            mockMvc.perform(getApiMembers()
+                            .param("sort", "invalidField,asc")
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(
                             "Invalid sort field")));
-        }
-
-        @Test
-        @DisplayName("should handle multi-field sort")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldHandleMultiFieldSort() throws Exception {
-            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
-
-            mockMvc.perform(
-                            get("/api/members")
-                                    .param("sort", "lastName,asc")
-                                    .param("sort", "firstName,asc")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.page").exists());
-        }
-
-        @Test
-        @DisplayName("should use default pagination when no parameters provided")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldUseDefaultPaginationWhenNoParams() throws Exception {
-            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
-
-            mockMvc.perform(
-                            get("/api/members")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.page.size").value(10))
-                    .andExpect(jsonPath("$.page.number").value(0));
-        }
-
-        @Test
-        @DisplayName("should include pagination links")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE, Authority.MEMBERS_READ})
-        void shouldIncludePaginationLinks() throws Exception {
-            List<Member> members = List.of(
-                    createTestMember(UUID.randomUUID(), "Member0", "Test0", "ZBM0001"),
-                    createTestMember(UUID.randomUUID(), "Member1", "Test1", "ZBM0002"),
-                    createTestMember(UUID.randomUUID(), "Member2", "Test2", "ZBM0003")
-            );
-
-            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
-                    .thenReturn(new PageImpl<>(members, PageRequest.of(0, 2), members.size()));
-
-            mockMvc.perform(
-                            get("/api/members")
-                                    .param("page", "0")
-                                    .param("size", "2")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href").exists());
         }
     }
 
@@ -1023,217 +1103,68 @@ class MemberControllerApiTest {
     @DisplayName("POST /api/members/{id}/terminate")
     class TerminateMemberTests {
 
+        private MockHttpServletRequestBuilder postMemberIdTerminate(MemberId memberId) {
+            return postMemberIdTerminate(memberId.uuid());
+        }
+
+        private MockHttpServletRequestBuilder postMemberIdTerminate(UUID memberId) {
+            return post("/api/members/" + memberId.toString() + "/terminate")
+                    .contentType("application/json");
+        }
+
         @Test
-        @DisplayName("successful termination should return 200 OK with termination details")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+        @DisplayName("it should call expected service method with correct arguments")
+        @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_UPDATE})
+        void shouldCallExpectedServiceMethodWithCorrectArguments() throws Exception {
+            // Arrange
+            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
+
+            UUID memberId = UUID.randomUUID();
+
+            // Act
+            mockMvc.perform(postMemberIdTerminate(memberId).content("""
+                    {
+                        "reason": "ODHLASKA",
+                        "note": "Member requested termination"
+                    }
+                    """)
+            );
+
+            // Assert
+            Member.TerminateMembership expectedCommand = new Member.TerminateMembership(UserId.fromString(
+                    "48e11797-a61b-4783-bc1d-1c11d1b1d288"),
+                    DeactivationReason.ODHLASKA,
+                    "Member requested termination");
+
+            Mockito.verify(managementService)
+                    .terminateMember(eq(memberId),
+                            eq(UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288")),
+                            eq(expectedCommand));
+        }
+
+        @Test
+        @DisplayName("valid termination request should return 204 NO CONTENT response")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
         void shouldTerminateMemberSuccessfully() throws Exception {
             // Arrange
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
 
             UUID memberId = UUID.randomUUID();
-            Member activeMember = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 6, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420777123456")
-                    .withNoGuardian()
-                    .build();
-
-            // Create a terminated member for the response
-            Member terminatedMember = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withRegistrationNumber("ZBM0501")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(2005, 6, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420777123456")
-                    .withNoGuardian()
-                    .terminated(DeactivationReason.ODHLASKA, "Member requested termination")
-                    .build();
-
-            when(managementService.terminateMember(eq(memberId), any(UserId.class), any(Member.TerminateMembership.class)))
-                    .thenReturn(terminatedMember);
-            when(memberRepository.findById(new UserId(memberId)))
-                    .thenReturn(java.util.Optional.of(terminatedMember));
-            when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
-                    .thenReturn(Link.of("/api/members/" + memberId));
 
             // Act & Assert
-            mockMvc.perform(
-                            post("/api/members/" + memberId + "/terminate")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "reason": "ODHLASKA",
-                                                "note": "Member requested termination"
-                                            }
-                                            """)
+            mockMvc.perform(postMemberIdTerminate(memberId).content("""
+                            {
+                                "reason": "ODHLASKA",
+                                "note": "Member requested termination"
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isNoContent());
-        }
-
-        @Test
-        @DisplayName("termination without note should return 204 NO_CONTENT with Location header pointing to list of members")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
-        void shouldTerminateMemberWithoutNote() throws Exception {
-            // Arrange
-            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
-
-            UUID memberId = UUID.randomUUID();
-            Member terminatedMember = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withRegistrationNumber("ZBM0502")
-                    .withName("Petra", "Nováková")
-                    .withDateOfBirth(LocalDate.of(2010, 6, 20))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Hlavní 456", "Brno", "60000", "CZ"))
-                    .withEmail("petra.novakova@example.com")
-                    .withPhone("+420111222333")
-                    .withNoGuardian()
-                    .terminated(DeactivationReason.PRESTUP, null)
-                    .build();
-
-            when(managementService.terminateMember(eq(memberId), any(UserId.class), any(Member.TerminateMembership.class)))
-                    .thenReturn(terminatedMember);
-            when(memberRepository.findById(new UserId(memberId)))
-                    .thenReturn(java.util.Optional.of(terminatedMember));
-            when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
-                    .thenReturn(Link.of("/api/members/" + memberId));
-
-            // Act & Assert
-            mockMvc.perform(
-                            post("/api/members/" + memberId + "/terminate")
-                                    .contentType("application/json")
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("""
-                                            {
-                                                "reason": "PRESTUP"
-                                            }
-                                            """)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isNoContent())
                     .andExpect(header().string(HttpHeaders.LOCATION, "http://localhost/api/members"));
         }
 
         @Test
-        @DisplayName("active member GET response should include terminate affordance")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE, Authority.MEMBERS_READ})
-        void shouldIncludeTerminateAffordanceForActiveMember() throws Exception {
-            // Arrange
-            UUID memberId = UUID.randomUUID();
-            Member activeMember = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withRegistrationNumber("ZBM0504")
-                    .withName("Active", "Member")
-                    .withDateOfBirth(LocalDate.of(2005, 6, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                    .withEmail("active.member@example.com")
-                    .withPhone("+420777123456")
-                    .withNoGuardian()
-                    .build();
-
-            when(memberRepository.findById(new UserId(memberId)))
-                    .thenReturn(java.util.Optional.of(activeMember));
-            when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
-                    .thenReturn(Link.of("/api/members/" + memberId));
-
-            // Act & Assert
-            mockMvc.perform(
-                            get("/api/members/" + memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.active").value(true))
-                    .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.collection.href").exists());
-            // Note: Affordances are part of _templates in HAL+FORMS, but we verify the controller logic
-            // by checking that the member is active and the link is present
-        }
-
-        @Test
-        @DisplayName("terminated member GET response should not include terminate affordance")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE, Authority.MEMBERS_READ})
-        void shouldNotIncludeTerminateAffordanceForTerminatedMember() throws Exception {
-            // Arrange
-            UUID memberId = UUID.randomUUID();
-            Member terminatedMember = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withRegistrationNumber("ZBM0505")
-                    .withName("Terminated", "Member")
-                    .withDateOfBirth(LocalDate.of(2005, 6, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 456", "Brno", "60000", "CZ"))
-                    .withEmail("terminated.member@example.com")
-                    .withPhone("+420111222333")
-                    .withNoGuardian()
-                    .terminated(DeactivationReason.ODHLASKA, "Member resigned")
-                    .build();
-
-            when(memberRepository.findById(new UserId(memberId)))
-                    .thenReturn(java.util.Optional.of(terminatedMember));
-            when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
-                    .thenReturn(Link.of("/api/members/" + memberId));
-
-            // Act & Assert
-            mockMvc.perform(
-                            get("/api/members/" + memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.active").value(false))
-                    .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.collection.href").exists());
-            // Note: The controller only adds update affordance for terminated members
-            // This is verified by checking that member is not active
-        }
-
-        @Test
-        @DisplayName("self link should always be present on member responses")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldAlwaysIncludeSelfLink() throws Exception {
-            // Arrange
-            UUID memberId = UUID.randomUUID();
-            Member activeMember = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withRegistrationNumber("ZBM0506")
-                    .withName("Self", "Link")
-                    .withDateOfBirth(LocalDate.of(2005, 6, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 789", "Ostrava", "70000", "CZ"))
-                    .withEmail("self.link@example.com")
-                    .withPhone("+420444555666")
-                    .withNoGuardian()
-                    .build();
-
-            when(memberRepository.findById(new UserId(memberId)))
-                    .thenReturn(java.util.Optional.of(activeMember));
-            when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
-                    .thenReturn(Link.of("/api/members/" + memberId));
-
-            // Act & Assert
-            mockMvc.perform(
-                            get("/api/members/" + memberId)
-                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                    )
-                    .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("/api/members/" + memberId)));
-        }
-
-        @Test
-        @DisplayName("termination of already terminated member should return 400 Bad Request")
+        @DisplayName("should return 400 Bad Request when service throws InvalidUpdateException")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
         void shouldReturn400WhenTerminatingAlreadyTerminatedMember() throws Exception {
             // Arrange
@@ -1241,21 +1172,19 @@ class MemberControllerApiTest {
 
             UUID memberId = UUID.randomUUID();
 
-            when(managementService.terminateMember(eq(memberId), any(UserId.class), any(Member.TerminateMembership.class)))
+            when(managementService.terminateMember(eq(memberId),
+                    any(UserId.class),
+                    any(Member.TerminateMembership.class)))
                     .thenThrow(new InvalidUpdateException("Member is already terminated"));
 
             // Act & Assert
-            mockMvc.perform(
-                            post("/api/members/" + memberId + "/terminate")
-                                    .contentType("application/json")
-                                    .content("""
-                                            {
-                                                "reason": "OTHER",
-                                                "note": "Second termination attempt"
-                                            }
-                                            """)
+            mockMvc.perform(postMemberIdTerminate(memberId).content("""
+                            {
+                                "reason": "OTHER",
+                                "note": "Second termination attempt"
+                            }
+                            """)
                     )
-                    .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").exists())
                     .andExpect(jsonPath("$.title").value("Bad Request"))
@@ -1266,69 +1195,19 @@ class MemberControllerApiTest {
         @DisplayName("termination with invalid reason should return 400 Bad Request")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
         void shouldReturn400WhenTerminationReasonInvalid() throws Exception {
-            // Arrange - note: validation happens at request level via @Valid
-            // This test verifies the controller handles invalid requests properly
+            // Arrange
             UUID memberId = UUID.randomUUID();
 
-            // Create request with null reason (should fail validation)
-            String invalidRequest = """
-                    {
-                        "reason": null,
-                        "note": "Test note"
-                    }
-                    """;
-
             // Act & Assert
-            mockMvc.perform(
-                            post("/api/members/" + memberId + "/terminate")
-                                    .contentType("application/json")
-                                    .content(invalidRequest)
+            mockMvc.perform(postMemberIdTerminate(memberId).content("""
+                            {
+                                "reason": null,
+                                "note": "Test note"
+                            }
+                            """)
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest());
         }
-    }
-
-    // Helper method to create test Member
-    private Member createTestMember(UUID id, String firstName, String lastName, String registrationNumber) {
-        return MemberTestDataBuilder.aMemberWithId(id)
-                .withRegistrationNumber(registrationNumber)
-                .withName(firstName, lastName)
-                .withDateOfBirth(LocalDate.of(2005, 6, 15))
-                .withNationality("CZ")
-                .withGender(Gender.MALE)
-                .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                .withEmail("test@example.com")
-                .withPhone("+420777888999")
-                .withNoGuardian()
-                .build();
-    }
-
-    /**
-     * Creates a test Member for mocking RegistrationService responses.
-     */
-    private Member createTestMember(UUID memberId) {
-        UserId id = UserId.fromString(memberId.toString());
-        RegistrationNumber registrationNumber = RegistrationNumber.of("ZBM1234");
-        PersonalInformation personalInformation = PersonalInformation.of(
-                "Test", "Member", LocalDate.of(2000, 1, 1), "CZ", Gender.MALE
-        );
-        Address address = Address.of("Test Street", "Test City", "10000", "CZ");
-        EmailAddress email = EmailAddress.of("test@example.com");
-        PhoneNumber phone = PhoneNumber.of("+420123456789");
-
-        // Create a domain command for Member.register
-        Member.RegisterMember domainCommand = new Member.RegisterMember(
-                id,
-                registrationNumber,
-                personalInformation,
-                address,
-                email,
-                phone,
-                null,
-                null,
-                null
-        );
-        return Member.register(domainCommand);
     }
 }

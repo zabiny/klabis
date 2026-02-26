@@ -42,7 +42,7 @@ class MemberPermissionsLinkProcessor implements RepresentationModelProcessor<Ent
             return model;
         }
 
-        if (hasMembersPermissionsAuthority()) {
+        if (response.active() && hasMembersPermissionsAuthority()) {
             Link permissionsLink = klabisLinkTo(methodOn(PermissionController.class)
                     .getUserPermissions(memberId))
                     .withRel("permissions");

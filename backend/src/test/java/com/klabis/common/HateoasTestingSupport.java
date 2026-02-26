@@ -3,6 +3,7 @@ package com.klabis.common;
 import com.klabis.KlabisApplication;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.core.ControllerEntityLinks;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilderFactory;
 import org.springframework.modulith.core.ApplicationModule;
@@ -27,6 +28,7 @@ public final class HateoasTestingSupport {
         List<? extends Class<?>> moduleControllers = testedControllerModule.getBasePackage()
                 .stream()
                 .filter(c -> c.isMetaAnnotatedWith(Controller.class))
+                .filter(c -> c.isMetaAnnotatedWith(ExposesResourceFor.class))
                 .map(JavaClass::reflect).toList();;
 
         return new ControllerEntityLinks(moduleControllers, new WebMvcLinkBuilderFactory());
