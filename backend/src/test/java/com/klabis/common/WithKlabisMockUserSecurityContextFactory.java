@@ -20,10 +20,12 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
     public SecurityContext createSecurityContext(WithKlabisMockUser withUser) {
         final String userName = StringUtils.defaultIfBlank(withUser.username(), "ZBM8001");
 
+        // if no userId is given, either use memberId if provided (as userId == memberId) or generate random (as userId is required)
         final UUID userId = UUID.fromString(StringUtils.defaultIfBlank(withUser.userId(),
                 StringUtils.defaultIfBlank(withUser.memberId(), UUID.randomUUID().toString())));
 
-        final UUID memberId = StringUtils.isBlank(withUser.memberId()) ? userId : UUID.fromString(withUser.memberId());
+        // if no memberId is given, do not generate random or use userId => memberId is not required (may be null), we can simulate users who are not members by that
+        final UUID memberId = StringUtils.isBlank(withUser.memberId()) ? null : UUID.fromString(withUser.memberId());
 
         KlabisJwtAuthenticationToken authentication = KlabisAuthenticationFactory.createAuthenticationToken(JwtParams.jwtTokenParams(
                 userName,

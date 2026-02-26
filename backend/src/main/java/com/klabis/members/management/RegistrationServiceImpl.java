@@ -4,22 +4,20 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.domain.*;
-import com.klabis.members.infrastructure.restapi.AddressRequest;
-import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
-import java.util.UUID;
+import java.time.LocalDate;
 
 /**
  * Service for member registration operations.
  *
  * <p>Handles the complete member registration process, including:
  * <ul>
- *   <li>Generating unique registration numbers</li>
+ *   <li>Generating registration numbers</li>
  *   <li>Creating both Member and User aggregates in an atomic transaction</li>
  *   <li>Ensuring Member ID = User ID for all members</li>
  * </ul>
@@ -43,144 +41,58 @@ class RegistrationServiceImpl implements RegistrationService {
     /**
      * Constructs a new RegistrationService.
      *
-     * @param memberRepository the member repository for persisting members
-     * @param userService      the user service for creating users and permissions
-     * @param clubCode         the club code used for registration number generation
+     * @param memberRepository            the member repository for persisting members
+     * @param userService                 the user service for creating users and permissions
+     * @param registrationNumberGenerator the generator for registration numbers
      */
     public RegistrationServiceImpl(
             MemberRepository memberRepository,
             UserService userService,
-            Members members,
-            @Value("${klabis.club.code}") String clubCode) {
+            RegistrationNumberGenerator registrationNumberGenerator) {
         this.memberRepository = memberRepository;
         this.userService = userService;
-        this.registrationNumberGenerator = new RegistrationNumberGenerator(clubCode, members);
+        this.registrationNumberGenerator = registrationNumberGenerator;
     }
 
     @Transactional
     @Override
-    public UUID registerMember(RegisterMemberRequest request) {
-        RegistrationNumber registrationNumber = registrationNumberGenerator.generate(request.dateOfBirth());
+    public Member registerMember(RegisterNewMember command) {
+        Assert.notNull(command.personalInformation(), "Personal information must not be null");
+        Assert.notNull(command.personalInformation().getDateOfBirth(), "Date of birth must not be null");
 
-        Address address = createAddress(request.address());
+        LocalDate dateOfBirth = command.personalInformation().getDateOfBirth();
 
-        EmailAddress email = createEmailAddress(request.email());
-        PhoneNumber phone = createPhoneNumber(request.phone());
-
-        GuardianInformation guardian = null;
-        if (request.guardian() != null) {
-            GuardianDTO dto = request.guardian();
-            EmailAddress guardianEmail = createEmailAddress(dto.email());
-            PhoneNumber guardianPhone = createPhoneNumber(dto.phone());
-
-            guardian = new GuardianInformation(
-                    dto.firstName(),
-                    dto.lastName(),
-                    dto.relationship(),
-                    guardianEmail,
-                    guardianPhone
-            );
-        }
-
-        PersonalInformation personalInformation = PersonalInformation.of(
-                request.firstName(),
-                request.lastName(),
-                request.dateOfBirth(),
-                request.nationality(),
-                request.gender()
-        );
-
-        BirthNumber birthNumber = null;
-        if (request.birthNumber() != null && !request.birthNumber().isBlank()) {
-            birthNumber = BirthNumber.of(request.birthNumber());
-        }
-
-        BankAccountNumber bankAccountNumber = null;
-        if (request.bankAccountNumber() != null && !request.bankAccountNumber().isBlank()) {
-            bankAccountNumber = BankAccountNumber.of(request.bankAccountNumber());
-        }
+        RegistrationNumber registrationNumber = registrationNumberGenerator.generate(dateOfBirth);
+        log.debug("Generated registration number: {} for date of birth: {}",
+                registrationNumber.getValue(), dateOfBirth);
 
         UserId sharedId = userService.createUser(
                 registrationNumber.getValue(),
-                email.value(),
+                command.email().value(),
                 Authority.getStandardUserAuthorities()
         );
 
         log.debug("User created with shared ID: {} for username: {}",
                 sharedId, registrationNumber.getValue());
 
-        Member.RegisterMember command = new Member.RegisterMember(
+        Member.RegisterMember domainCommand = new Member.RegisterMember(
                 sharedId,
                 registrationNumber,
-                personalInformation,
-                address,
-                email,
-                phone,
-                guardian,
-                birthNumber,
-                bankAccountNumber
+                command.personalInformation(),
+                command.address(),
+                command.email(),
+                command.phone(),
+                command.guardian(),
+                command.birthNumber(),
+                command.bankAccountNumber()
         );
-        Member member = Member.register(command);
+
+        Member member = Member.register(domainCommand);
 
         Member savedMember = memberRepository.save(member);
 
         log.debug("Member created with shared ID: {}", savedMember.getId());
 
-        return sharedId.uuid();
-    }
-
-    // ========== Helper Methods ==========
-
-    /**
-     * Creates an Address value object from the request data.
-     *
-     * @param addressRequest the address request data
-     * @return the Address value object
-     * @throws IllegalArgumentException if address data is invalid
-     */
-    private Address createAddress(AddressRequest addressRequest) {
-        try {
-            return Address.of(
-                    addressRequest.street(),
-                    addressRequest.city(),
-                    addressRequest.postalCode(),
-                    addressRequest.country()
-            );
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid address data: {}", e.getMessage());
-            throw new IllegalArgumentException("Invalid address: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Creates an EmailAddress value object from the string.
-     *
-     * @param email the email address string
-     * @return the EmailAddress value object
-     * @throws IllegalArgumentException if email is invalid
-     */
-    private EmailAddress createEmailAddress(String email) {
-        try {
-            return EmailAddress.of(email);
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid email address: {}", e.getMessage());
-            throw new IllegalArgumentException("Invalid email: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Creates a PhoneNumber value object from the string.
-     *
-     * @param phone the phone number string
-     * @return the PhoneNumber value object
-     * @throws IllegalArgumentException if phone number is invalid
-     */
-    private PhoneNumber createPhoneNumber(String phone) {
-        try {
-            return PhoneNumber.of(phone);
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid phone number: {}", e.getMessage());
-            throw new IllegalArgumentException("Invalid phone: " + e.getMessage(), e);
-        }
+        return savedMember;
     }
 }
