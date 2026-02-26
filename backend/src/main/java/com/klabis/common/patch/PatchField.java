@@ -39,7 +39,21 @@ public final class PatchField<T> {
         }
     }
 
-    public T get() {
+    /**
+     * Applies patch to field value. If value was provided in request, returns value from request. If value wasn't provided, returns original value (unpatched value).
+     *
+     * @param originalValue
+     * @return
+     */
+    public T patchValue(T originalValue) {
+        if (isProvided()) {
+            return value;
+        } else {
+            return originalValue;
+        }
+    }
+
+    public T throwIfNotProvided() {
         if (!provided) {
             throw new NoSuchElementException("No value provided");
         }

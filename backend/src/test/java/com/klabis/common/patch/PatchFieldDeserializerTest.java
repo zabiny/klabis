@@ -37,7 +37,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.name().isProvided()).isTrue();
-            assertThat(dto.name().get()).isEqualTo("John Doe");
+            assertThat(dto.name().throwIfNotProvided()).isEqualTo("John Doe");
         }
 
         @Test
@@ -52,7 +52,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.age().isProvided()).isTrue();
-            assertThat(dto.age().get()).isEqualTo(25);
+            assertThat(dto.age().throwIfNotProvided()).isEqualTo(25);
         }
 
         @Test
@@ -67,7 +67,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.active().isProvided()).isTrue();
-            assertThat(dto.active().get()).isTrue();
+            assertThat(dto.active().throwIfNotProvided()).isTrue();
         }
     }
 
@@ -149,7 +149,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.name().isProvided()).isTrue();
-            assertThat(dto.name().get()).isNull();
+            assertThat(dto.name().throwIfNotProvided()).isNull();
         }
 
         @Test
@@ -164,7 +164,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.age().isProvided()).isTrue();
-            assertThat(dto.age().get()).isNull();
+            assertThat(dto.age().throwIfNotProvided()).isNull();
         }
 
         @Test
@@ -179,7 +179,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.active().isProvided()).isTrue();
-            assertThat(dto.active().get()).isNull();
+            assertThat(dto.active().throwIfNotProvided()).isNull();
         }
     }
 
@@ -201,13 +201,13 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.name().isProvided()).isTrue();
-            assertThat(dto.name().get()).isEqualTo("John");
+            assertThat(dto.name().throwIfNotProvided()).isEqualTo("John");
 
             assertThat(dto.age().isProvided()).isTrue();
-            assertThat(dto.age().get()).isNull();
+            assertThat(dto.age().throwIfNotProvided()).isNull();
 
             assertThat(dto.active().isProvided()).isTrue();
-            assertThat(dto.active().get()).isTrue();
+            assertThat(dto.active().throwIfNotProvided()).isTrue();
         }
 
         @Test
@@ -222,7 +222,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.name().isProvided()).isTrue();
-            assertThat(dto.name().get()).isEmpty();
+            assertThat(dto.name().throwIfNotProvided()).isEmpty();
         }
 
         @Test
@@ -237,7 +237,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.age().isProvided()).isTrue();
-            assertThat(dto.age().get()).isEqualTo(0);
+            assertThat(dto.age().throwIfNotProvided()).isEqualTo(0);
         }
 
         @Test
@@ -252,7 +252,7 @@ class PatchFieldDeserializerTest {
             TestDto dto = objectMapper.readValue(json, TestDto.class);
 
             assertThat(dto.active().isProvided()).isTrue();
-            assertThat(dto.active().get()).isFalse();
+            assertThat(dto.active().throwIfNotProvided()).isFalse();
         }
     }
 

@@ -32,7 +32,7 @@ class PatchFieldTest {
             PatchField<String> patchField = PatchField.of(null);
 
             assertThat(patchField.isProvided()).isTrue();
-            assertThat(patchField.get()).isNull();
+            assertThat(patchField.throwIfNotProvided()).isNull();
         }
 
         @Test
@@ -41,7 +41,7 @@ class PatchFieldTest {
             PatchField<String> patchField = PatchField.of("");
 
             assertThat(patchField.isProvided()).isTrue();
-            assertThat(patchField.get()).isEmpty();
+            assertThat(patchField.throwIfNotProvided()).isEmpty();
         }
     }
 
@@ -106,7 +106,7 @@ class PatchFieldTest {
         void shouldReturnValueWhenProvided() {
             PatchField<String> patchField = PatchField.of("test value");
 
-            assertThat(patchField.get()).isEqualTo("test value");
+            assertThat(patchField.throwIfNotProvided()).isEqualTo("test value");
         }
 
         @Test
@@ -114,7 +114,7 @@ class PatchFieldTest {
         void shouldReturnNullWhenProvidedWithNull() {
             PatchField<String> patchField = PatchField.of(null);
 
-            assertThat(patchField.get()).isNull();
+            assertThat(patchField.throwIfNotProvided()).isNull();
         }
 
         @Test
@@ -122,7 +122,7 @@ class PatchFieldTest {
         void shouldThrowExceptionWhenNotProvided() {
             PatchField<String> patchField = PatchField.notProvided();
 
-            assertThatThrownBy(patchField::get)
+            assertThatThrownBy(patchField::throwIfNotProvided)
                     .isInstanceOf(NoSuchElementException.class)
                     .hasMessage("No value provided");
         }
@@ -197,7 +197,7 @@ class PatchFieldTest {
             PatchField<Integer> mapped = patchField.map(String::length);
 
             assertThat(mapped.isProvided()).isTrue();
-            assertThat(mapped.get()).isEqualTo(4);
+            assertThat(mapped.throwIfNotProvided()).isEqualTo(4);
         }
 
         @Test
@@ -208,7 +208,7 @@ class PatchFieldTest {
             PatchField<String> mapped = patchField.map(value -> value == null ? "fallback" : value);
 
             assertThat(mapped.isProvided()).isTrue();
-            assertThat(mapped.get()).isEqualTo("fallback");
+            assertThat(mapped.throwIfNotProvided()).isEqualTo("fallback");
         }
 
         @Test
@@ -245,6 +245,51 @@ class PatchFieldTest {
 
             assertThat(mapped.isProvided()).isFalse();
             assertThat(mapped).isSameAs(PatchField.notProvided());
+        }
+    }
+
+    @Nested
+    @DisplayName("patchValue() - Resolve final patched value")
+    class PatchValueTests {
+
+        @Test
+        @DisplayName("Should return provided value when patch field is provided")
+        void shouldReturnProvidedValueWhenPatchFieldIsProvided() {
+            PatchField<String> patchField = PatchField.of("patched");
+
+            String patchedValue = patchField.patchValue("original");
+
+            assertThat(patchedValue).isEqualTo("patched");
+        }
+
+        @Test
+        @DisplayName("Should return null when patch field is provided with null")
+        void shouldReturnNullWhenPatchFieldIsProvidedWithNull() {
+            PatchField<String> patchField = PatchField.of(null);
+
+            String patchedValue = patchField.patchValue("original");
+
+            assertThat(patchedValue).isNull();
+        }
+
+        @Test
+        @DisplayName("Should keep original value when patch field is not provided")
+        void shouldKeepOriginalValueWhenPatchFieldIsNotProvided() {
+            PatchField<String> patchField = PatchField.notProvided();
+
+            String patchedValue = patchField.patchValue("original");
+
+            assertThat(patchedValue).isEqualTo("original");
+        }
+
+        @Test
+        @DisplayName("Should keep original null when patch field is not provided")
+        void shouldKeepOriginalNullWhenPatchFieldIsNotProvided() {
+            PatchField<String> patchField = PatchField.notProvided();
+
+            String patchedValue = patchField.patchValue(null);
+
+            assertThat(patchedValue).isNull();
         }
     }
 }

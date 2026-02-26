@@ -21,7 +21,7 @@ class PatchFieldPatternValidator implements ConstraintValidator<ValidPatchFieldP
             return true;
         }
 
-        String stringValue = value.get();
+        String stringValue = value.throwIfNotProvided();
         if (stringValue == null) {
             return true;
         }

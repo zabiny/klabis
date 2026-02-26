@@ -69,26 +69,26 @@ class UpdateMemberRequestMapper {
     }
 
     private static EmailAddress toEmailAddress(com.klabis.common.patch.PatchField<String> email) {
-        return email.isProvided() ? EmailAddress.of(email.get()) : null;
+        return email.isProvided() ? EmailAddress.of(email.throwIfNotProvided()) : null;
     }
 
     private static PhoneNumber toPhoneNumber(com.klabis.common.patch.PatchField<String> phone) {
-        return phone.isProvided() ? PhoneNumber.of(phone.get()) : null;
+        return phone.isProvided() ? PhoneNumber.of(phone.throwIfNotProvided()) : null;
     }
 
     private static Address toAddress(com.klabis.common.patch.PatchField<AddressRequest> address) {
         return address.isProvided()
-            ? Address.of(address.get().street(), address.get().city(), address.get().postalCode(), address.get().country())
+            ? Address.of(address.throwIfNotProvided().street(), address.throwIfNotProvided().city(), address.throwIfNotProvided().postalCode(), address.throwIfNotProvided().country())
             : null;
     }
 
     private static String toString(com.klabis.common.patch.PatchField<String> value) {
-        return value.isProvided() ? value.get() : null;
+        return value.isProvided() ? value.throwIfNotProvided() : null;
     }
 
     private static BankAccountNumber toBankAccountNumber(com.klabis.common.patch.PatchField<String> bankAccountNumber) {
         if (bankAccountNumber.isProvided()) {
-            String value = bankAccountNumber.get();
+            String value = bankAccountNumber.throwIfNotProvided();
             if (!value.isBlank()) {
                 return BankAccountNumber.of(value);
             }
@@ -98,33 +98,33 @@ class UpdateMemberRequestMapper {
 
     private static IdentityCard toIdentityCard(com.klabis.common.patch.PatchField<com.klabis.members.management.IdentityCardDto> identityCard) {
         return identityCard.isProvided()
-            ? IdentityCard.of(identityCard.get().cardNumber(), identityCard.get().validityDate())
+            ? IdentityCard.of(identityCard.throwIfNotProvided().cardNumber(), identityCard.throwIfNotProvided().validityDate())
             : null;
     }
 
     private static <T> T toEnum(com.klabis.common.patch.PatchField<T> enumField) {
-        return enumField.isProvided() ? enumField.get() : null;
+        return enumField.isProvided() ? enumField.throwIfNotProvided() : null;
     }
 
     private static MedicalCourse toMedicalCourse(com.klabis.common.patch.PatchField<com.klabis.members.management.MedicalCourseDto> medicalCourse) {
         return medicalCourse.isProvided()
-            ? MedicalCourse.of(medicalCourse.get().completionDate(), medicalCourse.get().validityDate())
+            ? MedicalCourse.of(medicalCourse.throwIfNotProvided().completionDate(), medicalCourse.throwIfNotProvided().validityDate())
             : null;
     }
 
     private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<com.klabis.members.management.TrainerLicenseDto> trainerLicense) {
         return trainerLicense.isProvided()
-            ? TrainerLicense.of(trainerLicense.get().licenseNumber(), trainerLicense.get().validityDate())
+            ? TrainerLicense.of(trainerLicense.throwIfNotProvided().licenseNumber(), trainerLicense.throwIfNotProvided().validityDate())
             : null;
     }
 
     private static java.time.LocalDate toLocalDate(com.klabis.common.patch.PatchField<java.time.LocalDate> dateField) {
-        return dateField.isProvided() ? dateField.get() : null;
+        return dateField.isProvided() ? dateField.throwIfNotProvided() : null;
     }
 
     private static BirthNumber toBirthNumber(com.klabis.common.patch.PatchField<String> birthNumber) {
         if (birthNumber.isProvided()) {
-            String value = birthNumber.get();
+            String value = birthNumber.throwIfNotProvided();
             if (!value.isBlank()) {
                 return BirthNumber.of(value);
             }
@@ -135,11 +135,11 @@ class UpdateMemberRequestMapper {
     private static GuardianInformation toGuardianInformation(com.klabis.common.patch.PatchField<GuardianDTO> guardian) {
         return guardian.isProvided()
             ? new GuardianInformation(
-                guardian.get().firstName(),
-                guardian.get().lastName(),
-                guardian.get().relationship(),
-                guardian.get().email() != null ? EmailAddress.of(guardian.get().email()) : null,
-                guardian.get().phone() != null ? PhoneNumber.of(guardian.get().phone()) : null)
+                guardian.throwIfNotProvided().firstName(),
+                guardian.throwIfNotProvided().lastName(),
+                guardian.throwIfNotProvided().relationship(),
+                guardian.throwIfNotProvided().email() != null ? EmailAddress.of(guardian.throwIfNotProvided().email()) : null,
+                guardian.throwIfNotProvided().phone() != null ? PhoneNumber.of(guardian.throwIfNotProvided().phone()) : null)
             : null;
     }
 }

@@ -12,7 +12,7 @@ class PatchFieldNotBlankValidator implements ConstraintValidator<ValidPatchField
             return true;
         }
 
-        String stringValue = value.get();
+        String stringValue = value.throwIfNotProvided();
         return stringValue != null && !stringValue.trim().isEmpty();
     }
 }

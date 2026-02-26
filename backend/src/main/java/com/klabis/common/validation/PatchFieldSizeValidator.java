@@ -28,7 +28,7 @@ class PatchFieldSizeValidator implements ConstraintValidator<ValidPatchFieldSize
             return true; // Not provided is valid
         }
 
-        String stringValue = value.get();
+        String stringValue = value.throwIfNotProvided();
         if (stringValue == null) {
             return true; // Null value is valid
         }
