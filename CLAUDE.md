@@ -68,6 +68,7 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 
 - DO NOT create comments describing what code is doing. Use comments sparingly - exclusively to document intention behind implementation and only if is it necessary.
 - use `/mnt/ramdisk/klabis` folder when need to save temporary file
+- always do code review (use proper agent) before commiting changes involving CODE (either backend or frontend) to git. 
 
 ### Sandbox Issues
 
