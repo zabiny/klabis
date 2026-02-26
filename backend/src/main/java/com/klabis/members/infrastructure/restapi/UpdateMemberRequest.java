@@ -5,6 +5,7 @@ import com.klabis.common.validation.ValidOptionalPattern;
 import com.klabis.common.validation.ValidOptionalSize;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
+import com.klabis.members.management.GuardianDTO;
 import com.klabis.members.management.IdentityCardDto;
 import com.klabis.members.management.MedicalCourseDto;
 import com.klabis.members.management.TrainerLicenseDto;
@@ -38,6 +39,7 @@ import java.util.Optional;
  * @param dateOfBirth         Member's new date of birth (optional, admin-only)
  * @param gender              Member's new gender (optional, admin-only)
  * @param chipNumber          Member's new chip number (optional, admin-only, numeric only)
+ * @param nationality         Member's new nationality (optional)
  * @param identityCard        Member's new identity card information (optional, admin-only)
  * @param medicalCourse       Member's new medical course information (optional, admin-only)
  * @param trainerLicense      Member's new trainer license information (optional, admin-only)
@@ -45,6 +47,7 @@ import java.util.Optional;
  * @param dietaryRestrictions Member's new dietary restrictions (optional, max 500 chars)
  * @param birthNumber         Member's new birth number (optional, admin-only, Czech nationals only)
  * @param bankAccountNumber   Member's new bank account number (optional, admin-only)
+ * @param guardian            Member's new guardian information (optional)
  */
 public record UpdateMemberRequest(
         Optional<String> email,
@@ -66,6 +69,8 @@ public record UpdateMemberRequest(
         @ValidOptionalPattern(regexp = ValidationPatterns.NUMERIC_ONLY_PATTERN, message = "Chip number must contain only digits")
         Optional<String> chipNumber,
 
+        Optional<String> nationality,
+
         Optional<IdentityCardDto> identityCard,
 
         Optional<MedicalCourseDto> medicalCourse,
@@ -79,6 +84,8 @@ public record UpdateMemberRequest(
 
         Optional<String> birthNumber,
 
-        Optional<String> bankAccountNumber
+        Optional<String> bankAccountNumber,
+
+        Optional<GuardianDTO> guardian
 ) {
 }

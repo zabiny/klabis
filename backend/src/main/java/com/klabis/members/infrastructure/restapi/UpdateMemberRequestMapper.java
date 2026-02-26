@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.domain.*;
+import com.klabis.members.management.GuardianDTO;
 import com.klabis.members.management.InvalidUpdateException;
 
 /**
@@ -23,6 +24,7 @@ class UpdateMemberRequestMapper {
                     .map(a -> Address.of(a.street(), a.city(), a.postalCode(), a.country()))
                     .orElse(null);
             String chipNumber = request.chipNumber().orElse(null);
+            String nationality = request.nationality().orElse(null);
             BankAccountNumber bankAccountNumber = request.bankAccountNumber()
                     .filter(s -> !s.isBlank())
                     .map(BankAccountNumber::of)
@@ -38,6 +40,11 @@ class UpdateMemberRequestMapper {
                     .map(dto -> TrainerLicense.of(dto.licenseNumber(), dto.validityDate()))
                     .orElse(null);
             String dietaryRestrictions = request.dietaryRestrictions().orElse(null);
+            GuardianInformation guardian = request.guardian()
+                    .map(g -> new GuardianInformation(g.firstName(), g.lastName(), g.relationship(),
+                            g.email() != null ? EmailAddress.of(g.email()) : null,
+                            g.phone() != null ? PhoneNumber.of(g.phone()) : null))
+                    .orElse(null);
             String firstName = request.firstName().orElse(null);
             String lastName = request.lastName().orElse(null);
             java.time.LocalDate dateOfBirth = request.dateOfBirth().orElse(null);
@@ -48,10 +55,54 @@ class UpdateMemberRequestMapper {
                     .orElse(null);
 
             return new Member.UpdateMemberByAdmin(
-                    email, phone, address, chipNumber, null,
+                    email, phone, address, chipNumber, nationality,
                     bankAccountNumber, identityCard, drivingLicenseGroup,
-                    medicalCourse, trainerLicense, dietaryRestrictions, null,
+                    medicalCourse, trainerLicense, dietaryRestrictions, guardian,
                     firstName, lastName, dateOfBirth, gender, birthNumber
+            );
+        } catch (IllegalArgumentException e) {
+            throw new InvalidUpdateException(e.getMessage(), e);
+        }
+    }
+
+    static Member.SelfUpdate toSelfUpdateCommand(UpdateMemberRequest request) {
+        try {
+            EmailAddress email = request.email()
+                    .map(EmailAddress::of)
+                    .orElse(null);
+            PhoneNumber phone = request.phone()
+                    .map(PhoneNumber::of)
+                    .orElse(null);
+            Address address = request.address()
+                    .map(a -> Address.of(a.street(), a.city(), a.postalCode(), a.country()))
+                    .orElse(null);
+            String chipNumber = request.chipNumber().orElse(null);
+            String nationality = request.nationality().orElse(null);
+            BankAccountNumber bankAccountNumber = request.bankAccountNumber()
+                    .filter(s -> !s.isBlank())
+                    .map(BankAccountNumber::of)
+                    .orElse(null);
+            IdentityCard identityCard = request.identityCard()
+                    .map(dto -> IdentityCard.of(dto.cardNumber(), dto.validityDate()))
+                    .orElse(null);
+            DrivingLicenseGroup drivingLicenseGroup = request.drivingLicenseGroup().orElse(null);
+            MedicalCourse medicalCourse = request.medicalCourse()
+                    .map(dto -> MedicalCourse.of(dto.completionDate(), dto.validityDate()))
+                    .orElse(null);
+            TrainerLicense trainerLicense = request.trainerLicense()
+                    .map(dto -> TrainerLicense.of(dto.licenseNumber(), dto.validityDate()))
+                    .orElse(null);
+            String dietaryRestrictions = request.dietaryRestrictions().orElse(null);
+            GuardianInformation guardian = request.guardian()
+                    .map(g -> new GuardianInformation(g.firstName(), g.lastName(), g.relationship(),
+                            g.email() != null ? EmailAddress.of(g.email()) : null,
+                            g.phone() != null ? PhoneNumber.of(g.phone()) : null))
+                    .orElse(null);
+
+            return new Member.SelfUpdate(
+                    email, phone, address, chipNumber, nationality,
+                    bankAccountNumber, identityCard, drivingLicenseGroup,
+                    medicalCourse, trainerLicense, dietaryRestrictions, guardian
             );
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);

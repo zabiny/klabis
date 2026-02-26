@@ -522,6 +522,9 @@ class MemberTest {
                 .build();
     }
 
+    // DEAD CODE: UpdateContactInformation command removed - tests commented out
+    // TODO: Delete this commented code block after confirming no regression
+    /*
     @Nested
     @DisplayName("UpdateContactInformation command")
     class UpdateContactInformationCommand {
@@ -644,7 +647,11 @@ class MemberTest {
             assertThat(member.getAddress().street()).isEqualTo("Hlavní 123"); // unchanged
         }
     }
+    */
 
+    // DEAD CODE: UpdateDocuments command removed - tests commented out
+    // TODO: Delete this commented code block after confirming no regression
+    /*
     @Nested
     @DisplayName("UpdateDocuments command")
     class UpdateDocumentsCommand {
@@ -774,7 +781,11 @@ class MemberTest {
             assertThat(memberWithDoc.getIdentityCard().validityDate()).isEqualTo(futureDate); // unchanged
         }
     }
+    */
 
+    // DEAD CODE: UpdateMemberDetails command removed - tests commented out
+    // TODO: Delete this commented code block after confirming no regression
+    /*
     @Nested
     @DisplayName("UpdateMemberDetails command")
     class UpdateMemberDetailsCommand {
@@ -949,6 +960,7 @@ class MemberTest {
             assertThat(member.getChipNumber()).isEqualTo("12345");
         }
     }
+    */
 
     @Nested
     @DisplayName("handle(TerminateMembership) method")

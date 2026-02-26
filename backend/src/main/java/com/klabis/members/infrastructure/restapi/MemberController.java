@@ -33,6 +33,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
@@ -97,7 +99,7 @@ class MemberController {
      *
      * @param id      member ID
      * @param request partial update request (only fields to update should be provided)
-     * @param auth    OAuth2 authentication token (optional, for authorization)
+     * @param authentication Spring Security authentication for authority checking
      * @return 200 OK with updated member resource
      */
     @PatchMapping(value = "/{id}", consumes = "application/json")
@@ -115,11 +117,36 @@ class MemberController {
     public ResponseEntity<Void> updateMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
-            @Valid @RequestBody UpdateMemberRequest request) {
+            @Valid @RequestBody UpdateMemberRequest request,
+            Authentication authentication) {
 
-        var command = UpdateMemberRequestMapper.toAdminCommand(request);
-        managementService.updateMember(id, command);
+        if (hasAuthority(authentication, Authority.MEMBERS_UPDATE)) {
+            var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request);
+            managementService.updateMember(id, adminCommand);
+        } else {
+            UserId currentUserId = extractUserId(authentication);
+            if (!currentUserId.uuid().equals(id)) {
+                throw new ErrorResponseException(HttpStatus.FORBIDDEN,
+                        ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
+                                "You can only edit your own information"), null);
+            }
+            var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
+            managementService.updateMember(id, selfCommand);
+        }
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean hasAuthority(Authentication authentication, Authority requiredAuthority) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(auth -> auth.equals(requiredAuthority.getValue()));
+    }
+
+    private UserId extractUserId(Authentication authentication) {
+        if (authentication instanceof com.klabis.common.security.KlabisJwtAuthenticationToken token) {
+            return token.getUserId();
+        }
+        throw new IllegalStateException("Unable to extract user ID from authentication, got: " + authentication.getClass().getName());
     }
 
     /**
@@ -274,12 +301,12 @@ class MemberController {
         if (member.isActive()) {
             entityModel.add(
                     klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(UUID.randomUUID(), (UpdateMemberRequest) null, null)))
             );
         } else {
             entityModel.add(
                     klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(UUID.randomUUID(), (UpdateMemberRequest) null, null)))
             );
         }
 

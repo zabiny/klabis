@@ -9,7 +9,6 @@ import com.klabis.members.domain.*;
 import com.klabis.members.management.InvalidUpdateException;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.MemberNotFoundException;
-import com.klabis.members.management.SelfEditNotAllowedException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,8 +30,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Update Member Controller API Tests")
 @WebMvcTest(controllers = MemberController.class)
-@Import(EncryptionConfiguration.class)
+@Import({EncryptionConfiguration.class, com.klabis.common.security.SecurityConfiguration.class})
 class UpdateMemberApiTest {
 
     private static final String ADMIN_USERNAME = "admin";
@@ -410,13 +411,14 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating own email should return 204 No Content")
-            @WithKlabisMockUser(username = MEMBER_EMAIL, authorities = {})
+            @WithKlabisMockUser(userId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateOwnEmail() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                UUID currentUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.updateMember(eq(currentUserId), any(Member.SelfUpdate.class)))
                         .thenReturn(stubMember());
 
                 mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
+                                patch("/api/members/{id}", currentUserId)
                                         .contentType("application/json")
                                         .content("""
                                                 {
@@ -427,8 +429,8 @@ class UpdateMemberApiTest {
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
 
-                var captor = forClass(Member.UpdateMemberByAdmin.class);
-                verify(memberService).updateMember(any(UUID.class), captor.capture());
+                var captor = forClass(Member.SelfUpdate.class);
+                verify(memberService).updateMember(eq(currentUserId), captor.capture());
 
                 var command = captor.getValue();
                 assertThat(command.email()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
@@ -436,13 +438,14 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating own phone should return 204 No Content")
-            @WithKlabisMockUser(username = MEMBER_EMAIL, authorities = {})
+            @WithKlabisMockUser(userId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateOwnPhone() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                UUID currentUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.updateMember(eq(currentUserId), any(Member.SelfUpdate.class)))
                         .thenReturn(stubMember());
 
                 mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
+                                patch("/api/members/{id}", currentUserId)
                                         .contentType("application/json")
                                         .content("""
                                                 {
@@ -453,8 +456,8 @@ class UpdateMemberApiTest {
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
 
-                var captor = forClass(Member.UpdateMemberByAdmin.class);
-                verify(memberService).updateMember(any(UUID.class), captor.capture());
+                var captor = forClass(Member.SelfUpdate.class);
+                verify(memberService).updateMember(eq(currentUserId), captor.capture());
 
                 var command = captor.getValue();
                 assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420987654321"));
@@ -462,13 +465,14 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating own address should return 204 No Content")
-            @WithKlabisMockUser(username = MEMBER_EMAIL, authorities = {})
+            @WithKlabisMockUser(userId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateOwnAddress() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                UUID currentUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.updateMember(eq(currentUserId), any(Member.SelfUpdate.class)))
                         .thenReturn(stubMember());
 
                 mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
+                                patch("/api/members/{id}", currentUserId)
                                         .contentType("application/json")
                                         .content("""
                                                 {
@@ -484,8 +488,8 @@ class UpdateMemberApiTest {
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
 
-                var captor = forClass(Member.UpdateMemberByAdmin.class);
-                verify(memberService).updateMember(any(UUID.class), captor.capture());
+                var captor = forClass(Member.SelfUpdate.class);
+                verify(memberService).updateMember(eq(currentUserId), captor.capture());
 
                 var command = captor.getValue();
                 assertThat(command.address()).isNotNull();
@@ -495,13 +499,14 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("updating dietary restrictions should return 204 No Content")
-            @WithKlabisMockUser(username = MEMBER_EMAIL, authorities = {})
+            @WithKlabisMockUser(userId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateDietaryRestrictions() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
+                UUID currentUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.updateMember(eq(currentUserId), any(Member.SelfUpdate.class)))
                         .thenReturn(stubMember());
 
                 mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
+                                patch("/api/members/{id}", currentUserId)
                                         .contentType("application/json")
                                         .content("""
                                                 {
@@ -512,8 +517,8 @@ class UpdateMemberApiTest {
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isNoContent());
 
-                var captor = forClass(Member.UpdateMemberByAdmin.class);
-                verify(memberService).updateMember(any(UUID.class), captor.capture());
+                var captor = forClass(Member.SelfUpdate.class);
+                verify(memberService).updateMember(eq(currentUserId), captor.capture());
 
                 var command = captor.getValue();
                 assertThat(command.dietaryRestrictions()).isEqualTo("Gluten-free, no nuts");
@@ -522,10 +527,12 @@ class UpdateMemberApiTest {
             @Test
             @DisplayName("updating items editable only by member himself without beeing that member should return 403 Forbidden")
             @WithKlabisMockUser(userId = "729d897a-5676-431f-b22f-ad935af525ce", authorities = {})
-            @Disabled("Added as new test, probably would rather like 403 if someone attempts to edit (To be changed in prod code)")
             void shouldRejectToUpdateSelfEditInformationToOtherMembers() throws Exception {
+                UUID otherMemberId = UUID.fromString("16a9dfbb-145d-4587-b5b5-31383c1d4215");
+                UUID currentUser = UUID.fromString("729d897a-5676-431f-b22f-ad935af525ce");
+
                 mockMvc.perform(
-                                patch("/api/members/{id}", "16a9dfbb-145d-4587-b5b5-31383c1d4215")
+                                patch("/api/members/{id}", otherMemberId)
                                         .contentType("application/json")
                                         .content("""
                                                 {
@@ -549,14 +556,12 @@ class UpdateMemberApiTest {
 
             @Test
             @DisplayName("non-admin editing another member should return 403")
-            @WithKlabisMockUser(username = "other.user@example.com", authorities = {})
+            @WithKlabisMockUser(userId = "729d897a-5676-431f-b22f-ad935af525ce", authorities = {})
             void shouldReturn403WhenNonAdminEditsAnotherMember() throws Exception {
-                when(memberService.updateMember(any(UUID.class), any(Member.UpdateMemberByAdmin.class)))
-                        .thenThrow(new SelfEditNotAllowedException(
-                                new RegistrationNumber("ZBM9090"), new RegistrationNumber("ZBM1234")));
+                UUID otherMemberId = testMemberId;
 
                 mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
+                                patch("/api/members/{id}", otherMemberId)
                                         .contentType("application/json")
                                         .content("""
                                                 {
@@ -566,8 +571,8 @@ class UpdateMemberApiTest {
                         )
                         .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isForbidden())
-                        .andExpect(jsonPath("$.title").value("Authorization Failed"))
-                        .andExpect(jsonPath("$.detail").value("User with email 'ZBM9090' is not authorized to edit member with email 'ZBM1234'. Members can only edit their own information."));
+                        .andExpect(jsonPath("$.title").value("Forbidden"))
+                        .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("You can only edit your own information")));
             }
 
             @Test
