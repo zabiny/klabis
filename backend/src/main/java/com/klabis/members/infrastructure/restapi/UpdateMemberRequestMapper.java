@@ -14,45 +14,23 @@ class UpdateMemberRequestMapper {
 
     static Member.UpdateMemberByAdmin toAdminCommand(UpdateMemberRequest request) {
         try {
-            EmailAddress email = request.email()
-                    .map(EmailAddress::of)
-                    .orElse(null);
-            PhoneNumber phone = request.phone()
-                    .map(PhoneNumber::of)
-                    .orElse(null);
-            Address address = request.address()
-                    .map(a -> Address.of(a.street(), a.city(), a.postalCode(), a.country()))
-                    .orElse(null);
-            String chipNumber = request.chipNumber().orElse(null);
-            String nationality = request.nationality().orElse(null);
-            BankAccountNumber bankAccountNumber = request.bankAccountNumber()
-                    .filter(s -> !s.isBlank())
-                    .map(BankAccountNumber::of)
-                    .orElse(null);
-            IdentityCard identityCard = request.identityCard()
-                    .map(dto -> IdentityCard.of(dto.cardNumber(), dto.validityDate()))
-                    .orElse(null);
-            DrivingLicenseGroup drivingLicenseGroup = request.drivingLicenseGroup().orElse(null);
-            MedicalCourse medicalCourse = request.medicalCourse()
-                    .map(dto -> MedicalCourse.of(dto.completionDate(), dto.validityDate()))
-                    .orElse(null);
-            TrainerLicense trainerLicense = request.trainerLicense()
-                    .map(dto -> TrainerLicense.of(dto.licenseNumber(), dto.validityDate()))
-                    .orElse(null);
-            String dietaryRestrictions = request.dietaryRestrictions().orElse(null);
-            GuardianInformation guardian = request.guardian()
-                    .map(g -> new GuardianInformation(g.firstName(), g.lastName(), g.relationship(),
-                            g.email() != null ? EmailAddress.of(g.email()) : null,
-                            g.phone() != null ? PhoneNumber.of(g.phone()) : null))
-                    .orElse(null);
-            String firstName = request.firstName().orElse(null);
-            String lastName = request.lastName().orElse(null);
-            java.time.LocalDate dateOfBirth = request.dateOfBirth().orElse(null);
-            Gender gender = request.gender().orElse(null);
-            BirthNumber birthNumber = request.birthNumber()
-                    .filter(s -> !s.isBlank())
-                    .map(BirthNumber::of)
-                    .orElse(null);
+            EmailAddress email = toEmailAddress(request.email());
+            PhoneNumber phone = toPhoneNumber(request.phone());
+            Address address = toAddress(request.address());
+            String chipNumber = toString(request.chipNumber());
+            String nationality = toString(request.nationality());
+            BankAccountNumber bankAccountNumber = toBankAccountNumber(request.bankAccountNumber());
+            IdentityCard identityCard = toIdentityCard(request.identityCard());
+            DrivingLicenseGroup drivingLicenseGroup = toEnum(request.drivingLicenseGroup());
+            MedicalCourse medicalCourse = toMedicalCourse(request.medicalCourse());
+            TrainerLicense trainerLicense = toTrainerLicense(request.trainerLicense());
+            String dietaryRestrictions = toString(request.dietaryRestrictions());
+            GuardianInformation guardian = toGuardianInformation(request.guardian());
+            String firstName = toString(request.firstName());
+            String lastName = toString(request.lastName());
+            java.time.LocalDate dateOfBirth = toLocalDate(request.dateOfBirth());
+            Gender gender = toEnum(request.gender());
+            BirthNumber birthNumber = toBirthNumber(request.birthNumber());
 
             return new Member.UpdateMemberByAdmin(
                     email, phone, address, chipNumber, nationality,
@@ -67,37 +45,18 @@ class UpdateMemberRequestMapper {
 
     static Member.SelfUpdate toSelfUpdateCommand(UpdateMemberRequest request) {
         try {
-            EmailAddress email = request.email()
-                    .map(EmailAddress::of)
-                    .orElse(null);
-            PhoneNumber phone = request.phone()
-                    .map(PhoneNumber::of)
-                    .orElse(null);
-            Address address = request.address()
-                    .map(a -> Address.of(a.street(), a.city(), a.postalCode(), a.country()))
-                    .orElse(null);
-            String chipNumber = request.chipNumber().orElse(null);
-            String nationality = request.nationality().orElse(null);
-            BankAccountNumber bankAccountNumber = request.bankAccountNumber()
-                    .filter(s -> !s.isBlank())
-                    .map(BankAccountNumber::of)
-                    .orElse(null);
-            IdentityCard identityCard = request.identityCard()
-                    .map(dto -> IdentityCard.of(dto.cardNumber(), dto.validityDate()))
-                    .orElse(null);
-            DrivingLicenseGroup drivingLicenseGroup = request.drivingLicenseGroup().orElse(null);
-            MedicalCourse medicalCourse = request.medicalCourse()
-                    .map(dto -> MedicalCourse.of(dto.completionDate(), dto.validityDate()))
-                    .orElse(null);
-            TrainerLicense trainerLicense = request.trainerLicense()
-                    .map(dto -> TrainerLicense.of(dto.licenseNumber(), dto.validityDate()))
-                    .orElse(null);
-            String dietaryRestrictions = request.dietaryRestrictions().orElse(null);
-            GuardianInformation guardian = request.guardian()
-                    .map(g -> new GuardianInformation(g.firstName(), g.lastName(), g.relationship(),
-                            g.email() != null ? EmailAddress.of(g.email()) : null,
-                            g.phone() != null ? PhoneNumber.of(g.phone()) : null))
-                    .orElse(null);
+            EmailAddress email = toEmailAddress(request.email());
+            PhoneNumber phone = toPhoneNumber(request.phone());
+            Address address = toAddress(request.address());
+            String chipNumber = toString(request.chipNumber());
+            String nationality = toString(request.nationality());
+            BankAccountNumber bankAccountNumber = toBankAccountNumber(request.bankAccountNumber());
+            IdentityCard identityCard = toIdentityCard(request.identityCard());
+            DrivingLicenseGroup drivingLicenseGroup = toEnum(request.drivingLicenseGroup());
+            MedicalCourse medicalCourse = toMedicalCourse(request.medicalCourse());
+            TrainerLicense trainerLicense = toTrainerLicense(request.trainerLicense());
+            String dietaryRestrictions = toString(request.dietaryRestrictions());
+            GuardianInformation guardian = toGuardianInformation(request.guardian());
 
             return new Member.SelfUpdate(
                     email, phone, address, chipNumber, nationality,
@@ -107,5 +66,80 @@ class UpdateMemberRequestMapper {
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);
         }
+    }
+
+    private static EmailAddress toEmailAddress(com.klabis.common.patch.PatchField<String> email) {
+        return email.isProvided() ? EmailAddress.of(email.get()) : null;
+    }
+
+    private static PhoneNumber toPhoneNumber(com.klabis.common.patch.PatchField<String> phone) {
+        return phone.isProvided() ? PhoneNumber.of(phone.get()) : null;
+    }
+
+    private static Address toAddress(com.klabis.common.patch.PatchField<AddressRequest> address) {
+        return address.isProvided()
+            ? Address.of(address.get().street(), address.get().city(), address.get().postalCode(), address.get().country())
+            : null;
+    }
+
+    private static String toString(com.klabis.common.patch.PatchField<String> value) {
+        return value.isProvided() ? value.get() : null;
+    }
+
+    private static BankAccountNumber toBankAccountNumber(com.klabis.common.patch.PatchField<String> bankAccountNumber) {
+        if (bankAccountNumber.isProvided()) {
+            String value = bankAccountNumber.get();
+            if (!value.isBlank()) {
+                return BankAccountNumber.of(value);
+            }
+        }
+        return null;
+    }
+
+    private static IdentityCard toIdentityCard(com.klabis.common.patch.PatchField<com.klabis.members.management.IdentityCardDto> identityCard) {
+        return identityCard.isProvided()
+            ? IdentityCard.of(identityCard.get().cardNumber(), identityCard.get().validityDate())
+            : null;
+    }
+
+    private static <T> T toEnum(com.klabis.common.patch.PatchField<T> enumField) {
+        return enumField.isProvided() ? enumField.get() : null;
+    }
+
+    private static MedicalCourse toMedicalCourse(com.klabis.common.patch.PatchField<com.klabis.members.management.MedicalCourseDto> medicalCourse) {
+        return medicalCourse.isProvided()
+            ? MedicalCourse.of(medicalCourse.get().completionDate(), medicalCourse.get().validityDate())
+            : null;
+    }
+
+    private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<com.klabis.members.management.TrainerLicenseDto> trainerLicense) {
+        return trainerLicense.isProvided()
+            ? TrainerLicense.of(trainerLicense.get().licenseNumber(), trainerLicense.get().validityDate())
+            : null;
+    }
+
+    private static java.time.LocalDate toLocalDate(com.klabis.common.patch.PatchField<java.time.LocalDate> dateField) {
+        return dateField.isProvided() ? dateField.get() : null;
+    }
+
+    private static BirthNumber toBirthNumber(com.klabis.common.patch.PatchField<String> birthNumber) {
+        if (birthNumber.isProvided()) {
+            String value = birthNumber.get();
+            if (!value.isBlank()) {
+                return BirthNumber.of(value);
+            }
+        }
+        return null;
+    }
+
+    private static GuardianInformation toGuardianInformation(com.klabis.common.patch.PatchField<GuardianDTO> guardian) {
+        return guardian.isProvided()
+            ? new GuardianInformation(
+                guardian.get().firstName(),
+                guardian.get().lastName(),
+                guardian.get().relationship(),
+                guardian.get().email() != null ? EmailAddress.of(guardian.get().email()) : null,
+                guardian.get().phone() != null ? PhoneNumber.of(guardian.get().phone()) : null)
+            : null;
     }
 }
