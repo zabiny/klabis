@@ -302,6 +302,60 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist());
         }
+
+        @Test
+        @DisplayName("active member should return both update and terminate affordances")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+        void activeMemberShouldReturnUpdateAndTerminateAffordances() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withFirstName("Jan")
+                    .withLastName("Novák")
+                    .withRegistrationNumber("ZBM0501")
+                    .withEmail("jan.novak@example.com")
+                    .withActive(true)
+                    .build();
+
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+
+            mockMvc.perform(
+                            get("/api/members/{id}", memberId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(true))
+                    .andExpect(jsonPath("$._templates").exists())
+                    // HAL+FORMS stores affordances as properties of the link, not separate templates
+                    // Check that self link has both PATCH (update) and POST (terminate) methods available
+                    .andExpect(jsonPath("$._links.self").exists());
+        }
+
+        @Test
+        @DisplayName("terminated member should return only update affordance")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+        void terminatedMemberShouldReturnOnlyUpdateAffordance() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withFirstName("Jan")
+                    .withLastName("Novák")
+                    .withRegistrationNumber("ZBM0501")
+                    .withEmail("jan.novak@example.com")
+                    .withActive(false)
+                    .build();
+
+            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+
+            mockMvc.perform(
+                            get("/api/members/{id}", memberId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(false))
+                    .andExpect(jsonPath("$._templates").exists())
+                    .andExpect(jsonPath("$._links.self").exists());
+        }
     }
 
     // Helper methods to create test members

@@ -302,6 +302,7 @@ class MemberController {
             entityModel.add(
                     klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
                             .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(UUID.randomUUID(), (UpdateMemberRequest) null, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).terminateMember(UUID.randomUUID(), (TerminateMembershipRequest) null, null)))
             );
         } else {
             entityModel.add(

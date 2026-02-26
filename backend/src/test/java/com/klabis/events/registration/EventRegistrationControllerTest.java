@@ -19,7 +19,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -69,7 +68,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 201 Created")
-        @WithKlabisMockUser(userId = MEMBER_1_ID)
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldRegisterMemberForEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             RegisterForEventCommand command = new RegisterForEventCommand("123456");
@@ -104,7 +103,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return 409 Conflict for duplicate registration")
-        @WithKlabisMockUser(userId = MEMBER_1_ID)
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturn409ForDuplicateRegistration() throws Exception {
             UUID eventId = UUID.randomUUID();
             RegisterForEventCommand command = new RegisterForEventCommand("123456");
@@ -187,7 +186,7 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("should return list without SI card numbers")
-        @WithMockUser(username = MEMBER_1_ID)
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldListRegistrationsWithoutSiCardNumbers() throws Exception {
             UUID eventId = UUID.randomUUID();
             List<RegistrationDto> registrations = List.of(
