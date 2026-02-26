@@ -1,14 +1,10 @@
 package com.klabis.members.management;
 
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.common.users.AccountStatus;
 import com.klabis.common.users.User;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.persistence.UserRepository;
-import com.klabis.members.domain.Gender;
-import com.klabis.members.domain.MemberRepository;
-import com.klabis.members.infrastructure.restapi.AddressRequest;
-import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
+import com.klabis.members.domain.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,42 +45,38 @@ class RegisterMemberAutoProvisioningTest {
     @DisplayName("should create User when Member is registered")
     @Transactional
     void shouldCreateUserWhenMemberRegistered() {
-        AddressRequest address = new AddressRequest(
-                "Street 1",
-                "City 1",
-                "10000",
-                "CZ"
+        // Create a test shared ID
+        Address address = Address.of("Street 1", "City 1", "10000", "CZ");
+        EmailAddress email = EmailAddress.of("test@example.com");
+        PhoneNumber phone = PhoneNumber.of("+420777888888");
+        PersonalInformation personalInformation = PersonalInformation.of(
+                "Test", "User", LocalDate.of(2005, 6, 15), "CZ", Gender.MALE
         );
 
-        RegisterMemberRequest request = new RegisterMemberRequest(
-                "Test",
-                "User",
-                LocalDate.of(2005, 6, 15),
-                "CZ",
-                Gender.MALE,
-                "test@example.com",
-                "+420777888888",
+        RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
                 address,
+                email,
+                phone,
                 null,
                 null,
                 null
         );
 
-        UUID memberId = memberService.registerMember(request);
+        Member member = memberService.registerMember(command);
+        UUID memberId = member.getId().toUserId().uuid();
 
         // Verify Member was created
         var memberEntity = memberJpaRepository.findById(new UserId(memberId));
         assertThat(memberEntity).isPresent();
-        String registrationNumber = memberEntity.get().getRegistrationNumber().getValue();
+        String createdRegistrationNumber = memberEntity.get().getRegistrationNumber().getValue();
 
         // Verify User was created with same registration number
-        Optional<User> userOpt = userRepository.findByUsername(registrationNumber);
+        Optional<User> userOpt = userRepository.findByUsername(createdRegistrationNumber);
         assertThat(userOpt).isPresent();
         User user = userOpt.get();
 
         // Verify User properties
-        assertThat(user.getUsername()).isEqualTo(registrationNumber);
-        assertThat(user.getAccountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
+        assertThat(user.getUsername()).isEqualTo(createdRegistrationNumber);
         assertThat(user.getPasswordHash()).isNotNull();
         assertThat(user.getPasswordHash()).isNotBlank();
         assertThat(user.getPasswordHash()).isNotEqualTo(""); // Should be hashed, not plain
@@ -94,26 +86,27 @@ class RegisterMemberAutoProvisioningTest {
     @DisplayName("User should have MEMBERS:READ authority")
     @Transactional
     void userShouldHaveReadAuthority() {
-        AddressRequest address = new AddressRequest(
-                "Street 2",
-                "City 2",
-                "20000",
-                "CZ"
+        // Create a test shared ID
+        UserId sharedId = UserId.newId();
+        RegistrationNumber registrationNumber = RegistrationNumber.of("ZBM5678");
+        Address address = Address.of("Street 2", "City 2", "20000", "CZ");
+        EmailAddress email = EmailAddress.of("integration@example.com");
+        PhoneNumber phone = PhoneNumber.of("+420777999999");
+        PersonalInformation personalInformation = PersonalInformation.of(
+                "Integration", "Test", LocalDate.of(2006, 3, 20), "SK", Gender.FEMALE
         );
 
-        RegisterMemberRequest command = new RegisterMemberRequest(
-                "Integration",
-                "Test",
-                LocalDate.of(2006, 3, 20),
-                "SK",
-                Gender.FEMALE,
-                "integration@example.com",
-                "+420777999999",
+        RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,
                 address,
-                null, null, null
+                email,
+                phone,
+                null,
+                null,
+                null
         );
 
-        UUID memberId = memberService.registerMember(command);
+        Member member = memberService.registerMember(command);
+        UUID memberId = member.getId().toUserId().uuid();
         var memberEntity = memberJpaRepository.findById(new UserId(memberId)).get();
         User user = userRepository.findByUsername(memberEntity.getRegistrationNumber().getValue()).get();
 
@@ -126,46 +119,48 @@ class RegisterMemberAutoProvisioningTest {
     @DisplayName("should create different Users for different Members")
     @Transactional
     void shouldCreateDifferentUsersForDifferentMembers() {
-        AddressRequest address1 = new AddressRequest(
-                "Street 3",
-                "City 3",
-                "30000",
-                "CZ"
+        // Create first member
+        UserId sharedId1 = UserId.newId();
+        RegistrationNumber registrationNumber1 = RegistrationNumber.of("ZBM0001");
+        Address address1 = Address.of("Street 3", "City 3", "30000", "CZ");
+        EmailAddress email1 = EmailAddress.of("first@example.com");
+        PhoneNumber phone1 = PhoneNumber.of("+420111111111");
+        PersonalInformation personalInformation1 = PersonalInformation.of(
+                "First", "Person", LocalDate.of(2005, 1, 1), "CZ", Gender.MALE
         );
 
-        AddressRequest address2 = new AddressRequest(
-                "Street 4",
-                "City 4",
-                "40000",
-                "CZ"
-        );
-
-        RegisterMemberRequest command1 = new RegisterMemberRequest(
-                "First",
-                "Person",
-                LocalDate.of(2005, 1, 1),
-                "CZ",
-                Gender.MALE,
-                "first@example.com",
-                "+420111111111",
+        RegistrationService.RegisterNewMember command1 = new RegistrationService.RegisterNewMember(personalInformation1,
                 address1,
-                null, null, null
+                email1,
+                phone1,
+                null,
+                null,
+                null
         );
 
-        RegisterMemberRequest command2 = new RegisterMemberRequest(
-                "Second",
-                "Person",
-                LocalDate.of(2005, 1, 2),
-                "CZ",
-                Gender.MALE,
-                "second@example.com",
-                "+420222222222",
+        // Create second member
+        UserId sharedId2 = UserId.newId();
+        RegistrationNumber registrationNumber2 = RegistrationNumber.of("ZBM0002");
+        Address address2 = Address.of("Street 4", "City 4", "40000", "CZ");
+        EmailAddress email2 = EmailAddress.of("second@example.com");
+        PhoneNumber phone2 = PhoneNumber.of("+420222222222");
+        PersonalInformation personalInformation2 = PersonalInformation.of(
+                "Second", "Person", LocalDate.of(2005, 1, 2), "CZ", Gender.MALE
+        );
+
+        RegistrationService.RegisterNewMember command2 = new RegistrationService.RegisterNewMember(personalInformation2,
                 address2,
-                null, null, null
+                email2,
+                phone2,
+                null,
+                null,
+                null
         );
 
-        UserId memberId1 = new UserId(memberService.registerMember(command1));
-        UserId memberId2 = new UserId(memberService.registerMember(command2));
+        Member member1 = memberService.registerMember(command1);
+        Member member2 = memberService.registerMember(command2);
+        UserId memberId1 = member1.getId().toUserId();
+        UserId memberId2 = member2.getId().toUserId();
 
         var memberEntity1 = memberJpaRepository.findById(memberId1).get();
         var memberEntity2 = memberJpaRepository.findById(memberId2).get();

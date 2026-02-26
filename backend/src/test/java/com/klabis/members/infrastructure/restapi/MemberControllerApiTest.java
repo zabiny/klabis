@@ -391,7 +391,7 @@ class MemberControllerApiTest {
         void shouldCreateMemberWithValidData() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            when(registrationService.registerMember(any(RegisterMemberRequest.class))).thenReturn(memberId);
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(createTestMember(memberId));
             when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
                     .thenReturn(Link.of("/api/members/" + memberId));
 
@@ -428,7 +428,7 @@ class MemberControllerApiTest {
         void shouldCreateMinorWithGuardian() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            when(registrationService.registerMember(any(RegisterMemberRequest.class))).thenReturn(memberId);
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(createTestMember(memberId));
             when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
                     .thenReturn(Link.of("/api/members/" + memberId));
 
@@ -674,7 +674,7 @@ class MemberControllerApiTest {
         void shouldCreateMemberWithValidAddressAndContacts() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            when(registrationService.registerMember(any(RegisterMemberRequest.class))).thenReturn(memberId);
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(createTestMember(memberId));
             when(entityLinks.linkToItemResource(eq(Member.class), eq(memberId)))
                     .thenReturn(Link.of("/api/members/" + memberId));
 
@@ -1248,5 +1248,33 @@ class MemberControllerApiTest {
                 .withPhone("+420777888999")
                 .withNoGuardian()
                 .build();
+    }
+
+    /**
+     * Creates a test Member for mocking RegistrationService responses.
+     */
+    private Member createTestMember(UUID memberId) {
+        UserId id = UserId.fromString(memberId.toString());
+        RegistrationNumber registrationNumber = RegistrationNumber.of("ZBM1234");
+        PersonalInformation personalInformation = PersonalInformation.of(
+                "Test", "Member", LocalDate.of(2000, 1, 1), "CZ", Gender.MALE
+        );
+        Address address = Address.of("Test Street", "Test City", "10000", "CZ");
+        EmailAddress email = EmailAddress.of("test@example.com");
+        PhoneNumber phone = PhoneNumber.of("+420123456789");
+
+        // Create a domain command for Member.register
+        Member.RegisterMember domainCommand = new Member.RegisterMember(
+                id,
+                registrationNumber,
+                personalInformation,
+                address,
+                email,
+                phone,
+                null,
+                null,
+                null
+        );
+        return Member.register(domainCommand);
     }
 }

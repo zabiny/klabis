@@ -28,6 +28,14 @@ public record JwtParams(String userName, UserId userId, UUID memberId, Authority
         return new JwtParams(userName, userId, null);
     }
 
+    public static JwtParams member(UUID memberId) {
+        return member(new MemberId(memberId));
+    }
+
+    public static JwtParams member(MemberId memberId) {
+        return JwtParams.jwtTokenParams("ZBM8001", memberId.toUserId()).withMemberId(memberId);
+    }
+
     public JwtParams withMemberId(MemberId memberId) {
         return new JwtParams(userName, userId, memberId != null ? memberId.uuid() : null, authorities);
     }

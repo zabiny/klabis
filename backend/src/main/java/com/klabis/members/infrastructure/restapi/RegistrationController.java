@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
-
 /**
  * REST controller for Member resources.
  * <p>
@@ -36,10 +34,12 @@ class RegistrationController {
 
     private final RegistrationService registrationService;
     private final EntityLinks entityLinks;
+    private final MemberMapper memberMapper;
 
-    public RegistrationController(RegistrationService registrationService, EntityLinks entityLinks) {
+    public RegistrationController(RegistrationService registrationService, EntityLinks entityLinks, MemberMapper memberMapper) {
         this.registrationService = registrationService;
         this.entityLinks = entityLinks;
+        this.memberMapper = memberMapper;
     }
 
     /**
@@ -62,9 +62,13 @@ class RegistrationController {
             @Parameter(description = "Member registration data including personal information, contacts, and optional guardian")
             @Valid @RequestBody RegisterMemberRequest request) {
 
-        UUID memberId = registrationService.registerMember(request);
+        // Map request to service command
+        RegistrationService.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request);
+
+        // Register member
+        Member member = registrationService.registerMember(serviceCommand);
         return ResponseEntity
-                .created(entityLinks.linkToItemResource(Member.class, memberId).toUri())
+                .created(entityLinks.linkToItemResource(Member.class, member.getId().uuid()).toUri())
                 .build();
     }
 

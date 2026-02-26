@@ -77,9 +77,6 @@ class EventRegistrationServiceTest {
                     null
             );
             activeEvent.publish(); // Make it ACTIVE
-
-            MemberDto member = new MemberDto(TEST_USER_ID.uuid(), "Test", "User", "test@email.cz");
-            when(members.findByUserId(any(UserId.class))).thenReturn(Optional.of(member));
         }
 
         @Test
