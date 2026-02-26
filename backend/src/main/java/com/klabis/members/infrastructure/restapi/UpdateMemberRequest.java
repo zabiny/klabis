@@ -1,8 +1,9 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.common.validation.ValidOptionalNotBlank;
-import com.klabis.common.validation.ValidOptionalPattern;
-import com.klabis.common.validation.ValidOptionalSize;
+import com.klabis.common.patch.PatchField;
+import com.klabis.common.validation.ValidPatchFieldNotBlank;
+import com.klabis.common.validation.ValidPatchFieldPattern;
+import com.klabis.common.validation.ValidPatchFieldSize;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.management.GuardianDTO;
@@ -12,14 +13,13 @@ import com.klabis.members.management.TrainerLicenseDto;
 import com.klabis.members.management.ValidationPatterns;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 /**
  * Request DTO for updating a member's information.
  * <p>
  * This DTO is used for PATCH requests to update member information.
- * All fields are optional to support partial updates. Only the fields that are
- * provided (non-null) will be updated.
+ * All fields use PatchField to support partial updates. Only the fields that are
+ * provided will be updated.
  * <p>
  * Validation rules:
  * - firstName: if provided, must not be blank
@@ -50,42 +50,42 @@ import java.util.Optional;
  * @param guardian            Member's new guardian information (optional)
  */
 public record UpdateMemberRequest(
-        Optional<String> email,
+        PatchField<String> email,
 
-        Optional<String> phone,
+        PatchField<String> phone,
 
-        Optional<AddressRequest> address,
+        PatchField<AddressRequest> address,
 
-        @ValidOptionalNotBlank(message = "First name must not be blank")
-        Optional<String> firstName,
+        @ValidPatchFieldNotBlank(message = "First name must not be blank")
+        PatchField<String> firstName,
 
-        @ValidOptionalNotBlank(message = "Last name must not be blank")
-        Optional<String> lastName,
+        @ValidPatchFieldNotBlank(message = "Last name must not be blank")
+        PatchField<String> lastName,
 
-        Optional<LocalDate> dateOfBirth,
+        PatchField<LocalDate> dateOfBirth,
 
-        Optional<Gender> gender,
+        PatchField<Gender> gender,
 
-        @ValidOptionalPattern(regexp = ValidationPatterns.NUMERIC_ONLY_PATTERN, message = "Chip number must contain only digits")
-        Optional<String> chipNumber,
+        @ValidPatchFieldPattern(regexp = ValidationPatterns.NUMERIC_ONLY_PATTERN, message = "Chip number must contain only digits")
+        PatchField<String> chipNumber,
 
-        Optional<String> nationality,
+        PatchField<String> nationality,
 
-        Optional<IdentityCardDto> identityCard,
+        PatchField<IdentityCardDto> identityCard,
 
-        Optional<MedicalCourseDto> medicalCourse,
+        PatchField<MedicalCourseDto> medicalCourse,
 
-        Optional<TrainerLicenseDto> trainerLicense,
+        PatchField<TrainerLicenseDto> trainerLicense,
 
-        Optional<DrivingLicenseGroup> drivingLicenseGroup,
+        PatchField<DrivingLicenseGroup> drivingLicenseGroup,
 
-        @ValidOptionalSize(max = 500, message = "Dietary restrictions must not exceed 500 characters")
-        Optional<String> dietaryRestrictions,
+        @ValidPatchFieldSize(max = 500, message = "Dietary restrictions must not exceed 500 characters")
+        PatchField<String> dietaryRestrictions,
 
-        Optional<String> birthNumber,
+        PatchField<String> birthNumber,
 
-        Optional<String> bankAccountNumber,
+        PatchField<String> bankAccountNumber,
 
-        Optional<GuardianDTO> guardian
+        PatchField<GuardianDTO> guardian
 ) {
 }
