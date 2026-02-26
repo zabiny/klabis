@@ -184,4 +184,67 @@ class PatchFieldTest {
                     .isInstanceOf(NullPointerException.class);
         }
     }
+
+    @Nested
+    @DisplayName("map() - Transform provided values")
+    class MapTests {
+
+        @Test
+        @DisplayName("Should map provided value to another type")
+        void shouldMapProvidedValueToAnotherType() {
+            PatchField<String> patchField = PatchField.of("abcd");
+
+            PatchField<Integer> mapped = patchField.map(String::length);
+
+            assertThat(mapped.isProvided()).isTrue();
+            assertThat(mapped.get()).isEqualTo(4);
+        }
+
+        @Test
+        @DisplayName("Should map provided null value")
+        void shouldMapProvidedNullValue() {
+            PatchField<String> patchField = PatchField.of(null);
+
+            PatchField<String> mapped = patchField.map(value -> value == null ? "fallback" : value);
+
+            assertThat(mapped.isProvided()).isTrue();
+            assertThat(mapped.get()).isEqualTo("fallback");
+        }
+
+        @Test
+        @DisplayName("Should return not provided when original value was not provided")
+        void shouldReturnNotProvidedWhenOriginalValueWasNotProvided() {
+            PatchField<String> patchField = PatchField.notProvided();
+            AtomicBoolean mapperInvoked = new AtomicBoolean(false);
+
+            PatchField<Integer> mapped = patchField.map(value -> {
+                mapperInvoked.set(true);
+                return value.length();
+            });
+
+            assertThat(mapperInvoked.get()).isFalse();
+            assertThat(mapped.isProvided()).isFalse();
+            assertThat(mapped).isSameAs(PatchField.notProvided());
+        }
+
+        @Test
+        @DisplayName("Should throw NullPointerException when mapper is null and value is provided")
+        void shouldThrowNullPointerExceptionWhenMapperIsNullAndValueIsProvided() {
+            PatchField<String> patchField = PatchField.of("value");
+
+            assertThatThrownBy(() -> patchField.map(null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Should keep not provided when mapper is null and value is not provided")
+        void shouldKeepNotProvidedWhenMapperIsNullAndValueIsNotProvided() {
+            PatchField<String> patchField = PatchField.notProvided();
+
+            PatchField<Integer> mapped = patchField.map(null);
+
+            assertThat(mapped.isProvided()).isFalse();
+            assertThat(mapped).isSameAs(PatchField.notProvided());
+        }
+    }
 }

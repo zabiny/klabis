@@ -1,8 +1,11 @@
 package com.klabis.common.patch;
 
+import org.jspecify.annotations.NonNull;
+
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public final class PatchField<T> {
     private static final PatchField<?> NOT_PROVIDED = new PatchField<>(null, false);
@@ -26,6 +29,14 @@ public final class PatchField<T> {
 
     public boolean isProvided() {
         return provided;
+    }
+
+    public <O> PatchField<O> map(@NonNull Function<T, O> mapper) {
+        if (isProvided()) {
+            return PatchField.of(mapper.apply(value));
+        } else {
+            return PatchField.notProvided();
+        }
     }
 
     public T get() {
