@@ -48,6 +48,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * API tests for MemberController.
  * <p>
  * Tests validation, error handling, and HATEOAS link generation.
+ * <p>
+ * <b>Test Scope:</b> Controller unit tests focus on:
+ * <ul>
+ *   <li>HTTP status codes (200, 201, 204, 400, 403, 404, etc.)</li>
+ *   <li>Service method invocation with expected parameters (using Mockito.verify)</li>
+ *   <li>HATEOAS links presence and basic structure</li>
+ *   <li>Exception handling and error responses</li>
+ * </ul>
+ * <p>
+ * <b>What is NOT tested here:</b>
+ * <ul>
+ *   <li>Detailed JSON field-by-field mapping - tested in {@link MemberMappingTests}</li>
+ *   <li>Domain logic - tested in domain unit tests</li>
+ *   <li>Integration flows - tested in integration/E2E tests</li>
+ * </ul>
  */
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
@@ -126,20 +141,16 @@ class MemberControllerApiTest {
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(content().contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    // Assert only key fields - detailed JSON structure is tested in MemberMappingTests
                     .andExpect(jsonPath("$.id").value(memberId.toString()))
                     .andExpect(jsonPath("$.registrationNumber").value("ZBM0501"))
-                    .andExpect(jsonPath("$.firstName").value("Jan"))
-                    .andExpect(jsonPath("$.lastName").value("Novák"))
-                    .andExpect(jsonPath("$.dateOfBirth").value("2005-06-15"))
-                    .andExpect(jsonPath("$.nationality").value("CZ"))
-                    .andExpect(jsonPath("$.gender").value("MALE"))
-                    .andExpect(jsonPath("$.email").value("jan.novak@example.com"))
-                    .andExpect(jsonPath("$.phone").value("+420777888999"))
-                    .andExpect(jsonPath("$.address.street").value("Hlavní 123"))
-                    .andExpect(jsonPath("$.address.city").value("Praha"))
-                    .andExpect(jsonPath("$.address.postalCode").value("11000"))
-                    .andExpect(jsonPath("$.address.country").value("CZ"))
+                    .andExpect(jsonPath("$.firstName").exists())
+                    .andExpect(jsonPath("$.lastName").exists())
+                    .andExpect(jsonPath("$.email").exists())
+                    .andExpect(jsonPath("$.phone").exists())
+                    .andExpect(jsonPath("$.address").exists())
                     .andExpect(jsonPath("$.active").value(true))
+                    // Assert HATEOAS links presence
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString(
                             "/api/members/" + memberId)))
@@ -198,12 +209,13 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
+                    // Assert only guardian presence - detailed structure is tested in MemberMappingTests
                     .andExpect(jsonPath("$.guardian").isNotEmpty())
-                    .andExpect(jsonPath("$.guardian.firstName").value("Parent"))
-                    .andExpect(jsonPath("$.guardian.lastName").value("Name"))
-                    .andExpect(jsonPath("$.guardian.relationship").value("PARENT"))
-                    .andExpect(jsonPath("$.guardian.email").value("parent@example.com"))
-                    .andExpect(jsonPath("$.guardian.phone").value("+420777111222"));
+                    .andExpect(jsonPath("$.guardian.firstName").exists())
+                    .andExpect(jsonPath("$.guardian.lastName").exists())
+                    .andExpect(jsonPath("$.guardian.relationship").exists())
+                    .andExpect(jsonPath("$.guardian.email").exists())
+                    .andExpect(jsonPath("$.guardian.phone").exists());
         }
 
         @Test
@@ -219,10 +231,12 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.address.street").value("Main Street 123"))
-                    .andExpect(jsonPath("$.address.city").value("Bratislava"))
-                    .andExpect(jsonPath("$.address.postalCode").value("81101"))
-                    .andExpect(jsonPath("$.address.country").value("SK"));
+                    // Assert only address presence - detailed structure is tested in MemberMappingTests
+                    .andExpect(jsonPath("$.address").isNotEmpty())
+                    .andExpect(jsonPath("$.address.street").exists())
+                    .andExpect(jsonPath("$.address.city").exists())
+                    .andExpect(jsonPath("$.address.postalCode").exists())
+                    .andExpect(jsonPath("$.address.country").exists());
         }
 
         @Test
@@ -1064,20 +1078,14 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
+                    // Assert only basic structure - detailed member field mapping is tested in MemberMappingTests
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList").isArray())
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(2))
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].id").value(memberId1.toString()))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].firstName").value("Jan"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].lastName").value("Novák"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].registrationNumber").value("ZBM0001"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.self.href").value(
-                            "http://localhost/api/members/" + memberId1))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.self.href").exists())
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].id").value(memberId2.toString()))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].firstName").value("Petra"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].lastName").value("Svobodová"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1].registrationNumber").value("ZBM0002"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1]._links.self.href").value(
-                            "http://localhost/api/members/" + memberId2))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[1]._links.self.href").exists())
+                    // Assert page metadata
                     .andExpect(jsonPath("$.page.size").value(10))
                     .andExpect(jsonPath("$.page.totalElements").value(2))
                     .andExpect(jsonPath("$.page.totalPages").value(1))

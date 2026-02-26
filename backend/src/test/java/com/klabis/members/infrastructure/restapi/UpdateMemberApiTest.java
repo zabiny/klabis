@@ -44,16 +44,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>
  * Tests admin edit, member self-edit, authorization, and validation.
  * <p>
+ * <b>Test Scope:</b> Controller unit tests focus on:
+ * <ul>
+ *   <li>HTTP status codes (204, 400, 403, 404, etc.)</li>
+ *   <li>Service method invocation with expected command parameters (using Mockito.verify)</li>
+ *   <li>Authorization checks for different user roles</li>
+ *   <li>Exception handling and error responses</li>
+ * </ul>
+ * <p>
  * The PATCH endpoint returns 204 No Content without response body.
  * To verify updated data, clients should call the GET endpoint after PATCH.
+ * <p>
+ * <b>What is NOT tested here:</b>
+ * <ul>
+ *   <li>Detailed JSON field-by-field mapping - tested in {@link MemberMappingTests}</li>
+ *   <li>Domain update logic - tested in domain unit tests</li>
+ *   <li>Integration flows - tested in integration/E2E tests</li>
+ * </ul>
  */
 @DisplayName("Update Member Controller API Tests")
 @WebMvcTest(controllers = MemberController.class)
 @Import({EncryptionConfiguration.class, com.klabis.common.security.SecurityConfiguration.class})
 class UpdateMemberApiTest {
-
-    private static final String ADMIN_USERNAME = "admin";
-    private static final String MEMBER_EMAIL = "jan.novak@example.com";
 
     @Autowired
     private MockMvc mockMvc;
