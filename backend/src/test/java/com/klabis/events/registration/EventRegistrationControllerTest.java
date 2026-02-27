@@ -152,7 +152,7 @@ class EventRegistrationControllerTest {
             mockMvc.perform(delete("/api/events/{eventId}/registrations", eventId))
                     .andExpect(status().isNoContent());
 
-            verify(registrationServiceMock, never()).unregisterMember(eventId, userId, LocalDate.now());
+            verify(registrationServiceMock).unregisterMember(eventId, userId, LocalDate.now());
         }
 
         @Test

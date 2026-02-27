@@ -1,6 +1,5 @@
-package com.klabis;
+package com.klabis.testdomain;
 
-import com.klabis.testdomain.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -50,7 +50,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see ApplicationModuleTest
  */
 @Slf4j
-@ApplicationModuleTest
+@ApplicationModuleTest(module = "common")
+@ComponentScan(basePackageClasses = OrderCreatedEventHandler.class)
 @ActiveProfiles("test")
 @DisplayName("Framework: Event Lifecycle Logging")
 @ExtendWith(OutputCaptureExtension.class)

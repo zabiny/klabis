@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.configuration;
+package com.klabis.members.management;
 
 import com.klabis.members.domain.Members;
 import com.klabis.members.domain.RegistrationNumberGenerator;

@@ -1,11 +1,10 @@
-package com.klabis;
+package com.klabis.testdomain;
 
-import com.klabis.testdomain.*;
-import com.klabis.testdomain.Order;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.events.CompletedEventPublications;
 import org.springframework.modulith.events.EventPublication;
@@ -43,7 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see ApplicationModuleTest
  */
 @Slf4j
-@ApplicationModuleTest
+@ApplicationModuleTest(module = "common")
+@ComponentScan(basePackageClasses = OrderCreatedEventHandler.class)
 @ActiveProfiles("test")
 @DisplayName("Framework: Spring Modulith Event Processing")
 class ModularEventsTest {

@@ -1,6 +1,7 @@
 package com.klabis.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.bootstrap.BootstrapDataLoader;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "bootstrap.admin.password=" + OidcUserInfoEndpointTest.ADMIN_PASSWORD,
         "oauth2.client.secret=" + OidcUserInfoEndpointTest.CLIENT_SECRET
 })
+@CleanupTestData
 @DisplayName("OIDC UserInfo Endpoint Tests")
 class OidcUserInfoEndpointTest {
 
