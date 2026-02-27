@@ -247,13 +247,62 @@ public class User extends KlabisAggregateRoot<User, UserId> {
                 this.accountNonExpired,
                 this.accountNonLocked,
                 this.credentialsNonExpired,
-                true // enabled = true after activation
+                true
         );
 
-        // Copy audit metadata
         activated.updateAuditMetadata(this.getAuditMetadata());
 
         return activated;
+    }
+
+    /**
+     * Suspends this user account.
+     *
+     * <p>Returns a new User instance with SUSPENDED status and enabled=false.
+     * Suspended users cannot authenticate to the system (isAuthenticatable() returns false).
+     *
+     * @return new User instance with SUSPENDED status and enabled=false
+     */
+    public User suspend() {
+        User suspended = new User(
+                this.id,
+                this.username,
+                this.passwordHash,
+                AccountStatus.SUSPENDED,
+                this.accountNonExpired,
+                this.accountNonLocked,
+                this.credentialsNonExpired,
+                false
+        );
+
+        suspended.updateAuditMetadata(this.getAuditMetadata());
+
+        return suspended;
+    }
+
+    /**
+     * Reactivates this suspended user account.
+     *
+     * <p>Returns a new User instance with ACTIVE status and enabled=true.
+     * This restores the user's ability to authenticate.
+     *
+     * @return new User instance with ACTIVE status and enabled=true
+     */
+    public User reactivate() {
+        User reactivated = new User(
+                this.id,
+                this.username,
+                this.passwordHash,
+                AccountStatus.ACTIVE,
+                this.accountNonExpired,
+                this.accountNonLocked,
+                this.credentialsNonExpired,
+                true
+        );
+
+        reactivated.updateAuditMetadata(this.getAuditMetadata());
+
+        return reactivated;
     }
 
     private static void validateRequired(String value) {

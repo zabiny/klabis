@@ -42,17 +42,6 @@ class UserServiceImplTest {
         testedSubject = new UserServiceImpl(userRepository, userPermissionsRepository);
     }
 
-    private User userWithId(User user, UserId id) {
-        try {
-            var idField = User.class.getDeclaredField("id");
-            idField.setAccessible(true);
-            idField.set(user, id);
-            return user;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set user ID for testing", e);
-        }
-    }
-
     @Nested
     @DisplayName("createUser(username, email, authorities) method")
     class CreateUserWithEmailMethod {
@@ -62,9 +51,15 @@ class UserServiceImplTest {
         void shouldCreateUserWithPendingActivationWhenEmailProvided() {
             // Given
             String email = "user@example.com";
-            User pendingUser = userWithId(
-                    User.createdUserWithEmail(testUsername, email),
-                    testUserId
+            User pendingUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    java.util.UUID.randomUUID().toString(),
+                    AccountStatus.PENDING_ACTIVATION,
+                    true,
+                    true,
+                    true,
+                    false
             );
 
             when(userRepository.save(any(User.class))).thenReturn(pendingUser);
@@ -89,9 +84,15 @@ class UserServiceImplTest {
         void shouldIncludeEmailInUserCreatedEvent() {
             // Given
             String email = "user@example.com";
-            User pendingUser = userWithId(
-                    User.createdUserWithEmail(testUsername, email),
-                    testUserId
+            User pendingUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    java.util.UUID.randomUUID().toString(),
+                    AccountStatus.PENDING_ACTIVATION,
+                    true,
+                    true,
+                    true,
+                    false
             );
 
             when(userRepository.save(any(User.class))).thenReturn(pendingUser);
@@ -115,9 +116,15 @@ class UserServiceImplTest {
         void shouldGrantAuthoritiesOnCreatedUser() {
             // Given
             String email = "user@example.com";
-            User pendingUser = userWithId(
-                    User.createdUserWithEmail(testUsername, email),
-                    testUserId
+            User pendingUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    java.util.UUID.randomUUID().toString(),
+                    AccountStatus.PENDING_ACTIVATION,
+                    true,
+                    true,
+                    true,
+                    false
             );
 
             when(userRepository.save(any(User.class))).thenReturn(pendingUser);
@@ -142,7 +149,16 @@ class UserServiceImplTest {
         @DisplayName("should create user with ACTIVE status when passwordHash provided")
         void shouldCreateUserWithActiveStatusWhenPasswordHashProvided() {
             // Given
-            User activeUser = userWithId(User.createdUser(testUsername, testPasswordHash), testUserId);
+            User activeUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    testPasswordHash,
+                    AccountStatus.ACTIVE,
+                    true,
+                    true,
+                    true,
+                    true
+            );
 
             when(userRepository.save(any(User.class))).thenReturn(activeUser);
             when(userPermissionsRepository.save(any(UserPermissions.class)))
@@ -165,7 +181,16 @@ class UserServiceImplTest {
         @DisplayName("should not publish UserCreatedEvent so no password setup flow is triggered")
         void shouldNotPublishUserCreatedEvent() {
             // Given
-            User activeUser = userWithId(User.createdUser(testUsername, testPasswordHash), testUserId);
+            User activeUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    testPasswordHash,
+                    AccountStatus.ACTIVE,
+                    true,
+                    true,
+                    true,
+                    true
+            );
 
             when(userRepository.save(any(User.class))).thenReturn(activeUser);
             when(userPermissionsRepository.save(any(UserPermissions.class)))
@@ -184,7 +209,16 @@ class UserServiceImplTest {
         @DisplayName("should grant authorities on the created user")
         void shouldGrantAuthoritiesOnCreatedUser() {
             // Given
-            User activeUser = userWithId(User.createdUser(testUsername, testPasswordHash), testUserId);
+            User activeUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    testPasswordHash,
+                    AccountStatus.ACTIVE,
+                    true,
+                    true,
+                    true,
+                    true
+            );
 
             when(userRepository.save(any(User.class))).thenReturn(activeUser);
             when(userPermissionsRepository.save(any(UserPermissions.class)))
@@ -245,6 +279,146 @@ class UserServiceImplTest {
 
             // Then
             verify(userRepository).findByUsername("nonexistent");
+        }
+    }
+
+    @Nested
+    @DisplayName("suspendUser() method")
+    class SuspendUserMethod {
+
+        @Test
+        @DisplayName("should suspend existing user")
+        void shouldSuspendExistingUser() {
+            // Given
+            User activeUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    testPasswordHash,
+                    AccountStatus.ACTIVE,
+                    true,
+                    true,
+                    true,
+                    true
+            );
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(activeUser));
+            when(userRepository.save(any(User.class))).thenReturn(activeUser);
+
+            // When
+            testedSubject.suspendUser(testUserId);
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.SUSPENDED);
+            assertThat(userCaptor.getValue().isEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should be idempotent - skip if already suspended")
+        void shouldBeIdempotentIfAlreadySuspended() {
+            // Given
+            User suspendedUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    testPasswordHash,
+                    AccountStatus.SUSPENDED,
+                    true,
+                    true,
+                    true,
+                    false
+            );
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(suspendedUser));
+
+            // When
+            testedSubject.suspendUser(testUserId);
+
+            // Then - should not call save since already suspended
+            verify(userRepository).findById(testUserId);
+            verify(userRepository, org.mockito.Mockito.never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("should handle non-existent user gracefully")
+        void shouldHandleNonExistentUserGracefully() {
+            // Given
+            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+
+            // When - should not throw exception
+            testedSubject.suspendUser(testUserId);
+
+            // Then - should not call save
+            verify(userRepository).findById(testUserId);
+            verify(userRepository, org.mockito.Mockito.never()).save(any(User.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("reactivateUser() method")
+    class ReactivateUserMethod {
+
+        @Test
+        @DisplayName("should reactivate suspended user")
+        void shouldReactivateSuspendedUser() {
+            // Given
+            User suspendedUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    testPasswordHash,
+                    AccountStatus.SUSPENDED,
+                    true,
+                    true,
+                    true,
+                    false
+            );
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(suspendedUser));
+            when(userRepository.save(any(User.class))).thenReturn(suspendedUser);
+
+            // When
+            testedSubject.reactivateUser(testUserId);
+
+            // Then
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
+            assertThat(userCaptor.getValue().isEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should be idempotent - skip if already active")
+        void shouldBeIdempotentIfAlreadyActive() {
+            // Given
+            User activeUser = User.reconstruct(
+                    testUserId,
+                    testUsername,
+                    testPasswordHash,
+                    AccountStatus.ACTIVE,
+                    true,
+                    true,
+                    true,
+                    true
+            );
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(activeUser));
+
+            // When
+            testedSubject.reactivateUser(testUserId);
+
+            // Then - should not call save since already active
+            verify(userRepository).findById(testUserId);
+            verify(userRepository, org.mockito.Mockito.never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("should handle non-existent user gracefully")
+        void shouldHandleNonExistentUserGracefully() {
+            // Given
+            when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+
+            // When - should not throw exception
+            testedSubject.reactivateUser(testUserId);
+
+            // Then - should not call save
+            verify(userRepository).findById(testUserId);
+            verify(userRepository, org.mockito.Mockito.never()).save(any(User.class));
         }
     }
 }

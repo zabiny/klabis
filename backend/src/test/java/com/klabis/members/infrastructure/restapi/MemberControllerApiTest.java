@@ -79,7 +79,7 @@ class MemberControllerApiTest {
     private ManagementService managementService;
 
     @MockitoBean
-    private Members memberRepository;
+    private MemberRepository memberRepository;
 
     @MockitoBean
     private RegistrationService registrationService;
@@ -331,9 +331,9 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include only update affordance for inactive member")
+        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include update and reactivate affordances for terminated member")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
-        void terminatedMemberShouldReturnOnlyUpdateAffordance() throws Exception {
+        void terminatedMemberShouldReturnUpdateAndReactivateAffordances() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(false)
@@ -346,9 +346,12 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.active").value(false))
                     .andExpect(jsonPath("$._links.permissions").doesNotExist())
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
+                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
                     .andExpect(jsonPath("$._templates.default.target").doesNotExist())
-                    .andExpect(jsonPath("$._templates.terminateMember").doesNotExist());
+                    .andExpect(jsonPath("$._templates.terminateMember").doesNotExist())
+                    .andExpect(jsonPath("$._templates.reactivateMember.method").value("POST"))
+                    .andExpect(jsonPath("$._templates.reactivateMember.target").value(
+                            "http://localhost/api/members/%s/reactivate".formatted(memberId)));
         }
     }
 
@@ -1145,9 +1148,7 @@ class MemberControllerApiTest {
                     "Member requested termination");
 
             Mockito.verify(managementService)
-                    .terminateMember(eq(memberId),
-                            eq(UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288")),
-                            eq(expectedCommand));
+                    .terminateMember(eq(memberId), eq(expectedCommand));
         }
 
         @Test
@@ -1181,7 +1182,6 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
 
             when(managementService.terminateMember(eq(memberId),
-                    any(UserId.class),
                     any(Member.TerminateMembership.class)))
                     .thenThrow(new InvalidUpdateException("Member is already terminated"));
 
@@ -1216,6 +1216,61 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/members/{id}/reactivate")
+    class ReactivateMemberTests {
+
+        private MockHttpServletRequestBuilder postMemberIdReactivate(UUID memberId) {
+            return post("/api/members/" + memberId.toString() + "/reactivate");
+        }
+
+        @Test
+        @DisplayName("valid reactivation request should return 204 NO CONTENT response")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+        void shouldReactivateMemberSuccessfully() throws Exception {
+            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
+            UUID memberId = UUID.randomUUID();
+
+            mockMvc.perform(postMemberIdReactivate(memberId))
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().exists(HttpHeaders.LOCATION));
+        }
+
+        @Test
+        @DisplayName("should call service with correct arguments")
+        @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_UPDATE})
+        void shouldCallServiceWithCorrectArguments() throws Exception {
+            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
+            UUID memberId = UUID.randomUUID();
+
+            mockMvc.perform(postMemberIdReactivate(memberId));
+
+            Member.ReactivateMembership expectedCommand = new Member.ReactivateMembership(
+                    UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"));
+            Mockito.verify(managementService).reactivateMember(eq(memberId), eq(expectedCommand));
+        }
+
+        @Test
+        @DisplayName("should return 403 when user lacks MEMBERS:UPDATE authority")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403WhenUnauthorized() throws Exception {
+            UUID memberId = UUID.randomUUID();
+
+            mockMvc.perform(postMemberIdReactivate(memberId))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 401 when unauthenticated")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            UUID memberId = UUID.randomUUID();
+
+            mockMvc.perform(postMemberIdReactivate(memberId))
+                    .andExpect(status().isUnauthorized());
         }
     }
 }

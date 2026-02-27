@@ -2,13 +2,15 @@ package com.klabis.members.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
-import com.klabis.members.*;
+import com.klabis.members.MemberAssert;
+import com.klabis.members.MemberCreatedEvent;
+import com.klabis.members.MemberReactivatedEvent;
+import com.klabis.members.MemberTerminatedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.members.MemberTestDataBuilder.aMember;
@@ -1109,6 +1111,116 @@ class MemberTest {
             assertThat(activeMember.getDeactivatedAt().toEpochMilli())
                     .isGreaterThanOrEqualTo(beforeTermination)
                     .isLessThanOrEqualTo(afterTermination);
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(ReactivateMembership) method")
+    class HandleReactivateMembership {
+
+        private Member createActiveMember() {
+            return aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
+        }
+
+        private Member createTerminatedMember() {
+            Member activeMember = createActiveMember();
+            UserId adminUserId = new UserId(UUID.randomUUID());
+            Member.TerminateMembership terminateCommand = new Member.TerminateMembership(
+                    adminUserId,
+                    DeactivationReason.ODHLASKA,
+                    "Member requested termination"
+            );
+            activeMember.handle(terminateCommand);
+            return activeMember;
+        }
+
+        @Test
+        @DisplayName("should reactivate terminated member")
+        void shouldReactivateTerminatedMember() {
+            // Arrange
+            Member terminatedMember = createTerminatedMember();
+            UserId adminUserId = new UserId(UUID.randomUUID());
+            Member.ReactivateMembership command = new Member.ReactivateMembership(adminUserId);
+
+            // Act
+            terminatedMember.handle(command);
+
+            // Assert
+            assertThat(terminatedMember.isActive()).isTrue();
+            assertThat(terminatedMember.getDeactivationReason()).isNull();
+            assertThat(terminatedMember.getDeactivatedAt()).isNull();
+            assertThat(terminatedMember.getDeactivationNote()).isNull();
+            assertThat(terminatedMember.getDeactivatedBy()).isNull();
+        }
+
+        @Test
+        @DisplayName("should publish MemberReactivatedEvent when reactivating")
+        void shouldPublishEventWhenReactivating() {
+            // Arrange
+            Member terminatedMember = createTerminatedMember();
+            UserId adminUserId = new UserId(UUID.randomUUID());
+            Member.ReactivateMembership command = new Member.ReactivateMembership(adminUserId);
+
+            // Act - clear creation event first, then reactivate
+            terminatedMember.clearDomainEvents();
+            terminatedMember.handle(command);
+
+            // Assert - should have MemberReactivatedEvent
+            assertThat(terminatedMember.getDomainEvents())
+                    .hasSize(1)
+                    .allMatch(event -> event instanceof MemberReactivatedEvent);
+        }
+
+        @Test
+        @DisplayName("should reject reactivation of already active member")
+        void shouldRejectReactivationOfAlreadyActiveMember() {
+            // Arrange
+            Member activeMember = createActiveMember();
+            UserId adminUserId = new UserId(UUID.randomUUID());
+            Member.ReactivateMembership command = new Member.ReactivateMembership(adminUserId);
+
+            // Act & Assert
+            assertThatThrownBy(() -> activeMember.handle(command))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("already active");
+        }
+
+        @Test
+        @DisplayName("should record reactivation timestamp in event")
+        void shouldRecordReactivationTimestampInEvent() {
+            // Arrange
+            Member terminatedMember = createTerminatedMember();
+            UserId adminUserId = new UserId(UUID.randomUUID());
+            Member.ReactivateMembership command = new Member.ReactivateMembership(adminUserId);
+
+            var beforeReactivation = System.currentTimeMillis();
+
+            // Act
+            terminatedMember.clearDomainEvents();
+            terminatedMember.handle(command);
+
+            var afterReactivation = System.currentTimeMillis();
+
+            // Assert
+            assertThat(terminatedMember.getDomainEvents())
+                    .hasSize(1)
+                    .allMatch(event -> event instanceof MemberReactivatedEvent);
+
+            MemberReactivatedEvent event = (MemberReactivatedEvent) terminatedMember.getDomainEvents().get(0);
+            assertThat(event.getReactivatedAt()).isNotNull();
+            assertThat(event.getReactivatedAt().toEpochMilli())
+                    .isGreaterThanOrEqualTo(beforeReactivation)
+                    .isLessThanOrEqualTo(afterReactivation);
         }
     }
 

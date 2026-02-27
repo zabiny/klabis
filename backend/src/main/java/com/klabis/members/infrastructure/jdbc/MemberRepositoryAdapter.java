@@ -16,12 +16,7 @@ import java.util.stream.StreamSupport;
 /**
  * Adapter that bridges between MemberRepository domain interface and MemberJdbcRepository.
  * <p>
- * This adapter implements:
- * <ul>
- *   <li>{@link MemberRepository MemberRepository} - domain repository interface</li>
- * </ul>
- * <p>
- * MemberRepository extends {@link Members} public API, so this adapter indirectly implements both.
+ * This adapter implements {@link MemberRepository} domain repository interface.
  * <p>
  * It handles conversion between Member entities and MemberMemento persistence objects.
  * <p>
@@ -45,7 +40,6 @@ class MemberRepositoryAdapter implements MemberRepository {
 
     @Override
     public Member save(Member member) {
-        // Convert Member to MemberMemento for persistence
         MemberMemento savedMemento = jdbcRepository.save(MemberMemento.from(member));
         return savedMemento.toMember();
     }

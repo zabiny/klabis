@@ -1,7 +1,7 @@
 package com.klabis.members.domain;
 
 import com.klabis.common.users.UserId;
-import org.jmolecules.architecture.hexagonal.SecondaryPort;
+import org.jmolecules.architecture.hexagonal.Port;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -9,17 +9,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Internal repository interface for Member aggregate.
+ * Public query API for Member aggregate.
  * <p>
- * Defines persistence operations for the Member bounded context.
- * Implementation will be provided in the infrastructure layer.
- *
- * @apiNote This is internal API for use within the members module only.
- * Other modules should use {@link Members Members}
- * interface for querying members.
+ * Provides read-only access to members for other modules.
+ * This is the only public interface that should be used by external modules
+ * to query member information.
  */
-@SecondaryPort
-public interface MemberRepository extends Members {
+@Port
+public interface MemberRepository {
 
     /**
      * Find a member by their unique ID.
@@ -45,6 +42,8 @@ public interface MemberRepository extends Members {
      */
     Optional<Member> findByEmail(String email);
 
+    List<Member> findAll();
+
     /**
      * Find all members with pagination.
      *
@@ -63,22 +62,5 @@ public interface MemberRepository extends Members {
      */
     int countByBirthYear(int birthYear);
 
-    /**
-     * Saves a member to the repository.
-     *
-     * @param member the member to save
-     * @return the saved member with generated ID
-     */
     Member save(Member member);
-
-    /**
-     * Retrieves all members from the repository.
-     * <p>
-     * Returns all registered members without any specific ordering.
-     * Note: This method returns unsorted results. Sorting can be added in future iterations if needed.
-     *
-     * @return a list of all members (empty list if no members exist)
-     */
-    List<Member> findAll();
-
 }

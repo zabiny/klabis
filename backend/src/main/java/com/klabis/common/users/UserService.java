@@ -56,4 +56,32 @@ public interface UserService {
      * @return optional containing the user if found, empty otherwise
      */
     Optional<User> findUserByUsername(String username);
+
+    /**
+     * Suspends a user account by ID.
+     * <p>
+     * Sets the user's account status to SUSPENDED and enabled flag to false.
+     * Suspended users cannot authenticate to the system. This operation is idempotent -
+     * suspending an already suspended user completes successfully with no changes.
+     * <p>
+     * If the user account does not exist, the operation completes successfully without error
+     * (graceful handling for missing accounts).
+     *
+     * @param userId the ID of the user to suspend
+     */
+    void suspendUser(UserId userId);
+
+    /**
+     * Reactivates a suspended user account by ID.
+     * <p>
+     * Sets the user's account status to ACTIVE and enabled flag to true.
+     * This restores the user's ability to authenticate. This operation is idempotent -
+     * reactivating an already active user completes successfully with no changes.
+     * <p>
+     * If the user account does not exist, the operation completes successfully without error
+     * (graceful handling for missing accounts).
+     *
+     * @param userId the ID of the user to reactivate
+     */
+    void reactivateUser(UserId userId);
 }

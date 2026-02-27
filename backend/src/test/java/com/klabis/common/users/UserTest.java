@@ -321,4 +321,155 @@ class UserTest {
             UserAssert.assertThat(user1).isNotEqualTo(user2);
         }
     }
+
+    @Nested
+    @DisplayName("suspend() method")
+    class SuspendMethod {
+
+        @Test
+        @DisplayName("should suspend active user")
+        void shouldSuspendActiveUser() {
+            // Given
+            User activeUser = UserTestDataBuilder.anAdminUser().build();
+
+            // When
+            User suspendedUser = activeUser.suspend();
+
+            // Then
+            UserAssert.assertThat(suspendedUser)
+                    .hasSameIdentityAs(activeUser)
+                    .hasAccountStatus(AccountStatus.SUSPENDED)
+                    .isNotEnabled();
+        }
+
+        @Test
+        @DisplayName("should create new instance when suspending")
+        void shouldCreateNewInstanceWhenSuspending() {
+            // Given
+            User activeUser = UserTestDataBuilder.anAdminUser().build();
+
+            // When
+            User suspendedUser = activeUser.suspend();
+
+            // Then - immutability: original user unchanged
+            UserAssert.assertThat(activeUser)
+                    .hasAccountStatus(AccountStatus.ACTIVE)
+                    .isEnabled();
+            assertThat(suspendedUser).isNotSameAs(activeUser);
+        }
+
+        @Test
+        @DisplayName("should maintain non-authentication flags when suspending")
+        void shouldMaintainNonAuthenticationFlagsWhenSuspending() {
+            // Given
+            User activeUser = UserTestDataBuilder.anAdminUser().build();
+
+            // When
+            User suspendedUser = activeUser.suspend();
+
+            // Then
+            UserAssert.assertThat(suspendedUser)
+                    .isAccountNonExpired()
+                    .isAccountNonLocked()
+                    .isCredentialsNonExpired();
+        }
+    }
+
+    @Nested
+    @DisplayName("reactivate() method")
+    class ReactivateMethod {
+
+        @Test
+        @DisplayName("should reactivate suspended user")
+        void shouldReactivateSuspendedUser() {
+            // Given
+            User suspendedUser = UserTestDataBuilder.anAdminUser()
+                    .status(AccountStatus.SUSPENDED)
+                    .enabled(false)
+                    .build();
+
+            // When
+            User reactivatedUser = suspendedUser.reactivate();
+
+            // Then
+            UserAssert.assertThat(reactivatedUser)
+                    .hasSameIdentityAs(suspendedUser)
+                    .hasAccountStatus(AccountStatus.ACTIVE)
+                    .isEnabled();
+        }
+
+        @Test
+        @DisplayName("should create new instance when reactivating")
+        void shouldCreateNewInstanceWhenReactivating() {
+            // Given
+            User suspendedUser = UserTestDataBuilder.anAdminUser()
+                    .status(AccountStatus.SUSPENDED)
+                    .enabled(false)
+                    .build();
+
+            // When
+            User reactivatedUser = suspendedUser.reactivate();
+
+            // Then - immutability: original user unchanged
+            UserAssert.assertThat(suspendedUser)
+                    .hasAccountStatus(AccountStatus.SUSPENDED)
+                    .isNotEnabled();
+            assertThat(reactivatedUser).isNotSameAs(suspendedUser);
+        }
+
+        @Test
+        @DisplayName("should maintain non-authentication flags when reactivating")
+        void shouldMaintainNonAuthenticationFlagsWhenReactivating() {
+            // Given
+            User suspendedUser = UserTestDataBuilder.anAdminUser()
+                    .status(AccountStatus.SUSPENDED)
+                    .enabled(false)
+                    .build();
+
+            // When
+            User reactivatedUser = suspendedUser.reactivate();
+
+            // Then
+            UserAssert.assertThat(reactivatedUser)
+                    .isAccountNonExpired()
+                    .isAccountNonLocked()
+                    .isCredentialsNonExpired();
+        }
+    }
+
+    @Nested
+    @DisplayName("isAuthenticatable() with suspended status")
+    class IsAuthenticatableWithSuspendedStatus {
+
+        @Test
+        @DisplayName("should not be authenticatable after suspend()")
+        void shouldNotBeAuthenticatableAfterSuspend() {
+            // Given
+            User activeUser = UserTestDataBuilder.anAdminUser().build();
+
+            // When
+            User suspendedUser = activeUser.suspend();
+
+            // Then
+            UserAssert.assertThat(suspendedUser)
+                    .isNotAuthenticatable();
+        }
+
+        @Test
+        @DisplayName("should be authenticatable after reactivate()")
+        void shouldBeAuthenticatableAfterReactivate() {
+            // Given
+            User suspendedUser = UserTestDataBuilder.anAdminUser()
+                    .status(AccountStatus.SUSPENDED)
+                    .enabled(false)
+                    .build();
+
+            // When
+            User reactivatedUser = suspendedUser.reactivate();
+
+            // Then
+            UserAssert.assertThat(reactivatedUser)
+                    .isAuthenticatable();
+        }
+    }
 }

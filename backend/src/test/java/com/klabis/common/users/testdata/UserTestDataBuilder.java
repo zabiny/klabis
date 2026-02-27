@@ -38,6 +38,8 @@ public class UserTestDataBuilder {
     private String username = UserTestDataConstants.DEFAULT_MEMBER_USERNAME;
     private String passwordHash = UserTestDataConstants.DEFAULT_PASSWORD_HASH;
     private AccountStatus status = AccountStatus.ACTIVE;
+    private Boolean enabled = null;
+    private UserId userId = null;
 
     private UserTestDataBuilder() {
     }
@@ -127,26 +129,52 @@ public class UserTestDataBuilder {
     }
 
     /**
+     * Sets the enabled flag for the user.
+     *
+     * @param enabled the enabled flag to set
+     * @return this builder for method chaining
+     */
+    public UserTestDataBuilder enabled(boolean enabled) {
+        this.enabled = enabled;
+        return this;
+    }
+
+    /**
+     * Sets the user ID for the user.
+     *
+     * @param userId the user ID to set
+     * @return this builder for method chaining
+     */
+    public UserTestDataBuilder withId(UserId userId) {
+        this.userId = userId;
+        return this;
+    }
+
+    /**
      * Builds and returns a User instance with the configured values.
      *
      * @return a new User instance
      */
     public User build() {
-        if (status == AccountStatus.PENDING_ACTIVATION) {
+        UserId id = userId != null ? userId : new UserId(java.util.UUID.randomUUID());
+
+        if (status == AccountStatus.PENDING_ACTIVATION && enabled == null) {
             return User.createdUser(username);
         }
-        if (status == AccountStatus.ACTIVE) {
+        if (status == AccountStatus.ACTIVE && enabled == null) {
             return User.createdUser(username, passwordHash);
         }
+        // For SUSPENDED and other statuses, use reconstruct with enabled flag
+        boolean enabledValue = (enabled != null) ? enabled : false;
         return User.reconstruct(
-                new UserId(java.util.UUID.randomUUID()),
+                id,
                 username,
                 passwordHash,
                 status,
                 true,
                 true,
                 true,
-                false
+                enabledValue
         );
     }
 }

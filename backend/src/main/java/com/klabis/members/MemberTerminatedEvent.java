@@ -19,6 +19,11 @@ import java.util.UUID;
  * - Notifying other bounded contexts (Finance, ORIS, CUS, Groups)
  * - Processing final financial settlements
  *
+ * <p><b>User Account Suspension:</b> When a Member is terminated, the corresponding User account
+ * is automatically suspended via {@link com.klabis.common.users.UserService#suspendUser(com.klabis.common.users.UserId)}.
+ * This prevents the terminated member from authenticating to the system. The suspension happens in the same
+ * transaction as Member termination, ensuring atomicity.
+ *
  * <p><b>Privacy Note:</b> This event contains termination-related information.
  * Event listeners must handle this data in compliance with GDPR and data protection regulations.
  * Do not log the full event object with PII.

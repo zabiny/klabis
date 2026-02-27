@@ -18,16 +18,16 @@ public class RegistrationNumberGenerator {
     private static final int MAX_SEQUENCE_NUMBER = 99;
 
     private final String clubCode;
-    private final Members members;
+    private final MemberRepository memberRepository;
 
     /**
      * Creates a new RegistrationNumberGenerator.
      *
      * @param clubCode         club code (exactly 3 characters)
-     * @param members repository for querying existing members
+     * @param memberRepository repository for querying existing members
      * @throws IllegalArgumentException if club code is invalid
      */
-    public RegistrationNumberGenerator(String clubCode, Members members) {
+    public RegistrationNumberGenerator(String clubCode, MemberRepository memberRepository) {
         if (clubCode == null || clubCode.isBlank()) {
             throw new IllegalArgumentException("Club code is required");
         }
@@ -36,7 +36,7 @@ public class RegistrationNumberGenerator {
         }
 
         this.clubCode = clubCode.toUpperCase();
-        this.members = Objects.requireNonNull(members, "Member repository is required");
+        this.memberRepository = Objects.requireNonNull(memberRepository, "Member repository is required");
     }
 
     /**
@@ -53,7 +53,7 @@ public class RegistrationNumberGenerator {
         }
 
         int birthYear = dateOfBirth.getYear();
-        int nextSequence = members.countByBirthYear(birthYear);
+        int nextSequence = memberRepository.countByBirthYear(birthYear);
 
         if (nextSequence > MAX_SEQUENCE_NUMBER) {
             throw new IllegalStateException(

@@ -30,7 +30,6 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -74,7 +73,7 @@ class UpdateMemberApiTest {
     private ManagementService memberService;
 
     @MockitoBean
-    private Members memberRepository;
+    private MemberRepository memberRepository;
 
     @MockitoBean
     private MemberMapper memberMapper;

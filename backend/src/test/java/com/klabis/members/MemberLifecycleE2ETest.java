@@ -108,7 +108,7 @@ class MemberLifecycleE2ETest {
 
     @Test
     @DisplayName("Complete member lifecycle: register → list → email → validate → password → update → terminate")
-    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE, Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE, Authority.MEMBERS_DELETE})
+    @WithKlabisMockUser(memberId = "550e8400-e29b-41d4-a716-446655440000", authorities = {Authority.MEMBERS_CREATE, Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE, Authority.MEMBERS_DELETE})
     void shouldCompleteFullMemberLifecycle() throws Exception {
         // ========================================================================
         // STEP 1: Register member

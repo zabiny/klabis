@@ -6,6 +6,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberId;
+import com.klabis.members.MemberReactivatedEvent;
 import com.klabis.members.MemberTerminatedEvent;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -135,6 +136,16 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             UserId terminatedBy,
             DeactivationReason reason,
             String note
+    ) {}
+
+    /**
+     * Command to reactivate a terminated member's membership.
+     * <p>
+     * This command is used by administrators to reactivate a member's membership
+     * that was previously terminated.
+     */
+    public record ReactivateMembership(
+            UserId reactivatedBy
     ) {}
 
     // ========== Constructors ==========
@@ -636,6 +647,39 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
         // Register domain event
         registerEvent(MemberTerminatedEvent.fromMember(this, command));
+    }
+
+    /**
+     * Handles ReactivateMembership command.
+     * <p>
+     * Reactivates a terminated member's membership. This clears the deactivation fields
+     * and sets the member back to active status.
+     * <p>
+     * Enforces the business rule that an already active member cannot be reactivated.
+     *
+     * @param command the reactivation command
+     * @throws BusinessRuleViolationException if member is already active
+     */
+    public void handle(ReactivateMembership command) {
+        // Validate not already active
+        if (this.active) {
+            throw new BusinessRuleViolationException(
+                    "Member is already active and cannot be reactivated"
+            ) {};
+        }
+
+        // Validate reactivatedBy
+        Objects.requireNonNull(command.reactivatedBy(), "Reactivated by user is required");
+
+        // Modify fields in-place
+        this.active = true;
+        this.deactivationReason = null;
+        this.deactivatedAt = null;
+        this.deactivationNote = null;
+        this.deactivatedBy = null;
+
+        // Register domain event
+        registerEvent(MemberReactivatedEvent.fromMember(this, command));
     }
 
     @Override

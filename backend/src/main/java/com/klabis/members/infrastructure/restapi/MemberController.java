@@ -7,7 +7,7 @@ import com.klabis.common.users.authorization.HasAuthority;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
-import com.klabis.members.domain.Members;
+import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.management.ManagementService;
 import com.klabis.members.management.MemberNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +17,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -61,14 +63,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 class MemberController {
 
+    private static final Logger log = LoggerFactory.getLogger(MemberController.class);
+
     private final ManagementService managementService;
-    private final Members memberRepository;
+    private final MemberRepository memberRepository;
     private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
 
     public MemberController(
             ManagementService managementService,
-            Members memberRepository,
+            MemberRepository memberRepository,
             PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
             MemberMapper memberMapper) {
         this.managementService = managementService;
@@ -97,8 +101,8 @@ class MemberController {
      *   <li>Admin-only: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup</li>
      * </ul>
      *
-     * @param id      member ID
-     * @param request partial update request (only fields to update should be provided)
+     * @param id             member ID
+     * @param request        partial update request (only fields to update should be provided)
      * @param authentication Spring Security authentication for authority checking
      * @return 200 OK with updated member resource
      */
@@ -146,7 +150,31 @@ class MemberController {
         if (authentication instanceof com.klabis.common.security.KlabisJwtAuthenticationToken token) {
             return token.getUserId();
         }
-        throw new IllegalStateException("Unable to extract user ID from authentication, got: " + authentication.getClass().getName());
+        throw new IllegalStateException("Unable to extract user ID from authentication, got: " + authentication.getClass()
+                .getName());
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @HasAuthority(Authority.MEMBERS_UPDATE)
+    @Operation(
+            summary = "Reactivate terminated member membership",
+            description = "Reactivates a terminated member's membership. " +
+                          "Requires MEMBERS:UPDATE authority (admin-only). " +
+                          "Sets active status to true and records reactivation timestamp and user who performed reactivation."
+    )
+    @ApiResponse(responseCode = "204", description = "Membership reactivated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid reactivation request (e.g., member is already active)")
+    @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:UPDATE authority")
+    @ApiResponse(responseCode = "404", description = "Member not found")
+    public ResponseEntity<Void> reactivateMember(
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @CurrentUser UserId currentUserId) {
+
+        var command = new Member.ReactivateMembership(currentUserId);
+        managementService.reactivateMember(id, command);
+        return ResponseEntity.noContent()
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
+                .build();
     }
 
     /**
@@ -184,15 +212,16 @@ class MemberController {
             @Valid @RequestBody TerminateMembershipRequest request,
             @CurrentUser UserId currentUserId) {
 
-        // Map request to domain command with authenticated user for audit trail
         var command = new Member.TerminateMembership(
                 currentUserId,
                 request.reason(),
                 request.note().orElse(null)
         );
 
-        managementService.terminateMember(id, currentUserId, command);
-        return ResponseEntity.noContent().location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri()).build();
+        managementService.terminateMember(id, command);
+        return ResponseEntity.noContent()
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
+                .build();
     }
 
     /**
@@ -212,25 +241,23 @@ class MemberController {
                           "Supports pagination (page, size) and sorting (sort=field,direction). " +
                           "Default: page=0, size=10, sort=lastName,asc. " +
                           "Allowed sort fields: firstName, lastName, registrationNumber. " +
-                          "Returns HATEOAS links for navigation including pagination links (first, last, next, prev)."
+                          "Returns HATEOAS links for navigation including pagination links (first, last, next, prev). " +
+                          "Access is restricted to active members only - terminated members will receive 403 Forbidden."
     )
-    @ApiResponse(responseCode = "200",description = "Paginated list of members retrieved successfully")
+    @ApiResponse(responseCode = "200", description = "Paginated list of members retrieved successfully")
+    @ApiResponse(responseCode = "403", description = "Forbidden - user is not an active member")
     public ResponseEntity<PagedModel<EntityModel<MemberSummaryResponse>>> listMembers(
             @Parameter(description = "Pagination parameters: page, size, sort")
             @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
 
-        // Validate sort fields
         validateSortFields(pageable.getSort());
 
-        // Fetch page from repository directly
         Page<Member> memberPage = memberRepository.findAll(pageable);
 
-        // Map to DTOs and convert to PagedModel using assembler
         PagedModel<EntityModel<MemberSummaryResponse>> pagedModel = pagedResourcesAssembler.toModel(
                 memberPage.map(memberMapper::toSummaryResponse),
                 response -> {
                     EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
-                    // Add self link to individual member
                     model.add(klabisLinkTo(methodOn(MemberController.class).getMember(response.id())).withSelfRel());
                     return model;
                 }
@@ -285,33 +312,32 @@ class MemberController {
     public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id) {
 
-        // Load member directly from repository
         Member member = memberRepository.findById(new UserId(id))
                 .orElseThrow(() -> new MemberNotFoundException(new MemberId(id)));
 
-        // Map to response
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
-
-        // Create entity model with HATEOAS links
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
-        // Add self link with affordances
-        // Active members get both update and terminate affordances
-        // Terminated members only get update affordance
         if (member.isActive()) {
             entityModel.add(
                     klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, (UpdateMemberRequest) null, null)))
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).terminateMember(id, (TerminateMembershipRequest) null, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
+                                    (UpdateMemberRequest) null,
+                                    null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).terminateMember(id,
+                                    (TerminateMembershipRequest) null,
+                                    null)))
             );
         } else {
             entityModel.add(
                     klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, (UpdateMemberRequest) null, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
+                                    (UpdateMemberRequest) null,
+                                    null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).reactivateMember(id, null)))
             );
         }
 
-        // Add collection link
         entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(
                 org.springframework.data.domain.PageRequest.of(0, 10)
         )).withRel("collection"));
@@ -326,7 +352,8 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        model.add(klabisLinkTo(methodOn(MemberController.class).listMembers(null)).withRel("members"));
+        model.add(klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).withRel(
+                "members"));
         return model;
     }
 }

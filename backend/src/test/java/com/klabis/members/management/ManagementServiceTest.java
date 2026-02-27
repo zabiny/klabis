@@ -2,11 +2,15 @@ package com.klabis.members.management;
 
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.members.MemberReactivatedEvent;
 import com.klabis.members.MemberTerminatedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -14,11 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,8 +32,6 @@ import static org.mockito.Mockito.*;
 @DisplayName("ManagementService Unit Tests")
 class ManagementServiceTest {
 
-    private static final UserId TEST_CURRENT_USER_ID = UserId.newId();
-
     @Mock
     private MemberRepository memberRepository;
 
@@ -46,7 +44,7 @@ class ManagementServiceTest {
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementServiceImpl(memberRepository);
+        testedSubject = new ManagementServiceImpl(memberRepository, userService);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -147,17 +145,6 @@ class ManagementServiceTest {
                     .withAddress(Address.of("Vinohradská 456", "Praha", "12000", "CZ"))
                     .withNoGuardian()
                     .build();
-
-            UsernamePasswordAuthenticationToken adminAuth = new UsernamePasswordAuthenticationToken(
-                    "admin", "password",
-                    List.of(new SimpleGrantedAuthority("MEMBERS:UPDATE"))
-            );
-            SecurityContextHolder.getContext().setAuthentication(adminAuth);
-        }
-
-        @AfterEach
-        void tearDownNested() {
-            SecurityContextHolder.clearContext();
         }
 
         @Nested
@@ -178,7 +165,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command);
+                Member result = testedSubject.terminateMember(testMemberId, command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -191,6 +178,31 @@ class ManagementServiceTest {
                 assertThat(saved.getDeactivatedAt()).isNotNull();
                 assertThat(saved.getDeactivationNote()).isEqualTo("Member requested resignation");
                 assertThat(saved.getDeactivatedBy().uuid()).isEqualTo(adminUserId);
+
+                // Verify UserService.suspendUser was called
+                verify(userService).suspendUser(testActiveMember.getId().toUserId());
+            }
+
+            @Test
+            @DisplayName("should handle missing User account gracefully during termination")
+            void shouldHandleMissingUserAccountGracefully() {
+                var request = new TerminateMembershipRequest(
+                        DeactivationReason.ODHLASKA,
+                        Optional.of("Member requested resignation")
+                );
+
+                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+                // UserService.suspendUser should be called even if User doesn't exist (graceful handling)
+                doNothing().when(userService).suspendUser(any(UserId.class));
+
+                var command = new Member.TerminateMembership(
+                        new UserId(adminUserId), request.reason(), request.note().orElse(null)
+                );
+                Member result = testedSubject.terminateMember(testMemberId, command);
+
+                assertThat(result.isActive()).isFalse();
+                verify(userService).suspendUser(testActiveMember.getId().toUserId());
             }
 
             @Test
@@ -206,7 +218,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command);
+                Member result = testedSubject.terminateMember(testMemberId, command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -231,7 +243,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command);
+                testedSubject.terminateMember(testMemberId, command);
 
                 ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
                 verify(memberRepository).save(captor.capture());
@@ -274,7 +286,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.OTHER, "Second termination attempt"
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member is already terminated");
 
@@ -296,13 +308,12 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.PRESTUP, null
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, TEST_CURRENT_USER_ID, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
                         .isInstanceOf(OptimisticLockingFailureException.class);
 
                 verify(memberRepository).save(any(Member.class));
             }
         }
-
 
         @Nested
         @DisplayName("Member Not Found Tests")
@@ -318,12 +329,115 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.ODHLASKA, null
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(nonExistentId, TEST_CURRENT_USER_ID, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(nonExistentId, command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member not found");
 
                 verify(memberRepository, never()).save(any(Member.class));
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("Member Reactivation Tests")
+    class MemberReactivationTests {
+
+        private Member testTerminatedMember;
+        private UUID adminUserId;
+
+        @BeforeEach
+        void setUpNested() {
+            adminUserId = UUID.randomUUID();
+
+            // Create a terminated member for reactivation tests
+            testTerminatedMember = MemberTestDataBuilder.aMember()
+                    .withId(testMemberId)
+                    .withFirstName("Jane")
+                    .withLastName("Smith")
+                    .withRegistrationNumber("ZBM9998")
+                    .withEmail("jane.smith@example.com")
+                    .withPhone("+420987654321")
+                    .withAddress(Address.of("Reakční 10", "Brno", "60200", "CZ"))
+                    .withNoGuardian()
+                    .terminated(DeactivationReason.ODHLASKA, "Previous termination")
+                    .build();
+        }
+
+        @Test
+        @DisplayName("should reactivate terminated member successfully")
+        void shouldReactivateTerminatedMemberSuccessfully() {
+            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            var command = new Member.ReactivateMembership(new UserId(adminUserId));
+            Member result = testedSubject.reactivateMember(testMemberId, command);
+
+            assertThat(result.isActive()).isTrue();
+            verify(userService).reactivateUser(testTerminatedMember.getId().toUserId());
+        }
+
+        @Test
+        @DisplayName("should reject reactivation of already active member")
+        void shouldRejectReactivationOfAlreadyActiveMember() {
+            Member activeMember = MemberTestDataBuilder.aMember()
+                    .withId(testMemberId)
+                    .withFirstName("Bob")
+                    .withLastName("Jones")
+                    .withRegistrationNumber("ZBM9999")
+                    .withEmail("bob.jones@example.com")
+                    .withPhone("+420111222333")
+                    .withAddress(Address.of("Řeznická 1", "Brno", "60200", "CZ"))
+                    .withNoGuardian()
+                    .build();
+
+            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(activeMember));
+
+            var command = new Member.ReactivateMembership(new UserId(adminUserId));
+            assertThatThrownBy(() -> testedSubject.reactivateMember(testMemberId, command))
+                    .isInstanceOf(InvalidUpdateException.class)
+                    .hasMessageContaining("already active");
+
+            verify(memberRepository, never()).save(any(Member.class));
+            verify(userService, never()).reactivateUser(any(UserId.class));
+        }
+
+        @Test
+        @DisplayName("should handle missing User account gracefully during reactivation")
+        void shouldHandleMissingUserAccountGracefully() {
+            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+            // UserService.reactivateUser should be called even if User doesn't exist (graceful handling)
+            doNothing().when(userService).reactivateUser(any(UserId.class));
+
+            var command = new Member.ReactivateMembership(new UserId(adminUserId));
+            Member result = testedSubject.reactivateMember(testMemberId, command);
+
+            assertThat(result.isActive()).isTrue();
+            verify(userService).reactivateUser(testTerminatedMember.getId().toUserId());
+        }
+
+        @Test
+        @DisplayName("should publish MemberReactivatedEvent on successful reactivation")
+        void shouldPublishMemberReactivatedEventOnSuccessfulReactivation() {
+            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            var command = new Member.ReactivateMembership(new UserId(adminUserId));
+            testedSubject.reactivateMember(testMemberId, command);
+
+            ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
+            verify(memberRepository).save(captor.capture());
+
+            Member saved = captor.getValue();
+            assertThat(saved.getDomainEvents()).hasSize(1);
+
+            Object event = saved.getDomainEvents().get(0);
+            assertThat(event).isInstanceOf(MemberReactivatedEvent.class);
+
+            MemberReactivatedEvent reactivationEvent = (MemberReactivatedEvent) event;
+            assertThat(reactivationEvent.getMemberId()).isEqualTo(new UserId(testMemberId));
+            assertThat(reactivationEvent.getReactivatedBy()).isEqualTo(new UserId(adminUserId));
+            assertThat(reactivationEvent.getRegistrationNumber()).isEqualTo(testTerminatedMember.getRegistrationNumber());
         }
     }
 }

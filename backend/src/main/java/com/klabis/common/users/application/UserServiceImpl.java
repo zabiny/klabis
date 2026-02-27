@@ -85,4 +85,44 @@ class UserServiceImpl implements UserService {
         }
         return user;
     }
+
+    @Override
+    public void suspendUser(UserId userId) {
+        log.debug("Suspending user: userId={}", userId);
+
+        findById(userId).ifPresentOrElse(
+                user -> {
+                    if (user.getAccountStatus() != AccountStatus.SUSPENDED) {
+                        User suspended = user.suspend();
+                        userRepository.save(suspended);
+                        log.info("Suspended user: userId={}", userId);
+                    } else {
+                        log.debug("User already suspended: userId={}", userId);
+                    }
+                },
+                () -> log.debug("User not found for suspension: userId={}", userId)
+        );
+    }
+
+    @Override
+    public void reactivateUser(UserId userId) {
+        log.debug("Reactivating user: userId={}", userId);
+
+        findById(userId).ifPresentOrElse(
+                user -> {
+                    if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+                        User reactivated = user.reactivate();
+                        userRepository.save(reactivated);
+                        log.info("Reactivated user: userId={}", userId);
+                    } else {
+                        log.debug("User already active: userId={}", userId);
+                    }
+                },
+                () -> log.debug("User not found for reactivation: userId={}", userId)
+        );
+    }
+
+    private Optional<User> findById(UserId userId) {
+        return userRepository.findById(userId);
+    }
 }

@@ -29,13 +29,18 @@ class MembersImpl implements Members {
     @Override
     public Optional<MemberDto> findByRegistrationNumber(String registrationNumber) {
         if (RegistrationNumber.isRegistrationNumber(registrationNumber)) {
-            return memberRepository.findByRegistrationNumber(RegistrationNumber.of(registrationNumber)).map(this::fromMember);
+            return memberRepository.findByRegistrationNumber(RegistrationNumber.of(registrationNumber))
+                    .map(this::fromMember);
         } else {
             return Optional.empty();
         }
     }
 
     private MemberDto fromMember(Member member) {
-        return new MemberDto(member.getId().uuid(), member.getFirstName(), member.getLastName(), member.getEmail().value(), LocalDateTime.ofInstant(member.getLastModifiedAt(), ZoneId.of("Europe/Prague")));
+        return new MemberDto(member.getId().uuid(),
+                member.getFirstName(),
+                member.getLastName(),
+                member.getEmail().value(),
+                LocalDateTime.ofInstant(member.getLastModifiedAt(), ZoneId.of("Europe/Prague")));
     }
 }
