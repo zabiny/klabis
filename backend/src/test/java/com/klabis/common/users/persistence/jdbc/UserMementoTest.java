@@ -240,9 +240,7 @@ class UserMementoTest {
             UserAssert.assertThat(reconstructed)
                     .hasSameIdentityAs(original)
                     .hasAccountStatus(original.getAccountStatus())
-                    .isAccountNonExpired()
-                    .isAccountNonLocked()
-                    .isCredentialsNonExpired();
+                    .isAuthenticatable();
         }
 
         @Test

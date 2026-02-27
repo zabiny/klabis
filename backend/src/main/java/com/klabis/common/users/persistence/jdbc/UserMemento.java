@@ -67,19 +67,6 @@ public class UserMemento implements Persistable<UUID> {
     @Column("version")
     private Long version;
 
-    // Spring Security fields (transient = not persisted to database)
-    @Transient
-    private boolean accountNonExpired = true;
-
-    @Transient
-    private boolean accountNonLocked = true;
-
-    @Transient
-    private boolean credentialsNonExpired = true;
-
-    @Transient
-    private boolean enabled = true;
-
     // Transient reference to User for domain event delegation
     @Transient
     private User user;
@@ -132,7 +119,6 @@ public class UserMemento implements Persistable<UUID> {
         UserMemento memento = new UserMemento();
 
         copyBasicInfo(user, memento);
-        copySpringSecurityFields(user, memento);
         copyAuditMetadata(user, memento);
 
         // Store transient reference to User for domain event delegation
@@ -152,16 +138,6 @@ public class UserMemento implements Persistable<UUID> {
         memento.username = user.getUsername();
         memento.passwordHash = user.getPasswordHash();
         memento.accountStatus = user.getAccountStatus();
-    }
-
-    /**
-     * Copies Spring Security fields from User to memento.
-     */
-    private static void copySpringSecurityFields(User user, UserMemento memento) {
-        memento.accountNonExpired = user.isAccountNonExpired();
-        memento.accountNonLocked = user.isAccountNonLocked();
-        memento.credentialsNonExpired = user.isCredentialsNonExpired();
-        memento.enabled = user.isEnabled();
     }
 
     /**
@@ -187,16 +163,7 @@ public class UserMemento implements Persistable<UUID> {
     public User toUser() {
         // Use User.reconstruct method to create User instance
         UserId userId = this.id != null ? new UserId(this.id) : null;
-        User user = User.reconstruct(
-                userId,
-                this.username,
-                this.passwordHash,
-                this.accountStatus,
-                this.accountNonExpired,
-                this.accountNonLocked,
-                this.credentialsNonExpired,
-                this.enabled
-        );
+        User user = User.reconstruct(userId, this.username, this.passwordHash, this.accountStatus);
 
         // Update audit metadata
         if (this.createdAt != null) {

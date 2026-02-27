@@ -38,7 +38,6 @@ public class UserTestDataBuilder {
     private String username = UserTestDataConstants.DEFAULT_MEMBER_USERNAME;
     private String passwordHash = UserTestDataConstants.DEFAULT_PASSWORD_HASH;
     private AccountStatus status = AccountStatus.ACTIVE;
-    private Boolean enabled = null;
     private UserId userId = null;
 
     private UserTestDataBuilder() {
@@ -129,17 +128,6 @@ public class UserTestDataBuilder {
     }
 
     /**
-     * Sets the enabled flag for the user.
-     *
-     * @param enabled the enabled flag to set
-     * @return this builder for method chaining
-     */
-    public UserTestDataBuilder enabled(boolean enabled) {
-        this.enabled = enabled;
-        return this;
-    }
-
-    /**
      * Sets the user ID for the user.
      *
      * @param userId the user ID to set
@@ -158,23 +146,12 @@ public class UserTestDataBuilder {
     public User build() {
         UserId id = userId != null ? userId : new UserId(java.util.UUID.randomUUID());
 
-        if (status == AccountStatus.PENDING_ACTIVATION && enabled == null) {
+        if (status == AccountStatus.PENDING_ACTIVATION) {
             return User.createdUser(username);
         }
-        if (status == AccountStatus.ACTIVE && enabled == null) {
+        if (status == AccountStatus.ACTIVE) {
             return User.createdUser(username, passwordHash);
         }
-        // For SUSPENDED and other statuses, use reconstruct with enabled flag
-        boolean enabledValue = (enabled != null) ? enabled : false;
-        return User.reconstruct(
-                id,
-                username,
-                passwordHash,
-                status,
-                true,
-                true,
-                true,
-                enabledValue
-        );
+        return User.reconstruct(id, username, passwordHash, status);
     }
 }

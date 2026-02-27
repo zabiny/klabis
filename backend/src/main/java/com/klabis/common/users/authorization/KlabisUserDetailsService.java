@@ -105,22 +105,22 @@ public class KlabisUserDetailsService implements UserDetailsService {
 
         @Override
         public boolean isAccountNonExpired() {
-            return user.isAccountNonExpired();
+            return true;
         }
 
         @Override
         public boolean isAccountNonLocked() {
-            return user.isAccountNonLocked();
+            return true;
         }
 
         @Override
         public boolean isCredentialsNonExpired() {
-            return user.isCredentialsNonExpired();
+            return true;
         }
 
         @Override
         public boolean isEnabled() {
-            return user.isEnabled() && user.isAuthenticatable();
+            return user.isAuthenticatable();
         }
 
         public User getUser() {

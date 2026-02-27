@@ -178,8 +178,8 @@ class UserTest {
 
 
         @Test
-        @DisplayName("should maintain all non-authentication flags when activating")
-        void shouldMaintainAllNonAuthenticationFlagsWhenActivating() {
+        @DisplayName("should be authenticatable after activation")
+        void shouldBeAuthenticatableAfterActivation() {
             // Given
             User pendingUser = UserTestDataBuilder.aPendingUser().build();
             String newPasswordHash = "$2a$10$newPasswordHash...";
@@ -189,9 +189,7 @@ class UserTest {
 
             // Then
             UserAssert.assertThat(activatedUser)
-                    .isAccountNonExpired()
-                    .isAccountNonLocked()
-                    .isCredentialsNonExpired();
+                    .isAuthenticatable();
         }
     }
 
@@ -217,11 +215,11 @@ class UserTest {
         }
 
         @Test
-        @DisplayName("should not be enabled until password is set")
+        @DisplayName("should not be authenticatable until password is set")
         void shouldNotBeEnabled() {
             User user = User.createdUser(UserTestDataConstants.DEFAULT_MEMBER_USERNAME);
 
-            assertThat(user.isEnabled()).isFalse();
+            assertThat(user.isAuthenticatable()).isFalse();
         }
 
         @Test
@@ -271,14 +269,14 @@ class UserTest {
         }
 
         @Test
-        @DisplayName("should be enabled immediately")
+        @DisplayName("should be authenticatable immediately")
         void shouldBeEnabled() {
             User user = User.createdUser(
                     UserTestDataConstants.DEFAULT_ADMIN_USERNAME,
                     UserTestDataConstants.DEFAULT_PASSWORD_HASH
             );
 
-            assertThat(user.isEnabled()).isTrue();
+            assertThat(user.isAuthenticatable()).isTrue();
         }
 
         @Test
@@ -354,12 +352,12 @@ class UserTest {
             // Then - immutability: original user unchanged
             UserAssert.assertThat(activeUser)
                     .hasAccountStatus(AccountStatus.ACTIVE)
-                    .isEnabled();
+                    .isAuthenticatable();
             assertThat(suspendedUser).isNotSameAs(activeUser);
         }
 
         @Test
-        @DisplayName("should maintain non-authentication flags when suspending")
+        @DisplayName("should not be authenticatable after suspending")
         void shouldMaintainNonAuthenticationFlagsWhenSuspending() {
             // Given
             User activeUser = UserTestDataBuilder.anAdminUser().build();
@@ -369,9 +367,7 @@ class UserTest {
 
             // Then
             UserAssert.assertThat(suspendedUser)
-                    .isAccountNonExpired()
-                    .isAccountNonLocked()
-                    .isCredentialsNonExpired();
+                    .isNotAuthenticatable();
         }
     }
 
@@ -385,7 +381,6 @@ class UserTest {
             // Given
             User suspendedUser = UserTestDataBuilder.anAdminUser()
                     .status(AccountStatus.SUSPENDED)
-                    .enabled(false)
                     .build();
 
             // When
@@ -395,7 +390,7 @@ class UserTest {
             UserAssert.assertThat(reactivatedUser)
                     .hasSameIdentityAs(suspendedUser)
                     .hasAccountStatus(AccountStatus.ACTIVE)
-                    .isEnabled();
+                    .isAuthenticatable();
         }
 
         @Test
@@ -404,7 +399,6 @@ class UserTest {
             // Given
             User suspendedUser = UserTestDataBuilder.anAdminUser()
                     .status(AccountStatus.SUSPENDED)
-                    .enabled(false)
                     .build();
 
             // When
@@ -413,17 +407,16 @@ class UserTest {
             // Then - immutability: original user unchanged
             UserAssert.assertThat(suspendedUser)
                     .hasAccountStatus(AccountStatus.SUSPENDED)
-                    .isNotEnabled();
+                    .isNotAuthenticatable();
             assertThat(reactivatedUser).isNotSameAs(suspendedUser);
         }
 
         @Test
-        @DisplayName("should maintain non-authentication flags when reactivating")
+        @DisplayName("should be authenticatable after reactivating")
         void shouldMaintainNonAuthenticationFlagsWhenReactivating() {
             // Given
             User suspendedUser = UserTestDataBuilder.anAdminUser()
                     .status(AccountStatus.SUSPENDED)
-                    .enabled(false)
                     .build();
 
             // When
@@ -431,9 +424,7 @@ class UserTest {
 
             // Then
             UserAssert.assertThat(reactivatedUser)
-                    .isAccountNonExpired()
-                    .isAccountNonLocked()
-                    .isCredentialsNonExpired();
+                    .isAuthenticatable();
         }
     }
 
@@ -461,7 +452,6 @@ class UserTest {
             // Given
             User suspendedUser = UserTestDataBuilder.anAdminUser()
                     .status(AccountStatus.SUSPENDED)
-                    .enabled(false)
                     .build();
 
             // When

@@ -159,16 +159,7 @@ class UserCreatedEventTest {
         void shouldCreateEventFromUser() {
             // Given
             UserId userId = new UserId(TEST_USER_ID);
-            User user = User.reconstruct(
-                    userId,
-                    TEST_USERNAME,
-                    "hashedPassword",
-                    AccountStatus.PENDING_ACTIVATION,
-                    true,
-                    true,
-                    true,
-                    true
-            );
+            User user = User.reconstruct(userId, TEST_USERNAME, "hashedPassword", AccountStatus.PENDING_ACTIVATION);
 
             // When
             UserCreatedEvent event = UserCreatedEvent.fromUser(user);

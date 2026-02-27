@@ -97,16 +97,7 @@ public class UserTestData {
             if (accountStatus == AccountStatus.ACTIVE) {
                 return User.createdUser(username, passwordHash);
             }
-            return User.reconstruct(
-                    new UserId(java.util.UUID.randomUUID()),
-                    username,
-                    passwordHash,
-                    accountStatus,
-                    true,
-                    true,
-                    true,
-                    false
-            );
+            return User.reconstruct(new UserId(java.util.UUID.randomUUID()), username, passwordHash, accountStatus);
         }
 
         public User buildPending() {

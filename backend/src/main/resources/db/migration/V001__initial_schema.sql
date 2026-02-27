@@ -121,10 +121,6 @@ CREATE TABLE users
     user_name               VARCHAR(7)   NOT NULL UNIQUE,
     password_hash           VARCHAR(255) NOT NULL,
     account_status          VARCHAR(50)  NOT NULL DEFAULT 'ACTIVE',
-    account_non_expired     BOOLEAN      NOT NULL DEFAULT TRUE,
-    account_non_locked      BOOLEAN      NOT NULL DEFAULT TRUE,
-    credentials_non_expired BOOLEAN      NOT NULL DEFAULT TRUE,
-    enabled                 BOOLEAN      NOT NULL DEFAULT TRUE,
 
     -- Audit fields (from V008)
     created_at              TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,

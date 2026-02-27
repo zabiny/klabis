@@ -55,11 +55,7 @@ class UserServiceImplTest {
                     testUserId,
                     testUsername,
                     java.util.UUID.randomUUID().toString(),
-                    AccountStatus.PENDING_ACTIVATION,
-                    true,
-                    true,
-                    true,
-                    false
+                    AccountStatus.PENDING_ACTIVATION
             );
 
             when(userRepository.save(any(User.class))).thenReturn(pendingUser);
@@ -76,7 +72,7 @@ class UserServiceImplTest {
             verify(userRepository).save(userCaptor.capture());
             assertThat(userCaptor.getValue().getUsername()).isEqualTo(testUsername);
             assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
-            assertThat(userCaptor.getValue().isEnabled()).isFalse();
+            assertThat(userCaptor.getValue().isAuthenticatable()).isFalse();
         }
 
         @Test
@@ -88,11 +84,7 @@ class UserServiceImplTest {
                     testUserId,
                     testUsername,
                     java.util.UUID.randomUUID().toString(),
-                    AccountStatus.PENDING_ACTIVATION,
-                    true,
-                    true,
-                    true,
-                    false
+                    AccountStatus.PENDING_ACTIVATION
             );
 
             when(userRepository.save(any(User.class))).thenReturn(pendingUser);
@@ -120,11 +112,7 @@ class UserServiceImplTest {
                     testUserId,
                     testUsername,
                     java.util.UUID.randomUUID().toString(),
-                    AccountStatus.PENDING_ACTIVATION,
-                    true,
-                    true,
-                    true,
-                    false
+                    AccountStatus.PENDING_ACTIVATION
             );
 
             when(userRepository.save(any(User.class))).thenReturn(pendingUser);
@@ -149,16 +137,7 @@ class UserServiceImplTest {
         @DisplayName("should create user with ACTIVE status when passwordHash provided")
         void shouldCreateUserWithActiveStatusWhenPasswordHashProvided() {
             // Given
-            User activeUser = User.reconstruct(
-                    testUserId,
-                    testUsername,
-                    testPasswordHash,
-                    AccountStatus.ACTIVE,
-                    true,
-                    true,
-                    true,
-                    true
-            );
+            User activeUser = User.reconstruct(testUserId, testUsername, testPasswordHash, AccountStatus.ACTIVE);
 
             when(userRepository.save(any(User.class))).thenReturn(activeUser);
             when(userPermissionsRepository.save(any(UserPermissions.class)))
@@ -174,23 +153,14 @@ class UserServiceImplTest {
             verify(userRepository).save(userCaptor.capture());
             assertThat(userCaptor.getValue().getUsername()).isEqualTo(testUsername);
             assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
-            assertThat(userCaptor.getValue().isEnabled()).isTrue();
+            assertThat(userCaptor.getValue().isAuthenticatable()).isTrue();
         }
 
         @Test
         @DisplayName("should not publish UserCreatedEvent so no password setup flow is triggered")
         void shouldNotPublishUserCreatedEvent() {
             // Given
-            User activeUser = User.reconstruct(
-                    testUserId,
-                    testUsername,
-                    testPasswordHash,
-                    AccountStatus.ACTIVE,
-                    true,
-                    true,
-                    true,
-                    true
-            );
+            User activeUser = User.reconstruct(testUserId, testUsername, testPasswordHash, AccountStatus.ACTIVE);
 
             when(userRepository.save(any(User.class))).thenReturn(activeUser);
             when(userPermissionsRepository.save(any(UserPermissions.class)))
@@ -209,16 +179,7 @@ class UserServiceImplTest {
         @DisplayName("should grant authorities on the created user")
         void shouldGrantAuthoritiesOnCreatedUser() {
             // Given
-            User activeUser = User.reconstruct(
-                    testUserId,
-                    testUsername,
-                    testPasswordHash,
-                    AccountStatus.ACTIVE,
-                    true,
-                    true,
-                    true,
-                    true
-            );
+            User activeUser = User.reconstruct(testUserId, testUsername, testPasswordHash, AccountStatus.ACTIVE);
 
             when(userRepository.save(any(User.class))).thenReturn(activeUser);
             when(userPermissionsRepository.save(any(UserPermissions.class)))
@@ -290,16 +251,7 @@ class UserServiceImplTest {
         @DisplayName("should suspend existing user")
         void shouldSuspendExistingUser() {
             // Given
-            User activeUser = User.reconstruct(
-                    testUserId,
-                    testUsername,
-                    testPasswordHash,
-                    AccountStatus.ACTIVE,
-                    true,
-                    true,
-                    true,
-                    true
-            );
+            User activeUser = User.reconstruct(testUserId, testUsername, testPasswordHash, AccountStatus.ACTIVE);
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(activeUser));
             when(userRepository.save(any(User.class))).thenReturn(activeUser);
 
@@ -310,23 +262,14 @@ class UserServiceImplTest {
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(userCaptor.capture());
             assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.SUSPENDED);
-            assertThat(userCaptor.getValue().isEnabled()).isFalse();
+            assertThat(userCaptor.getValue().isAuthenticatable()).isFalse();
         }
 
         @Test
         @DisplayName("should be idempotent - skip if already suspended")
         void shouldBeIdempotentIfAlreadySuspended() {
             // Given
-            User suspendedUser = User.reconstruct(
-                    testUserId,
-                    testUsername,
-                    testPasswordHash,
-                    AccountStatus.SUSPENDED,
-                    true,
-                    true,
-                    true,
-                    false
-            );
+            User suspendedUser = User.reconstruct(testUserId, testUsername, testPasswordHash, AccountStatus.SUSPENDED);
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(suspendedUser));
 
             // When
@@ -360,16 +303,7 @@ class UserServiceImplTest {
         @DisplayName("should reactivate suspended user")
         void shouldReactivateSuspendedUser() {
             // Given
-            User suspendedUser = User.reconstruct(
-                    testUserId,
-                    testUsername,
-                    testPasswordHash,
-                    AccountStatus.SUSPENDED,
-                    true,
-                    true,
-                    true,
-                    false
-            );
+            User suspendedUser = User.reconstruct(testUserId, testUsername, testPasswordHash, AccountStatus.SUSPENDED);
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(suspendedUser));
             when(userRepository.save(any(User.class))).thenReturn(suspendedUser);
 
@@ -380,23 +314,14 @@ class UserServiceImplTest {
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(userCaptor.capture());
             assertThat(userCaptor.getValue().getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
-            assertThat(userCaptor.getValue().isEnabled()).isTrue();
+            assertThat(userCaptor.getValue().isAuthenticatable()).isTrue();
         }
 
         @Test
         @DisplayName("should be idempotent - skip if already active")
         void shouldBeIdempotentIfAlreadyActive() {
             // Given
-            User activeUser = User.reconstruct(
-                    testUserId,
-                    testUsername,
-                    testPasswordHash,
-                    AccountStatus.ACTIVE,
-                    true,
-                    true,
-                    true,
-                    true
-            );
+            User activeUser = User.reconstruct(testUserId, testUsername, testPasswordHash, AccountStatus.ACTIVE);
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(activeUser));
 
             // When

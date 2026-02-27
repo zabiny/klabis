@@ -75,16 +75,16 @@ public class UserAssert extends AbstractAssert<UserAssert, User> {
 
     public UserAssert isEnabled() {
         isNotNull();
-        if (!actual.isEnabled()) {
-            failWithMessage("Expected user to be enabled");
+        if (!actual.isAuthenticatable()) {
+            failWithMessage("Expected user to be enabled (authenticatable)");
         }
         return this;
     }
 
     public UserAssert isNotEnabled() {
         isNotNull();
-        if (actual.isEnabled()) {
-            failWithMessage("Expected user to be not enabled");
+        if (actual.isAuthenticatable()) {
+            failWithMessage("Expected user to be not enabled (not authenticatable)");
         }
         return this;
     }
@@ -101,56 +101,6 @@ public class UserAssert extends AbstractAssert<UserAssert, User> {
         isNotNull();
         if (actual.isAuthenticatable()) {
             failWithMessage("Expected user to be not authenticatable");
-        }
-        return this;
-    }
-
-    // ===== Spring Security Flags =====
-
-    public UserAssert isAccountNonExpired() {
-        isNotNull();
-        if (!actual.isAccountNonExpired()) {
-            failWithMessage("Expected account to be non-expired");
-        }
-        return this;
-    }
-
-    public UserAssert isAccountExpired() {
-        isNotNull();
-        if (actual.isAccountNonExpired()) {
-            failWithMessage("Expected account to be expired");
-        }
-        return this;
-    }
-
-    public UserAssert isAccountNonLocked() {
-        isNotNull();
-        if (!actual.isAccountNonLocked()) {
-            failWithMessage("Expected account to be non-locked");
-        }
-        return this;
-    }
-
-    public UserAssert isAccountLocked() {
-        isNotNull();
-        if (actual.isAccountNonLocked()) {
-            failWithMessage("Expected account to be locked");
-        }
-        return this;
-    }
-
-    public UserAssert isCredentialsNonExpired() {
-        isNotNull();
-        if (!actual.isCredentialsNonExpired()) {
-            failWithMessage("Expected credentials to be non-expired");
-        }
-        return this;
-    }
-
-    public UserAssert isCredentialsExpired() {
-        isNotNull();
-        if (actual.isCredentialsNonExpired()) {
-            failWithMessage("Expected credentials to be expired");
         }
         return this;
     }

@@ -47,15 +47,6 @@ public class User extends KlabisAggregateRoot<User, UserId> {
 
     private AccountStatus accountStatus;
 
-    // Spring Security fields
-    private boolean accountNonExpired = true;
-
-    private boolean accountNonLocked = true;
-
-    private boolean credentialsNonExpired = true;
-
-    private boolean enabled = true;
-
     // ========== Command Records ==========
 
     /**
@@ -73,29 +64,11 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     protected User() {
     }
 
-    /**
-     * Constructor for creating new User instances via factory methods.
-     * <p>
-     * This constructor is used by the static factory methods to ensure business invariants
-     * are validated during construction.
-     */
-    private User(
-            UserId id,
-            String username,
-            String passwordHash,
-            AccountStatus accountStatus,
-            boolean accountNonExpired,
-            boolean accountNonLocked,
-            boolean credentialsNonExpired,
-            boolean enabled) {
+    private User(UserId id, String username, String passwordHash, AccountStatus accountStatus) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
         this.accountStatus = accountStatus;
-        this.accountNonExpired = accountNonExpired;
-        this.accountNonLocked = accountNonLocked;
-        this.credentialsNonExpired = credentialsNonExpired;
-        this.enabled = enabled;
     }
 
     /**
@@ -117,11 +90,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
                 new UserId(UUID.randomUUID()),
                 username,
                 placeholderHash,
-                AccountStatus.PENDING_ACTIVATION,
-                true,
-                true,
-                true,
-                false
+                AccountStatus.PENDING_ACTIVATION
         );
 
         user.registerEvent(UserCreatedEvent.fromUser(user));
@@ -151,11 +120,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
                 new UserId(UUID.randomUUID()),
                 username,
                 placeholderHash,
-                AccountStatus.PENDING_ACTIVATION,
-                true,
-                true,
-                true,
-                false
+                AccountStatus.PENDING_ACTIVATION
         );
 
         user.registerEvent(UserCreatedEvent.fromUserWithEmail(user, email));
@@ -181,11 +146,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
                 new UserId(UUID.randomUUID()),
                 username,
                 passwordHash,
-                AccountStatus.ACTIVE,
-                true,
-                true,
-                true,
-                true
+                AccountStatus.ACTIVE
         );
     }
 
@@ -195,36 +156,14 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      * This method bypasses validation to allow reconstruction of users from the database.
      * Domain events are NOT registered during reconstruction.
      *
-     * @param id                    user ID
-     * @param username              username (registration number)
-     * @param passwordHash          BCrypt-hashed password
-     * @param accountStatus         account status
-     * @param accountNonExpired     account non-expired flag
-     * @param accountNonLocked      account non-locked flag
-     * @param credentialsNonExpired credentials non-expired flag
-     * @param enabled               enabled flag
+     * @param id            user ID
+     * @param username      username (registration number)
+     * @param passwordHash  BCrypt-hashed password
+     * @param accountStatus account status
      * @return User instance reconstructed from persisted data
      */
-    public static User reconstruct(
-            UserId id,
-            String username,
-            String passwordHash,
-            AccountStatus accountStatus,
-            boolean accountNonExpired,
-            boolean accountNonLocked,
-            boolean credentialsNonExpired,
-            boolean enabled) {
-
-        return new User(
-                id,
-                username,
-                passwordHash,
-                accountStatus,
-                accountNonExpired,
-                accountNonLocked,
-                credentialsNonExpired,
-                enabled
-        );
+    public static User reconstruct(UserId id, String username, String passwordHash, AccountStatus accountStatus) {
+        return new User(id, username, passwordHash, accountStatus);
     }
 
     /**
@@ -234,21 +173,12 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      * This method is called after the user successfully completes the password setup flow.
      *
      * @param newPasswordHash the BCrypt-hashed new password
-     * @return new User instance with ACTIVE status and enabled=true
+     * @return new User instance with ACTIVE status
      */
     public User activateWithPassword(String newPasswordHash) {
         Objects.requireNonNull(newPasswordHash, "New password hash is required");
 
-        User activated = new User(
-                this.id,
-                this.username,
-                newPasswordHash,
-                AccountStatus.ACTIVE,
-                this.accountNonExpired,
-                this.accountNonLocked,
-                this.credentialsNonExpired,
-                true
-        );
+        User activated = new User(this.id, this.username, newPasswordHash, AccountStatus.ACTIVE);
 
         activated.updateAuditMetadata(this.getAuditMetadata());
 
@@ -258,22 +188,13 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     /**
      * Suspends this user account.
      *
-     * <p>Returns a new User instance with SUSPENDED status and enabled=false.
+     * <p>Returns a new User instance with SUSPENDED status.
      * Suspended users cannot authenticate to the system (isAuthenticatable() returns false).
      *
-     * @return new User instance with SUSPENDED status and enabled=false
+     * @return new User instance with SUSPENDED status
      */
     public User suspend() {
-        User suspended = new User(
-                this.id,
-                this.username,
-                this.passwordHash,
-                AccountStatus.SUSPENDED,
-                this.accountNonExpired,
-                this.accountNonLocked,
-                this.credentialsNonExpired,
-                false
-        );
+        User suspended = new User(this.id, this.username, this.passwordHash, AccountStatus.SUSPENDED);
 
         suspended.updateAuditMetadata(this.getAuditMetadata());
 
@@ -283,22 +204,13 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     /**
      * Reactivates this suspended user account.
      *
-     * <p>Returns a new User instance with ACTIVE status and enabled=true.
+     * <p>Returns a new User instance with ACTIVE status.
      * This restores the user's ability to authenticate.
      *
-     * @return new User instance with ACTIVE status and enabled=true
+     * @return new User instance with ACTIVE status
      */
     public User reactivate() {
-        User reactivated = new User(
-                this.id,
-                this.username,
-                this.passwordHash,
-                AccountStatus.ACTIVE,
-                this.accountNonExpired,
-                this.accountNonLocked,
-                this.credentialsNonExpired,
-                true
-        );
+        User reactivated = new User(this.id, this.username, this.passwordHash, AccountStatus.ACTIVE);
 
         reactivated.updateAuditMetadata(this.getAuditMetadata());
 
@@ -313,13 +225,10 @@ public class User extends KlabisAggregateRoot<User, UserId> {
 
     /**
      * Check if user can authenticate.
+     * A user is authenticatable only when their account is ACTIVE.
      */
     public boolean isAuthenticatable() {
-        return enabled
-               && accountStatus == AccountStatus.ACTIVE
-               && accountNonExpired
-               && accountNonLocked
-               && credentialsNonExpired;
+        return accountStatus == AccountStatus.ACTIVE;
     }
 
     // Getters
@@ -346,29 +255,12 @@ public class User extends KlabisAggregateRoot<User, UserId> {
         return accountStatus;
     }
 
-    public boolean isAccountNonExpired() {
-        return accountNonExpired;
-    }
-
-    public boolean isAccountNonLocked() {
-        return accountNonLocked;
-    }
-
-    public boolean isCredentialsNonExpired() {
-        return credentialsNonExpired;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
     @Override
     public String toString() {
         return "User{" +
                "id=" + id +
                ", username=" + username +
                ", accountStatus=" + accountStatus +
-               ", enabled=" + enabled +
                '}';
     }
 }
