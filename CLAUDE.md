@@ -115,3 +115,19 @@ Before starting work, check the appropriate CLAUDE.md:
 
 - **Specifications** → Reference `./openspec/` for change proposals
     - Feature specifications and design documents
+
+## Commit Conventions
+
+Follow Conventional Commits format:
+
+```
+<type>(<scope>): <description>
+
+feat(members): add member registration endpoint
+fix(email): correct welcome email template
+test(members): add tests for registration number generation
+docs(api): update authentication examples
+refactor(users): extract password validation to service
+```
+
+**Common types:** feat, fix, test, docs, refactor, chore, perf, style, ci
