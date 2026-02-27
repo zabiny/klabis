@@ -4,7 +4,7 @@
 
 This specification defines requirements for automatic User account suspension when Member membership is terminated. It ensures that terminated members cannot authenticate or access protected API endpoints, maintaining security and access control consistency across the system.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: User Suspension on Member Termination
 

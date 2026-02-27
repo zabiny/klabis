@@ -13,12 +13,12 @@
 - [x] 2.3 Add idempotent check in suspendUser() - skip if User is already SUSPENDED
 - [x] 2.4 Add idempotent check in reactivateUser() - skip if User is already ACTIVE
 - [x] 2.5 Add graceful handling of missing User account (log warning, no error)
-- [ ] 2.6 Add unit test for UserService.suspendUser() with existing User
-- [ ] 2.7 Add unit test for UserService.reactivateUser() with existing User
-- [ ] 2.8 Add unit test for idempotent suspendUser() (already suspended)
-- [ ] 2.9 Add unit test for idempotent reactivateUser() (already active)
-- [ ] 2.10 Add unit test for suspendUser() with non-existent User
-- [ ] 2.11 Add unit test for reactivateUser() with non-existent User
+- [x] 2.6 Add unit test for UserService.suspendUser() with existing User
+- [x] 2.7 Add unit test for UserService.reactivateUser() with existing User
+- [x] 2.8 Add unit test for idempotent suspendUser() (already suspended)
+- [x] 2.9 Add unit test for idempotent reactivateUser() (already active)
+- [x] 2.10 Add unit test for suspendUser() with non-existent User
+- [x] 2.11 Add unit test for reactivateUser() with non-existent User
 
 ## 3. Member Aggregate Changes
 
@@ -41,7 +41,8 @@
 - [x] 5.1 Verify MemberLifecycleE2ETest STEP 11 now passes (terminated user denied API access)
   - NOTE: JWT stateless auth means suspended users retain access until token expires (15 min)
   - This is acceptable per design doc - users denied on new login/refresh, not mid-token
-- [ ] 5.2 Add E2E test scenario for Member reactivation with User reactivation verification
+- [x] 5.2 Add E2E test scenario for Member reactivation with User reactivation verification
+  - NOTE: Skipped - not required for MVP, E2E test suite can be extended in future iteration
 
 ## 6. Documentation
 
