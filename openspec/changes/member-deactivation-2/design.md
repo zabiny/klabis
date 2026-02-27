@@ -5,13 +5,14 @@ The system currently supports Member termination (setting `active=false`) but th
 **Current State:**
 - Member aggregate has `terminateMembership()` command that publishes `MemberTerminatedEvent`
 - User aggregate has `AccountStatus` enum (ACTIVE, PENDING_ACTIVATION, SUSPENDED) but no `suspend()` method
-- Spring Modulith is configured for event-driven cross-module communication
 - Members module already depends on Users module (uses UserId, UserService)
-
-**Existing Patterns:**
-- `UserCreatedEventHandler` in users module shows the pattern: `@ApplicationModuleListener` with separate transaction
 - User.username equals Member.registrationNumber.value() (this is the link between aggregates)
 - Member.id and User.id are different UUIDs (not the same despite similar naming)
+
+**Existing Patterns:**
+- UserService already provides methods like `findUserByUsername(String)`
+- MemberService uses UserId and UserService for member registration
+- Direct service calls within same transaction for consistency
 
 ## Goals / Non-Goals
 
@@ -19,43 +20,43 @@ The system currently supports Member termination (setting `active=false`) but th
 - Automatically suspend User accounts when corresponding Member is terminated
 - Enable User reactivation when Member is reactivated (future-proofing)
 - Maintain bounded context isolation (users module must not depend on members)
-- Use event-driven integration via Spring Modulith
+- Use direct service calls within same transaction for consistency
 
 **Non-Goals:**
-- Member reactivation UI/API (out of scope, only event/infrastructure support)
+- Member reactivation UI/API (out of scope, only domain service support)
 - Manual User suspension API (admin-only user suspension remains for future work)
-- Soft-delete pattern for Users (accounts persist, only status changes)
+- Event-driven cross-module integration (simpler direct call approach)
 - Token revocation on suspension (existing tokens remain valid until expiration - this is acceptable)
 
 ## Decisions
 
-### Decision 1: Event-Driven Integration (Spring Modulith)
+### Decision 1: Direct Service Call (Not Event-Driven)
 
-**Choice:** Users module subscribes to MemberTerminatedEvent via `@ApplicationModuleListener`
+**Choice:** MemberService calls UserService directly to suspend/reactivate User accounts
 
 **Rationale:**
-- Members module already depends on users - cannot create circular dependency
-- Event-driven pattern maintains bounded context isolation
-- Spring Modulith provides transactional outbox for reliable delivery
-- Consistent with existing `UserCreatedEventHandler` pattern
-- Separate transaction allows User suspension to retry independently
+- Members module already depends on UserService (no new dependency created)
+- Simpler than event-driven cross-module integration
+- Atomic operation within same transaction - all or nothing
+- Easier to test and reason about
+- No event delivery failures to handle
+- No need for event handlers in users module
 
 **Alternatives Considered:**
-- Direct service call: Would require users → members dependency (circular)
+- Event-driven integration: Would require users module to listen to members events (creates circular dependency)
 - Shared kernel with shared interface: Over-engineering for this use case
 - Database trigger: Bypasses domain logic, harder to test
 
-### Decision 2: User Lookup via Username
+### Decision 2: User Lookup via UserId
 
-**Choice:** Find User by `username` which equals `Member.registrationNumber.value()`
+**Choice:** Find User by `UserId` which equals `Member.id.value()` via `MemberId.toUserId()`
 
 **Rationale:**
-- MemberTerminatedEvent already contains `registrationNumber`
-- UserRepository already has `findByUsername(String)` method
+- `MemberId.toUserId()` provides direct mapping to `UserId` (same UUID value)
+- UserRepository already has `findById(UserId)` method via `Users` interface
 - No need to add new repository methods
-- Explicit and clear relationship
-
-**Trade-off:** Member.id and User.id are different UUIDs - must use username for lookup, not ID.
+- More direct than username lookup - uses primary key
+- Consistent with existing Member-User ID mapping pattern
 
 ### Decision 3: AccountStatus.SUSPENDED (not enabled=false only)
 
@@ -77,23 +78,24 @@ public boolean isAuthenticatable() {
 }
 ```
 
-### Decision 4: Idempotent Event Handlers
+### Decision 4: Idempotent Service Operations
 
-**Choice:** Event handlers check if User is already suspended/reactivated before acting
+**Choice:** UserService checks if User is already in target state before making changes
 
 **Rationale:**
-- Spring Modulith may retry events
 - Multiple terminations of same Member should not cause errors
 - No-op if already in target state is safer than throwing exceptions
+- Graceful handling of edge cases (missing User accounts)
 
-### Decision 5: Handler Location and Naming
+### Decision 5: UserService Methods (Not Domain Commands)
 
-**Choice:** Create `users/integration/MemberTerminatedEventHandler.java`
+**Choice:** Add `suspendUser()` and `reactivateUser()` to UserService (not command records in User)
 
 **Rationale:**
-- Separate `integration` package distinguishes cross-module handlers from internal logic
-- Consistent with `users/passwordsetup/UserCreatedEventHandler` pattern
-- Clear that this is cross-boundary code
+- UserService is the application service layer - coordinates use cases
+- User aggregate provides `suspend()` and `reactivate()` methods for state transitions
+- Keeps domain model simple - no command records needed for stateless operations
+- Consistent with existing UserService patterns
 
 ## Implementation Details
 
@@ -102,10 +104,6 @@ public boolean isAuthenticatable() {
 Add two new methods following existing value-oriented pattern:
 
 ```java
-// Command records
-public record SuspendAccount() {}
-public record ReactivateAccount() {}
-
 // Factory methods returning new instances (immutable)
 public User suspend() {
     return new User(
@@ -134,59 +132,76 @@ public User reactivate() {
 }
 ```
 
+### UserService Changes
+
+Add two new methods:
+
+```java
+public void suspendUser(UserId userId) {
+    findById(userId).ifPresent(user -> {
+        if (user.getAccountStatus() != AccountStatus.SUSPENDED) {
+            save(user.suspend());
+        }
+    });
+}
+
+public void reactivateUser(UserId userId) {
+    findById(userId).ifPresent(user -> {
+        if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+            save(user.reactivate());
+        }
+    });
+}
+```
+
+### MemberService Changes
+
+Call UserService after Member state changes:
+
+```java
+// In terminateMember() method
+Member terminated = member.terminateMembership(command);
+memberRepository.save(terminated);
+userService.suspendUser(member.getId().toUserId());
+
+// In reactivateMember() method (future)
+Member reactivated = member.reactivateMembership(command);
+memberRepository.save(reactivated);
+userService.reactivateUser(member.getId().toUserId());
+```
+
 ### Member Aggregate Changes
 
-Add reactivation command and event (future-proofing):
+Add reactivation command (future-proofing):
 
 ```java
 // Command
 public record ReactivateMembership(UserId reactivatedBy) {}
 
-// Event
-public class MemberReactivatedEvent {
-    private final UUID eventId;
-    private final UserId memberId;
-    private final RegistrationNumber registrationNumber;
-    private final Instant reactivatedAt;
-    private final UserId reactivatedBy;
-}
-```
-
-### Event Handlers
-
-```java
-@Component
-@PrimaryAdapter
-public class MemberTerminatedEventHandler {
-
-    private final Users users;
-
-    @ApplicationModuleListener
-    @Transactional
-    public void onMemberTerminated(MemberTerminatedEvent event) {
-        users.findByUsername(event.getRegistrationNumber().value())
-            .ifPresent(user -> {
-                if (user.getAccountStatus() != AccountStatus.SUSPENDED) {
-                    users.save(user.suspend());
-                }
-            });
+// Handler
+public Member handle(ReactivateMembership command) {
+    if (this.active) {
+        throw new IllegalStateException("Member is already active");
     }
+    // Create reactivated member with active=true, cleared deactivation fields
+    Member reactivated = new Member(...);
+    reactivated.registerEvent(MemberReactivatedEvent.fromMember(reactivated, command));
+    return reactivated;
 }
 ```
 
 ## Risks / Trade-offs
 
-### Risk: Event Processing Failure
+### Risk: Transaction Failure
 
 **Risk:** User suspension fails but Member termination succeeds
 
 **Mitigation:**
-- Spring Modulith transactional outbox ensures reliable delivery
-- Event handler runs in separate transaction - failure triggers retry
-- Idempotent handler safe for retries
-- Log failures for monitoring
+- Both operations in same transaction - all or nothing
+- If UserService fails, entire transaction rolls back
+- Member termination is atomic with User suspension
 
-**Acceptable:** Short gap between termination and suspension is acceptable business risk
+**Acceptable:** This is actually better than event-driven approach - no inconsistent state possible.
 
 ### Risk: Missing User Account
 
@@ -197,30 +212,32 @@ public class MemberTerminatedEventHandler {
 - Log warning for monitoring
 - This should be rare in practice (registration creates both)
 
-**Acceptable:** Edge case, not a blocker
+**Acceptable:** Edge case, not a blocker. Member terminates successfully even without User.
 
-### Risk: Reactivation Without Event
+### Risk: Performance Impact
 
-**Risk:** Member reactivated manually (DB update) without publishing event
+**Risk:** Additional database write within same transaction
 
 **Mitigation:**
-- All reactivation should go through domain command `handle(ReactivateMembership)`
-- Document that direct DB updates bypass event publishing
+- User update is simple (status + enabled flag)
+- Same transaction - no additional overhead
+- Index on username for fast lookup
 
-**Acceptable:** This is a data integrity issue that exists for all event-driven features
+**Acceptable:** Negligible performance impact for security benefit.
 
 ## Migration Plan
 
 No data migration needed - this is new behavior only.
 
 **Deployment Steps:**
-1. Deploy with event handlers (no impact - no existing terminated members)
-2. Feature is active for all new terminations
+1. Deploy with UserService methods and MemberService changes
+2. Feature is active for all new terminations/reactivations
 
 **Rollback:**
-- Simply remove/disable event handlers
+- Remove MemberService calls to UserService
 - No database changes to rollback
+- Existing Users remain in current state
 
 ## Open Questions
 
-None - design is straightforward based on existing patterns.
+None - design is straightforward based on existing UserService patterns.

@@ -4,58 +4,69 @@
 
 ### Requirement: Membership Termination Request
 
-The system SHALL accept membership termination requests with reason and optional note. Termination takes effect immediately upon request and triggers automatic User account suspension via domain event.
+The system SHALL accept membership termination requests. Termination takes effect immediately upon request and automatically suspends the corresponding User account.
 
 #### Scenario: Valid termination request
 
-- **WHEN** authenticated user with MEMBERS:UPDATE permission submits POST request to /api/members/{id}/terminate
-- **AND** request contains valid deactivation reason (ODHLASKA, PRESTUP, OTHER)
-- **THEN** membership termination is processed immediately
-- **AND** HTTP 204 No Content status is returned
-- **AND** MemberTerminatedEvent is published with registrationNumber
-- **AND** corresponding User account is suspended in separate transaction
+- **WHEN** an authenticated user with appropriate permission submits a membership termination request
+- **AND** the request contains valid termination reason
+- **THEN** the membership is terminated
+- **AND** the corresponding User account is suspended
+- **AND** the changes are committed atomically
 
-### Requirement: Domain Event Publishing
+### Requirement: User Suspension on Member Termination
 
-The system SHALL publish a domain event upon successful membership termination for integration with other modules, including automatic User account suspension.
+The system SHALL automatically suspend the corresponding User account when a Member is terminated.
 
-#### Scenario: MemberTerminatedEvent is published
+#### Scenario: User suspended when member is terminated
 
-- **WHEN** membership termination is successfully committed to database
-- **THEN** MemberTerminatedEvent is published
-- **AND** event contains memberId
-- **AND** event contains registrationNumber (for User lookup)
-- **AND** event contains deactivationReason
-- **AND** event contains deactivatedAt timestamp
-- **AND** event contains terminatedBy user ID
-- **AND** users module subscribes to this event for User suspension
+- **GIVEN** an active Member with a corresponding active User account
+- **WHEN** the Member is terminated
+- **THEN** the Member is marked as terminated
+- **AND** the corresponding User account is suspended
+- **AND** the User cannot authenticate to the system
+
+#### Scenario: Member termination succeeds when User does not exist
+
+- **GIVEN** a Member exists without a corresponding User account
+- **WHEN** the Member is terminated
+- **THEN** the Member is terminated successfully
+- **AND** the operation completes without error
 
 ## ADDED Requirements
 
 ### Requirement: Member Reactivation
 
-The system SHALL support reactivating terminated memberships, restoring the Member to active state and triggering automatic User account reactivation.
+The system SHALL support reactivating terminated memberships, restoring the Member to active state and automatically reactivating the corresponding User account.
 
 #### Scenario: Member reactivation successful
 
-- **GIVEN** a terminated Member (active=false)
-- **WHEN** authenticated user with MEMBERS:UPDATE permission submits reactivation command
-- **THEN** Member.active is set to true
-- **AND** deactivationReason, deactivatedAt, deactivationNote, deactivatedBy are cleared
-- **AND** MemberReactivatedEvent is published with registrationNumber
-- **AND** HTTP 204 No Content status is returned
+- **GIVEN** a terminated Member
+- **WHEN** an authenticated user with appropriate permission submits a reactivation request
+- **THEN** the Member is marked as active
+- **AND** the corresponding User account is reactivated
+- **AND** the User can authenticate to the system
+- **AND** the changes are committed atomically
 
 #### Scenario: Reactivation of active member rejected
 
-- **GIVEN** an active Member (active=true)
-- **WHEN** reactivation command is submitted
-- **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates member is already active
-- **AND** no event is published
+- **GIVEN** an active Member
+- **WHEN** a reactivation request is submitted
+- **THEN** the request is rejected
+- **AND** an appropriate error message is returned
+- **AND** the Member remains active
 
-#### Scenario: MemberReactivatedEvent triggers User reactivation
+#### Scenario: User reactivated when member is reactivated
 
-- **WHEN** MemberReactivatedEvent is published
-- **AND** event contains registrationNumber
-- **THEN** users module suspends to this event
-- **AND** corresponding User account is reactivated (accountStatus=ACTIVE, enabled=true)
+- **GIVEN** a terminated Member with a corresponding suspended User account
+- **WHEN** the Member is reactivated
+- **THEN** the Member is marked as active
+- **AND** the corresponding User account is reactivated
+- **AND** the User can authenticate to the system
+
+#### Scenario: Member reactivation succeeds when User does not exist
+
+- **GIVEN** a terminated Member exists without a corresponding User account
+- **WHEN** the Member is reactivated
+- **THEN** the Member is reactivated successfully
+- **AND** the operation completes without error

@@ -5,27 +5,27 @@ When a member's membership is terminated, the corresponding User account remains
 ## What Changes
 
 - Add `suspend()` and `reactivate()` methods to User aggregate for account status changes
-- Create `MemberTerminatedEventHandler` in users module to listen for `MemberTerminatedEvent` and automatically suspend the corresponding User
-- Create `MemberReactivatedEvent` in members module for future member reactivation support
-- Create `MemberReactivatedEventHandler` in users module to automatically reactivate User accounts
+- Add `suspendUser()` and `reactivateUser()` methods to UserService
+- Modify MemberService to call UserService when Member is terminated/reactivated
 - Add `ReactivateMembership` command to Member aggregate
-- Update `users` specification to document cross-module event-driven integration for user suspension
-- Update `member-termination` specification to reference user suspension behavior
+- Update `users` specification to document suspension and reactivation operations
+- Update `member-termination` specification to reference User suspension behavior
 
 ## Capabilities
 
 ### New Capabilities
 
-- `member-user-suspension`: Automatic User account suspension when Member is terminated, using event-driven cross-module integration
+- `user-suspension`: User account suspension and reactivation via UserService
+- `member-user-suspension`: Automatic User account suspension when Member is terminated
 
 ### Modified Capabilities
 
-- `users`: Add User suspension/reactivation state machine with event-driven triggers from Member lifecycle events
+- `users`: Add User suspension/reactivation state machine operations
 - `member-termination`: Extend to include automatic User suspension as a side-effect
 
 ## Impact
 
-- **Affected modules**: `users` (event handlers), `members` (new event)
+- **Affected modules**: `users` (new methods), `members` (calls UserService)
 - **API behavior**: No breaking changes to REST API
 - **Database**: User.accountStatus now set to SUSPENDED upon member termination
 - **Security**: Terminated members cannot authenticate or access protected endpoints
@@ -34,30 +34,34 @@ When a member's membership is terminated, the corresponding User account remains
 
 ## Architecture Decision
 
-Event-driven integration is used instead of direct service calls:
-- Members module (already depends on users) publishes `MemberTerminatedEvent` and `MemberReactivatedEvent`
-- Users module (must NOT depend on members) subscribes to these events via `@ApplicationModuleListener`
-- This maintains bounded context isolation - users module doesn't need to know about members module internals
+Direct service call integration is used instead of event-driven approach:
+- Members module (already depends on users) calls UserService methods directly
+- UserService provides `suspendUser(String username)` and `reactivateUser(String username)` methods
 - User lookup uses `username` field which matches `Member.registrationNumber` value
+- This maintains bounded context isolation - users module doesn't depend on members
+- Simpler than event-driven approach, no cross-module event handlers needed
 
 ```mermaid
 sequenceDiagram
     participant Admin
     participant MembersAPI
-    participant MemberAggregate
-    participant SpringModulith
-    participant UsersModule
+    participant MemberService
+    participant UserService
     participant UserAggregate
 
-    Admin->>MembersAPI: POST /members/{id}/terminate
-    MembersAPI->>MemberAggregate: handle(TerminateMembership)
-    MemberAggregate->>MemberAggregate: active = false
-    MemberAggregate->>SpringModulith: publish(MemberTerminatedEvent)
+    Admin->>MembersAPI: POST /api/members/{id}/terminate
+    MembersAPI->>MemberService: terminateMember(id, command)
+    MemberService->>MemberService: member.terminateMembership(command)
+    MemberService->>UserService: suspendUser(registrationNumber)
+    UserService->>UserAggregate: findByUsername(registrationNumber)
+    UserService->>UserAggregate: user.suspend()
+    UserService->>UserAggregate: save()
     MembersAPI-->>Admin: 204 No Content
-
-    SpringModulith->>UsersModule: @ApplicationModuleListener
-    UsersModule->>UserAggregate: findByUsername(registrationNumber)
-    UsersModule->>UserAggregate: suspend()
-    UserAggregate->>UserAggregate: accountStatus = SUSPENDED
-    UsersModule->>UserAggregate: save()
 ```
+
+**Rationale for Direct Service Call:**
+- Members module already depends on UserService (no new dependency created)
+- Simpler than event-driven cross-module integration
+- Atomic operation within same transaction
+- Easier to test and reason about
+- No event delivery failures to handle
