@@ -539,9 +539,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
         validateContactInformation(newEmail, newPhone, newGuardian);
 
+        String oldNationality = this.personalInformation.getNationalityCode();
         String newNationality = command.nationality() != null
                 ? command.nationality()
-                : this.personalInformation.getNationalityCode();
+                : oldNationality;
         PersonalInformation newPersonalInfo = PersonalInformation.of(
                 this.personalInformation.getFirstName(),
                 this.personalInformation.getLastName(),
@@ -563,6 +564,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
         if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
+
+        if ("CZ".equals(oldNationality) && !newNationality.equals(oldNationality) && this.birthNumber != null) {
+            this.birthNumber = null;
+        }
     }
 
     /**

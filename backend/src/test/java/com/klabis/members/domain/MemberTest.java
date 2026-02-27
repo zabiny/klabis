@@ -1354,6 +1354,34 @@ class MemberTest {
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
         }
+
+        @Test
+        @DisplayName("should clear birth number when nationality changes from CZ to non-CZ")
+        void shouldClearBirthNumberWhenNationalityChangesFromCZToNonCZ() {
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withBirthNumber("9005151234")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.getBirthNumber()).isNotNull();
+
+            member.handle(new Member.SelfUpdate(
+                    null, null, null, null, "SK", null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getNationality()).isEqualTo("SK");
+            assertThat(member.getBirthNumber()).isNull();
+        }
+
     }
 
     @Nested
@@ -1478,6 +1506,44 @@ class MemberTest {
                     null, null, minorDateOfBirth, null, null
             ))).isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
+        }
+
+        @Test
+        @DisplayName("should reject setting birth number on non-Czech member")
+        void shouldRejectSettingBirthNumberOnNonCzechMember() {
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("SK")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Bratislava", "81102", "SK"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
+
+            assertThatThrownBy(() -> member.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, null, null, null, BirthNumber.of("9005151234")
+            )))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Birth number is only allowed for Czech nationals");
+        }
+
+        @Test
+        @DisplayName("should allow setting birth number on Czech member")
+        void shouldAllowSettingBirthNumberOnCzechMember() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, null, null, null, BirthNumber.of("9005151234")
+            ));
+
+            assertThat(member.getBirthNumber()).isNotNull();
         }
     }
 }

@@ -136,4 +136,68 @@ class UpdateMemberIntegrationTest {
                 .andExpect(jsonPath("$.phone").value("+420111222333"))
                 .andExpect(jsonPath("$.dietaryRestrictions").value("Vegetarian, no nuts"));
     }
+
+    @Test
+    @WithKlabisMockUser(userId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+    @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @DisplayName("member: should update extended self-edit fields (chipNumber, identityCard, drivingLicenseGroup, medicalCourse, trainerLicense, nationality)")
+    void shouldUpdateExtendedSelfEditFields() throws Exception {
+        mockMvc.perform(
+                        patch("/api/members/{id}", TEST_MEMBER_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "chipNumber": "123456",
+                                            "nationality": "SK",
+                                            "identityCard": {
+                                                "cardNumber": "ABC123456",
+                                                "validityDate": "2030-12-31"
+                                            },
+                                            "drivingLicenseGroup": "C",
+                                            "medicalCourse": {
+                                                "completionDate": "2024-01-15",
+                                                "validityDate": "2030-12-31"
+                                            },
+                                            "trainerLicense": {
+                                                "licenseNumber": "TRAIN123",
+                                                "validityDate": "2030-12-31"
+                                            }
+                                        }
+                                        """)
+                )
+                .andExpect(status().isNoContent());
+
+        // Verify data persisted
+        mockMvc.perform(get("/api/members/{id}", TEST_MEMBER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chipNumber").value("123456"))
+                .andExpect(jsonPath("$.nationality").value("SK"))
+                .andExpect(jsonPath("$.identityCard.cardNumber").value("ABC123456"))
+                .andExpect(jsonPath("$.drivingLicenseGroup").value("C"))
+                .andExpect(jsonPath("$.medicalCourse.completionDate").value("2024-01-15"))
+                .andExpect(jsonPath("$.trainerLicense.licenseNumber").value("TRAIN123"));
+    }
+
+    @Test
+    @WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+    @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @DisplayName("admin: should update gender and birthNumber for Czech member")
+    void shouldUpdateGenderAndBirthNumberForCzechMember() throws Exception {
+        mockMvc.perform(
+                        patch("/api/members/{id}", TEST_MEMBER_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "gender": "FEMALE",
+                                            "birthNumber": "950215/2345"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isNoContent());
+
+        // Verify data persisted
+        mockMvc.perform(get("/api/members/{id}", TEST_MEMBER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.gender").value("FEMALE"));
+    }
 }
