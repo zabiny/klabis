@@ -11,14 +11,13 @@ birth numbers and contact data.
 
 ### Requirement: Member Registration Flow
 
-The system SHALL process member registration by creating a User entity first, then creating a Member entity that uses
-the User's UserId.
+The system SHALL process member registration by creating a User entity first, then creating a Member entity with a unique member identifier that references the associated user.
 
 #### Scenario: Member registration creates User then Member
 
 - **WHEN** authenticated user with MEMBERS:CREATE permission submits member data via POST /api/members
-- **THEN** the system creates a User entity with generated UserId
-- **AND** the system creates a Member entity with the same UserId
+- **THEN** the system creates a User entity with a generated unique identifier
+- **AND** the system creates a Member entity with a member identifier that references the same user
 - **AND** member is created with generated registration number
 - **AND** response includes HAL+FORMS links for viewing, editing, and related actions
 - **AND** HTTP 201 Created status is returned with Location header
@@ -1594,4 +1593,37 @@ both aggregates.
 - **THEN** no join operation is required between User and Member tables
 - **AND** query is optimized by using the shared UserId directly
 - **AND** performance is improved compared to foreign key lookups
+
+### Requirement: Type-Safe Member Identification
+
+The system SHALL enforce type-safe member identification to prevent confusion between member identifiers and other entity identifiers (user, event).
+
+#### Scenario: Member services require member-specific identifier
+
+- **WHEN** calling member update, termination, or query services
+- **THEN** services require a member-specific identifier
+- **AND** the system prevents accidental use of user or event identifiers where member identifier is required
+
+#### Scenario: Member domain uses member identifier type
+
+- **WHEN** accessing a Member entity's identifier
+- **THEN** the identifier is of member-specific type
+- **AND** implicit conversion to other identifier types is not allowed
+
+#### Scenario: Member events contain member identifier
+
+- **WHEN** a member-related domain event is published (MemberCreatedEvent, MemberTerminatedEvent)
+- **THEN** the event contains member-specific identifier
+- **AND** event consumers receive type-safe member reference
+
+### Requirement: Member-User Identifier Relationship
+
+The system SHALL maintain a 1:1 relationship between member and user identifiers while keeping them as distinct types for type safety.
+
+#### Scenario: Member identifier references user identifier
+
+- **WHEN** a Member is created
+- **THEN** the member identifier and user identifier reference the same underlying value
+- **AND** the system can convert between member and user identifiers when explicitly required
+- **AND** no automatic conversion occurs (requires explicit code)
 
