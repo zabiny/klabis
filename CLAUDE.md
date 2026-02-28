@@ -87,8 +87,6 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 
 When testing API endpoints with `.http` files:
 
-- Always use `intellij-http-files` skill when working with .http files
-
 **Example OAuth2 authenticated call:**
 
 ```http request
@@ -105,7 +103,7 @@ For backend development, use the `backend-developer` agent which leverages speci
 - `developer:tdd-best-practices` - TDD workflow (RED-GREEN-REFACTOR)
 - `developer:spring-modulith` - DDD patterns and Spring Modulith architecture
 - `developer:spring-data-jdbc` - Repository and persistence patterns
-- `developer:backend-development` - HATEOAS and API patterns
+- `developer:spring-hateoas-api` - HATEOAS and API patterns
 
 ### Domain Type Safety Pattern
 

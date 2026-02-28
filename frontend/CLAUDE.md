@@ -224,69 +224,16 @@ export const MyComponent: React.FC<MyComponentProps> = ({ prop1 }) => {
 
 ### TanStack Query (React Query)
 
-**Global Configuration** (`src/main.tsx`):
-
-```typescript
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
-```
-
-**Usage Patterns:**
-
-```typescript
-// Fetching data
-const { data, isLoading, error } = useQuery({
-  queryKey: ['members'],
-  queryFn: () => fetchMembers(),
-});
-
-// Mutations
-const mutation = useMutation({
-  mutationFn: createMember,
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['members'] });
-  },
-});
-```
-
-**DevTools:** Available at `http://localhost:3000` (toggle with button)
+- Global config in `src/main.tsx`: `refetchOnWindowFocus: false`, `retry: 1`
+- Query key convention: domain-based arrays, e.g. `['members']`, `['members', id]`
+- After mutations: `queryClient.invalidateQueries({ queryKey: ['members'] })`
+- **DevTools:** Available in development mode (toggle button at `http://localhost:3000`)
 
 ## Forms
 
 ### Formik + Yup
 
-```tsx
-import { Formik, Form, Field } from 'formik';
-import * as Yup from 'yup';
-
-const validationSchema = Yup.object({
-  name: Yup.string().required('Required'),
-  email: Yup.string().email('Invalid email').required('Required'),
-});
-
-<Formik
-  initialValues={{ name: '', email: '' }}
-  validationSchema={validationSchema}
-  onSubmit={(values) => console.log(values)}
->
-  <Form>
-    <Field name="name" />
-    <Field name="email" type="email" />
-    <button type="submit">Submit</button>
-  </Form>
-</Formik>
-```
-
-**MUI Integration:**
-
-- `formik-mui` - Material-UI bindings
-- `formik-mui-x-date-pickers` - Date/time pickers
+- Validation schemas via Yup, bindings via `formik-mui` (MUI) and `formik-mui-x-date-pickers`
 
 ## Environment Variables
 
@@ -360,33 +307,9 @@ npm run build
 
 ## Gotchas & Best Practices
 
-### 0. Process Management - Check Before Starting
+### 0. Process Management
 
-**CRITICAL:** Always check if frontend is already running before starting new process.
-
-```bash
-# Check if port 3000 is in use
-lsof -i :3000 || netstat -tulpn | grep 3000
-
-# Check for Vite dev server processes
-ps aux | grep -E "vite|npm.*dev" | grep -v grep
-
-# If already running, DON'T start another instance
-# Either:
-# 1. Use the existing process (check IntelliJ Run tool window)
-# 2. Stop it first: pkill -f "vite" or stop from IntelliJ
-```
-
-**Common mistake:** Starting duplicate frontend process (e.g., port 3001) when frontend is already running from IntelliJ on port 3000.
-
-**Result:** Confusion about which process serves which code, wasted resources, port conflicts.
-
-**Best practice:**
-
-1. Check IntelliJ Run tool window first
-2. Check running processes with `lsof -i :3000`
-3. Only start `npm run dev` if nothing is running
-4. Prefer running from IntelliJ for better integration
+Always check if frontend is already running before starting — see root `CLAUDE.md`.
 
 ### 1. HATEOAS Navigation
 

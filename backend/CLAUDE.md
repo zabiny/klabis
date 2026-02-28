@@ -131,7 +131,7 @@ instances run on in-memory H2 database (dev profile).
 - **Spring Boot 3.5.9**
 - **Spring Modulith 1.4.6** - Event-driven modular application using hexagonal architecture
 - **Spring Security** - OAuth2 Authorization Server + Resource Server
-- **Spring Data JPA** - Hibernate ORM
+- **Spring Data JDBC** - Lightweight JDBC-based persistence
 - **Spring HATEOAS** - HAL+FORMS hypermedia
 - **PostgreSQL** (prod) / H2 (dev/test)
 - **Flyway** - Database migrations
