@@ -155,71 +155,71 @@ class MemberController {
                 .getName());
     }
 
-    @PostMapping("/{id}/reactivate")
+    @PostMapping("/{id}/resume")
     @HasAuthority(Authority.MEMBERS_UPDATE)
     @Operation(
-            summary = "Reactivate terminated member membership",
-            description = "Reactivates a terminated member's membership. " +
+            summary = "Resume suspended member membership",
+            description = "Resumes a suspended member's membership. " +
                           "Requires MEMBERS:UPDATE authority (admin-only). " +
-                          "Sets active status to true and records reactivation timestamp and user who performed reactivation."
+                          "Sets active status to true and records resume timestamp and user who performed resume."
     )
-    @ApiResponse(responseCode = "204", description = "Membership reactivated successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid reactivation request (e.g., member is already active)")
+    @ApiResponse(responseCode = "204", description = "Membership resumed successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid resume request (e.g., member is already active)")
     @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:UPDATE authority")
     @ApiResponse(responseCode = "404", description = "Member not found")
-    public ResponseEntity<Void> reactivateMember(
+    public ResponseEntity<Void> resumeMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @CurrentUser UserId currentUserId) {
 
-        var command = new Member.ReactivateMembership(currentUserId);
-        managementService.reactivateMember(new MemberId(id), command);
+        var command = new Member.ResumeMembership(currentUserId);
+        managementService.resumeMember(new MemberId(id), command);
         return ResponseEntity.noContent()
                 .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
                 .build();
     }
 
     /**
-     * Terminate a member's membership.
+     * Suspend a member's membership.
      * <p>
-     * POST /api/members/{id}/terminate
+     * POST /api/members/{id}/suspend
      * <p>
-     * Admin-only endpoint for terminating a member's membership.
+     * Admin-only endpoint for suspending a member's membership.
      * Requires MEMBERS:UPDATE authority.
      * <p>
-     * Sets member's active status to false and records termination details.
-     * Publishes MemberTerminatedEvent for integration with other modules.
+     * Sets member's active status to false and records suspension details.
+     * Publishes MemberSuspendedEvent for integration with other modules.
      *
      * @param id      member ID
-     * @param request termination request with reason and optional note
-     * @param auth    authentication for retrieving the user performing termination
+     * @param request suspension request with reason and optional note
+     * @param currentUserId the user performing the suspension
      * @return 204 No Content on success
      */
-    @PostMapping(value = "/{id}/terminate", consumes = "application/json")
+    @PostMapping(value = "/{id}/suspend", consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_UPDATE)
     @Operation(
-            summary = "Terminate member membership",
-            description = "Terminates a member's membership with a specified reason. " +
+            summary = "Suspend member membership",
+            description = "Suspends a member's membership with a specified reason. " +
                           "Requires MEMBERS:UPDATE authority (admin-only). " +
-                          "Sets active status to false and records termination details including timestamp and user who performed termination."
+                          "Sets active status to false and records suspension details including timestamp and user who performed suspension."
     )
-    @ApiResponse(responseCode = "204", description = "Membership terminated successfully")
-    @ApiResponse(responseCode = "400", description = "Invalid termination request (e.g., already terminated)")
+    @ApiResponse(responseCode = "204", description = "Membership suspended successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid suspension request (e.g., already suspended)")
     @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:UPDATE authority")
     @ApiResponse(responseCode = "404", description = "Member not found")
     @ApiResponse(responseCode = "409", description = "Conflict - concurrent modification detected")
-    public ResponseEntity<Void> terminateMember(
+    public ResponseEntity<Void> suspendMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
-            @Parameter(description = "Termination request")
-            @Valid @RequestBody TerminateMembershipRequest request,
+            @Parameter(description = "Suspension request")
+            @Valid @RequestBody SuspendMembershipRequest request,
             @CurrentUser UserId currentUserId) {
 
-        var command = new Member.TerminateMembership(
+        var command = new Member.SuspendMembership(
                 currentUserId,
                 request.reason(),
                 request.note().orElse(null)
         );
 
-        managementService.terminateMember(new MemberId(id), command);
+        managementService.suspendMember(new MemberId(id), command);
         return ResponseEntity.noContent()
                 .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
                 .build();
@@ -326,8 +326,8 @@ class MemberController {
                             .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
                                     (UpdateMemberRequest) null,
                                     null)))
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).terminateMember(id,
-                                    (TerminateMembershipRequest) null,
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(id,
+                                    (SuspendMembershipRequest) null,
                                     null)))
             );
         } else {
@@ -336,7 +336,7 @@ class MemberController {
                             .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
                                     (UpdateMemberRequest) null,
                                     null)))
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).reactivateMember(id, null)))
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(id, null)))
             );
         }
 

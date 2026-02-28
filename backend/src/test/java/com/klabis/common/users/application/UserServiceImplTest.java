@@ -296,19 +296,19 @@ class UserServiceImplTest {
     }
 
     @Nested
-    @DisplayName("reactivateUser() method")
-    class ReactivateUserMethod {
+    @DisplayName("resumeUser() method")
+    class ResumeUserMethod {
 
         @Test
-        @DisplayName("should reactivate suspended user")
-        void shouldReactivateSuspendedUser() {
+        @DisplayName("should resume suspended user")
+        void shouldResumeSuspendedUser() {
             // Given
             User suspendedUser = User.reconstruct(testUserId, testUsername, testPasswordHash, AccountStatus.SUSPENDED);
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(suspendedUser));
             when(userRepository.save(any(User.class))).thenReturn(suspendedUser);
 
             // When
-            testedSubject.reactivateUser(testUserId);
+            testedSubject.resumeUser(testUserId);
 
             // Then
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
@@ -325,7 +325,7 @@ class UserServiceImplTest {
             when(userRepository.findById(testUserId)).thenReturn(Optional.of(activeUser));
 
             // When
-            testedSubject.reactivateUser(testUserId);
+            testedSubject.resumeUser(testUserId);
 
             // Then - should not call save since already active
             verify(userRepository).findById(testUserId);
@@ -339,7 +339,7 @@ class UserServiceImplTest {
             when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
 
             // When - should not throw exception
-            testedSubject.reactivateUser(testUserId);
+            testedSubject.resumeUser(testUserId);
 
             // Then - should not call save
             verify(userRepository).findById(testUserId);

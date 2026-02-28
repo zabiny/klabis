@@ -3,11 +3,11 @@ package com.klabis.members.application;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberReactivatedEvent;
-import com.klabis.members.MemberTerminatedEvent;
+import com.klabis.members.MemberResumedEvent;
+import com.klabis.members.MemberSuspendedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
-import com.klabis.members.infrastructure.restapi.TerminateMembershipRequest;
+import com.klabis.members.infrastructure.restapi.SuspendMembershipRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -127,8 +127,8 @@ class ManagementServiceTest {
     }
 
     @Nested
-    @DisplayName("Member Termination Tests")
-    class MemberTerminationTests {
+    @DisplayName("Member Suspension Tests")
+    class MemberSuspensionTests {
 
         private Member testActiveMember;
         private UUID adminUserId;
@@ -149,13 +149,13 @@ class ManagementServiceTest {
         }
 
         @Nested
-        @DisplayName("Successful Termination Tests")
-        class SuccessfulTerminationTests {
+        @DisplayName("Successful Suspension Tests")
+        class SuccessfulSuspensionTests {
 
             @Test
-            @DisplayName("should terminate active member with ODHLASKA reason")
-            void shouldTerminateActiveMemberWithOdhlaskaReason() {
-                var request = new TerminateMembershipRequest(
+            @DisplayName("should suspend active member with ODHLASKA reason")
+            void shouldSuspendActiveMemberWithOdhlaskaReason() {
+                var request = new SuspendMembershipRequest(
                         DeactivationReason.ODHLASKA,
                         Optional.of("Member requested resignation")
                 );
@@ -163,10 +163,10 @@ class ManagementServiceTest {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                var command = new Member.TerminateMembership(
+                var command = new Member.SuspendMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -175,51 +175,49 @@ class ManagementServiceTest {
 
                 Member saved = captor.getValue();
                 assertThat(saved.isActive()).isFalse();
-                assertThat(saved.getDeactivationReason()).isEqualTo(DeactivationReason.ODHLASKA);
-                assertThat(saved.getDeactivatedAt()).isNotNull();
-                assertThat(saved.getDeactivationNote()).isEqualTo("Member requested resignation");
-                assertThat(saved.getDeactivatedBy().uuid()).isEqualTo(adminUserId);
+                assertThat(saved.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
+                assertThat(saved.getSuspendedAt()).isNotNull();
+                assertThat(saved.getSuspensionNote()).isEqualTo("Member requested resignation");
+                assertThat(saved.getSuspendedBy().uuid()).isEqualTo(adminUserId);
 
-                // Verify UserService.suspendUser was called
                 verify(userService).suspendUser(testActiveMember.getId().toUserId());
             }
 
             @Test
-            @DisplayName("should handle missing User account gracefully during termination")
+            @DisplayName("should handle missing User account gracefully during suspension")
             void shouldHandleMissingUserAccountGracefully() {
-                var request = new TerminateMembershipRequest(
+                var request = new SuspendMembershipRequest(
                         DeactivationReason.ODHLASKA,
                         Optional.of("Member requested resignation")
                 );
 
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-                // UserService.suspendUser should be called even if User doesn't exist (graceful handling)
                 doNothing().when(userService).suspendUser(any(UserId.class));
 
-                var command = new Member.TerminateMembership(
+                var command = new Member.SuspendMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
                 assertThat(result.isActive()).isFalse();
                 verify(userService).suspendUser(testActiveMember.getId().toUserId());
             }
 
             @Test
-            @DisplayName("should terminate active member without note")
-            void shouldTerminateActiveMemberWithoutNote() {
-                var request = new TerminateMembershipRequest(
+            @DisplayName("should suspend active member without note")
+            void shouldSuspendActiveMemberWithoutNote() {
+                var request = new SuspendMembershipRequest(
                         DeactivationReason.PRESTUP, Optional.empty()
                 );
 
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                var command = new Member.TerminateMembership(
+                var command = new Member.SuspendMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(new MemberId(testMemberId), command);
+                Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -227,24 +225,24 @@ class ManagementServiceTest {
                 verify(memberRepository).save(captor.capture());
 
                 assertThat(captor.getValue().isActive()).isFalse();
-                assertThat(captor.getValue().getDeactivationReason()).isEqualTo(DeactivationReason.PRESTUP);
-                assertThat(captor.getValue().getDeactivationNote()).isNull();
+                assertThat(captor.getValue().getSuspensionReason()).isEqualTo(DeactivationReason.PRESTUP);
+                assertThat(captor.getValue().getSuspensionNote()).isNull();
             }
 
             @Test
-            @DisplayName("should publish MemberTerminatedEvent on successful termination")
-            void shouldPublishMemberTerminatedEventOnSuccessfulTermination() {
-                var request = new TerminateMembershipRequest(
+            @DisplayName("should publish MemberSuspendedEvent on successful suspension")
+            void shouldPublishMemberSuspendedEventOnSuccessfulSuspension() {
+                var request = new SuspendMembershipRequest(
                         DeactivationReason.OTHER, Optional.of("Administrative decision")
                 );
 
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-                var command = new Member.TerminateMembership(
+                var command = new Member.SuspendMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                testedSubject.terminateMember(new MemberId(testMemberId), command);
+                testedSubject.suspendMember(new MemberId(testMemberId), command);
 
                 ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
                 verify(memberRepository).save(captor.capture());
@@ -253,24 +251,24 @@ class ManagementServiceTest {
                 assertThat(saved.getDomainEvents()).hasSize(1);
 
                 Object event = saved.getDomainEvents().get(0);
-                assertThat(event).isInstanceOf(MemberTerminatedEvent.class);
+                assertThat(event).isInstanceOf(MemberSuspendedEvent.class);
 
-                MemberTerminatedEvent terminationEvent = (MemberTerminatedEvent) event;
-                assertThat(terminationEvent.getMemberId()).isEqualTo(new MemberId(testMemberId));
-                assertThat(terminationEvent.getReason()).isEqualTo(DeactivationReason.OTHER);
-                assertThat(terminationEvent.getTerminatedBy()).isEqualTo(new UserId(adminUserId));
-                assertThat(terminationEvent.getNote()).isEqualTo("Administrative decision");
+                MemberSuspendedEvent suspensionEvent = (MemberSuspendedEvent) event;
+                assertThat(suspensionEvent.getMemberId()).isEqualTo(new MemberId(testMemberId));
+                assertThat(suspensionEvent.getReason()).isEqualTo(DeactivationReason.OTHER);
+                assertThat(suspensionEvent.getSuspendedBy()).isEqualTo(new UserId(adminUserId));
+                assertThat(suspensionEvent.getNote()).isEqualTo("Administrative decision");
             }
         }
 
         @Nested
-        @DisplayName("Already Terminated Tests")
-        class AlreadyTerminatedTests {
+        @DisplayName("Already Suspended Tests")
+        class AlreadySuspendedTests {
 
             @Test
-            @DisplayName("should reject termination of already terminated member")
-            void shouldRejectTerminationOfAlreadyTerminatedMember() {
-                Member terminatedMember = MemberTestDataBuilder.aMember()
+            @DisplayName("should reject suspension of already suspended member")
+            void shouldRejectSuspensionOfAlreadySuspendedMember() {
+                Member suspendedMember = MemberTestDataBuilder.aMember()
                         .withId(testMemberId)
                         .withFirstName("Bob")
                         .withLastName("Jones")
@@ -279,37 +277,37 @@ class ManagementServiceTest {
                         .withPhone("+420111222333")
                         .withAddress(Address.of("Řeznická 1", "Brno", "60200", "CZ"))
                         .withNoGuardian()
-                        .terminated(DeactivationReason.ODHLASKA, "Previous termination")
+                        .suspended(DeactivationReason.ODHLASKA, "Previous termination")
                         .build();
 
-                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(terminatedMember));
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(suspendedMember));
 
-                var command = new Member.TerminateMembership(
+                var command = new Member.SuspendMembership(
                         new UserId(adminUserId), DeactivationReason.OTHER, "Second termination attempt"
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(new MemberId(testMemberId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
                         .isInstanceOf(InvalidUpdateException.class)
-                        .hasMessageContaining("Member is already terminated");
+                        .hasMessageContaining("Member is already suspended");
 
                 verify(memberRepository, never()).save(any(Member.class));
             }
         }
 
         @Nested
-        @DisplayName("Concurrent Termination Tests")
-        class ConcurrentTerminationTests {
+        @DisplayName("Concurrent Suspension Tests")
+        class ConcurrentSuspensionTests {
 
             @Test
-            @DisplayName("should handle concurrent termination attempts with optimistic locking")
-            void shouldHandleConcurrentTerminationAttempts() {
+            @DisplayName("should handle concurrent suspension attempts with optimistic locking")
+            void shouldHandleConcurrentSuspensionAttempts() {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class)))
                         .thenThrow(new OptimisticLockingFailureException("Concurrent modification detected"));
 
-                var command = new Member.TerminateMembership(
+                var command = new Member.SuspendMembership(
                         new UserId(adminUserId), DeactivationReason.PRESTUP, null
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(new MemberId(testMemberId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
                         .isInstanceOf(OptimisticLockingFailureException.class);
 
                 verify(memberRepository).save(any(Member.class));
@@ -321,16 +319,16 @@ class ManagementServiceTest {
         class MemberNotFoundTests {
 
             @Test
-            @DisplayName("should throw exception when terminating non-existent member")
-            void shouldThrowExceptionWhenTerminatingNonExistentMember() {
+            @DisplayName("should throw exception when suspending non-existent member")
+            void shouldThrowExceptionWhenSuspendingNonExistentMember() {
                 UUID nonExistentId = UUID.randomUUID();
 
                 when(memberRepository.findById(new MemberId(nonExistentId))).thenReturn(Optional.empty());
 
-                var command = new Member.TerminateMembership(
+                var command = new Member.SuspendMembership(
                         new UserId(adminUserId), DeactivationReason.ODHLASKA, null
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(new MemberId(nonExistentId), command))
+                assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(nonExistentId), command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member not found");
 
@@ -340,18 +338,17 @@ class ManagementServiceTest {
     }
 
     @Nested
-    @DisplayName("Member Reactivation Tests")
-    class MemberReactivationTests {
+    @DisplayName("Member Resume Tests")
+    class MemberResumeTests {
 
-        private Member testTerminatedMember;
+        private Member testSuspendedMember;
         private UUID adminUserId;
 
         @BeforeEach
         void setUpNested() {
             adminUserId = UUID.randomUUID();
 
-            // Create a terminated member for reactivation tests
-            testTerminatedMember = MemberTestDataBuilder.aMember()
+            testSuspendedMember = MemberTestDataBuilder.aMember()
                     .withId(testMemberId)
                     .withFirstName("Jane")
                     .withLastName("Smith")
@@ -360,26 +357,26 @@ class ManagementServiceTest {
                     .withPhone("+420987654321")
                     .withAddress(Address.of("Reakční 10", "Brno", "60200", "CZ"))
                     .withNoGuardian()
-                    .terminated(DeactivationReason.ODHLASKA, "Previous termination")
+                    .suspended(DeactivationReason.ODHLASKA, "Previous termination")
                     .build();
         }
 
         @Test
-        @DisplayName("should reactivate terminated member successfully")
-        void shouldReactivateTerminatedMemberSuccessfully() {
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+        @DisplayName("should resume suspended member successfully")
+        void shouldResumeSuspendedMemberSuccessfully() {
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testSuspendedMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            var command = new Member.ReactivateMembership(new UserId(adminUserId));
-            Member result = testedSubject.reactivateMember(new MemberId(testMemberId), command);
+            var command = new Member.ResumeMembership(new UserId(adminUserId));
+            Member result = testedSubject.resumeMember(new MemberId(testMemberId), command);
 
             assertThat(result.isActive()).isTrue();
-            verify(userService).reactivateUser(testTerminatedMember.getId().toUserId());
+            verify(userService).resumeUser(testSuspendedMember.getId().toUserId());
         }
 
         @Test
-        @DisplayName("should reject reactivation of already active member")
-        void shouldRejectReactivationOfAlreadyActiveMember() {
+        @DisplayName("should reject resume of already active member")
+        void shouldRejectResumeOfAlreadyActiveMember() {
             Member activeMember = MemberTestDataBuilder.aMember()
                     .withId(testMemberId)
                     .withFirstName("Bob")
@@ -393,38 +390,37 @@ class ManagementServiceTest {
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(activeMember));
 
-            var command = new Member.ReactivateMembership(new UserId(adminUserId));
-            assertThatThrownBy(() -> testedSubject.reactivateMember(new MemberId(testMemberId), command))
+            var command = new Member.ResumeMembership(new UserId(adminUserId));
+            assertThatThrownBy(() -> testedSubject.resumeMember(new MemberId(testMemberId), command))
                     .isInstanceOf(InvalidUpdateException.class)
                     .hasMessageContaining("already active");
 
             verify(memberRepository, never()).save(any(Member.class));
-            verify(userService, never()).reactivateUser(any(UserId.class));
+            verify(userService, never()).resumeUser(any(UserId.class));
         }
 
         @Test
-        @DisplayName("should handle missing User account gracefully during reactivation")
+        @DisplayName("should handle missing User account gracefully during resume")
         void shouldHandleMissingUserAccountGracefully() {
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testSuspendedMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-            // UserService.reactivateUser should be called even if User doesn't exist (graceful handling)
-            doNothing().when(userService).reactivateUser(any(UserId.class));
+            doNothing().when(userService).resumeUser(any(UserId.class));
 
-            var command = new Member.ReactivateMembership(new UserId(adminUserId));
-            Member result = testedSubject.reactivateMember(new MemberId(testMemberId), command);
+            var command = new Member.ResumeMembership(new UserId(adminUserId));
+            Member result = testedSubject.resumeMember(new MemberId(testMemberId), command);
 
             assertThat(result.isActive()).isTrue();
-            verify(userService).reactivateUser(testTerminatedMember.getId().toUserId());
+            verify(userService).resumeUser(testSuspendedMember.getId().toUserId());
         }
 
         @Test
-        @DisplayName("should publish MemberReactivatedEvent on successful reactivation")
-        void shouldPublishMemberReactivatedEventOnSuccessfulReactivation() {
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+        @DisplayName("should publish MemberResumedEvent on successful resume")
+        void shouldPublishMemberResumedEventOnSuccessfulResume() {
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testSuspendedMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            var command = new Member.ReactivateMembership(new UserId(adminUserId));
-            testedSubject.reactivateMember(new MemberId(testMemberId), command);
+            var command = new Member.ResumeMembership(new UserId(adminUserId));
+            testedSubject.resumeMember(new MemberId(testMemberId), command);
 
             ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
             verify(memberRepository).save(captor.capture());
@@ -433,12 +429,12 @@ class ManagementServiceTest {
             assertThat(saved.getDomainEvents()).hasSize(1);
 
             Object event = saved.getDomainEvents().get(0);
-            assertThat(event).isInstanceOf(MemberReactivatedEvent.class);
+            assertThat(event).isInstanceOf(MemberResumedEvent.class);
 
-            MemberReactivatedEvent reactivationEvent = (MemberReactivatedEvent) event;
-            assertThat(reactivationEvent.getMemberId()).isEqualTo(new MemberId(testMemberId));
-            assertThat(reactivationEvent.getReactivatedBy()).isEqualTo(new UserId(adminUserId));
-            assertThat(reactivationEvent.getRegistrationNumber()).isEqualTo(testTerminatedMember.getRegistrationNumber());
+            MemberResumedEvent resumeEvent = (MemberResumedEvent) event;
+            assertThat(resumeEvent.getMemberId()).isEqualTo(new MemberId(testMemberId));
+            assertThat(resumeEvent.getResumedBy()).isEqualTo(new UserId(adminUserId));
+            assertThat(resumeEvent.getRegistrationNumber()).isEqualTo(testSuspendedMember.getRegistrationNumber());
         }
     }
 }

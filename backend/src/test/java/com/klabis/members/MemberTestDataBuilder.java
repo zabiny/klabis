@@ -33,11 +33,11 @@ public class MemberTestDataBuilder {
     private BankAccountNumber bankAccountNumber = null;
     private AuditMetadata auditMetadata = null;
 
-    // Termination fields
-    private DeactivationReason deactivationReason = null;
-    private java.time.Instant deactivatedAt = null;
-    private String deactivationNote = null;
-    private String deactivatedBy = null;
+    // Suspension fields
+    private DeactivationReason suspensionReason = null;
+    private java.time.Instant suspendedAt = null;
+    private String suspensionNote = null;
+    private String suspendedBy = null;
 
     private MemberTestDataBuilder() {
     }
@@ -186,12 +186,12 @@ public class MemberTestDataBuilder {
         return withBankAccountNumber(BankAccountNumber.of(bankAccountNumber));
     }
 
-    public MemberTestDataBuilder terminated(DeactivationReason reason, String note) {
+    public MemberTestDataBuilder suspended(DeactivationReason reason, String note) {
         this.isActive = false;
-        this.deactivationReason = reason;
-        this.deactivatedAt = java.time.Instant.now();
-        this.deactivationNote = note;
-        this.deactivatedBy = UUID.randomUUID().toString();
+        this.suspensionReason = reason;
+        this.suspendedAt = java.time.Instant.now();
+        this.suspensionNote = note;
+        this.suspendedBy = UUID.randomUUID().toString();
         return this;
     }
 
@@ -212,10 +212,10 @@ public class MemberTestDataBuilder {
                 dietaryRestrictions,
                 birthNumber,
                 bankAccountNumber,
-                deactivationReason,
-                deactivatedAt,
-                deactivationNote,
-                deactivatedBy,
+                suspensionReason,
+                suspendedAt,
+                suspensionNote,
+                suspendedBy,
                 auditMetadata
         );
         return result;

@@ -6,8 +6,8 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberReactivatedEvent;
-import com.klabis.members.MemberTerminatedEvent;
+import com.klabis.members.MemberResumedEvent;
+import com.klabis.members.MemberSuspendedEvent;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
@@ -52,11 +52,11 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     private BirthNumber birthNumber;
     private BankAccountNumber bankAccountNumber;
 
-    // Termination fields
-    private DeactivationReason deactivationReason;
-    private Instant deactivatedAt;
-    private String deactivationNote;
-    private String deactivatedBy;
+    // Suspension fields
+    private DeactivationReason suspensionReason;
+    private Instant suspendedAt;
+    private String suspensionNote;
+    private String suspendedBy;
 
     // ========== Command Records ==========
 
@@ -127,25 +127,25 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     ) {}
 
     /**
-     * Command to terminate a member's membership.
+     * Command to suspend a member's membership.
      * <p>
-     * This command is used by administrators to terminate a member's membership
+     * This command is used by administrators to suspend a member's membership
      * with a specific reason and optional note.
      */
-    public record TerminateMembership(
-            UserId terminatedBy,
+    public record SuspendMembership(
+            UserId suspendedBy,
             DeactivationReason reason,
             String note
     ) {}
 
     /**
-     * Command to reactivate a terminated member's membership.
+     * Command to resume a suspended member's membership.
      * <p>
-     * This command is used by administrators to reactivate a member's membership
-     * that was previously terminated.
+     * This command is used by administrators to resume a member's membership
+     * that was previously suspended.
      */
-    public record ReactivateMembership(
-            UserId reactivatedBy
+    public record ResumeMembership(
+            UserId resumedBy
     ) {}
 
     // ========== Constructors ==========
@@ -167,10 +167,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             String dietaryRestrictions,
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
-            DeactivationReason deactivationReason,
-            Instant deactivatedAt,
-            String deactivationNote,
-            String deactivatedBy) {
+            DeactivationReason suspensionReason,
+            Instant suspendedAt,
+            String suspensionNote,
+            String suspendedBy) {
 
         this.id = id;
         this.registrationNumber = registrationNumber;
@@ -188,10 +188,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.dietaryRestrictions = dietaryRestrictions;
         this.birthNumber = birthNumber;
         this.bankAccountNumber = bankAccountNumber;
-        this.deactivationReason = deactivationReason;
-        this.deactivatedAt = deactivatedAt;
-        this.deactivationNote = deactivationNote;
-        this.deactivatedBy = deactivatedBy;
+        this.suspensionReason = suspensionReason;
+        this.suspendedAt = suspendedAt;
+        this.suspensionNote = suspensionNote;
+        this.suspendedBy = suspendedBy;
     }
 
     /**
@@ -220,10 +220,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @param dietaryRestrictions member's dietary restrictions (may be null)
      * @param birthNumber         member's birth number (may be null)
      * @param bankAccountNumber   member's bank account number (may be null)
-     * @param deactivationReason  reason for deactivation (may be null)
-     * @param deactivatedAt       timestamp of deactivation (may be null)
-     * @param deactivationNote    optional deactivation note (may be null)
-     * @param deactivatedBy       user who deactivated (may be null)
+     * @param suspensionReason    reason for suspension (may be null)
+     * @param suspendedAt         timestamp of suspension (may be null)
+     * @param suspensionNote      optional suspension note (may be null)
+     * @param suspendedBy         user who suspended (may be null)
      * @return reconstructed Member instance
      */
     public static Member reconstruct(
@@ -243,10 +243,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             String dietaryRestrictions,
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
-            DeactivationReason deactivationReason,
-            Instant deactivatedAt,
-            String deactivationNote,
-            String deactivatedBy,
+            DeactivationReason suspensionReason,
+            Instant suspendedAt,
+            String suspensionNote,
+            String suspendedBy,
             AuditMetadata auditMetadata) {
 
         Member member = new Member(
@@ -266,10 +266,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 dietaryRestrictions,
                 birthNumber,
                 bankAccountNumber,
-                deactivationReason,
-                deactivatedAt,
-                deactivationNote,
-                deactivatedBy
+                suspensionReason,
+                suspendedAt,
+                suspensionNote,
+                suspendedBy
         );
         member.updateAuditMetadata(auditMetadata);
         // No domain events for reconstructed entities
@@ -309,10 +309,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 null, // dietaryRestrictions
                 command.birthNumber(),
                 command.bankAccountNumber(),
-                null, // deactivationReason
-                null, // deactivatedAt
-                null, // deactivationNote
-                null  // deactivatedBy
+                null, // suspensionReason
+                null, // suspendedAt
+                null, // suspensionNote
+                null  // suspendedBy
         );
 
         // Register domain event
@@ -503,20 +503,20 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         return bankAccountNumber;
     }
 
-    public DeactivationReason getDeactivationReason() {
-        return deactivationReason;
+    public DeactivationReason getSuspensionReason() {
+        return suspensionReason;
     }
 
-    public Instant getDeactivatedAt() {
-        return deactivatedAt;
+    public Instant getSuspendedAt() {
+        return suspendedAt;
     }
 
-    public String getDeactivationNote() {
-        return deactivationNote;
+    public String getSuspensionNote() {
+        return suspensionNote;
     }
 
-    public UserId getDeactivatedBy() {
-        return deactivatedBy != null ? new UserId(UUID.fromString(deactivatedBy)) : null;
+    public UserId getSuspendedBy() {
+        return suspendedBy != null ? new UserId(UUID.fromString(suspendedBy)) : null;
     }
 
     // ========== Command Handlers (Domain Methods) ==========
@@ -622,69 +622,61 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     /**
-     * Handles TerminateMembership command.
+     * Handles SuspendMembership command.
      * <p>
-     * Terminates a member's membership with the specified reason.
+     * Suspends a member's membership with the specified reason.
      * This method modifies the Member in-place (mutable pattern).
      * <p>
-     * Enforces the business rule that an already terminated member cannot be terminated again.
+     * Enforces the business rule that an already suspended member cannot be suspended again.
      *
-     * @param command the termination command
-     * @throws BusinessRuleViolationException if member is already terminated
+     * @param command the suspension command
+     * @throws BusinessRuleViolationException if member is already suspended
      */
-    public void handle(TerminateMembership command) {
-        // Validate not already terminated
+    public void handle(SuspendMembership command) {
         if (!this.active) {
             throw new BusinessRuleViolationException(
-                    "Member is already terminated and cannot be terminated again"
+                    "Member is already suspended and cannot be suspended again"
             ) {};
         }
 
-        // Validate termination reason
-        Objects.requireNonNull(command.reason(), "Termination reason is required");
+        Objects.requireNonNull(command.reason(), "Suspension reason is required");
 
-        // Modify fields in-place
         this.active = false;
-        this.deactivationReason = command.reason();
-        this.deactivatedAt = Instant.now();
-        this.deactivationNote = command.note();
-        this.deactivatedBy = command.terminatedBy().uuid().toString();
+        this.suspensionReason = command.reason();
+        this.suspendedAt = Instant.now();
+        this.suspensionNote = command.note();
+        this.suspendedBy = command.suspendedBy().uuid().toString();
 
-        // Register domain event
-        registerEvent(MemberTerminatedEvent.fromMember(this, command));
+        registerEvent(MemberSuspendedEvent.fromMember(this, command));
     }
 
     /**
-     * Handles ReactivateMembership command.
+     * Handles ResumeMembership command.
      * <p>
-     * Reactivates a terminated member's membership. This clears the deactivation fields
+     * Resumes a suspended member's membership. This clears the suspension fields
      * and sets the member back to active status.
      * <p>
-     * Enforces the business rule that an already active member cannot be reactivated.
+     * Enforces the business rule that an already active member cannot be resumed.
      *
-     * @param command the reactivation command
+     * @param command the resume command
      * @throws BusinessRuleViolationException if member is already active
      */
-    public void handle(ReactivateMembership command) {
-        // Validate not already active
+    public void handle(ResumeMembership command) {
         if (this.active) {
             throw new BusinessRuleViolationException(
-                    "Member is already active and cannot be reactivated"
+                    "Member is already active and cannot be resumed"
             ) {};
         }
 
-        // Validate reactivatedBy
-        Objects.requireNonNull(command.reactivatedBy(), "Reactivated by user is required");
+        Objects.requireNonNull(command.resumedBy(), "Resumed by user is required");
 
-        // Modify fields in-place
         this.active = true;
-        this.deactivationReason = null;
-        this.deactivatedAt = null;
-        this.deactivationNote = null;
-        this.deactivatedBy = null;
+        this.suspensionReason = null;
+        this.suspendedAt = null;
+        this.suspensionNote = null;
+        this.suspendedBy = null;
 
-        // Register domain event
-        registerEvent(MemberReactivatedEvent.fromMember(this, command));
+        registerEvent(MemberResumedEvent.fromMember(this, command));
     }
 
     @Override

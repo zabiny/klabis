@@ -202,19 +202,19 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     }
 
     /**
-     * Reactivates this suspended user account.
+     * Resumes this suspended user account.
      *
      * <p>Returns a new User instance with ACTIVE status.
      * This restores the user's ability to authenticate.
      *
      * @return new User instance with ACTIVE status
      */
-    public User reactivate() {
-        User reactivated = new User(this.id, this.username, this.passwordHash, AccountStatus.ACTIVE);
+    public User resume() {
+        User resumed = new User(this.id, this.username, this.passwordHash, AccountStatus.ACTIVE);
 
-        reactivated.updateAuditMetadata(this.getAuditMetadata());
+        resumed.updateAuditMetadata(this.getAuditMetadata());
 
-        return reactivated;
+        return resumed;
     }
 
     private static void validateRequired(String value) {

@@ -39,10 +39,10 @@ import java.util.UUID;
  * @param dietaryRestrictions Member's dietary restrictions (nullable, max 500 chars)
  * @param birthNumber         Member's birth number (nullable, Czech nationals only)
  * @param bankAccountNumber   Member's bank account number (nullable)
- * @param deactivationReason  Reason for membership deactivation (nullable, present only if active=false)
- * @param deactivatedAt       Timestamp when membership was deactivated (nullable, present only if active=false)
- * @param deactivatedBy       ID of user who deactivated the membership (nullable, present only if active=false)
- * @param deactivationNote    Optional note about deactivation (nullable, present only if active=false)
+ * @param suspensionReason    Reason for membership suspension (nullable, present only if active=false)
+ * @param suspendedAt         Timestamp when membership was suspended (nullable, present only if active=false)
+ * @param suspendedBy         ID of user who suspended the membership (nullable, present only if active=false)
+ * @param suspensionNote      Optional note about suspension (nullable, present only if active=false)
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MemberDetailsResponse(
@@ -67,9 +67,9 @@ public record MemberDetailsResponse(
         String dietaryRestrictions,
         String birthNumber,
         String bankAccountNumber,
-        DeactivationReason deactivationReason,
-        Instant deactivatedAt,
-        String deactivatedBy,
-        String deactivationNote
+        DeactivationReason suspensionReason,
+        Instant suspendedAt,
+        String suspendedBy,
+        String suspensionNote
 ) {
 }

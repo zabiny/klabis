@@ -5,8 +5,8 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberCreatedEvent;
-import com.klabis.members.MemberReactivatedEvent;
-import com.klabis.members.MemberTerminatedEvent;
+import com.klabis.members.MemberResumedEvent;
+import com.klabis.members.MemberSuspendedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -966,8 +966,8 @@ class MemberTest {
     */
 
     @Nested
-    @DisplayName("handle(TerminateMembership) method")
-    class HandleTerminateMembership {
+    @DisplayName("handle(SuspendMembership) method")
+    class HandleSuspendMembership {
 
         private Member createActiveMember() {
             return aMember()
@@ -984,26 +984,26 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("active member should not have termination details")
-        void activeMemberShouldNotHaveTerminationDetails() {
+        @DisplayName("active member should not have suspension details")
+        void activeMemberShouldNotHaveSuspensionDetails() {
             // Arrange
             Member activeMember = createActiveMember();
 
             // Assert
             assertThat(activeMember.isActive()).isTrue();
-            assertThat(activeMember.getDeactivationReason()).isNull();
-            assertThat(activeMember.getDeactivatedAt()).isNull();
-            assertThat(activeMember.getDeactivationNote()).isNull();
-            assertThat(activeMember.getDeactivatedBy()).isNull();
+            assertThat(activeMember.getSuspensionReason()).isNull();
+            assertThat(activeMember.getSuspendedAt()).isNull();
+            assertThat(activeMember.getSuspensionNote()).isNull();
+            assertThat(activeMember.getSuspendedBy()).isNull();
         }
 
         @Test
-        @DisplayName("should terminate active member with reason")
-        void shouldTerminateActiveMemberWithReason() {
+        @DisplayName("should suspend active member with reason")
+        void shouldSuspendActiveMemberWithReason() {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.TerminateMembership command = new Member.TerminateMembership(
+            Member.SuspendMembership command = new Member.SuspendMembership(
                     adminUserId,
                     DeactivationReason.ODHLASKA,
                     "Member requested termination"
@@ -1014,42 +1014,42 @@ class MemberTest {
 
             // Assert
             assertThat(activeMember.isActive()).isFalse();
-            assertThat(activeMember.getDeactivationReason()).isEqualTo(DeactivationReason.ODHLASKA);
-            assertThat(activeMember.getDeactivatedAt()).isNotNull();
-            assertThat(activeMember.getDeactivationNote()).isEqualTo("Member requested termination");
-            assertThat(activeMember.getDeactivatedBy()).isEqualTo(adminUserId);
+            assertThat(activeMember.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
+            assertThat(activeMember.getSuspendedAt()).isNotNull();
+            assertThat(activeMember.getSuspensionNote()).isEqualTo("Member requested termination");
+            assertThat(activeMember.getSuspendedBy()).isEqualTo(adminUserId);
         }
 
         @Test
-        @DisplayName("should publish MemberTerminatedEvent when terminating")
-        void shouldPublishEventWhenTerminating() {
+        @DisplayName("should publish MemberSuspendedEvent when suspending")
+        void shouldPublishEventWhenSuspending() {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.TerminateMembership command = new Member.TerminateMembership(
+            Member.SuspendMembership command = new Member.SuspendMembership(
                     adminUserId,
                     DeactivationReason.PRESTUP,
                     null
             );
 
             // Act
-            // Clear creation event first, then terminate
+            // Clear creation event first, then suspend
             activeMember.clearDomainEvents();  // Clear the MemberCreatedEvent from registration
             activeMember.handle(command);
 
-            // Assert - should have MemberTerminatedEvent
+            // Assert - should have MemberSuspendedEvent
             assertThat(activeMember.getDomainEvents())
                     .hasSize(1)
-                    .allMatch(event -> event instanceof MemberTerminatedEvent);
+                    .allMatch(event -> event instanceof MemberSuspendedEvent);
         }
 
         @Test
-        @DisplayName("should reject termination of already terminated member")
-        void shouldRejectTerminationOfAlreadyTerminatedMember() {
+        @DisplayName("should reject suspension of already suspended member")
+        void shouldRejectSuspensionOfAlreadySuspendedMember() {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.TerminateMembership firstCommand = new Member.TerminateMembership(
+            Member.SuspendMembership firstCommand = new Member.SuspendMembership(
                     adminUserId,
                     DeactivationReason.ODHLASKA,
                     "First termination"
@@ -1057,7 +1057,7 @@ class MemberTest {
             activeMember.handle(firstCommand);
 
             UserId anotherAdmin = new UserId(UUID.randomUUID());
-            Member.TerminateMembership secondCommand = new Member.TerminateMembership(
+            Member.SuspendMembership secondCommand = new Member.SuspendMembership(
                     anotherAdmin,
                     DeactivationReason.OTHER,
                     "Second termination attempt"
@@ -1066,58 +1066,58 @@ class MemberTest {
             // Act & Assert
             assertThatThrownBy(() -> activeMember.handle(secondCommand))
                     .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessageContaining("already terminated");
+                    .hasMessageContaining("already suspended");
         }
 
         @Test
-        @DisplayName("should allow termination with all reason types")
-        void shouldAllowTerminationWithAllReasonTypes() {
+        @DisplayName("should allow suspension with all reason types")
+        void shouldAllowSuspensionWithAllReasonTypes() {
             // Arrange
             UserId adminUserId = new UserId(UUID.randomUUID());
 
             // Test ODHLASKA
             Member member1 = createActiveMember();
-            member1.handle(new Member.TerminateMembership(
+            member1.handle(new Member.SuspendMembership(
                     adminUserId, DeactivationReason.ODHLASKA, "Note 1"));
-            assertThat(member1.getDeactivationReason()).isEqualTo(DeactivationReason.ODHLASKA);
+            assertThat(member1.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
 
             // Test PRESTUP
             Member member2 = createActiveMember();
-            member2.handle(new Member.TerminateMembership(
+            member2.handle(new Member.SuspendMembership(
                     adminUserId, DeactivationReason.PRESTUP, "Note 2"));
-            assertThat(member2.getDeactivationReason()).isEqualTo(DeactivationReason.PRESTUP);
+            assertThat(member2.getSuspensionReason()).isEqualTo(DeactivationReason.PRESTUP);
 
             // Test OTHER
             Member member3 = createActiveMember();
-            member3.handle(new Member.TerminateMembership(
+            member3.handle(new Member.SuspendMembership(
                     adminUserId, DeactivationReason.OTHER, "Note 3"));
-            assertThat(member3.getDeactivationReason()).isEqualTo(DeactivationReason.OTHER);
+            assertThat(member3.getSuspensionReason()).isEqualTo(DeactivationReason.OTHER);
         }
 
         @Test
-        @DisplayName("should record termination timestamp")
-        void shouldRecordTerminationTimestamp() {
+        @DisplayName("should record suspension timestamp")
+        void shouldRecordSuspensionTimestamp() {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            var beforeTermination = System.currentTimeMillis();
+            var beforeSuspension = System.currentTimeMillis();
 
             // Act
-            activeMember.handle(new Member.TerminateMembership(
+            activeMember.handle(new Member.SuspendMembership(
                     adminUserId, DeactivationReason.ODHLASKA, null));
-            var afterTermination = System.currentTimeMillis();
+            var afterSuspension = System.currentTimeMillis();
 
             // Assert
-            assertThat(activeMember.getDeactivatedAt()).isNotNull();
-            assertThat(activeMember.getDeactivatedAt().toEpochMilli())
-                    .isGreaterThanOrEqualTo(beforeTermination)
-                    .isLessThanOrEqualTo(afterTermination);
+            assertThat(activeMember.getSuspendedAt()).isNotNull();
+            assertThat(activeMember.getSuspendedAt().toEpochMilli())
+                    .isGreaterThanOrEqualTo(beforeSuspension)
+                    .isLessThanOrEqualTo(afterSuspension);
         }
     }
 
     @Nested
-    @DisplayName("handle(ReactivateMembership) method")
-    class HandleReactivateMembership {
+    @DisplayName("handle(ResumeMembership) method")
+    class HandleResumeMembership {
 
         private Member createActiveMember() {
             return aMember()
@@ -1133,62 +1133,62 @@ class MemberTest {
                     .build();
         }
 
-        private Member createTerminatedMember() {
+        private Member createSuspendedMember() {
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.TerminateMembership terminateCommand = new Member.TerminateMembership(
+            Member.SuspendMembership suspendCommand = new Member.SuspendMembership(
                     adminUserId,
                     DeactivationReason.ODHLASKA,
                     "Member requested termination"
             );
-            activeMember.handle(terminateCommand);
+            activeMember.handle(suspendCommand);
             return activeMember;
         }
 
         @Test
-        @DisplayName("should reactivate terminated member")
-        void shouldReactivateTerminatedMember() {
+        @DisplayName("should resume suspended member")
+        void shouldResumeSuspendedMember() {
             // Arrange
-            Member terminatedMember = createTerminatedMember();
+            Member suspendedMember = createSuspendedMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ReactivateMembership command = new Member.ReactivateMembership(adminUserId);
+            Member.ResumeMembership command = new Member.ResumeMembership(adminUserId);
 
             // Act
-            terminatedMember.handle(command);
+            suspendedMember.handle(command);
 
             // Assert
-            assertThat(terminatedMember.isActive()).isTrue();
-            assertThat(terminatedMember.getDeactivationReason()).isNull();
-            assertThat(terminatedMember.getDeactivatedAt()).isNull();
-            assertThat(terminatedMember.getDeactivationNote()).isNull();
-            assertThat(terminatedMember.getDeactivatedBy()).isNull();
+            assertThat(suspendedMember.isActive()).isTrue();
+            assertThat(suspendedMember.getSuspensionReason()).isNull();
+            assertThat(suspendedMember.getSuspendedAt()).isNull();
+            assertThat(suspendedMember.getSuspensionNote()).isNull();
+            assertThat(suspendedMember.getSuspendedBy()).isNull();
         }
 
         @Test
-        @DisplayName("should publish MemberReactivatedEvent when reactivating")
-        void shouldPublishEventWhenReactivating() {
+        @DisplayName("should publish MemberResumedEvent when resuming")
+        void shouldPublishEventWhenResuming() {
             // Arrange
-            Member terminatedMember = createTerminatedMember();
+            Member suspendedMember = createSuspendedMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ReactivateMembership command = new Member.ReactivateMembership(adminUserId);
+            Member.ResumeMembership command = new Member.ResumeMembership(adminUserId);
 
-            // Act - clear creation event first, then reactivate
-            terminatedMember.clearDomainEvents();
-            terminatedMember.handle(command);
+            // Act - clear creation event first, then resume
+            suspendedMember.clearDomainEvents();
+            suspendedMember.handle(command);
 
-            // Assert - should have MemberReactivatedEvent
-            assertThat(terminatedMember.getDomainEvents())
+            // Assert - should have MemberResumedEvent
+            assertThat(suspendedMember.getDomainEvents())
                     .hasSize(1)
-                    .allMatch(event -> event instanceof MemberReactivatedEvent);
+                    .allMatch(event -> event instanceof MemberResumedEvent);
         }
 
         @Test
-        @DisplayName("should reject reactivation of already active member")
-        void shouldRejectReactivationOfAlreadyActiveMember() {
+        @DisplayName("should reject resume of already active member")
+        void shouldRejectResumeOfAlreadyActiveMember() {
             // Arrange
             Member activeMember = createActiveMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ReactivateMembership command = new Member.ReactivateMembership(adminUserId);
+            Member.ResumeMembership command = new Member.ResumeMembership(adminUserId);
 
             // Act & Assert
             assertThatThrownBy(() -> activeMember.handle(command))
@@ -1197,31 +1197,31 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("should record reactivation timestamp in event")
-        void shouldRecordReactivationTimestampInEvent() {
+        @DisplayName("should record resume timestamp in event")
+        void shouldRecordResumeTimestampInEvent() {
             // Arrange
-            Member terminatedMember = createTerminatedMember();
+            Member suspendedMember = createSuspendedMember();
             UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ReactivateMembership command = new Member.ReactivateMembership(adminUserId);
+            Member.ResumeMembership command = new Member.ResumeMembership(adminUserId);
 
-            var beforeReactivation = System.currentTimeMillis();
+            var beforeResume = System.currentTimeMillis();
 
             // Act
-            terminatedMember.clearDomainEvents();
-            terminatedMember.handle(command);
+            suspendedMember.clearDomainEvents();
+            suspendedMember.handle(command);
 
-            var afterReactivation = System.currentTimeMillis();
+            var afterResume = System.currentTimeMillis();
 
             // Assert
-            assertThat(terminatedMember.getDomainEvents())
+            assertThat(suspendedMember.getDomainEvents())
                     .hasSize(1)
-                    .allMatch(event -> event instanceof MemberReactivatedEvent);
+                    .allMatch(event -> event instanceof MemberResumedEvent);
 
-            MemberReactivatedEvent event = (MemberReactivatedEvent) terminatedMember.getDomainEvents().get(0);
-            assertThat(event.getReactivatedAt()).isNotNull();
-            assertThat(event.getReactivatedAt().toEpochMilli())
-                    .isGreaterThanOrEqualTo(beforeReactivation)
-                    .isLessThanOrEqualTo(afterReactivation);
+            MemberResumedEvent event = (MemberResumedEvent) suspendedMember.getDomainEvents().get(0);
+            assertThat(event.getResumedAt()).isNotNull();
+            assertThat(event.getResumedAt().toEpochMilli())
+                    .isGreaterThanOrEqualTo(beforeResume)
+                    .isLessThanOrEqualTo(afterResume);
         }
     }
 

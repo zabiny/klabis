@@ -268,7 +268,7 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
                     .andExpect(jsonPath("$._templates.default.target").doesNotExist())
-                    .andExpect(jsonPath("$._templates.terminateMember").doesNotExist());
+                    .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
         @Test
@@ -309,9 +309,9 @@ class MemberControllerApiTest {
 
 
         @Test
-        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include update and terminate in active member response (no permissions)")
+        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include update and suspend in active member response (no permissions)")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
-        void activeMemberShouldReturnUpdateAndTerminateAffordances() throws Exception {
+        void activeMemberShouldReturnUpdateAndSuspendAffordances() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(true)
@@ -325,15 +325,15 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
                     .andExpect(jsonPath("$._templates.default.target").doesNotExist())
-                    .andExpect(jsonPath("$._templates.terminateMember.method").value("POST"))
-                    .andExpect(jsonPath("$._templates.terminateMember.target").value(
-                            "http://localhost/api/members/%s/terminate".formatted(memberId)));
+                    .andExpect(jsonPath("$._templates.suspendMember.method").value("POST"))
+                    .andExpect(jsonPath("$._templates.suspendMember.target").value(
+                            "http://localhost/api/members/%s/suspend".formatted(memberId)));
         }
 
         @Test
-        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include update and reactivate affordances for terminated member")
+        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include update and resume affordances for suspended member")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
-        void terminatedMemberShouldReturnUpdateAndReactivateAffordances() throws Exception {
+        void suspendedMemberShouldReturnUpdateAndResumeAffordances() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(false)
@@ -348,10 +348,10 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
                     .andExpect(jsonPath("$._templates.default.target").doesNotExist())
-                    .andExpect(jsonPath("$._templates.terminateMember").doesNotExist())
-                    .andExpect(jsonPath("$._templates.reactivateMember.method").value("POST"))
-                    .andExpect(jsonPath("$._templates.reactivateMember.target").value(
-                            "http://localhost/api/members/%s/reactivate".formatted(memberId)));
+                    .andExpect(jsonPath("$._templates.suspendMember").doesNotExist())
+                    .andExpect(jsonPath("$._templates.resumeMember.method").value("POST"))
+                    .andExpect(jsonPath("$._templates.resumeMember.target").value(
+                            "http://localhost/api/members/%s/resume".formatted(memberId)));
         }
     }
 
@@ -1111,15 +1111,15 @@ class MemberControllerApiTest {
     }
 
     @Nested
-    @DisplayName("POST /api/members/{id}/terminate")
-    class TerminateMemberTests {
+    @DisplayName("POST /api/members/{id}/suspend")
+    class SuspendMemberTests {
 
-        private MockHttpServletRequestBuilder postMemberIdTerminate(MemberId memberId) {
-            return postMemberIdTerminate(memberId.uuid());
+        private MockHttpServletRequestBuilder postMemberIdSuspend(MemberId memberId) {
+            return postMemberIdSuspend(memberId.uuid());
         }
 
-        private MockHttpServletRequestBuilder postMemberIdTerminate(UUID memberId) {
-            return post("/api/members/" + memberId.toString() + "/terminate")
+        private MockHttpServletRequestBuilder postMemberIdSuspend(UUID memberId) {
+            return post("/api/members/" + memberId.toString() + "/suspend")
                     .contentType("application/json");
         }
 
@@ -1133,7 +1133,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
 
             // Act
-            mockMvc.perform(postMemberIdTerminate(memberId).content("""
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
                     {
                         "reason": "ODHLASKA",
                         "note": "Member requested termination"
@@ -1142,26 +1142,26 @@ class MemberControllerApiTest {
             );
 
             // Assert
-            Member.TerminateMembership expectedCommand = new Member.TerminateMembership(UserId.fromString(
+            Member.SuspendMembership expectedCommand = new Member.SuspendMembership(UserId.fromString(
                     "48e11797-a61b-4783-bc1d-1c11d1b1d288"),
                     DeactivationReason.ODHLASKA,
                     "Member requested termination");
 
             Mockito.verify(managementService)
-                    .terminateMember(eq(new MemberId(memberId)), eq(expectedCommand));
+                    .suspendMember(eq(new MemberId(memberId)), eq(expectedCommand));
         }
 
         @Test
-        @DisplayName("valid termination request should return 204 NO CONTENT response")
+        @DisplayName("valid suspension request should return 204 NO CONTENT response")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
-        void shouldTerminateMemberSuccessfully() throws Exception {
+        void shouldSuspendMemberSuccessfully() throws Exception {
             // Arrange
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
 
             UUID memberId = UUID.randomUUID();
 
             // Act & Assert
-            mockMvc.perform(postMemberIdTerminate(memberId).content("""
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
                                 "reason": "ODHLASKA",
                                 "note": "Member requested termination"
@@ -1175,18 +1175,18 @@ class MemberControllerApiTest {
         @Test
         @DisplayName("should return 400 Bad Request when service throws InvalidUpdateException")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
-        void shouldReturn400WhenTerminatingAlreadyTerminatedMember() throws Exception {
+        void shouldReturn400WhenSuspendingAlreadySuspendedMember() throws Exception {
             // Arrange
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
 
             UUID memberId = UUID.randomUUID();
 
-            when(managementService.terminateMember(eq(new MemberId(memberId)),
-                    any(Member.TerminateMembership.class)))
-                    .thenThrow(new InvalidUpdateException("Member is already terminated"));
+            when(managementService.suspendMember(eq(new MemberId(memberId)),
+                    any(Member.SuspendMembership.class)))
+                    .thenThrow(new InvalidUpdateException("Member is already suspended"));
 
             // Act & Assert
-            mockMvc.perform(postMemberIdTerminate(memberId).content("""
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
                                 "reason": "OTHER",
                                 "note": "Second termination attempt"
@@ -1196,18 +1196,18 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type").exists())
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already terminated")));
+                    .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already suspended")));
         }
 
         @Test
-        @DisplayName("termination with invalid reason should return 400 Bad Request")
+        @DisplayName("suspension with invalid reason should return 400 Bad Request")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
-        void shouldReturn400WhenTerminationReasonInvalid() throws Exception {
+        void shouldReturn400WhenSuspensionReasonInvalid() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
 
             // Act & Assert
-            mockMvc.perform(postMemberIdTerminate(memberId).content("""
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
                                 "reason": null,
                                 "note": "Test note"
@@ -1220,21 +1220,21 @@ class MemberControllerApiTest {
     }
 
     @Nested
-    @DisplayName("POST /api/members/{id}/reactivate")
-    class ReactivateMemberTests {
+    @DisplayName("POST /api/members/{id}/resume")
+    class ResumeMemberTests {
 
-        private MockHttpServletRequestBuilder postMemberIdReactivate(UUID memberId) {
-            return post("/api/members/" + memberId.toString() + "/reactivate");
+        private MockHttpServletRequestBuilder postMemberIdResume(UUID memberId) {
+            return post("/api/members/" + memberId.toString() + "/resume");
         }
 
         @Test
-        @DisplayName("valid reactivation request should return 204 NO CONTENT response")
+        @DisplayName("valid resume request should return 204 NO CONTENT response")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
-        void shouldReactivateMemberSuccessfully() throws Exception {
+        void shouldResumeMemberSuccessfully() throws Exception {
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
             UUID memberId = UUID.randomUUID();
 
-            mockMvc.perform(postMemberIdReactivate(memberId))
+            mockMvc.perform(postMemberIdResume(memberId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isNoContent())
                     .andExpect(header().exists(HttpHeaders.LOCATION));
@@ -1247,11 +1247,11 @@ class MemberControllerApiTest {
             when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
             UUID memberId = UUID.randomUUID();
 
-            mockMvc.perform(postMemberIdReactivate(memberId));
+            mockMvc.perform(postMemberIdResume(memberId));
 
-            Member.ReactivateMembership expectedCommand = new Member.ReactivateMembership(
+            Member.ResumeMembership expectedCommand = new Member.ResumeMembership(
                     UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"));
-            Mockito.verify(managementService).reactivateMember(eq(new MemberId(memberId)), eq(expectedCommand));
+            Mockito.verify(managementService).resumeMember(eq(new MemberId(memberId)), eq(expectedCommand));
         }
 
         @Test
@@ -1260,7 +1260,7 @@ class MemberControllerApiTest {
         void shouldReturn403WhenUnauthorized() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            mockMvc.perform(postMemberIdReactivate(memberId))
+            mockMvc.perform(postMemberIdResume(memberId))
                     .andExpect(status().isForbidden());
         }
 
@@ -1269,7 +1269,7 @@ class MemberControllerApiTest {
         void shouldReturn401WhenUnauthenticated() throws Exception {
             UUID memberId = UUID.randomUUID();
 
-            mockMvc.perform(postMemberIdReactivate(memberId))
+            mockMvc.perform(postMemberIdResume(memberId))
                     .andExpect(status().isUnauthorized());
         }
     }

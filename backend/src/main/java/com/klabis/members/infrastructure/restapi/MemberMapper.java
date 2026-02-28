@@ -74,10 +74,10 @@ public interface MemberMapper {
                 response.dietaryRestrictions(),
                 member.getBirthNumber() != null ? member.getBirthNumber().value() : null,
                 member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null,
-                member.getDeactivationReason(),
-                member.getDeactivatedAt(),
-                member.getDeactivatedBy() != null ? member.getDeactivatedBy().uuid().toString() : null,
-                member.getDeactivationNote()
+                member.getSuspensionReason(),
+                member.getSuspendedAt(),
+                member.getSuspendedBy() != null ? member.getSuspendedBy().uuid().toString() : null,
+                member.getSuspensionNote()
         );
     }
 

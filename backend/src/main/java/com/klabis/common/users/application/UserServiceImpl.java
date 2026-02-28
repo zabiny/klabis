@@ -105,20 +105,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void reactivateUser(UserId userId) {
-        log.debug("Reactivating user: userId={}", userId);
+    public void resumeUser(UserId userId) {
+        log.debug("Resuming user: userId={}", userId);
 
         findById(userId).ifPresentOrElse(
                 user -> {
                     if (user.getAccountStatus() != AccountStatus.ACTIVE) {
-                        User reactivated = user.reactivate();
-                        userRepository.save(reactivated);
-                        log.info("Reactivated user: userId={}", userId);
+                        User resumed = user.resume();
+                        userRepository.save(resumed);
+                        log.info("Resumed user: userId={}", userId);
                     } else {
                         log.debug("User already active: userId={}", userId);
                     }
                 },
-                () -> log.debug("User not found for reactivation: userId={}", userId)
+                () -> log.debug("User not found for resume: userId={}", userId)
         );
     }
 

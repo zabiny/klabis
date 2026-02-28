@@ -237,10 +237,10 @@ class MemberLifecycleE2ETest {
                 .andExpect(jsonPath("$.id").value(memberId.toString()));
 
         // ========================================================================
-        // STEP 9: Terminate member
+        // STEP 9: Suspend member
         // ========================================================================
         mockMvc.perform(
-                        post("/api/members/{id}/terminate", memberId)
+                        post("/api/members/{id}/suspend", memberId)
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .content("""
@@ -253,7 +253,7 @@ class MemberLifecycleE2ETest {
                 .andExpect(status().isNoContent());
 
         // ========================================================================
-        // STEP 10: Verify termination state
+        // STEP 10: Verify suspension state
         // ========================================================================
         mockMvc.perform(
                         get("/api/members/{id}", memberId)
@@ -273,10 +273,10 @@ class MemberLifecycleE2ETest {
 
 
         // ========================================================================
-        // STEP 12: Verify second termination is rejected
+        // STEP 12: Verify second suspension is rejected
         // ========================================================================
         mockMvc.perform(
-                        post("/api/members/{id}/terminate", memberId)
+                        post("/api/members/{id}/suspend", memberId)
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .content("""
@@ -287,7 +287,7 @@ class MemberLifecycleE2ETest {
                                         """)
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already terminated")));
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already suspended")));
 
     }
 

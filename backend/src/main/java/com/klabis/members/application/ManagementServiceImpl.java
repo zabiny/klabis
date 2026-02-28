@@ -53,10 +53,10 @@ public class ManagementServiceImpl implements ManagementService {
 
     @Transactional
     @Override
-    public Member terminateMember(MemberId memberId, Member.TerminateMembership command) {
+    public Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
         Member member = loadMember(memberId);
 
-        log.info("Processing membership termination: memberId={}, reason={}", memberId, command.reason());
+        log.info("Processing membership suspension: memberId={}, reason={}", memberId, command.reason());
 
         try {
             member.handle(command);
@@ -66,21 +66,20 @@ public class ManagementServiceImpl implements ManagementService {
 
         Member saved = memberRepository.save(member);
 
-        // Suspend the corresponding User account
         userService.suspendUser(member.getId().toUserId());
 
-        log.info("Membership terminated: memberId={}, terminatedAt={}, terminatedBy={}",
-                saved.getId(), saved.getDeactivatedAt(), command.terminatedBy());
+        log.info("Membership suspended: memberId={}, suspendedAt={}, suspendedBy={}",
+                saved.getId(), saved.getSuspendedAt(), command.suspendedBy());
 
         return saved;
     }
 
     @Transactional
     @Override
-    public Member reactivateMember(MemberId memberId, Member.ReactivateMembership command) {
+    public Member resumeMember(MemberId memberId, Member.ResumeMembership command) {
         Member member = loadMember(memberId);
 
-        log.info("Processing membership reactivation: memberId={}", memberId);
+        log.info("Processing membership resume: memberId={}", memberId);
 
         try {
             member.handle(command);
@@ -90,10 +89,9 @@ public class ManagementServiceImpl implements ManagementService {
 
         Member saved = memberRepository.save(member);
 
-        // Reactivate the corresponding User account
-        userService.reactivateUser(member.getId().toUserId());
+        userService.resumeUser(member.getId().toUserId());
 
-        log.info("Membership reactivated: memberId={}, reactivatedBy={}", saved.getId(), command.reactivatedBy());
+        log.info("Membership resumed: memberId={}, resumedBy={}", saved.getId(), command.resumedBy());
 
         return saved;
     }

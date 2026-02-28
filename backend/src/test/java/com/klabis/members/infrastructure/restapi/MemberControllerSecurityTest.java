@@ -215,12 +215,12 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     }
 
     @Test
-    @DisplayName("POST /api/members/{id}/terminate without authentication should return 401")
-    void shouldReturn401WhenTerminatingMemberUnauthenticated() throws Exception {
+    @DisplayName("POST /api/members/{id}/suspend without authentication should return 401")
+    void shouldReturn401WhenSuspendingMemberUnauthenticated() throws Exception {
         UUID memberId = UUID.randomUUID();
 
         mockMvc.perform(
-                        post("/api/members/" + memberId + "/terminate")
+                        post("/api/members/" + memberId + "/suspend")
                                 .contentType("application/json")
                                 .content("""
                                         {
@@ -237,13 +237,13 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     }
 
     @Test
-    @DisplayName("POST /api/members/{id}/terminate with wrong authority should return 403")
+    @DisplayName("POST /api/members/{id}/suspend with wrong authority should return 403")
     @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-    void shouldReturn403WhenTerminatingMemberWithoutUpdateAuthority() throws Exception {
+    void shouldReturn403WhenSuspendingMemberWithoutUpdateAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
 
         mockMvc.perform(
-                        post("/api/members/" + memberId + "/terminate")
+                        post("/api/members/" + memberId + "/suspend")
                                 .contentType("application/json")
                                 .content("""
                                         {
@@ -260,16 +260,16 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     }
 
     @Test
-    @DisplayName("POST /api/members/{id}/terminate with MEMBERS:UPDATE authority should pass authorization")
+    @DisplayName("POST /api/members/{id}/suspend with MEMBERS:UPDATE authority should pass authorization")
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
-    void shouldPassAuthorizationWhenTerminatingMemberWithUpdateAuthority() throws Exception {
+    void shouldPassAuthorizationWhenSuspendingMemberWithUpdateAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
 
         // This test validates that authorization passes - the endpoint returns
         // 400 Bad Request for non-existent member IDs (service throws InvalidUpdateException)
         // If authorization was denied, we'd get 403 before reaching the endpoint
         mockMvc.perform(
-                        post("/api/members/" + memberId + "/terminate")
+                        post("/api/members/" + memberId + "/suspend")
                                 .contentType("application/json")
                                 .content("""
                                         {

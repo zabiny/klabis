@@ -13,8 +13,8 @@ public interface ManagementService {
     Member updateMember(MemberId memberId, Member.UpdateMemberByAdmin command);
 
     @Transactional
-    Member terminateMember(MemberId memberId, Member.TerminateMembership command);
+    Member suspendMember(MemberId memberId, Member.SuspendMembership command);
 
     @Transactional
-    Member reactivateMember(MemberId memberId, Member.ReactivateMembership command);
+    Member resumeMember(MemberId memberId, Member.ResumeMembership command);
 }

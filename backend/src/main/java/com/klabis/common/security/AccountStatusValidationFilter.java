@@ -23,7 +23,7 @@ import java.util.Map;
  * Ensures that suspended or deactivated users cannot use JWT tokens to access the API.
  * This filter is applied after JWT decoding but before controller execution.
  * <p>
- * When a member is terminated, their User account is suspended. This filter checks
+ * When a member is suspended, their User account is suspended. This filter checks
  * the current account status from the database on each request and returns HTTP 403 Forbidden
  * if the user is no longer authenticatable (e.g., account is suspended).
  */

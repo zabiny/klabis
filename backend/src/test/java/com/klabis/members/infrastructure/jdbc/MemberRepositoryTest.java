@@ -1091,12 +1091,12 @@ class MemberRepositoryTest {
     }
 
     @Nested
-    @DisplayName("Member termination")
-    class MemberTermination {
+    @DisplayName("Member suspension")
+    class MemberSuspension {
 
         @Test
-        @DisplayName("should save and load terminated member with all termination fields")
-        void shouldSaveAndLoadTerminatedMember() {
+        @DisplayName("should save and load suspended member with all suspension fields")
+        void shouldSaveAndLoadSuspendedMember() {
             // Given
             PersonalInformation personalInformation = PersonalInformation.of(
                     "Jan",
@@ -1125,13 +1125,13 @@ class MemberRepositoryTest {
                     .withPhone("+420123456789")
                     .build();
 
-            // When - terminate the member
-            Member.TerminateMembership terminateCommand = new Member.TerminateMembership(
+            // When - suspend the member
+            Member.SuspendMembership suspendCommand = new Member.SuspendMembership(
                     adminUserId,
                     DeactivationReason.ODHLASKA,
                     "Member requested termination"
             );
-            member.handle(terminateCommand);
+            member.handle(suspendCommand);
 
             // And save to database
             Member savedMember = memberRepository.save(member);
@@ -1139,19 +1139,19 @@ class MemberRepositoryTest {
             // And load from database
             Optional<Member> loadedMember = memberRepository.findById(savedMember.getId());
 
-            // Then - verify termination fields persisted correctly
+            // Then - verify suspension fields persisted correctly
             assertThat(loadedMember).isPresent();
             Member loaded = loadedMember.get();
             assertThat(loaded.isActive()).isFalse();
-            assertThat(loaded.getDeactivationReason()).isEqualTo(DeactivationReason.ODHLASKA);
-            assertThat(loaded.getDeactivatedAt()).isNotNull();
-            assertThat(loaded.getDeactivationNote()).isEqualTo("Member requested termination");
-            assertThat(loaded.getDeactivatedBy()).isEqualTo(adminUserId);
+            assertThat(loaded.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
+            assertThat(loaded.getSuspendedAt()).isNotNull();
+            assertThat(loaded.getSuspensionNote()).isEqualTo("Member requested termination");
+            assertThat(loaded.getSuspendedBy()).isEqualTo(adminUserId);
         }
 
         @Test
-        @DisplayName("should save active member with null termination fields")
-        void shouldSaveActiveMemberWithNullTerminationFields() {
+        @DisplayName("should save active member with null suspension fields")
+        void shouldSaveActiveMemberWithNullSuspensionFields() {
             // Given
             PersonalInformation personalInformation = PersonalInformation.of(
                     "Petra",
@@ -1184,10 +1184,10 @@ class MemberRepositoryTest {
 
             // Then
             assertThat(savedMember.isActive()).isTrue();
-            assertThat(savedMember.getDeactivationReason()).isNull();
-            assertThat(savedMember.getDeactivatedAt()).isNull();
-            assertThat(savedMember.getDeactivationNote()).isNull();
-            assertThat(savedMember.getDeactivatedBy()).isNull();
+            assertThat(savedMember.getSuspensionReason()).isNull();
+            assertThat(savedMember.getSuspendedAt()).isNull();
+            assertThat(savedMember.getSuspensionNote()).isNull();
+            assertThat(savedMember.getSuspendedBy()).isNull();
         }
     }
 }

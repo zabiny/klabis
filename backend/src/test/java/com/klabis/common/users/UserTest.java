@@ -372,58 +372,58 @@ class UserTest {
     }
 
     @Nested
-    @DisplayName("reactivate() method")
-    class ReactivateMethod {
+    @DisplayName("resume() method")
+    class ResumeMethod {
 
         @Test
-        @DisplayName("should reactivate suspended user")
-        void shouldReactivateSuspendedUser() {
+        @DisplayName("should resume suspended user")
+        void shouldResumeSuspendedUser() {
             // Given
             User suspendedUser = UserTestDataBuilder.anAdminUser()
                     .status(AccountStatus.SUSPENDED)
                     .build();
 
             // When
-            User reactivatedUser = suspendedUser.reactivate();
+            User resumedUser = suspendedUser.resume();
 
             // Then
-            UserAssert.assertThat(reactivatedUser)
+            UserAssert.assertThat(resumedUser)
                     .hasSameIdentityAs(suspendedUser)
                     .hasAccountStatus(AccountStatus.ACTIVE)
                     .isAuthenticatable();
         }
 
         @Test
-        @DisplayName("should create new instance when reactivating")
-        void shouldCreateNewInstanceWhenReactivating() {
+        @DisplayName("should create new instance when resuming")
+        void shouldCreateNewInstanceWhenResuming() {
             // Given
             User suspendedUser = UserTestDataBuilder.anAdminUser()
                     .status(AccountStatus.SUSPENDED)
                     .build();
 
             // When
-            User reactivatedUser = suspendedUser.reactivate();
+            User resumedUser = suspendedUser.resume();
 
             // Then - immutability: original user unchanged
             UserAssert.assertThat(suspendedUser)
                     .hasAccountStatus(AccountStatus.SUSPENDED)
                     .isNotAuthenticatable();
-            assertThat(reactivatedUser).isNotSameAs(suspendedUser);
+            assertThat(resumedUser).isNotSameAs(suspendedUser);
         }
 
         @Test
-        @DisplayName("should be authenticatable after reactivating")
-        void shouldMaintainNonAuthenticationFlagsWhenReactivating() {
+        @DisplayName("should be authenticatable after resuming")
+        void shouldMaintainNonAuthenticationFlagsWhenResuming() {
             // Given
             User suspendedUser = UserTestDataBuilder.anAdminUser()
                     .status(AccountStatus.SUSPENDED)
                     .build();
 
             // When
-            User reactivatedUser = suspendedUser.reactivate();
+            User resumedUser = suspendedUser.resume();
 
             // Then
-            UserAssert.assertThat(reactivatedUser)
+            UserAssert.assertThat(resumedUser)
                     .isAuthenticatable();
         }
     }
@@ -447,18 +447,18 @@ class UserTest {
         }
 
         @Test
-        @DisplayName("should be authenticatable after reactivate()")
-        void shouldBeAuthenticatableAfterReactivate() {
+        @DisplayName("should be authenticatable after resume()")
+        void shouldBeAuthenticatableAfterResume() {
             // Given
             User suspendedUser = UserTestDataBuilder.anAdminUser()
                     .status(AccountStatus.SUSPENDED)
                     .build();
 
             // When
-            User reactivatedUser = suspendedUser.reactivate();
+            User resumedUser = suspendedUser.resume();
 
             // Then
-            UserAssert.assertThat(reactivatedUser)
+            UserAssert.assertThat(resumedUser)
                     .isAuthenticatable();
         }
     }

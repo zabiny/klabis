@@ -134,18 +134,18 @@ class MemberMemento implements Persistable<UUID> {
     @Column("bank_account_number")
     private String bankAccountNumber;
 
-    // Termination fields
-    @Column("deactivation_reason")
-    private DeactivationReason deactivationReason;
+    // Suspension fields
+    @Column("suspension_reason")
+    private DeactivationReason suspensionReason;
 
-    @Column("deactivated_at")
-    private Instant deactivatedAt;
+    @Column("suspended_at")
+    private Instant suspendedAt;
 
-    @Column("deactivation_note")
-    private String deactivationNote;
+    @Column("suspension_note")
+    private String suspensionNote;
 
-    @Column("deactivated_by")
-    private String deactivatedBy;
+    @Column("suspended_by")
+    private String suspendedBy;
 
     // Audit fields
     @CreatedDate
@@ -322,10 +322,10 @@ class MemberMemento implements Persistable<UUID> {
         memento.dietaryRestrictions = member.getDietaryRestrictions();
         memento.birthNumber = member.getBirthNumber() != null ? EncryptedString.of(member.getBirthNumber().value()) : null;
         memento.bankAccountNumber = member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null;
-        memento.deactivationReason = member.getDeactivationReason();
-        memento.deactivatedAt = member.getDeactivatedAt();
-        memento.deactivationNote = member.getDeactivationNote();
-        memento.deactivatedBy = member.getDeactivatedBy() != null ? member.getDeactivatedBy().uuid().toString() : null;
+        memento.suspensionReason = member.getSuspensionReason();
+        memento.suspendedAt = member.getSuspendedAt();
+        memento.suspensionNote = member.getSuspensionNote();
+        memento.suspendedBy = member.getSuspendedBy() != null ? member.getSuspendedBy().uuid().toString() : null;
     }
 
     /**
@@ -445,10 +445,10 @@ class MemberMemento implements Persistable<UUID> {
                 this.dietaryRestrictions,
                 birthNumber,
                 bankAccountNumber,
-                this.deactivationReason,
-                this.deactivatedAt,
-                this.deactivationNote,
-                this.deactivatedBy,
+                this.suspensionReason,
+                this.suspendedAt,
+                this.suspensionNote,
+                this.suspendedBy,
                 getAuditMetadata()
         );
 
