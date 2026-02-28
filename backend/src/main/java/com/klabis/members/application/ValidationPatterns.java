@@ -1,4 +1,4 @@
-package com.klabis.members.management;
+package com.klabis.members.application;
 
 /**
  * Centralized validation patterns and messages for consistency across the domain and application layers.

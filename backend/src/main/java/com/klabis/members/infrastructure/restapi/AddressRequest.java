@@ -1,7 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.members.application.ValidationPatterns;
 import com.klabis.members.domain.Address;
-import com.klabis.members.management.ValidationPatterns;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;

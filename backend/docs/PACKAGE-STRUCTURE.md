@@ -174,14 +174,23 @@ com.klabis.members/
 │   ├── RegisterMemberRequest.java          # DTO
 │   ├── MemberRegistrationResponse.java     # DTO
 │   └── package-info.java                    # @NamedInterface("registration")
-├── management/                              # Management feature
+├── application/                             # Application services (internal)
 │   ├── ManagementService.java              # Service with getMember(), updateMember()
-│   ├── MemberController.java               # REST controller
-│   ├── UpdateMemberRequest.java            # DTO
-│   ├── MemberDetailsResponse.java          # DTO
-│   ├── SelfEditNotAllowedException.java    # Exception
+│   ├── ManagementServiceImpl.java           # Service implementation
+│   ├── RegistrationService.java            # Service interface for registration
+│   ├── RegistrationServiceImpl.java         # Service implementation
+│   ├── MembersImpl.java                     # Members query API implementation
+│   ├── MembersConfiguration.java           # Spring configuration
+│   ├── ValidationPatterns.java             # Shared validation utilities
+│   ├── GuardianDTO.java                    # DTO
+│   ├── IdentityCardDto.java                # DTO
+│   ├── MedicalCourseDto.java               # DTO
+│   ├── TrainerLicenseDto.java              # DTO
 │   ├── AdminFieldAccessException.java      # Exception
-│   └── package-info.java                    # @NamedInterface("management")
+│   ├── InvalidUpdateException.java         # Exception
+│   ├── MemberNotFoundException.java         # Exception
+│   ├── UserIdentificationException.java    # Exception
+│   └── package-info.java                    # No @NamedInterface (internal)
 ├── persistence/
 │   ├── MemberRepository.java               # Internal repository interface (@apiNote documentation)
 │   └── jdbc/                               # Internal (no @NamedInterface)

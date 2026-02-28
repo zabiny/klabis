@@ -21,7 +21,7 @@ Affected test files found in this project:
 - Domain: `com.klabis.members.domain` — pure domain, no Spring
 - Infrastructure: `com.klabis.members.infrastructure.restapi` — controllers
 - Infrastructure: `com.klabis.members.infrastructure.jdbc` — repositories
-- Management: `com.klabis.members.management` — application services
+- Management: `com.klabis.members.application` — application services
 
 ## MemberId / UserId Relationship
 

@@ -1,10 +1,10 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.application.IdentityCardDto;
+import com.klabis.members.application.MedicalCourseDto;
+import com.klabis.members.application.TrainerLicenseDto;
 import com.klabis.members.domain.*;
-import com.klabis.members.management.IdentityCardDto;
-import com.klabis.members.management.MedicalCourseDto;
-import com.klabis.members.management.TrainerLicenseDto;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

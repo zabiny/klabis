@@ -2,8 +2,8 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.authorization.HasAuthority;
+import com.klabis.members.application.RegistrationService;
 import com.klabis.members.domain.Member;
-import com.klabis.members.management.RegistrationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

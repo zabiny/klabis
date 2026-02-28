@@ -1,4 +1,4 @@
-package com.klabis.members.management;
+package com.klabis.members.application;
 
 import com.klabis.members.domain.GuardianInformation;
 import io.swagger.v3.oas.annotations.media.Schema;

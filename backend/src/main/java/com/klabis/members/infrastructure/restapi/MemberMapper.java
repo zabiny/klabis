@@ -1,12 +1,11 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.UserId;
+import com.klabis.members.application.GuardianDTO;
+import com.klabis.members.application.IdentityCardDto;
+import com.klabis.members.application.MedicalCourseDto;
+import com.klabis.members.application.TrainerLicenseDto;
 import com.klabis.members.domain.*;
-import com.klabis.members.management.GuardianDTO;
-import com.klabis.members.management.IdentityCardDto;
-import com.klabis.members.management.MedicalCourseDto;
-import com.klabis.members.management.TrainerLicenseDto;
-import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;
@@ -153,7 +152,7 @@ public interface MemberMapper {
     @Mapping(target = "guardian", expression = "java(request.guardian() != null ? new GuardianInformation(request.guardian().firstName(), request.guardian().lastName(), request.guardian().relationship(), request.guardian().email(), request.guardian().phone()) : null)")
     @Mapping(target = "birthNumber", expression = "java(request.birthNumber() != null ? BirthNumber.of(request.birthNumber()) : null)")
     @Mapping(target = "bankAccountNumber", expression = "java(request.bankAccountNumber() != null ? BankAccountNumber.of(request.bankAccountNumber()) : null)")
-    com.klabis.members.management.RegistrationService.RegisterNewMember toRegisterNewMemberCommand(RegisterMemberRequest request);
+    com.klabis.members.application.RegistrationService.RegisterNewMember toRegisterNewMemberCommand(RegisterMemberRequest request);
 
     /**
      * Creates PersonalInformation from primitive values.

@@ -1,7 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.members.application.GuardianDTO;
 import com.klabis.members.domain.Gender;
-import com.klabis.members.management.GuardianDTO;
 
 import java.time.LocalDate;
 

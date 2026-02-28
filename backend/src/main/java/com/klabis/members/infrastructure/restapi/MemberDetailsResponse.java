@@ -1,13 +1,13 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.klabis.members.application.GuardianDTO;
+import com.klabis.members.application.IdentityCardDto;
+import com.klabis.members.application.MedicalCourseDto;
+import com.klabis.members.application.TrainerLicenseDto;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
-import com.klabis.members.management.GuardianDTO;
-import com.klabis.members.management.IdentityCardDto;
-import com.klabis.members.management.MedicalCourseDto;
-import com.klabis.members.management.TrainerLicenseDto;
 
 import java.time.Instant;
 import java.time.LocalDate;

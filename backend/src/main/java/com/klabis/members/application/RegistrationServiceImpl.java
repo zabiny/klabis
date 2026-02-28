@@ -1,4 +1,4 @@
-package com.klabis.members.management;
+package com.klabis.members.application;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;

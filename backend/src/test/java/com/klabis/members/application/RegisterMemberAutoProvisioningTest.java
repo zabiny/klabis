@@ -1,4 +1,4 @@
-package com.klabis.members.management;
+package com.klabis.members.application;
 
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.users.User;
@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

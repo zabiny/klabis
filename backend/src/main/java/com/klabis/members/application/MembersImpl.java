@@ -1,4 +1,4 @@
-package com.klabis.members.management;
+package com.klabis.members.application;
 
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;

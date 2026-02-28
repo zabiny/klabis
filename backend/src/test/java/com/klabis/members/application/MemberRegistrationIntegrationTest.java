@@ -1,10 +1,6 @@
-package com.klabis.members.management;
+package com.klabis.members.application;
 
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.members.domain.Gender;
-import com.klabis.members.infrastructure.restapi.AddressRequest;
-import com.klabis.members.infrastructure.restapi.MemberManagementDtosTestDataBuilder;
-import com.klabis.members.infrastructure.restapi.RegisterMemberRequest;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,8 +14,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-
-import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;

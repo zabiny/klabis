@@ -1,8 +1,6 @@
-package com.klabis.members.management;
+package com.klabis.members.application;
 
 import com.klabis.members.domain.*;
-
-import java.time.LocalDate;
 
 /**
  * Service for member registration operations.

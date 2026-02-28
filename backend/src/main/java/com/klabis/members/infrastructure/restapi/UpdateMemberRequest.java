@@ -4,13 +4,9 @@ import com.klabis.common.patch.PatchField;
 import com.klabis.common.validation.ValidPatchFieldNotBlank;
 import com.klabis.common.validation.ValidPatchFieldPattern;
 import com.klabis.common.validation.ValidPatchFieldSize;
+import com.klabis.members.application.*;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
-import com.klabis.members.management.GuardianDTO;
-import com.klabis.members.management.IdentityCardDto;
-import com.klabis.members.management.MedicalCourseDto;
-import com.klabis.members.management.TrainerLicenseDto;
-import com.klabis.members.management.ValidationPatterns;
 
 import java.time.LocalDate;
 
