@@ -30,6 +30,6 @@ Affected test files found in this project:
 
 ## Test Infrastructure
 
-- Always use `test-runner` skill — never run `./gradlew test` directly
+- Always use `test-runner` subagent to run tests  — never run `./gradlew test` directly
 - For `@WebMvcTest` tests: mock `UserService`, `UserDetailsService`, and service layer beans
 - `@DataJdbcTest` for repository tests — use `@ComponentScan.Filter(type=FilterType.ANNOTATION, value=Repository.class)`
