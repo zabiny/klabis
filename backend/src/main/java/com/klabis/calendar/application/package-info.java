@@ -9,10 +9,8 @@
  *   <li>{@link com.klabis.calendar.application.EventsEventListener} - Primary adapter (event listener)</li>
  *   <li>{@link com.klabis.calendar.application.CalendarEventSyncPort} - Primary port (business interface)</li>
  *   <li>{@link com.klabis.calendar.application.CalendarEventSyncService} - Application service</li>
- *   <li>{@link com.klabis.calendar.application.EventData} - DTO for event data</li>
+ *   <li>{@link com.klabis.calendar.infrastructure.jdbc.EventData} - DTO for event data</li>
  * </ul>
  */
-@NamedInterface("eventsintegration")
 package com.klabis.calendar.application;
 
-import org.springframework.modulith.NamedInterface;

@@ -1,4 +1,4 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.infrastructure.jdbc;
 
 import com.klabis.events.WebsiteUrl;
 

@@ -2,6 +2,7 @@ package com.klabis.calendar.application;
 
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.infrastructure.jdbc.CalendarRepository;
+import com.klabis.calendar.infrastructure.jdbc.EventData;
 import com.klabis.calendar.infrastructure.jdbc.EventDataProvider;
 import com.klabis.events.EventId;
 import org.slf4j.Logger;

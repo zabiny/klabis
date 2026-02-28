@@ -1,6 +1,5 @@
 package com.klabis.calendar.infrastructure.jdbc;
 
-import com.klabis.calendar.application.EventData;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.Events;
