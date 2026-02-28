@@ -109,6 +109,11 @@ public class AuthorizationServerConfiguration {
                 // ID Token claims for OpenID Connect
                 String subject = context.getPrincipal().getName();
 
+                // Always add user_name claim for ID tokens (except client_credentials grant)
+                if (!AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) {
+                    context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_USER_NAME, subject);
+                }
+
                 // Add profile claims (user_name, given_name, family_name) for OIDC profile scope
                 authorizationServerCustomizer.customizeIdTokenClaims(subject,
                         context.getClaims(),

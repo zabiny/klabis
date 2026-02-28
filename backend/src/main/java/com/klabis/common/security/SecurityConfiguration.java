@@ -1,6 +1,7 @@
 package com.klabis.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.common.users.UserService;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -29,6 +30,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
@@ -140,8 +142,13 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter() {
-        return new KlabisJwtAuthenticationConverter();
+    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter(UserService userService) {
+        return new KlabisJwtAuthenticationConverter(userService);
+    }
+
+    @Bean
+    public AccountStatusValidationFilter accountStatusValidationFilter(UserService userService, ObjectMapper objectMapper) {
+        return new AccountStatusValidationFilter(userService, objectMapper);
     }
 
     @Bean
@@ -261,7 +268,9 @@ public class SecurityConfiguration implements WebMvcConfigurer {
             HttpSecurity http,
             AuthenticationEntryPoint authenticationEntryPoint,
             AccessDeniedHandler accessDeniedHandler,
-            CorsConfigurationSource corsConfigurationSource) throws Exception {
+            CorsConfigurationSource corsConfigurationSource,
+            Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter,
+            AccountStatusValidationFilter accountStatusValidationFilter) throws Exception {
         http
                 .securityMatcher("/api/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**")
                 .authorizeHttpRequests(authorize -> authorize
@@ -273,10 +282,11 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                         .requestMatchers("/api/**").authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
+                .addFilterAfter(accountStatusValidationFilter, SecurityContextPersistenceFilter.class)
                 // Enable CORS configuration
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -4,6 +4,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
@@ -345,7 +346,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws BusinessRuleViolationException if event is not ACTIVE
      * @throws IllegalStateException          if member is already registered (domain invariant violation)
      */
-    public void registerMember(UserId memberId, SiCardNumber siCardNumber) {
+    public void registerMember(MemberId memberId, SiCardNumber siCardNumber) {
         // Check event status
         if (status != EventStatus.ACTIVE) {
             throw new BusinessRuleViolationException("Registration is only allowed for ACTIVE events") {
@@ -379,7 +380,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws IllegalStateException    if current date is on or after event date
      * @throws IllegalArgumentException if member is not registered
      */
-    public void unregisterMember(UserId memberId, LocalDate currentDate) {
+    public void unregisterMember(MemberId memberId, LocalDate currentDate) {
         // Check if unregistration is allowed (before event date)
         if (!currentDate.isBefore(eventDate)) {
             throw new BusinessRuleViolationException("Cannot unregister on or after event date") {
@@ -402,7 +403,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @param memberId member's user ID
      * @return Optional containing the registration if found, empty otherwise
      */
-    public Optional<EventRegistration> findRegistration(UserId memberId) {
+    public Optional<EventRegistration> findRegistration(MemberId memberId) {
         return registrations.stream()
                 .filter(r -> r.memberId().equals(memberId))
                 .findFirst();

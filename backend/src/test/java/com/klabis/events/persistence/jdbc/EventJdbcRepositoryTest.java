@@ -3,6 +3,7 @@ package com.klabis.events.persistence.jdbc;
 import com.klabis.CleanupTestData;
 import com.klabis.common.users.UserId;
 import com.klabis.events.*;
+import com.klabis.members.MemberId;
 import com.klabis.events.persistence.EventRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
@@ -173,8 +174,8 @@ class EventJdbcRepositoryTest {
             );
             event.publish();
 
-            UserId member1Id = new UserId(TEST_MEMBER_1_ID);
-            UserId member2Id = new UserId(TEST_MEMBER_2_ID);
+            MemberId member1Id = new MemberId(TEST_MEMBER_1_ID);
+            MemberId member2Id = new MemberId(TEST_MEMBER_2_ID);
             SiCardNumber siCard1 = new SiCardNumber("123456");
             SiCardNumber siCard2 = new SiCardNumber("789012");
 
@@ -552,7 +553,7 @@ class EventJdbcRepositoryTest {
             );
             event.publish();
 
-            UserId memberId = new UserId(TEST_MEMBER_1_ID);
+            MemberId memberId = new MemberId(TEST_MEMBER_1_ID);
             SiCardNumber siCard = new SiCardNumber("123456");
 
             event.registerMember(memberId, siCard);

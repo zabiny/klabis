@@ -135,7 +135,7 @@ class MemberControllerApiTest {
                     .withNationality("CZ")
                     .build();
 
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(getMemberById(member.getId()))
                     .andDo(MockMvcResultHandlers.print())
@@ -164,7 +164,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturn404WhenMemberNotFound() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.empty());
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.empty());
 
             mockMvc.perform(getMemberById(nonExistentId))
                     .andDo(MockMvcResultHandlers.print())
@@ -205,7 +205,7 @@ class MemberControllerApiTest {
                             "+420777111222"))
                     .build();
 
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -227,7 +227,7 @@ class MemberControllerApiTest {
                     .withAddress(new Address("Main Street 123", "Bratislava", "81101", "SK"))
                     .build();
 
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -260,7 +260,7 @@ class MemberControllerApiTest {
                     .withEmail(email)
                     .build();
 
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -280,7 +280,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -298,7 +298,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -317,7 +317,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -339,7 +339,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(memberRepository.findById(any(UserId.class))).thenReturn(Optional.of(member));
+            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -1148,7 +1148,7 @@ class MemberControllerApiTest {
                     "Member requested termination");
 
             Mockito.verify(managementService)
-                    .terminateMember(eq(memberId), eq(expectedCommand));
+                    .terminateMember(eq(new MemberId(memberId)), eq(expectedCommand));
         }
 
         @Test
@@ -1181,7 +1181,7 @@ class MemberControllerApiTest {
 
             UUID memberId = UUID.randomUUID();
 
-            when(managementService.terminateMember(eq(memberId),
+            when(managementService.terminateMember(eq(new MemberId(memberId)),
                     any(Member.TerminateMembership.class)))
                     .thenThrow(new InvalidUpdateException("Member is already terminated"));
 
@@ -1251,7 +1251,7 @@ class MemberControllerApiTest {
 
             Member.ReactivateMembership expectedCommand = new Member.ReactivateMembership(
                     UserId.fromString("48e11797-a61b-4783-bc1d-1c11d1b1d288"));
-            Mockito.verify(managementService).reactivateMember(eq(memberId), eq(expectedCommand));
+            Mockito.verify(managementService).reactivateMember(eq(new MemberId(memberId)), eq(expectedCommand));
         }
 
         @Test

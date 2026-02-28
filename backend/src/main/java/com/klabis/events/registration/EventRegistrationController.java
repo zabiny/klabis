@@ -1,8 +1,8 @@
 package com.klabis.events.registration;
 
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserId;
 import com.klabis.events.Event;
+import com.klabis.members.MemberId;
 import com.klabis.events.EventRegistration;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
@@ -82,13 +82,13 @@ class EventRegistrationController {
         registrationService.registerMember(eventId, currentUser.memberId(), command);
 
         // Get registration details
-        OwnRegistrationDto registration = registrationService.getOwnRegistration(eventId, currentUser.userId());
+        OwnRegistrationDto registration = registrationService.getOwnRegistration(eventId, currentUser.memberId());
 
         // Build entity model with HATEOAS links
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
-        addLinksForOwnRegistration(entityModel, eventId, currentUser.userId());
+        addLinksForOwnRegistration(entityModel, eventId, currentUser.memberId());
 
-        return ResponseEntity.created(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, currentUser.userId())).toUri())
+        return ResponseEntity.created(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).toUri())
                 .body(entityModel);
     }
 
@@ -111,10 +111,10 @@ class EventRegistrationController {
     @ApiResponse(responseCode = "204", description = "Successfully unregistered")
     public ResponseEntity<Void> unregisterFromEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @CurrentUser UserId currentUserId) {
+            @CurrentUser CurrentUserData currentUser) {
 
         // Unregister member (use current date)
-        registrationService.unregisterMember(eventId, currentUserId, LocalDate.now());
+        registrationService.unregisterMember(eventId, currentUser.memberId(), LocalDate.now());
 
         return ResponseEntity.noContent().build();
     }
@@ -169,14 +169,14 @@ class EventRegistrationController {
     @ApiResponse(responseCode = "200", description = "Own registration retrieved successfully")
     public ResponseEntity<EntityModel<OwnRegistrationDto>> getOwnRegistration(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @CurrentUser UserId currentUserId) {
+            @CurrentUser CurrentUserData currentUser) {
 
         // Get own registration
-        OwnRegistrationDto registration = registrationService.getOwnRegistration(eventId, currentUserId);
+        OwnRegistrationDto registration = registrationService.getOwnRegistration(eventId, currentUser.memberId());
 
         // Build entity model with HATEOAS links
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
-        addLinksForOwnRegistration(entityModel, eventId, currentUserId);
+        addLinksForOwnRegistration(entityModel, eventId, currentUser.memberId());
 
         return ResponseEntity.ok(entityModel);
     }
@@ -190,9 +190,9 @@ class EventRegistrationController {
      * @param eventId     event ID
      * @param currentUserId current user ID
      */
-    private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId, UserId currentUserId) {
-        entityModel.add(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, currentUserId)).withSelfRel()
-                .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, currentUserId)))
+    private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId, MemberId memberId) {
+        entityModel.add(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).withSelfRel()
+                .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)))
         );
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }

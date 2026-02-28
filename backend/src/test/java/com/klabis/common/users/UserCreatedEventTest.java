@@ -13,7 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("UserCreatedEvent tests")
 class UserCreatedEventTest {
 
-    private static final UUID TEST_USER_ID = UUID.randomUUID();
+    private static final UUID TEST_USER_UUID = UUID.randomUUID();
+    private static final UserId TEST_USER_ID = new UserId(TEST_USER_UUID);
     private static final String TEST_USERNAME = "ZBM9001";
     private static final AccountStatus TEST_STATUS = AccountStatus.PENDING_ACTIVATION;
 
@@ -98,7 +99,7 @@ class UserCreatedEventTest {
         void shouldThrowExceptionForNullUserId() {
             assertThatThrownBy(() -> new UserCreatedEvent(
                     UUID.randomUUID(),
-                    null,
+                    (UserId) null,
                     TEST_USERNAME,
                     TEST_STATUS,
                     Instant.now()
@@ -158,8 +159,7 @@ class UserCreatedEventTest {
         @DisplayName("should create event from User aggregate")
         void shouldCreateEventFromUser() {
             // Given
-            UserId userId = new UserId(TEST_USER_ID);
-            User user = User.reconstruct(userId, TEST_USERNAME, "hashedPassword", AccountStatus.PENDING_ACTIVATION);
+            User user = User.reconstruct(TEST_USER_ID, TEST_USERNAME, "hashedPassword", AccountStatus.PENDING_ACTIVATION);
 
             // When
             UserCreatedEvent event = UserCreatedEvent.fromUser(user);
@@ -231,7 +231,7 @@ class UserCreatedEventTest {
             );
             UserCreatedEvent event2 = new UserCreatedEvent(
                     eventId,
-                    UUID.randomUUID(), // Different user
+                    new UserId(UUID.randomUUID()), // Different user
                     "different",
                     AccountStatus.ACTIVE,
                     Instant.now().plusSeconds(10)

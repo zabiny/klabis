@@ -2,7 +2,7 @@ package com.klabis.members.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.encryption.EncryptedString;
-import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.AfterDomainEventPublication;
@@ -427,9 +427,9 @@ class MemberMemento implements Persistable<UUID> {
                 : null;
 
         // Create Member using reconstruct method (bypasses validation)
-        UserId userId = this.id != null ? new UserId(this.id) : null;
+        MemberId memberId = this.id != null ? new MemberId(this.id) : null;
         Member member = Member.reconstruct(
-                userId,
+                memberId,
                 registrationNumber,
                 personalInfo,
                 address,

@@ -2,8 +2,8 @@ package com.klabis.members.management;
 
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.users.User;
-import com.klabis.common.users.UserId;
 import com.klabis.common.users.persistence.UserRepository;
+import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,10 +63,10 @@ class RegisterMemberAutoProvisioningTest {
         );
 
         Member member = memberService.registerMember(command);
-        UUID memberId = member.getId().toUserId().uuid();
+        MemberId memberId = member.getId();
 
         // Verify Member was created
-        var memberEntity = memberJpaRepository.findById(new UserId(memberId));
+        var memberEntity = memberJpaRepository.findById(memberId);
         assertThat(memberEntity).isPresent();
         String createdRegistrationNumber = memberEntity.get().getRegistrationNumber().getValue();
 
@@ -86,9 +86,6 @@ class RegisterMemberAutoProvisioningTest {
     @DisplayName("User should have MEMBERS:READ authority")
     @Transactional
     void userShouldHaveReadAuthority() {
-        // Create a test shared ID
-        UserId sharedId = UserId.newId();
-        RegistrationNumber registrationNumber = RegistrationNumber.of("ZBM5678");
         Address address = Address.of("Street 2", "City 2", "20000", "CZ");
         EmailAddress email = EmailAddress.of("integration@example.com");
         PhoneNumber phone = PhoneNumber.of("+420777999999");
@@ -106,8 +103,7 @@ class RegisterMemberAutoProvisioningTest {
         );
 
         Member member = memberService.registerMember(command);
-        UUID memberId = member.getId().toUserId().uuid();
-        var memberEntity = memberJpaRepository.findById(new UserId(memberId)).get();
+        var memberEntity = memberJpaRepository.findById(member.getId()).get();
         User user = userRepository.findByUsername(memberEntity.getRegistrationNumber().getValue()).get();
 
         // Verify user was created successfully (authorities are now in UserPermissions, not User)
@@ -120,7 +116,6 @@ class RegisterMemberAutoProvisioningTest {
     @Transactional
     void shouldCreateDifferentUsersForDifferentMembers() {
         // Create first member
-        UserId sharedId1 = UserId.newId();
         RegistrationNumber registrationNumber1 = RegistrationNumber.of("ZBM0001");
         Address address1 = Address.of("Street 3", "City 3", "30000", "CZ");
         EmailAddress email1 = EmailAddress.of("first@example.com");
@@ -139,7 +134,6 @@ class RegisterMemberAutoProvisioningTest {
         );
 
         // Create second member
-        UserId sharedId2 = UserId.newId();
         RegistrationNumber registrationNumber2 = RegistrationNumber.of("ZBM0002");
         Address address2 = Address.of("Street 4", "City 4", "40000", "CZ");
         EmailAddress email2 = EmailAddress.of("second@example.com");
@@ -159,11 +153,9 @@ class RegisterMemberAutoProvisioningTest {
 
         Member member1 = memberService.registerMember(command1);
         Member member2 = memberService.registerMember(command2);
-        UserId memberId1 = member1.getId().toUserId();
-        UserId memberId2 = member2.getId().toUserId();
 
-        var memberEntity1 = memberJpaRepository.findById(memberId1).get();
-        var memberEntity2 = memberJpaRepository.findById(memberId2).get();
+        var memberEntity1 = memberJpaRepository.findById(member1.getId()).get();
+        var memberEntity2 = memberJpaRepository.findById(member2.getId()).get();
 
         User user1 = userRepository.findByUsername(memberEntity1.getRegistrationNumber().getValue()).get();
         User user2 = userRepository.findByUsername(memberEntity2.getRegistrationNumber().getValue()).get();

@@ -1,6 +1,6 @@
 package com.klabis.events;
 
-import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.ValueObject;
 
@@ -25,7 +25,7 @@ public class EventRegistration {
 
     private final UUID id;
     @Association
-    private final UserId memberId;
+    private final MemberId memberId;
     private final SiCardNumber siCardNumber;
     private final Instant registeredAt;
 
@@ -37,7 +37,7 @@ public class EventRegistration {
      * @param siCardNumber SI card number for this registration
      * @param registeredAt timestamp when registration was created
      */
-    private EventRegistration(UUID id, UserId memberId, SiCardNumber siCardNumber, Instant registeredAt) {
+    private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, Instant registeredAt) {
         this.id = id;
         this.memberId = memberId;
         this.siCardNumber = siCardNumber;
@@ -54,7 +54,7 @@ public class EventRegistration {
      * @return new EventRegistration instance
      * @throws IllegalArgumentException if validation fails
      */
-    public static EventRegistration create(UserId memberId, SiCardNumber siCardNumber) {
+    public static EventRegistration create(MemberId memberId, SiCardNumber siCardNumber) {
         if (memberId == null) {
             throw new IllegalArgumentException("memberId is required");
         }
@@ -81,7 +81,7 @@ public class EventRegistration {
      * @param registeredAt registration timestamp
      * @return reconstructed EventRegistration instance
      */
-    public static EventRegistration reconstruct(UUID id, UserId memberId, SiCardNumber siCardNumber, Instant registeredAt) {
+    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, Instant registeredAt) {
         return new EventRegistration(id, memberId, siCardNumber, registeredAt);
     }
 
@@ -91,7 +91,7 @@ public class EventRegistration {
         return id;
     }
 
-    public UserId memberId() {
+    public MemberId memberId() {
         return memberId;
     }
 

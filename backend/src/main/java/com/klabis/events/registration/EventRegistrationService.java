@@ -1,6 +1,5 @@
 package com.klabis.events.registration;
 
-import com.klabis.common.users.UserId;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.EventRegistration;
@@ -56,19 +55,17 @@ class EventRegistrationService {
         Assert.notNull(eventId, "Event id must not be null");
         Assert.notNull(memberId, "Member id must not be null");
 
-        UserId userId = memberId.toUserId();
-
         // Load event
         Event event = eventRepository.findById(new EventId(eventId))
-                .orElseThrow(() -> new EventNotFoundException(eventId));
+                .orElseThrow(() -> new EventNotFoundException(new EventId(eventId)));
 
         // Check for duplicate registration
-        if (event.findRegistration(userId).isPresent()) {
-            throw new DuplicateRegistrationException(memberId.uuid(), eventId);
+        if (event.findRegistration(memberId).isPresent()) {
+            throw new DuplicateRegistrationException(memberId, new EventId(eventId));
         }
 
         // Register member (domain logic validates ACTIVE status)
-        event.registerMember(userId, SiCardNumber.of(command.siCardNumber()));
+        event.registerMember(memberId, SiCardNumber.of(command.siCardNumber()));
 
         // Save event
         eventRepository.save(event);
@@ -85,14 +82,14 @@ class EventRegistrationService {
      * @throws IllegalStateException         if current date is on or after event date
      */
     @Transactional
-    public void unregisterMember(UUID eventId, UserId memberId, LocalDate currentDate) {
+    public void unregisterMember(UUID eventId, MemberId memberId, LocalDate currentDate) {
         // Load event
         Event event = eventRepository.findById(new EventId(eventId))
-                .orElseThrow(() -> new EventNotFoundException(eventId));
+                .orElseThrow(() -> new EventNotFoundException(new EventId(eventId)));
 
         // Check if member is registered
         if (event.findRegistration(memberId).isEmpty()) {
-            throw new RegistrationNotFoundException(memberId.uuid(), eventId);
+            throw new RegistrationNotFoundException(memberId, new EventId(eventId));
         }
 
         // Unregister member (domain logic validates date)
@@ -113,7 +110,7 @@ class EventRegistrationService {
     public List<RegistrationDto> listRegistrations(UUID eventId) {
         // Load event
         Event event = eventRepository.findById(new EventId(eventId))
-                .orElseThrow(() -> new EventNotFoundException(eventId));
+                .orElseThrow(() -> new EventNotFoundException(new EventId(eventId)));
 
         // Map registrations to DTOs (without SI card numbers)
         return event.getRegistrations().stream()
@@ -131,14 +128,14 @@ class EventRegistrationService {
      * @throws RegistrationNotFoundException if member not registered
      */
     @Transactional(readOnly = true)
-    public OwnRegistrationDto getOwnRegistration(UUID eventId, UserId memberId) {
+    public OwnRegistrationDto getOwnRegistration(UUID eventId, MemberId memberId) {
         // Load event
         Event event = eventRepository.findById(new EventId(eventId))
-                .orElseThrow(() -> new EventNotFoundException(eventId));
+                .orElseThrow(() -> new EventNotFoundException(new EventId(eventId)));
 
         // Find member's registration
         EventRegistration registration = event.findRegistration(memberId)
-                .orElseThrow(() -> new RegistrationNotFoundException(memberId.uuid(), eventId));
+                .orElseThrow(() -> new RegistrationNotFoundException(memberId, new EventId(eventId)));
 
         // Map to DTO with SI card number
         return toOwnRegistrationDto(registration);
@@ -154,7 +151,7 @@ class EventRegistrationService {
      */
     private RegistrationDto toRegistrationDto(EventRegistration registration) {
         // Lookup member details from members module
-        MemberDto member = members.findByUserId(registration.memberId())
+        MemberDto member = members.findById(registration.memberId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Member not found for registration: " + registration.memberId()));
 
@@ -173,7 +170,7 @@ class EventRegistrationService {
      */
     private OwnRegistrationDto toOwnRegistrationDto(EventRegistration registration) {
         // Lookup member details from members module
-        MemberDto member = members.findByUserId(registration.memberId())
+        MemberDto member = members.findById(registration.memberId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Member not found for registration: " + registration.memberId()));
 

@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.jdbc;
 
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberAssert;
+import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import org.jmolecules.ddd.annotation.Repository;
@@ -225,7 +226,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getUserId());
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
 
             // Then
             assertThat(foundMember).isPresent();
@@ -238,7 +239,7 @@ class MemberRepositoryTest {
         @DisplayName("should return empty when member not found")
         void shouldReturnEmptyWhenMemberNotFound() {
             // Given
-            UserId nonExistentId = new UserId(UUID.randomUUID());
+            MemberId nonExistentId = new MemberId(UUID.randomUUID());
 
             // When
             Optional<Member> foundMember = memberRepository.findById(nonExistentId);
@@ -272,7 +273,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getUserId());
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
 
             // Then
             assertThat(foundMember).isPresent();
@@ -784,7 +785,7 @@ class MemberRepositoryTest {
             Member savedUpdatedMember = memberRepository.save(savedMember);
 
             // Then
-            Optional<Member> foundMember = memberRepository.findById(savedUpdatedMember.getUserId());
+            Optional<Member> foundMember = memberRepository.findById(savedUpdatedMember.getId());
             assertThat(foundMember).isPresent();
             assertThat(foundMember.get().getEmail().value()).isEqualTo("new@example.com");
         }
@@ -871,7 +872,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getUserId());
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
 
             // Then
             assertThat(foundMember).isPresent();
@@ -1035,7 +1036,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // When
-            Optional<Member> foundMember = memberRepository.findById(savedMember.getUserId());
+            Optional<Member> foundMember = memberRepository.findById(savedMember.getId());
 
             // Then
             assertThat(foundMember).isPresent();
@@ -1136,7 +1137,7 @@ class MemberRepositoryTest {
             Member savedMember = memberRepository.save(member);
 
             // And load from database
-            Optional<Member> loadedMember = memberRepository.findById(savedMember.getUserId());
+            Optional<Member> loadedMember = memberRepository.findById(savedMember.getId());
 
             // Then - verify termination fields persisted correctly
             assertThat(loadedMember).isPresent();

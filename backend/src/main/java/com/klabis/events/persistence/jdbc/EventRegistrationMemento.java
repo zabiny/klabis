@@ -1,7 +1,7 @@
 package com.klabis.events.persistence.jdbc;
 
-import com.klabis.common.users.UserId;
 import com.klabis.events.EventRegistration;
+import com.klabis.members.MemberId;
 import com.klabis.events.SiCardNumber;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -67,7 +67,7 @@ class EventRegistrationMemento {
     EventRegistration toEventRegistration() {
         return EventRegistration.reconstruct(
                 this.id,
-                new UserId(this.memberId),
+                new MemberId(this.memberId),
                 new SiCardNumber(this.siCardNumber),
                 this.registeredAt
         );

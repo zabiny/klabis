@@ -1,15 +1,15 @@
 package com.klabis.events.registration;
 
 import com.klabis.common.exceptions.ResourceNotFoundException;
-
-import java.util.UUID;
+import com.klabis.events.EventId;
+import com.klabis.members.MemberId;
 
 /**
  * Exception thrown when a registration is not found.
  */
 class RegistrationNotFoundException extends ResourceNotFoundException {
 
-    public RegistrationNotFoundException(UUID memberId, UUID eventId) {
-        super("Member " + memberId + " is not registered for event " + eventId);
+    public RegistrationNotFoundException(MemberId memberId, EventId eventId) {
+        super("Member " + memberId.uuid() + " is not registered for event " + eventId.value());
     }
 }

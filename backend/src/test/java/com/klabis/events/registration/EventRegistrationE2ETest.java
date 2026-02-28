@@ -90,8 +90,7 @@ class EventRegistrationE2ETest {
                         get("/api/events/{id}/registrations/me", publishedEventId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(
-                                        JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_MEMBER_ID))
+                                        member(TEST_MEMBER_ID)
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -107,8 +106,7 @@ class EventRegistrationE2ETest {
                         get("/api/events/{id}/registrations", publishedEventId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(
-                                        JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_MEMBER_ID))
+                                        member(TEST_MEMBER_ID)
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -124,8 +122,7 @@ class EventRegistrationE2ETest {
                         delete("/api/events/{id}/registrations", publishedEventId)
                                 .contentType("application/json")
                                 .with(klabisAuthentication(
-                                        JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_MEMBER_ID))
+                                        member(TEST_MEMBER_ID)
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )
@@ -137,8 +134,7 @@ class EventRegistrationE2ETest {
                         get("/api/events/{id}/registrations/me", publishedEventId)
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                 .with(klabisAuthentication(
-                                        JwtParams.jwtTokenParams("11111111-1111-1111-1111-111111111111",
-                                                        new UserId(TEST_MEMBER_ID))
+                                        member(TEST_MEMBER_ID)
                                                 .withAuthorities(Authority.EVENTS_MANAGE)
                                 ))
                 )

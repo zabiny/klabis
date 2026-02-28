@@ -1,8 +1,7 @@
 package com.klabis.events.management;
 
 import com.klabis.common.exceptions.ResourceNotFoundException;
-
-import java.util.UUID;
+import com.klabis.events.EventId;
 
 /**
  * Exception thrown when an event cannot be found by ID.
@@ -16,7 +15,7 @@ class EventNotFoundException extends ResourceNotFoundException {
      *
      * @param eventId the ID of the event that was not found
      */
-    public EventNotFoundException(UUID eventId) {
+    public EventNotFoundException(EventId eventId) {
         super("Event not found with ID: " + eventId);
     }
 }

@@ -1,6 +1,6 @@
 package com.klabis.members.domain;
 
-import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.Port;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,10 +21,10 @@ public interface MemberRepository {
     /**
      * Find a member by their unique ID.
      *
-     * @param id the member's user ID
+     * @param id the member's ID
      * @return optional containing the member if found
      */
-    Optional<Member> findById(UserId id);
+    Optional<Member> findById(MemberId id);
 
     /**
      * Find a member by their registration number.

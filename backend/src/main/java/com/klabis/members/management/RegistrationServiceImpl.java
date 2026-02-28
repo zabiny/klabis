@@ -3,6 +3,7 @@ package com.klabis.members.management;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
@@ -33,7 +34,7 @@ import java.time.LocalDate;
  * triggering the password setup email to be sent asynchronously by the members module.
  */
 @Service
-class RegistrationServiceImpl implements RegistrationService {
+public class RegistrationServiceImpl implements RegistrationService {
 
     private static final Logger log = LoggerFactory.getLogger(RegistrationServiceImpl.class);
 
@@ -69,17 +70,17 @@ class RegistrationServiceImpl implements RegistrationService {
         log.debug("Generated registration number: {} for date of birth: {}",
                 registrationNumber.getValue(), dateOfBirth);
 
-        UserId sharedId = userService.createUser(
+        UserId sharedUserId = userService.createUser(
                 registrationNumber.getValue(),
                 command.email().value(),
                 Authority.getStandardUserAuthorities()
         );
 
         log.debug("User created with shared ID: {} for username: {}",
-                sharedId, registrationNumber.getValue());
+                sharedUserId, registrationNumber.getValue());
 
         Member.RegisterMember domainCommand = new Member.RegisterMember(
-                sharedId,
+                MemberId.fromUserId(sharedUserId),
                 registrationNumber,
                 command.personalInformation(),
                 command.address(),

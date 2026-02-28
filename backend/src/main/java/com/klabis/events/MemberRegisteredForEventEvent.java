@@ -1,6 +1,6 @@
 package com.klabis.events;
 
-import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -13,14 +13,14 @@ import java.util.Objects;
 public class MemberRegisteredForEventEvent {
 
     private final EventId eventId;
-    private final UserId memberId;
+    private final MemberId memberId;
     private final Instant occurredAt;
 
-    public MemberRegisteredForEventEvent(EventId eventId, UserId memberId) {
+    public MemberRegisteredForEventEvent(EventId eventId, MemberId memberId) {
         this(eventId, memberId, Instant.now());
     }
 
-    public MemberRegisteredForEventEvent(EventId eventId, UserId memberId, Instant occurredAt) {
+    public MemberRegisteredForEventEvent(EventId eventId, MemberId memberId, Instant occurredAt) {
         this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
         this.memberId = Objects.requireNonNull(memberId, "Member ID is required");
         this.occurredAt = Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
@@ -30,7 +30,7 @@ public class MemberRegisteredForEventEvent {
         return eventId;
     }
 
-    public UserId memberId() {
+    public MemberId memberId() {
         return memberId;
     }
 

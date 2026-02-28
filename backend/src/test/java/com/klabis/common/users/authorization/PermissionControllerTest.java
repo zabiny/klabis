@@ -6,6 +6,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.AuthorizationPolicy;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserPermissions;
+import com.klabis.common.users.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,9 @@ class PermissionControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private UserService userService;
 
     @MockitoBean
     private PermissionService permissionService;

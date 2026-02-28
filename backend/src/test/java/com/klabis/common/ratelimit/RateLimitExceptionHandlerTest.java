@@ -1,6 +1,7 @@
 package com.klabis.common.ratelimit;
 
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.users.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -27,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ErrorHandlingTestController.class)
 @ActiveProfiles("test")
 @Import(EncryptionConfiguration.class)
-@MockitoBean(types = UserDetailsService.class)
+@MockitoBean(types = {UserDetailsService.class, UserService.class})
 class RateLimitExceptionHandlerTest {
 
     @Autowired

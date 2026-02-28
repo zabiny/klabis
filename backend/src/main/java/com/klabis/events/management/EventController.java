@@ -4,6 +4,7 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.authorization.HasAuthority;
 import com.klabis.events.Event;
+import com.klabis.events.EventId;
 import com.klabis.events.EventStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -79,7 +80,7 @@ public class EventController {
             @Valid @RequestBody CreateEventCommand command) {
 
         UUID eventId = eventManagementService.createEvent(command);
-        EventDto eventDto = eventManagementService.getEvent(eventId);
+        EventDto eventDto = eventManagementService.getEvent(new EventId(eventId));
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
         addLinksForEvent(entityModel, eventDto);
@@ -112,8 +113,9 @@ public class EventController {
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @Parameter(description = "Event update data") @Valid @RequestBody UpdateEventCommand command) {
 
-        eventManagementService.updateEvent(id, command);
-        EventDto eventDto = eventManagementService.getEvent(id);
+        EventId eventId = new EventId(id);
+        eventManagementService.updateEvent(eventId, command);
+        EventDto eventDto = eventManagementService.getEvent(eventId);
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
         addLinksForEvent(entityModel, eventDto);
@@ -140,7 +142,7 @@ public class EventController {
     public ResponseEntity<EntityModel<EventDto>> getEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        EventDto eventDto = eventManagementService.getEvent(id);
+        EventDto eventDto = eventManagementService.getEvent(new EventId(id));
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
         addLinksForEvent(entityModel, eventDto);
@@ -241,8 +243,9 @@ public class EventController {
     public ResponseEntity<EntityModel<EventDto>> publishEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        eventManagementService.publishEvent(id);
-        EventDto eventDto = eventManagementService.getEvent(id);
+        EventId eventId = new EventId(id);
+        eventManagementService.publishEvent(eventId);
+        EventDto eventDto = eventManagementService.getEvent(eventId);
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
         addLinksForEvent(entityModel, eventDto);
@@ -268,8 +271,9 @@ public class EventController {
     public ResponseEntity<EntityModel<EventDto>> cancelEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        eventManagementService.cancelEvent(id);
-        EventDto eventDto = eventManagementService.getEvent(id);
+        EventId eventId = new EventId(id);
+        eventManagementService.cancelEvent(eventId);
+        EventDto eventDto = eventManagementService.getEvent(eventId);
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
         addLinksForEvent(entityModel, eventDto);
@@ -295,8 +299,9 @@ public class EventController {
     public ResponseEntity<EntityModel<EventDto>> finishEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        eventManagementService.finishEvent(id);
-        EventDto eventDto = eventManagementService.getEvent(id);
+        EventId eventId = new EventId(id);
+        eventManagementService.finishEvent(eventId);
+        EventDto eventDto = eventManagementService.getEvent(eventId);
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
         addLinksForEvent(entityModel, eventDto);

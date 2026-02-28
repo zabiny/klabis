@@ -1,7 +1,7 @@
 package com.klabis.members.management;
 
-import com.klabis.common.users.UserId;
 import com.klabis.members.MemberDto;
+import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
@@ -22,7 +22,7 @@ class MembersImpl implements Members {
     }
 
     @Override
-    public Optional<MemberDto> findByUserId(UserId memberId) {
+    public Optional<MemberDto> findById(MemberId memberId) {
         return memberRepository.findById(memberId).map(this::fromMember);
     }
 

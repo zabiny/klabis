@@ -1,6 +1,6 @@
 package com.klabis.events;
 
-import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ class EventRegistrationTest {
         @DisplayName("should create registration with all required fields and timestamp")
         void shouldCreateRegistrationWithAllRequiredFieldsAndTimestamp() {
             // Arrange
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             Instant beforeCreation = Instant.now();
 
@@ -51,7 +51,7 @@ class EventRegistrationTest {
         @DisplayName("should generate unique ID for each registration")
         void shouldGenerateUniqueIdForEachRegistration() {
             // Arrange
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
             // Act
@@ -78,7 +78,7 @@ class EventRegistrationTest {
         @DisplayName("should fail when siCardNumber is null")
         void shouldFailWhenSiCardNumberIsNull() {
             // Arrange
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act & Assert
             assertThatThrownBy(() -> EventRegistration.create(memberId, null))
@@ -96,7 +96,7 @@ class EventRegistrationTest {
         void shouldBeEqualWhenIdsAreSame() {
             // Arrange
             UUID id = UUID.randomUUID();
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             Instant registeredAt = Instant.now();
 
@@ -113,7 +113,7 @@ class EventRegistrationTest {
         @DisplayName("should not be equal when IDs are different")
         void shouldNotBeEqualWhenIdsAreDifferent() {
             // Arrange
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             Instant registeredAt = Instant.now();
 

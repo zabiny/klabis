@@ -24,7 +24,7 @@ import java.util.Set;
 @Slf4j
 @Service
 @Transactional
-class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserPermissionsRepository userPermissionsRepository;

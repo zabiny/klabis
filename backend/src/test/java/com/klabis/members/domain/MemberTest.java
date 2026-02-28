@@ -2,6 +2,7 @@ package com.klabis.members.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberReactivatedEvent;
@@ -52,7 +53,7 @@ class MemberTest {
                     "CZ",
                     Gender.MALE
             );
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act
             Member.RegisterMember command = new Member.RegisterMember(
@@ -129,7 +130,7 @@ class MemberTest {
                     "CZ",
                     Gender.FEMALE
             );
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act
             Member.RegisterMember command = new Member.RegisterMember(
@@ -196,7 +197,7 @@ class MemberTest {
             );
 
             Member.RegisterMember command = new Member.RegisterMember(
-                    new UserId(UUID.randomUUID()),
+                    new MemberId(UUID.randomUUID()),
                     registrationNumber,
                     PersonalInformation.of("Anna", "Novakova", dateOfBirth, "CZ", Gender.FEMALE),
                     address,
@@ -235,7 +236,7 @@ class MemberTest {
                     Gender.FEMALE
             );
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act & Assert - register() validates business rules
             assertThatThrownBy(() -> {
@@ -270,7 +271,7 @@ class MemberTest {
                     "CZ",
                     Gender.MALE
             );
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act & Assert
             assertThatThrownBy(() -> {
@@ -306,7 +307,7 @@ class MemberTest {
                     "CZ",
                     Gender.MALE
             );
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act & Assert
             assertThatThrownBy(() -> {
@@ -342,7 +343,7 @@ class MemberTest {
                     "CZ",
                     Gender.MALE
             );
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act & Assert
             assertThatThrownBy(() -> {
@@ -387,7 +388,7 @@ class MemberTest {
                     "CZ",
                     Gender.FEMALE
             );
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act
             Member.RegisterMember command = new Member.RegisterMember(
@@ -414,7 +415,7 @@ class MemberTest {
             Address address = new Address("Ulice 1", "Město", "11000", "CZ");
             EmailAddress email = new EmailAddress("test@example.com");
             PhoneNumber phone = new PhoneNumber("+420123456789");
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             assertThatThrownBy(() -> {
                 PersonalInformation personalInformation = PersonalInformation.of(
@@ -448,7 +449,7 @@ class MemberTest {
             Address address = new Address("Ulice 1", "Město", "11000", "CZ");
             EmailAddress email = new EmailAddress("test@example.com");
             PhoneNumber phone = new PhoneNumber("+420123456789");
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             assertThatThrownBy(() -> {
                 PersonalInformation personalInformation = PersonalInformation.of(
@@ -482,7 +483,7 @@ class MemberTest {
             Address address = new Address("Ulice 1", "Město", "11000", "CZ");
             EmailAddress email = new EmailAddress("test@example.com");
             PhoneNumber phone = new PhoneNumber("+420123456789");
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             assertThatThrownBy(() -> {
                 PersonalInformation personalInformation = PersonalInformation.of(

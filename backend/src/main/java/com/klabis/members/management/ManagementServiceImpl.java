@@ -1,8 +1,8 @@
 package com.klabis.members.management;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
@@ -10,8 +10,6 @@ import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 /**
  * Service for member update operations.
@@ -21,7 +19,7 @@ import java.util.UUID;
  */
 @Service
 @PrimaryPort
-class ManagementServiceImpl implements ManagementService {
+public class ManagementServiceImpl implements ManagementService {
 
     private static final Logger log = LoggerFactory.getLogger(ManagementServiceImpl.class);
 
@@ -35,7 +33,7 @@ class ManagementServiceImpl implements ManagementService {
 
     @Transactional
     @Override
-    public Member updateMember(UUID memberId, Member.SelfUpdate command) {
+    public Member updateMember(MemberId memberId, Member.SelfUpdate command) {
         Member member = loadMember(memberId);
         member.handle(command);
         Member saved = memberRepository.save(member);
@@ -45,7 +43,7 @@ class ManagementServiceImpl implements ManagementService {
 
     @Transactional
     @Override
-    public Member updateMember(UUID memberId, Member.UpdateMemberByAdmin command) {
+    public Member updateMember(MemberId memberId, Member.UpdateMemberByAdmin command) {
         Member member = loadMember(memberId);
         member.handle(command);
         Member saved = memberRepository.save(member);
@@ -55,7 +53,7 @@ class ManagementServiceImpl implements ManagementService {
 
     @Transactional
     @Override
-    public Member terminateMember(UUID memberId, Member.TerminateMembership command) {
+    public Member terminateMember(MemberId memberId, Member.TerminateMembership command) {
         Member member = loadMember(memberId);
 
         log.info("Processing membership termination: memberId={}, reason={}", memberId, command.reason());
@@ -79,7 +77,7 @@ class ManagementServiceImpl implements ManagementService {
 
     @Transactional
     @Override
-    public Member reactivateMember(UUID memberId, Member.ReactivateMembership command) {
+    public Member reactivateMember(MemberId memberId, Member.ReactivateMembership command) {
         Member member = loadMember(memberId);
 
         log.info("Processing membership reactivation: memberId={}", memberId);
@@ -100,8 +98,8 @@ class ManagementServiceImpl implements ManagementService {
         return saved;
     }
 
-    private Member loadMember(UUID memberId) {
-        return memberRepository.findById(new UserId(memberId))
+    private Member loadMember(MemberId memberId) {
+        return memberRepository.findById(memberId)
                 .orElseThrow(() -> new InvalidUpdateException("Member not found with ID: " + memberId));
     }
 }

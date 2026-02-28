@@ -124,9 +124,10 @@ class MemberController {
             @Valid @RequestBody UpdateMemberRequest request,
             Authentication authentication) {
 
+        MemberId memberId = new MemberId(id);
         if (hasAuthority(authentication, Authority.MEMBERS_UPDATE)) {
             var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request);
-            managementService.updateMember(id, adminCommand);
+            managementService.updateMember(memberId, adminCommand);
         } else {
             UserId currentUserId = extractUserId(authentication);
             if (!currentUserId.uuid().equals(id)) {
@@ -135,7 +136,7 @@ class MemberController {
                                 "You can only edit your own information"), null);
             }
             var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
-            managementService.updateMember(id, selfCommand);
+            managementService.updateMember(memberId, selfCommand);
         }
         return ResponseEntity.noContent().build();
     }
@@ -171,7 +172,7 @@ class MemberController {
             @CurrentUser UserId currentUserId) {
 
         var command = new Member.ReactivateMembership(currentUserId);
-        managementService.reactivateMember(id, command);
+        managementService.reactivateMember(new MemberId(id), command);
         return ResponseEntity.noContent()
                 .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
                 .build();
@@ -218,7 +219,7 @@ class MemberController {
                 request.note().orElse(null)
         );
 
-        managementService.terminateMember(id, command);
+        managementService.terminateMember(new MemberId(id), command);
         return ResponseEntity.noContent()
                 .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
                 .build();
@@ -312,8 +313,9 @@ class MemberController {
     public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id) {
 
-        Member member = memberRepository.findById(new UserId(id))
-                .orElseThrow(() -> new MemberNotFoundException(new MemberId(id)));
+        MemberId memberId = new MemberId(id);
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
 
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);

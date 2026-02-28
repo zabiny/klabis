@@ -2,6 +2,7 @@ package com.klabis.members.management;
 
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.members.MemberId;
 import com.klabis.members.MemberReactivatedEvent;
 import com.klabis.members.MemberTerminatedEvent;
 import com.klabis.members.MemberTestDataBuilder;
@@ -74,10 +75,10 @@ class ManagementServiceTest {
                     BirthNumber.of("900101/1234")
             );
 
-            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Member result = testedSubject.updateMember(testMemberId, command);
+            Member result = testedSubject.updateMember(new MemberId(testMemberId), command);
 
             assertThat(result.getId().uuid()).isEqualTo(testMemberId);
             verify(memberRepository).save(any(Member.class));
@@ -93,10 +94,10 @@ class ManagementServiceTest {
                     null, null, null, null, null
             );
 
-            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Member result = testedSubject.updateMember(testMemberId, command);
+            Member result = testedSubject.updateMember(new MemberId(testMemberId), command);
 
             assertThat(result.getId().uuid()).isEqualTo(testMemberId);
             verify(memberRepository).save(any(Member.class));
@@ -115,10 +116,10 @@ class ManagementServiceTest {
                     null, null, null, null, null, null, null, null, null, null, null
             );
 
-            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Member result = testedSubject.updateMember(testMemberId, command);
+            Member result = testedSubject.updateMember(new MemberId(testMemberId), command);
 
             assertThat(result.getId().uuid()).isEqualTo(testMemberId);
             verify(memberRepository).save(any(Member.class));
@@ -159,13 +160,13 @@ class ManagementServiceTest {
                         Optional.of("Member requested resignation")
                 );
 
-                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(testMemberId, command);
+                Member result = testedSubject.terminateMember(new MemberId(testMemberId), command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -191,7 +192,7 @@ class ManagementServiceTest {
                         Optional.of("Member requested resignation")
                 );
 
-                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
                 // UserService.suspendUser should be called even if User doesn't exist (graceful handling)
                 doNothing().when(userService).suspendUser(any(UserId.class));
@@ -199,7 +200,7 @@ class ManagementServiceTest {
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(testMemberId, command);
+                Member result = testedSubject.terminateMember(new MemberId(testMemberId), command);
 
                 assertThat(result.isActive()).isFalse();
                 verify(userService).suspendUser(testActiveMember.getId().toUserId());
@@ -212,13 +213,13 @@ class ManagementServiceTest {
                         DeactivationReason.PRESTUP, Optional.empty()
                 );
 
-                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                Member result = testedSubject.terminateMember(testMemberId, command);
+                Member result = testedSubject.terminateMember(new MemberId(testMemberId), command);
 
                 assertThat(result.getId().uuid()).isEqualTo(testMemberId);
 
@@ -237,13 +238,13 @@ class ManagementServiceTest {
                         DeactivationReason.OTHER, Optional.of("Administrative decision")
                 );
 
-                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), request.reason(), request.note().orElse(null)
                 );
-                testedSubject.terminateMember(testMemberId, command);
+                testedSubject.terminateMember(new MemberId(testMemberId), command);
 
                 ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
                 verify(memberRepository).save(captor.capture());
@@ -255,7 +256,7 @@ class ManagementServiceTest {
                 assertThat(event).isInstanceOf(MemberTerminatedEvent.class);
 
                 MemberTerminatedEvent terminationEvent = (MemberTerminatedEvent) event;
-                assertThat(terminationEvent.getMemberId()).isEqualTo(new UserId(testMemberId));
+                assertThat(terminationEvent.getMemberId()).isEqualTo(new MemberId(testMemberId));
                 assertThat(terminationEvent.getReason()).isEqualTo(DeactivationReason.OTHER);
                 assertThat(terminationEvent.getTerminatedBy()).isEqualTo(new UserId(adminUserId));
                 assertThat(terminationEvent.getNote()).isEqualTo("Administrative decision");
@@ -281,12 +282,12 @@ class ManagementServiceTest {
                         .terminated(DeactivationReason.ODHLASKA, "Previous termination")
                         .build();
 
-                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(terminatedMember));
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(terminatedMember));
 
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.OTHER, "Second termination attempt"
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(new MemberId(testMemberId), command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member is already terminated");
 
@@ -301,14 +302,14 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should handle concurrent termination attempts with optimistic locking")
             void shouldHandleConcurrentTerminationAttempts() {
-                when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testActiveMember));
+                when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class)))
                         .thenThrow(new OptimisticLockingFailureException("Concurrent modification detected"));
 
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.PRESTUP, null
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(testMemberId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(new MemberId(testMemberId), command))
                         .isInstanceOf(OptimisticLockingFailureException.class);
 
                 verify(memberRepository).save(any(Member.class));
@@ -324,12 +325,12 @@ class ManagementServiceTest {
             void shouldThrowExceptionWhenTerminatingNonExistentMember() {
                 UUID nonExistentId = UUID.randomUUID();
 
-                when(memberRepository.findById(new UserId(nonExistentId))).thenReturn(Optional.empty());
+                when(memberRepository.findById(new MemberId(nonExistentId))).thenReturn(Optional.empty());
 
                 var command = new Member.TerminateMembership(
                         new UserId(adminUserId), DeactivationReason.ODHLASKA, null
                 );
-                assertThatThrownBy(() -> testedSubject.terminateMember(nonExistentId, command))
+                assertThatThrownBy(() -> testedSubject.terminateMember(new MemberId(nonExistentId), command))
                         .isInstanceOf(InvalidUpdateException.class)
                         .hasMessageContaining("Member not found");
 
@@ -366,11 +367,11 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should reactivate terminated member successfully")
         void shouldReactivateTerminatedMemberSuccessfully() {
-            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
             var command = new Member.ReactivateMembership(new UserId(adminUserId));
-            Member result = testedSubject.reactivateMember(testMemberId, command);
+            Member result = testedSubject.reactivateMember(new MemberId(testMemberId), command);
 
             assertThat(result.isActive()).isTrue();
             verify(userService).reactivateUser(testTerminatedMember.getId().toUserId());
@@ -390,10 +391,10 @@ class ManagementServiceTest {
                     .withNoGuardian()
                     .build();
 
-            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(activeMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(activeMember));
 
             var command = new Member.ReactivateMembership(new UserId(adminUserId));
-            assertThatThrownBy(() -> testedSubject.reactivateMember(testMemberId, command))
+            assertThatThrownBy(() -> testedSubject.reactivateMember(new MemberId(testMemberId), command))
                     .isInstanceOf(InvalidUpdateException.class)
                     .hasMessageContaining("already active");
 
@@ -404,13 +405,13 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should handle missing User account gracefully during reactivation")
         void shouldHandleMissingUserAccountGracefully() {
-            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
             // UserService.reactivateUser should be called even if User doesn't exist (graceful handling)
             doNothing().when(userService).reactivateUser(any(UserId.class));
 
             var command = new Member.ReactivateMembership(new UserId(adminUserId));
-            Member result = testedSubject.reactivateMember(testMemberId, command);
+            Member result = testedSubject.reactivateMember(new MemberId(testMemberId), command);
 
             assertThat(result.isActive()).isTrue();
             verify(userService).reactivateUser(testTerminatedMember.getId().toUserId());
@@ -419,11 +420,11 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should publish MemberReactivatedEvent on successful reactivation")
         void shouldPublishMemberReactivatedEventOnSuccessfulReactivation() {
-            when(memberRepository.findById(new UserId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testTerminatedMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
             var command = new Member.ReactivateMembership(new UserId(adminUserId));
-            testedSubject.reactivateMember(testMemberId, command);
+            testedSubject.reactivateMember(new MemberId(testMemberId), command);
 
             ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
             verify(memberRepository).save(captor.capture());
@@ -435,7 +436,7 @@ class ManagementServiceTest {
             assertThat(event).isInstanceOf(MemberReactivatedEvent.class);
 
             MemberReactivatedEvent reactivationEvent = (MemberReactivatedEvent) event;
-            assertThat(reactivationEvent.getMemberId()).isEqualTo(new UserId(testMemberId));
+            assertThat(reactivationEvent.getMemberId()).isEqualTo(new MemberId(testMemberId));
             assertThat(reactivationEvent.getReactivatedBy()).isEqualTo(new UserId(adminUserId));
             assertThat(reactivationEvent.getRegistrationNumber()).isEqualTo(testTerminatedMember.getRegistrationNumber());
         }

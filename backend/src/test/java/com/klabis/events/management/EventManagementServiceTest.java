@@ -151,7 +151,7 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            service.updateEvent(eventId.value(), command);
+            service.updateEvent(eventId, command);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -185,7 +185,7 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            service.updateEvent(eventId.value(), command);
+            service.updateEvent(eventId, command);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -219,7 +219,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             // When & Then
-            assertThatThrownBy(() -> service.updateEvent(eventId.value(), command))
+            assertThatThrownBy(() -> service.updateEvent(eventId, command))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("FINISHED");
         }
@@ -251,7 +251,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             // When & Then
-            assertThatThrownBy(() -> service.updateEvent(eventId.value(), command))
+            assertThatThrownBy(() -> service.updateEvent(eventId, command))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("CANCELLED");
         }
@@ -273,7 +273,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> service.updateEvent(eventId, command))
+            assertThatThrownBy(() -> service.updateEvent(new EventId(eventId), command))
                     .isInstanceOf(EventNotFoundException.class);
         }
     }
@@ -300,7 +300,7 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            service.publishEvent(eventId.value());
+            service.publishEvent(eventId);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -314,7 +314,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> service.publishEvent(eventId))
+            assertThatThrownBy(() -> service.publishEvent(new EventId(eventId)))
                     .isInstanceOf(EventNotFoundException.class);
         }
     }
@@ -341,7 +341,7 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            service.cancelEvent(eventId.value());
+            service.cancelEvent(eventId);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -366,7 +366,7 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            service.cancelEvent(eventId.value());
+            service.cancelEvent(eventId);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -380,7 +380,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> service.cancelEvent(eventId))
+            assertThatThrownBy(() -> service.cancelEvent(new EventId(eventId)))
                     .isInstanceOf(EventNotFoundException.class);
         }
     }
@@ -408,7 +408,7 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            service.finishEvent(eventId.value());
+            service.finishEvent(eventId);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -422,7 +422,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> service.finishEvent(eventId))
+            assertThatThrownBy(() -> service.finishEvent(new EventId(eventId)))
                     .isInstanceOf(EventNotFoundException.class);
         }
     }
@@ -448,7 +448,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             // When
-            EventDto result = service.getEvent(eventId.value());
+            EventDto result = service.getEvent(eventId);
 
             // Then
             assertThat(result).isNotNull();
@@ -466,7 +466,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> service.getEvent(eventId))
+            assertThatThrownBy(() -> service.getEvent(new EventId(eventId)))
                     .isInstanceOf(EventNotFoundException.class);
         }
     }

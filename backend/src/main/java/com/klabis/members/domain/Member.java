@@ -67,7 +67,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * (e.g., User aggregate) to ensure both aggregates use the same identifier.
      */
     public record RegisterMember(
-            UserId id,
+            MemberId id,
             RegistrationNumber registrationNumber,
             PersonalInformation personalInformation,
             Address address,
@@ -151,7 +151,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     // ========== Constructors ==========
 
     private Member(
-            UserId id,
+            MemberId id,
             RegistrationNumber registrationNumber,
             PersonalInformation personalInformation,
             Address address,
@@ -172,7 +172,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             String deactivationNote,
             String deactivatedBy) {
 
-        this.id = MemberId.fromUserId(id);
+        this.id = id;
         this.registrationNumber = registrationNumber;
         this.personalInformation = personalInformation;
         this.address = address;
@@ -227,7 +227,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @return reconstructed Member instance
      */
     public static Member reconstruct(
-            UserId id,
+            MemberId id,
             RegistrationNumber registrationNumber,
             PersonalInformation personalInformation,
             Address address,

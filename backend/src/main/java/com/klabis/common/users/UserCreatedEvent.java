@@ -33,7 +33,7 @@ import java.util.UUID;
 public class UserCreatedEvent {
 
     private final UUID eventId;
-    private final UUID userId;
+    private final UserId userId;
     private final String username;
     private final AccountStatus accountStatus;
     private final Instant occurredAt;
@@ -47,7 +47,7 @@ public class UserCreatedEvent {
      * @param accountStatus the user's account status
      */
     public UserCreatedEvent(
-            UUID userId,
+            UserId userId,
             String username,
             AccountStatus accountStatus) {
         this(
@@ -72,7 +72,7 @@ public class UserCreatedEvent {
      */
     public UserCreatedEvent(
             UUID eventId,
-            UUID userId,
+            UserId userId,
             String username,
             AccountStatus accountStatus,
             Instant occurredAt) {
@@ -99,7 +99,7 @@ public class UserCreatedEvent {
      */
     public UserCreatedEvent(
             UUID eventId,
-            UUID userId,
+            UserId userId,
             String username,
             AccountStatus accountStatus,
             Instant occurredAt,
@@ -121,7 +121,7 @@ public class UserCreatedEvent {
      */
     public static UserCreatedEvent fromUser(User user) {
         return new UserCreatedEvent(
-                user.getId().uuid(),  // Extract UUID from UserId
+                user.getId(),
                 user.getUsername(),
                 user.getAccountStatus()
         );
@@ -138,7 +138,7 @@ public class UserCreatedEvent {
     public static UserCreatedEvent fromUserWithEmail(User user, String email) {
         return new UserCreatedEvent(
                 UUID.randomUUID(),  // Generate unique event ID
-                user.getId().uuid(),  // Extract UUID from UserId
+                user.getId(),
                 user.getUsername(),
                 user.getAccountStatus(),
                 Instant.now(),  // Use current time
@@ -158,7 +158,7 @@ public class UserCreatedEvent {
         return eventId;
     }
 
-    public UUID getUserId() {
+    public UserId getUserId() {
         return userId;
     }
 

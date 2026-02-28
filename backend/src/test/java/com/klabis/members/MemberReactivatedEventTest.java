@@ -46,7 +46,7 @@ class MemberReactivatedEventTest {
         MemberReactivatedEvent event = MemberReactivatedEvent.fromMember(member, command);
 
         // Then
-        assertThat(event.getMemberId()).isEqualTo(member.getId().toUserId());
+        assertThat(event.getMemberId()).isEqualTo(member.getId());
         assertThat(event.getRegistrationNumber()).isEqualTo(member.getRegistrationNumber());
         assertThat(event.getReactivatedBy()).isEqualTo(reactivatedBy);
         assertThat(event.getReactivatedAt()).isNotNull();
@@ -57,7 +57,7 @@ class MemberReactivatedEventTest {
     @DisplayName("should validate required fields")
     void shouldValidateRequiredFields() {
         // Given
-        UserId memberId = new UserId(UUID.randomUUID());
+        MemberId memberId = new MemberId(UUID.randomUUID());
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
         Instant now = Instant.now();
         UserId reactivatedBy = new UserId(UUID.randomUUID());
@@ -117,7 +117,7 @@ class MemberReactivatedEventTest {
     @DisplayName("should have meaningful toString")
     void shouldHaveMeaningfulToString() {
         // Given
-        UserId memberId = new UserId(UUID.randomUUID());
+        MemberId memberId = new MemberId(UUID.randomUUID());
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
         Instant now = Instant.now();
         UserId reactivatedBy = new UserId(UUID.randomUUID());
@@ -145,7 +145,7 @@ class MemberReactivatedEventTest {
     @DisplayName("should implement equals and hashCode based on eventId")
     void shouldImplementEqualsAndHashCodeBasedOnEventId() {
         // Given
-        UserId memberId = new UserId(UUID.randomUUID());
+        MemberId memberId = new MemberId(UUID.randomUUID());
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
         Instant now = Instant.now();
         UserId reactivatedBy = new UserId(UUID.randomUUID());
@@ -176,7 +176,7 @@ class MemberReactivatedEventTest {
     @DisplayName("should not be equal with different eventId")
     void shouldNotBeEqualWithDifferentEventId() {
         // Given
-        UserId memberId = new UserId(UUID.randomUUID());
+        MemberId memberId = new MemberId(UUID.randomUUID());
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
         Instant now = Instant.now();
         UserId reactivatedBy = new UserId(UUID.randomUUID());

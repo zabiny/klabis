@@ -4,6 +4,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.RegistrationNumber;
+import com.klabis.members.MemberId;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -39,7 +40,7 @@ import java.util.UUID;
 public class MemberTerminatedEvent {
 
     private final UUID eventId;
-    private final UserId memberId;
+    private final MemberId memberId;
     private final RegistrationNumber registrationNumber;
     private final DeactivationReason reason;
     private final Instant terminatedAt;
@@ -57,7 +58,7 @@ public class MemberTerminatedEvent {
      * @param note               optional termination note
      */
     public MemberTerminatedEvent(
-            UserId memberId,
+            MemberId memberId,
             RegistrationNumber registrationNumber,
             DeactivationReason reason,
             Instant terminatedAt,
@@ -88,7 +89,7 @@ public class MemberTerminatedEvent {
      */
     public MemberTerminatedEvent(
             UUID eventId,
-            UserId memberId,
+            MemberId memberId,
             RegistrationNumber registrationNumber,
             DeactivationReason reason,
             Instant terminatedAt,
@@ -113,7 +114,7 @@ public class MemberTerminatedEvent {
      */
     public static MemberTerminatedEvent fromMember(Member member, Member.TerminateMembership command) {
         return new MemberTerminatedEvent(
-                member.getId().toUserId(),  // change to MemberId
+                member.getId(),
                 member.getRegistrationNumber(),
                 command.reason(),
                 member.getDeactivatedAt(),
@@ -134,7 +135,7 @@ public class MemberTerminatedEvent {
         return eventId;
     }
 
-    public UserId getMemberId() {
+    public MemberId getMemberId() {
         return memberId;
     }
 

@@ -2,6 +2,8 @@ package com.klabis.events.management;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.users.UserService;
+import com.klabis.events.EventId;
 import com.klabis.events.EventStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -47,6 +49,9 @@ class EventControllerTest {
     private EventManagementService eventManagementService;
 
     @MockitoBean
+    private UserService userService;
+
+    @MockitoBean
     private UserDetailsService userDetailsService;
 
     @MockitoBean
@@ -82,7 +87,7 @@ class EventControllerTest {
             );
 
             when(eventManagementService.createEvent(any(CreateEventCommand.class))).thenReturn(eventId);
-            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             post("/api/events")
@@ -174,7 +179,7 @@ class EventControllerTest {
                     EventStatus.DRAFT
             );
 
-            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
@@ -294,7 +299,7 @@ class EventControllerTest {
                     EventStatus.DRAFT
             );
 
-            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             get("/api/events/{id}", eventId)
@@ -313,7 +318,7 @@ class EventControllerTest {
         void shouldReturn404ForNonExistentEvent() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
 
-            when(eventManagementService.getEvent(nonExistentId)).thenThrow(new EventNotFoundException(nonExistentId));
+            when(eventManagementService.getEvent(any())).thenThrow(new EventNotFoundException(new EventId(nonExistentId)));
 
             mockMvc.perform(
                             get("/api/events/{id}", nonExistentId)
@@ -343,7 +348,7 @@ class EventControllerTest {
                     EventStatus.ACTIVE
             );
 
-            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             post("/api/events/{id}/publish", eventId)
@@ -374,7 +379,7 @@ class EventControllerTest {
                     EventStatus.CANCELLED
             );
 
-            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             post("/api/events/{id}/cancel", eventId)
@@ -405,7 +410,7 @@ class EventControllerTest {
                     EventStatus.FINISHED
             );
 
-            when(eventManagementService.getEvent(eventId)).thenReturn(eventDto);
+            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             post("/api/events/{id}/finish", eventId)

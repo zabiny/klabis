@@ -2,6 +2,7 @@ package com.klabis.events;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -721,7 +722,7 @@ class EventTest {
             event.publish(); // Make event ACTIVE
             EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
             // Act
@@ -746,7 +747,7 @@ class EventTest {
             );
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
             // Act & Assert
@@ -771,7 +772,7 @@ class EventTest {
             event.finish();
             EventAssert.assertThat(event).hasStatus(EventStatus.FINISHED);
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
             // Act & Assert
@@ -795,7 +796,7 @@ class EventTest {
             event.cancel();
             EventAssert.assertThat(event).hasStatus(EventStatus.CANCELLED);
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
             // Act & Assert
@@ -818,7 +819,7 @@ class EventTest {
             );
             event.publish();
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             event.registerMember(memberId, siCardNumber);
 
@@ -842,7 +843,7 @@ class EventTest {
             );
             event.publish();
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             event.registerMember(memberId, siCardNumber);
             assertThat(event.getRegistrations()).hasSize(1);
@@ -871,7 +872,7 @@ class EventTest {
             );
             event.publish();
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             event.registerMember(memberId, siCardNumber);
 
@@ -897,7 +898,7 @@ class EventTest {
             );
             event.publish();
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             event.registerMember(memberId, siCardNumber);
 
@@ -923,7 +924,7 @@ class EventTest {
             );
             event.publish();
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             LocalDate currentDate = LocalDate.of(2025, 7, 9);
 
             // Act & Assert
@@ -946,7 +947,7 @@ class EventTest {
             );
             event.publish();
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             event.registerMember(memberId, siCardNumber);
 
@@ -973,7 +974,7 @@ class EventTest {
             );
             event.publish();
 
-            UserId memberId = new UserId(UUID.randomUUID());
+            MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act
             var foundRegistration = event.findRegistration(memberId);
@@ -996,8 +997,8 @@ class EventTest {
             );
             event.publish();
 
-            UserId memberId1 = new UserId(UUID.randomUUID());
-            UserId memberId2 = new UserId(UUID.randomUUID());
+            MemberId memberId1 = new MemberId(UUID.randomUUID());
+            MemberId memberId2 = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber1 = SiCardNumber.of("123456");
             SiCardNumber siCardNumber2 = SiCardNumber.of("654321");
 
@@ -1011,7 +1012,7 @@ class EventTest {
             assertThat(registrations).hasSize(2);
 
             // Verify list is unmodifiable
-            assertThatThrownBy(() -> registrations.add(EventRegistration.create(new UserId(UUID.randomUUID()),
+            assertThatThrownBy(() -> registrations.add(EventRegistration.create(new MemberId(UUID.randomUUID()),
                     SiCardNumber.of("111111"))))
                     .isInstanceOf(UnsupportedOperationException.class);
         }

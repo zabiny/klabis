@@ -38,7 +38,7 @@ class UserEventsListeningTests {
         final UserId userId = PENDING_ACTIVATION_USER;
 
         // When & Then: CalendarItem should be created automatically
-        scenario.publish(new UserCreatedEvent(UUID.randomUUID(), userId.uuid(), "test", AccountStatus.PENDING_ACTIVATION, Instant.now(), "test@email.com"))
+        scenario.publish(new UserCreatedEvent(UUID.randomUUID(), userId, "test", AccountStatus.PENDING_ACTIVATION, Instant.now(), "test@email.com"))
                 .andWaitForStateChange(() -> !passwordSetupTokenRepository.findActiveTokensForUser(userId).isEmpty())
                 .andVerify(isPresent -> {
                     PasswordSetupToken token = passwordSetupTokenRepository.findActiveTokensForUser(userId).get(0);

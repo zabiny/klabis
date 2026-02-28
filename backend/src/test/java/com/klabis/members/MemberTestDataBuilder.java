@@ -1,7 +1,7 @@
 package com.klabis.members;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 
 import java.time.LocalDate;
@@ -196,7 +196,7 @@ public class MemberTestDataBuilder {
     }
 
     public Member build() {
-        Member result = Member.reconstruct(new UserId(memberId),
+        Member result = Member.reconstruct(new MemberId(memberId),
                 registrationNumber,
                 PersonalInformation.of(firstName, lastName, dateOfBirth, nationality, gender),
                 address,
@@ -222,7 +222,7 @@ public class MemberTestDataBuilder {
     }
 
     public Member.RegisterMember toRegisterMemberCommand() {
-        return new Member.RegisterMember(new UserId(this.memberId),
+        return new Member.RegisterMember(new MemberId(this.memberId),
                 this.registrationNumber,
                 this.build()
                         .getPersonalInformation(),

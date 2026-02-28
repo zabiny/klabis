@@ -1,6 +1,6 @@
 package com.klabis.members.infrastructure.jdbc;
 
-import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
@@ -45,7 +45,7 @@ class MemberRepositoryAdapter implements MemberRepository {
     }
 
     @Override
-    public Optional<Member> findById(UserId memberId) {
+    public Optional<Member> findById(MemberId memberId) {
         return jdbcRepository.findById(memberId.uuid())
                 .map(MemberMemento::toMember);
     }

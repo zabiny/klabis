@@ -3,6 +3,7 @@ package com.klabis.members;
 import com.klabis.common.users.UserId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.RegistrationNumber;
+import com.klabis.members.MemberId;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -33,7 +34,7 @@ import java.util.UUID;
 public class MemberReactivatedEvent {
 
     private final UUID eventId;
-    private final UserId memberId;
+    private final MemberId memberId;
     private final RegistrationNumber registrationNumber;
     private final Instant reactivatedAt;
     private final UserId reactivatedBy;
@@ -47,7 +48,7 @@ public class MemberReactivatedEvent {
      * @param reactivatedBy      the user who performed the reactivation
      */
     public MemberReactivatedEvent(
-            UserId memberId,
+            MemberId memberId,
             RegistrationNumber registrationNumber,
             Instant reactivatedAt,
             UserId reactivatedBy) {
@@ -72,7 +73,7 @@ public class MemberReactivatedEvent {
      */
     public MemberReactivatedEvent(
             UUID eventId,
-            UserId memberId,
+            MemberId memberId,
             RegistrationNumber registrationNumber,
             Instant reactivatedAt,
             UserId reactivatedBy) {
@@ -93,7 +94,7 @@ public class MemberReactivatedEvent {
      */
     public static MemberReactivatedEvent fromMember(Member member, Member.ReactivateMembership command) {
         return new MemberReactivatedEvent(
-                member.getId().toUserId(),
+                member.getId(),
                 member.getRegistrationNumber(),
                 Instant.now(),
                 command.reactivatedBy()
@@ -109,7 +110,7 @@ public class MemberReactivatedEvent {
         return eventId;
     }
 
-    public UserId getMemberId() {
+    public MemberId getMemberId() {
         return memberId;
     }
 

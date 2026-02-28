@@ -50,7 +50,7 @@ class UserCreatedEventHandlerTest {
             // Given
             UserCreatedEvent event = new UserCreatedEvent(
                     UUID.randomUUID(),
-                    userId,
+                    new UserId(userId),
                     username,
                     AccountStatus.PENDING_ACTIVATION,
                     Instant.now(),
@@ -102,7 +102,7 @@ class UserCreatedEventHandlerTest {
             // Given
             UserCreatedEvent event = new UserCreatedEvent(
                     UUID.randomUUID(),
-                    userId,
+                    new UserId(userId),
                     username,
                     AccountStatus.PENDING_ACTIVATION,
                     Instant.now(),
@@ -124,7 +124,7 @@ class UserCreatedEventHandlerTest {
             // Given
             UserCreatedEvent event = new UserCreatedEvent(
                     UUID.randomUUID(),
-                    userId,
+                    new UserId(userId),
                     username,
                     AccountStatus.ACTIVE,  // Already active
                     Instant.now(),
@@ -146,7 +146,7 @@ class UserCreatedEventHandlerTest {
             // Given
             UserCreatedEvent event = new UserCreatedEvent(
                     UUID.randomUUID(),
-                    userId,
+                    new UserId(userId),
                     username,
                     AccountStatus.PENDING_ACTIVATION,
                     Instant.now(),
@@ -169,7 +169,7 @@ class UserCreatedEventHandlerTest {
             // Given
             UserCreatedEvent event = new UserCreatedEvent(
                     UUID.randomUUID(),
-                    userId,
+                    new UserId(userId),
                     username,
                     AccountStatus.PENDING_ACTIVATION,
                     Instant.now(),
@@ -229,7 +229,7 @@ class UserCreatedEventHandlerTest {
             // Given
             UserCreatedEvent event = new UserCreatedEvent(
                     UUID.randomUUID(),
-                    userId,
+                    new UserId(userId),
                     username,
                     AccountStatus.ACTIVE,
                     Instant.now(),
@@ -249,7 +249,7 @@ class UserCreatedEventHandlerTest {
             // Given
             UserCreatedEvent event = new UserCreatedEvent(
                     UUID.randomUUID(),
-                    userId,
+                    new UserId(userId),
                     username,
                     AccountStatus.PENDING_ACTIVATION,
                     Instant.now()

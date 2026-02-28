@@ -60,8 +60,8 @@ class EventManagementService {
      * @throws IllegalStateException  if event is in FINISHED or CANCELLED status
      */
     @Transactional
-    public void updateEvent(UUID eventId, UpdateEventCommand command) {
-        Event event = eventRepository.findById(new EventId(eventId))
+    public void updateEvent(EventId eventId, UpdateEventCommand command) {
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
         event.update(
@@ -84,8 +84,8 @@ class EventManagementService {
      * @throws IllegalStateException  if transition is not allowed
      */
     @Transactional
-    public void publishEvent(UUID eventId) {
-        Event event = eventRepository.findById(new EventId(eventId))
+    public void publishEvent(EventId eventId) {
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
         event.publish();
@@ -100,8 +100,8 @@ class EventManagementService {
      * @throws IllegalStateException  if transition is not allowed
      */
     @Transactional
-    public void cancelEvent(UUID eventId) {
-        Event event = eventRepository.findById(new EventId(eventId))
+    public void cancelEvent(EventId eventId) {
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
         event.cancel();
@@ -116,8 +116,8 @@ class EventManagementService {
      * @throws IllegalStateException  if transition is not allowed
      */
     @Transactional
-    public void finishEvent(UUID eventId) {
-        Event event = eventRepository.findById(new EventId(eventId))
+    public void finishEvent(EventId eventId) {
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
         event.finish();
@@ -132,8 +132,8 @@ class EventManagementService {
      * @throws EventNotFoundException if event not found
      */
     @Transactional(readOnly = true)
-    public EventDto getEvent(UUID eventId) {
-        Event event = eventRepository.findById(new EventId(eventId))
+    public EventDto getEvent(EventId eventId) {
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
         return mapToDto(event);

@@ -2,6 +2,7 @@ package com.klabis.common.users.passwordsetup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.users.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class PasswordSetupControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private UserService userServiceMock;
 
     @MockitoBean
     private PasswordSetupService passwordSetupServiceMock;
