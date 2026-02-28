@@ -1,4 +1,4 @@
-package com.klabis.members.application;
+package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.domain.IdentityCard;
 

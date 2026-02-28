@@ -1,10 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.UserId;
-import com.klabis.members.application.GuardianDTO;
-import com.klabis.members.application.IdentityCardDto;
-import com.klabis.members.application.MedicalCourseDto;
-import com.klabis.members.application.TrainerLicenseDto;
 import com.klabis.members.domain.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

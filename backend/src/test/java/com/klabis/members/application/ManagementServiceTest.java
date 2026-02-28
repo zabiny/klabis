@@ -7,7 +7,6 @@ import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
-import com.klabis.members.infrastructure.restapi.SuspendMembershipRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -155,16 +154,11 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should suspend active member with ODHLASKA reason")
             void shouldSuspendActiveMemberWithOdhlaskaReason() {
-                var request = new SuspendMembershipRequest(
-                        DeactivationReason.ODHLASKA,
-                        Optional.of("Member requested resignation")
-                );
-
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
                 var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), request.reason(), request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.ODHLASKA, "Member requested resignation"
                 );
                 Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
@@ -186,17 +180,12 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should handle missing User account gracefully during suspension")
             void shouldHandleMissingUserAccountGracefully() {
-                var request = new SuspendMembershipRequest(
-                        DeactivationReason.ODHLASKA,
-                        Optional.of("Member requested resignation")
-                );
-
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
                 doNothing().when(userService).suspendUser(any(UserId.class));
 
                 var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), request.reason(), request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.ODHLASKA, "Member requested resignation"
                 );
                 Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
@@ -207,15 +196,11 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should suspend active member without note")
             void shouldSuspendActiveMemberWithoutNote() {
-                var request = new SuspendMembershipRequest(
-                        DeactivationReason.PRESTUP, Optional.empty()
-                );
-
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
                 var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), request.reason(), request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.PRESTUP, null
                 );
                 Member result = testedSubject.suspendMember(new MemberId(testMemberId), command);
 
@@ -232,15 +217,11 @@ class ManagementServiceTest {
             @Test
             @DisplayName("should publish MemberSuspendedEvent on successful suspension")
             void shouldPublishMemberSuspendedEventOnSuccessfulSuspension() {
-                var request = new SuspendMembershipRequest(
-                        DeactivationReason.OTHER, Optional.of("Administrative decision")
-                );
-
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
                 when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
                 var command = new Member.SuspendMembership(
-                        new UserId(adminUserId), request.reason(), request.note().orElse(null)
+                        new UserId(adminUserId), DeactivationReason.OTHER, "Administrative decision"
                 );
                 testedSubject.suspendMember(new MemberId(testMemberId), command);
 

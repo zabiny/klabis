@@ -1,6 +1,5 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.members.application.GuardianDTO;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.domain.*;
 
@@ -96,7 +95,7 @@ class UpdateMemberRequestMapper {
         return null;
     }
 
-    private static IdentityCard toIdentityCard(com.klabis.common.patch.PatchField<com.klabis.members.application.IdentityCardDto> identityCard) {
+    private static IdentityCard toIdentityCard(com.klabis.common.patch.PatchField<IdentityCardDto> identityCard) {
         return identityCard.isProvided()
             ? IdentityCard.of(identityCard.throwIfNotProvided().cardNumber(), identityCard.throwIfNotProvided().validityDate())
             : null;
@@ -106,13 +105,13 @@ class UpdateMemberRequestMapper {
         return enumField.isProvided() ? enumField.throwIfNotProvided() : null;
     }
 
-    private static MedicalCourse toMedicalCourse(com.klabis.common.patch.PatchField<com.klabis.members.application.MedicalCourseDto> medicalCourse) {
+    private static MedicalCourse toMedicalCourse(com.klabis.common.patch.PatchField<MedicalCourseDto> medicalCourse) {
         return medicalCourse.isProvided()
             ? MedicalCourse.of(medicalCourse.throwIfNotProvided().completionDate(), medicalCourse.throwIfNotProvided().validityDate())
             : null;
     }
 
-    private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<com.klabis.members.application.TrainerLicenseDto> trainerLicense) {
+    private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<TrainerLicenseDto> trainerLicense) {
         return trainerLicense.isProvided()
             ? TrainerLicense.of(trainerLicense.throwIfNotProvided().licenseNumber(), trainerLicense.throwIfNotProvided().validityDate())
             : null;
