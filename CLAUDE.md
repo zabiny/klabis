@@ -74,7 +74,14 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 
 - Direct `./gradlew` commands may fail with "bwrap: loopback: Failed RTM_NEWADDR"
 - Use `test-runner` skill instead of direct Gradle commands for testing
-- Gradle runs in sandbox mode by default - most operations work but some may be restricted 
+- Gradle runs in sandbox mode by default - most operations work but some may be restricted
+- Workaround: Use `dangerouslyDisableSandbox: true` for Bash tool when needed
+
+### Git & 1Password Integration Issues
+
+- 1Password socket errors ("Could not connect to socket") require user intervention
+- If git commit fails with 1Password error, ask user to check 1Password agent status
+- Short commit messages (without HEREDOC) are more reliable than multi-line messages
 
 ## IntelliJ HTTP Files
 
@@ -99,6 +106,18 @@ For backend development, use the `backend-developer` agent which leverages speci
 - `developer:spring-modulith` - DDD patterns and Spring Modulith architecture
 - `developer:spring-data-jdbc` - Repository and persistence patterns
 - `developer:backend-development` - HATEOAS and API patterns
+
+### Domain Type Safety Pattern
+
+Klabis uses type-safe identifiers (MemberId, UserId, EventId) to prevent wrong ID types being passed between aggregates:
+
+- **Domain layer** (Member, User, Event): Type-safe ID types (`MemberId`, `UserId`, `EventId`)
+- **Service layer**: Accept and return type-safe IDs
+- **Controller layer**: Convert UUID path variables → type-safe IDs at boundary: `new MemberId(uuid)`
+- **Persistence layer**: Mementos use UUID (no database migrations, backward compatible)
+- **API contracts**: DTOs continue using UUID (no breaking changes to external API)
+
+This pattern provides compile-time safety while maintaining API stability.
 
 ## Component-Specific Instructions
 
