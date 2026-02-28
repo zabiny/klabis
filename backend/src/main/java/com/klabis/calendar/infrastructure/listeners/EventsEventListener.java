@@ -1,4 +1,5 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.infrastructure.listeners;
+import com.klabis.calendar.application.CalendarEventSyncPort;
 import com.klabis.events.EventCancelledEvent;
 import com.klabis.events.EventPublishedEvent;
 import com.klabis.events.EventUpdatedEvent;
