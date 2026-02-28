@@ -73,7 +73,7 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 ### Sandbox Issues
 
 - Direct `./gradlew` commands may fail with "bwrap: loopback: Failed RTM_NEWADDR"
-- Use `test-runner` skill instead of direct Gradle commands for testing
+- Use `test-runner` agent instead of direct Gradle commands for testing
 - Gradle runs in sandbox mode by default - most operations work but some may be restricted
 - Workaround: Use `dangerouslyDisableSandbox: true` for Bash tool when needed
 

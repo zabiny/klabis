@@ -47,7 +47,7 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 
 ### Testing
 
-**IMPORTANT:** Always use the `test-runner` skill to execute tests. Never run `./gradlew test` directly.
+**IMPORTANT:** Always use the `test-runner` agent to execute tests. Never run `./gradlew test` directly.
 
 - `spring.modulith.test.file-modification-detector=default` is configured as system property in `build.gradle.kts` — no
   need to pass it manually
@@ -96,7 +96,7 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 
 ### Test-Driven Development
 
-- **Always use `test-runner` skill to run tests** — never invoke Gradle test commands directly
+- **Always use `test-runner` agent to run tests** — never invoke Gradle test commands directly
 - Prefer running single tests and not the whole test suite - for performance
 - Use `developer:tdd-best-practices` skill for TDD workflow guidance
 

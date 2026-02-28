@@ -37,8 +37,8 @@ if [ "$COMPILE_ONLY" = true ]; then
     ./gradlew compileJava --no-daemon 2>&1 || true
 else
     if [ -n "$TEST_FILTER" ]; then
-        ./gradlew test --no-daemon --tests "$TEST_FILTER" 2>&1 || true
+        ./gradlew test --no-daemon --tests "$TEST_FILTER" 2>&1 1>/dev/null || true
     else
-        ./gradlew test --no-daemon 2>&1 || true
+        ./gradlew test --no-daemon 2>&1 1>/dev/null || true
     fi
 fi

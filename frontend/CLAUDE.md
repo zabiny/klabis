@@ -60,7 +60,7 @@ npm run preview
 
 ### Testing
 
-**IMPORTANT:** Always use the `test-runner` skill to execute tests. Never run `npm test` directly.
+**IMPORTANT:** Always use the `test-runner` agent to execute tests. Never run `npm test` directly.
 
 **Test Configuration:**
 

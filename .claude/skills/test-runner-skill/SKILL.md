@@ -1,9 +1,9 @@
 ---
-name: test-runner
-description: This skill should be used when the user asks to "run tests", "test backend", "test frontend", "run UserTest", "test --filter=LoginComponent", "check if tests pass", "run all tests", or mentions test execution and report. Supports running all tests or selected tests with detailed failure analysis and stacktrace filtering for klabis project.
-context: fork
-model: Haiku
-version: 0.2.0
+name: test-runner-skill
+description: "Runs tests and report results in concise format. Should be used exclusively from test-runner subagent"
+disable-model-invocation: false
+user-invocable: false
+version: 0.3.0
 allowed-tools: Bash(./.claude/skills/test-runner/scripts/run-backend-tests.sh *), Bash(./.claude/skills/test-runner/scripts/run-frontend-tests.sh *)
 ---
 
