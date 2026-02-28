@@ -15,7 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.klabis.common.WithKlabisMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -60,7 +60,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should return 200 and permissions when user has MEMBERS:PERMISSIONS authority")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn200AndPermissionsWhenAuthorized() throws Exception {
             // Given
             PermissionsResponse response = new PermissionsResponse(
@@ -79,7 +79,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should include HATEOAS links in response")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldIncludeHateoasLinks() throws Exception {
             // Given
             PermissionsResponse response = new PermissionsResponse(
@@ -98,7 +98,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should return 404 when user not found")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn404WhenUserNotFound() throws Exception {
             // Given
             when(permissionService.getUserPermissions(any(UserId.class)))
@@ -120,7 +120,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should return 200 and updated permissions when authorized")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn200AndUpdatedPermissionsWhenAuthorized() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
@@ -147,7 +147,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should include HATEOAS links in response")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldIncludeHateoasLinks() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
@@ -172,7 +172,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should return Location header")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturnLocationHeader() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
@@ -198,7 +198,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should return 409 when attempting to remove last admin")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn409WhenRemovingLastAdmin() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
@@ -222,7 +222,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should return 400 for invalid authority")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn400ForInvalidAuthority() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
@@ -246,7 +246,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should return 400 for empty authorities")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn400ForEmptyAuthorities() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
@@ -269,7 +269,7 @@ class PermissionControllerTest {
 
         @Test
         @DisplayName("should return 400 for invalid request body")
-        @WithMockUser(authorities = {"MEMBERS:PERMISSIONS"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn400ForInvalidRequestBody() throws Exception {
             // When & Then - Missing authorities field
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())

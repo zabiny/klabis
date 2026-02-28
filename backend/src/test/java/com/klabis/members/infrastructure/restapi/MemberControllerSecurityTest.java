@@ -4,7 +4,6 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
@@ -14,8 +13,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.util.UUID;
 
-import static com.klabis.common.security.JwtParams.jwtTokenParams;
-import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisAuthentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -187,12 +184,10 @@ class MemberControllerSecurityTest extends SecurityTestBase {
 
     @Test
     @DisplayName("GET /api/members with wrong authority should return 403")
-    @WithKlabisMockUser(username = "ZBM0102", authorities = {})
+    @WithKlabisMockUser(username = "ZBM0102", authorities = {Authority.CALENDAR_MANAGE})
     void shouldReturn403WhenListingMembersWithoutReadAuthority() throws Exception {
         mockMvc.perform(
                         get("/api/members")
-                                .with(klabisAuthentication(jwtTokenParams("ZBM0102", new UserId(UUID.randomUUID()))
-                                        .withAuthorities(Authority.MEMBERS_CREATE)))
                                 .contentType("application/json")
                 )
                 .andDo(MockMvcResultHandlers.print())

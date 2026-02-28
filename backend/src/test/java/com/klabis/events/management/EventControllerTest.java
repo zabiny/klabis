@@ -16,7 +16,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.users.Authority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,9 +36,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EventControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";
-    private static final String MEMBERS_READ_AUTHORITY = "MEMBERS:READ";
-    private static final String EVENTS_MANAGE_AUTHORITY = "EVENTS:MANAGE";
-    private static final String EVENTS_READ_AUTHORITY = "EVENTS:READ";
 
     @Autowired
     private MockMvc mockMvc;
@@ -63,7 +61,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return 201 with Location header and HAL+FORMS links")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithValidData() throws Exception {
             UUID eventId = UUID.randomUUID();
             CreateEventCommand command = new CreateEventCommand(
@@ -107,7 +105,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
             CreateEventCommand command = new CreateEventCommand(
                     "Test Event",
@@ -129,7 +127,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return 400 with invalid data")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn400WithInvalidData() throws Exception {
             CreateEventCommand command = new CreateEventCommand(
                     "",
@@ -156,7 +154,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return 200 with updated event")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldUpdateEventSuccessfully() throws Exception {
             UUID eventId = UUID.randomUUID();
             UpdateEventCommand updateCommand = new UpdateEventCommand(
@@ -195,7 +193,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenUpdatingWithoutAuthority() throws Exception {
             UUID eventId = UUID.randomUUID();
             UpdateEventCommand command = new UpdateEventCommand(
@@ -222,7 +220,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return paginated list with HAL+FORMS")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldListEventsWithPagination() throws Exception {
             EventSummaryDto event1 = new EventSummaryDto(
                     UUID.randomUUID(),
@@ -255,7 +253,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should filter by status")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldFilterEventsByStatus() throws Exception {
             EventSummaryDto event = new EventSummaryDto(
                     UUID.randomUUID(),
@@ -285,7 +283,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return event detail with status-appropriate links")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldGetEventWithHateoasLinks() throws Exception {
             UUID eventId = UUID.randomUUID();
             EventDto eventDto = new EventDto(
@@ -314,7 +312,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return 404 for non-existent event")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldReturn404ForNonExistentEvent() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
 
@@ -334,7 +332,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should transition event to ACTIVE")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldPublishEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             EventDto eventDto = new EventDto(
@@ -365,7 +363,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should transition event to CANCELLED")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCancelEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             EventDto eventDto = new EventDto(
@@ -396,7 +394,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should transition event to FINISHED")
-        @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldFinishEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
             EventDto eventDto = new EventDto(

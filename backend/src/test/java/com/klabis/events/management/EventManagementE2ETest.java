@@ -8,7 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.users.Authority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Event Management E2E Tests")
-@WithMockUser(username = "admin", authorities = {EventManagementE2ETest.EVENTS_MANAGE_AUTHORITY, EventManagementE2ETest.EVENTS_READ_AUTHORITY})
+@WithKlabisMockUser(username = "admin", authorities = {Authority.EVENTS_MANAGE, Authority.EVENTS_READ})
 class EventManagementE2ETest extends SecurityTestBase {
 
     @Autowired
@@ -43,9 +44,6 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    static final String EVENTS_MANAGE_AUTHORITY = "EVENTS:MANAGE";
-    static final String EVENTS_READ_AUTHORITY = "EVENTS:READ";
 
     @Test
     @DisplayName("Complete event lifecycle: create → publish → finish")
@@ -390,7 +388,7 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Test
     @DisplayName("GET /api/events/{id} should return 404 for non-existent event")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_READ_AUTHORITY})
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
     void shouldReturn404ForNonExistentEventId() throws Exception {
         // Given: A non-existent UUID
         String nonExistentId = UUID.randomUUID().toString();
@@ -406,7 +404,7 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @Test
     @DisplayName("Event update should be rejected for FINISHED events")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {EVENTS_MANAGE_AUTHORITY})
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
     void shouldRejectUpdateForFinishedEvent() throws Exception {
         // Given: Create and finish an event
         CreateEventCommand createCommand = new CreateEventCommand(

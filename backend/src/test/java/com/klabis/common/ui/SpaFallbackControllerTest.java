@@ -6,7 +6,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.users.Authority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -54,7 +55,7 @@ class SpaFallbackControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = "MEMBERS:READ")
+    @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
     void shouldNotForwardApiRequests() throws Exception {
         // API requests should be handled by REST controllers, not SPA fallback
         // This verifies that /api/** paths are NOT matched by SPA fallback controller

@@ -9,7 +9,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.klabis.common.WithKlabisMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +33,7 @@ class HalFormsExpectationsTest {
     @Autowired
     MockMvc mockMvc;
 
-    @WithMockUser(username = "Tester")
+    @WithKlabisMockUser(username = "Tester")
     @Test
     @DisplayName("it should handle readOnly attribute for record (default as readWrite, customizable with @HalForms)")
     void shouldReturnExpectedFormsMetadata() throws Exception {
@@ -47,7 +47,7 @@ class HalFormsExpectationsTest {
                 .andExpect(status().isOk());
     }
 
-    @WithMockUser(username = "Tester")
+    @WithKlabisMockUser(username = "Tester")
     @Test
     @DisplayName("it should return expected type for DTOs")
     void shouldReturnExpectedTypeForDtoAttribute() throws Exception {
@@ -59,7 +59,7 @@ class HalFormsExpectationsTest {
                 .andExpect(status().isOk());
     }
 
-    @WithMockUser(username = "Tester")
+    @WithKlabisMockUser(username = "Tester")
     @Test
     @DisplayName("it should return expected type for Optional attributes")
     void shouldReturnExpectedTypeForOptionalAttribute() throws Exception {
@@ -72,7 +72,7 @@ class HalFormsExpectationsTest {
                 .andExpect(status().isOk());
     }
 
-    @WithMockUser(username = "Tester")
+    @WithKlabisMockUser(username = "Tester")
     @Test
     @DisplayName("it should return expected type from @HalForms annotation if present")
     void shouldReturnExpectedTypeForHalFormsAnnotated() throws Exception {

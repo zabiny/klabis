@@ -10,7 +10,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.users.Authority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -32,12 +33,10 @@ class MemberRegistrationIntegrationTest {
     private MockMvc mockMvc;
 
     private static final String ADMIN_USERNAME = "admin";
-    private static final String MEMBERS_CREATE_AUTHORITY = "MEMBERS:CREATE";
-    private static final String MEMBERS_READ_AUTHORITY = "MEMBERS:READ";
 
     @Test
     @DisplayName("Registration of member should succeed")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
     void shouldCompleteRegistrationFlowForAdult() throws Exception {
         // When: Registering the member
         mockMvc.perform(
@@ -68,7 +67,7 @@ class MemberRegistrationIntegrationTest {
 
     @Test
     @DisplayName("Registration should generate unique registration numbers")
-    @WithMockUser(username = ADMIN_USERNAME, authorities = {MEMBERS_CREATE_AUTHORITY})
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
     void shouldGenerateUniqueRegistrationNumbers() throws Exception {
         // When: Registering both members
         MvcResult result1 = mockMvc.perform(

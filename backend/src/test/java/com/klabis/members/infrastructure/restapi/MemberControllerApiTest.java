@@ -3,10 +3,8 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.User;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
-import com.klabis.common.users.testdata.UserTestDataBuilder;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.InvalidUpdateException;
@@ -14,7 +12,10 @@ import com.klabis.members.application.ManagementService;
 import com.klabis.members.application.RegistrationService;
 import com.klabis.members.application.ValidationPatterns;
 import com.klabis.members.domain.*;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -67,6 +68,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
 @Import({MemberMapperImpl.class})
+@MockitoBean(types = {UserService.class, UserDetailsService.class})
 class MemberControllerApiTest {
 
     private static final String ADMIN_USERNAME = "ZBM0001";
@@ -87,21 +89,8 @@ class MemberControllerApiTest {
     @TestBean
     private EntityLinks entityLinks;
 
-    @MockitoBean
-    private UserDetailsService userDetailsService;
-
-    @MockitoBean
-    private UserService userServiceMock;
-
-    private final User ZBM001 = UserTestDataBuilder.aMemberUser().username("ZBM0001").build();
-
     static EntityLinks entityLinks() {
         return HateoasTestingSupport.createModuleEntityLinks(MemberController.class);
-    }
-
-    @BeforeEach
-    void setupZbm001User() {
-        when(userServiceMock.findUserByUsername("ZBM001")).thenReturn(Optional.of(ZBM001));
     }
 
     @Nested
@@ -1128,8 +1117,6 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_UPDATE})
         void shouldCallExpectedServiceMethodWithCorrectArguments() throws Exception {
             // Arrange
-            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
-
             UUID memberId = UUID.randomUUID();
 
             // Act
@@ -1156,8 +1143,6 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
         void shouldSuspendMemberSuccessfully() throws Exception {
             // Arrange
-            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
-
             UUID memberId = UUID.randomUUID();
 
             // Act & Assert
@@ -1177,8 +1162,6 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
         void shouldReturn400WhenSuspendingAlreadySuspendedMember() throws Exception {
             // Arrange
-            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
-
             UUID memberId = UUID.randomUUID();
 
             when(managementService.suspendMember(eq(new MemberId(memberId)),
@@ -1231,7 +1214,6 @@ class MemberControllerApiTest {
         @DisplayName("valid resume request should return 204 NO CONTENT response")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
         void shouldResumeMemberSuccessfully() throws Exception {
-            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
             UUID memberId = UUID.randomUUID();
 
             mockMvc.perform(postMemberIdResume(memberId))
@@ -1244,7 +1226,6 @@ class MemberControllerApiTest {
         @DisplayName("should call service with correct arguments")
         @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_UPDATE})
         void shouldCallServiceWithCorrectArguments() throws Exception {
-            when(userServiceMock.findUserByUsername(ADMIN_USERNAME)).thenReturn(Optional.of(ZBM001));
             UUID memberId = UUID.randomUUID();
 
             mockMvc.perform(postMemberIdResume(memberId));

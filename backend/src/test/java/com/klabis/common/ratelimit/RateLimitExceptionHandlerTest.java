@@ -8,7 +8,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.context.support.WithMockUser;
+import com.klabis.common.WithKlabisMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -38,7 +38,7 @@ class RateLimitExceptionHandlerTest {
     private ErrorHandlingTestController controller;
 
     @Test
-    @WithMockUser(authorities = "PERM_EVENTS_MANAGE")
+    @WithKlabisMockUser
     void shouldReturnMethodNotAllowedWhenCallingPostEndpointWithGet() throws Exception {
         controller.setExceptionToThrow(new RateLimitExceededException("Example exception"));
 
