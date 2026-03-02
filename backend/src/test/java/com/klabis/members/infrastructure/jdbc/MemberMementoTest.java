@@ -144,52 +144,8 @@ class MemberMementoTest {
 
             // Assert - convert back to domain to verify
             Member reconstructed = memento.toMember();
-
-            // Assert - Personal info
-            MemberAssert.assertThat(reconstructed)
-                    .hasFirstName("Petra")
-                    .hasLastName("Nováková")
-                    .hasGuardianNotNull();
-
-            // Assert - Address
-            assertThat(reconstructed.getAddress().street()).isEqualTo("Dětská 1");
-            assertThat(reconstructed.getAddress().city()).isEqualTo("Brno");
-            assertThat(reconstructed.getAddress().postalCode()).isEqualTo("60200");
-            assertThat(reconstructed.getAddress().country()).isEqualTo("CZ");
-
-            // Assert - Contact
-            assertThat(reconstructed.getEmail().value()).isEqualTo("petra.novakova@example.com");
-            assertThat(reconstructed.getPhone().value()).isEqualTo("+420111222333");
-
-            // Assert - Guardian details
-            assertThat(reconstructed.getGuardian().getFirstName()).isEqualTo("Pavel");
-            assertThat(reconstructed.getGuardian().getLastName()).isEqualTo("Novák");
-            assertThat(reconstructed.getGuardian().getRelationship()).isEqualTo("PARENT");
-            assertThat(reconstructed.getGuardian().getEmailValue()).isEqualTo("pavel.novak@example.com");
-            assertThat(reconstructed.getGuardian().getPhoneValue()).isEqualTo("+420987654321");
-
-            // Assert - Documents
-            assertThat(reconstructed.getIdentityCard().cardNumber()).isEqualTo("AB123456");
-            assertThat(reconstructed.getMedicalCourse().completionDate()).isEqualTo(LocalDate.of(2023, 1, 15));
-            assertThat(reconstructed.getMedicalCourse().validityDate()).hasValue(LocalDate.of(2025, 1, 15));
-            assertThat(reconstructed.getTrainerLicense().licenseNumber()).isEqualTo("TRAINER001");
-
-            // Assert - Other fields
-            MemberAssert.assertThat(reconstructed).isActive();
-            assertThat(reconstructed.getChipNumber()).isEqualTo("CHIP123");
-            assertThat(reconstructed.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.A);
-            assertThat(reconstructed.getDietaryRestrictions()).isEqualTo("Vegetarian");
-
-            // Assert - Birth number and bank account
-            assertThat(reconstructed.getBirthNumber()).isNotNull();
-            assertThat(reconstructed.getBirthNumber().value()).isEqualTo("950301/1234");
-            assertThat(reconstructed.getBankAccountNumber()).isNotNull();
-            assertThat(reconstructed.getBankAccountNumber().value()).isEqualTo("123456/0300");
-
-            // Assert - Audit fields
-            assertThat(reconstructed.getCreatedAt()).isNotNull();
-            assertThat(reconstructed.getCreatedBy()).isEqualTo("test-user");
-            assertThat(reconstructed.getVersion()).isEqualTo(1L);
+            reconstructed.handle(new Member.SelfUpdate(reconstructed.getEmail(), reconstructed.getPhone(), reconstructed.getAddress(), reconstructed.getChipNumber(), "SK", reconstructed.getBankAccountNumber(), reconstructed.getIdentityCard(), reconstructed.getDrivingLicenseGroup(), reconstructed.getMedicalCourse(), reconstructed.getTrainerLicense(), reconstructed.getDietaryRestrictions(), reconstructed.getGuardian()));
+            assertThat(reconstructed).usingRecursiveComparison().isEqualTo(member);
         }
     }
 
