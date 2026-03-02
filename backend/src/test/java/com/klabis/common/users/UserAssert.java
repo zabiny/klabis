@@ -1,5 +1,7 @@
 package com.klabis.common.users;
 
+import com.klabis.common.users.domain.AccountStatus;
+import com.klabis.common.users.domain.User;
 import org.assertj.core.api.AbstractAssert;
 
 import java.time.Instant;

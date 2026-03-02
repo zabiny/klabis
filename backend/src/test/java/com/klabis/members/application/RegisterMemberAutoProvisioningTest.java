@@ -1,8 +1,8 @@
 package com.klabis.members.application;
 
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.common.users.User;
-import com.klabis.common.users.persistence.UserRepository;
+import com.klabis.common.users.domain.User;
+import com.klabis.common.users.domain.UserRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.DisplayName;

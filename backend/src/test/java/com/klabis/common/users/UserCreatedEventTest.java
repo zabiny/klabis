@@ -1,5 +1,8 @@
 package com.klabis.common.users;
 
+import com.klabis.common.users.domain.AccountStatus;
+import com.klabis.common.users.domain.User;
+import com.klabis.common.users.domain.UserCreatedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

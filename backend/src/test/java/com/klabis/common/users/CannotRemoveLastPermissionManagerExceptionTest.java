@@ -1,6 +1,6 @@
 package com.klabis.common.users;
 
-import com.klabis.common.users.authorization.CannotRemoveLastPermissionManagerException;
+import com.klabis.common.users.domain.CannotRemoveLastPermissionManagerException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

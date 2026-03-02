@@ -1,9 +1,9 @@
 package com.klabis.members.infrastructure.authorizationserver;
 
 import com.klabis.common.security.KlabisOAuth2ClaimNames;
-import com.klabis.common.users.User;
-import com.klabis.common.users.UserPermissions;
-import com.klabis.common.users.authorization.KlabisUserDetailsService;
+import com.klabis.common.users.domain.User;
+import com.klabis.common.users.domain.UserPermissions;
+import com.klabis.common.users.infrastructure.restapi.KlabisUserDetailsService;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
 import org.junit.jupiter.api.AfterEach;

@@ -2,7 +2,7 @@ package com.klabis.members.infrastructure.authorizationserver;
 
 import com.klabis.common.security.AuthorizationServerCustomizer;
 import com.klabis.common.security.KlabisOAuth2ClaimNames;
-import com.klabis.common.users.authorization.KlabisUserDetailsService;
+import com.klabis.common.users.infrastructure.restapi.KlabisUserDetailsService;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;

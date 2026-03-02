@@ -1,5 +1,6 @@
 package com.klabis.common.users;
 
+import com.klabis.common.users.domain.AuthorizationPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;

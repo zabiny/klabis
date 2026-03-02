@@ -2,7 +2,7 @@ package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.authorization.HasAuthority;
+import com.klabis.common.users.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -1,5 +1,6 @@
 package com.klabis.common.users;
 
+import com.klabis.common.users.domain.TokenHash;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

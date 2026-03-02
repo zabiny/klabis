@@ -1,5 +1,8 @@
 package com.klabis.common.users;
 
+import com.klabis.common.users.domain.PasswordSetupToken;
+import com.klabis.common.users.domain.TokenHash;
+import com.klabis.common.users.domain.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

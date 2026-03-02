@@ -1,5 +1,6 @@
 package com.klabis.members.application;
 
+import com.klabis.common.users.UserService;
 import com.klabis.members.domain.*;
 
 /**
@@ -37,7 +38,7 @@ public interface RegistrationService {
      * The service layer generates:
      * <ul>
      *   <li>registration number - using {@link com.klabis.members.domain.RegistrationNumberGenerator}</li>
-     *   <li>user ID - using {@link com.klabis.common.users.UserService#createUser}</li>
+     *   <li>user ID - using {@link UserService#createUser}</li>
      * </ul>
      * <p>
      * The MemberCreatedEvent will be published after commit, triggering

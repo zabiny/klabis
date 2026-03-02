@@ -1,6 +1,7 @@
 package com.klabis.members;
 
 import com.klabis.common.users.UserId;
+import com.klabis.common.users.UserService;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.RegistrationNumber;
@@ -20,7 +21,7 @@ import java.util.UUID;
  * - Processing final financial settlements
  *
  * <p><b>User Account Suspension:</b> When a Member is suspended, the corresponding User account
- * is automatically suspended via {@link com.klabis.common.users.UserService#suspendUser(com.klabis.common.users.UserId)}.
+ * is automatically suspended via {@link UserService#suspendUser(com.klabis.common.users.UserId)}.
  * This prevents the suspended member from authenticating to the system. The suspension happens in the same
  * transaction as Member suspension, ensuring atomicity.
  *

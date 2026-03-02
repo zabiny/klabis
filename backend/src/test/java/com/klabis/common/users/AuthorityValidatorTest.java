@@ -1,5 +1,6 @@
 package com.klabis.common.users;
 
+import com.klabis.common.users.domain.AuthorityValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

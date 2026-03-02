@@ -1,5 +1,6 @@
 package com.klabis.common.users;
 
+import com.klabis.common.users.domain.User;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 import java.util.Optional;

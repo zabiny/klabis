@@ -2,8 +2,11 @@ package com.klabis.common.users.authorization;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserPermissions;
-import com.klabis.common.users.persistence.UserPermissionsRepository;
+import com.klabis.common.users.application.AuthorizationQueryService;
+import com.klabis.common.users.application.AuthorizationQueryServiceImpl;
+import com.klabis.common.users.domain.AuthorizationContext;
+import com.klabis.common.users.domain.UserPermissions;
+import com.klabis.common.users.domain.UserPermissionsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

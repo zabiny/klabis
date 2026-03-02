@@ -1,12 +1,17 @@
 package com.klabis.common.users.authorization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.AuthorizationPolicy;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserPermissions;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.application.PermissionService;
+import com.klabis.common.users.domain.AuthorizationPolicy;
+import com.klabis.common.users.domain.UserNotFoundException;
+import com.klabis.common.users.domain.UserPermissions;
+import com.klabis.common.users.infrastructure.restapi.PermissionController;
+import com.klabis.common.users.infrastructure.restapi.PermissionsResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,7 +20,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import com.klabis.common.WithKlabisMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 

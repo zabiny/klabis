@@ -1,5 +1,7 @@
 package com.klabis.common.users.passwordsetup;
 
+import com.klabis.common.users.application.PasswordComplexityValidator;
+import com.klabis.common.users.domain.PasswordValidationException;
 import com.klabis.members.domain.Address;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;

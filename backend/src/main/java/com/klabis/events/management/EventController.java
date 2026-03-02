@@ -2,7 +2,7 @@ package com.klabis.events.management;
 
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.authorization.HasAuthority;
+import com.klabis.common.users.HasAuthority;
 import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.EventStatus;

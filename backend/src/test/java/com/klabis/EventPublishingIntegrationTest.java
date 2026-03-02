@@ -1,10 +1,10 @@
 package com.klabis;
 
-import com.klabis.common.users.AccountStatus;
-import com.klabis.common.users.User;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.authentication.TestTransactionHelper;
-import com.klabis.common.users.persistence.UserRepository;
+import com.klabis.common.users.domain.AccountStatus;
+import com.klabis.common.users.domain.User;
+import com.klabis.common.users.domain.UserRepository;
 import com.klabis.common.users.testdata.UserTestDataBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

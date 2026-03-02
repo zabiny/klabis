@@ -1,14 +1,13 @@
 package com.klabis.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klabis.common.users.User;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.domain.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;

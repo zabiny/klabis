@@ -2,8 +2,8 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
+import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.authorization.HasAuthority;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementService;

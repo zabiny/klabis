@@ -1,5 +1,6 @@
 package com.klabis.common.users;
 
+import com.klabis.common.users.domain.UserPermissions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;

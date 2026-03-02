@@ -1,8 +1,8 @@
 package com.klabis.common.users.testdata;
 
-import com.klabis.common.users.AccountStatus;
-import com.klabis.common.users.User;
 import com.klabis.common.users.UserId;
+import com.klabis.common.users.domain.AccountStatus;
+import com.klabis.common.users.domain.User;
 
 /**
  * Fluent builder for creating User test data.

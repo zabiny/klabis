@@ -1,7 +1,9 @@
 package com.klabis.events.management;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
 import com.klabis.events.EventId;
 import com.klabis.events.EventStatus;
@@ -16,8 +18,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.users.Authority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 

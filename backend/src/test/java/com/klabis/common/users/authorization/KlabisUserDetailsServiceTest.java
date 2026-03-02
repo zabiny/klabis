@@ -1,7 +1,12 @@
 package com.klabis.common.users.authorization;
 
-import com.klabis.common.users.*;
-import com.klabis.common.users.persistence.UserPermissionsRepository;
+import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserService;
+import com.klabis.common.users.domain.AccountStatus;
+import com.klabis.common.users.domain.User;
+import com.klabis.common.users.domain.UserPermissions;
+import com.klabis.common.users.domain.UserPermissionsRepository;
+import com.klabis.common.users.infrastructure.restapi.KlabisUserDetailsService;
 import com.klabis.common.users.testdata.UserTestDataBuilder;
 import com.klabis.common.users.testdata.UserTestDataConstants;
 import org.junit.jupiter.api.BeforeEach;
