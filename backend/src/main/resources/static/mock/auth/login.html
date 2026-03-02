@@ -97,7 +97,7 @@
             response_type: 'code',
             client_id: clientId,
             redirect_uri: `${backendUrl}/mock/auth/callback.html`,
-            scope: 'MEMBERS:CREATE MEMBERS:UPDATE MEMBERS:DELETE MEMBERS:READ'
+            scope: 'openid profile email MEMBERS EVENTS'
         });
 
         const authUrl = `${backendUrl}/oauth2/authorize?${authParams.toString()}`;
