@@ -102,13 +102,6 @@ public class UserMemento implements Persistable<UUID> {
         return this.id;
     }
 
-    // TODO: Phase 2 - Implement conversion methods
-    // public static UserMemento from(User user) { throw new UnsupportedOperationException(); }
-    // public User toUser() { throw new UnsupportedOperationException(); }
-    // public List<Object> getDomainEvents() { throw new UnsupportedOperationException(); }
-    // public void clearDomainEvents() { throw new UnsupportedOperationException(); }
-    // public UserAuditMetadata getAuditMetadata() { throw new UnsupportedOperationException(); }
-
     /**
      * Creates a UserMemento from a User entity (for save operations).
      *

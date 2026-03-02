@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 /**
  * Repository interface for {@link PasswordSetupToken} aggregate.
  *
@@ -68,10 +69,4 @@ public interface PasswordSetupTokenRepository {
      */
     Optional<PasswordSetupToken> findById(UUID id);
 
-    /**
-     * Finds all tokens (for testing purposes).
-     *
-     * @return list of all tokens
-     */
-    List<PasswordSetupToken> findAll();
 }

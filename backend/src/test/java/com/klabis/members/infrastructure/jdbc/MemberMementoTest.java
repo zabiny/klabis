@@ -144,7 +144,6 @@ class MemberMementoTest {
 
             // Assert - convert back to domain to verify
             Member reconstructed = memento.toMember();
-            reconstructed.handle(new Member.SelfUpdate(reconstructed.getEmail(), reconstructed.getPhone(), reconstructed.getAddress(), reconstructed.getChipNumber(), "SK", reconstructed.getBankAccountNumber(), reconstructed.getIdentityCard(), reconstructed.getDrivingLicenseGroup(), reconstructed.getMedicalCourse(), reconstructed.getTrainerLicense(), reconstructed.getDietaryRestrictions(), reconstructed.getGuardian()));
             assertThat(reconstructed).usingRecursiveComparison().isEqualTo(member);
         }
     }

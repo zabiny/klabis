@@ -6,7 +6,7 @@ import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSuppor
 
 import java.util.Set;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -25,7 +25,7 @@ class PermissionsResponseModelAssembler
         PermissionsResponseModel model = instantiateModel(entity);
 
         // Add self link
-        Link selfLink = linkTo(methodOn(PermissionController.class)
+        Link selfLink = klabisLinkTo(methodOn(PermissionController.class)
                 .getUserPermissions(entity.userId().uuid()))
                 .withSelfRel();
         model.add(selfLink);

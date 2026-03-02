@@ -12,8 +12,6 @@ import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -63,14 +61,11 @@ public class PermissionController {
         PermissionsResponse response = permissionService.getUserPermissions(new UserId(id));
         PermissionsResponseModel model = permissionsAssembler.toModel(response);
 
-        // Add conditional permissions link with affordance (only if authorized)
-        if (hasMembersPermissionsAuthority()) {
-            Link permissionsLink = klabisLinkTo(methodOn(PermissionController.class)
-                    .updatePermissions(id, null))
-                    .withRel("permissions")
-                    .andAffordances(klabisAfford(methodOn(PermissionController.class).updatePermissions(id, null)));
-            model.add(permissionsLink);
-        }
+        Link permissionsLink = klabisLinkTo(methodOn(PermissionController.class)
+                .updatePermissions(id, null))
+                .withRel("permissions")
+                .andAffordances(klabisAfford(methodOn(PermissionController.class).updatePermissions(id, null)));
+        model.add(permissionsLink);
 
         return ResponseEntity.ok(model);
     }
@@ -164,20 +159,6 @@ public class PermissionController {
         problemDetail.setType(URI.create(type));
         problemDetail.setTitle("Invalid Request");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
-    }
-
-    /**
-     * Check if current user has MEMBERS:PERMISSIONS authority.
-     */
-    private boolean hasMembersPermissionsAuthority() {
-        Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        return authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(auth -> auth.equals("MEMBERS:PERMISSIONS"));
     }
 
     /**

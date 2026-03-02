@@ -162,7 +162,7 @@ public class PasswordSetupTokenMemento implements Persistable<UUID> {
         return new AuditMetadata(
                 this.createdAt,
                 this.createdBy,
-                this.createdAt,  // For password tokens, use createdAt since no separate modifiedAt exists
+                this.createdAt,
                 this.modifiedBy,
                 this.version
         );

@@ -35,7 +35,7 @@ class PermissionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PermissionService(permissionsRepository);
+        service = new PermissionServiceImpl(permissionsRepository);
     }
 
     @Nested

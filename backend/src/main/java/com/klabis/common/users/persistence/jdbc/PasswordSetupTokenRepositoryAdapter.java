@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.StreamSupport;
 
 /**
  * Adapter that bridges between PasswordSetupTokenRepository domain interface and PasswordSetupTokenJdbcRepository.
@@ -78,11 +77,4 @@ class PasswordSetupTokenRepositoryAdapter implements PasswordSetupTokenRepositor
                 .map(PasswordSetupTokenMemento::toPasswordSetupToken);
     }
 
-    @Override
-    public List<PasswordSetupToken> findAll() {
-        Iterable<PasswordSetupTokenMemento> mementos = jdbcRepository.findAll();
-        return StreamSupport.stream(mementos.spliterator(), false)
-                .map(PasswordSetupTokenMemento::toPasswordSetupToken)
-                .toList();
-    }
 }

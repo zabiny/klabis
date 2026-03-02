@@ -111,7 +111,7 @@ public abstract class PasswordSetupServiceTestBase {
      * @return a new PasswordSetupService instance configured with mocks
      */
     protected PasswordSetupService createService() {
-        PasswordSetupService service = new PasswordSetupService(
+        PasswordSetupService service = new PasswordSetupServiceImpl(
                 tokenRepository,
                 userRepository,
                 emailService,

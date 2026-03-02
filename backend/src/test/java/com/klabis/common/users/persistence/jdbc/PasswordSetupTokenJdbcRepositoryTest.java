@@ -66,6 +66,15 @@ class PasswordSetupTokenJdbcRepositoryTest {
         // ensuring test isolation without manual cleanup
     }
 
+    private int countAllTokens() {
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM password_setup_tokens", Integer.class);
+        return count != null ? count : 0;
+    }
+
+    private List<java.util.UUID> findAllTokenUserIds() {
+        return jdbcTemplate.queryForList("SELECT user_id FROM password_setup_tokens", java.util.UUID.class);
+    }
+
     private User createTestUser(String username) {
         User user = User.createdUser(
                 username,
@@ -349,8 +358,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
             tokenRepository.invalidateAllForUser(user.getId());
 
             // Then
-            List<PasswordSetupToken> remaining = tokenRepository.findAll();
-            assertThat(remaining).isEmpty();
+            assertThat(countAllTokens()).isZero();
         }
 
         @Test
@@ -368,9 +376,9 @@ class PasswordSetupTokenJdbcRepositoryTest {
             tokenRepository.invalidateAllForUser(user1.getId());
 
             // Then
-            List<PasswordSetupToken> remaining = tokenRepository.findAll();
-            assertThat(remaining).hasSize(1);
-            assertThat(remaining.get(0).getUserId()).isEqualTo(user2.getId());
+            List<java.util.UUID> remainingUserIds = findAllTokenUserIds();
+            assertThat(remainingUserIds).hasSize(1);
+            assertThat(remainingUserIds.get(0)).isEqualTo(user2.getId().uuid());
         }
     }
 
@@ -399,8 +407,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
 
             // Then
             assertThat(deletedCount).isEqualTo(1);
-            List<PasswordSetupToken> remaining = tokenRepository.findAll();
-            assertThat(remaining).isEmpty();
+            assertThat(countAllTokens()).isZero();
         }
 
         @Test
@@ -416,8 +423,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
 
             // Then
             assertThat(deletedCount).isZero();
-            List<PasswordSetupToken> remaining = tokenRepository.findAll();
-            assertThat(remaining).hasSize(1);
+            assertThat(countAllTokens()).isEqualTo(1);
         }
 
         @Test
@@ -451,12 +457,12 @@ class PasswordSetupTokenJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findAll() method")
-    class FindAllMethod {
+    @DisplayName("token count via JdbcTemplate")
+    class TokenCountTests {
 
         @Test
-        @DisplayName("should find all tokens")
-        void shouldFindAllTokens() {
+        @DisplayName("should count all saved tokens")
+        void shouldCountAllSavedTokens() {
             // Given
             User user1 = createTestUser("ZBM9018");
             User user2 = createTestUser("ZBM9019");
@@ -465,21 +471,14 @@ class PasswordSetupTokenJdbcRepositoryTest {
             tokenRepository.save(token1);
             tokenRepository.save(token2);
 
-            // When
-            List<PasswordSetupToken> allTokens = tokenRepository.findAll();
-
             // Then
-            assertThat(allTokens).hasSize(2);
+            assertThat(countAllTokens()).isEqualTo(2);
         }
 
         @Test
-        @DisplayName("should return empty list when no tokens exist")
-        void shouldReturnEmptyListWhenNoTokensExist() {
-            // When
-            List<PasswordSetupToken> allTokens = tokenRepository.findAll();
-
-            // Then
-            assertThat(allTokens).isEmpty();
+        @DisplayName("should return zero when no tokens exist")
+        void shouldReturnZeroWhenNoTokensExist() {
+            assertThat(countAllTokens()).isZero();
         }
     }
 

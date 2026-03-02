@@ -89,7 +89,7 @@ public class UserPermissionsMemento implements Persistable<UUID> {
         memento.userId = permissions.getUserId().uuid();
         memento.authoritiesJson = serializeAuthorities(permissions.getDirectAuthorities());
         memento.version = permissions.getVersion();
-        memento.isNew = permissions.isNew();
+        memento.isNew = isNew;
         return memento;
     }
 
