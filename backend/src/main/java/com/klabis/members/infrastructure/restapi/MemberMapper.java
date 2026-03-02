@@ -20,7 +20,7 @@ import java.util.UUID;
         nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL
 )
-public interface MemberMapper {
+interface MemberMapper {
 
     /**
      * Maps Member domain object to MemberSummaryResponse.

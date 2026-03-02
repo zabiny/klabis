@@ -2,8 +2,10 @@ package com.klabis.members.application;
 
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
+import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.transaction.annotation.Transactional;
 
+@PrimaryPort
 public interface ManagementService {
 
     @Transactional

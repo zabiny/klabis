@@ -17,8 +17,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +35,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.stereotype.Component;
+import com.klabis.common.mvc.MvcComponent;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
@@ -62,8 +60,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @ExposesResourceFor(Member.class)
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
 class MemberController {
-
-    private static final Logger log = LoggerFactory.getLogger(MemberController.class);
 
     private final ManagementService managementService;
     private final MemberRepository memberRepository;
@@ -349,7 +345,7 @@ class MemberController {
 
 }
 
-@Component
+@MvcComponent
 class MembersRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
     @Override

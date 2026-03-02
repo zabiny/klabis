@@ -11,6 +11,8 @@ import com.klabis.members.MemberSuspendedEvent;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
+import org.springframework.util.Assert;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
@@ -278,10 +280,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
     public static Member register(RegisterMember command) {
         // Validate required fields
-        Objects.requireNonNull(command.id(), "Member ID is required");
-        Objects.requireNonNull(command.registrationNumber(), "Registration number is required");
-        Objects.requireNonNull(command.personalInformation(), "Personal information is required");
-        Objects.requireNonNull(command.address(), "Address is required");
+        Assert.notNull(command.id(), "Member ID is required");
+        Assert.notNull(command.registrationNumber(), "Registration number is required");
+        Assert.notNull(command.personalInformation(), "Personal information is required");
+        Assert.notNull(command.address(), "Address is required");
 
         // Validate contact information
         validateContactInformation(command.email(), command.phone(), command.guardian());
@@ -340,23 +342,12 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
         // If both missing, throw combined error
         if (!hasEmail && !hasPhone) {
-            throw new IllegalArgumentException(
-                    "At least one email and one phone required (member or guardian)"
-            );
+            Assert.isTrue(false, "At least one email and one phone required (member or guardian)");
         }
 
         // Otherwise check individually
-        if (!hasEmail) {
-            throw new IllegalArgumentException(
-                    "At least one email is required (member or guardian)"
-            );
-        }
-
-        if (!hasPhone) {
-            throw new IllegalArgumentException(
-                    "At least one phone is required (member or guardian)"
-            );
-        }
+        Assert.isTrue(hasEmail, "At least one email is required (member or guardian)");
+        Assert.isTrue(hasPhone, "At least one phone is required (member or guardian)");
     }
 
     /**
