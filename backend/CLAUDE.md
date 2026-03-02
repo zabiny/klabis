@@ -110,11 +110,7 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 
 ### Domain Type Safety Pattern
 
-- **Domain/Service layers**: Use type-safe IDs (`MemberId`, `UserId`, `EventId`)
-- **Controllers**: Convert UUID path variables to type-safe IDs: `new MemberId(uuid)`
-- **Persistence**: Mementos continue using UUID (no database migrations)
-- **API contracts**: DTOs continue using UUID (no breaking changes)
-- **Benefit**: Compile-time type safety prevents wrong ID types between aggregates
+See `developer:klabis-backend-patterns` skill for detailed patterns including type-safe IDs, Memento, application services, and REST controllers.
 
 ## Application Profiles
 

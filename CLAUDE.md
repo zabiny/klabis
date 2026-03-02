@@ -100,22 +100,11 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 ## Backend Development
 
 For backend development, use the `backend-developer` agent which leverages specialized skills:
+- `developer:klabis-backend-patterns` - Klabis-specific patterns (modules, services, controllers, JDBC, events)
 - `developer:tdd-best-practices` - TDD workflow (RED-GREEN-REFACTOR)
 - `developer:spring-modulith` - DDD patterns and Spring Modulith architecture
 - `developer:spring-data-jdbc` - Repository and persistence patterns
 - `developer:spring-hateoas-api` - HATEOAS and API patterns
-
-### Domain Type Safety Pattern
-
-Klabis uses type-safe identifiers (MemberId, UserId, EventId) to prevent wrong ID types being passed between aggregates:
-
-- **Domain layer** (Member, User, Event): Type-safe ID types (`MemberId`, `UserId`, `EventId`)
-- **Service layer**: Accept and return type-safe IDs
-- **Controller layer**: Convert UUID path variables → type-safe IDs at boundary: `new MemberId(uuid)`
-- **Persistence layer**: Mementos use UUID (no database migrations, backward compatible)
-- **API contracts**: DTOs continue using UUID (no breaking changes to external API)
-
-This pattern provides compile-time safety while maintaining API stability.
 
 ## Component-Specific Instructions
 

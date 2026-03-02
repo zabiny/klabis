@@ -15,30 +15,15 @@
 
 # Coding conventions
 
-## Rules
-
-- NON-NEGOTIABLE: use HalFormsSupport#klabisAfford and HalFormsSupport#klabisLinkTo to prepare HATEOAS navigation in controllers (never use WebMvcLinkBuilder#linkTo and WebMvcLinkBuilder#afford) methods.
-- **HATEOAS link/affordance rules**: Links ONLY for GET endpoints, affordances ONLY for POST/PUT/DELETE/PATCH endpoints
-- RepresentationModelProcessor must follow same HATEOAS rules as controllers (no links to POST endpoints)
-- klabisAfford handles authorization internally - don't duplicate authorization checks in controllers and processors
-- **Response bodies**: POST/PUT/PATCH/DELETE endpoints return 204 No Content (empty body) or 201 Created with Location header only
+See `developer:klabis-backend-patterns` skill for HATEOAS rules, package conventions, and parameter handling patterns.
 
 ## Java Best Practices
 
 - Use **Java Records** for value objects (DTOs, immutable domain objects)
-- Use `org.springframework.util.Assert` for parameter validation in methods
 - Use Lombok annotations sparingly (only for entities/infrastructure where needed)
 - Use MapStruct for DTO ↔ Entity mapping
 - Prefix test methods with `should` (e.g., `shouldCreateMemberWithValidData`)
-- Use 'package protected' visibility as default for new classes. Make them public only when they need to be accessed
-  from other package
-- **Do not mock data objects** (entities, value objects, DTOs) in tests - use real instances instead
-- **Refactor methods with more than 4 parameters** by introducing parameter objects, request models, or splitting the
-  method
 - use jMolecules annotations for "Ports and Adapters" (hexagonal) architecture
-- use `@MvcComponent` annotation on components from presentation layer
-- **`reconstruct()` method is for persistence layer ONLY** — use it only in JDBC/Memento classes to load aggregates
-  from DB.
 
 ## Naming conventions
 
@@ -94,7 +79,7 @@
 ./gradlew bootRun
 
 # Only use background for automated testing with explicit output redirection
-./gradlew bootRun > /tmp/server.log 2>&1 &
+./gradlew bootRun > server.log 2>&1 &
 ```
 
 ## 3. Environment Variables
@@ -111,15 +96,7 @@ In-memory, resets on restart. H2 Console: https://localhost:8443/h2-console (`jd
 
 Workflow: compile → start server → health check → simple endpoint → complex flow. Check logs immediately on failure. Don't make multiple changes without testing.
 
-## 6. Cross-Module Repository Access
-
-Don't inject repositories from other modules in tests. Use `@Sql` for FK setup instead.
-
-## 7. @Sql String Concatenation
-
-`@Sql` requires compile-time constants - no string concatenation with variables.
-
-## 8. Column Length Constraints
+## 6. Column Length Constraints
 
 Check schema first, use realistic values matching column limits (e.g., "OOB" not "Organizer A").
 
