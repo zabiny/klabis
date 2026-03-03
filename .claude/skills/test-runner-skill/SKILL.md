@@ -4,7 +4,7 @@ description: "Runs tests and report results in concise format. Should be used ex
 disable-model-invocation: false
 user-invocable: false
 version: 0.3.0
-allowed-tools: Bash(./.claude/skills/test-runner/scripts/run-backend-tests.sh *), Bash(./.claude/skills/test-runner/scripts/run-frontend-tests.sh *)
+allowed-tools: Bash(./.claude/skills/test-runner-skill/scripts/run-backend-tests.sh *), Bash(./.claude/skills/test-runner-skill/scripts/run-frontend-tests.sh *)
 ---
 
 # Klabis Test Runner
@@ -34,28 +34,28 @@ Runs backend (Gradle/JUnit) or frontend (Vitest) tests and displays a formatted 
 
 **Backend:**
 ```bash
-bash ./.claude/skills/test-runner/scripts/run-backend-tests.sh
+bash ./.claude/skills/test-runner-skill/scripts/run-backend-tests.sh
 # or with filter:
-bash ./.claude/skills/test-runner/scripts/run-backend-tests.sh "UserTest"
+bash ./.claude/skills/test-runner-skill/scripts/run-backend-tests.sh "UserTest"
 ```
 
 **Frontend:**
 ```bash
-bash ./.claude/skills/test-runner/scripts/run-frontend-tests.sh
+bash ./.claude/skills/test-runner-skill/scripts/run-frontend-tests.sh
 # or with filter:
-bash ./.claude/skills/test-runner/scripts/run-frontend-tests.sh "LoginComponent"
+bash ./.claude/skills/test-runner-skill/scripts/run-frontend-tests.sh "LoginComponent"
 ```
 
 ### 4. Parse results and display report
 
 **Without filter** (standard mode — filters stacktraces to app code only):
 ```bash
-python3 ./.claude/skills/test-runner/scripts/parse-test-output.py backend
+python3 ./.claude/skills/test-runner-skill/scripts/parse-test-output.py backend
 ```
 
 **With filter** (full mode — complete output for failed tests):
 ```bash
-python3 ./.claude/skills/test-runner/scripts/parse-test-output.py backend --full
+python3 ./.claude/skills/test-runner-skill/scripts/parse-test-output.py backend --full
 ```
 
 Replace `backend` with `frontend` for frontend tests.
