@@ -2,8 +2,7 @@ package com.klabis.events.application;
 
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
-import com.klabis.events.infrastructure.restapi.OwnRegistrationDto;
-import com.klabis.events.infrastructure.restapi.RegistrationDto;
+import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
@@ -17,7 +16,7 @@ public interface EventRegistrationService {
 
     void unregisterMember(EventId eventId, MemberId memberId, LocalDate currentDate);
 
-    List<RegistrationDto> listRegistrations(EventId eventId);
+    List<EventRegistration> listRegistrations(EventId eventId);
 
-    OwnRegistrationDto getOwnRegistration(EventId eventId, MemberId memberId);
+    EventRegistration getOwnRegistration(EventId eventId, MemberId memberId);
 }

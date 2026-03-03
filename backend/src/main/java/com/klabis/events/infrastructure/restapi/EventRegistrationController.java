@@ -8,6 +8,8 @@ import com.klabis.events.EventId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
+import com.klabis.members.MemberDto;
+import com.klabis.members.Members;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -48,10 +50,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class EventRegistrationController {
 
     private final EventRegistrationService registrationService;
+    private final Members members;
     private final EntityLinks entityLinks;
 
-    public EventRegistrationController(EventRegistrationService registrationService, EntityLinks entityLinks) {
+    public EventRegistrationController(EventRegistrationService registrationService, Members members, EntityLinks entityLinks) {
         this.registrationService = registrationService;
+        this.members = members;
         this.entityLinks = entityLinks;
     }
 
@@ -107,7 +111,9 @@ class EventRegistrationController {
     public ResponseEntity<CollectionModel<RegistrationDto>> listRegistrations(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        List<RegistrationDto> registrations = registrationService.listRegistrations(new EventId(eventId));
+        List<RegistrationDto> registrations = registrationService.listRegistrations(new EventId(eventId)).stream()
+                .map(this::toRegistrationDto)
+                .toList();
 
         CollectionModel<RegistrationDto> collectionModel = CollectionModel.of(
                 registrations,
@@ -129,7 +135,8 @@ class EventRegistrationController {
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @CurrentUser CurrentUserData currentUser) {
 
-        OwnRegistrationDto registration = registrationService.getOwnRegistration(new EventId(eventId), currentUser.memberId());
+        OwnRegistrationDto registration = toOwnRegistrationDto(
+                registrationService.getOwnRegistration(new EventId(eventId), currentUser.memberId()));
 
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
         addLinksForOwnRegistration(entityModel, eventId);
@@ -144,6 +151,18 @@ class EventRegistrationController {
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }
 
+
+    private RegistrationDto toRegistrationDto(EventRegistration registration) {
+        MemberDto member = members.findById(registration.memberId())
+                .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
+        return new RegistrationDto(member.firstName(), member.lastName(), registration.registeredAt());
+    }
+
+    private OwnRegistrationDto toOwnRegistrationDto(EventRegistration registration) {
+        MemberDto member = members.findById(registration.memberId())
+                .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
+        return new OwnRegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(), registration.registeredAt());
+    }
 
     @ExceptionHandler(DuplicateRegistrationException.class)
     public ErrorResponse handleBusinessRuleViolationException(DuplicateRegistrationException ex) {

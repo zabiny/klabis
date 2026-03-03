@@ -4,13 +4,10 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
+import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.events.domain.EventRepository;
-import com.klabis.events.infrastructure.restapi.OwnRegistrationDto;
-import com.klabis.events.infrastructure.restapi.RegistrationDto;
-import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
-import com.klabis.members.Members;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -49,14 +46,11 @@ class EventRegistrationServiceTest {
     @Mock
     private EventRepository eventRepository;
 
-    @Mock
-    private Members members;
-
     private EventRegistrationService service;
 
     @BeforeEach
     void setUp() {
-        service = new EventRegistrationServiceImpl(eventRepository, members);
+        service = new EventRegistrationServiceImpl(eventRepository);
     }
 
     @Nested
@@ -231,8 +225,8 @@ class EventRegistrationServiceTest {
     class ListRegistrationsMethod {
 
         @Test
-        @DisplayName("should return list without SI card numbers for privacy")
-        void shouldReturnListWithoutSiCardNumbers() {
+        @DisplayName("should return list of EventRegistration domain objects")
+        void shouldReturnListOfEventRegistrations() {
             // Given
             EventId eventId = EventId.generate();
             UUID member1Id = UUID.randomUUID();
@@ -252,21 +246,13 @@ class EventRegistrationServiceTest {
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
-            MemberDto member1 = new MemberDto(member1Id, "John", "Doe", "doe@email.com");
-            MemberDto member2 = new MemberDto(member2Id, "Jane", "Smith", "smith@email.com");
-
-            when(members.findById(new MemberId(member1Id))).thenReturn(Optional.of(member1));
-            when(members.findById(new MemberId(member2Id))).thenReturn(Optional.of(member2));
-
             // When
-            List<RegistrationDto> registrations = service.listRegistrations(eventId);
+            List<EventRegistration> registrations = service.listRegistrations(eventId);
 
             // Then
             assertThat(registrations).hasSize(2);
-            assertThat(registrations.get(0).firstName()).isEqualTo("John");
-            assertThat(registrations.get(0).lastName()).isEqualTo("Doe");
-            assertThat(registrations.get(1).firstName()).isEqualTo("Jane");
-            assertThat(registrations.get(1).lastName()).isEqualTo("Smith");
+            assertThat(registrations).extracting(r -> r.memberId().uuid())
+                    .containsExactlyInAnyOrder(member1Id, member2Id);
         }
 
         @Test
@@ -287,7 +273,7 @@ class EventRegistrationServiceTest {
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             // When
-            List<RegistrationDto> registrations = service.listRegistrations(eventId);
+            List<EventRegistration> registrations = service.listRegistrations(eventId);
 
             // Then
             assertThat(registrations).isEmpty();
@@ -318,22 +304,18 @@ class EventRegistrationServiceTest {
         }
 
         @Test
-        @DisplayName("should return full registration details including SI card for own registration")
+        @DisplayName("should return EventRegistration domain object including SI card for own registration")
         void shouldReturnOwnRegistrationWithSiCard() {
             // Given
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
 
-            MemberDto member = new MemberDto(TEST_USER_ID.uuid(), "John", "Doe", "doe@email.com");
-            when(members.findById(TEST_MEMBER_ID)).thenReturn(Optional.of(member));
-
             // When
-            OwnRegistrationDto registration = service.getOwnRegistration(eventId, TEST_MEMBER_ID);
+            EventRegistration registration = service.getOwnRegistration(eventId, TEST_MEMBER_ID);
 
             // Then
             assertThat(registration).isNotNull();
-            assertThat(registration.firstName()).isEqualTo("John");
-            assertThat(registration.lastName()).isEqualTo("Doe");
-            assertThat(registration.siCardNumber()).isEqualTo("123456"); // SI card IS visible
+            assertThat(registration.memberId()).isEqualTo(TEST_MEMBER_ID);
+            assertThat(registration.siCardNumber().value()).isEqualTo("123456");
         }
 
         @Test

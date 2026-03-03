@@ -11,7 +11,11 @@ import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.application.RegistrationNotFoundException;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.SiCardNumber;
 import com.klabis.events.EventId;
+import com.klabis.members.MemberDto;
+import com.klabis.members.Members;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -62,6 +66,9 @@ class EventRegistrationControllerTest {
 
     @MockitoBean
     private EventRegistrationService registrationServiceMock;
+
+    @MockitoBean
+    private Members membersMock;
 
     static EntityLinks entityLinksMock() {
         return HateoasTestingSupport.createModuleEntityLinks(EventRegistrationController.class);
@@ -122,6 +129,23 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isUnauthorized());
         }
+
+        @Test
+        @DisplayName("should return 403 Forbidden when user has no member profile")
+        @WithKlabisMockUser
+        void shouldReturn403WhenUserHasNoMemberProfile() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+
+            mockMvc.perform(
+                            post("/api/events/{eventId}/registrations", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.title").value("Authorization Failed"));
+        }
     }
 
     @Nested
@@ -175,12 +199,16 @@ class EventRegistrationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldListRegistrationsWithoutSiCardNumbers() throws Exception {
             UUID eventId = UUID.randomUUID();
-            List<RegistrationDto> registrations = List.of(
-                    new RegistrationDto("John", "Doe", Instant.now()),
-                    new RegistrationDto("Jane", "Smith", Instant.now())
+            MemberId member1Id = new MemberId(UUID.randomUUID());
+            MemberId member2Id = new MemberId(UUID.randomUUID());
+            List<EventRegistration> registrations = List.of(
+                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), Instant.now()),
+                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), Instant.now())
             );
 
             when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
+            when(membersMock.findById(member1Id)).thenReturn(java.util.Optional.of(new MemberDto(member1Id.value(), "John", "Doe", "john@example.com")));
+            when(membersMock.findById(member2Id)).thenReturn(java.util.Optional.of(new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations", eventId)
@@ -188,8 +216,8 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.registrationDtoList").isArray())
-                    .andExpect(jsonPath("$._embedded.registrationDtoList.length()")
-                            .value(registrations.size()))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList.length()").value(registrations.size()))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("John"))
                     .andExpect(jsonPath("$._embedded.registrationDtoList[0].siCardNumber").doesNotExist())
                     .andExpect(jsonPath("$._embedded.registrationDtoList[1].siCardNumber").doesNotExist());
         }
@@ -206,14 +234,11 @@ class EventRegistrationControllerTest {
             final UUID eventId = UUID.randomUUID();
             final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
-            OwnRegistrationDto registration = new OwnRegistrationDto(
-                    "John",
-                    "Doe",
-                    "123456",
-                    Instant.now()
-            );
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
 
             when(registrationServiceMock.getOwnRegistration(new EventId(eventId), memberId)).thenReturn(registration);
+            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/me", eventId)
