@@ -6,7 +6,6 @@ import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventStatus;
-import com.klabis.events.infrastructure.restapi.EventNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

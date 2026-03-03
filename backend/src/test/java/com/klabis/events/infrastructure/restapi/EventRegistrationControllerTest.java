@@ -6,7 +6,10 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.common.users.UserService;
+import com.klabis.events.application.DuplicateRegistrationException;
+import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
+import com.klabis.events.application.RegistrationNotFoundException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
 import com.klabis.members.MemberId;
@@ -16,17 +19,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.LinkRelation;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.LinkBuilder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -259,35 +258,4 @@ class EventRegistrationControllerTest {
         }
     }
 
-    private LinkBuilder eventLinkBuilder(UUID eventId) {
-        return new SimpleLinkBuilder("/api/events/" + eventId);
-    }
-
-    private static final class SimpleLinkBuilder implements LinkBuilder {
-        private final String href;
-
-        private SimpleLinkBuilder(String href) {
-            this.href = href;
-        }
-
-        @Override
-        public LinkBuilder slash(Object object) {
-            return new SimpleLinkBuilder(href.endsWith("/") ? href + object : href + "/" + object);
-        }
-
-        @Override
-        public URI toUri() {
-            return URI.create(href);
-        }
-
-        @Override
-        public Link withRel(LinkRelation rel) {
-            return Link.of(href, rel);
-        }
-
-        @Override
-        public Link withSelfRel() {
-            return Link.of(href, "self");
-        }
-    }
 }

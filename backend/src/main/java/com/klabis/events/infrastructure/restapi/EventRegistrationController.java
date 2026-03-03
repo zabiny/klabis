@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
+import com.klabis.events.application.DuplicateRegistrationException;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;

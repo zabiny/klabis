@@ -1,4 +1,4 @@
-package com.klabis.events.infrastructure.restapi;
+package com.klabis.events.application;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;

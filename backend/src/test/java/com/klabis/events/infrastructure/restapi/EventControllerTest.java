@@ -6,6 +6,7 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
 import com.klabis.events.application.EventManagementService;
+import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
 import org.junit.jupiter.api.DisplayName;

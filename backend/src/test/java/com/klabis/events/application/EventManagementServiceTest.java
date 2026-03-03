@@ -7,7 +7,6 @@ import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventStatus;
-import com.klabis.events.infrastructure.restapi.EventNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
