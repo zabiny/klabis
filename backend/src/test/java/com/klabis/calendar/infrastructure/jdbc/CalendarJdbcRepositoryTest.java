@@ -3,6 +3,7 @@ package com.klabis.calendar.infrastructure.jdbc;
 import com.klabis.CleanupTestData;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemId;
+import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.events.EventId;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;

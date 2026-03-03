@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @PrimaryAdapter
-public class EventsEventListener {
+class EventsEventListener {
 
     private static final Logger log = LoggerFactory.getLogger(EventsEventListener.class);
 

@@ -2,6 +2,7 @@ package com.klabis.calendar.infrastructure.jdbc;
 
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemId;
+import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;

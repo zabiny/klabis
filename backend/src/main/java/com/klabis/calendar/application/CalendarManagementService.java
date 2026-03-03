@@ -1,11 +1,11 @@
-package com.klabis.calendar.infrastructure.restapi;
+package com.klabis.calendar.application;
 
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemId;
-import com.klabis.calendar.infrastructure.jdbc.CalendarRepository;
-import org.jmolecules.ddd.annotation.Service;
+import com.klabis.calendar.domain.CalendarRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -14,20 +14,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Application service for calendar item management operations.
- * <p>
- * Handles manual calendar item creation, updates, deletion, and queries.
- * All mutation operations are transactional.
- * <p>
- * Event-linked calendar items (eventId != null) are read-only and managed
- * automatically through event handlers.
- * <p>
- * This is an application service (not a port), responsible for orchestrating
- * use cases exposed through the REST API.
- */
 @Service
-class CalendarManagementService {
+class CalendarManagementService implements CalendarManagementPort {
 
     private final CalendarRepository calendarRepository;
 
@@ -37,25 +25,13 @@ class CalendarManagementService {
 
     private static final int MAX_DATE_RANGE_DAYS = 366; // 1 year (including leap year)
 
-    /**
-     * Lists calendar items with date range filtering.
-     * <p>
-     * Returns items that intersect with the specified date range, sorted according to the provided sort parameter.
-     * Maximum date range is 1 year (366 days).
-     *
-     * @param startDate start date for filtering (inclusive)
-     * @param endDate   end date for filtering (inclusive)
-     * @param sort      sort specification
-     * @return list of calendar item DTOs
-     * @throws IllegalArgumentException if date range exceeds 366 days
-     */
     @Transactional(readOnly = true)
+    @Override
     public List<CalendarItemDto> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Sort sort) {
         validateDateRange(startDate, endDate);
 
         List<CalendarItem> items = calendarRepository.findByDateRange(startDate, endDate);
 
-        // Apply sorting based on sort parameter
         Comparator<CalendarItem> comparator;
         if (sort.isSorted() && sort.iterator().hasNext()) {
             Sort.Order order = sort.iterator().next();
@@ -64,7 +40,6 @@ class CalendarManagementService {
                 comparator = comparator.reversed();
             }
         } else {
-            // Default sorting by startDate ascending
             comparator = Comparator.comparing(CalendarItem::getStartDate);
         }
 
@@ -74,12 +49,6 @@ class CalendarManagementService {
                 .toList();
     }
 
-    /**
-     * Gets comparator for specified field name.
-     *
-     * @param field field name to sort by
-     * @return comparator for that field
-     */
     private Comparator<CalendarItem> getComparatorForField(String field) {
         return switch (field) {
             case "id" -> Comparator.comparing(item -> item.getId().value());
@@ -90,15 +59,8 @@ class CalendarManagementService {
         };
     }
 
-    /**
-     * Validates that the date range is within acceptable limits.
-     *
-     * @param startDate start date
-     * @param endDate   end date
-     * @throws IllegalArgumentException if range exceeds 366 days
-     */
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
-        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate) + 1; // Include both start and end dates
+        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate) + 1;
 
         if (daysBetween > MAX_DATE_RANGE_DAYS) {
             throw new IllegalArgumentException(
@@ -108,14 +70,8 @@ class CalendarManagementService {
         }
     }
 
-    /**
-     * Retrieves calendar item details by ID.
-     *
-     * @param calendarItemId the ID of the calendar item
-     * @return calendar item DTO
-     * @throws CalendarNotFoundException if calendar item not found
-     */
     @Transactional(readOnly = true)
+    @Override
     public CalendarItemDto getCalendarItem(UUID calendarItemId) {
         CalendarItem calendarItem = calendarRepository.findById(new CalendarItemId(calendarItemId))
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId));
@@ -123,15 +79,8 @@ class CalendarManagementService {
         return mapToDto(calendarItem);
     }
 
-    /**
-     * Creates a new manual calendar item.
-     * <p>
-     * Manual calendar items (eventId = null) can be freely updated and deleted.
-     *
-     * @param command the create calendar item command
-     * @return the ID of the created calendar item
-     */
     @Transactional
+    @Override
     public UUID createCalendarItem(CreateCalendarItemCommand command) {
         CalendarItem calendarItem = CalendarItem.create(
                 command.name(),
@@ -144,19 +93,8 @@ class CalendarManagementService {
         return savedItem.getId().value();
     }
 
-    /**
-     * Updates an existing manual calendar item.
-     * <p>
-     * Business rule: Only manual items (eventId == null) can be updated.
-     * Event-linked items are read-only and managed automatically.
-     *
-     * @param calendarItemId the ID of the calendar item to update
-     * @param command        the update calendar item command
-     * @throws CalendarNotFoundException        if calendar item not found
-     * @throws CalendarItemReadOnlyException    if calendar item is event-linked
-     * @throws IllegalArgumentException         if validation fails
-     */
     @Transactional
+    @Override
     public void updateCalendarItem(UUID calendarItemId, UpdateCalendarItemCommand command) {
         CalendarItem calendarItem = calendarRepository.findById(new CalendarItemId(calendarItemId))
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId));
@@ -175,17 +113,8 @@ class CalendarManagementService {
         calendarRepository.save(calendarItem);
     }
 
-    /**
-     * Deletes a manual calendar item.
-     * <p>
-     * Business rule: Only manual items (eventId == null) can be deleted.
-     * Event-linked items are read-only and managed automatically.
-     *
-     * @param calendarItemId the ID of the calendar item to delete
-     * @throws CalendarNotFoundException        if calendar item not found
-     * @throws CalendarItemReadOnlyException    if calendar item is event-linked
-     */
     @Transactional
+    @Override
     public void deleteCalendarItem(UUID calendarItemId) {
         CalendarItem calendarItem = calendarRepository.findById(new CalendarItemId(calendarItemId))
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId));
@@ -199,14 +128,6 @@ class CalendarManagementService {
         calendarRepository.delete(calendarItem);
     }
 
-    // ========== Mapping Methods ==========
-
-    /**
-     * Maps CalendarItem domain object to CalendarItemDto.
-     *
-     * @param calendarItem the calendar item to map
-     * @return calendar item DTO
-     */
     private CalendarItemDto mapToDto(CalendarItem calendarItem) {
         return new CalendarItemDto(
                 calendarItem.getId().value(),

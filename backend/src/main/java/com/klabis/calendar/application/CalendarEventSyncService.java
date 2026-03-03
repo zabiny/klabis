@@ -1,7 +1,7 @@
 package com.klabis.calendar.application;
 
 import com.klabis.calendar.domain.CalendarItem;
-import com.klabis.calendar.infrastructure.jdbc.CalendarRepository;
+import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.events.EventData;
 import com.klabis.events.EventDataProvider;
 import com.klabis.events.EventId;
@@ -48,19 +48,15 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
     public void handleEventPublished(EventId eventId) {
         log.info("Creating calendar item for published event: {}", eventId);
 
-        // Check if calendar item already exists (idempotency)
         if (calendarRepository.findByEventId(eventId).isPresent()) {
             log.warn("Calendar item already exists for event {}. Skipping creation (idempotent).", eventId);
             return;
         }
 
-        // Fetch event data from events module
         EventData eventData = eventDataProvider.getEventData(eventId);
 
-        // Build description: location + " - " + organizer + [newline + websiteUrl if present]
         String description = buildDescription(eventData);
 
-        // Create event-linked calendar item using business factory method
         CalendarItem calendarItem = CalendarItem.createForEvent(
                 eventData.name(),
                 description,
@@ -107,10 +103,8 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
         CalendarItem calendarItem = calendarItemOpt.get();
 
-        // Build updated description
         String description = buildDescription(location, organizer, websiteUrl);
 
-        // Synchronize calendar item with updated event data using domain method
         calendarItem.synchronizeFromEvent(name, description, eventDate);
 
         calendarRepository.save(calendarItem);
@@ -145,8 +139,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
     }
 
     private String buildDescription(EventData eventData) {
-        return buildDescription(eventData.location(), eventData.organizer(),
-                eventData.websiteUrl() != null ? eventData.websiteUrl() : null);
+        return buildDescription(eventData.location(), eventData.organizer(), eventData.websiteUrl());
     }
 
     private String buildDescription(String location, String organizer, String websiteUrl) {

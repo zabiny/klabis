@@ -8,6 +8,8 @@ import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
 
+import org.springframework.util.Assert;
+
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -91,16 +93,7 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
             EventId eventId,
             AuditMetadata auditMetadata) {
 
-        CalendarItem calendarItem = new CalendarItem(
-                id,
-                name,
-                description,
-                startDate,
-                endDate,
-                eventId,
-                auditMetadata
-        );
-        return calendarItem;
+        return new CalendarItem(id, name, description, startDate, endDate, eventId, auditMetadata);
     }
 
     /**
@@ -181,33 +174,23 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
     // ========== Validation Methods ==========
 
     private static void validateName(String name) {
-        if (name == null || name.trim().isBlank()) {
-            throw new IllegalArgumentException("Calendar item name is required");
-        }
+        Assert.hasText(name, "Calendar item name is required");
     }
 
     private static void validateDescription(String description) {
-        if (description == null || description.trim().isBlank()) {
-            throw new IllegalArgumentException("Calendar item description is required");
-        }
+        Assert.hasText(description, "Calendar item description is required");
     }
 
     private static void validateStartDate(LocalDate startDate) {
-        if (startDate == null) {
-            throw new IllegalArgumentException("Start date is required");
-        }
+        Assert.notNull(startDate, "Start date is required");
     }
 
     private static void validateEndDate(LocalDate endDate) {
-        if (endDate == null) {
-            throw new IllegalArgumentException("End date is required");
-        }
+        Assert.notNull(endDate, "End date is required");
     }
 
     private static void validateDateRange(LocalDate startDate, LocalDate endDate) {
-        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
-            throw new IllegalArgumentException("End date must be on or after start date");
-        }
+        Assert.isTrue(!endDate.isBefore(startDate), "End date must be on or after start date");
     }
 
     // ========== Getters ==========

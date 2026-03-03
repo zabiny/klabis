@@ -2,7 +2,7 @@ package com.klabis.calendar.application;
 
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemId;
-import com.klabis.calendar.infrastructure.jdbc.CalendarRepository;
+import com.klabis.calendar.domain.CalendarRepository;
 import com.klabis.events.*;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;

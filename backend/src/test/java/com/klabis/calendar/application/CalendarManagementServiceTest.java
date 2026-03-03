@@ -1,9 +1,9 @@
-package com.klabis.calendar.infrastructure.restapi;
+package com.klabis.calendar.application;
 
 import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemId;
-import com.klabis.calendar.infrastructure.jdbc.CalendarRepository;
+import com.klabis.calendar.domain.CalendarRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

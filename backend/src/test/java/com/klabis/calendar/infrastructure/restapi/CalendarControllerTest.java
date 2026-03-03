@@ -1,5 +1,11 @@
 package com.klabis.calendar.infrastructure.restapi;
 
+import com.klabis.calendar.application.CalendarItemDto;
+import com.klabis.calendar.application.CalendarItemReadOnlyException;
+import com.klabis.calendar.application.CalendarManagementPort;
+import com.klabis.calendar.application.CalendarNotFoundException;
+import com.klabis.calendar.application.CreateCalendarItemCommand;
+import com.klabis.calendar.application.UpdateCalendarItemCommand;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
@@ -8,8 +14,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -37,7 +41,7 @@ class CalendarControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private CalendarManagementService calendarManagementService;
+    private CalendarManagementPort calendarManagementService;
 
     @Nested
     @DisplayName("GET /api/calendar-items")
@@ -66,12 +70,6 @@ class CalendarControllerTest {
                     LocalDate.of(2026, 3, 20),
                     LocalDate.of(2026, 3, 20),
                     UUID.randomUUID()
-            );
-
-            PageImpl<CalendarItemDto> page = new PageImpl<>(
-                    List.of(dto1, dto2),
-                    PageRequest.of(0, 20),
-                    2
             );
 
             when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(dto1, dto2));
@@ -103,12 +101,6 @@ class CalendarControllerTest {
                     today,
                     today,
                     null
-            );
-
-            PageImpl<CalendarItemDto> page = new PageImpl<>(
-                    List.of(dto),
-                    PageRequest.of(0, 20),
-                    1
             );
 
             when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any())).thenReturn(List.of(dto));
@@ -286,22 +278,12 @@ class CalendarControllerTest {
     class CreateCalendarItemTests {
 
         @Test
-        @DisplayName("should return 201 with Location header and HAL+FORMS links")
+        @DisplayName("should return 201 with Location header")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
         void shouldCreateCalendarItemWithValidData() throws Exception {
             UUID calendarItemId = UUID.randomUUID();
 
-            CalendarItemDto calendarItemDto = new CalendarItemDto(
-                    calendarItemId,
-                    "Training Session",
-                    "Weekly training session at the park",
-                    LocalDate.of(2026, 3, 15),
-                    LocalDate.of(2026, 3, 15),
-                    null
-            );
-
             when(calendarManagementService.createCalendarItem(any(CreateCalendarItemCommand.class))).thenReturn(calendarItemId);
-            when(calendarManagementService.getCalendarItem(calendarItemId)).thenReturn(calendarItemDto);
 
             mockMvc.perform(
                             post("/api/calendar-items")
@@ -318,11 +300,7 @@ class CalendarControllerTest {
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"))
-                    .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/calendar-items/" + calendarItemId)))
-                    .andExpect(jsonPath("$.id").value(calendarItemId.toString()))
-                    .andExpect(jsonPath("$.name").value("Training Session"))
-                    .andExpect(jsonPath("$.eventId").isEmpty())
-                    .andExpect(jsonPath("$._links.self.href").exists());
+                    .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/calendar-items/" + calendarItemId)));
         }
 
         @Test
@@ -371,21 +349,10 @@ class CalendarControllerTest {
     class UpdateCalendarItemTests {
 
         @Test
-        @DisplayName("should return 200 with updated calendar item")
+        @DisplayName("should return 204 No Content on successful update")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
         void shouldUpdateCalendarItemWithValidData() throws Exception {
             UUID calendarItemId = UUID.randomUUID();
-
-            CalendarItemDto calendarItemDto = new CalendarItemDto(
-                    calendarItemId,
-                    "Updated Training Session",
-                    "Updated description",
-                    LocalDate.of(2026, 3, 20),
-                    LocalDate.of(2026, 3, 20),
-                    null
-            );
-
-            when(calendarManagementService.getCalendarItem(calendarItemId)).thenReturn(calendarItemDto);
 
             mockMvc.perform(
                             put("/api/calendar-items/{id}", calendarItemId)
@@ -400,11 +367,7 @@ class CalendarControllerTest {
                                             }
                                             """)
                     )
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(calendarItemId.toString()))
-                    .andExpect(jsonPath("$.name").value("Updated Training Session"))
-                    .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").exists());
+                    .andExpect(status().isNoContent());
         }
 
         @Test
