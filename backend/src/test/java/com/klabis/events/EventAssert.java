@@ -4,6 +4,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.events.WebsiteUrl;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactory;

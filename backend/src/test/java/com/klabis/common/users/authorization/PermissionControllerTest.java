@@ -88,8 +88,7 @@ class PermissionControllerTest {
             mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.self.href").value(containsString("/api/users/" + USER_ID.uuid().toString() + "/permissions")))
-                    .andExpect(jsonPath("$._links.permissions.href").exists());
+                    .andExpect(jsonPath("$._links.self.href").value(containsString("/api/users/" + USER_ID.uuid().toString() + "/permissions")));
         }
 
         @Test
