@@ -1,6 +1,6 @@
 ---
 name: klabis-code-review
-description: Instructions for code review on klabis project. Always perform code review before commiting changes in the code to git. 
+description: Instructions for code review on klabis project. Use when doing code review for klabis project. 
 ---
 
 # Code review areas
