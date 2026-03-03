@@ -1,7 +1,6 @@
 package com.klabis.members;
 
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.UserService;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.RegistrationNumber;
@@ -21,7 +20,7 @@ import java.util.UUID;
  * - Processing final financial settlements
  *
  * <p><b>User Account Suspension:</b> When a Member is suspended, the corresponding User account
- * is automatically suspended via {@link UserService#suspendUser(com.klabis.common.users.UserId)}.
+ * is automatically suspended via {@link com.klabis.common.users.UserService#suspendUser(com.klabis.common.users.UserId)}.
  * This prevents the suspended member from authenticating to the system. The suspension happens in the same
  * transaction as Member suspension, ensuring atomicity.
  *
@@ -37,17 +36,20 @@ import java.util.UUID;
  * @see <a href="https://spring.io/projects/spring-modulith">Spring Modulith</a>
  */
 @DomainEvent
-public class MemberSuspendedEvent {
+public record MemberSuspendedEvent(
+        UUID eventId,
+        MemberId memberId,
+        RegistrationNumber registrationNumber,
+        DeactivationReason reason,
+        Instant suspendedAt,
+        UserId suspendedBy,
+        String note
+) {
 
-    private final UUID eventId;
-    private final MemberId memberId;
-    private final RegistrationNumber registrationNumber;
-    private final DeactivationReason reason;
-    private final Instant suspendedAt;
-    private final UserId suspendedBy;
-    private final String note;
-
-    MemberSuspendedEvent(
+    /**
+     * Creates a new MemberSuspendedEvent with generated eventId.
+     */
+    public MemberSuspendedEvent(
             MemberId memberId,
             RegistrationNumber registrationNumber,
             DeactivationReason reason,
@@ -65,25 +67,20 @@ public class MemberSuspendedEvent {
         );
     }
 
-    MemberSuspendedEvent(
-            UUID eventId,
-            MemberId memberId,
-            RegistrationNumber registrationNumber,
-            DeactivationReason reason,
-            Instant suspendedAt,
-            UserId suspendedBy,
-            String note) {
-
-        this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
-        this.memberId = Objects.requireNonNull(memberId, "Member ID is required");
-        this.registrationNumber = Objects.requireNonNull(registrationNumber, "Registration number is required");
-        this.reason = Objects.requireNonNull(reason, "Suspension reason is required");
-        this.suspendedAt = Objects.requireNonNull(suspendedAt, "Suspended at timestamp is required");
-        this.suspendedBy = Objects.requireNonNull(suspendedBy, "Suspended by user ID is required");
-        this.note = note;
+    /**
+     * Compact constructor for validation.
+     */
+    public MemberSuspendedEvent {
+        Objects.requireNonNull(eventId, "Event ID is required");
+        Objects.requireNonNull(memberId, "Member ID is required");
+        Objects.requireNonNull(registrationNumber, "Registration number is required");
+        Objects.requireNonNull(reason, "Suspension reason is required");
+        Objects.requireNonNull(suspendedAt, "Suspended at timestamp is required");
+        Objects.requireNonNull(suspendedBy, "Suspended by user ID is required");
+        // note is nullable
     }
 
-    public static MemberSuspendedEvent fromMember(Member member, Member.SuspendMembership command) {
+    public static MemberSuspendedEvent fromAggregate(Member member, Member.SuspendMembership command) {
         return new MemberSuspendedEvent(
                 member.getId(),
                 member.getRegistrationNumber(),
@@ -92,47 +89,6 @@ public class MemberSuspendedEvent {
                 command.suspendedBy(),
                 command.note()
         );
-    }
-
-    public UUID getEventId() {
-        return eventId;
-    }
-
-    public MemberId getMemberId() {
-        return memberId;
-    }
-
-    public RegistrationNumber getRegistrationNumber() {
-        return registrationNumber;
-    }
-
-    public DeactivationReason getReason() {
-        return reason;
-    }
-
-    public Instant getSuspendedAt() {
-        return suspendedAt;
-    }
-
-    public UserId getSuspendedBy() {
-        return suspendedBy;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MemberSuspendedEvent that = (MemberSuspendedEvent) o;
-        return Objects.equals(eventId, that.eventId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(eventId);
     }
 
     @Override

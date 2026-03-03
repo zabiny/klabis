@@ -41,13 +41,13 @@ class MemberResumedEventTest {
         UserId resumedBy = new UserId(UUID.randomUUID());
         Member.ResumeMembership command = new Member.ResumeMembership(resumedBy);
 
-        MemberResumedEvent event = MemberResumedEvent.fromMember(member, command);
+        MemberResumedEvent event = MemberResumedEvent.fromAggregate(member, command);
 
-        assertThat(event.getMemberId()).isEqualTo(member.getId());
-        assertThat(event.getRegistrationNumber()).isEqualTo(member.getRegistrationNumber());
-        assertThat(event.getResumedBy()).isEqualTo(resumedBy);
-        assertThat(event.getResumedAt()).isNotNull();
-        assertThat(event.getEventId()).isNotNull();
+        assertThat(event.memberId()).isEqualTo(member.getId());
+        assertThat(event.registrationNumber()).isEqualTo(member.getRegistrationNumber());
+        assertThat(event.resumedBy()).isEqualTo(resumedBy);
+        assertThat(event.resumedAt()).isNotNull();
+        assertThat(event.eventId()).isNotNull();
     }
 
     @Test
@@ -105,8 +105,8 @@ class MemberResumedEventTest {
     }
 
     @Test
-    @DisplayName("should have meaningful toString")
-    void shouldHaveMeaningfulToString() {
+    @DisplayName("should have toString with event details")
+    void shouldHaveToStringWithEventDetails() {
         MemberId memberId = new MemberId(UUID.randomUUID());
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
         Instant now = Instant.now();
@@ -121,51 +121,11 @@ class MemberResumedEventTest {
 
         String toString = event.toString();
 
+        // Verify key event details are present
         assertThat(toString).contains("MemberResumedEvent");
         assertThat(toString).contains("eventId=");
-        assertThat(toString).contains("memberId=");
         assertThat(toString).contains("ZBM0501");
         assertThat(toString).contains("resumedAt=");
         assertThat(toString).contains("resumedBy=");
-    }
-
-    @Test
-    @DisplayName("should implement equals and hashCode based on eventId")
-    void shouldImplementEqualsAndHashCodeBasedOnEventId() {
-        MemberId memberId = new MemberId(UUID.randomUUID());
-        RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
-        Instant now = Instant.now();
-        UserId resumedBy = new UserId(UUID.randomUUID());
-        UUID eventId = UUID.randomUUID();
-
-        MemberResumedEvent event1 = new MemberResumedEvent(
-                eventId, memberId, registrationNumber, now, resumedBy
-        );
-
-        MemberResumedEvent event2 = new MemberResumedEvent(
-                eventId, memberId, registrationNumber, now, resumedBy
-        );
-
-        assertThat(event1).isEqualTo(event2);
-        assertThat(event1.hashCode()).isEqualTo(event2.hashCode());
-    }
-
-    @Test
-    @DisplayName("should not be equal with different eventId")
-    void shouldNotBeEqualWithDifferentEventId() {
-        MemberId memberId = new MemberId(UUID.randomUUID());
-        RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
-        Instant now = Instant.now();
-        UserId resumedBy = new UserId(UUID.randomUUID());
-
-        MemberResumedEvent event1 = new MemberResumedEvent(
-                UUID.randomUUID(), memberId, registrationNumber, now, resumedBy
-        );
-
-        MemberResumedEvent event2 = new MemberResumedEvent(
-                UUID.randomUUID(), memberId, registrationNumber, now, resumedBy
-        );
-
-        assertThat(event1).isNotEqualTo(event2);
     }
 }

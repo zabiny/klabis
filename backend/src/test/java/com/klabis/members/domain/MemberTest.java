@@ -88,21 +88,21 @@ class MemberTest {
                     .isInstanceOf(MemberCreatedEvent.class);
 
             MemberCreatedEvent event = (MemberCreatedEvent) member.getDomainEvents().get(0);
-            assertThat(event.getEventId()).isNotNull();
-            assertThat(event.getMemberId()).isEqualTo(member.getId());
-            assertThat(event.getRegistrationNumber()).isEqualTo(registrationNumber);
-            assertThat(event.getFirstName()).isEqualTo("Jan");
-            assertThat(event.getLastName()).isEqualTo("Novák");
-            assertThat(event.getDateOfBirth()).isEqualTo(dateOfBirth);
-            assertThat(event.getNationality()).isEqualTo("CZ");
-            assertThat(event.getGender()).isEqualTo(Gender.MALE);
-            assertThat(event.getAddress()).isEqualTo(address);
-            assertThat(event.getEmail()).isPresent().contains(email);
-            assertThat(event.getPhone()).isPresent().contains(phone);
-            assertThat(event.getGuardian()).isNull();
+            assertThat(event.eventId()).isNotNull();
+            assertThat(event.memberId()).isEqualTo(member.getId());
+            assertThat(event.registrationNumber()).isEqualTo(registrationNumber);
+            assertThat(event.firstName()).isEqualTo("Jan");
+            assertThat(event.lastName()).isEqualTo("Novák");
+            assertThat(event.dateOfBirth()).isEqualTo(dateOfBirth);
+            assertThat(event.nationality()).isEqualTo("CZ");
+            assertThat(event.gender()).isEqualTo(Gender.MALE);
+            assertThat(event.address()).isEqualTo(address);
+            assertThat(event.emailAsOptional()).isPresent().contains(email);
+            assertThat(event.phoneAsOptional()).isPresent().contains(phone);
+            assertThat(event.guardian()).isNull();
             assertThat(event.isMinor()).isFalse();
             assertThat(event.getPrimaryEmail()).isEqualTo("jan.novak@example.com");
-            assertThat(event.getOccurredAt()).isNotNull();
+            assertThat(event.occurredAt()).isNotNull();
 
         }
 
@@ -158,26 +158,26 @@ class MemberTest {
                     .isInstanceOf(MemberCreatedEvent.class);
 
             MemberCreatedEvent event = (MemberCreatedEvent) member.getDomainEvents().get(0);
-            assertThat(event.getEventId()).isNotNull();
-            assertThat(event.getMemberId()).isEqualTo(member.getId());
-            assertThat(event.getRegistrationNumber()).isEqualTo(registrationNumber);
-            assertThat(event.getFirstName()).isEqualTo("Anna");
-            assertThat(event.getLastName()).isEqualTo("Nováková");
-            assertThat(event.getDateOfBirth()).isEqualTo(dateOfBirth);
-            assertThat(event.getNationality()).isEqualTo("CZ");
-            assertThat(event.getGender()).isEqualTo(Gender.FEMALE);
-            assertThat(event.getAddress()).isEqualTo(address);
-            assertThat(event.getEmail()).isEmpty();
-            assertThat(event.getPhone()).isEmpty();
-            assertThat(event.getGuardian()).isNotNull();
-            assertThat(event.getGuardian().getFirstName()).isEqualTo("Petr");
-            assertThat(event.getGuardian().getLastName()).isEqualTo("Novák");
-            assertThat(event.getGuardian().getRelationship()).isEqualTo("PARENT");
-            assertThat(event.getGuardian().getEmail()).isEqualTo(EmailAddress.of("petr.novak@example.com"));
-            assertThat(event.getGuardian().getPhone()).isEqualTo(PhoneNumber.of("+420987654321"));
+            assertThat(event.eventId()).isNotNull();
+            assertThat(event.memberId()).isEqualTo(member.getId());
+            assertThat(event.registrationNumber()).isEqualTo(registrationNumber);
+            assertThat(event.firstName()).isEqualTo("Anna");
+            assertThat(event.lastName()).isEqualTo("Nováková");
+            assertThat(event.dateOfBirth()).isEqualTo(dateOfBirth);
+            assertThat(event.nationality()).isEqualTo("CZ");
+            assertThat(event.gender()).isEqualTo(Gender.FEMALE);
+            assertThat(event.address()).isEqualTo(address);
+            assertThat(event.emailAsOptional()).isEmpty();
+            assertThat(event.phoneAsOptional()).isEmpty();
+            assertThat(event.guardian()).isNotNull();
+            assertThat(event.guardian().getFirstName()).isEqualTo("Petr");
+            assertThat(event.guardian().getLastName()).isEqualTo("Novák");
+            assertThat(event.guardian().getRelationship()).isEqualTo("PARENT");
+            assertThat(event.guardian().getEmail()).isEqualTo(EmailAddress.of("petr.novak@example.com"));
+            assertThat(event.guardian().getPhone()).isEqualTo(PhoneNumber.of("+420987654321"));
             assertThat(event.isMinor()).isTrue();
             assertThat(event.getPrimaryEmail()).isEqualTo("petr.novak@example.com");
-            assertThat(event.getOccurredAt()).isNotNull();
+            assertThat(event.occurredAt()).isNotNull();
 
         }
 
@@ -1218,8 +1218,8 @@ class MemberTest {
                     .allMatch(event -> event instanceof MemberResumedEvent);
 
             MemberResumedEvent event = (MemberResumedEvent) suspendedMember.getDomainEvents().get(0);
-            assertThat(event.getResumedAt()).isNotNull();
-            assertThat(event.getResumedAt().toEpochMilli())
+            assertThat(event.resumedAt()).isNotNull();
+            assertThat(event.resumedAt().toEpochMilli())
                     .isGreaterThanOrEqualTo(beforeResume)
                     .isLessThanOrEqualTo(afterResume);
         }

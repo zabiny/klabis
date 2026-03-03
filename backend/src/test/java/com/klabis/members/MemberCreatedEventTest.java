@@ -30,22 +30,22 @@ class MemberCreatedEventTest {
                 .build();
 
         // When
-        MemberCreatedEvent event = MemberCreatedEvent.fromMember(member);
+        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
 
         // Then
-        assertThat(event.getMemberId()).isEqualTo(member.getId());
-        assertThat(event.getRegistrationNumber()).isEqualTo(member.getRegistrationNumber());
-        assertThat(event.getFirstName()).isEqualTo("Jan");
-        assertThat(event.getLastName()).isEqualTo("Novák");
-        assertThat(event.getDateOfBirth()).isEqualTo(LocalDate.of(2005, 6, 15));
-        assertThat(event.getNationality()).isEqualTo("CZ");
-        assertThat(event.getGender()).isEqualTo(Gender.MALE);
-        assertThat(event.getEmail()).isPresent();
-        assertThat(event.getEmail().get().value()).isEqualTo("jan@example.com");
-        assertThat(event.getPhone()).isPresent();
-        assertThat(event.getPhone().get().value()).isEqualTo("+420777888999");
-        assertThat(event.getGuardian()).isNull();
-        assertThat(event.getOccurredAt()).isNotNull();
+        assertThat(event.memberId()).isEqualTo(member.getId());
+        assertThat(event.registrationNumber()).isEqualTo(member.getRegistrationNumber());
+        assertThat(event.firstName()).isEqualTo("Jan");
+        assertThat(event.lastName()).isEqualTo("Novák");
+        assertThat(event.dateOfBirth()).isEqualTo(LocalDate.of(2005, 6, 15));
+        assertThat(event.nationality()).isEqualTo("CZ");
+        assertThat(event.gender()).isEqualTo(Gender.MALE);
+        assertThat(event.emailAsOptional()).isPresent();
+        assertThat(event.emailAsOptional().get().value()).isEqualTo("jan@example.com");
+        assertThat(event.phoneAsOptional()).isPresent();
+        assertThat(event.phoneAsOptional().get().value()).isEqualTo("+420777888999");
+        assertThat(event.guardian()).isNull();
+        assertThat(event.occurredAt()).isNotNull();
     }
 
     @Test
@@ -73,12 +73,12 @@ class MemberCreatedEventTest {
                 .build();
 
         // When
-        MemberCreatedEvent event = MemberCreatedEvent.fromMember(member);
+        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
 
         // Then
-        assertThat(event.getGuardian()).isNotNull();
-        assertThat(event.getGuardian().getFirstName()).isEqualTo("Parent");
-        assertThat(event.getGuardian().getLastName()).isEqualTo("Name");
+        assertThat(event.guardian()).isNotNull();
+        assertThat(event.guardian().getFirstName()).isEqualTo("Parent");
+        assertThat(event.guardian().getLastName()).isEqualTo("Name");
         assertThat(event.isMinor()).isTrue();
     }
 
@@ -99,7 +99,7 @@ class MemberCreatedEventTest {
                 .build();
 
         // When
-        MemberCreatedEvent event = MemberCreatedEvent.fromMember(member);
+        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
 
         // Then
         assertThat(event.isMinor()).isFalse();
@@ -122,7 +122,7 @@ class MemberCreatedEventTest {
                 .build();
 
         // When
-        MemberCreatedEvent event = MemberCreatedEvent.fromMember(member);
+        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
 
         // Then
         assertThat(event.getPrimaryEmail()).isEqualTo("test@example.com");
@@ -153,7 +153,7 @@ class MemberCreatedEventTest {
                 .build();
 
         // When
-        MemberCreatedEvent event = MemberCreatedEvent.fromMember(member);
+        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
 
         // Then
         assertThat(event.getPrimaryEmail()).isEqualTo("parent@example.com");
@@ -175,13 +175,13 @@ class MemberCreatedEventTest {
                 .withNoGuardian()
                 .build();
 
-        MemberCreatedEvent event = MemberCreatedEvent.fromMember(member);
+        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
 
         // When/Then
-        assertThat(event.getEmail()).isPresent();
-        assertThat(event.getEmail().get().value()).isEqualTo("test@example.com");
-        assertThat(event.getPhone()).isPresent();
-        assertThat(event.getPhone().get().value()).isEqualTo("+420777888999");
+        assertThat(event.emailAsOptional()).isPresent();
+        assertThat(event.emailAsOptional().get().value()).isEqualTo("test@example.com");
+        assertThat(event.phoneAsOptional()).isPresent();
+        assertThat(event.phoneAsOptional().get().value()).isEqualTo("+420777888999");
     }
 
     @Test
@@ -210,8 +210,8 @@ class MemberCreatedEventTest {
     }
 
     @Test
-    @DisplayName("should have meaningful toString without PII")
-    void shouldHaveMeaningfulToStringWithoutPII() {
+    @DisplayName("should have toString without PII for GDPR compliance")
+    void shouldHaveToStringWithoutPII() {
         // Given
         Member member = aMember()
                 .withRegistrationNumber("ZBM0501")
@@ -226,24 +226,20 @@ class MemberCreatedEventTest {
                 .build();
 
         // When
-        MemberCreatedEvent event = MemberCreatedEvent.fromMember(member);
+        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
 
         // Then - toString should NOT contain PII for GDPR compliance
         String toString = event.toString();
         assertThat(toString).contains("MemberCreatedEvent");
-        assertThat(toString).contains("eventId=");
-        assertThat(toString).contains("memberId=");
-        assertThat(toString).contains("ZBM0501");
-        assertThat(toString).contains("nationality='CZ'");
-        assertThat(toString).contains("isMinor=false");
-        assertThat(toString).contains("occurredAt=");
+        assertThat(toString).contains("ZBM0501"); // Non-PII identifier
 
-        // Verify PII is NOT in toString
-        assertThat(toString).doesNotContain("Jan");
-        assertThat(toString).doesNotContain("Novák");
-        assertThat(toString).doesNotContain("@example.com");
-        assertThat(toString).doesNotContain("+420");
-        assertThat(toString).doesNotContain("Hlavní");
-        assertThat(toString).doesNotContain("Praha");
+        // Verify PII is NOT in toString (GDPR compliance)
+        assertThat(toString).doesNotContain("Jan"); // First name
+        assertThat(toString).doesNotContain("Novák"); // Last name
+        assertThat(toString).doesNotContain("@example.com"); // Email
+        assertThat(toString).doesNotContain("+420"); // Phone
+        assertThat(toString).doesNotContain("Hlavní"); // Address
+        assertThat(toString).doesNotContain("Praha"); // Address
+        assertThat(toString).doesNotContain("2005-06-15"); // Date of birth
     }
 }

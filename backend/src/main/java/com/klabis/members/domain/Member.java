@@ -318,7 +318,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         );
 
         // Register domain event
-        member.registerEvent(MemberCreatedEvent.fromMember(member));
+        member.registerEvent(MemberCreatedEvent.fromAggregate(member));
 
         return member;
     }
@@ -638,7 +638,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.suspensionNote = command.note();
         this.suspendedBy = command.suspendedBy().uuid().toString();
 
-        registerEvent(MemberSuspendedEvent.fromMember(this, command));
+        registerEvent(MemberSuspendedEvent.fromAggregate(this, command));
     }
 
     /**
@@ -667,7 +667,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.suspensionNote = null;
         this.suspendedBy = null;
 
-        registerEvent(MemberResumedEvent.fromMember(this, command));
+        registerEvent(MemberResumedEvent.fromAggregate(this, command));
     }
 
     @Override

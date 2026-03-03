@@ -30,14 +30,17 @@ import java.util.UUID;
  * @see <a href="https://spring.io/projects/spring-modulith">Spring Modulith</a>
  */
 @DomainEvent
-public class MemberResumedEvent {
+public record MemberResumedEvent(
+        UUID eventId,
+        MemberId memberId,
+        RegistrationNumber registrationNumber,
+        Instant resumedAt,
+        UserId resumedBy
+) {
 
-    private final UUID eventId;
-    private final MemberId memberId;
-    private final RegistrationNumber registrationNumber;
-    private final Instant resumedAt;
-    private final UserId resumedBy;
-
+    /**
+     * Creates a new MemberResumedEvent with generated eventId.
+     */
     public MemberResumedEvent(
             MemberId memberId,
             RegistrationNumber registrationNumber,
@@ -52,60 +55,24 @@ public class MemberResumedEvent {
         );
     }
 
-    public MemberResumedEvent(
-            UUID eventId,
-            MemberId memberId,
-            RegistrationNumber registrationNumber,
-            Instant resumedAt,
-            UserId resumedBy) {
-
-        this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
-        this.memberId = Objects.requireNonNull(memberId, "Member ID is required");
-        this.registrationNumber = Objects.requireNonNull(registrationNumber, "Registration number is required");
-        this.resumedAt = Objects.requireNonNull(resumedAt, "Resumed at timestamp is required");
-        this.resumedBy = Objects.requireNonNull(resumedBy, "Resumed by user ID is required");
+    /**
+     * Compact constructor for validation.
+     */
+    public MemberResumedEvent {
+        Objects.requireNonNull(eventId, "Event ID is required");
+        Objects.requireNonNull(memberId, "Member ID is required");
+        Objects.requireNonNull(registrationNumber, "Registration number is required");
+        Objects.requireNonNull(resumedAt, "Resumed at timestamp is required");
+        Objects.requireNonNull(resumedBy, "Resumed by user ID is required");
     }
 
-    public static MemberResumedEvent fromMember(Member member, Member.ResumeMembership command) {
+    public static MemberResumedEvent fromAggregate(Member member, Member.ResumeMembership command) {
         return new MemberResumedEvent(
                 member.getId(),
                 member.getRegistrationNumber(),
                 Instant.now(),
                 command.resumedBy()
         );
-    }
-
-    public UUID getEventId() {
-        return eventId;
-    }
-
-    public MemberId getMemberId() {
-        return memberId;
-    }
-
-    public RegistrationNumber getRegistrationNumber() {
-        return registrationNumber;
-    }
-
-    public Instant getResumedAt() {
-        return resumedAt;
-    }
-
-    public UserId getResumedBy() {
-        return resumedBy;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MemberResumedEvent that = (MemberResumedEvent) o;
-        return Objects.equals(eventId, that.eventId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(eventId);
     }
 
     @Override

@@ -235,10 +235,10 @@ class ManagementServiceTest {
                 assertThat(event).isInstanceOf(MemberSuspendedEvent.class);
 
                 MemberSuspendedEvent suspensionEvent = (MemberSuspendedEvent) event;
-                assertThat(suspensionEvent.getMemberId()).isEqualTo(new MemberId(testMemberId));
-                assertThat(suspensionEvent.getReason()).isEqualTo(DeactivationReason.OTHER);
-                assertThat(suspensionEvent.getSuspendedBy()).isEqualTo(new UserId(adminUserId));
-                assertThat(suspensionEvent.getNote()).isEqualTo("Administrative decision");
+                assertThat(suspensionEvent.memberId()).isEqualTo(new MemberId(testMemberId));
+                assertThat(suspensionEvent.reason()).isEqualTo(DeactivationReason.OTHER);
+                assertThat(suspensionEvent.suspendedBy()).isEqualTo(new UserId(adminUserId));
+                assertThat(suspensionEvent.note()).isEqualTo("Administrative decision");
             }
         }
 
@@ -413,9 +413,9 @@ class ManagementServiceTest {
             assertThat(event).isInstanceOf(MemberResumedEvent.class);
 
             MemberResumedEvent resumeEvent = (MemberResumedEvent) event;
-            assertThat(resumeEvent.getMemberId()).isEqualTo(new MemberId(testMemberId));
-            assertThat(resumeEvent.getResumedBy()).isEqualTo(new UserId(adminUserId));
-            assertThat(resumeEvent.getRegistrationNumber()).isEqualTo(testSuspendedMember.getRegistrationNumber());
+            assertThat(resumeEvent.memberId()).isEqualTo(new MemberId(testMemberId));
+            assertThat(resumeEvent.resumedBy()).isEqualTo(new UserId(adminUserId));
+            assertThat(resumeEvent.registrationNumber()).isEqualTo(testSuspendedMember.getRegistrationNumber());
         }
     }
 }
