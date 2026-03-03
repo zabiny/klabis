@@ -124,7 +124,7 @@ class EventMemento implements Persistable<UUID> {
         // Set isNew flag based on whether event has audit metadata
         // New events (no audit metadata yet) -> INSERT (isNew = true)
         // Existing events (have audit metadata) -> UPDATE (isNew = false)
-        memento.isNew = (event.getCreatedAt() == null);
+        memento.isNew = (event.getAuditMetadata() == null);
 
         return memento;
     }

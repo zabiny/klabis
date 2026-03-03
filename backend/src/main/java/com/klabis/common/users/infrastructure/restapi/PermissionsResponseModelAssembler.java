@@ -23,13 +23,6 @@ class PermissionsResponseModelAssembler
     @Override
     public PermissionsResponseModel toModel(PermissionsResponse entity) {
         PermissionsResponseModel model = instantiateModel(entity);
-
-        // Add self link
-        Link selfLink = klabisLinkTo(methodOn(PermissionController.class)
-                .getUserPermissions(entity.userId().uuid()))
-                .withSelfRel();
-        model.add(selfLink);
-
         return model;
     }
 

@@ -5,7 +5,6 @@ import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
-import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
  * This service applies domain commands and persists the result.
  */
 @Service
-@PrimaryPort
 public class ManagementServiceImpl implements ManagementService {
 
     private static final Logger log = LoggerFactory.getLogger(ManagementServiceImpl.class);

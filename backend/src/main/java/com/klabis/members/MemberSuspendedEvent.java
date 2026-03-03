@@ -47,7 +47,7 @@ public class MemberSuspendedEvent {
     private final UserId suspendedBy;
     private final String note;
 
-    public MemberSuspendedEvent(
+    MemberSuspendedEvent(
             MemberId memberId,
             RegistrationNumber registrationNumber,
             DeactivationReason reason,
@@ -65,7 +65,7 @@ public class MemberSuspendedEvent {
         );
     }
 
-    public MemberSuspendedEvent(
+    MemberSuspendedEvent(
             UUID eventId,
             MemberId memberId,
             RegistrationNumber registrationNumber,

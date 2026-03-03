@@ -98,8 +98,7 @@ class CalendarMemento implements Persistable<UUID> {
 
         copyAuditMetadata(calendarItem, memento);
 
-        memento.isNew = (calendarItem.getAuditMetadata() == null
-                         || calendarItem.getAuditMetadata().createdAt() == null);
+        memento.isNew = (calendarItem.getAuditMetadata() == null);
 
         return memento;
     }

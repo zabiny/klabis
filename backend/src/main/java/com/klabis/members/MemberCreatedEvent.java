@@ -63,7 +63,7 @@ public class MemberCreatedEvent {
      * @param phone              the member's phone number
      * @param guardian           the guardian information (may be null for adults)
      */
-    public MemberCreatedEvent(
+    MemberCreatedEvent(
             MemberId memberId,
             RegistrationNumber registrationNumber,
             String firstName,
@@ -110,7 +110,7 @@ public class MemberCreatedEvent {
      * @param guardian           the guardian information (may be null for adults)
      * @param occurredAt         the timestamp when this event occurred
      */
-    public MemberCreatedEvent(
+    MemberCreatedEvent(
             UUID eventId,
             MemberId memberId,
             RegistrationNumber registrationNumber,
@@ -148,7 +148,7 @@ public class MemberCreatedEvent {
      */
     public static MemberCreatedEvent fromMember(Member member) {
         return new MemberCreatedEvent(
-                member.getId(),  // TODO: change to MemberId
+                member.getId(),
                 member.getRegistrationNumber(),
                 member.getFirstName(),
                 member.getLastName(),

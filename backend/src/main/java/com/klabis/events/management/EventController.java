@@ -26,7 +26,7 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
+import com.klabis.common.mvc.MvcComponent;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -244,7 +244,7 @@ public class EventController {
 
 }
 
-@Component
+@MvcComponent
 class EventsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
     @Override

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 @Service
-@Transactional
 public class EventManagementServiceImpl implements EventManagementService {
 
     private final EventRepository eventRepository;
@@ -23,6 +22,7 @@ public class EventManagementServiceImpl implements EventManagementService {
         this.eventRepository = eventRepository;
     }
 
+    @Transactional
     @Override
     public UUID createEvent(Event.CreateCommand command) {
         Event event = Event.create(
@@ -38,6 +38,7 @@ public class EventManagementServiceImpl implements EventManagementService {
         return savedEvent.getId().value();
     }
 
+    @Transactional
     @Override
     public void updateEvent(EventId eventId, Event.UpdateCommand command) {
         Event event = eventRepository.findById(eventId)
@@ -55,6 +56,7 @@ public class EventManagementServiceImpl implements EventManagementService {
         eventRepository.save(event);
     }
 
+    @Transactional
     @Override
     public void publishEvent(EventId eventId) {
         Event event = eventRepository.findById(eventId)
@@ -64,6 +66,7 @@ public class EventManagementServiceImpl implements EventManagementService {
         eventRepository.save(event);
     }
 
+    @Transactional
     @Override
     public void cancelEvent(EventId eventId) {
         Event event = eventRepository.findById(eventId)
@@ -73,6 +76,7 @@ public class EventManagementServiceImpl implements EventManagementService {
         eventRepository.save(event);
     }
 
+    @Transactional
     @Override
     public void finishEvent(EventId eventId) {
         Event event = eventRepository.findById(eventId)

@@ -68,11 +68,11 @@ public class PermissionController {
         PermissionsResponse response = toPermissionsResponse(permissions);
         PermissionsResponseModel model = permissionsAssembler.toModel(response);
 
-        Link permissionsLink = klabisLinkTo(methodOn(PermissionController.class)
-                .updatePermissions(id, null))
-                .withRel("permissions")
+        Link selfLink = klabisLinkTo(methodOn(PermissionController.class)
+                .getUserPermissions(id))
+                .withSelfRel()
                 .andAffordances(klabisAfford(methodOn(PermissionController.class).updatePermissions(id, null)));
-        model.add(permissionsLink);
+        model.add(selfLink);
 
         return ResponseEntity.ok(model);
     }
