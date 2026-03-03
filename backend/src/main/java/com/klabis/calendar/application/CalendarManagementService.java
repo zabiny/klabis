@@ -78,7 +78,7 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional
     @Override
-    public UUID createCalendarItem(CreateCalendarItemCommand command) {
+    public CalendarItem createCalendarItem(CreateCalendarItemCommand command) {
         CalendarItem calendarItem = CalendarItem.create(
                 command.name(),
                 command.description(),
@@ -86,8 +86,7 @@ class CalendarManagementService implements CalendarManagementPort {
                 command.endDate()
         );
 
-        CalendarItem savedItem = calendarRepository.save(calendarItem);
-        return savedItem.getId().value();
+        return calendarRepository.save(calendarItem);
     }
 
     @Transactional

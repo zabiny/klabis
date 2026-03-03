@@ -16,7 +16,7 @@ public interface CalendarManagementPort {
 
     CalendarItem getCalendarItem(UUID calendarItemId);
 
-    UUID createCalendarItem(CreateCalendarItemCommand command);
+    CalendarItem createCalendarItem(CreateCalendarItemCommand command);
 
     void updateCalendarItem(UUID calendarItemId, UpdateCalendarItemCommand command);
 

@@ -260,9 +260,11 @@ class CalendarControllerTest {
         @DisplayName("should return 201 with Location header")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
         void shouldCreateCalendarItemWithValidData() throws Exception {
-            UUID calendarItemId = UUID.randomUUID();
+            CalendarItem createdItem = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Training Session")
+                    .buildManual();
 
-            when(calendarManagementService.createCalendarItem(any(CreateCalendarItemCommand.class))).thenReturn(calendarItemId);
+            when(calendarManagementService.createCalendarItem(any(CreateCalendarItemCommand.class))).thenReturn(createdItem);
 
             mockMvc.perform(
                             post("/api/calendar-items")
@@ -279,7 +281,7 @@ class CalendarControllerTest {
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"))
-                    .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/calendar-items/" + calendarItemId)));
+                    .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/calendar-items/" + createdItem.getId().value())));
         }
 
         @Test

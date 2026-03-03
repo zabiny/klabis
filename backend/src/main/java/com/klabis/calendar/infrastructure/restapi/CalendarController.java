@@ -176,10 +176,10 @@ class CalendarController {
             @Parameter(description = "Calendar item creation data")
             @Valid @RequestBody CreateCalendarItemCommand command) {
 
-        UUID calendarItemId = calendarManagementService.createCalendarItem(command);
+        CalendarItem created = calendarManagementService.createCalendarItem(command);
 
         return ResponseEntity
-                .created(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(calendarItemId)).toUri())
+                .created(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(created.getId().value())).toUri())
                 .build();
     }
 

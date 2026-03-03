@@ -160,8 +160,8 @@ class CalendarManagementServiceTest {
     class CreateCalendarItemTests {
 
         @Test
-        @DisplayName("should create calendar item and return its ID")
-        void shouldCreateCalendarItemAndReturnId() {
+        @DisplayName("should create calendar item and return it")
+        void shouldCreateCalendarItemAndReturnIt() {
             CreateCalendarItemCommand command = new CreateCalendarItemCommand(
                     "New Event",
                     "New event description",
@@ -175,9 +175,9 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.save(any(CalendarItem.class))).thenReturn(savedItem);
 
-            UUID result = testedSubject.createCalendarItem(command);
+            CalendarItem result = testedSubject.createCalendarItem(command);
 
-            assertThat(result).isEqualTo(savedItem.getId().value());
+            assertThat(result).isEqualTo(savedItem);
             verify(calendarRepository).save(any(CalendarItem.class));
         }
     }
