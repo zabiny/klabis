@@ -1044,11 +1044,11 @@ class EventTest {
                     .isInstanceOf(EventCreatedEvent.class);
 
             EventCreatedEvent createdEvent = (EventCreatedEvent) domainEvents.get(0);
-            assertThat(createdEvent.getEventId()).isEqualTo(event.getId());
-            assertThat(createdEvent.getName()).isEqualTo("Test Event");
-            assertThat(createdEvent.getEventDate()).isEqualTo(LocalDate.of(2025, 7, 10));
-            assertThat(createdEvent.getLocation()).isEqualTo("Test Location");
-            assertThat(createdEvent.getOrganizer()).isEqualTo("Test Organizer");
+            assertThat(createdEvent.eventId()).isEqualTo(event.getId());
+            assertThat(createdEvent.name()).isEqualTo("Test Event");
+            assertThat(createdEvent.eventDate()).isEqualTo(LocalDate.of(2025, 7, 10));
+            assertThat(createdEvent.location()).isEqualTo("Test Location");
+            assertThat(createdEvent.organizer()).isEqualTo("Test Organizer");
         }
 
         @Test
@@ -1076,7 +1076,7 @@ class EventTest {
                     .isInstanceOf(EventPublishedEvent.class);
 
             EventPublishedEvent publishedEvent = (EventPublishedEvent) domainEvents.get(0);
-            assertThat(publishedEvent.getEventId()).isEqualTo(event.getId());
+            assertThat(publishedEvent.eventId()).isEqualTo(event.getId());
         }
 
         @Test
@@ -1104,7 +1104,7 @@ class EventTest {
                     .isInstanceOf(EventCancelledEvent.class);
 
             EventCancelledEvent cancelledEvent = (EventCancelledEvent) domainEvents.get(0);
-            assertThat(cancelledEvent.getEventId()).isEqualTo(event.getId());
+            assertThat(cancelledEvent.eventId()).isEqualTo(event.getId());
         }
 
         @Test
@@ -1133,7 +1133,7 @@ class EventTest {
                     .isInstanceOf(EventFinishedEvent.class);
 
             EventFinishedEvent finishedEvent = (EventFinishedEvent) domainEvents.get(0);
-            assertThat(finishedEvent.getEventId()).isEqualTo(event.getId());
+            assertThat(finishedEvent.eventId()).isEqualTo(event.getId());
         }
 
         @Test

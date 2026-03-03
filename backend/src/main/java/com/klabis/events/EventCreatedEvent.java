@@ -27,38 +27,26 @@ import java.util.UUID;
  * exactly-once event delivery with guaranteed consistency.
  */
 @DomainEvent
-public class EventCreatedEvent {
+public record EventCreatedEvent(
+        UUID occurrenceId,
+        EventId eventId,
+        String name,
+        LocalDate eventDate,
+        String location,
+        String organizer,
+        WebsiteUrl websiteUrl,
+        UserId eventCoordinatorId,
+        Instant occurredAt
+) {
 
-    private final UUID occurrenceId;
-    private final EventId eventId;
-    private final String name;
-    private final LocalDate eventDate;
-    private final String location;
-    private final String organizer;
-    private final WebsiteUrl websiteUrl;
-    private final UserId eventCoordinatorId;
-    private final Instant occurredAt;
-
-    private EventCreatedEvent(
-            UUID occurrenceId,
-            EventId eventId,
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            UserId eventCoordinatorId,
-            Instant occurredAt) {
-
-        this.occurrenceId = Objects.requireNonNull(occurrenceId, "Occurrence ID is required");
-        this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
-        this.name = Objects.requireNonNull(name, "Event name is required");
-        this.eventDate = Objects.requireNonNull(eventDate, "Event date is required");
-        this.location = Objects.requireNonNull(location, "Event location is required");
-        this.organizer = Objects.requireNonNull(organizer, "Event organizer is required");
-        this.websiteUrl = websiteUrl;
-        this.eventCoordinatorId = eventCoordinatorId;
-        this.occurredAt = Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+    public EventCreatedEvent {
+        Objects.requireNonNull(occurrenceId, "Occurrence ID is required");
+        Objects.requireNonNull(eventId, "Event ID is required");
+        Objects.requireNonNull(name, "Event name is required");
+        Objects.requireNonNull(eventDate, "Event date is required");
+        Objects.requireNonNull(location, "Event location is required");
+        Objects.requireNonNull(organizer, "Event organizer is required");
+        Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
     }
 
     public static EventCreatedEvent fromAggregate(Event event) {
@@ -75,65 +63,11 @@ public class EventCreatedEvent {
         );
     }
 
-    public UUID getOccurrenceId() {
-        return occurrenceId;
-    }
-
-    public EventId getEventId() {
-        return eventId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public LocalDate getEventDate() {
-        return eventDate;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public String getOrganizer() {
-        return organizer;
-    }
-
     public Optional<WebsiteUrl> getWebsiteUrl() {
-        return Optional.ofNullable(websiteUrl);
+        return Optional.ofNullable(websiteUrl());
     }
 
     public Optional<UserId> getEventCoordinatorId() {
-        return Optional.ofNullable(eventCoordinatorId);
-    }
-
-    public Instant getOccurredAt() {
-        return occurredAt;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EventCreatedEvent that = (EventCreatedEvent) o;
-        return Objects.equals(occurrenceId, that.occurrenceId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(occurrenceId);
-    }
-
-    @Override
-    public String toString() {
-        return "EventCreatedEvent{" +
-               "occurrenceId=" + occurrenceId +
-               ", eventId=" + eventId +
-               ", name='" + name + '\'' +
-               ", eventDate=" + eventDate +
-               ", location='" + location + '\'' +
-               ", organizer='" + organizer + '\'' +
-               ", occurredAt=" + occurredAt +
-               '}';
+        return Optional.ofNullable(eventCoordinatorId());
     }
 }

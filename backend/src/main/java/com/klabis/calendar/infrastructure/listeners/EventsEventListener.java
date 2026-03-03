@@ -37,8 +37,8 @@ class EventsEventListener {
      */
     @ApplicationModuleListener
     public void handle(EventPublishedEvent event) {
-        log.debug("Received EventPublishedEvent for event: {}", event.getEventId());
-        calendarEventSyncPort.handleEventPublished(event.getEventId());
+        log.debug("Received EventPublishedEvent for event: {}", event.eventId());
+        calendarEventSyncPort.handleEventPublished(event.eventId());
     }
 
     /**
@@ -66,7 +66,7 @@ class EventsEventListener {
      */
     @ApplicationModuleListener
     public void handle(EventCancelledEvent event) {
-        log.debug("Received EventCancelledEvent for event: {}", event.getEventId());
-        calendarEventSyncPort.handleEventCancelled(event.getEventId());
+        log.debug("Received EventCancelledEvent for event: {}", event.eventId());
+        calendarEventSyncPort.handleEventCancelled(event.eventId());
     }
 }

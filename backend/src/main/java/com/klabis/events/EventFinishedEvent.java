@@ -20,53 +20,19 @@ import java.util.UUID;
  * <p>Domain events are immutable and represent facts that have already occurred.
  */
 @DomainEvent
-public class EventFinishedEvent {
+public record EventFinishedEvent(
+        UUID occurrenceId,
+        EventId eventId,
+        Instant occurredAt
+) {
 
-    private final UUID occurrenceId;
-    private final EventId eventId;
-    private final Instant occurredAt;
-
-    private EventFinishedEvent(UUID occurrenceId, EventId eventId, Instant occurredAt) {
-        this.occurrenceId = Objects.requireNonNull(occurrenceId, "Occurrence ID is required");
-        this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
-        this.occurredAt = Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+    public EventFinishedEvent {
+        Objects.requireNonNull(occurrenceId, "Occurrence ID is required");
+        Objects.requireNonNull(eventId, "Event ID is required");
+        Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
     }
 
     public static EventFinishedEvent fromAggregate(Event event) {
         return new EventFinishedEvent(UUID.randomUUID(), event.getId(), Instant.now());
-    }
-
-    public UUID getOccurrenceId() {
-        return occurrenceId;
-    }
-
-    public EventId getEventId() {
-        return eventId;
-    }
-
-    public Instant getOccurredAt() {
-        return occurredAt;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EventFinishedEvent that = (EventFinishedEvent) o;
-        return Objects.equals(occurrenceId, that.occurrenceId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(occurrenceId);
-    }
-
-    @Override
-    public String toString() {
-        return "EventFinishedEvent{" +
-               "occurrenceId=" + occurrenceId +
-               ", eventId=" + eventId +
-               ", occurredAt=" + occurredAt +
-               '}';
     }
 }
