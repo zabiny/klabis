@@ -71,10 +71,10 @@ public class EventController {
             @Parameter(description = "Event creation data")
             @Valid @RequestBody Event.CreateCommand command) {
 
-        UUID eventId = eventManagementService.createEvent(command);
+        Event created = eventManagementService.createEvent(command);
 
         return ResponseEntity
-                .created(klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).toUri())
+                .created(klabisLinkTo(methodOn(EventController.class).getEvent(created.getId().value())).toUri())
                 .build();
     }
 

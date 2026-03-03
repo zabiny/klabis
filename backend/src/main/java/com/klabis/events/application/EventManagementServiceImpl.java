@@ -24,7 +24,7 @@ public class EventManagementServiceImpl implements EventManagementService {
 
     @Transactional
     @Override
-    public UUID createEvent(Event.CreateCommand command) {
+    public Event createEvent(Event.CreateCommand command) {
         Event event = Event.create(
                 command.name(),
                 command.eventDate(),
@@ -34,8 +34,7 @@ public class EventManagementServiceImpl implements EventManagementService {
                 command.eventCoordinatorId() != null ? new UserId(command.eventCoordinatorId()) : null
         );
 
-        Event savedEvent = eventRepository.save(event);
-        return savedEvent.getId().value();
+        return eventRepository.save(event);
     }
 
     @Transactional

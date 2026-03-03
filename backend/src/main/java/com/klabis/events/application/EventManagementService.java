@@ -7,12 +7,10 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.UUID;
-
 @PrimaryPort
 public interface EventManagementService {
 
-    UUID createEvent(Event.CreateCommand command);
+    Event createEvent(Event.CreateCommand command);
 
     void updateEvent(EventId eventId, Event.UpdateCommand command);
 

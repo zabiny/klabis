@@ -80,10 +80,10 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            UUID eventId = service.createEvent(command);
+            Event result = service.createEvent(command);
 
             // Then
-            assertThat(eventId).isNotNull();
+            assertThat(result).isEqualTo(event);
             verify(eventRepository).save(any(Event.class));
         }
 
@@ -112,10 +112,10 @@ class EventManagementServiceTest {
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
             // When
-            UUID eventId = service.createEvent(command);
+            Event result = service.createEvent(command);
 
             // Then
-            assertThat(eventId).isNotNull();
+            assertThat(result).isEqualTo(event);
             verify(eventRepository).save(any(Event.class));
         }
     }
