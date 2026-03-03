@@ -5,6 +5,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
+import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.domain.Event;
@@ -65,7 +66,7 @@ class EventControllerTest {
         @DisplayName("should return 201 with Location header and no body")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithValidData() throws Exception {
-            UUID eventId = UUID.randomUUID();
+            Event createdEvent = EventTestDataBuilder.anEvent().withName("Spring Cup 2026").build();
             Event.CreateCommand command = new Event.CreateCommand(
                     "Spring Cup 2026",
                     LocalDate.of(2026, 3, 15),
@@ -75,7 +76,7 @@ class EventControllerTest {
                     null
             );
 
-            when(eventManagementService.createEvent(any(Event.CreateCommand.class))).thenReturn(eventId);
+            when(eventManagementService.createEvent(any(Event.CreateCommand.class))).thenReturn(createdEvent);
 
             mockMvc.perform(
                             post("/api/events")
