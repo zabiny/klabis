@@ -31,87 +31,53 @@ import java.util.UUID;
  * @see <a href="https://spring.io/projects/spring-modulith">Spring Modulith</a>
  */
 @DomainEvent
-public class UserCreatedEvent {
-
-    private final UUID eventId;
-    private final UserId userId;
-    private final String username;
-    private final AccountStatus accountStatus;
-    private final Instant occurredAt;
-    private final String email;  // Optional PII
-
-    /**
-     * Creates a new UserCreatedEvent with the current timestamp.
-     *
-     * @param userId        the unique identifier of the created user
-     * @param username      the user's username (registration number)
-     * @param accountStatus the user's account status
-     */
-    public UserCreatedEvent(
-            UserId userId,
-            String username,
-            AccountStatus accountStatus) {
-        this(
-                UUID.randomUUID(),  // Generate unique event ID
-                userId,
-                username,
-                accountStatus,
-                Instant.now(),  // Use current time
-                null  // No email by default
-        );
-    }
+public record UserCreatedEvent(
+        UUID eventId,
+        UserId userId,
+        String username,
+        AccountStatus accountStatus,
+        Instant occurredAt,
+        String rawEmail  // Optional PII
+) {
 
     /**
-     * Creates a new UserCreatedEvent with explicit event ID and timestamp.
-     * Useful for testing and event reconstruction.
-     *
-     * @param eventId       unique identifier for this event
-     * @param userId        the unique identifier of the created user
-     * @param username      the user's username (registration number)
-     * @param accountStatus the user's account status
-     * @param occurredAt    the timestamp when this event occurred
-     */
-    public UserCreatedEvent(
-            UUID eventId,
-            UserId userId,
-            String username,
-            AccountStatus accountStatus,
-            Instant occurredAt) {
-        this(
-                eventId,
-                userId,
-                username,
-                accountStatus,
-                occurredAt,
-                null  // No email by default
-        );
-    }
-
-    /**
+     * Canonical constructor with validation.
      * Creates a new UserCreatedEvent with explicit event ID, timestamp, and email.
-     * Useful for testing and event reconstruction with PII.
      *
      * @param eventId       unique identifier for this event
      * @param userId        the unique identifier of the created user
      * @param username      the user's username (registration number)
      * @param accountStatus the user's account status
      * @param occurredAt    the timestamp when this event occurred
-     * @param email         optional email for password setup coordination (may be null)
+     * @param rawEmail      optional email for password setup coordination (may be null)
      */
-    public UserCreatedEvent(
-            UUID eventId,
-            UserId userId,
-            String username,
-            AccountStatus accountStatus,
-            Instant occurredAt,
-            String email) {
+    public UserCreatedEvent {
+        Objects.requireNonNull(eventId, "Event ID is required");
+        Objects.requireNonNull(userId, "User ID is required");
+        Objects.requireNonNull(username, "Username is required");
+        Objects.requireNonNull(accountStatus, "Account status is required");
+        Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+        // rawEmail is optional, may be null
+    }
 
-        this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
-        this.userId = Objects.requireNonNull(userId, "User ID is required");
-        this.username = Objects.requireNonNull(username, "Username is required");
-        this.accountStatus = Objects.requireNonNull(accountStatus, "Account status is required");
-        this.occurredAt = Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
-        this.email = email;  // Optional, may be null
+    /**
+     * Creates a new UserCreatedEvent with generated event ID and current timestamp.
+     * Useful for testing and default event creation.
+     *
+     * @param userId        the unique identifier of the created user
+     * @param username      the user's username (registration number)
+     * @param accountStatus the user's account status
+     * @return new UserCreatedEvent with generated ID and current timestamp
+     */
+    public static UserCreatedEvent create(UserId userId, String username, AccountStatus accountStatus) {
+        return new UserCreatedEvent(
+                UUID.randomUUID(),
+                userId,
+                username,
+                accountStatus,
+                Instant.now(),
+                null
+        );
     }
 
     /**
@@ -120,11 +86,14 @@ public class UserCreatedEvent {
      * @param user the user that was created
      * @return new UserCreatedEvent without email
      */
-    public static UserCreatedEvent fromUser(User user) {
+    public static UserCreatedEvent fromAggregate(User user) {
         return new UserCreatedEvent(
+                UUID.randomUUID(),
                 user.getId(),
                 user.getUsername(),
-                user.getAccountStatus()
+                user.getAccountStatus(),
+                Instant.now(),
+                null
         );
     }
 
@@ -136,48 +105,15 @@ public class UserCreatedEvent {
      * @param email the email address (PII from Member context)
      * @return new UserCreatedEvent with email
      */
-    public static UserCreatedEvent fromUserWithEmail(User user, String email) {
+    public static UserCreatedEvent fromAggregateWithEmail(User user, String email) {
         return new UserCreatedEvent(
-                UUID.randomUUID(),  // Generate unique event ID
+                UUID.randomUUID(),
                 user.getId(),
                 user.getUsername(),
                 user.getAccountStatus(),
-                Instant.now(),  // Use current time
-                email  // Include email for password setup
+                Instant.now(),
+                email
         );
-    }
-
-    // Getters
-
-    /**
-     * Get the unique event ID.
-     * Used for idempotency checks and distributed tracing.
-     *
-     * @return unique event identifier
-     */
-    public UUID getEventId() {
-        return eventId;
-    }
-
-    public UserId getUserId() {
-        return userId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public AccountStatus getAccountStatus() {
-        return accountStatus;
-    }
-
-    /**
-     * Get the timestamp when this event occurred.
-     *
-     * @return event occurrence timestamp
-     */
-    public Instant getOccurredAt() {
-        return occurredAt;
     }
 
     /**
@@ -186,8 +122,8 @@ public class UserCreatedEvent {
      *
      * @return Optional containing email if present, empty otherwise
      */
-    public Optional<String> getEmail() {
-        return Optional.ofNullable(email);
+    public Optional<String> email() {
+        return Optional.ofNullable(rawEmail);
     }
 
     /**
@@ -197,19 +133,6 @@ public class UserCreatedEvent {
      */
     public boolean isPendingActivation() {
         return accountStatus == AccountStatus.PENDING_ACTIVATION;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        UserCreatedEvent that = (UserCreatedEvent) o;
-        return Objects.equals(eventId, that.eventId);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(eventId);
     }
 
     /**

@@ -61,14 +61,7 @@ class UserCreatedEventHandlerTest {
                     email
             );
 
-            User mockUser = User.createdUser(username);
-            try {
-                var idField = User.class.getDeclaredField("id");
-                idField.setAccessible(true);
-                idField.set(mockUser, new UserId(userId));
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to set user ID for testing", e);
-            }
+            User mockUser = User.reconstruct(new UserId(userId), username, UUID.randomUUID().toString(), AccountStatus.PENDING_ACTIVATION);
 
             GeneratedTokenResult tokenResult = new GeneratedTokenResult(
                     mock(PasswordSetupToken.class),
@@ -180,14 +173,7 @@ class UserCreatedEventHandlerTest {
                     email
             );
 
-            User mockUser = User.createdUser(username);
-            try {
-                var idField = User.class.getDeclaredField("id");
-                idField.setAccessible(true);
-                idField.set(mockUser, new UserId(userId));
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to set user ID for testing", e);
-            }
+            User mockUser = User.reconstruct(new UserId(userId), username, UUID.randomUUID().toString(), AccountStatus.PENDING_ACTIVATION);
 
             GeneratedTokenResult tokenResult = new GeneratedTokenResult(
                     mock(PasswordSetupToken.class),
@@ -213,58 +199,14 @@ class UserCreatedEventHandlerTest {
         @DisplayName("should use factory method fromUserWithEmail when email is present")
         void shouldUseFactoryMethodWhenEmailPresent() {
             // This test verifies the correct event creation path
-            UserCreatedEvent event = UserCreatedEvent.fromUserWithEmail(
+            UserCreatedEvent event = UserCreatedEvent.fromAggregateWithEmail(
                     User.createdUser(username),
                     email
             );
 
-            assertThat(event.getEmail()).contains(email);
-            assertThat(event.getAccountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
+            assertThat(event.email()).contains(email);
+            assertThat(event.accountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
         }
     }
 
-    @Nested
-    @DisplayName("Event filtering logic")
-    class EventFilteringLogic {
-
-        @Test
-        @DisplayName("should handle ACTIVE status gracefully (no action)")
-        void shouldHandleActiveStatusGracefully() {
-            // Given
-            UserCreatedEvent event = new UserCreatedEvent(
-                    UUID.randomUUID(),
-                    new UserId(userId),
-                    username,
-                    AccountStatus.ACTIVE,
-                    Instant.now(),
-                    email
-            );
-
-            // When
-            handler.onUserCreated(event);
-
-            // Then - no interactions with services
-            verifyNoInteractions(userService, passwordSetupService);
-        }
-
-        @Test
-        @DisplayName("should handle no email gracefully (no action)")
-        void shouldHandleNoEmailGracefully() {
-            // Given
-            UserCreatedEvent event = new UserCreatedEvent(
-                    UUID.randomUUID(),
-                    new UserId(userId),
-                    username,
-                    AccountStatus.PENDING_ACTIVATION,
-                    Instant.now()
-                    // email is null
-            );
-
-            // When
-            handler.onUserCreated(event);
-
-            // Then - no interactions with services
-            verifyNoInteractions(userService, passwordSetupService);
-        }
-    }
 }

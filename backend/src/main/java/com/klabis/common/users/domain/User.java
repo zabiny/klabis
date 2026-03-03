@@ -88,7 +88,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
                 AccountStatus.PENDING_ACTIVATION
         );
 
-        user.registerEvent(UserCreatedEvent.fromUser(user));
+        user.registerEvent(UserCreatedEvent.fromAggregate(user));
 
         return user;
     }
@@ -118,7 +118,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
                 AccountStatus.PENDING_ACTIVATION
         );
 
-        user.registerEvent(UserCreatedEvent.fromUserWithEmail(user, email));
+        user.registerEvent(UserCreatedEvent.fromAggregateWithEmail(user, email));
 
         return user;
     }

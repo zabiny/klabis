@@ -101,7 +101,7 @@ class UserServiceImplTest {
             User savedUser = userCaptor.getValue();
             assertThat(savedUser.getDomainEvents()).hasSize(1);
             UserCreatedEvent event = (UserCreatedEvent) savedUser.getDomainEvents().get(0);
-            assertThat(event.getEmail()).contains(email);
+            assertThat(event.email()).contains(email);
         }
 
         @Test

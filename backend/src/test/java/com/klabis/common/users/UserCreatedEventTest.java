@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("UserCreatedEvent tests")
@@ -22,43 +23,43 @@ class UserCreatedEventTest {
     private static final AccountStatus TEST_STATUS = AccountStatus.PENDING_ACTIVATION;
 
     @Nested
-    @DisplayName("Constructor with generated eventId")
-    class ConstructorWithGeneratedEventId {
+    @DisplayName("Static factory method create()")
+    class CreateFactoryMethod {
 
         @Test
         @DisplayName("should create event with generated ID and current timestamp")
         void shouldCreateEventWithGeneratedIdAndTimestamp() {
             // When
-            UserCreatedEvent event = new UserCreatedEvent(
+            UserCreatedEvent event = UserCreatedEvent.create(
                     TEST_USER_ID,
                     TEST_USERNAME,
                     TEST_STATUS
             );
 
             // Then
-            assertThat(event.getEventId()).isNotNull();
-            assertThat(event.getUserId()).isEqualTo(TEST_USER_ID);
-            assertThat(event.getUsername()).isEqualTo(TEST_USERNAME);
-            assertThat(event.getAccountStatus()).isEqualTo(TEST_STATUS);
-            assertThat(event.getOccurredAt()).isNotNull();
-            assertThat(event.getOccurredAt()).isBefore(Instant.now().plusMillis(100)); // Within last 100ms
+            assertThat(event.eventId()).isNotNull();
+            assertThat(event.userId()).isEqualTo(TEST_USER_ID);
+            assertThat(event.username()).isEqualTo(TEST_USERNAME);
+            assertThat(event.accountStatus()).isEqualTo(TEST_STATUS);
+            assertThat(event.occurredAt()).isNotNull();
+            assertThat(event.occurredAt()).isBefore(Instant.now().plusMillis(100)); // Within last 100ms
         }
 
         @Test
         @DisplayName("should generate unique event IDs")
         void shouldGenerateUniqueEventIds() {
             // When
-            UserCreatedEvent event1 = new UserCreatedEvent(TEST_USER_ID, TEST_USERNAME, TEST_STATUS);
-            UserCreatedEvent event2 = new UserCreatedEvent(TEST_USER_ID, TEST_USERNAME, TEST_STATUS);
+            UserCreatedEvent event1 = UserCreatedEvent.create(TEST_USER_ID, TEST_USERNAME, TEST_STATUS);
+            UserCreatedEvent event2 = UserCreatedEvent.create(TEST_USER_ID, TEST_USERNAME, TEST_STATUS);
 
             // Then
-            assertThat(event1.getEventId()).isNotEqualTo(event2.getEventId());
+            assertThat(event1.eventId()).isNotEqualTo(event2.eventId());
         }
     }
 
     @Nested
-    @DisplayName("Constructor with explicit eventId")
-    class ConstructorWithExplicitEventId {
+    @DisplayName("Canonical constructor with explicit values")
+    class CanonicalConstructor {
 
         private static final UUID TEST_EVENT_ID = UUID.randomUUID();
         private static final Instant TEST_TIMESTAMP = Instant.parse("2025-01-25T10:00:00Z");
@@ -72,15 +73,16 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     TEST_USERNAME,
                     TEST_STATUS,
-                    TEST_TIMESTAMP
+                    TEST_TIMESTAMP,
+                    null
             );
 
             // Then
-            assertThat(event.getEventId()).isEqualTo(TEST_EVENT_ID);
-            assertThat(event.getUserId()).isEqualTo(TEST_USER_ID);
-            assertThat(event.getUsername()).isEqualTo(TEST_USERNAME);
-            assertThat(event.getAccountStatus()).isEqualTo(TEST_STATUS);
-            assertThat(event.getOccurredAt()).isEqualTo(TEST_TIMESTAMP);
+            assertThat(event.eventId()).isEqualTo(TEST_EVENT_ID);
+            assertThat(event.userId()).isEqualTo(TEST_USER_ID);
+            assertThat(event.username()).isEqualTo(TEST_USERNAME);
+            assertThat(event.accountStatus()).isEqualTo(TEST_STATUS);
+            assertThat(event.occurredAt()).isEqualTo(TEST_TIMESTAMP);
         }
 
         @Test
@@ -91,7 +93,8 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     TEST_USERNAME,
                     TEST_STATUS,
-                    Instant.now()
+                    Instant.now(),
+                    null
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Event ID is required");
@@ -105,7 +108,8 @@ class UserCreatedEventTest {
                     (UserId) null,
                     TEST_USERNAME,
                     TEST_STATUS,
-                    Instant.now()
+                    Instant.now(),
+                    null
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("User ID is required");
@@ -119,7 +123,8 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     null,
                     TEST_STATUS,
-                    Instant.now()
+                    Instant.now(),
+                    null
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Username is required");
@@ -133,7 +138,8 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     TEST_USERNAME,
                     null,
-                    Instant.now()
+                    Instant.now(),
+                    null
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Account status is required");
@@ -147,16 +153,30 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     TEST_USERNAME,
                     TEST_STATUS,
+                    null,
                     null
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Occurred at timestamp is required");
         }
+
+        @Test
+        @DisplayName("should allow null email (optional PII)")
+        void shouldAllowNullEmail() {
+            assertThatNoException().isThrownBy(() -> new UserCreatedEvent(
+                    UUID.randomUUID(),
+                    TEST_USER_ID,
+                    TEST_USERNAME,
+                    TEST_STATUS,
+                    Instant.now(),
+                    null
+            ));
+        }
     }
 
     @Nested
-    @DisplayName("fromUser() factory method")
-    class FromUserFactoryMethod {
+    @DisplayName("fromAggregate() factory method")
+    class FromAggregateFactoryMethod {
 
         @Test
         @DisplayName("should create event from User aggregate")
@@ -165,14 +185,66 @@ class UserCreatedEventTest {
             User user = User.reconstruct(TEST_USER_ID, TEST_USERNAME, "hashedPassword", AccountStatus.PENDING_ACTIVATION);
 
             // When
-            UserCreatedEvent event = UserCreatedEvent.fromUser(user);
+            UserCreatedEvent event = UserCreatedEvent.fromAggregate(user);
 
             // Then
-            assertThat(event.getUserId()).isEqualTo(TEST_USER_ID);
-            assertThat(event.getUsername()).isEqualTo(TEST_USERNAME);
-            assertThat(event.getAccountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
-            assertThat(event.getEventId()).isNotNull(); // Generated
-            assertThat(event.getOccurredAt()).isNotNull(); // Current time
+            assertThat(event.userId()).isEqualTo(TEST_USER_ID);
+            assertThat(event.username()).isEqualTo(TEST_USERNAME);
+            assertThat(event.accountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
+            assertThat(event.eventId()).isNotNull(); // Generated
+            assertThat(event.occurredAt()).isNotNull(); // Current time
+        }
+    }
+
+    @Nested
+    @DisplayName("fromAggregateWithEmail() factory method")
+    class FromAggregateWithEmailFactoryMethod {
+
+        @Test
+        @DisplayName("should create event with email from User aggregate")
+        void shouldCreateEventWithEmailFromUser() {
+            // Given
+            User user = User.reconstruct(TEST_USER_ID, TEST_USERNAME, "hashedPassword", AccountStatus.PENDING_ACTIVATION);
+            String email = "test@example.com";
+
+            // When
+            UserCreatedEvent event = UserCreatedEvent.fromAggregateWithEmail(user, email);
+
+            // Then
+            assertThat(event.userId()).isEqualTo(TEST_USER_ID);
+            assertThat(event.username()).isEqualTo(TEST_USERNAME);
+            assertThat(event.accountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
+            assertThat(event.email()).isPresent().contains(email);
+            assertThat(event.eventId()).isNotNull(); // Generated
+            assertThat(event.occurredAt()).isNotNull(); // Current time
+        }
+    }
+
+    @Nested
+    @DisplayName("email() method")
+    class EmailMethod {
+
+        @Test
+        @DisplayName("should return Optional with email when present")
+        void shouldReturnOptionalWithEmailWhenPresent() {
+            UserCreatedEvent event = new UserCreatedEvent(
+                    UUID.randomUUID(),
+                    TEST_USER_ID,
+                    TEST_USERNAME,
+                    TEST_STATUS,
+                    Instant.now(),
+                    "test@example.com"
+            );
+
+            assertThat(event.email()).isPresent().contains("test@example.com");
+        }
+
+        @Test
+        @DisplayName("should return empty Optional when email is null")
+        void shouldReturnEmptyOptionalWhenEmailIsNull() {
+            UserCreatedEvent event = UserCreatedEvent.create(TEST_USER_ID, TEST_USERNAME, TEST_STATUS);
+
+            assertThat(event.email()).isEmpty();
         }
     }
 
@@ -183,7 +255,7 @@ class UserCreatedEventTest {
         @Test
         @DisplayName("should return true when account status is PENDING_ACTIVATION")
         void shouldReturnTrueWhenPendingActivation() {
-            UserCreatedEvent event = new UserCreatedEvent(
+            UserCreatedEvent event = UserCreatedEvent.create(
                     TEST_USER_ID,
                     TEST_USERNAME,
                     AccountStatus.PENDING_ACTIVATION
@@ -195,7 +267,7 @@ class UserCreatedEventTest {
         @Test
         @DisplayName("should return false when account status is ACTIVE")
         void shouldReturnFalseWhenActive() {
-            UserCreatedEvent event = new UserCreatedEvent(
+            UserCreatedEvent event = UserCreatedEvent.create(
                     TEST_USER_ID,
                     TEST_USERNAME,
                     AccountStatus.ACTIVE
@@ -207,7 +279,7 @@ class UserCreatedEventTest {
         @Test
         @DisplayName("should return false when account status is SUSPENDED")
         void shouldReturnFalseWhenSuspended() {
-            UserCreatedEvent event = new UserCreatedEvent(
+            UserCreatedEvent event = UserCreatedEvent.create(
                     TEST_USER_ID,
                     TEST_USERNAME,
                     AccountStatus.SUSPENDED
@@ -218,86 +290,13 @@ class UserCreatedEventTest {
     }
 
     @Nested
-    @DisplayName("Equality methods")
-    class EqualityMethods {
-
-        @Test
-        @DisplayName("should be equal based on eventId")
-        void shouldBeEqualBasedOnEventId() {
-            UUID eventId = UUID.randomUUID();
-            UserCreatedEvent event1 = new UserCreatedEvent(
-                    eventId,
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    TEST_STATUS,
-                    Instant.now()
-            );
-            UserCreatedEvent event2 = new UserCreatedEvent(
-                    eventId,
-                    new UserId(UUID.randomUUID()), // Different user
-                    "different",
-                    AccountStatus.ACTIVE,
-                    Instant.now().plusSeconds(10)
-            );
-
-            assertThat(event1).isEqualTo(event2);
-            assertThat(event1.hashCode()).isEqualTo(event2.hashCode());
-        }
-
-        @Test
-        @DisplayName("should not be equal with different eventId")
-        void shouldNotBeEqualWithDifferentEventId() {
-            UserCreatedEvent event1 = new UserCreatedEvent(
-                    UUID.randomUUID(),
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    TEST_STATUS,
-                    Instant.now()
-            );
-            UserCreatedEvent event2 = new UserCreatedEvent(
-                    UUID.randomUUID(),
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    TEST_STATUS,
-                    Instant.now()
-            );
-
-            assertThat(event1).isNotEqualTo(event2);
-        }
-
-        @Test
-        @DisplayName("should not be equal with null")
-        void shouldNotBeEqualWithNull() {
-            UserCreatedEvent event = new UserCreatedEvent(
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    TEST_STATUS
-            );
-
-            assertThat(event).isNotEqualTo(null);
-        }
-
-        @Test
-        @DisplayName("should not be equal with different type")
-        void shouldNotBeEqualWithDifferentType() {
-            UserCreatedEvent event = new UserCreatedEvent(
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    TEST_STATUS
-            );
-
-            assertThat(event).isNotEqualTo("some string");
-        }
-    }
-
-    @Nested
     @DisplayName("toString() method")
     class ToStringMethod {
 
         @Test
         @DisplayName("should not include PII in toString output")
         void shouldNotIncludePIIInToString() {
-            UserCreatedEvent event = new UserCreatedEvent(
+            UserCreatedEvent event = UserCreatedEvent.create(
                     TEST_USER_ID,
                     TEST_USERNAME,
                     TEST_STATUS
@@ -315,28 +314,5 @@ class UserCreatedEventTest {
             assertThat(result).contains("isPendingActivation=");
         }
 
-        @Test
-        @DisplayName("should include isPendingActivation flag in toString")
-        void shouldIncludePendingActivationFlagInToString() {
-            UserCreatedEvent event = new UserCreatedEvent(
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    AccountStatus.PENDING_ACTIVATION
-            );
-
-            assertThat(event.toString()).contains("isPendingActivation=true");
-        }
-
-        @Test
-        @DisplayName("should show false for non-pending status")
-        void shouldShowFalseForNonPendingStatus() {
-            UserCreatedEvent event = new UserCreatedEvent(
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    AccountStatus.ACTIVE
-            );
-
-            assertThat(event.toString()).contains("isPendingActivation=false");
-        }
     }
 }

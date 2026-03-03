@@ -78,45 +78,45 @@ public class UserCreatedEventHandler {
     @ApplicationModuleListener
     public void onUserCreated(UserCreatedEvent event) {
         log.info("Processing UserCreatedEvent (eventId: {}) for user: {} (status: {})",
-                event.getEventId(), event.getUserId(), event.getAccountStatus());
+                event.eventId(), event.userId(), event.accountStatus());
 
         // Only send password setup email for pending activation
-        if (event.getAccountStatus() != AccountStatus.PENDING_ACTIVATION) {
+        if (event.accountStatus() != AccountStatus.PENDING_ACTIVATION) {
             log.debug("Skipping password setup for user {} - status is {}",
-                    event.getUserId(), event.getAccountStatus());
+                    event.userId(), event.accountStatus());
             return;
         }
 
         // Only send if email is available
-        if (event.getEmail().isEmpty()) {
+        if (event.email().isEmpty()) {
             log.warn("No email address available in UserCreatedEvent for user {}. Skipping password setup.",
-                    event.getUserId());
+                    event.userId());
             return;
         }
 
         try {
             // Find the user account
-            User user = userService.findUserByUsername(event.getUsername())
+            User user = userService.findUserByUsername(event.username())
                     .orElseThrow(() -> new IllegalStateException(
-                            "User not found for username: " + event.getUsername()));
+                            "User not found for username: " + event.username()));
 
             // Generate password setup token
             GeneratedTokenResult tokenResult = passwordSetupService.generateToken(user);
 
             // Send password setup email with username (registration number) greeting
-            String email = event.getEmail().get();
+            String email = event.email().get();
             passwordSetupService.sendPasswordSetupEmailWithUsername(
-                    event.getUsername(),  // Use username as greeting
+                    event.username(),  // Use username as greeting
                     email,
                     tokenResult.plainToken()
             );
 
             log.info("Password setup email sent successfully for event {} to user {} (email: {})",
-                    event.getEventId(), event.getUserId(), email);
+                    event.eventId(), event.userId(), email);
         } catch (Exception e) {
             // Log error and re-throw to trigger retry
             log.error("Failed to send password setup email for user {} (event: {})",
-                    event.getUserId(), event.getEventId(), e);
+                    event.userId(), event.eventId(), e);
             throw e;
         }
     }
