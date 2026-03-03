@@ -1,6 +1,5 @@
 package com.klabis.calendar.infrastructure.restapi;
 
-import com.klabis.calendar.application.CalendarItemDto;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.application.CreateCalendarItemCommand;
 import com.klabis.calendar.application.InvalidCalendarQueryException;
@@ -76,7 +75,8 @@ class CalendarController {
 
         Sort sortObj = parseAndValidateSort(sort);
 
-        List<CalendarItemDto> items = calendarManagementService.listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj);
+        List<CalendarItemDto> items = calendarManagementService.listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj)
+                .stream().map(this::toDto).toList();
 
         CollectionModel<EntityModel<CalendarItemDto>> collectionModel = CollectionModel.of(
                 items.stream()
@@ -155,7 +155,7 @@ class CalendarController {
     public ResponseEntity<EntityModel<CalendarItemDto>> getCalendarItem(
             @Parameter(description = "Calendar item UUID") @PathVariable UUID id) {
 
-        CalendarItemDto calendarItemDto = calendarManagementService.getCalendarItem(id);
+        CalendarItemDto calendarItemDto = toDto(calendarManagementService.getCalendarItem(id));
 
         EntityModel<CalendarItemDto> entityModel = EntityModel.of(calendarItemDto);
         addLinksForCalendarItem(entityModel, calendarItemDto);
@@ -225,6 +225,17 @@ class CalendarController {
 
     private LocalDate getCurrentMonthLastDay() {
         return LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+    }
+
+    private CalendarItemDto toDto(CalendarItem calendarItem) {
+        return new CalendarItemDto(
+                calendarItem.getId().value(),
+                calendarItem.getName(),
+                calendarItem.getDescription(),
+                calendarItem.getStartDate(),
+                calendarItem.getEndDate(),
+                calendarItem.getEventId() != null ? calendarItem.getEventId().value() : null
+        );
     }
 
     private void addLinksForCalendarItem(EntityModel<?> entityModel, CalendarItemDto calendarItemDto) {

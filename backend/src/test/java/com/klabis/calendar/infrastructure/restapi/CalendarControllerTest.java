@@ -1,11 +1,13 @@
 package com.klabis.calendar.infrastructure.restapi;
 
-import com.klabis.calendar.application.CalendarItemDto;
+import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.application.CalendarItemReadOnlyException;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.application.CalendarNotFoundException;
 import com.klabis.calendar.application.CreateCalendarItemCommand;
 import com.klabis.calendar.application.UpdateCalendarItemCommand;
+import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.CalendarItemId;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
@@ -54,25 +56,19 @@ class CalendarControllerTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            CalendarItemDto dto1 = new CalendarItemDto(
-                    UUID.randomUUID(),
-                    "Spring Training",
-                    "Monthly training session",
-                    LocalDate.of(2026, 3, 15),
-                    LocalDate.of(2026, 3, 15),
-                    null
-            );
+            CalendarItem item1 = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Spring Training")
+                    .withStartDate(LocalDate.of(2026, 3, 15))
+                    .withEndDate(LocalDate.of(2026, 3, 15))
+                    .buildManual();
 
-            CalendarItemDto dto2 = new CalendarItemDto(
-                    UUID.randomUUID(),
-                    "Spring Cup 2026",
-                    "Forest Park - OOB",
-                    LocalDate.of(2026, 3, 20),
-                    LocalDate.of(2026, 3, 20),
-                    UUID.randomUUID()
-            );
+            CalendarItem item2 = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Spring Cup 2026")
+                    .withStartDate(LocalDate.of(2026, 3, 20))
+                    .withEndDate(LocalDate.of(2026, 3, 20))
+                    .buildEventLinked(UUID.randomUUID());
 
-            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(dto1, dto2));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(item1, item2));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -94,16 +90,13 @@ class CalendarControllerTest {
             LocalDate firstDay = today.withDayOfMonth(1);
             LocalDate lastDay = today.withDayOfMonth(today.lengthOfMonth());
 
-            CalendarItemDto dto = new CalendarItemDto(
-                    UUID.randomUUID(),
-                    "Current Month Event",
-                    "Event in current month",
-                    today,
-                    today,
-                    null
-            );
+            CalendarItem item = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("Current Month Event")
+                    .withStartDate(today)
+                    .withEndDate(today)
+                    .buildManual();
 
-            when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any())).thenReturn(List.of(dto));
+            when(calendarManagementService.listCalendarItems(eq(firstDay), eq(lastDay), any())).thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -135,16 +128,13 @@ class CalendarControllerTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            CalendarItemDto dto = new CalendarItemDto(
-                    UUID.randomUUID(),
-                    "March Event",
-                    "Event in March",
-                    LocalDate.of(2026, 3, 15),
-                    LocalDate.of(2026, 3, 15),
-                    null
-            );
+            CalendarItem item = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("March Event")
+                    .withStartDate(LocalDate.of(2026, 3, 15))
+                    .withEndDate(LocalDate.of(2026, 3, 15))
+                    .buildManual();
 
-            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(dto));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -168,16 +158,13 @@ class CalendarControllerTest {
             LocalDate startDate = LocalDate.of(2026, 3, 1);
             LocalDate endDate = LocalDate.of(2026, 3, 31);
 
-            CalendarItemDto dto = new CalendarItemDto(
-                    UUID.randomUUID(),
-                    "March Event",
-                    "Event in March",
-                    LocalDate.of(2026, 3, 15),
-                    LocalDate.of(2026, 3, 15),
-                    null
-            );
+            CalendarItem item = CalendarItemTestDataBuilder.aCalendarItem()
+                    .withName("March Event")
+                    .withStartDate(LocalDate.of(2026, 3, 15))
+                    .withEndDate(LocalDate.of(2026, 3, 15))
+                    .buildManual();
 
-            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(dto));
+            when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(item));
 
             mockMvc.perform(
                             get("/api/calendar-items")
@@ -201,16 +188,12 @@ class CalendarControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME)
         void shouldGetManualCalendarItem() throws Exception {
             UUID calendarItemId = UUID.randomUUID();
-            CalendarItemDto dto = new CalendarItemDto(
-                    calendarItemId,
-                    "Training Session",
-                    "Weekly training session",
-                    LocalDate.of(2026, 3, 15),
-                    LocalDate.of(2026, 3, 15),
-                    null
-            );
+            CalendarItem item = CalendarItemTestDataBuilder.aCalendarItemWithId(new CalendarItemId(calendarItemId))
+                    .withName("Training Session")
+                    .withDescription("Weekly training session")
+                    .buildManual();
 
-            when(calendarManagementService.getCalendarItem(calendarItemId)).thenReturn(dto);
+            when(calendarManagementService.getCalendarItem(calendarItemId)).thenReturn(item);
 
             mockMvc.perform(
                             get("/api/calendar-items/{id}", calendarItemId)
@@ -233,16 +216,12 @@ class CalendarControllerTest {
         void shouldGetEventLinkedCalendarItem() throws Exception {
             UUID calendarItemId = UUID.randomUUID();
             UUID eventId = UUID.randomUUID();
-            CalendarItemDto dto = new CalendarItemDto(
-                    calendarItemId,
-                    "Spring Cup 2026",
-                    "Forest Park - OOB",
-                    LocalDate.of(2026, 3, 20),
-                    LocalDate.of(2026, 3, 20),
-                    eventId
-            );
+            CalendarItem item = CalendarItemTestDataBuilder.aCalendarItemWithId(new CalendarItemId(calendarItemId))
+                    .withName("Spring Cup 2026")
+                    .withDescription("Forest Park - OOB")
+                    .buildEventLinked(eventId);
 
-            when(calendarManagementService.getCalendarItem(calendarItemId)).thenReturn(dto);
+            when(calendarManagementService.getCalendarItem(calendarItemId)).thenReturn(item);
 
             mockMvc.perform(
                             get("/api/calendar-items/{id}", calendarItemId)

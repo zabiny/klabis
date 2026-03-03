@@ -27,7 +27,7 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional(readOnly = true)
     @Override
-    public List<CalendarItemDto> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Sort sort) {
+    public List<CalendarItem> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Sort sort) {
         validateDateRange(startDate, endDate);
 
         List<CalendarItem> items = calendarRepository.findByDateRange(startDate, endDate);
@@ -45,7 +45,6 @@ class CalendarManagementService implements CalendarManagementPort {
 
         return items.stream()
                 .sorted(comparator)
-                .map(this::mapToDto)
                 .toList();
     }
 
@@ -72,11 +71,9 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional(readOnly = true)
     @Override
-    public CalendarItemDto getCalendarItem(UUID calendarItemId) {
-        CalendarItem calendarItem = calendarRepository.findById(new CalendarItemId(calendarItemId))
+    public CalendarItem getCalendarItem(UUID calendarItemId) {
+        return calendarRepository.findById(new CalendarItemId(calendarItemId))
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId));
-
-        return mapToDto(calendarItem);
     }
 
     @Transactional
@@ -128,14 +125,4 @@ class CalendarManagementService implements CalendarManagementPort {
         calendarRepository.delete(calendarItem);
     }
 
-    private CalendarItemDto mapToDto(CalendarItem calendarItem) {
-        return new CalendarItemDto(
-                calendarItem.getId().value(),
-                calendarItem.getName(),
-                calendarItem.getDescription(),
-                calendarItem.getStartDate(),
-                calendarItem.getEndDate(),
-                calendarItem.getEventId() != null ? calendarItem.getEventId().value() : null
-        );
-    }
 }

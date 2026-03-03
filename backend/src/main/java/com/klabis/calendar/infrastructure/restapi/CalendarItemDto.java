@@ -1,4 +1,4 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.infrastructure.restapi;
 
 import java.time.LocalDate;
 import java.util.UUID;

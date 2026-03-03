@@ -1,5 +1,6 @@
 package com.klabis.calendar.application;
 
+import com.klabis.calendar.domain.CalendarItem;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
@@ -11,9 +12,9 @@ import java.util.UUID;
 @PrimaryPort
 public interface CalendarManagementPort {
 
-    List<CalendarItemDto> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Sort sort);
+    List<CalendarItem> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Sort sort);
 
-    CalendarItemDto getCalendarItem(UUID calendarItemId);
+    CalendarItem getCalendarItem(UUID calendarItemId);
 
     UUID createCalendarItem(CreateCalendarItemCommand command);
 

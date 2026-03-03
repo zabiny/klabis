@@ -63,11 +63,11 @@ class CalendarManagementServiceTest {
             when(calendarRepository.findByDateRange(startDate, endDate))
                     .thenReturn(List.of(item1, item2));
 
-            List<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
 
             assertThat(result).hasSize(2);
-            assertThat(result.get(0).name()).isEqualTo("March Training");
-            assertThat(result.get(1).name()).isEqualTo("March Event");
+            assertThat(result.get(0).getName()).isEqualTo("March Training");
+            assertThat(result.get(1).getName()).isEqualTo("March Event");
         }
 
         @Test
@@ -78,7 +78,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
 
-            List<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
 
             assertThat(result).isEmpty();
         }
@@ -91,7 +91,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findByDateRange(startDate, endDate)).thenReturn(List.of());
 
-            List<CalendarItemDto> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
+            List<CalendarItem> result = testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted());
 
             assertThat(result).isEmpty();
         }
@@ -135,11 +135,11 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(calendarItem));
 
-            CalendarItemDto result = testedSubject.getCalendarItem(calendarItemId);
+            CalendarItem result = testedSubject.getCalendarItem(calendarItemId);
 
-            assertThat(result.id()).isEqualTo(calendarItemId);
-            assertThat(result.name()).isEqualTo("Test Event");
-            assertThat(result.description()).isEqualTo("Test description");
+            assertThat(result.getId().value()).isEqualTo(calendarItemId);
+            assertThat(result.getName()).isEqualTo("Test Event");
+            assertThat(result.getDescription()).isEqualTo("Test description");
         }
 
         @Test
