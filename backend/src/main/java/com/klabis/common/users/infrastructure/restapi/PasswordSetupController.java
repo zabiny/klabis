@@ -1,8 +1,10 @@
 package com.klabis.common.users.infrastructure.restapi;
 
 import com.klabis.common.users.application.PasswordSetupService;
+import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenAlreadyUsedException;
 import com.klabis.common.users.domain.TokenExpiredException;
+import com.klabis.common.users.domain.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -61,8 +63,8 @@ public class PasswordSetupController {
     })
     @Parameter(name = "token", description = "The plain text token from the email link", required = true, example = "abc123def456")
     public ResponseEntity<ValidateTokenResponse> validateToken(@RequestParam @NotBlank String token) {
-        ValidateTokenResponse response = passwordSetupService.validateToken(token);
-        return ResponseEntity.ok(response);
+        PasswordSetupToken setupToken = passwordSetupService.validateToken(token);
+        return ResponseEntity.ok(new ValidateTokenResponse(true, setupToken.getExpiresAt()));
     }
 
     /**
@@ -82,17 +84,21 @@ public class PasswordSetupController {
             @Valid @RequestBody SetPasswordRequest request,
             HttpServletRequest httpRequest) {
 
+        if (!request.password().equals(request.passwordConfirmation())) {
+            throw new com.klabis.common.users.domain.PasswordValidationException("Passwords do not match");
+        }
+
         String ipAddress = getClientIpAddress(httpRequest);
 
-        PasswordSetupRequest serviceRequest =
-                new PasswordSetupRequest(
-                        request.token(),
-                        request.password(),
-                        request.passwordConfirmation()
-                );
+        PasswordSetupService.SetupPasswordCommand command =
+                new PasswordSetupService.SetupPasswordCommand(request.token(), request.password());
 
-        PasswordSetupResponse response =
-                passwordSetupService.completePasswordSetup(serviceRequest, ipAddress);
+        User activatedUser = passwordSetupService.completePasswordSetup(command, ipAddress);
+
+        PasswordSetupResponse response = new PasswordSetupResponse(
+                "Password set successfully. You can now log in.",
+                activatedUser.getUsername()
+        );
 
         return ResponseEntity.ok(response);
     }

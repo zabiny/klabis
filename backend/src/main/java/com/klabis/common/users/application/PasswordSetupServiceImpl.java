@@ -8,9 +8,6 @@ import com.klabis.common.ratelimit.PerKeyRateLimiter;
 import com.klabis.common.templating.ThymeleafTemplateRenderer;
 import com.klabis.common.users.domain.*;
 import com.klabis.common.users.infrastructure.PasswordSetupTokenRepository;
-import com.klabis.common.users.infrastructure.restapi.PasswordSetupRequest;
-import com.klabis.common.users.infrastructure.restapi.PasswordSetupResponse;
-import com.klabis.common.users.infrastructure.restapi.ValidateTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -142,8 +139,8 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
 
     @Override
     @Transactional(readOnly = true)
-    public ValidateTokenResponse validateToken(String plainToken) {
-        PasswordSetupToken token = validateTokenAndGetUser(plainToken);
+    public PasswordSetupToken validateToken(String plainToken) {
+        PasswordSetupToken token = findValidToken(plainToken);
 
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new TokenValidationException("User not found"));
@@ -154,41 +151,34 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
 
         log.info("Validated password setup token for user {}", user.getId());
 
-        return new ValidateTokenResponse(true, token.getExpiresAt());
+        return token;
     }
 
     @Override
     @Transactional
-    public PasswordSetupResponse completePasswordSetup(PasswordSetupRequest request, String ipAddress) {
-        PasswordSetupToken token = validateTokenAndGetUser(request.token());
+    public User completePasswordSetup(SetupPasswordCommand command, String ipAddress) {
+        PasswordSetupToken token = findValidToken(command.token());
 
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new TokenValidationException("User not found"));
 
-        if (!request.password().equals(request.passwordConfirmation())) {
-            throw new PasswordValidationException("Passwords do not match");
-        }
-
         try {
-            passwordValidator.validateBasic(request.password());
+            passwordValidator.validateBasic(command.password());
         } catch (PasswordValidationException e) {
             throw new PasswordValidationException(e.getMessage());
         }
 
-        String newPasswordHash = passwordEncoder.encode(request.password());
+        String newPasswordHash = passwordEncoder.encode(command.password());
 
         User activatedUser = user.activateWithPassword(newPasswordHash);
-        userRepository.save(activatedUser);
+        User savedUser = userRepository.save(activatedUser);
 
         token.markAsUsed(ipAddress);
         tokenRepository.save(token);
 
         log.info("Completed password setup for user {}", user.getId());
 
-        return new PasswordSetupResponse(
-                "Password set successfully. You can now log in.",
-                user.getUsername().toString()
-        );
+        return savedUser;
     }
 
     @Override
@@ -222,7 +212,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
                 .toUriString();
     }
 
-    private PasswordSetupToken validateTokenAndGetUser(String plainToken) {
+    private PasswordSetupToken findValidToken(String plainToken) {
         TokenHash tokenHash = TokenHash.hash(plainToken);
 
         PasswordSetupToken token = tokenRepository.findByTokenHash(tokenHash)

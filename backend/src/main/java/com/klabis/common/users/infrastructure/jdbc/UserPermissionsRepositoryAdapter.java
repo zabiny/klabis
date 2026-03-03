@@ -29,13 +29,7 @@ class UserPermissionsRepositoryAdapter implements UserPermissionsRepository {
 
     @Override
     public UserPermissions save(UserPermissions permissions) {
-        // Check if this is a new or existing permissions record
-        // This is necessary for UserPermissions created via create() which have isNew=true by default
-        // but may already exist in database
-        boolean exists = jdbcRepository.existsById(permissions.getUserId().uuid());
-
-        // Convert UserPermissions to UserPermissionsMemento for persistence
-        UserPermissionsMemento saved = jdbcRepository.save(UserPermissionsMemento.from(permissions, !exists));
+        UserPermissionsMemento saved = jdbcRepository.save(UserPermissionsMemento.from(permissions));
         return saved.toUserPermissions();
     }
 

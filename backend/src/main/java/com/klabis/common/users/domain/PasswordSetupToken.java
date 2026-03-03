@@ -2,6 +2,7 @@ package com.klabis.common.users.domain;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
+import com.klabis.common.users.PasswordSetupTokenId;
 import com.klabis.common.users.UserId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -36,10 +37,10 @@ import java.util.UUID;
  * <p>Factory method: {@link #generateFor(UserId, Duration)}
  */
 @AggregateRoot
-public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, UUID> {
+public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, PasswordSetupTokenId> {
 
     @Identity
-    private final UUID id;
+    private final PasswordSetupTokenId id;
     private final UserId userId;
     private final TokenHash tokenHash;
     private final Instant createdAt;
@@ -58,7 +59,7 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
      * @param expiresAt     token expiration timestamp
      * @param auditMetadata audit metadata
      */
-    private PasswordSetupToken(UUID id, UserId userId, TokenHash tokenHash, Instant createdAt, Instant expiresAt, AuditMetadata auditMetadata) {
+    private PasswordSetupToken(PasswordSetupTokenId id, UserId userId, TokenHash tokenHash, Instant createdAt, Instant expiresAt, AuditMetadata auditMetadata) {
         this.id = Objects.requireNonNull(id, "Token ID is required");
         this.userId = Objects.requireNonNull(userId, "User ID is required");
         this.tokenHash = Objects.requireNonNull(tokenHash, "Token hash is required");
@@ -88,7 +89,7 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
             throw new IllegalArgumentException("Validity period must be positive");
         }
 
-        UUID tokenId = UUID.randomUUID();
+        PasswordSetupTokenId tokenId = PasswordSetupTokenId.newId();
         Instant now = Instant.now();
         Instant expiration = now.plus(validityPeriod);
 
@@ -119,7 +120,7 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
      * @return reconstructed PasswordSetupToken
      */
     public static PasswordSetupToken reconstruct(
-            UUID id,
+            PasswordSetupTokenId id,
             UserId userId,
             TokenHash tokenHash,
             Instant createdAt,
@@ -244,7 +245,8 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
 
     // Getters
 
-    public UUID getId() {
+    @Override
+    public PasswordSetupTokenId getId() {
         return id;
     }
 

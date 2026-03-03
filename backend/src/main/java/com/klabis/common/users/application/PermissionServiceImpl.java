@@ -6,13 +6,11 @@ import com.klabis.common.users.domain.AuthorityValidator;
 import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.domain.UserPermissionsRepository;
-import com.klabis.common.users.infrastructure.restapi.PermissionsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Set;
 
 @Service
@@ -54,14 +52,8 @@ class PermissionServiceImpl implements PermissionService {
 
     @Override
     @Transactional(readOnly = true)
-    public PermissionsResponse getUserPermissions(UserId userId) {
-        UserPermissions permissions = permissionsRepository.findById(userId)
+    public UserPermissions getUserPermissions(UserId userId) {
+        return permissionsRepository.findById(userId)
                 .orElse(UserPermissions.empty(userId));
-
-        List<String> authorities = permissions.getDirectAuthorities().stream()
-                .map(Authority::getValue)
-                .toList();
-
-        return new PermissionsResponse(userId, authorities);
     }
 }

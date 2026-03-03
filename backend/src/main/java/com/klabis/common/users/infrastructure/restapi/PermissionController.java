@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RequestMapping("/api/users")
 @PrimaryAdapter
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
+@ExposesResourceFor(UserPermissions.class)
 public class PermissionController {
 
     private final PermissionService permissionService;
@@ -62,7 +64,8 @@ public class PermissionController {
     @GetMapping("/{id}/permissions")
     @HasAuthority(Authority.MEMBERS_PERMISSIONS)
     public ResponseEntity<PermissionsResponseModel> getUserPermissions(@PathVariable UUID id) {
-        PermissionsResponse response = permissionService.getUserPermissions(new UserId(id));
+        UserPermissions permissions = permissionService.getUserPermissions(new UserId(id));
+        PermissionsResponse response = toPermissionsResponse(permissions);
         PermissionsResponseModel model = permissionsAssembler.toModel(response);
 
         Link permissionsLink = klabisLinkTo(methodOn(PermissionController.class)
@@ -74,6 +77,13 @@ public class PermissionController {
         return ResponseEntity.ok(model);
     }
 
+    private PermissionsResponse toPermissionsResponse(UserPermissions permissions) {
+        return new PermissionsResponse(
+                permissions.getUserId(),
+                permissions.getDirectAuthorities().stream().map(Authority::getValue).toList()
+        );
+    }
+
     /**
      * PUT /api/users/{id}/permissions - Update user permissions.
      *
@@ -83,24 +93,14 @@ public class PermissionController {
      */
     @PutMapping("/{id}/permissions")
     @HasAuthority(Authority.MEMBERS_PERMISSIONS)
-    public ResponseEntity<PermissionsResponseModel> updatePermissions(
+    public ResponseEntity<Void> updatePermissions(
             @PathVariable UUID id,
             @Valid @RequestBody UpdatePermissionsRequest request) {
 
-        UserPermissions updatedPermissions = permissionService.updateUserPermissions(new UserId(id),
-                request.authorities());
+        permissionService.updateUserPermissions(new UserId(id), request.authorities());
 
-        // Use actual saved authorities from updatedPermissions, not the request
-        // This ensures the response reflects the validated/saved state, not what was requested
-        PermissionsResponse response = new PermissionsResponse(
-                updatedPermissions.getUserId(),
-                updatedPermissions.getDirectAuthorities().stream().map(Authority::getValue).toList()
-        );
-        PermissionsResponseModel model = permissionsAssembler.toModel(response);
-
-        return ResponseEntity.ok()
-                .location(URI.create("/api/users/" + id + "/permissions"))
-                .body(model);
+        URI location = klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(id)).toUri();
+        return ResponseEntity.noContent().location(location).build();
     }
 
     /**

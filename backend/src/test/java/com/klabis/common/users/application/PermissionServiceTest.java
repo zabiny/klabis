@@ -5,7 +5,6 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.domain.UserPermissionsRepository;
-import com.klabis.common.users.infrastructure.restapi.PermissionsResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -235,15 +234,15 @@ class PermissionServiceTest {
             when(permissionsRepository.findById(USER_ID)).thenReturn(Optional.of(permissions));
 
             // When
-            PermissionsResponse response = service.getUserPermissions(USER_ID);
+            UserPermissions result = service.getUserPermissions(USER_ID);
 
             // Then
-            assertThat(response.userId()).isEqualTo(USER_ID);
-            assertThat(response.authorities())
+            assertThat(result.getUserId()).isEqualTo(USER_ID);
+            assertThat(result.getDirectAuthorities())
                     .containsExactlyInAnyOrder(
-                            Authority.MEMBERS_CREATE.getValue(),
-                            Authority.MEMBERS_READ.getValue(),
-                            Authority.MEMBERS_UPDATE.getValue()
+                            Authority.MEMBERS_CREATE,
+                            Authority.MEMBERS_READ,
+                            Authority.MEMBERS_UPDATE
                     );
             verify(permissionsRepository).findById(USER_ID);
         }
@@ -255,11 +254,11 @@ class PermissionServiceTest {
             when(permissionsRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
             // When
-            PermissionsResponse response = service.getUserPermissions(USER_ID);
+            UserPermissions result = service.getUserPermissions(USER_ID);
 
             // Then
-            assertThat(response.userId()).isEqualTo(USER_ID);
-            assertThat(response.authorities()).isEmpty();
+            assertThat(result.getUserId()).isEqualTo(USER_ID);
+            assertThat(result.getDirectAuthorities()).isEmpty();
             verify(permissionsRepository).findById(USER_ID);
         }
 
@@ -275,11 +274,11 @@ class PermissionServiceTest {
             when(permissionsRepository.findById(USER_ID)).thenReturn(Optional.of(permissions));
 
             // When
-            PermissionsResponse response = service.getUserPermissions(USER_ID);
+            UserPermissions result = service.getUserPermissions(USER_ID);
 
             // Then
-            assertThat(response.authorities()).containsExactly(Authority.MEMBERS_READ.getValue());
-            assertThat(response.authorities()).hasSize(1);
+            assertThat(result.getDirectAuthorities()).containsExactly(Authority.MEMBERS_READ);
+            assertThat(result.getDirectAuthorities()).hasSize(1);
         }
 
         @Test
@@ -300,18 +299,18 @@ class PermissionServiceTest {
             when(permissionsRepository.findById(USER_ID)).thenReturn(Optional.of(permissions));
 
             // When
-            PermissionsResponse response = service.getUserPermissions(USER_ID);
+            UserPermissions result = service.getUserPermissions(USER_ID);
 
             // Then
-            assertThat(response.authorities())
+            assertThat(result.getDirectAuthorities())
                     .containsExactlyInAnyOrder(
-                            Authority.MEMBERS_CREATE.getValue(),
-                            Authority.MEMBERS_READ.getValue(),
-                            Authority.MEMBERS_UPDATE.getValue(),
-                            Authority.MEMBERS_DELETE.getValue(),
-                            Authority.MEMBERS_PERMISSIONS.getValue()
+                            Authority.MEMBERS_CREATE,
+                            Authority.MEMBERS_READ,
+                            Authority.MEMBERS_UPDATE,
+                            Authority.MEMBERS_DELETE,
+                            Authority.MEMBERS_PERMISSIONS
                     );
-            assertThat(response.authorities()).hasSize(5);
+            assertThat(result.getDirectAuthorities()).hasSize(5);
         }
     }
 }

@@ -3,11 +3,14 @@ package com.klabis.common.users.passwordsetup;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.UserId;
 import com.klabis.common.users.application.PasswordSetupService;
+import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.PasswordValidationException;
 import com.klabis.common.users.domain.TokenAlreadyUsedException;
 import com.klabis.common.users.domain.TokenExpiredException;
 import com.klabis.common.users.domain.TokenValidationException;
+import com.klabis.common.users.domain.User;
 import com.klabis.common.users.infrastructure.restapi.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -65,11 +68,8 @@ class PasswordSetupControllerTest {
             SetPasswordRequest request =
                     new SetPasswordRequest(plainToken, password, password);
 
-            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
-                    .thenReturn(new PasswordSetupResponse(
-                            "Password set successfully. You can now log in.",
-                            "ZBM0101"
-                    ));
+            when(passwordSetupServiceMock.completePasswordSetup(any(PasswordSetupService.SetupPasswordCommand.class), anyString()))
+                    .thenReturn(User.createdUser("ZBM0101", "$2a$10$hash"));
 
             // When/Then
             mockMvc.perform(post("/api/auth/password-setup/complete")
@@ -88,10 +88,7 @@ class PasswordSetupControllerTest {
             SetPasswordRequest request =
                     new SetPasswordRequest(plainToken, "Password123!", "DifferentPassword123!");
 
-            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
-                    .thenThrow(new PasswordValidationException("Passwords do not match"));
-
-            // When/Then
+            // When/Then — controller validates password match before calling service
             mockMvc.perform(post("/api/auth/password-setup/complete")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -220,10 +217,11 @@ class PasswordSetupControllerTest {
         void shouldValidateValidToken() throws Exception {
             // Given
             String plainToken = UUID.randomUUID().toString();
-            Instant expiresAt = Instant.now().plus(Duration.ofHours(4));
+            UserId userId = new UserId(UUID.randomUUID());
+            PasswordSetupToken setupToken = PasswordSetupToken.generateFor(userId, Duration.ofHours(4));
 
             when(passwordSetupServiceMock.validateToken(plainToken))
-                    .thenReturn(new ValidateTokenResponse(true, expiresAt));
+                    .thenReturn(setupToken);
 
             // When/Then
             mockMvc.perform(get("/api/auth/password-setup/validate")

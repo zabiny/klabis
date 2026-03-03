@@ -1,6 +1,7 @@
 package com.klabis.common.users.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.users.PasswordSetupTokenId;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenHash;
@@ -58,6 +59,10 @@ public class PasswordSetupTokenMemento implements Persistable<UUID> {
     @Column("created_by")
     private String createdBy;
 
+    @LastModifiedDate
+    @Column("modified_at")
+    private Instant modifiedAt;
+
     @LastModifiedBy
     @Column("modified_by")
     private String modifiedBy;
@@ -107,7 +112,7 @@ public class PasswordSetupTokenMemento implements Persistable<UUID> {
         PasswordSetupTokenMemento memento = new PasswordSetupTokenMemento();
 
         // Copy ID
-        memento.id = token.getId();
+        memento.id = token.getId().uuid();
 
         // Copy user ID
         memento.userId = token.getUserId().uuid();
@@ -141,7 +146,7 @@ public class PasswordSetupTokenMemento implements Persistable<UUID> {
         TokenHash tokenHash = this.tokenHash != null ? TokenHash.fromHashedValue(this.tokenHash) : null;
 
         return PasswordSetupToken.reconstruct(
-                this.id,
+                this.id != null ? new PasswordSetupTokenId(this.id) : null,
                 userId,
                 tokenHash,
                 this.createdAt,
@@ -162,7 +167,7 @@ public class PasswordSetupTokenMemento implements Persistable<UUID> {
         return new AuditMetadata(
                 this.createdAt,
                 this.createdBy,
-                this.createdAt,
+                this.modifiedAt,
                 this.modifiedBy,
                 this.version
         );

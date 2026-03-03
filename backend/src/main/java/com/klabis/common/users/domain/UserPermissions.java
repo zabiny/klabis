@@ -53,28 +53,6 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
     // Optimistic locking
     private Long version;
 
-    private boolean isNew = true;
-
-    // ========== Command Records ==========
-
-    /**
-     * Command to grant an authority to a user.
-     */
-    public record GrantAuthority(Authority authority) {
-    }
-
-    /**
-     * Command to revoke an authority from a user.
-     */
-    public record RevokeAuthority(Authority authority) {
-    }
-
-    /**
-     * Command to replace all authorities with a new set.
-     */
-    public record ReplaceAuthorities(Set<Authority> authorities) {
-    }
-
     // ========== Constructors ==========
 
     /**
@@ -157,27 +135,6 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
     }
 
     /**
-     * Checks if this is a new (unsaved) UserPermissions instance.
-     * <p>
-     * Used by Spring Data JDBC via Persistable.isNew() to determine INSERT vs UPDATE.
-     *
-     * @return true if this is a new instance, false if already persisted
-     */
-    public boolean isNew() {
-        return isNew;
-    }
-
-    /**
-     * Marks this UserPermissions as persisted (no longer new).
-     * <p>
-     * Called by the repository after save operation.
-     */
-    public void markAsPersisted() {
-        this.isNew = false;
-    }
-
-    
-    /**
      * Checks if the user has a specific direct authority.
      *
      * @param authority the authority to check
@@ -185,16 +142,6 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
      */
     public boolean hasDirectAuthority(Authority authority) {
         return directAuthorities.contains(authority);
-    }
-
-    /**
-     * Grants a direct authority to this user using a command.
-     *
-     * @param command the GrantAuthority command
-     * @see AuthorizationPolicy#checkAdminLockoutPrevention
-     */
-    public void grantAuthority(GrantAuthority command) {
-        grantAuthority(command.authority());
     }
 
     /**
@@ -225,16 +172,6 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
     }
 
     /**
-     * Revokes a direct authority from this user using a command.
-     *
-     * @param command the RevokeAuthority command
-     * @see AuthorizationPolicy#checkAdminLockoutPrevention
-     */
-    public void revokeAuthority(RevokeAuthority command) {
-        revokeAuthority(command.authority());
-    }
-
-    /**
      * Revokes a direct authority from this user.
      * <p>
      * This method:
@@ -259,16 +196,6 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
         Set<Authority> newAuthorities = new HashSet<>(this.directAuthorities);
         newAuthorities.remove(authority);
         this.directAuthorities = newAuthorities;
-    }
-
-    /**
-     * Replaces all direct authorities with a new set using a command.
-     *
-     * @param command the ReplaceAuthorities command
-     * @see AuthorizationPolicy#checkAdminLockoutPrevention
-     */
-    public void replaceAuthorities(ReplaceAuthorities command) {
-        replaceAuthorities(command.authorities());
     }
 
     /**

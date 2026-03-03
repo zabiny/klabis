@@ -1,5 +1,6 @@
 package com.klabis.common.users.infrastructure;
 
+import com.klabis.common.users.PasswordSetupTokenId;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenHash;
@@ -7,7 +8,6 @@ import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 
 /**
@@ -67,6 +67,6 @@ public interface PasswordSetupTokenRepository {
      * @param id the token ID
      * @return optional containing the token, or empty if not found
      */
-    Optional<PasswordSetupToken> findById(UUID id);
+    Optional<PasswordSetupToken> findById(PasswordSetupTokenId id);
 
 }

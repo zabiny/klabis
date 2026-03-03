@@ -3,7 +3,6 @@ package com.klabis.common.users.domain;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.infrastructure.jdbc.UserMemento;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
@@ -30,12 +29,6 @@ import java.util.UUID;
  *
  * @see Authority
  * @see UserPermissions
- * <p>
- * Persistence:
- * - This aggregate root is persisted via UserMemento using the Memento pattern
- * - ID is stored as UUID in database, exposed as UserId value object in domain
- * - Domain events are published via Spring Modulith's transactional outbox pattern
- * @see UserMemento
  */
 @AggregateRoot
 public class User extends KlabisAggregateRoot<User, UserId> {

@@ -185,9 +185,10 @@ CREATE TABLE password_setup_tokens
     expires_at TIMESTAMP   NOT NULL,
     used_at    TIMESTAMP,
     used_by_ip VARCHAR(45),
-    created_by VARCHAR(100),
+    created_by  VARCHAR(100),
+    modified_at TIMESTAMP,
     modified_by VARCHAR(100),
-    version    BIGINT      NOT NULL DEFAULT 0,
+    version     BIGINT      NOT NULL DEFAULT 0,
     CONSTRAINT unique_user_token UNIQUE (user_id, created_at)
 );
 
@@ -207,6 +208,7 @@ COMMENT ON COLUMN password_setup_tokens.expires_at IS 'Token expiration timestam
 COMMENT ON COLUMN password_setup_tokens.used_at IS 'Timestamp when token was used to set password (null if unused)';
 COMMENT ON COLUMN password_setup_tokens.used_by_ip IS 'IP address of user who set password (for security audit)';
 COMMENT ON COLUMN password_setup_tokens.created_by IS 'Identifier of who created this token (for audit trail)';
+COMMENT ON COLUMN password_setup_tokens.modified_at IS 'Timestamp when token was last modified';
 COMMENT ON COLUMN password_setup_tokens.modified_by IS 'Identifier of who last modified this token (for audit trail)';
 COMMENT ON COLUMN password_setup_tokens.version IS 'Optimistic locking version for concurrent modification detection';
 

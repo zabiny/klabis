@@ -11,7 +11,6 @@ import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
-import com.klabis.common.users.infrastructure.restapi.PermissionsResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -67,11 +65,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn200AndPermissionsWhenAuthorized() throws Exception {
             // Given
-            PermissionsResponse response = new PermissionsResponse(
-                    USER_ID,
-                    List.of("MEMBERS:CREATE", "MEMBERS:READ")
-            );
-            when(permissionService.getUserPermissions(any(UserId.class))).thenReturn(response);
+            when(permissionService.getUserPermissions(any(UserId.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)));
 
             // When & Then
             mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
@@ -86,11 +81,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldIncludeHateoasLinks() throws Exception {
             // Given
-            PermissionsResponse response = new PermissionsResponse(
-                    USER_ID,
-                    List.of("MEMBERS:READ")
-            );
-            when(permissionService.getUserPermissions(any(UserId.class))).thenReturn(response);
+            when(permissionService.getUserPermissions(any(UserId.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
 
             // When & Then
             mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
@@ -123,81 +115,65 @@ class PermissionControllerTest {
     class UpdateUserPermissions {
 
         @Test
-        @DisplayName("should return 200 and updated permissions when authorized")
+        @DisplayName("should return 204 No Content when authorized")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
-        void shouldReturn200AndUpdatedPermissionsWhenAuthorized() throws Exception {
+        void shouldReturn204WhenAuthorized() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
                     new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_CREATE,
                             Authority.MEMBERS_READ));
 
-            UserPermissions updatedPermissions = UserPermissions.create(
-                    USER_ID,
-                    Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)
-            );
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
-                    .thenReturn(updatedPermissions);
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)));
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.userId").isNotEmpty())
-                    .andExpect(jsonPath("$.authorities").isArray())
-                    .andExpect(jsonPath("$.authorities", hasItems("MEMBERS:CREATE", "MEMBERS:READ")));
+                    .andExpect(status().isNoContent());
         }
 
         @Test
-        @DisplayName("should include HATEOAS links in response")
+        @DisplayName("should return Location header pointing to permissions resource")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
-        void shouldIncludeHateoasLinks() throws Exception {
+        void shouldReturnLocationHeaderPointingToPermissionsResource() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
                     new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_CREATE,
                             Authority.MEMBERS_READ));
 
-            UserPermissions updatedPermissions = UserPermissions.create(
-                    USER_ID,
-                    Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)
-            );
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
-                    .thenReturn(updatedPermissions);
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)));
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href").exists());
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().string("Location",
+                            containsString("/api/users/" + USER_ID.uuid() + "/permissions")));
         }
 
         @Test
-        @DisplayName("should return Location header")
+        @DisplayName("should return 204 No Content with no response body")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
-        void shouldReturnLocationHeader() throws Exception {
+        void shouldReturn204WithNoBody() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
                     new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
 
-            UserPermissions updatedPermissions = UserPermissions.create(
-                    USER_ID,
-                    Set.of(Authority.MEMBERS_READ)
-            );
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
-                    .thenReturn(updatedPermissions);
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(header().exists("Location"))
-                    .andExpect(header().string("Location",
-                            containsString("/api/users/" + USER_ID.uuid() + "/permissions")));
+                    .andExpect(status().isNoContent())
+                    .andExpect(content().string(""));
         }
 
         @Test
@@ -255,9 +231,6 @@ class PermissionControllerTest {
             // Given
             PermissionController.UpdatePermissionsRequest request =
                     new PermissionController.UpdatePermissionsRequest(Set.of());
-
-            when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
-                    .thenThrow(new IllegalArgumentException("At least one authority required"));
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())

@@ -5,7 +5,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.common.users.domain.*;
 import lombok.extern.slf4j.Slf4j;
-import org.jmolecules.ddd.annotation.Service;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;

@@ -2,9 +2,6 @@ package com.klabis.common.users.application;
 
 import com.klabis.common.email.EmailMessage;
 import com.klabis.common.users.domain.*;
-import com.klabis.common.users.infrastructure.restapi.PasswordSetupRequest;
-import com.klabis.common.users.infrastructure.restapi.PasswordSetupResponse;
-import com.klabis.common.users.infrastructure.restapi.ValidateTokenResponse;
 import com.klabis.common.users.testdata.UserTestDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -179,13 +176,13 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             when(userRepository.findById(token.getUserId())).thenReturn(Optional.of(user));
 
             // When
-            ValidateTokenResponse response = passwordSetupService.validateToken(plainToken);
+            PasswordSetupToken result = passwordSetupService.validateToken(plainToken);
 
             // Then
-            assertThat(response).isNotNull();
-            assertThat(response.valid()).isTrue();
-            assertThat(response.expiresAt()).isNotNull();
-            assertThat(response.expiresAt()).isAfter(Instant.now());
+            assertThat(result).isNotNull();
+            assertThat(result.isValid()).isTrue();
+            assertThat(result.getExpiresAt()).isNotNull();
+            assertThat(result.getExpiresAt()).isAfter(Instant.now());
         }
 
         @Test
@@ -304,46 +301,20 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            PasswordSetupRequest request =
-                    new PasswordSetupRequest(plainToken, password, password);
+            PasswordSetupService.SetupPasswordCommand command =
+                    new PasswordSetupService.SetupPasswordCommand(plainToken, password);
 
             // When
-            PasswordSetupResponse response =
-                    passwordSetupService.completePasswordSetup(request, ipAddress);
+            User result = passwordSetupService.completePasswordSetup(command, ipAddress);
 
             // Then
-            assertThat(response).isNotNull();
-            assertThat(response.message()).contains("Password set successfully");
-            assertThat(response.registrationNumber()).isEqualTo(pendingUser.getUsername());
+            assertThat(result).isNotNull();
+            assertThat(result.getUsername()).isEqualTo(pendingUser.getUsername());
 
             verify(passwordValidator).validateBasic(password);
             verify(passwordEncoder).encode(password);
             verify(userRepository).save(any(User.class));
             verify(tokenRepository).save(any(PasswordSetupToken.class));
-        }
-
-        @Test
-        @DisplayName("should reject password mismatch")
-        void shouldRejectPasswordMismatch() {
-            // Given
-            String plainToken = "valid-token";
-            TokenHash tokenHash = TokenHash.hash(plainToken);
-            User pendingUser = createPendingUser();
-            PasswordSetupToken token = PasswordSetupToken.generateFor(pendingUser.getId(), Duration.ofHours(4));
-
-            when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
-            when(userRepository.findById(token.getUserId())).thenReturn(Optional.of(pendingUser));
-
-            PasswordSetupRequest request =
-                    new PasswordSetupRequest(plainToken, "Password123!", "DifferentPassword123!");
-
-            // When/Then
-            assertThatThrownBy(() -> passwordSetupService.completePasswordSetup(request, "192.168.1.1"))
-                    .isInstanceOf(PasswordValidationException.class)
-                    .hasMessage("Passwords do not match");
-
-            verify(passwordEncoder, never()).encode(anyString());
-            verify(userRepository, never()).save(any(User.class));
         }
 
         @Test
@@ -359,15 +330,14 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
             when(userRepository.findById(token.getUserId())).thenReturn(Optional.of(pendingUser));
 
-            // Set up the validator to throw exception for weak password
             doThrow(new PasswordValidationException("Password must be at least 12 characters long"))
                     .when(passwordValidator).validateBasic(weakPassword);
 
-            PasswordSetupRequest request =
-                    new PasswordSetupRequest(plainToken, weakPassword, weakPassword);
+            PasswordSetupService.SetupPasswordCommand command =
+                    new PasswordSetupService.SetupPasswordCommand(plainToken, weakPassword);
 
             // When/Then
-            assertThatThrownBy(() -> passwordSetupService.completePasswordSetup(request, "192.168.1.1"))
+            assertThatThrownBy(() -> passwordSetupService.completePasswordSetup(command, "192.168.1.1"))
                     .isInstanceOf(PasswordValidationException.class)
                     .hasMessageContaining("Password must be at least 12 characters long");
 
@@ -392,11 +362,11 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
 
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
 
-            PasswordSetupRequest request =
-                    new PasswordSetupRequest(plainToken, "SecurePassword123!", "SecurePassword123!");
+            PasswordSetupService.SetupPasswordCommand command =
+                    new PasswordSetupService.SetupPasswordCommand(plainToken, "SecurePassword123!");
 
             // When/Then
-            assertThatThrownBy(() -> passwordSetupService.completePasswordSetup(request, "192.168.1.1"))
+            assertThatThrownBy(() -> passwordSetupService.completePasswordSetup(command, "192.168.1.1"))
                     .isInstanceOf(TokenValidationException.class)
                     .hasMessage("Token has expired");
 
@@ -421,11 +391,11 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            PasswordSetupRequest request =
-                    new PasswordSetupRequest(plainToken, password, password);
+            PasswordSetupService.SetupPasswordCommand command =
+                    new PasswordSetupService.SetupPasswordCommand(plainToken, password);
 
             // When
-            passwordSetupService.completePasswordSetup(request, ipAddress);
+            passwordSetupService.completePasswordSetup(command, ipAddress);
 
             // Then
             assertThat(token.isUsed()).isTrue();

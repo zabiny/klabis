@@ -79,17 +79,20 @@ public class UserPermissionsMemento implements Persistable<UUID> {
 
     /**
      * Creates a memento from a domain UserPermissions.
+     * <p>
+     * Uses auditMetadata == null as the sentinel to determine isNew:
+     * a null auditMetadata means the aggregate has never been persisted (INSERT),
+     * while a non-null auditMetadata means it was loaded from the database (UPDATE).
      *
      * @param permissions the domain UserPermissions
-     * @param isNew       whether this is a new entity (for INSERT) or existing (for UPDATE)
      * @return a new UserPermissionsMemento
      */
-    static UserPermissionsMemento from(UserPermissions permissions, boolean isNew) {
+    static UserPermissionsMemento from(UserPermissions permissions) {
         UserPermissionsMemento memento = new UserPermissionsMemento();
         memento.userId = permissions.getUserId().uuid();
         memento.authoritiesJson = serializeAuthorities(permissions.getDirectAuthorities());
         memento.version = permissions.getVersion();
-        memento.isNew = isNew;
+        memento.isNew = permissions.getAuditMetadata() == null;
         return memento;
     }
 
@@ -102,7 +105,7 @@ public class UserPermissionsMemento implements Persistable<UUID> {
         Set<Authority> authorities = deserializeAuthorities(authoritiesJson);
         UserPermissions permissions = UserPermissions.create(new UserId(userId), authorities);
         permissions.setVersion(this.version);
-        permissions.markAsPersisted();
+        permissions.updateAuditMetadata(getAuditMetadata());
         return permissions;
     }
 

@@ -1,6 +1,7 @@
 package com.klabis.common.users.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
+import com.klabis.common.users.PasswordSetupTokenId;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenHash;
@@ -173,7 +174,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
             UUID nonExistentId = UUID.randomUUID();
 
             // When
-            Optional<PasswordSetupToken> found = tokenRepository.findById(nonExistentId);
+            Optional<PasswordSetupToken> found = tokenRepository.findById(new PasswordSetupTokenId(nonExistentId));
 
             // Then
             assertThat(found).isEmpty();
@@ -266,7 +267,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
             Instant expired = Instant.now().minus(Duration.ofHours(1));
 
             PasswordSetupToken expiredToken = PasswordSetupToken.reconstruct(
-                    tokenId, userId, hash, past, expired, null, null, null
+                    new PasswordSetupTokenId(tokenId), userId, hash, past, expired, null, null, null
             );
             tokenRepository.save(expiredToken);
 
@@ -327,7 +328,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
             Instant past = Instant.now().minus(Duration.ofHours(5));
             Instant expired = Instant.now().minus(Duration.ofHours(1));
             PasswordSetupToken expiredToken = PasswordSetupToken.reconstruct(
-                    expiredTokenId, user.getId(), expiredHash, past, expired, null, null, null
+                    new PasswordSetupTokenId(expiredTokenId), user.getId(), expiredHash, past, expired, null, null, null
             );
             tokenRepository.save(expiredToken);
 
@@ -398,7 +399,7 @@ class PasswordSetupTokenJdbcRepositoryTest {
             Instant expired = Instant.now().minus(Duration.ofHours(1));
 
             PasswordSetupToken expiredToken = PasswordSetupToken.reconstruct(
-                    tokenId, userId, hash, past, expired, null, null, null
+                    new PasswordSetupTokenId(tokenId), userId, hash, past, expired, null, null, null
             );
             tokenRepository.save(expiredToken);
 
@@ -436,10 +437,10 @@ class PasswordSetupTokenJdbcRepositoryTest {
             Instant expired = Instant.now().minus(Duration.ofHours(1));
 
             PasswordSetupToken expiredToken1 = PasswordSetupToken.reconstruct(
-                    UUID.randomUUID(), user.getId(), TokenHash.hash("expired1"), past1, expired, null, null, null
+                    new PasswordSetupTokenId(UUID.randomUUID()), user.getId(), TokenHash.hash("expired1"), past1, expired, null, null, null
             );
             PasswordSetupToken expiredToken2 = PasswordSetupToken.reconstruct(
-                    UUID.randomUUID(), user.getId(), TokenHash.hash("expired2"), past2, expired, null, null, null
+                    new PasswordSetupTokenId(UUID.randomUUID()), user.getId(), TokenHash.hash("expired2"), past2, expired, null, null, null
             );
             tokenRepository.save(expiredToken1);
             tokenRepository.save(expiredToken2);

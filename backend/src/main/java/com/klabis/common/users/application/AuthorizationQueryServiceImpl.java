@@ -5,7 +5,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.domain.AuthorizationContext;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.domain.UserPermissionsRepository;
-import org.jmolecules.ddd.annotation.Service;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;

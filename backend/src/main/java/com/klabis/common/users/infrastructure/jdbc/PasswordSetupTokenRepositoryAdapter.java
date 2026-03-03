@@ -1,5 +1,6 @@
 package com.klabis.common.users.infrastructure.jdbc;
 
+import com.klabis.common.users.PasswordSetupTokenId;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenHash;
@@ -10,7 +11,6 @@ import org.jmolecules.ddd.annotation.Repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Adapter that bridges between PasswordSetupTokenRepository domain interface and PasswordSetupTokenJdbcRepository.
@@ -33,8 +33,7 @@ class PasswordSetupTokenRepositoryAdapter implements PasswordSetupTokenRepositor
     @Override
     public PasswordSetupToken save(PasswordSetupToken token) {
         // Check if token already exists in database to determine INSERT vs UPDATE
-        // This is necessary for tokens created via reconstruct() which have isNew=false
-        boolean exists = jdbcRepository.existsById(token.getId());
+        boolean exists = jdbcRepository.existsById(token.getId().uuid());
 
         // Convert PasswordSetupToken to PasswordSetupTokenMemento for persistence
         PasswordSetupTokenMemento memento = PasswordSetupTokenMemento.from(token);
@@ -72,8 +71,8 @@ class PasswordSetupTokenRepositoryAdapter implements PasswordSetupTokenRepositor
     }
 
     @Override
-    public Optional<PasswordSetupToken> findById(UUID id) {
-        return jdbcRepository.findById(id)
+    public Optional<PasswordSetupToken> findById(PasswordSetupTokenId id) {
+        return jdbcRepository.findById(id.uuid())
                 .map(PasswordSetupTokenMemento::toPasswordSetupToken);
     }
 
