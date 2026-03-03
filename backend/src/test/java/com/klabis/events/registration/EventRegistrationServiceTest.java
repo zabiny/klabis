@@ -54,19 +54,19 @@ class EventRegistrationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EventRegistrationService(eventRepository, members);
+        service = new EventRegistrationServiceImpl(eventRepository, members);
     }
 
     @Nested
     @DisplayName("registerMember() method")
     class RegisterMemberMethod {
 
-        private UUID eventId;
+        private EventId eventId;
         private Event activeEvent;
 
         @BeforeEach
         void setUp() {
-            eventId = UUID.randomUUID();
+            eventId = EventId.generate();
 
             activeEvent = Event.create(
                     "Test Event",
@@ -83,8 +83,8 @@ class EventRegistrationServiceTest {
         @DisplayName("should register member with valid SI card number for ACTIVE event")
         void shouldRegisterMemberWithValidSiCard() {
             // Given
-            RegisterForEventCommand command = new RegisterForEventCommand("123456");
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
             when(eventRepository.save(any(Event.class))).thenReturn(activeEvent);
 
             // When
@@ -100,8 +100,8 @@ class EventRegistrationServiceTest {
         @DisplayName("should throw exception when member already registered (duplicate registration)")
         void shouldRejectDuplicateRegistration() {
             // Given
-            RegisterForEventCommand command = new RegisterForEventCommand("123456");
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
 
             // Register member first time
             activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
@@ -128,8 +128,8 @@ class EventRegistrationServiceTest {
             );
             // Event is in DRAFT status
 
-            RegisterForEventCommand command = new RegisterForEventCommand("123456");
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(draftEvent));
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(draftEvent));
 
             // When/Then
             assertThatThrownBy(() -> service.registerMember(eventId, TEST_MEMBER_ID, command))
@@ -143,8 +143,8 @@ class EventRegistrationServiceTest {
         @DisplayName("should throw exception when event not found")
         void shouldThrowExceptionWhenEventNotFound() {
             // Given
-            RegisterForEventCommand command = new RegisterForEventCommand("123456");
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.empty());
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
             // When/Then
             assertThatThrownBy(() -> service.registerMember(eventId, TEST_MEMBER_ID, command))
@@ -158,12 +158,12 @@ class EventRegistrationServiceTest {
     @DisplayName("unregisterMember() method")
     class UnregisterMemberMethod {
 
-        private UUID eventId;
+        private EventId eventId;
         private Event activeEvent;
 
         @BeforeEach
         void setUp() {
-            eventId = UUID.randomUUID();
+            eventId = EventId.generate();
 
             activeEvent = Event.create(
                     "Test Event",
@@ -182,11 +182,11 @@ class EventRegistrationServiceTest {
         void shouldUnregisterMemberBeforeEventDate() {
             // Given
             LocalDate currentDate = LocalDate.of(2026, 6, 10); // Before event date
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
             when(eventRepository.save(any(Event.class))).thenReturn(activeEvent);
 
             // When
-            service.unregisterMember(eventId, TEST_MEMBER_ID,currentDate);
+            service.unregisterMember(eventId, TEST_MEMBER_ID, currentDate);
 
             // Then
             verify(eventRepository).save(any(Event.class));
@@ -198,10 +198,10 @@ class EventRegistrationServiceTest {
         void shouldRejectUnregistrationOnEventDate() {
             // Given
             LocalDate eventDate = LocalDate.of(2026, 6, 15); // Same as event date
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
 
             // When/Then
-            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID,eventDate))
+            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID, eventDate))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
 
@@ -213,10 +213,10 @@ class EventRegistrationServiceTest {
         void shouldRejectUnregistrationAfterEventDate() {
             // Given
             LocalDate afterEventDate = LocalDate.of(2026, 6, 20); // After event date
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
 
             // When/Then
-            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID,afterEventDate))
+            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID, afterEventDate))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
 
@@ -232,7 +232,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should return list without SI card numbers for privacy")
         void shouldReturnListWithoutSiCardNumbers() {
             // Given
-            UUID eventId = UUID.randomUUID();
+            EventId eventId = EventId.generate();
             UUID member1Id = UUID.randomUUID();
             UUID member2Id = UUID.randomUUID();
 
@@ -248,7 +248,7 @@ class EventRegistrationServiceTest {
             event.registerMember(new MemberId(member1Id), SiCardNumber.of("111111"));
             event.registerMember(new MemberId(member2Id), SiCardNumber.of("222222"));
 
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(event));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             MemberDto member1 = new MemberDto(member1Id, "John", "Doe", "doe@email.com");
             MemberDto member2 = new MemberDto(member2Id, "Jane", "Smith", "smith@email.com");
@@ -263,7 +263,6 @@ class EventRegistrationServiceTest {
             assertThat(registrations).hasSize(2);
             assertThat(registrations.get(0).firstName()).isEqualTo("John");
             assertThat(registrations.get(0).lastName()).isEqualTo("Doe");
-            // SI card number should NOT be present in RegistrationDto
             assertThat(registrations.get(1).firstName()).isEqualTo("Jane");
             assertThat(registrations.get(1).lastName()).isEqualTo("Smith");
         }
@@ -272,7 +271,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should return empty list when no registrations")
         void shouldReturnEmptyListWhenNoRegistrations() {
             // Given
-            UUID eventId = UUID.randomUUID();
+            EventId eventId = EventId.generate();
             Event event = Event.create(
                     "Test Event",
                     LocalDate.of(2026, 6, 15),
@@ -283,7 +282,7 @@ class EventRegistrationServiceTest {
             );
             event.publish();
 
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(event));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             // When
             List<RegistrationDto> registrations = service.listRegistrations(eventId);
@@ -297,12 +296,12 @@ class EventRegistrationServiceTest {
     @DisplayName("getOwnRegistration() method")
     class GetOwnRegistrationMethod {
 
-        private UUID eventId;
+        private EventId eventId;
         private Event activeEvent;
 
         @BeforeEach
         void setUp() {
-            eventId = UUID.randomUUID();
+            eventId = EventId.generate();
 
             activeEvent = Event.create(
                     "Test Event",
@@ -320,7 +319,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should return full registration details including SI card for own registration")
         void shouldReturnOwnRegistrationWithSiCard() {
             // Given
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(activeEvent));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
 
             MemberDto member = new MemberDto(TEST_USER_ID.uuid(), "John", "Doe", "doe@email.com");
             when(members.findById(TEST_MEMBER_ID)).thenReturn(Optional.of(member));
@@ -349,7 +348,7 @@ class EventRegistrationServiceTest {
             );
             eventWithoutRegistration.publish();
 
-            when(eventRepository.findById(new EventId(eventId))).thenReturn(Optional.of(eventWithoutRegistration));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithoutRegistration));
 
             // When/Then
             assertThatThrownBy(() -> service.getOwnRegistration(eventId, TEST_MEMBER_ID))

@@ -5,6 +5,11 @@ import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.URL;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
@@ -14,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Event aggregate root.
@@ -52,6 +58,61 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     // Event registrations
     private final List<EventRegistration> registrations = new ArrayList<>();
+
+    // ========== Nested Command Records ==========
+
+    public record CreateCommand(
+            @NotBlank(message = "Event name is required")
+            @Size(max = 100, message = "Event name must not exceed 100 characters")
+            String name,
+
+            @NotNull(message = "Event date is required")
+            LocalDate eventDate,
+
+            @NotBlank(message = "Event location is required")
+            @Size(max = 100, message = "Event location must not exceed 100 characters")
+            String location,
+
+            @NotBlank(message = "Event organizer is required")
+            @Size(max = 10, message = "Event organizer must not exceed 10 characters")
+            String organizer,
+
+            @URL(message = "Website URL must be valid")
+            String websiteUrl,
+
+            UUID eventCoordinatorId
+    ) {
+    }
+
+    public record UpdateCommand(
+            @NotBlank(message = "Event name is required")
+            @Size(max = 100, message = "Event name must not exceed 100 characters")
+            String name,
+
+            @NotNull(message = "Event date is required")
+            LocalDate eventDate,
+
+            @NotBlank(message = "Event location is required")
+            @Size(max = 100, message = "Event location must not exceed 100 characters")
+            String location,
+
+            @NotBlank(message = "Event organizer is required")
+            @Size(max = 10, message = "Event organizer must not exceed 10 characters")
+            String organizer,
+
+            @URL(message = "Website URL must be valid")
+            String websiteUrl,
+
+            UUID eventCoordinatorId
+    ) {
+    }
+
+    public record RegisterCommand(
+            @NotBlank(message = "SI card number is required")
+            @Pattern(regexp = "\\d{6,7}", message = "SI card number must be 6-7 digits")
+            String siCardNumber
+    ) {
+    }
 
     /**
      * Private constructor for creating new Event instances.
@@ -168,7 +229,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         );
 
         // Register domain event
-        event.registerEvent(EventCreatedEvent.fromEvent(event));
+        event.registerEvent(EventCreatedEvent.fromAggregate(event));
 
         return event;
     }
@@ -248,7 +309,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.status = EventStatus.ACTIVE;
 
         // Register domain event
-        registerEvent(new EventPublishedEvent(this.id));
+        registerEvent(EventPublishedEvent.fromAggregate(this));
     }
 
     /**
@@ -263,7 +324,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.status = EventStatus.CANCELLED;
 
         // Register domain event
-        registerEvent(new EventCancelledEvent(this.id));
+        registerEvent(EventCancelledEvent.fromAggregate(this));
     }
 
     /**
@@ -278,7 +339,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.status = EventStatus.FINISHED;
 
         // Register domain event
-        registerEvent(new EventFinishedEvent(this.id));
+        registerEvent(EventFinishedEvent.fromAggregate(this));
     }
 
     /**
@@ -329,7 +390,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.eventCoordinatorId = eventCoordinatorId;
 
         // Register domain event
-        registerEvent(EventUpdatedEvent.publish(this));
+        registerEvent(EventUpdatedEvent.fromAggregate(this));
     }
 
     // ========== Registration Methods ==========
@@ -367,7 +428,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         registrations.add(registration);
 
         // Register domain event
-        registerEvent(new MemberRegisteredForEventEvent(this.id, memberId));
+        registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId));
     }
 
     /**
@@ -394,7 +455,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         registrations.remove(registration);
 
         // Register domain event
-        registerEvent(new MemberUnregisteredFromEventEvent(this.id, memberId));
+        registerEvent(MemberUnregisteredFromEventEvent.fromAggregate(this, memberId));
     }
 
     /**
@@ -416,18 +477,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      */
     public List<EventRegistration> getRegistrations() {
         return Collections.unmodifiableList(registrations);
-    }
-
-    // ========== Audit Metadata Methods ==========
-
-    /**
-     * Public method to add a registration during reconstruction.
-     * Used by the persistence layer when loading events from the database.
-     *
-     * @param registration the registration to add
-     */
-    public void addRegistration(EventRegistration registration) {
-        this.registrations.add(registration);
     }
 
     @Override

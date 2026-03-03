@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
@@ -34,7 +35,8 @@ class EventsEventListenerTest {
     void shouldDelegateToServiceWhenEventIsPublished() {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
-        EventPublishedEvent event = new EventPublishedEvent(eventId, Instant.now());
+        Event aggregate = Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, EventStatus.ACTIVE, List.of(), null);
+        EventPublishedEvent event = EventPublishedEvent.fromAggregate(aggregate);
 
         // When
         testedSubject.handle(event);
@@ -49,6 +51,7 @@ class EventsEventListenerTest {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
         EventUpdatedEvent event = new EventUpdatedEvent(
+                UUID.randomUUID(),
                 eventId,
                 "Updated Spring Boot Workshop",
                 LocalDate.of(2024, 3, 15),
@@ -78,6 +81,7 @@ class EventsEventListenerTest {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
         EventUpdatedEvent event = new EventUpdatedEvent(
+                UUID.randomUUID(),
                 eventId,
                 "Java Meetup",
                 LocalDate.of(2024, 4, 20),
@@ -106,7 +110,8 @@ class EventsEventListenerTest {
     void shouldDelegateToServiceWhenEventIsCancelled() {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
-        EventCancelledEvent event = new EventCancelledEvent(eventId, Instant.now());
+        Event aggregate = Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, EventStatus.CANCELLED, List.of(), null);
+        EventCancelledEvent event = EventCancelledEvent.fromAggregate(aggregate);
 
         // When
         testedSubject.handle(event);

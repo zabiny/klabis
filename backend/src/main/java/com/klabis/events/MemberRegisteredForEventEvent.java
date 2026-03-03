@@ -5,6 +5,7 @@ import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Domain event published when a member registers for an event.
@@ -12,18 +13,24 @@ import java.util.Objects;
 @DomainEvent
 public class MemberRegisteredForEventEvent {
 
+    private final UUID occurrenceId;
     private final EventId eventId;
     private final MemberId memberId;
     private final Instant occurredAt;
 
-    public MemberRegisteredForEventEvent(EventId eventId, MemberId memberId) {
-        this(eventId, memberId, Instant.now());
-    }
-
-    public MemberRegisteredForEventEvent(EventId eventId, MemberId memberId, Instant occurredAt) {
+    private MemberRegisteredForEventEvent(UUID occurrenceId, EventId eventId, MemberId memberId, Instant occurredAt) {
+        this.occurrenceId = Objects.requireNonNull(occurrenceId, "Occurrence ID is required");
         this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
         this.memberId = Objects.requireNonNull(memberId, "Member ID is required");
         this.occurredAt = Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+    }
+
+    public static MemberRegisteredForEventEvent fromAggregate(Event event, MemberId memberId) {
+        return new MemberRegisteredForEventEvent(UUID.randomUUID(), event.getId(), memberId, Instant.now());
+    }
+
+    public UUID getOccurrenceId() {
+        return occurrenceId;
     }
 
     public EventId eventId() {
@@ -43,20 +50,19 @@ public class MemberRegisteredForEventEvent {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MemberRegisteredForEventEvent that = (MemberRegisteredForEventEvent) o;
-        return Objects.equals(eventId, that.eventId) &&
-               Objects.equals(memberId, that.memberId) &&
-               Objects.equals(occurredAt, that.occurredAt);
+        return Objects.equals(occurrenceId, that.occurrenceId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(eventId, memberId, occurredAt);
+        return Objects.hash(occurrenceId);
     }
 
     @Override
     public String toString() {
         return "MemberRegisteredForEventEvent{" +
-               "eventId=" + eventId +
+               "occurrenceId=" + occurrenceId +
+               ", eventId=" + eventId +
                ", memberId=" + memberId +
                ", occurredAt=" + occurredAt +
                '}';

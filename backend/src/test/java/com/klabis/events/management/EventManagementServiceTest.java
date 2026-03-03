@@ -47,7 +47,7 @@ class EventManagementServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new EventManagementService(eventRepository);
+        service = new EventManagementServiceImpl(eventRepository);
     }
 
     @Nested
@@ -59,7 +59,7 @@ class EventManagementServiceTest {
         void shouldCreateEventWithValidCommand() {
             // Given
             UUID coordinatorId = UUID.randomUUID();
-            CreateEventCommand command = new CreateEventCommand(
+            Event.CreateCommand command = new Event.CreateCommand(
                     "Spring Cup 2026",
                     LocalDate.of(2026, 3, 15),
                     "Forest Park",
@@ -91,7 +91,7 @@ class EventManagementServiceTest {
         @DisplayName("should create event without optional fields")
         void shouldCreateEventWithoutOptionalFields() {
             // Given
-            CreateEventCommand command = new CreateEventCommand(
+            Event.CreateCommand command = new Event.CreateCommand(
                     "Autumn Race 2026",
                     LocalDate.of(2026, 10, 12),
                     "City Park",
@@ -138,7 +138,7 @@ class EventManagementServiceTest {
                     null
             );
 
-            UpdateEventCommand command = new UpdateEventCommand(
+            Event.UpdateCommand command = new Event.UpdateCommand(
                     "Updated Name",
                     LocalDate.of(2026, 5, 15),
                     "Updated Location",
@@ -172,7 +172,7 @@ class EventManagementServiceTest {
             );
             event.publish();  // Transition to ACTIVE
 
-            UpdateEventCommand command = new UpdateEventCommand(
+            Event.UpdateCommand command = new Event.UpdateCommand(
                     "Updated Event",
                     LocalDate.of(2026, 6, 15),
                     "New Location",
@@ -207,7 +207,7 @@ class EventManagementServiceTest {
             event.publish();
             event.finish();  // Transition to FINISHED
 
-            UpdateEventCommand command = new UpdateEventCommand(
+            Event.UpdateCommand command = new Event.UpdateCommand(
                     "Updated Event",
                     LocalDate.of(2026, 6, 15),
                     "New Location",
@@ -239,7 +239,7 @@ class EventManagementServiceTest {
             );
             event.cancel();  // Transition to CANCELLED
 
-            UpdateEventCommand command = new UpdateEventCommand(
+            Event.UpdateCommand command = new Event.UpdateCommand(
                     "Updated Event",
                     LocalDate.of(2026, 6, 15),
                     "New Location",
@@ -261,7 +261,7 @@ class EventManagementServiceTest {
         void shouldThrowExceptionWhenEventNotFound() {
             // Given
             UUID eventId = UUID.randomUUID();
-            UpdateEventCommand command = new UpdateEventCommand(
+            Event.UpdateCommand command = new Event.UpdateCommand(
                     "Updated Event",
                     LocalDate.of(2026, 6, 15),
                     "New Location",
@@ -448,14 +448,14 @@ class EventManagementServiceTest {
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             // When
-            EventDto result = service.getEvent(eventId);
+            Event result = service.getEvent(eventId);
 
             // Then
             assertThat(result).isNotNull();
-            assertThat(result.name()).isEqualTo("Test Event");
-            assertThat(result.location()).isEqualTo("Forest Park");
-            assertThat(result.organizer()).isEqualTo("OOB");
-            assertThat(result.status()).isEqualTo(EventStatus.DRAFT);
+            assertThat(result.getName()).isEqualTo("Test Event");
+            assertThat(result.getLocation()).isEqualTo("Forest Park");
+            assertThat(result.getOrganizer()).isEqualTo("OOB");
+            assertThat(result.getStatus()).isEqualTo(EventStatus.DRAFT);
         }
 
         @Test
@@ -501,12 +501,12 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(pageable)).thenReturn(eventPage);
 
             // When
-            Page<EventSummaryDto> result = service.listEvents(pageable);
+            Page<Event> result = service.listEvents(pageable);
 
             // Then
             assertThat(result.getContent()).hasSize(2);
-            assertThat(result.getContent().get(0).name()).isEqualTo("Event 1");
-            assertThat(result.getContent().get(1).name()).isEqualTo("Event 2");
+            assertThat(result.getContent().get(0).getName()).isEqualTo("Event 1");
+            assertThat(result.getContent().get(1).getName()).isEqualTo("Event 2");
         }
 
         @Test
@@ -528,11 +528,11 @@ class EventManagementServiceTest {
             when(eventRepository.findByStatus(EventStatus.ACTIVE, pageable)).thenReturn(eventPage);
 
             // When
-            Page<EventSummaryDto> result = service.listEventsByStatus(EventStatus.ACTIVE, pageable);
+            Page<Event> result = service.listEventsByStatus(EventStatus.ACTIVE, pageable);
 
             // Then
             assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).status()).isEqualTo(EventStatus.ACTIVE);
+            assertThat(result.getContent().get(0).getStatus()).isEqualTo(EventStatus.ACTIVE);
         }
     }
 }

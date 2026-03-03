@@ -18,6 +18,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,7 +70,7 @@ class CalendarEventSyncIntegrationTest {
         ));
 
         // When & Then: CalendarItem should be created automatically
-        scenario.publish(new EventPublishedEvent(eventId))
+        scenario.publish(EventPublishedEvent.fromAggregate(Event.reconstruct(eventId, "Spring Boot Workshop", LocalDate.of(2024, 3, 15), "Prague CC", "OOB", WebsiteUrl.of("https://example.com/workshop"), null, EventStatus.ACTIVE, List.of(), null)))
                 .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isPresent())
                 .andVerify(isPresent -> {
                     CalendarItem calendarItem = calendarRepository.findByEventId(eventId).orElseThrow();
@@ -99,6 +100,7 @@ class CalendarEventSyncIntegrationTest {
                 WebsiteUrl.of("https://new-url.com")
         ));
         scenario.publish(new EventUpdatedEvent(
+                        java.util.UUID.randomUUID(),
                         eventId,
                         "Updated Workshop",
                         LocalDate.of(2024, 5, 21),
@@ -129,7 +131,7 @@ class CalendarEventSyncIntegrationTest {
         final CalendarItemId calendarItemId = calendarRepository.findByEventId(eventId).orElseThrow().getId();
 
         // When: Event is cancelled
-        scenario.publish(new EventCancelledEvent(eventId))
+        scenario.publish(EventCancelledEvent.fromAggregate(Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, EventStatus.CANCELLED, List.of(), null)))
                 .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isEmpty())
                 .andVerify(calendarItemIsGone -> {
                     assertThat(calendarRepository.findById(calendarItemId)).isEmpty();

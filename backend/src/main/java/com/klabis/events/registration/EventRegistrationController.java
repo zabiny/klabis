@@ -2,7 +2,7 @@ package com.klabis.events.registration;
 
 import com.klabis.common.users.Authority;
 import com.klabis.events.Event;
-import com.klabis.members.MemberId;
+import com.klabis.events.EventId;
 import com.klabis.events.EventRegistration;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
@@ -53,53 +53,29 @@ class EventRegistrationController {
         this.entityLinks = entityLinks;
     }
 
-    /**
-     * Register for an event.
-     * <p>
-     * POST /api/events/{eventId}/registrations
-     *
-     * @param eventId event ID
-     * @param command registration command
-     * @return 201 Created with registration details
-     */
     @PostMapping(consumes = "application/json")
     @Operation(
             summary = "Register for an event",
             description = "Register the authenticated member for an event with SI card number. " +
-                          "Only allowed for ACTIVE events. Returns HATEOAS links for resource navigation."
+                          "Only allowed for ACTIVE events. Returns Location header pointing to the registration."
     )
     @ApiResponse(responseCode = "201", description = "Successfully registered for event")
     @ApiResponse(responseCode = "409", description = "User already registered to this event")
-    public ResponseEntity<EntityModel<OwnRegistrationDto>> registerForEvent(
+    public ResponseEntity<Void> registerForEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
-            @Parameter(description = "Registration data") @Valid @RequestBody RegisterForEventCommand command,
+            @Parameter(description = "Registration data") @Valid @RequestBody Event.RegisterCommand command,
             @CurrentUser CurrentUserData currentUser) {
 
-        // Register member
         if (currentUser.memberId() == null) {
             throw new MemberProfileRequiredException();
         }
-        registrationService.registerMember(eventId, currentUser.memberId(), command);
+        registrationService.registerMember(new EventId(eventId), currentUser.memberId(), command);
 
-        // Get registration details
-        OwnRegistrationDto registration = registrationService.getOwnRegistration(eventId, currentUser.memberId());
-
-        // Build entity model with HATEOAS links
-        EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
-        addLinksForOwnRegistration(entityModel, eventId, currentUser.memberId());
-
-        return ResponseEntity.created(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).toUri())
-                .body(entityModel);
+        return ResponseEntity.created(
+                klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).toUri()
+        ).build();
     }
 
-    /**
-     * Unregister from an event.
-     * <p>
-     * DELETE /api/events/{eventId}/registrations
-     *
-     * @param eventId event ID
-     * @return 204 No Content
-     */
     @DeleteMapping
     @Operation(
             summary = "Unregister from an event",
@@ -113,20 +89,10 @@ class EventRegistrationController {
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @CurrentUser CurrentUserData currentUser) {
 
-        // Unregister member (use current date)
-        registrationService.unregisterMember(eventId, currentUser.memberId(), LocalDate.now());
-
+        registrationService.unregisterMember(new EventId(eventId), currentUser.memberId(), LocalDate.now());
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * List all registrations for an event.
-     * <p>
-     * GET /api/events/{eventId}/registrations
-     *
-     * @param eventId event ID
-     * @return list of registrations (without SI card numbers)
-     */
     @GetMapping
     @Operation(
             summary = "List event registrations",
@@ -139,10 +105,8 @@ class EventRegistrationController {
     public ResponseEntity<CollectionModel<RegistrationDto>> listRegistrations(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        // Get registrations
-        List<RegistrationDto> registrations = registrationService.listRegistrations(eventId);
+        List<RegistrationDto> registrations = registrationService.listRegistrations(new EventId(eventId));
 
-        // Build collection model with HATEOAS links
         CollectionModel<RegistrationDto> collectionModel = CollectionModel.of(
                 registrations,
                 klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
@@ -153,14 +117,6 @@ class EventRegistrationController {
         return ResponseEntity.ok(collectionModel);
     }
 
-    /**
-     * Get own registration details.
-     * <p>
-     * GET /api/events/{eventId}/registrations/me
-     *
-     * @param eventId event ID
-     * @return own registration with SI card number
-     */
     @GetMapping("/me")
     @Operation(
             summary = "Get own registration",
@@ -171,26 +127,15 @@ class EventRegistrationController {
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @CurrentUser CurrentUserData currentUser) {
 
-        // Get own registration
-        OwnRegistrationDto registration = registrationService.getOwnRegistration(eventId, currentUser.memberId());
+        OwnRegistrationDto registration = registrationService.getOwnRegistration(new EventId(eventId), currentUser.memberId());
 
-        // Build entity model with HATEOAS links
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
-        addLinksForOwnRegistration(entityModel, eventId, currentUser.memberId());
+        addLinksForOwnRegistration(entityModel, eventId);
 
         return ResponseEntity.ok(entityModel);
     }
 
-    // ========== HATEOAS Link Builders ==========
-
-    /**
-     * Add HATEOAS links for own registration resource.
-     *
-     * @param entityModel entity model to add links to
-     * @param eventId     event ID
-     * @param currentUserId current user ID
-     */
-    private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId, MemberId memberId) {
+    private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId) {
         entityModel.add(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).withSelfRel()
                 .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)))
         );

@@ -5,8 +5,8 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
+import com.klabis.events.Event;
 import com.klabis.events.EventId;
-import com.klabis.events.EventStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,11 +60,11 @@ class EventControllerTest {
     class CreateEventTests {
 
         @Test
-        @DisplayName("should return 201 with Location header and HAL+FORMS links")
+        @DisplayName("should return 201 with Location header and no body")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithValidData() throws Exception {
             UUID eventId = UUID.randomUUID();
-            CreateEventCommand command = new CreateEventCommand(
+            Event.CreateCommand command = new Event.CreateCommand(
                     "Spring Cup 2026",
                     LocalDate.of(2026, 3, 15),
                     "Forest Park",
@@ -73,19 +73,7 @@ class EventControllerTest {
                     null
             );
 
-            EventDto eventDto = new EventDto(
-                    eventId,
-                    "Spring Cup 2026",
-                    LocalDate.of(2026, 3, 15),
-                    "Forest Park",
-                    "OOB",
-                    "https://example.com/spring-cup",
-                    null,
-                    EventStatus.DRAFT
-            );
-
-            when(eventManagementService.createEvent(any(CreateEventCommand.class))).thenReturn(eventId);
-            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
+            when(eventManagementService.createEvent(any(Event.CreateCommand.class))).thenReturn(eventId);
 
             mockMvc.perform(
                             post("/api/events")
@@ -94,20 +82,14 @@ class EventControllerTest {
                                     .content(objectMapper.writeValueAsString(command))
                     )
                     .andExpect(status().isCreated())
-                    .andExpect(header().exists("Location"))
-                    .andExpect(jsonPath("$.id").value(eventId.toString()))
-                    .andExpect(jsonPath("$.name").value("Spring Cup 2026"))
-                    .andExpect(jsonPath("$.location").value("Forest Park"))
-                    .andExpect(jsonPath("$.organizer").value("OOB"))
-                    .andExpect(jsonPath("$.status").value("DRAFT"))
-                    .andExpect(jsonPath("$._links.self.href").exists());
+                    .andExpect(header().exists("Location"));
         }
 
         @Test
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
-            CreateEventCommand command = new CreateEventCommand(
+            Event.CreateCommand command = new Event.CreateCommand(
                     "Test Event",
                     LocalDate.of(2026, 5, 1),
                     "Location",
@@ -129,7 +111,7 @@ class EventControllerTest {
         @DisplayName("should return 400 with invalid data")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn400WithInvalidData() throws Exception {
-            CreateEventCommand command = new CreateEventCommand(
+            Event.CreateCommand command = new Event.CreateCommand(
                     "",
                     LocalDate.of(2026, 5, 1),
                     "Location",
@@ -153,11 +135,11 @@ class EventControllerTest {
     class UpdateEventTests {
 
         @Test
-        @DisplayName("should return 200 with updated event")
+        @DisplayName("should return 204 No Content")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldUpdateEventSuccessfully() throws Exception {
             UUID eventId = UUID.randomUUID();
-            UpdateEventCommand updateCommand = new UpdateEventCommand(
+            Event.UpdateCommand updateCommand = new Event.UpdateCommand(
                     "Updated Event",
                     LocalDate.of(2026, 5, 15),
                     "Updated Location",
@@ -166,29 +148,13 @@ class EventControllerTest {
                     null
             );
 
-            EventDto eventDto = new EventDto(
-                    eventId,
-                    "Updated Event",
-                    LocalDate.of(2026, 5, 15),
-                    "Updated Location",
-                    "PRG",
-                    "https://updated.com",
-                    null,
-                    EventStatus.DRAFT
-            );
-
-            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
-
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(objectMapper.writeValueAsString(updateCommand))
                     )
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.name").value("Updated Event"))
-                    .andExpect(jsonPath("$.location").value("Updated Location"))
-                    .andExpect(jsonPath("$.organizer").value("PRG"));
+                    .andExpect(status().isNoContent());
         }
 
         @Test
@@ -196,7 +162,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenUpdatingWithoutAuthority() throws Exception {
             UUID eventId = UUID.randomUUID();
-            UpdateEventCommand command = new UpdateEventCommand(
+            Event.UpdateCommand command = new Event.UpdateCommand(
                     "Updated Event",
                     LocalDate.of(2026, 5, 1),
                     "Location",
@@ -222,22 +188,9 @@ class EventControllerTest {
         @DisplayName("should return paginated list with HAL+FORMS")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldListEventsWithPagination() throws Exception {
-            EventSummaryDto event1 = new EventSummaryDto(
-                    UUID.randomUUID(),
-                    "Event 1",
-                    LocalDate.of(2026, 6, 1),
-                    "Location 1",
-                    "OOB",
-                    EventStatus.DRAFT
-            );
-            EventSummaryDto event2 = new EventSummaryDto(
-                    UUID.randomUUID(),
-                    "Event 2",
-                    LocalDate.of(2026, 7, 1),
-                    "Location 2",
-                    "PRG",
-                    EventStatus.ACTIVE
-            );
+            Event event1 = Event.create("Event 1", LocalDate.of(2026, 6, 1), "Location 1", "OOB", null, null);
+            Event event2 = Event.create("Event 2", LocalDate.of(2026, 7, 1), "Location 2", "PRG", null, null);
+            event2.publish();
 
             when(eventManagementService.listEvents(any()))
                     .thenReturn(new PageImpl<>(List.of(event1, event2), PageRequest.of(0, 10), 2));
@@ -255,14 +208,8 @@ class EventControllerTest {
         @DisplayName("should filter by status")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldFilterEventsByStatus() throws Exception {
-            EventSummaryDto event = new EventSummaryDto(
-                    UUID.randomUUID(),
-                    "Active Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    EventStatus.ACTIVE
-            );
+            Event event = Event.create("Active Event", LocalDate.of(2026, 6, 1), "Location", "OOB", null, null);
+            event.publish();
 
             when(eventManagementService.listEventsByStatus(any(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
@@ -286,18 +233,16 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldGetEventWithHateoasLinks() throws Exception {
             UUID eventId = UUID.randomUUID();
-            EventDto eventDto = new EventDto(
-                    eventId,
+            Event event = Event.create(
                     "Test Event",
                     LocalDate.of(2026, 6, 1),
                     "Location",
                     "OOB",
                     null,
-                    null,
-                    EventStatus.DRAFT
+                    null
             );
 
-            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
+            when(eventManagementService.getEvent(any())).thenReturn(event);
 
             mockMvc.perform(
                             get("/api/events/{id}", eventId)
@@ -331,29 +276,16 @@ class EventControllerTest {
     class PublishEventTests {
 
         @Test
-        @DisplayName("should transition event to ACTIVE")
+        @DisplayName("should return 204 No Content")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldPublishEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
-            EventDto eventDto = new EventDto(
-                    eventId,
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    EventStatus.ACTIVE
-            );
-
-            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             post("/api/events/{id}/publish", eventId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("ACTIVE"));
+                    .andExpect(status().isNoContent());
         }
     }
 
@@ -362,29 +294,16 @@ class EventControllerTest {
     class CancelEventTests {
 
         @Test
-        @DisplayName("should transition event to CANCELLED")
+        @DisplayName("should return 204 No Content")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCancelEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
-            EventDto eventDto = new EventDto(
-                    eventId,
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    EventStatus.CANCELLED
-            );
-
-            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             post("/api/events/{id}/cancel", eventId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("CANCELLED"));
+                    .andExpect(status().isNoContent());
         }
     }
 
@@ -393,29 +312,16 @@ class EventControllerTest {
     class FinishEventTests {
 
         @Test
-        @DisplayName("should transition event to FINISHED")
+        @DisplayName("should return 204 No Content")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldFinishEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
-            EventDto eventDto = new EventDto(
-                    eventId,
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    EventStatus.FINISHED
-            );
-
-            when(eventManagementService.getEvent(any())).thenReturn(eventDto);
 
             mockMvc.perform(
                             post("/api/events/{id}/finish", eventId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("FINISHED"));
+                    .andExpect(status().isNoContent());
         }
     }
 }

@@ -4,6 +4,7 @@ import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Domain event published when an Event is finished.
@@ -20,52 +21,28 @@ import java.util.Objects;
 @DomainEvent
 public class EventFinishedEvent {
 
+    private final UUID occurrenceId;
     private final EventId eventId;
     private final Instant occurredAt;
 
-    /**
-     * Creates a new EventFinishedEvent with the current timestamp.
-     *
-     * @param eventId the unique identifier of the finished event
-     */
-    public EventFinishedEvent(EventId eventId) {
-        this(
-                eventId,
-                Instant.now()  // Use current time
-        );
-    }
-
-    /**
-     * Creates a new EventFinishedEvent with explicit timestamp.
-     * Useful for testing and event reconstruction.
-     *
-     * @param eventId    the unique identifier of the finished event
-     * @param occurredAt the timestamp when this event occurred
-     */
-    public EventFinishedEvent(
-            EventId eventId,
-            Instant occurredAt) {
-
+    private EventFinishedEvent(UUID occurrenceId, EventId eventId, Instant occurredAt) {
+        this.occurrenceId = Objects.requireNonNull(occurrenceId, "Occurrence ID is required");
         this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
         this.occurredAt = Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
     }
 
-    // Getters
+    public static EventFinishedEvent fromAggregate(Event event) {
+        return new EventFinishedEvent(UUID.randomUUID(), event.getId(), Instant.now());
+    }
 
-    /**
-     * Get the event identifier.
-     *
-     * @return event identifier
-     */
+    public UUID getOccurrenceId() {
+        return occurrenceId;
+    }
+
     public EventId getEventId() {
         return eventId;
     }
 
-    /**
-     * Get the timestamp when this event occurred.
-     *
-     * @return event occurrence timestamp
-     */
     public Instant getOccurredAt() {
         return occurredAt;
     }
@@ -75,18 +52,19 @@ public class EventFinishedEvent {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EventFinishedEvent that = (EventFinishedEvent) o;
-        return Objects.equals(eventId, that.eventId);
+        return Objects.equals(occurrenceId, that.occurrenceId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(eventId);
+        return Objects.hash(occurrenceId);
     }
 
     @Override
     public String toString() {
         return "EventFinishedEvent{" +
-               "eventId=" + eventId +
+               "occurrenceId=" + occurrenceId +
+               ", eventId=" + eventId +
                ", occurredAt=" + occurredAt +
                '}';
     }

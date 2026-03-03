@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Domain event published when a new Event is created.
@@ -26,6 +27,7 @@ import java.util.Optional;
 @DomainEvent
 public class EventCreatedEvent {
 
+    private final UUID occurrenceId;
     private final EventId eventId;
     private final String name;
     private final LocalDate eventDate;
@@ -35,51 +37,8 @@ public class EventCreatedEvent {
     private final UserId eventCoordinatorId;
     private final Instant occurredAt;
 
-    /**
-     * Creates a new EventCreatedEvent with the current timestamp.
-     *
-     * @param eventId            the unique identifier of the created event
-     * @param name               the event name
-     * @param eventDate          the event date
-     * @param location           the event location
-     * @param organizer          the event organizer
-     * @param websiteUrl         the event website URL (may be null)
-     * @param eventCoordinatorId the event coordinator ID (may be null)
-     */
-    public EventCreatedEvent(
-            EventId eventId,
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            UserId eventCoordinatorId) {
-        this(
-                eventId,
-                name,
-                eventDate,
-                location,
-                organizer,
-                websiteUrl,
-                eventCoordinatorId,
-                Instant.now()  // Use current time
-        );
-    }
-
-    /**
-     * Creates a new EventCreatedEvent with explicit timestamp.
-     * Useful for testing and event reconstruction.
-     *
-     * @param eventId            the unique identifier of the created event
-     * @param name               the event name
-     * @param eventDate          the event date
-     * @param location           the event location
-     * @param organizer          the event organizer
-     * @param websiteUrl         the event website URL (may be null)
-     * @param eventCoordinatorId the event coordinator ID (may be null)
-     * @param occurredAt         the timestamp when this event occurred
-     */
-    public EventCreatedEvent(
+    private EventCreatedEvent(
+            UUID occurrenceId,
             EventId eventId,
             String name,
             LocalDate eventDate,
@@ -89,6 +48,7 @@ public class EventCreatedEvent {
             UserId eventCoordinatorId,
             Instant occurredAt) {
 
+        this.occurrenceId = Objects.requireNonNull(occurrenceId, "Occurrence ID is required");
         this.eventId = Objects.requireNonNull(eventId, "Event ID is required");
         this.name = Objects.requireNonNull(name, "Event name is required");
         this.eventDate = Objects.requireNonNull(eventDate, "Event date is required");
@@ -99,31 +59,24 @@ public class EventCreatedEvent {
         this.occurredAt = Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
     }
 
-    /**
-     * Factory method to create event from Event aggregate.
-     *
-     * @param event the event that was created
-     * @return new EventCreatedEvent
-     */
-    public static EventCreatedEvent fromEvent(Event event) {
+    public static EventCreatedEvent fromAggregate(Event event) {
         return new EventCreatedEvent(
+                UUID.randomUUID(),
                 event.getId(),
                 event.getName(),
                 event.getEventDate(),
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl(),
-                event.getEventCoordinatorId()
+                event.getEventCoordinatorId(),
+                event.getCreatedAt() != null ? event.getCreatedAt() : Instant.now()
         );
     }
 
-    // Getters
+    public UUID getOccurrenceId() {
+        return occurrenceId;
+    }
 
-    /**
-     * Get the event identifier.
-     *
-     * @return event identifier
-     */
     public EventId getEventId() {
         return eventId;
     }
@@ -144,29 +97,14 @@ public class EventCreatedEvent {
         return organizer;
     }
 
-    /**
-     * Get event website URL.
-     *
-     * @return Optional containing website URL, or empty if not provided
-     */
     public Optional<WebsiteUrl> getWebsiteUrl() {
         return Optional.ofNullable(websiteUrl);
     }
 
-    /**
-     * Get event coordinator ID.
-     *
-     * @return Optional containing coordinator ID, or empty if not provided
-     */
     public Optional<UserId> getEventCoordinatorId() {
         return Optional.ofNullable(eventCoordinatorId);
     }
 
-    /**
-     * Get the timestamp when this event occurred.
-     *
-     * @return event occurrence timestamp
-     */
     public Instant getOccurredAt() {
         return occurredAt;
     }
@@ -176,23 +114,19 @@ public class EventCreatedEvent {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EventCreatedEvent that = (EventCreatedEvent) o;
-        return Objects.equals(eventId, that.eventId);
+        return Objects.equals(occurrenceId, that.occurrenceId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(eventId);
+        return Objects.hash(occurrenceId);
     }
 
-    /**
-     * Returns a string representation for logging.
-     *
-     * @return safe string representation for logs
-     */
     @Override
     public String toString() {
         return "EventCreatedEvent{" +
-               "eventId=" + eventId +
+               "occurrenceId=" + occurrenceId +
+               ", eventId=" + eventId +
                ", name='" + name + '\'' +
                ", eventDate=" + eventDate +
                ", location='" + location + '\'' +

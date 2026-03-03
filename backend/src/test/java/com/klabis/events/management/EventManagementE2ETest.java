@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.hateoas.MediaTypes;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
+import com.klabis.events.Event;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -49,7 +50,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Complete event lifecycle: create → publish → finish")
     void shouldCompleteEventLifecycleFromCreateToFinish() throws Exception {
         // Given: Create an event
-        CreateEventCommand createCommand = new CreateEventCommand(
+        Event.CreateCommand createCommand = new Event.CreateCommand(
                 "Spring Cup 2026",
                 LocalDate.of(2026, 3, 15),
                 "Forest Park",
@@ -67,12 +68,16 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
-                .andExpect(jsonPath("$.id").isString())
-                .andExpect(jsonPath("$.name").value("Spring Cup 2026"))
-                .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andReturn();
 
-        String eventId = extractEventId(createResult);
+        String eventId = extractEventIdFromLocation(createResult);
+
+        // Verify event was created correctly
+        mockMvc.perform(get("/api/events/{id}", eventId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(eventId))
+                .andExpect(jsonPath("$.name").value("Spring Cup 2026"))
+                .andExpect(jsonPath("$.status").value("DRAFT"));
 
         // When: Publish the event (DRAFT → ACTIVE)
         mockMvc.perform(
@@ -80,8 +85,11 @@ class EventManagementE2ETest extends SecurityTestBase {
                                 .contentType("application/json")
                 )
                 .andDo(print())
+                .andExpect(status().isNoContent());
+
+        // Verify ACTIVE status
+        mockMvc.perform(get("/api/events/{id}", eventId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(eventId))
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         // When: Finish the event (ACTIVE → FINISHED)
@@ -90,9 +98,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                                 .contentType("application/json")
                 )
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(eventId))
-                .andExpect(jsonPath("$.status").value("FINISHED"));
+                .andExpect(status().isNoContent());
 
         // Then: Verify final state
         mockMvc.perform(
@@ -108,7 +114,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Complete event lifecycle: create → cancel")
     void shouldCompleteEventLifecycleFromCreateToCancel() throws Exception {
         // Given: Create an event
-        CreateEventCommand createCommand = new CreateEventCommand(
+        Event.CreateCommand createCommand = new Event.CreateCommand(
                 "Autumn Race 2026",
                 LocalDate.of(2026, 10, 12),
                 "City Park",
@@ -125,10 +131,9 @@ class EventManagementE2ETest extends SecurityTestBase {
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andReturn();
 
-        String eventId = extractEventId(createResult);
+        String eventId = extractEventIdFromLocation(createResult);
 
         // When: Cancel the event (DRAFT → CANCELLED)
         mockMvc.perform(
@@ -136,9 +141,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                                 .contentType("application/json")
                 )
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(eventId))
-                .andExpect(jsonPath("$.status").value("CANCELLED"));
+                .andExpect(status().isNoContent());
 
         // Then: Verify final state
         mockMvc.perform(
@@ -152,14 +155,14 @@ class EventManagementE2ETest extends SecurityTestBase {
     @Test
     @DisplayName("Event CRUD with optional websiteUrl")
     void shouldCreateEventWithOptionalWebsiteUrl() throws Exception {
-        // Given: Create event with optional websiteUrl (no coordinator due to FK constraint)
-        CreateEventCommand createCommand = new CreateEventCommand(
+        // Given: Create event with optional websiteUrl
+        Event.CreateCommand createCommand = new Event.CreateCommand(
                 "Summer Championship 2026",
                 LocalDate.of(2026, 7, 20),
                 "Mountain Valley",
                 "BRN",
                 "https://example.com/summer-champ",
-                null  // no coordinator - would require member in DB
+                null
         );
 
         MvcResult createResult = mockMvc.perform(
@@ -170,16 +173,20 @@ class EventManagementE2ETest extends SecurityTestBase {
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
+                .andReturn();
+
+        String eventId = extractEventIdFromLocation(createResult);
+
+        // Verify creation
+        mockMvc.perform(get("/api/events/{id}", eventId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Summer Championship 2026"))
                 .andExpect(jsonPath("$.location").value("Mountain Valley"))
                 .andExpect(jsonPath("$.organizer").value("BRN"))
-                .andExpect(jsonPath("$.websiteUrl").value("https://example.com/summer-champ"))
-                .andReturn();
-
-        String eventId = extractEventId(createResult);
+                .andExpect(jsonPath("$.websiteUrl").value("https://example.com/summer-champ"));
 
         // When: Update event with new values
-        UpdateEventCommand updateCommand = new UpdateEventCommand(
+        Event.UpdateCommand updateCommand = new Event.UpdateCommand(
                 "Summer Championship 2026 (Updated)",
                 LocalDate.of(2026, 7, 21),
                 "Mountain Valley (Updated)",
@@ -194,10 +201,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                                 .content(objectMapper.writeValueAsString(updateCommand))
                 )
                 .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Summer Championship 2026 (Updated)"))
-                .andExpect(jsonPath("$.location").value("Mountain Valley (Updated)"))
-                .andExpect(jsonPath("$.websiteUrl").value("https://example.com/summer-champ-updated"));
+                .andExpect(status().isNoContent());
 
         // Then: Verify updated event
         mockMvc.perform(
@@ -214,7 +218,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event list with pagination and filtering by status")
     void shouldListEventsWithPaginationAndStatusFilter() throws Exception {
         // Given: Create multiple events with different statuses
-        CreateEventCommand draftEvent = new CreateEventCommand(
+        Event.CreateCommand draftEvent = new Event.CreateCommand(
                 "Draft Event",
                 LocalDate.of(2026, 5, 1),
                 "Location 1",
@@ -223,7 +227,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 null
         );
 
-        CreateEventCommand activeEvent = new CreateEventCommand(
+        Event.CreateCommand activeEvent = new Event.CreateCommand(
                 "Active Event",
                 LocalDate.of(2026, 6, 1),
                 "Location 2",
@@ -245,13 +249,13 @@ class EventManagementE2ETest extends SecurityTestBase {
                         .content(objectMapper.writeValueAsString(activeEvent))
         ).andExpect(status().isCreated()).andReturn();
 
-        String activeEventId = extractEventId(activeResult);
+        String activeEventId = extractEventIdFromLocation(activeResult);
 
         // Publish one event to ACTIVE
         mockMvc.perform(
                 post("/api/events/{id}/publish", activeEventId)
                         .contentType("application/json")
-        ).andExpect(status().isOk());
+        ).andExpect(status().isNoContent());
 
         // When: List all events
         mockMvc.perform(
@@ -279,7 +283,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event list with filtering by organizer and date range")
     void shouldListEventsWithOrganizerAndDateRangeFilter() throws Exception {
         // Given: Create events for different organizers
-        CreateEventCommand oobEvent = new CreateEventCommand(
+        Event.CreateCommand oobEvent = new Event.CreateCommand(
                 "OOB Event",
                 LocalDate.of(2026, 3, 15),
                 "Forest",
@@ -288,7 +292,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 null
         );
 
-        CreateEventCommand prgEvent = new CreateEventCommand(
+        Event.CreateCommand prgEvent = new Event.CreateCommand(
                 "PRG Event",
                 LocalDate.of(2026, 4, 20),
                 "City",
@@ -333,7 +337,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event detail should show status-appropriate HAL+FORMS links")
     void shouldShowStatusAppropriateHateoasLinks() throws Exception {
         // Given: Create a DRAFT event
-        CreateEventCommand createCommand = new CreateEventCommand(
+        Event.CreateCommand createCommand = new Event.CreateCommand(
                 "Links Test Event",
                 LocalDate.of(2026, 8, 10),
                 "Test Location",
@@ -351,7 +355,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        String eventId = extractEventId(createResult);
+        String eventId = extractEventIdFromLocation(createResult);
 
         // When: Get DRAFT event detail
         mockMvc.perform(
@@ -371,7 +375,7 @@ class EventManagementE2ETest extends SecurityTestBase {
         mockMvc.perform(
                 post("/api/events/{id}/publish", eventId)
                         .contentType("application/json")
-        ).andExpect(status().isOk());
+        ).andExpect(status().isNoContent());
 
         mockMvc.perform(
                         get("/api/events/{id}", eventId)
@@ -407,7 +411,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
     void shouldRejectUpdateForFinishedEvent() throws Exception {
         // Given: Create and finish an event
-        CreateEventCommand createCommand = new CreateEventCommand(
+        Event.CreateCommand createCommand = new Event.CreateCommand(
                 "Immutable Event",
                 LocalDate.of(2026, 9, 5),
                 "Immutable Location",
@@ -424,20 +428,20 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        String eventId = extractEventId(createResult);
+        String eventId = extractEventIdFromLocation(createResult);
 
         mockMvc.perform(
                 post("/api/events/{id}/publish", eventId)
                         .contentType("application/json")
-        ).andExpect(status().isOk());
+        ).andExpect(status().isNoContent());
 
         mockMvc.perform(
                 post("/api/events/{id}/finish", eventId)
                         .contentType("application/json")
-        ).andExpect(status().isOk());
+        ).andExpect(status().isNoContent());
 
         // When: Try to update finished event
-        UpdateEventCommand updateCommand = new UpdateEventCommand(
+        Event.UpdateCommand updateCommand = new Event.UpdateCommand(
                 "Updated Name",
                 LocalDate.of(2026, 9, 6),
                 "Updated Location",
@@ -456,8 +460,8 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isBadRequest());
     }
 
-    private String extractEventId(MvcResult result) throws Exception {
-        String responseJson = result.getResponse().getContentAsString();
-        return objectMapper.readTree(responseJson).get("id").asText();
+    private String extractEventIdFromLocation(MvcResult result) {
+        String location = result.getResponse().getHeader("Location");
+        return location.substring(location.lastIndexOf('/') + 1);
     }
 }

@@ -6,6 +6,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
+import com.klabis.events.Event;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,7 +70,7 @@ class EventRegistrationE2ETest {
         String publishedEventId = createPublishedEvent("Registration flow test event", LocalDate.now().plusDays(10));
 
         // When: Register for the event
-        RegisterForEventCommand registerCommand = new RegisterForEventCommand("123456");
+        Event.RegisterCommand registerCommand = new Event.RegisterCommand("123456");
 
         mockMvc.perform(
                         post("/api/events/{id}/registrations", publishedEventId)
@@ -79,11 +80,7 @@ class EventRegistrationE2ETest {
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
-                .andExpect(header().exists("Location"))
-                .andExpect(jsonPath("$.firstName").value("Test"))
-                .andExpect(jsonPath("$.lastName").value("User"))
-                .andExpect(jsonPath("$.siCardNumber").value("123456"))
-                .andExpect(jsonPath("$.registeredAt").exists());
+                .andExpect(header().exists("Location"));
 
         // Then: View own registration (should include SI card)
         mockMvc.perform(
@@ -152,9 +149,9 @@ class EventRegistrationE2ETest {
                                 JwtParams.jwtTokenParams(ADMIN_USERNAME, new UserId(UUID.randomUUID()))
                                         .withAuthorities(Authority.EVENTS_MANAGE)
                         ))
-        ).andExpect(status().isOk());
+        ).andExpect(status().isNoContent());
 
-        RegisterForEventCommand registerCommand = new RegisterForEventCommand("876543");
+        Event.RegisterCommand registerCommand = new Event.RegisterCommand("876543");
 
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
@@ -183,7 +180,7 @@ class EventRegistrationE2ETest {
         String eventId = createDraftEvent("Draft Event");
 
         // When: Try to register for DRAFT event
-        RegisterForEventCommand registerCommand = new RegisterForEventCommand("111122");
+        Event.RegisterCommand registerCommand = new Event.RegisterCommand("111122");
 
         mockMvc.perform(
                         post("/api/events/{id}/registrations", eventId)
@@ -202,7 +199,7 @@ class EventRegistrationE2ETest {
         String eventId = createPublishedEvent("Privacy Test Event", LocalDate.now().plusDays(3));
 
         // User 1 registration
-        RegisterForEventCommand registerCommand1 = new RegisterForEventCommand("123456");
+        Event.RegisterCommand registerCommand1 = new Event.RegisterCommand("123456");
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
@@ -211,7 +208,7 @@ class EventRegistrationE2ETest {
         ).andExpect(status().isCreated());
 
         // User 2 registration
-        RegisterForEventCommand registerCommand2 = new RegisterForEventCommand("789012");
+        Event.RegisterCommand registerCommand2 = new Event.RegisterCommand("789012");
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
@@ -257,7 +254,7 @@ class EventRegistrationE2ETest {
         String eventId = createPublishedEvent("Past Event", LocalDate.now().minusDays(10));
 
         // And: Register for the event first
-        RegisterForEventCommand registerCommand = new RegisterForEventCommand("123456");
+        Event.RegisterCommand registerCommand = new Event.RegisterCommand("123456");
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
@@ -297,7 +294,7 @@ class EventRegistrationE2ETest {
                         post("/api/events/{id}/publish", eventId)
                                 .with(eventsManageUserAuthentication())
                 )
-                .andExpect(status().isOk())
+                .andExpect(status().isNoContent())
                 .andReturn();
 
         return eventId;
@@ -325,7 +322,7 @@ class EventRegistrationE2ETest {
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        String response = result.getResponse().getContentAsString();
-        return objectMapper.readTree(response).get("id").asText();
+        String location = result.getResponse().getHeader("Location");
+        return location.substring(location.lastIndexOf('/') + 1);
     }
 }

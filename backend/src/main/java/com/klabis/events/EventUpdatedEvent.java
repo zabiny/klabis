@@ -5,6 +5,7 @@ import org.jmolecules.event.annotation.DomainEvent;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Domain event published when an Event is updated.
@@ -24,6 +25,7 @@ import java.util.Objects;
  */
 @DomainEvent
 public record EventUpdatedEvent(
+        UUID occurrenceId,
         EventId eventId,
         String name,
         LocalDate eventDate,
@@ -33,10 +35,8 @@ public record EventUpdatedEvent(
         Instant occurredAt
 ) {
 
-    /**
-     * Compact constructor with validation.
-     */
     public EventUpdatedEvent {
+        Objects.requireNonNull(occurrenceId, "Occurrence ID is required");
         Objects.requireNonNull(eventId, "Event ID is required");
         Objects.requireNonNull(name, "Event name is required");
         Objects.requireNonNull(eventDate, "Event date is required");
@@ -45,14 +45,9 @@ public record EventUpdatedEvent(
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
     }
 
-    /**
-     * Static factory method to create EventUpdatedEvent from Event aggregate.
-     *
-     * @param event the updated Event aggregate
-     * @return new EventUpdatedEvent with current timestamp
-     */
-    public static EventUpdatedEvent publish(Event event) {
+    public static EventUpdatedEvent fromAggregate(Event event) {
         return new EventUpdatedEvent(
+                UUID.randomUUID(),
                 event.getId(),
                 event.getName(),
                 event.getEventDate(),

@@ -59,78 +59,39 @@ public class EventController {
         this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
-    /**
-     * Create a new event.
-     * <p>
-     * POST /api/events
-     *
-     * @param command create event command
-     * @return 201 Created with Location header and event resource
-     */
     @PostMapping(consumes = "application/json")
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Create a new event",
-            description = "Creates a new event in DRAFT status. Event coordinator ID is optional. " +
-                          "Returns HATEOAS links for resource navigation."
+            description = "Creates a new event in DRAFT status. Returns Location header pointing to the created resource."
     )
     @ApiResponse(responseCode = "201", description = "Event successfully created")
-    public ResponseEntity<EntityModel<EventDto>> createEvent(
+    public ResponseEntity<Void> createEvent(
             @Parameter(description = "Event creation data")
-            @Valid @RequestBody CreateEventCommand command) {
+            @Valid @RequestBody Event.CreateCommand command) {
 
         UUID eventId = eventManagementService.createEvent(command);
-        EventDto eventDto = eventManagementService.getEvent(new EventId(eventId));
-
-        EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
-        addLinksForEvent(entityModel, eventDto);
 
         return ResponseEntity
                 .created(klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).toUri())
-                .body(entityModel);
+                .build();
     }
 
-    /**
-     * Update an event.
-     * <p>
-     * PATCH /api/events/{id}
-     *
-     * @param id      event ID
-     * @param command update event command
-     * @return 200 OK with updated event resource
-     */
     @PatchMapping(value = "/{id}", consumes = "application/json")
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Update an event",
-            description = """
-                    Updates event information. Only allowed for DRAFT and ACTIVE events.
-                    Returns HATEOAS links for resource navigation.
-                    """
+            description = "Updates event information. Only allowed for DRAFT and ACTIVE events."
     )
-    @ApiResponse(responseCode = "200", description = "Event successfully updated")
-    public ResponseEntity<EntityModel<EventDto>> updateEvent(
+    @ApiResponse(responseCode = "204", description = "Event successfully updated")
+    public ResponseEntity<Void> updateEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
-            @Parameter(description = "Event update data") @Valid @RequestBody UpdateEventCommand command) {
+            @Parameter(description = "Event update data") @Valid @RequestBody Event.UpdateCommand command) {
 
-        EventId eventId = new EventId(id);
-        eventManagementService.updateEvent(eventId, command);
-        EventDto eventDto = eventManagementService.getEvent(eventId);
-
-        EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
-        addLinksForEvent(entityModel, eventDto);
-
-        return ResponseEntity.ok(entityModel);
+        eventManagementService.updateEvent(new EventId(id), command);
+        return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Get event by ID.
-     * <p>
-     * GET /api/events/{id}
-     *
-     * @param id event ID
-     * @return event resource with full details
-     */
     @GetMapping("/{id}")
     @HasAuthority(Authority.EVENTS_READ)
     @Operation(
@@ -142,7 +103,7 @@ public class EventController {
     public ResponseEntity<EntityModel<EventDto>> getEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        EventDto eventDto = eventManagementService.getEvent(new EventId(id));
+        EventDto eventDto = EventDtoMapper.toDto(eventManagementService.getEvent(new EventId(id)));
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
         addLinksForEvent(entityModel, eventDto);
@@ -150,15 +111,6 @@ public class EventController {
         return ResponseEntity.ok(entityModel);
     }
 
-    /**
-     * List events with pagination and optional filtering.
-     * <p>
-     * GET /api/events?page=0&size=10&sort=eventDate,desc&status=ACTIVE
-     *
-     * @param status   optional status filter
-     * @param pageable pagination and sorting parameters
-     * @return paginated collection of event summaries
-     */
     @GetMapping
     @HasAuthority(Authority.EVENTS_READ)
     @Operation(
@@ -180,8 +132,8 @@ public class EventController {
         validateSortFields(pageable.getSort());
 
         Page<EventSummaryDto> page = status != null
-                ? eventManagementService.listEventsByStatus(status, pageable)
-                : eventManagementService.listEvents(pageable);
+                ? eventManagementService.listEventsByStatus(status, pageable).map(EventDtoMapper::toSummaryDto)
+                : eventManagementService.listEvents(pageable).map(EventDtoMapper::toSummaryDto);
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,
@@ -199,12 +151,6 @@ public class EventController {
         return ResponseEntity.ok(pagedModel);
     }
 
-    /**
-     * Validates that all sort fields are in the allowed list.
-     *
-     * @param sort the sort specification to validate
-     * @throws IllegalArgumentException if any sort field is not allowed
-     */
     private void validateSortFields(Sort sort) {
         final var allowedSortFields = java.util.Set.of(
                 "id",
@@ -225,113 +171,62 @@ public class EventController {
         }
     }
 
-    /**
-     * Publish an event (DRAFT to ACTIVE).
-     * <p>
-     * POST /api/events/{id}/publish
-     *
-     * @param id event ID
-     * @return 200 OK with updated event resource
-     */
     @PostMapping("/{id}/publish")
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Publish an event",
             description = "Transitions event from DRAFT to ACTIVE status."
     )
-    @ApiResponse(responseCode = "200", description = "Event published successfully")
-    public ResponseEntity<EntityModel<EventDto>> publishEvent(
+    @ApiResponse(responseCode = "204", description = "Event published successfully")
+    public ResponseEntity<Void> publishEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        EventId eventId = new EventId(id);
-        eventManagementService.publishEvent(eventId);
-        EventDto eventDto = eventManagementService.getEvent(eventId);
-
-        EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
-        addLinksForEvent(entityModel, eventDto);
-
-        return ResponseEntity.ok(entityModel);
+        eventManagementService.publishEvent(new EventId(id));
+        return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Cancel an event (DRAFT/ACTIVE to CANCELLED).
-     * <p>
-     * POST /api/events/{id}/cancel
-     *
-     * @param id event ID
-     * @return 200 OK with updated event resource
-     */
     @PostMapping("/{id}/cancel")
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Cancel an event",
             description = "Transitions event to CANCELLED status."
     )
-    @ApiResponse(responseCode = "200", description = "Event cancelled successfully")
-    public ResponseEntity<EntityModel<EventDto>> cancelEvent(
+    @ApiResponse(responseCode = "204", description = "Event cancelled successfully")
+    public ResponseEntity<Void> cancelEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        EventId eventId = new EventId(id);
-        eventManagementService.cancelEvent(eventId);
-        EventDto eventDto = eventManagementService.getEvent(eventId);
-
-        EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
-        addLinksForEvent(entityModel, eventDto);
-
-        return ResponseEntity.ok(entityModel);
+        eventManagementService.cancelEvent(new EventId(id));
+        return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Finish an event (ACTIVE to FINISHED).
-     * <p>
-     * POST /api/events/{id}/finish
-     *
-     * @param id event ID
-     * @return 200 OK with updated event resource
-     */
     @PostMapping("/{id}/finish")
     @HasAuthority(Authority.EVENTS_MANAGE)
     @Operation(
             summary = "Finish an event",
             description = "Transitions event from ACTIVE to FINISHED status."
     )
-    @ApiResponse(responseCode = "200", description = "Event finished successfully")
-    public ResponseEntity<EntityModel<EventDto>> finishEvent(
+    @ApiResponse(responseCode = "204", description = "Event finished successfully")
+    public ResponseEntity<Void> finishEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        EventId eventId = new EventId(id);
-        eventManagementService.finishEvent(eventId);
-        EventDto eventDto = eventManagementService.getEvent(eventId);
-
-        EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
-        addLinksForEvent(entityModel, eventDto);
-
-        return ResponseEntity.ok(entityModel);
+        eventManagementService.finishEvent(new EventId(id));
+        return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Add HATEOAS links to event based on its status.
-     *
-     * @param entityModel the entity model to add links to
-     * @param eventDto    the event DTO
-     */
     private void addLinksForEvent(EntityModel<?> entityModel, EventDto eventDto) {
         UUID eventId = eventDto.id();
         EventStatus status = eventDto.status();
 
         Link selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
 
-        // Status-specific affordances
         switch (status) {
             case DRAFT:
-                // DRAFT: can edit, publish, or cancel
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
                 break;
 
             case ACTIVE:
-                // ACTIVE: can edit, cancel, or finish
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).finishEvent(eventId)));
@@ -339,17 +234,11 @@ public class EventController {
 
             case FINISHED:
             case CANCELLED:
-                // FINISHED/CANCELLED: read-only, no edit/transition links
                 break;
         }
 
-        // Self link - always present
         entityModel.add(selfLink);
-
-        // Collection link - always present
         entityModel.add(klabisLinkTo(methodOn(EventController.class).listEvents(null, null)).withRel("collection"));
-
-        // Registrations link - always present (links to event registration endpoint)
         entityModel.add(Link.of("/api/events/" + eventId + "/registrations").withRel("registrations"));
     }
 

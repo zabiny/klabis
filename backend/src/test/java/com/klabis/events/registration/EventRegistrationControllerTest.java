@@ -6,6 +6,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.common.users.UserService;
+import com.klabis.events.Event;
 import com.klabis.events.EventId;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
@@ -71,20 +72,11 @@ class EventRegistrationControllerTest {
     class RegisterForEventTests {
 
         @Test
-        @DisplayName("should return 201 Created")
+        @DisplayName("should return 201 Created with Location header and no body")
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldRegisterMemberForEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
-            RegisterForEventCommand command = new RegisterForEventCommand("123456");
-
-            OwnRegistrationDto registration = new OwnRegistrationDto(
-                    "John",
-                    "Doe",
-                    "123456",
-                    Instant.now()
-            );
-
-            when(registrationServiceMock.getOwnRegistration(eq(eventId), any(MemberId.class))).thenReturn(registration);
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)
@@ -92,17 +84,7 @@ class EventRegistrationControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(objectMapper.writeValueAsString(command))
                     )
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.firstName").value("John"))
-                    .andExpect(jsonPath("$.lastName").value("Doe"))
-                    .andExpect(jsonPath("$.siCardNumber").value("123456"))
-                    .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.event.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("DELETE"));    // UNREGISTER
-        }
-
-        private LinkBuilder eventLinkBuilder(UUID eventId) {
-            return new SimpleLinkBuilder("/api/events/" + eventId);
+                    .andExpect(status().isCreated());
         }
 
         @Test
@@ -110,11 +92,11 @@ class EventRegistrationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturn409ForDuplicateRegistration() throws Exception {
             UUID eventId = UUID.randomUUID();
-            RegisterForEventCommand command = new RegisterForEventCommand("123456");
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
 
             doThrow(new DuplicateRegistrationException(new MemberId(UUID.fromString(MEMBER_1_ID)), new EventId(eventId)))
                     .when(registrationServiceMock)
-                    .registerMember(eq(eventId), any(MemberId.class), any(RegisterForEventCommand.class));
+                    .registerMember(eq(new EventId(eventId)), any(MemberId.class), any(Event.RegisterCommand.class));
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)
@@ -130,7 +112,7 @@ class EventRegistrationControllerTest {
         @DisplayName("should return 401 for unauthenticated users")
         void shouldReturn401ForUnauthenticatedUser() throws Exception {
             UUID eventId = UUID.randomUUID();
-            RegisterForEventCommand command = new RegisterForEventCommand("123456");
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)
@@ -156,7 +138,7 @@ class EventRegistrationControllerTest {
             mockMvc.perform(delete("/api/events/{eventId}/registrations", eventId))
                     .andExpect(status().isNoContent());
 
-            verify(registrationServiceMock).unregisterMember(eventId, memberId, LocalDate.now());
+            verify(registrationServiceMock).unregisterMember(new EventId(eventId), memberId, LocalDate.now());
         }
 
         @Test
@@ -198,7 +180,7 @@ class EventRegistrationControllerTest {
                     new RegistrationDto("Jane", "Smith", Instant.now())
             );
 
-            when(registrationServiceMock.listRegistrations(eventId)).thenReturn(registrations);
+            when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations", eventId)
@@ -231,7 +213,7 @@ class EventRegistrationControllerTest {
                     Instant.now()
             );
 
-            when(registrationServiceMock.getOwnRegistration(eventId, memberId)).thenReturn(registration);
+            when(registrationServiceMock.getOwnRegistration(new EventId(eventId), memberId)).thenReturn(registration);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/me", eventId)
@@ -252,7 +234,7 @@ class EventRegistrationControllerTest {
         void shouldReturn404WhenNotRegistered() throws Exception {
             UUID eventId = UUID.randomUUID();
 
-            when(registrationServiceMock.getOwnRegistration(eq(eventId), any(MemberId.class)))
+            when(registrationServiceMock.getOwnRegistration(eq(new EventId(eventId)), any(MemberId.class)))
                     .thenThrow(new RegistrationNotFoundException(new MemberId(UUID.fromString(MEMBER_1_ID)), new EventId(eventId)));
 
             mockMvc.perform(
