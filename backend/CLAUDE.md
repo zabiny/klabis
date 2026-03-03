@@ -110,7 +110,7 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 
 ### Domain Type Safety Pattern
 
-See `developer:klabis-backend-patterns` skill for detailed patterns including type-safe IDs, Memento, application services, and REST controllers.
+See `klabis:backend-patterns` skill for detailed patterns including type-safe IDs, Memento, application services, and REST controllers.
 
 ## Application Profiles
 

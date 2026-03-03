@@ -100,7 +100,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 ## Backend Development
 
 For backend development, use the `backend-developer` agent which leverages specialized skills:
-- `developer:klabis-backend-patterns` - Klabis-specific patterns (modules, services, controllers, JDBC, events)
+- `klabis:backend-patterns` - Klabis-specific patterns (modules, services, controllers, JDBC, events)
 - `developer:tdd-best-practices` - TDD workflow (RED-GREEN-REFACTOR)
 - `developer:spring-modulith` - DDD patterns and Spring Modulith architecture
 - `developer:spring-data-jdbc` - Repository and persistence patterns
