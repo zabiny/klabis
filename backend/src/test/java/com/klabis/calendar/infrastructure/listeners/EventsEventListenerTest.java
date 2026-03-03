@@ -2,6 +2,8 @@ package com.klabis.calendar.infrastructure.listeners;
 
 import com.klabis.calendar.application.CalendarEventSyncPort;
 import com.klabis.events.*;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

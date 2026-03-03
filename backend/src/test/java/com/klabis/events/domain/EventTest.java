@@ -1,7 +1,8 @@
-package com.klabis.events;
+package com.klabis.events.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
+import com.klabis.events.*;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

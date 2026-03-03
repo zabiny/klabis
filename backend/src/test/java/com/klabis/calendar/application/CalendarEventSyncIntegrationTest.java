@@ -3,9 +3,9 @@ package com.klabis.calendar.application;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemId;
 import com.klabis.calendar.infrastructure.jdbc.CalendarRepository;
-import com.klabis.calendar.infrastructure.jdbc.EventData;
-import com.klabis.calendar.infrastructure.jdbc.EventDataProvider;
 import com.klabis.events.*;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +66,7 @@ class CalendarEventSyncIntegrationTest {
                 LocalDate.of(2024, 3, 15),
                 "Prague CC",
                 "OOB",
-                WebsiteUrl.of("https://example.com/workshop")
+                "https://example.com/workshop"
         ));
 
         // When & Then: CalendarItem should be created automatically
@@ -97,7 +97,7 @@ class CalendarEventSyncIntegrationTest {
                 LocalDate.of(2024, 5, 21),
                 "New Loc",
                 "NewOrg",
-                WebsiteUrl.of("https://new-url.com")
+                "https://new-url.com"
         ));
         scenario.publish(new EventUpdatedEvent(
                         java.util.UUID.randomUUID(),

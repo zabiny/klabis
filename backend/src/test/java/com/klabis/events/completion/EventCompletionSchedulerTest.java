@@ -1,8 +1,8 @@
 package com.klabis.events.completion;
 
-import com.klabis.events.Event;
-import com.klabis.events.EventStatus;
-import com.klabis.events.persistence.EventRepository;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.EventRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

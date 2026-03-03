@@ -1,4 +1,4 @@
-package com.klabis.events;
+package com.klabis.events.domain;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

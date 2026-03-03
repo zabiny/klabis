@@ -1,9 +1,9 @@
 package com.klabis.events.registration;
 
 import com.klabis.common.users.Authority;
-import com.klabis.events.Event;
+import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
-import com.klabis.events.EventRegistration;
+import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
 import io.swagger.v3.oas.annotations.Operation;

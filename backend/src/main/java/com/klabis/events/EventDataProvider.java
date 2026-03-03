@@ -1,6 +1,5 @@
-package com.klabis.calendar.infrastructure.jdbc;
+package com.klabis.events;
 
-import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 /**

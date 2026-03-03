@@ -2,6 +2,9 @@ package com.klabis.events;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.users.UserId;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.EventStatus;
 
 import java.time.LocalDate;
 import java.util.ArrayList;

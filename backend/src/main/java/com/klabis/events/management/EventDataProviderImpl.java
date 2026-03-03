@@ -1,8 +1,10 @@
-package com.klabis.calendar.infrastructure.jdbc;
+package com.klabis.events.management;
 
-import com.klabis.events.Event;
+import com.klabis.events.EventData;
+import com.klabis.events.EventDataProvider;
 import com.klabis.events.EventId;
-import com.klabis.events.Events;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.Events;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +35,7 @@ class EventDataProviderImpl implements EventDataProvider {
                 event.getEventDate(),
                 event.getLocation(),
                 event.getOrganizer(),
-                event.getWebsiteUrl()
+                event.getWebsiteUrl().value()
         );
     }
 }

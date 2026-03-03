@@ -10,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.hateoas.MediaTypes;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
-import com.klabis.events.Event;
+import com.klabis.events.domain.Event;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;

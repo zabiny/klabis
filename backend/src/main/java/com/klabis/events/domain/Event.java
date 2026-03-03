@@ -1,9 +1,10 @@
-package com.klabis.events;
+package com.klabis.events.domain;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
+import com.klabis.events.*;
 import com.klabis.members.MemberId;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

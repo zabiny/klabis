@@ -5,7 +5,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
-import com.klabis.events.Event;
+import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,6 +1,6 @@
 package com.klabis.events.management;
 
-import com.klabis.events.Event;
+import com.klabis.events.domain.Event;
 
 class EventDtoMapper {
 

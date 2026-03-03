@@ -1,10 +1,11 @@
 package com.klabis.events.persistence.jdbc;
 
 import com.klabis.common.pagination.TranslatedPageable;
-import com.klabis.events.Event;
 import com.klabis.events.EventId;
-import com.klabis.events.EventStatus;
-import com.klabis.events.persistence.EventRepository;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.Events;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.domain.Page;
@@ -19,10 +20,10 @@ import java.util.Optional;
  * <p>
  * This adapter implements:
  * <ul>
- *   <li>{@link com.klabis.events.persistence.EventRepository EventRepository} - domain repository interface</li>
+ *   <li>{@link EventRepository EventRepository} - domain repository interface</li>
  * </ul>
  * <p>
- * EventRepository extends {@link com.klabis.events.Events Events} public API, so this adapter indirectly implements both.
+ * EventRepository extends {@link Events Events} public API, so this adapter indirectly implements both.
  * <p>
  * It handles conversion between Event entities and EventMemento persistence objects.
  * <p>

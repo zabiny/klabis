@@ -1,6 +1,4 @@
-package com.klabis.calendar.infrastructure.jdbc;
-
-import com.klabis.events.WebsiteUrl;
+package com.klabis.events;
 
 import java.time.LocalDate;
 
@@ -21,6 +19,6 @@ public record EventData(
         LocalDate eventDate,
         String location,
         String organizer,
-        WebsiteUrl websiteUrl
+        String websiteUrl
 ) {
 }

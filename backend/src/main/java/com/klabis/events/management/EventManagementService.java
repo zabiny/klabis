@@ -1,8 +1,8 @@
 package com.klabis.events.management;
 
-import com.klabis.events.Event;
+import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
-import com.klabis.events.EventStatus;
+import com.klabis.events.domain.EventStatus;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,6 +1,6 @@
 package com.klabis.events.management;
 
-import com.klabis.events.EventStatus;
+import com.klabis.events.domain.EventStatus;
 
 import java.time.LocalDate;
 import java.util.UUID;

@@ -1,6 +1,7 @@
 package com.klabis.events;
 
 import com.klabis.common.users.UserId;
+import com.klabis.events.domain.Event;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;

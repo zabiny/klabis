@@ -3,10 +3,9 @@ package com.klabis.calendar.application;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemId;
 import com.klabis.calendar.infrastructure.jdbc.CalendarRepository;
-import com.klabis.calendar.infrastructure.jdbc.EventData;
-import com.klabis.calendar.infrastructure.jdbc.EventDataProvider;
+import com.klabis.events.EventData;
+import com.klabis.events.EventDataProvider;
 import com.klabis.events.EventId;
-import com.klabis.events.WebsiteUrl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +52,7 @@ class CalendarEventSyncServiceTest {
                 LocalDate.of(2024, 3, 15),
                 "Prague Conference Center",
                 "OOB",
-                WebsiteUrl.of("https://example.com/workshop")
+                "https://example.com/workshop"
         );
 
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.empty());

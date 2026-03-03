@@ -1,6 +1,6 @@
 package com.klabis.events.registration;
 
-import com.klabis.events.Event;
+import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;

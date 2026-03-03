@@ -6,7 +6,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.events.Event;
+import com.klabis.events.domain.Event;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

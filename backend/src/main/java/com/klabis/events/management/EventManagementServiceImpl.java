@@ -1,11 +1,11 @@
 package com.klabis.events.management;
 
 import com.klabis.common.users.UserId;
-import com.klabis.events.Event;
 import com.klabis.events.EventId;
-import com.klabis.events.EventStatus;
 import com.klabis.events.WebsiteUrl;
-import com.klabis.events.persistence.EventRepository;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.EventStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

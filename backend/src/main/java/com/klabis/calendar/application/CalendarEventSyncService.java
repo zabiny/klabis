@@ -2,8 +2,8 @@ package com.klabis.calendar.application;
 
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.infrastructure.jdbc.CalendarRepository;
-import com.klabis.calendar.infrastructure.jdbc.EventData;
-import com.klabis.calendar.infrastructure.jdbc.EventDataProvider;
+import com.klabis.events.EventData;
+import com.klabis.events.EventDataProvider;
 import com.klabis.events.EventId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,7 +146,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
     private String buildDescription(EventData eventData) {
         return buildDescription(eventData.location(), eventData.organizer(),
-                eventData.websiteUrl() != null ? eventData.websiteUrl().value() : null);
+                eventData.websiteUrl() != null ? eventData.websiteUrl() : null);
     }
 
     private String buildDescription(String location, String organizer, String websiteUrl) {

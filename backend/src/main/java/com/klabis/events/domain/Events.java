@@ -1,5 +1,6 @@
-package com.klabis.events;
+package com.klabis.events.domain;
 
+import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.Port;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

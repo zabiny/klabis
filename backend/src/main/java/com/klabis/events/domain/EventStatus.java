@@ -1,4 +1,4 @@
-package com.klabis.events;
+package com.klabis.events.domain;
 
 import java.util.EnumSet;
 import java.util.Map;

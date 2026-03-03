@@ -1,7 +1,5 @@
-package com.klabis.events.persistence;
+package com.klabis.events.domain;
 
-import com.klabis.events.Event;
-import com.klabis.events.Events;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.time.LocalDate;

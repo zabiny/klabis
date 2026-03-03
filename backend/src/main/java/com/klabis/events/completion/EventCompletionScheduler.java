@@ -1,7 +1,7 @@
 package com.klabis.events.completion;
 
-import com.klabis.events.Event;
-import com.klabis.events.persistence.EventRepository;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
