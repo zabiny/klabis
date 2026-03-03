@@ -92,12 +92,10 @@ Success criteria for this phase:
 
 #### 4b. Run tests
 
-After the agent finishes, run tests using the `test-runner` skill:
+After the agent finishes, run tests using the `test-runner` subagent:
 - Backend changes → run backend tests
 - Frontend changes → run frontend tests
 - Both changed → run both
-
-Use the Skill tool: `test-runner`
 
 #### 4c. Handle test failures
 
@@ -137,10 +135,10 @@ Then continue to the next phase.
 After all phases of a task are complete:
 1. Run the full test suite one more time
 2. Review success criteria from the task file — confirm each one is met
-3. Move the task file to `tasks/completed/`:
+3. update task file - add section containing links to all commits created with task changes
+4. Move the task file to `tasks/completed/`:
    - Create `tasks/completed/` directory if it doesn't exist
    - Move: `mv tasks/<filename>.md tasks/completed/<filename>.md`
-4. Commit the move using the `commit` skill
 5. Report task completion to the user with a brief summary
 
 Then proceed to the next task in the queue (go back to Step 2 of the next task).
