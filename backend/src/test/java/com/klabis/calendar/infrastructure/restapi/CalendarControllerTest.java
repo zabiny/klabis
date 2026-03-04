@@ -1,11 +1,7 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.CalendarItemTestDataBuilder;
-import com.klabis.calendar.application.CalendarItemReadOnlyException;
-import com.klabis.calendar.application.CalendarManagementPort;
-import com.klabis.calendar.application.CalendarNotFoundException;
-import com.klabis.calendar.application.CreateCalendarItemCommand;
-import com.klabis.calendar.application.UpdateCalendarItemCommand;
+import com.klabis.calendar.application.*;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemId;
 import com.klabis.common.WithKlabisMockUser;
@@ -62,11 +58,12 @@ class CalendarControllerTest {
                     .withEndDate(LocalDate.of(2026, 3, 15))
                     .buildManual();
 
+            UUID eventId = UUID.randomUUID();
             CalendarItem item2 = CalendarItemTestDataBuilder.aCalendarItem()
                     .withName("Spring Cup 2026")
                     .withStartDate(LocalDate.of(2026, 3, 20))
                     .withEndDate(LocalDate.of(2026, 3, 20))
-                    .buildEventLinked(UUID.randomUUID());
+                    .buildEventLinked(eventId);
 
             when(calendarManagementService.listCalendarItems(eq(startDate), eq(endDate), any())).thenReturn(List.of(item1, item2));
 
@@ -79,7 +76,9 @@ class CalendarControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[0].name").value("Spring Training"))
                     .andExpect(jsonPath("$._embedded.calendarItemDtoList[1].name").value("Spring Cup 2026"))
-                    .andExpect(jsonPath("$._embedded.calendarItemDtoList").isArray());
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList").isArray())
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[1]._links.event.href").value("/api/events/" + eventId))
+                    .andExpect(jsonPath("$._embedded.calendarItemDtoList[0]._links.event").doesNotExist());
         }
 
         @Test

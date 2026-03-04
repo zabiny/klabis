@@ -5,6 +5,7 @@ import com.klabis.calendar.application.CreateCalendarItemCommand;
 import com.klabis.calendar.application.InvalidCalendarQueryException;
 import com.klabis.calendar.application.UpdateCalendarItemCommand;
 import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,8 +28,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-
-import com.klabis.common.mvc.MvcComponent;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -83,6 +82,9 @@ class CalendarController {
                         .map(dto -> {
                             EntityModel<CalendarItemDto> model = EntityModel.of(dto);
                             model.add(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(dto.id())).withSelfRel());
+                            if (dto.eventId() != null) {
+                                model.add(Link.of("/api/events/" + dto.eventId()).withRel("event"));
+                            }
                             return model;
                         })
                         .toList()
