@@ -1,8 +1,8 @@
 package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.common.users.UserId;
 import com.klabis.events.EventId;
+import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;
@@ -140,7 +140,7 @@ class EventMemento implements Persistable<UUID> {
         memento.organizer = event.getOrganizer();
         memento.websiteUrl = event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null;
         memento.eventCoordinatorId = event.getEventCoordinatorId() != null ? event.getEventCoordinatorId()
-                .uuid() : null;
+                .value() : null;
         memento.status = event.getStatus().name();
     }
 
@@ -171,7 +171,7 @@ class EventMemento implements Persistable<UUID> {
     Event toEvent() {
         EventId eventId = new EventId(this.id);
         WebsiteUrl websiteUrlObj = this.websiteUrl != null ? new WebsiteUrl(this.websiteUrl) : null;
-        UserId coordinatorId = this.eventCoordinatorId != null ? new UserId(this.eventCoordinatorId) : null;
+        MemberId coordinatorId = this.eventCoordinatorId != null ? new MemberId(this.eventCoordinatorId) : null;
         EventStatus eventStatus = EventStatus.valueOf(this.status);
 
         return Event.reconstruct(

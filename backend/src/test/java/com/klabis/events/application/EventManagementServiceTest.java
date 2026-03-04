@@ -1,8 +1,8 @@
 package com.klabis.events.application;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.common.users.UserId;
 import com.klabis.events.EventId;
+import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
@@ -58,7 +58,7 @@ class EventManagementServiceTest {
         @DisplayName("should create event with valid command and return EventId")
         void shouldCreateEventWithValidCommand() {
             // Given
-            UUID coordinatorId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.randomUUID());
             Event.CreateCommand command = new Event.CreateCommand(
                     "Spring Cup 2026",
                     LocalDate.of(2026, 3, 15),
@@ -74,7 +74,7 @@ class EventManagementServiceTest {
                     command.location(),
                     command.organizer(),
                     command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                    command.eventCoordinatorId() != null ? new UserId(command.eventCoordinatorId()) : null
+                    command.eventCoordinatorId()
             );
 
             when(eventRepository.save(any(Event.class))).thenReturn(event);
@@ -442,7 +442,7 @@ class EventManagementServiceTest {
                     "Forest Park",
                     "OOB",
                     WebsiteUrl.of("https://example.com"),
-                    new UserId(UUID.randomUUID())
+                    new MemberId(UUID.randomUUID())
             );
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));

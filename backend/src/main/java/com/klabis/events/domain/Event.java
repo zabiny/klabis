@@ -3,7 +3,6 @@ package com.klabis.events.domain;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.common.users.UserId;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
 import jakarta.validation.constraints.NotBlank;
@@ -20,8 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-
 /**
  * Event aggregate root.
  * <p>
@@ -54,7 +51,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private String organizer;
     private WebsiteUrl websiteUrl;
     @Association
-    private UserId eventCoordinatorId;
+    private MemberId eventCoordinatorId;
     private EventStatus status;
 
     // Event registrations
@@ -81,7 +78,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @URL(message = "Website URL must be valid")
             String websiteUrl,
 
-            UUID eventCoordinatorId
+            MemberId eventCoordinatorId
     ) {
     }
 
@@ -104,7 +101,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @URL(message = "Website URL must be valid")
             String websiteUrl,
 
-            UUID eventCoordinatorId
+            MemberId eventCoordinatorId
     ) {
     }
 
@@ -128,7 +125,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            UserId eventCoordinatorId,
+            MemberId eventCoordinatorId,
             EventStatus status,
             AuditMetadata auditMetadata) {
 
@@ -148,7 +145,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * This bypasses validation since the data was already validated when originally stored.
      * <p>
      * This method is public only for infrastructure/persistence layer usage.
-     * Use {@link #create(String, LocalDate, String, String, WebsiteUrl, UserId)} for creating new events.
+     * Use {@link #create(String, LocalDate, String, String, WebsiteUrl, MemberId)} for creating new events.
      *
      * @param id                 event's unique identifier
      * @param name               event name
@@ -167,7 +164,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            UserId eventCoordinatorId,
+            MemberId eventCoordinatorId,
             EventStatus status,
             List<EventRegistration> registrations,
             AuditMetadata auditMetadata) {
@@ -209,7 +206,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            UserId eventCoordinatorId) {
+            MemberId eventCoordinatorId) {
 
         // Validate required fields
         validateName(name);
@@ -288,7 +285,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         return websiteUrl;
     }
 
-    public UserId getEventCoordinatorId() {
+    public MemberId getEventCoordinatorId() {
         return eventCoordinatorId;
     }
 
@@ -364,7 +361,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            UserId eventCoordinatorId) {
+            MemberId eventCoordinatorId) {
 
         // Check status allows updates
         if (status == EventStatus.FINISHED) {

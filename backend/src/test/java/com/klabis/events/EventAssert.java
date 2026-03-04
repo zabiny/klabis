@@ -1,7 +1,7 @@
 package com.klabis.events;
 
-import com.klabis.common.users.UserId;
 import com.klabis.events.domain.Event;
+import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.WebsiteUrl;
@@ -89,7 +89,7 @@ public class EventAssert extends AbstractAssert<EventAssert, Event> {
         return this;
     }
 
-    public EventAssert hasEventCoordinatorId(UserId expected) {
+    public EventAssert hasEventCoordinatorId(MemberId expected) {
         isNotNull();
         if (expected == null) {
             if (actual.getEventCoordinatorId() != null) {

@@ -12,7 +12,7 @@ class EventDtoMapper {
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
-                event.getEventCoordinatorId() != null ? event.getEventCoordinatorId().uuid() : null,
+                event.getEventCoordinatorId() != null ? event.getEventCoordinatorId().value() : null,
                 event.getStatus()
         );
     }

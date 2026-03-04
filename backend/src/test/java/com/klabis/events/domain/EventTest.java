@@ -1,7 +1,6 @@
 package com.klabis.events.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.common.users.UserId;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +45,7 @@ class EventTest {
             String location = "Krkonoše National Park";
             String organizer = "Czech Orienteering Club";
             WebsiteUrl websiteUrl = WebsiteUrl.of("https://example.com/race");
-            UserId coordinatorId = new UserId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.randomUUID());
 
             // Act
             Event event = Event.create(name, eventDate, location, organizer, websiteUrl, coordinatorId);
@@ -416,7 +415,7 @@ class EventTest {
             String newLocation = "Updated Location";
             String newOrganizer = "Updated Organizer";
             WebsiteUrl newWebsiteUrl = WebsiteUrl.of("https://updated.com");
-            UserId newCoordinatorId = new UserId(UUID.randomUUID());
+            MemberId newCoordinatorId = new MemberId(UUID.randomUUID());
 
             // Act
             event.update(newName, newDate, newLocation, newOrganizer, newWebsiteUrl, newCoordinatorId);
@@ -1033,7 +1032,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     WebsiteUrl.of("https://test.com"),
-                    new UserId(UUID.randomUUID())
+                    new MemberId(UUID.randomUUID())
             );
 
             // Assert

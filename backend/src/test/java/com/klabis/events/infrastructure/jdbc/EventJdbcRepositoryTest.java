@@ -1,7 +1,6 @@
 package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
-import com.klabis.common.users.UserId;
 import com.klabis.events.*;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
@@ -113,7 +112,7 @@ class EventJdbcRepositoryTest {
         void shouldSaveAndFindEventWithAllFieldsIncludingOptional() {
             // Given
             WebsiteUrl websiteUrl = new WebsiteUrl("https://example.com/event");
-            UserId coordinatorId = new UserId(TEST_MEMBER_1_ID);
+            MemberId coordinatorId = new MemberId(TEST_MEMBER_1_ID);
 
             Event event = Event.create(
                     "Forest Sprint Race",

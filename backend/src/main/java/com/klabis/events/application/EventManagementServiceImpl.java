@@ -1,6 +1,5 @@
 package com.klabis.events.application;
 
-import com.klabis.common.users.UserId;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
@@ -10,8 +9,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 @Service
 public class EventManagementServiceImpl implements EventManagementService {
@@ -31,7 +28,7 @@ public class EventManagementServiceImpl implements EventManagementService {
                 command.location(),
                 command.organizer(),
                 command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                command.eventCoordinatorId() != null ? new UserId(command.eventCoordinatorId()) : null
+                command.eventCoordinatorId()
         );
 
         return eventRepository.save(event);
@@ -49,7 +46,7 @@ public class EventManagementServiceImpl implements EventManagementService {
                 command.location(),
                 command.organizer(),
                 command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                command.eventCoordinatorId() != null ? new UserId(command.eventCoordinatorId()) : null
+                command.eventCoordinatorId()
         );
 
         eventRepository.save(event);

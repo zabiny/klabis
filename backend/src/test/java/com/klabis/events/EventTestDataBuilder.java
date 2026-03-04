@@ -1,8 +1,8 @@
 package com.klabis.events;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.common.users.UserId;
 import com.klabis.events.domain.Event;
+import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.WebsiteUrl;
@@ -19,7 +19,7 @@ public class EventTestDataBuilder {
     private String location = "Test Location";
     private String organizer = "Test Organizer";
     private WebsiteUrl websiteUrl = null;
-    private UserId coordinatorId = null;
+    private MemberId coordinatorId = null;
     private EventId eventId = new EventId(UUID.randomUUID());
     private List<EventRegistration> registrations = new ArrayList<>();
     private AuditMetadata auditMetadata = null;
@@ -72,7 +72,7 @@ public class EventTestDataBuilder {
         return this;
     }
 
-    public EventTestDataBuilder withCoordinator(UserId coordinatorId) {
+    public EventTestDataBuilder withCoordinator(MemberId coordinatorId) {
         this.coordinatorId = coordinatorId;
         return this;
     }

@@ -1,8 +1,8 @@
 package com.klabis.events;
 
-import com.klabis.common.users.UserId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.WebsiteUrl;
+import com.klabis.members.MemberId;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -35,7 +35,7 @@ public record EventCreatedEvent(
         String location,
         String organizer,
         WebsiteUrl websiteUrl,
-        UserId eventCoordinatorId,
+        MemberId eventCoordinatorId,
         Instant occurredAt
 ) {
 
@@ -67,7 +67,7 @@ public record EventCreatedEvent(
         return Optional.ofNullable(websiteUrl());
     }
 
-    public Optional<UserId> getEventCoordinatorId() {
+    public Optional<MemberId> getEventCoordinatorId() {
         return Optional.ofNullable(eventCoordinatorId());
     }
 }
