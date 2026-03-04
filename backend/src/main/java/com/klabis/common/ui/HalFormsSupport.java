@@ -1,5 +1,6 @@
 package com.klabis.common.ui;
 
+import com.klabis.common.patch.PatchField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.support.SpringFactoriesLoader;
@@ -367,7 +368,7 @@ public class HalFormsSupport {
                 result = getEncosedClass().getSimpleName();
             }
 
-            if (Optional.class.getSimpleName().equalsIgnoreCase(result)) {
+            if (Optional.class.getSimpleName().equalsIgnoreCase(result) || PatchField.class.getSimpleName().equalsIgnoreCase(result)) {
                 result = delegate.getType().getGeneric(0).getRawClass().getSimpleName();
             }
 
