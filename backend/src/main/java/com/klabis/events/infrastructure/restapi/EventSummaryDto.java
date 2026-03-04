@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.ui.HalForms;
 import com.klabis.events.domain.EventStatus;
 
 import java.time.LocalDate;
@@ -18,11 +19,11 @@ import java.util.UUID;
  * @param status    event status (DRAFT, ACTIVE, FINISHED, CANCELLED)
  */
 record EventSummaryDto(
-        UUID id,
+        @HalForms(access = HalForms.Access.READ_ONLY) UUID id,
         String name,
         LocalDate eventDate,
         String location,
         String organizer,
-        EventStatus status
+        @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status
 ) {
 }

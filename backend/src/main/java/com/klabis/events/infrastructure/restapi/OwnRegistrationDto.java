@@ -1,5 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.ui.HalForms;
+
 import java.time.Instant;
 
 /**
@@ -14,9 +16,9 @@ import java.time.Instant;
  * @param registeredAt timestamp when registration was created
  */
 public record OwnRegistrationDto(
-        String firstName,
-        String lastName,
+        @HalForms(access = HalForms.Access.READ_ONLY) String firstName,
+        @HalForms(access = HalForms.Access.READ_ONLY) String lastName,
         String siCardNumber,
-        Instant registeredAt
+        @HalForms(access = HalForms.Access.READ_ONLY) Instant registeredAt
 ) {
 }
