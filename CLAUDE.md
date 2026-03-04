@@ -13,26 +13,19 @@
     - TanStack Query, React Router, Tailwind CSS
     - See `./frontend/CLAUDE.md` for development workflow
 
-3. **Frontend (UI Mockup)** → `./backend/src/main/resources/static/mock` (Vanilla JS)
-    - Legacy static HTML/CSS/JavaScript UI served by Spring Boot
-    - See `./backend/src/main/resources/static/mock/CLAUDE.md` for development
-    - OAuth2 Authorization Code flow integration
-
-4. **Specifications** → `./openspec/` (OpenSpec change proposal workflow)
+3. **Specifications** → `./openspec/` (OpenSpec change proposal workflow)
     - Feature specifications, design docs, tasks
     - Uses experimental artifact workflow (opsx commands)
 
 ## Quick Start
 
 ```bash
-# Start backend (serves API and legacy UI mockup on https://localhost:8443)
+# Start backend (serves API)
 cd backend
 BOOTSTRAP_ADMIN_USERNAME='admin' \
 BOOTSTRAP_ADMIN_PASSWORD='admin123' \
 OAUTH2_CLIENT_SECRET='test-secret-123' \
 ./gradlew bootRun
-
-# Legacy UI mockup: https://localhost:8443/mock-login.html
 
 # Start modern frontend (React SPA on http://localhost:3000)
 cd frontend
@@ -115,9 +108,6 @@ Before starting work, check the appropriate CLAUDE.md:
 
 - **Frontend work** → `./frontend/CLAUDE.md`
     - React/TypeScript conventions, build/dev workflow, testing strategy
-
-- **UI mockup work** → `./backend/src/main/resources/static/mock/CLAUDE.md`
-    - Mockup frontend UI, OAuth2 flow, HTML/CSS/JS conventions
 
 - **Specifications** → Reference `./openspec/` for change proposals
     - Feature specifications and design documents
