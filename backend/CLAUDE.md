@@ -102,7 +102,7 @@ JASYPT_ENCRYPTOR_PASSWORD='test-key-123' \
 
 ### Large Refactorings with OpenSpec
 
-- Use `developer:backend-developer` agent for multi-file refactoring (50+ files)
+- Use `klabis:backend-developer` agent for multi-file refactoring (50+ files)
 - Agent runs tests automatically and fixes failures
 - OpenSpec tasks.md must be updated manually after completion (CLI doesn't auto-detect)
 - Provide `design.md`, `proposal.md`, and `tasks.md` context files to agent
