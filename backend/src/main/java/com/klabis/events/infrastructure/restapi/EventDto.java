@@ -1,10 +1,11 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.ui.HalForms;
+import com.klabis.events.EventId;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.members.MemberId;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 /**
  * DTO for event details response.
@@ -21,13 +22,13 @@ import java.util.UUID;
  * @param status             event status (DRAFT, ACTIVE, FINISHED, CANCELLED)
  */
 record EventDto(
-        @HalForms(access = HalForms.Access.READ_ONLY) UUID id,
+        @HalForms(access = HalForms.Access.READ_ONLY) EventId id,
         String name,
         LocalDate eventDate,
         String location,
         String organizer,
         String websiteUrl,
-        UUID eventCoordinatorId,
+        MemberId eventCoordinatorId,
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status
 ) {
 }

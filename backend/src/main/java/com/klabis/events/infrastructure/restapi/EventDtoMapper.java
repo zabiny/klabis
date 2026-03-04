@@ -6,20 +6,20 @@ class EventDtoMapper {
 
     static EventDto toDto(Event event) {
         return new EventDto(
-                event.getId().value(),
+                event.getId(),
                 event.getName(),
                 event.getEventDate(),
                 event.getLocation(),
                 event.getOrganizer(),
                 event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null,
-                event.getEventCoordinatorId() != null ? event.getEventCoordinatorId().value() : null,
+                event.getEventCoordinatorId(),
                 event.getStatus()
         );
     }
 
     static EventSummaryDto toSummaryDto(Event event) {
         return new EventSummaryDto(
-                event.getId().value(),
+                event.getId(),
                 event.getName(),
                 event.getEventDate(),
                 event.getLocation(),

@@ -140,7 +140,7 @@ public class EventController {
                 page,
                 dto -> {
                     EntityModel<EventSummaryDto> model = EntityModel.of(dto);
-                    model.add(klabisLinkTo(methodOn(EventController.class).getEvent(dto.id())).withSelfRel());
+                    model.add(klabisLinkTo(methodOn(EventController.class).getEvent(dto.id().value())).withSelfRel());
                     return model;
                 }
         );
@@ -215,7 +215,7 @@ public class EventController {
     }
 
     private void addLinksForEvent(EntityModel<?> entityModel, EventDto eventDto) {
-        UUID eventId = eventDto.id();
+        UUID eventId = eventDto.id().value();
         EventStatus status = eventDto.status();
 
         Link selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
