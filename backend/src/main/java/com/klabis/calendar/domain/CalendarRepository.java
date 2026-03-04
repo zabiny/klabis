@@ -1,5 +1,6 @@
 package com.klabis.calendar.domain;
 
+import com.klabis.calendar.CalendarItemId;
 import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 import org.jmolecules.ddd.annotation.Repository;

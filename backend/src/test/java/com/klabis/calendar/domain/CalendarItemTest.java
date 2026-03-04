@@ -1,6 +1,7 @@
 package com.klabis.calendar.domain;
 
 import com.klabis.calendar.CalendarItemAssert;
+import com.klabis.calendar.CalendarItemId;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import org.junit.jupiter.api.DisplayName;

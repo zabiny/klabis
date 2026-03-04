@@ -1,5 +1,6 @@
 package com.klabis.calendar.domain;
 
+import com.klabis.calendar.CalendarItemId;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;

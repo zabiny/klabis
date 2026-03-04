@@ -1,7 +1,7 @@
 package com.klabis.calendar.application;
 
 import com.klabis.calendar.domain.CalendarItem;
-import com.klabis.calendar.domain.CalendarItemId;
+import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.domain.CalendarRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;

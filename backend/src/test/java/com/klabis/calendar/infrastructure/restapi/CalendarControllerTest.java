@@ -3,7 +3,7 @@ package com.klabis.calendar.infrastructure.restapi;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.application.*;
 import com.klabis.calendar.domain.CalendarItem;
-import com.klabis.calendar.domain.CalendarItemId;
+import com.klabis.calendar.CalendarItemId;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
