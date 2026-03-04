@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 class CalendarManagementService implements CalendarManagementPort {
@@ -71,9 +70,9 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional(readOnly = true)
     @Override
-    public CalendarItem getCalendarItem(UUID calendarItemId) {
-        return calendarRepository.findById(new CalendarItemId(calendarItemId))
-                .orElseThrow(() -> new CalendarNotFoundException(calendarItemId));
+    public CalendarItem getCalendarItem(CalendarItemId calendarItemId) {
+        return calendarRepository.findById(calendarItemId)
+                .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
     }
 
     @Transactional
@@ -91,9 +90,9 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional
     @Override
-    public void updateCalendarItem(UUID calendarItemId, UpdateCalendarItemCommand command) {
-        CalendarItem calendarItem = calendarRepository.findById(new CalendarItemId(calendarItemId))
-                .orElseThrow(() -> new CalendarNotFoundException(calendarItemId));
+    public void updateCalendarItem(CalendarItemId calendarItemId, UpdateCalendarItemCommand command) {
+        CalendarItem calendarItem = calendarRepository.findById(calendarItemId)
+                .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
 
         try {
             calendarItem.update(
@@ -111,9 +110,9 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional
     @Override
-    public void deleteCalendarItem(UUID calendarItemId) {
-        CalendarItem calendarItem = calendarRepository.findById(new CalendarItemId(calendarItemId))
-                .orElseThrow(() -> new CalendarNotFoundException(calendarItemId));
+    public void deleteCalendarItem(CalendarItemId calendarItemId) {
+        CalendarItem calendarItem = calendarRepository.findById(calendarItemId)
+                .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
 
         try {
             calendarItem.delete();

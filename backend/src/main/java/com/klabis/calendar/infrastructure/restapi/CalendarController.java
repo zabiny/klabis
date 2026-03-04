@@ -1,5 +1,6 @@
 package com.klabis.calendar.infrastructure.restapi;
 
+import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.application.CreateCalendarItemCommand;
 import com.klabis.calendar.application.InvalidCalendarQueryException;
@@ -81,9 +82,9 @@ class CalendarController {
                 items.stream()
                         .map(dto -> {
                             EntityModel<CalendarItemDto> model = EntityModel.of(dto);
-                            model.add(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(dto.id())).withSelfRel());
+                            model.add(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(dto.id().value())).withSelfRel());
                             if (dto.eventId() != null) {
-                                model.add(Link.of("/api/events/" + dto.eventId()).withRel("event"));
+                                model.add(Link.of("/api/events/" + dto.eventId().value()).withRel("event"));
                             }
                             return model;
                         })
@@ -157,7 +158,7 @@ class CalendarController {
     public ResponseEntity<EntityModel<CalendarItemDto>> getCalendarItem(
             @Parameter(description = "Calendar item UUID") @PathVariable UUID id) {
 
-        CalendarItemDto calendarItemDto = toDto(calendarManagementService.getCalendarItem(id));
+        CalendarItemDto calendarItemDto = toDto(calendarManagementService.getCalendarItem(new CalendarItemId(id)));
 
         EntityModel<CalendarItemDto> entityModel = EntityModel.of(calendarItemDto);
         addLinksForCalendarItem(entityModel, calendarItemDto);
@@ -200,7 +201,7 @@ class CalendarController {
             @Parameter(description = "Calendar item UUID") @PathVariable UUID id,
             @Parameter(description = "Calendar item update data") @Valid @RequestBody UpdateCalendarItemCommand command) {
 
-        calendarManagementService.updateCalendarItem(id, command);
+        calendarManagementService.updateCalendarItem(new CalendarItemId(id), command);
         return ResponseEntity.noContent().build();
     }
 
@@ -217,7 +218,7 @@ class CalendarController {
     public ResponseEntity<Void> deleteCalendarItem(
             @Parameter(description = "Calendar item UUID") @PathVariable UUID id) {
 
-        calendarManagementService.deleteCalendarItem(id);
+        calendarManagementService.deleteCalendarItem(new CalendarItemId(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -231,24 +232,24 @@ class CalendarController {
 
     private CalendarItemDto toDto(CalendarItem calendarItem) {
         return new CalendarItemDto(
-                calendarItem.getId().value(),
+                calendarItem.getId(),
                 calendarItem.getName(),
                 calendarItem.getDescription(),
                 calendarItem.getStartDate(),
                 calendarItem.getEndDate(),
-                calendarItem.getEventId() != null ? calendarItem.getEventId().value() : null
+                calendarItem.getEventId()
         );
     }
 
     private void addLinksForCalendarItem(EntityModel<?> entityModel, CalendarItemDto calendarItemDto) {
-        UUID calendarItemId = calendarItemDto.id();
+        UUID calendarItemId = calendarItemDto.id().value();
         boolean isEventLinked = calendarItemDto.eventId() != null;
 
         Link selfLink = klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(calendarItemId)).withSelfRel();
 
         if (isEventLinked) {
             entityModel.add(selfLink);
-            entityModel.add(Link.of("/api/events/" + calendarItemDto.eventId()).withRel("event"));
+            entityModel.add(Link.of("/api/events/" + calendarItemDto.eventId().value()).withRel("event"));
         } else {
             selfLink = selfLink.andAffordances(klabisAfford(methodOn(CalendarController.class).updateCalendarItem(calendarItemId, null)));
             selfLink = selfLink.andAffordances(klabisAfford(methodOn(CalendarController.class).deleteCalendarItem(calendarItemId)));

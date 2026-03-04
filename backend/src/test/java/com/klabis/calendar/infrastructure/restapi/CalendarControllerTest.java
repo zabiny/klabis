@@ -192,7 +192,7 @@ class CalendarControllerTest {
                     .withDescription("Weekly training session")
                     .buildManual();
 
-            when(calendarManagementService.getCalendarItem(calendarItemId)).thenReturn(item);
+            when(calendarManagementService.getCalendarItem(new CalendarItemId(calendarItemId))).thenReturn(item);
 
             mockMvc.perform(
                             get("/api/calendar-items/{id}", calendarItemId)
@@ -220,7 +220,7 @@ class CalendarControllerTest {
                     .withDescription("Forest Park - OOB")
                     .buildEventLinked(eventId);
 
-            when(calendarManagementService.getCalendarItem(calendarItemId)).thenReturn(item);
+            when(calendarManagementService.getCalendarItem(new CalendarItemId(calendarItemId))).thenReturn(item);
 
             mockMvc.perform(
                             get("/api/calendar-items/{id}", calendarItemId)
@@ -240,7 +240,7 @@ class CalendarControllerTest {
         void shouldReturn404WhenCalendarItemNotFound() throws Exception {
             UUID calendarItemId = UUID.randomUUID();
 
-            when(calendarManagementService.getCalendarItem(calendarItemId))
+            when(calendarManagementService.getCalendarItem(new CalendarItemId(calendarItemId)))
                     .thenThrow(new CalendarNotFoundException(calendarItemId));
 
             mockMvc.perform(
@@ -357,7 +357,7 @@ class CalendarControllerTest {
             UUID calendarItemId = UUID.randomUUID();
 
             doThrow(new CalendarItemReadOnlyException())
-                    .when(calendarManagementService).updateCalendarItem(eq(calendarItemId), any(UpdateCalendarItemCommand.class));
+                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(UpdateCalendarItemCommand.class));
 
             mockMvc.perform(
                             put("/api/calendar-items/{id}", calendarItemId)
@@ -404,7 +404,7 @@ class CalendarControllerTest {
             UUID calendarItemId = UUID.randomUUID();
 
             doThrow(new CalendarNotFoundException(calendarItemId))
-                    .when(calendarManagementService).updateCalendarItem(eq(calendarItemId), any(UpdateCalendarItemCommand.class));
+                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(UpdateCalendarItemCommand.class));
 
             mockMvc.perform(
                             put("/api/calendar-items/{id}", calendarItemId)
@@ -446,7 +446,7 @@ class CalendarControllerTest {
             UUID calendarItemId = UUID.randomUUID();
 
             doThrow(new CalendarItemReadOnlyException())
-                    .when(calendarManagementService).deleteCalendarItem(calendarItemId);
+                    .when(calendarManagementService).deleteCalendarItem(new CalendarItemId(calendarItemId));
 
             mockMvc.perform(
                             delete("/api/calendar-items/{id}", calendarItemId)
@@ -473,7 +473,7 @@ class CalendarControllerTest {
             UUID calendarItemId = UUID.randomUUID();
 
             doThrow(new CalendarNotFoundException(calendarItemId))
-                    .when(calendarManagementService).deleteCalendarItem(calendarItemId);
+                    .when(calendarManagementService).deleteCalendarItem(new CalendarItemId(calendarItemId));
 
             mockMvc.perform(
                             delete("/api/calendar-items/{id}", calendarItemId)

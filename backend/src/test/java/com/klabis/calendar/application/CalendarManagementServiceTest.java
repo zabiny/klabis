@@ -135,7 +135,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(calendarItem));
 
-            CalendarItem result = testedSubject.getCalendarItem(calendarItemId);
+            CalendarItem result = testedSubject.getCalendarItem(new CalendarItemId(calendarItemId));
 
             assertThat(result.getId().value()).isEqualTo(calendarItemId);
             assertThat(result.getName()).isEqualTo("Test Event");
@@ -149,7 +149,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> testedSubject.getCalendarItem(calendarItemId))
+            assertThatThrownBy(() -> testedSubject.getCalendarItem(new CalendarItemId(calendarItemId)))
                     .isInstanceOf(CalendarNotFoundException.class)
                     .hasMessageContaining(calendarItemId.toString());
         }
@@ -204,7 +204,7 @@ class CalendarManagementServiceTest {
             when(calendarRepository.findById(any())).thenReturn(Optional.of(existingItem));
             when(calendarRepository.save(any(CalendarItem.class))).thenReturn(existingItem);
 
-            testedSubject.updateCalendarItem(calendarItemId, command);
+            testedSubject.updateCalendarItem(new CalendarItemId(calendarItemId), command);
 
             assertThat(existingItem.getName()).isEqualTo("Updated Name");
             assertThat(existingItem.getDescription()).isEqualTo("Updated description");
@@ -229,7 +229,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(eventLinkedItem));
 
-            assertThatThrownBy(() -> testedSubject.updateCalendarItem(calendarItemId, command))
+            assertThatThrownBy(() -> testedSubject.updateCalendarItem(new CalendarItemId(calendarItemId), command))
                     .isInstanceOf(CalendarItemReadOnlyException.class);
         }
 
@@ -246,7 +246,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> testedSubject.updateCalendarItem(calendarItemId, command))
+            assertThatThrownBy(() -> testedSubject.updateCalendarItem(new CalendarItemId(calendarItemId), command))
                     .isInstanceOf(CalendarNotFoundException.class);
         }
     }
@@ -265,7 +265,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(manualItem));
 
-            testedSubject.deleteCalendarItem(calendarItemId);
+            testedSubject.deleteCalendarItem(new CalendarItemId(calendarItemId));
 
             verify(calendarRepository).delete(manualItem);
         }
@@ -281,7 +281,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findById(any())).thenReturn(Optional.of(eventLinkedItem));
 
-            assertThatThrownBy(() -> testedSubject.deleteCalendarItem(calendarItemId))
+            assertThatThrownBy(() -> testedSubject.deleteCalendarItem(new CalendarItemId(calendarItemId)))
                     .isInstanceOf(CalendarItemReadOnlyException.class);
         }
 
@@ -292,7 +292,7 @@ class CalendarManagementServiceTest {
 
             when(calendarRepository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> testedSubject.deleteCalendarItem(calendarItemId))
+            assertThatThrownBy(() -> testedSubject.deleteCalendarItem(new CalendarItemId(calendarItemId)))
                     .isInstanceOf(CalendarNotFoundException.class);
         }
     }
