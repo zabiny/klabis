@@ -65,7 +65,7 @@ class HasAuthorityAspect {
         }
 
         log.debug("Authorization check passed for user: {} (required authority: {})",
-                authentication != null ? authentication.getName() : "ANONYMOUS",
+                authentication.getName(),
                 requiredAuthority);
     }
 

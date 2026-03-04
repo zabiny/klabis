@@ -202,6 +202,7 @@ public class UserAssert extends AbstractAssert<UserAssert, User> {
         isNotNull();
         if (expected == null) {
             failWithMessage("Expected user is null");
+            return this;
         }
         hasId(expected.getId());
         hasUsername(expected.getUsername());

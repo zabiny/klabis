@@ -109,7 +109,7 @@ public class CustomMetricsTrackingAspect {
         }
     }
 
-    public void trackEventFailure(Object event, Duration latency) {
+    public void trackEventFailure(Object event, Duration ignored) {
         if (isKlabisEvent(event)) {
             log.debug("Tracking failed processing of event {}", event.getClass().getSimpleName());
             getPublishedEventsCounter().increment();

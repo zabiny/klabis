@@ -129,7 +129,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     }
 
     @EventListener
-    public void onSuccess(AuthenticationSuccessEvent success) {
+    public void onSuccess(AuthenticationSuccessEvent ignored) {
         // Extract user ID from security context
         String userId = extractUserId();
         if (userId != null) {

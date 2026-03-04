@@ -11,7 +11,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.modulith.test.PublishedEvents;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -58,7 +57,7 @@ class CalendarEventSyncIntegrationTest {
     @Test
     @DisplayName("should create calendar item when EventPublishedEvent arrives")
     @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar_items")
-    void shouldCreateCalendarItemWhenEventIsPublished(Scenario scenario, PublishedEvents events) {
+    void shouldCreateCalendarItemWhenEventIsPublished(Scenario scenario) {
         // Given: Event data
         final EventId eventId = EVENT_ID;
 
