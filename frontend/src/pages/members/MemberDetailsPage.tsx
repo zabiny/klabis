@@ -1,19 +1,17 @@
 import {type ReactElement} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Alert, Button, Spinner} from '../components/UI';
-import {MemberDetailsCard} from '../components/members/MemberDetailsCard';
-import {MemberDetailsField} from '../components/members/MemberDetailsField';
-import {extractNavigationPath} from '../utils/navigationPath';
-import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
-import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
-import {useHalPageData} from '../hooks/useHalPageData';
-import {formatDate} from "../utils/dateUtils.ts";
+import {Alert, Button, Spinner} from '../../components/UI';
+import {MemberDetailsCard} from '../../components/members/MemberDetailsCard.tsx';
+import {MemberDetailsField} from '../../components/members/MemberDetailsField.tsx';
+import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {useHalPageData} from '../../hooks/useHalPageData.ts';
+import {formatDate} from "../../utils/dateUtils.ts";
 
 /**
  * Page for displaying member details fetched from GET /members/{id} API
  */
 export const MemberDetailsPage = (): ReactElement => {
-    const {resourceData, isLoading, error, route, actions} = useHalPageData();
+    const {resourceData, isLoading, error, route} = useHalPageData();
     const navigate = useNavigate();
 
     if (isLoading) {
@@ -260,20 +258,6 @@ export const MemberDetailsPage = (): ReactElement => {
                 )}
 
             </div>
-
-            {/* Links/Actions section */}
-            {resourceData?._links && Object.keys(resourceData._links).length > 0 ? (
-                <HalLinksSection
-                    links={resourceData._links}
-                    onNavigate={actions.handleNavigateToItem}
-                />
-            ) : null}
-
-            {/* Templates/Forms section */}
-            {resourceData?._templates && Object.keys(resourceData._templates).length > 0 ? (
-                <HalFormsSection templates={resourceData._templates}/>
-            ) : null}
-
         </div>
     );
 };

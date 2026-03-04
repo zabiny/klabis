@@ -3,12 +3,12 @@ import {render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
-import {MemberFinancePage, MemberName} from './FinancesPage';
-import {mockFinanceResource, mockMemberResource} from '../__mocks__/halData';
-import {createMockResponse} from '../__mocks__/mockFetch';
-import {HalRouteProvider} from '../contexts/HalRouteContext';
+import {MemberFinancePage, MemberName} from './FinancesPage.tsx';
+import {mockFinanceResource, mockMemberResource} from '../../__mocks__/halData.ts';
+import {createMockResponse} from '../../__mocks__/mockFetch.ts';
+import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {type Mock, vi} from 'vitest';
-import {HalFormProvider} from "../contexts/HalFormContext.tsx";
+import {HalFormProvider} from "../../contexts/HalFormContext.tsx";
 
 // Mock the auth user manager to return a user with access token
 vi.mock('../api/klabisUserManager', () => ({

@@ -1,10 +1,10 @@
 import {type ReactElement} from "react";
-import {TableCell} from "../components/KlabisTable";
-import {HalEmbeddedTable} from "../components/HalNavigator2/HalEmbeddedTable.tsx";
-import {HalSubresourceProvider, useHalRoute} from "../contexts/HalRouteContext.tsx";
-import {Skeleton} from "../components/UI";
-import {HalFormButton} from "../components/HalNavigator2/HalFormButton.tsx";
-import {useHalPageData} from "../hooks/useHalPageData.ts";
+import {TableCell} from "../../components/KlabisTable";
+import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
+import {HalSubresourceProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
+import {Skeleton} from "../../components/UI";
+import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
+import {useHalPageData} from "../../hooks/useHalPageData.ts";
 
 interface MemberNameProps {
     user?: { firstName: string, lastName: string }

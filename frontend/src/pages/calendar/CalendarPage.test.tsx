@@ -3,9 +3,9 @@ import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
-import CalendarPage from './CalendarPage';
+import CalendarPage from './CalendarPage.tsx';
 import {vi} from 'vitest';
-import * as HalPageDataModule from '../hooks/useHalPageData';
+import * as HalPageDataModule from '../../hooks/useHalPageData.ts';
 
 // Mock child components
 vi.mock('../components/UI', () => ({

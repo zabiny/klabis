@@ -1,4 +1,4 @@
-import {Navigate, Route, Routes, Outlet} from 'react-router-dom';
+import {Navigate, Outlet, Route, Routes} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
 import {AuthProvider, useAuth} from './contexts/AuthContext2';
 import Layout from './pages/Layout';
@@ -8,13 +8,13 @@ import {ThemeProvider} from "./theme/ThemeContext.tsx";
 import {AdminModeProvider, useAdminMode} from "./contexts/AdminModeContext.tsx";
 import ErrorFallback from './components/ErrorFallback';
 import {GenericHalPage} from "./pages/GenericHalPage.tsx";
-import {MemberDetailsPage} from "./pages/MemberDetailsPage.tsx";
+import {MemberDetailsPage} from "./pages/members/MemberDetailsPage.tsx";
 import HomePage from "./pages/HomePage.tsx";
-import CalendarPage from "./pages/CalendarPage.tsx";
+import CalendarPage from "./pages/calendar/CalendarPage.tsx";
 import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
-import {MembersPage} from "./pages/MembersPage.tsx";
-import {EventsPage} from "./pages/EventsPage.tsx";
-import {MemberFinancePage} from "./pages/FinancesPage.tsx";
+import {MembersPage} from "./pages/members/MembersPage.tsx";
+import {EventsPage} from "./pages/events/EventsPage.tsx";
+import {MemberFinancePage} from "./pages/finances/FinancesPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 

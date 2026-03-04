@@ -1,11 +1,9 @@
 import {type ReactElement} from "react";
-import type {EntityModel} from "../api";
-import {TableCell} from "../components/KlabisTable";
-import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
-import {HalEmbeddedTable} from "../components/HalNavigator2/HalEmbeddedTable.tsx";
-import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
-import {formatDate} from "../utils/dateUtils.ts";
-import {useHalPageData} from "../hooks/useHalPageData.ts";
+import type {EntityModel} from "../../api";
+import {TableCell} from "../../components/KlabisTable";
+import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
+import {formatDate} from "../../utils/dateUtils.ts";
+import {useHalPageData} from "../../hooks/useHalPageData.ts";
 
 interface EventListData extends EntityModel<{
     id: string,  // UUID as string
@@ -34,13 +32,6 @@ export const EventsPage = (): ReactElement => {
                 <TableCell sortable column={"organizer"}>Pořadatel</TableCell>
                 <TableCell sortable column={"status"}>Status</TableCell>
             </HalEmbeddedTable>
-        </div>
-
-        <div className="flex flex-col gap-4">
-            <HalLinksSection/>
-        </div>
-        <div className="flex flex-col gap-4">
-            <HalFormsSection/>
         </div>
     </div>;
 

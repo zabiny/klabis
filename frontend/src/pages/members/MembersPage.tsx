@@ -1,11 +1,11 @@
 import {type ReactElement} from "react";
-import type {EntityModel} from "../api";
-import {TableCell} from "../components/KlabisTable";
-import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
-import {HalEmbeddedTable} from "../components/HalNavigator2/HalEmbeddedTable.tsx";
-import {useHalPageData} from "../hooks/useHalPageData.ts";
-import {HalFormButton} from "../components/HalNavigator2/HalFormButton.tsx";
-import {type FormStep, MultiStepFormModal} from "../components/HalNavigator2/MultiStepFormModal.tsx";
+import type {EntityModel} from "../../api";
+import {TableCell} from "../../components/KlabisTable";
+import {HalLinksSection} from "../../components/HalNavigator2/HalLinksSection.tsx";
+import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
+import {useHalPageData} from "../../hooks/useHalPageData.ts";
+import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
+import {type FormStep, MultiStepFormModal} from "../../components/HalNavigator2/MultiStepFormModal.tsx";
 
 type MemberListData = EntityModel<{
     id: string,  // UUID as string

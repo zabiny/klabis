@@ -1,12 +1,10 @@
 import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Alert} from '../components/UI';
-import {JsonPreview} from '../components/JsonPreview';
-import {hasCalendarItems} from '../api';
-import {extractNavigationPath} from '../utils/navigationPath';
-import {HalLinksSection} from "../components/HalNavigator2/HalLinksSection.tsx";
-import {HalFormsSection} from "../components/HalNavigator2/HalFormsSection.tsx";
-import {useHalPageData} from '../hooks/useHalPageData';
+import {Alert} from '../../components/UI';
+import {hasCalendarItems} from '../../api';
+import {toHref} from '../../api/hateoas.ts';
+import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {useHalPageData} from '../../hooks/useHalPageData.ts';
 
 interface CalendarItem {
     id: string;
@@ -26,27 +24,38 @@ interface CalendarItem {
  * Shows all calendar items on their respective dates
  */
 const CalendarPage = () => {
-    const {resourceData, isLoading, error, actions} = useHalPageData();
+    const {resourceData, isLoading, error} = useHalPageData();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    // Parse referenceDate from query params, fall back to current date
     const currentDate = useMemo(() => {
+        // Primary: use startDate from self link (reflects actual fetched month)
+        if (resourceData?._links?.self) {
+            const selfHref = toHref(resourceData._links.self);
+            const url = new URL(selfHref, 'https://placeholder');
+            const startDate = url.searchParams.get('startDate');
+            if (startDate) {
+                const parts = startDate.split('-');
+                if (parts.length === 3) {
+                    const year = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10);
+                    if (!isNaN(year) && !isNaN(month) && month >= 1 && month <= 12) {
+                        return new Date(year, month - 1, 1);
+                    }
+                }
+            }
+        }
+        // Fallback: referenceDate URL param or today
         const referenceDate = searchParams.get('referenceDate');
         if (referenceDate) {
-            // Parse yyyy-mm-dd format manually to avoid timezone issues
             const parts = referenceDate.split('-');
             if (parts.length === 3) {
                 const year = parseInt(parts[0], 10);
                 const month = parseInt(parts[1], 10);
                 const day = parseInt(parts[2], 10);
-
-                // Validate parsed values
                 if (!isNaN(year) && !isNaN(month) && !isNaN(day) &&
                     month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                    // Create date in local timezone (month is 0-indexed in Date constructor)
                     const parsed = new Date(year, month - 1, day);
-                    // Double-check the date is valid by verifying the month matches
                     if (parsed.getMonth() === month - 1) {
                         return parsed;
                     }
@@ -54,7 +63,7 @@ const CalendarPage = () => {
             }
         }
         return new Date();
-    }, [searchParams]);
+    }, [resourceData, searchParams]);
 
     // Extract calendar items from resource data using type guard
     let calendarItems: CalendarItem[] = [];
@@ -87,7 +96,16 @@ const CalendarPage = () => {
         calendarDays.push(day);
     }
 
-    // Helper function to handle calendar item click
+    const handlePrevMonth = () => {
+        const prevLink = resourceData?._links?.prev;
+        if (prevLink) navigate(extractNavigationPath(toHref(prevLink)));
+    };
+
+    const handleNextMonth = () => {
+        const nextLink = resourceData?._links?.next;
+        if (nextLink) navigate(extractNavigationPath(toHref(nextLink)));
+    };
+
     const handleItemClick = (item: CalendarItem) => {
         // Prefer event link if available, otherwise navigate to calendar-item details
         const href = item._links.event?.href || item._links.self.href;
@@ -124,13 +142,31 @@ const CalendarPage = () => {
     return (
         <div className="flex flex-col gap-8">
             {/* Header */}
-            <div>
-                <h1 className="text-4xl font-bold text-text-primary mb-2 capitalize">
-                    {monthName}
-                </h1>
-                <p className="text-lg text-text-secondary">
-                    Kalendář akcí a důležitých dat
-                </p>
+            <div className="flex items-center gap-4">
+                <button
+                    onClick={handlePrevMonth}
+                    disabled={!resourceData?._links?.prev}
+                    className="p-2 rounded-md border border-border text-text-primary hover:bg-surface-raised disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Předchozí měsíc"
+                >
+                    ←
+                </button>
+                <div>
+                    <h1 className="text-4xl font-bold text-text-primary mb-2 capitalize">
+                        {monthName}
+                    </h1>
+                    <p className="text-lg text-text-secondary">
+                        Kalendář akcí a důležitých dat
+                    </p>
+                </div>
+                <button
+                    onClick={handleNextMonth}
+                    disabled={!resourceData?._links?.next}
+                    className="p-2 rounded-md border border-border text-text-primary hover:bg-surface-raised disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Následující měsíc"
+                >
+                    →
+                </button>
             </div>
 
             {/* Calendar */}
@@ -189,29 +225,6 @@ const CalendarPage = () => {
                     ))}
                 </div>
             </div>
-
-            {/* Links/Actions section */}
-            {resourceData?._links && Object.keys(resourceData._links).length > 0 ? (
-                <div className="flex flex-col gap-4">
-                    <HalLinksSection
-                        links={resourceData._links}
-                        onNavigate={actions.handleNavigateToItem}
-                    />
-                </div>
-            ) : null}
-
-            {/* Templates/Forms section */}
-            {resourceData?._templates && Object.keys(resourceData._templates).length > 0 ? (
-                <div className="flex flex-col gap-4">
-                    <HalFormsSection templates={resourceData._templates}/>
-                </div>
-            ) : null}
-
-            {/* Full JSON preview */}
-            <details className="p-3 border border-border rounded-md bg-surface-base">
-                <summary className="cursor-pointer font-semibold text-text-primary">Zobrazit surový JSON</summary>
-                <JsonPreview data={resourceData} label="Kompletní odpověď"/>
-            </details>
         </div>
     );
 };
