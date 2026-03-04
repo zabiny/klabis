@@ -13,10 +13,10 @@ import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -110,16 +110,12 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
      *
      * @return the authenticated user's ID, or {@code null} if not authenticated
      */
-    private String extractUserId() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated()) {
-                return authentication.getName();
-            }
-        } catch (Exception e) {
-            log.warn("Failed to extract user ID from security context", e);
+    private Optional<String> extractUserId(Authentication authentication) {
+        if (authentication.isAuthenticated()) {
+            return Optional.ofNullable(authentication.getName());
+        } else {
+            return Optional.empty();
         }
-        return null;
     }
 
     @Bean
@@ -129,11 +125,10 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     }
 
     @EventListener
-    public void onSuccess(AuthenticationSuccessEvent ignored) {
+    public void onSuccess(AuthenticationSuccessEvent event) {
         // Extract user ID from security context
-        String userId = extractUserId();
-        if (userId != null) {
-            MDC.put(USER_ID, userId);
-        }
+        extractUserId(event.getAuthentication()).ifPresent(id -> {
+            MDC.put(USER_ID, id);
+        });
     }
 }
