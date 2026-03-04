@@ -1,3 +1,0 @@
-#
-#Mon Mar 02 23:17:05 CET 2026
-no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..infrastructure..',\ because\ Application\ layer\ must\ not\ depend\ on\ infrastructure\ layer\ \u2014\ dependency\ direction\ is\ infrastructure\ \u2192\ application=9c03244e-204a-4ff0-bc65-6a09aaa5c0d3

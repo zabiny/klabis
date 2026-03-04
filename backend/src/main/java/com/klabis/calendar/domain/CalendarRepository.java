@@ -1,6 +1,7 @@
 package com.klabis.calendar.domain;
 
 import com.klabis.events.EventId;
+import org.jmolecules.architecture.hexagonal.SecondaryPort;
 import org.jmolecules.ddd.annotation.Repository;
 
 import java.time.LocalDate;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@SecondaryPort
 public interface CalendarRepository {
 
     CalendarItem save(CalendarItem calendarItem);
