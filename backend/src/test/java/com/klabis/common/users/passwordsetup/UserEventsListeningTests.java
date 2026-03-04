@@ -10,7 +10,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.modulith.test.PublishedEvents;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
@@ -21,9 +20,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-//@ActiveProfiles("test")
 @TestPropertySource(properties = {"jasypt.encryptor.password=example"})
-//@CleanupTestData
 @DisplayName("Password setup token integration with User events")
 @Sql(statements = {
         "INSERT INTO users (id, user_name, password_hash, account_status) VALUES ('11111111-1111-1111-1111-111111111111', 'test', 'hashedpw', 'PENDING_ACTIVATION')"
@@ -37,7 +34,7 @@ class UserEventsListeningTests {
 
     @Test
     @DisplayName("should create password token for user without password")
-    void shouldCreateCalendarItemWhenEventIsPublished(Scenario scenario, PublishedEvents events) {
+    void shouldCreateCalendarItemWhenEventIsPublished(Scenario scenario) {
         // Given: Event data
         final UserId userId = PENDING_ACTIVATION_USER;
 

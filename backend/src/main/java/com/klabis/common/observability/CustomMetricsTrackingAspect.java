@@ -101,15 +101,13 @@ public class CustomMetricsTrackingAspect {
 
             return result;
         } catch (Throwable throwable) {
-            // Still record latency even if listener fails
-            Duration latency = Duration.between(startTime, Instant.now());
-            trackEventFailure(event, latency);
+            trackEventFailure(event);
 
             throw throwable;
         }
     }
 
-    public void trackEventFailure(Object event, Duration ignored) {
+    public void trackEventFailure(Object event) {
         if (isKlabisEvent(event)) {
             log.debug("Tracking failed processing of event {}", event.getClass().getSimpleName());
             getPublishedEventsCounter().increment();

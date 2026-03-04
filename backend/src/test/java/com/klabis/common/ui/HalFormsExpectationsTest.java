@@ -4,6 +4,8 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.patch.PatchField;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
@@ -109,20 +111,23 @@ record Address(String street, String city, String state, String zip) {}
 @RequestMapping("/api/testHalSupport")
 class HalFormsExampleController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(HalFormsExampleController.class);
+
     @GetMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<EntityModel<User>> getUser(@RequestParam int id) {
         User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"), Optional.of("Vegetarian"), Optional.empty(), PatchField.of("Jen maso"));
 
         EntityModel<User> model = EntityModel.of(data)
                 .add(klabisLinkTo(methodOn(HalFormsExampleController.class).getUser(id)).withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(HalFormsExampleController.class).editUser(id,
-                                null))));
+                        .andAffordances(klabisAfford(methodOn(HalFormsExampleController.class).editUser(id
+                        ))));
 
         return ResponseEntity.ok(model);
     }
 
     @PutMapping(produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<Void> editUser(@RequestParam int id, @RequestBody User data) {
+    public ResponseEntity<Void> editUser(@RequestParam int id) {
+        LOG.info("Test edit of user with id {}", id);
         return ResponseEntity.noContent().build();
     }
 }

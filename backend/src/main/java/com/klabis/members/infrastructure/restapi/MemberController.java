@@ -1,5 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -35,7 +37,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import com.klabis.common.mvc.MvcComponent;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
@@ -206,7 +207,7 @@ class MemberController {
     public ResponseEntity<Void> suspendMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Suspension request")
-            @Valid @RequestBody SuspendMembershipRequest request,
+            @Valid @RequestBody @NotNull SuspendMembershipRequest request,
             @CurrentUser UserId currentUserId) {
 
         var command = new Member.SuspendMembership(
