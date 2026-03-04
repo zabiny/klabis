@@ -7,6 +7,7 @@ import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.mediatype.AffordanceModelFactory;
 import org.springframework.hateoas.mediatype.ConfiguredAffordance;
+import org.springframework.hateoas.mediatype.html.HtmlInputType;
 import org.springframework.hateoas.server.core.DummyInvocationUtils;
 import org.springframework.hateoas.server.core.LastInvocationAware;
 import org.springframework.hateoas.server.core.MethodInvocation;
@@ -365,15 +366,25 @@ public class HalFormsSupport {
 
             String result = delegate.getInputType();
             if (result == null) {
-                result = getEncosedClass().getSimpleName();
+                result = getTypeFromClass(getEncosedClass());
             }
 
             if (Optional.class.getSimpleName().equalsIgnoreCase(result) || PatchField.class.getSimpleName().equalsIgnoreCase(result)) {
-                result = delegate.getType().getGeneric(0).getRawClass().getSimpleName();
+                result = getTypeFromClass(delegate.getType().getGeneric(0).getRawClass());
             }
 
             return result;
         }
+
+        private Optional<HtmlInputType> fromClass(Class<?> type) {
+            return Optional.ofNullable(HtmlInputType.from(type));
+        }
+
+        private String getTypeFromClass(Class<?> type) {
+            return fromClass(type).map(HtmlInputType::value).orElse(type.getSimpleName());
+        }
+
+
     }
 
 }

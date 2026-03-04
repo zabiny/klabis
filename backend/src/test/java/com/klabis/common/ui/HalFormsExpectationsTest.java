@@ -68,7 +68,7 @@ class HalFormsExpectationsTest {
                         .param("id", "2")
                         .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'dietary')].type").value("String"))
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'dietary')].type").value("text"))
                 .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'postalAddress')].type").value("Address"))
                 .andExpect(status().isOk());
     }
@@ -81,7 +81,7 @@ class HalFormsExpectationsTest {
                         .param("id", "2")
                         .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'diet')].type").value("String"))
+                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'diet')].type").value("text"))
                 .andExpect(status().isOk());
     }
 
