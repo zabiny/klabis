@@ -37,7 +37,7 @@ class MemberPermissionsLinkProcessor implements RepresentationModelProcessor<Ent
             return model;
         }
 
-        UUID memberId = response.id();
+        UUID memberId = response.id() != null ? response.id().uuid() : null;
         if (memberId == null) {
             return model;
         }

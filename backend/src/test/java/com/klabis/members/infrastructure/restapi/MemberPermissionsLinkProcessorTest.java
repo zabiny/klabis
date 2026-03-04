@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -122,7 +123,7 @@ class MemberPermissionsLinkProcessorTest {
      */
     private MemberDetailsResponse createMemberDetailsResponse(UUID id) {
         return new MemberDetailsResponse(
-                id,
+                new MemberId(id),
                 "ZBM0101",
                 "Jan",
                 "Novák",

@@ -1,13 +1,13 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.klabis.members.MemberId;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.UUID;
 
 /**
  * REST API response model for complete member details.
@@ -42,11 +42,10 @@ import java.util.UUID;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MemberDetailsResponse(
-        UUID id,
+        MemberId id,
         String registrationNumber,
         String firstName,
         String lastName,
-        //@JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate dateOfBirth,
         String nationality,
         Gender gender,

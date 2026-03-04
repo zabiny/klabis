@@ -255,7 +255,7 @@ class MemberController {
                 memberPage.map(memberMapper::toSummaryResponse),
                 response -> {
                     EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
-                    model.add(klabisLinkTo(methodOn(MemberController.class).getMember(response.id())).withSelfRel());
+                    model.add(klabisLinkTo(methodOn(MemberController.class).getMember(response.id().uuid())).withSelfRel());
                     return model;
                 }
         );

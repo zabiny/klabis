@@ -1,8 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.members.MemberId;
 import io.swagger.v3.oas.annotations.media.Schema;
-
-import java.util.UUID;
 
 /**
  * Response DTO for member registration endpoint.
@@ -13,7 +12,7 @@ import java.util.UUID;
 @Schema(description = "Member registration response with HATEOAS links")
 record MemberRegistrationResponse(
         @Schema(description = "Unique member identifier (UUID)", example = "123e4567-e89b-12d3-a456-426614174000")
-        UUID id,
+        MemberId id,
 
         @Schema(description = "Member's first name", example = "Jan")
         String firstName,

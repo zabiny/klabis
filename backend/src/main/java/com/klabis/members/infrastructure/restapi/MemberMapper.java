@@ -1,6 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -8,7 +8,6 @@ import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 /**
  * MapStruct mapper for Member entity to DTO transformations.
@@ -18,7 +17,8 @@ import java.util.UUID;
 @Mapper(
         componentModel = "spring",
         nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL,
+        imports = MemberId.class
 )
 interface MemberMapper {
 
@@ -28,13 +28,9 @@ interface MemberMapper {
      * @param member the source member domain object
      * @return mapped summary response
      */
-    @Mapping(target = "id", source = "userId.uuid")
+    @Mapping(target = "id", expression = "java(MemberId.fromUserId(member.getUserId()))")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     MemberSummaryResponse toSummaryResponse(Member member);
-
-    default UUID map(UserId userId) {
-        return userId.uuid();
-    }
 
     /**
      * Maps Member domain object to MemberDetailsResponse.
@@ -77,7 +73,7 @@ interface MemberMapper {
         );
     }
 
-    @Mapping(target = "id", source = "userId.uuid")
+    @Mapping(target = "id", expression = "java(MemberId.fromUserId(member.getUserId()))")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "address", source = "address")
     @Mapping(target = "guardian", source="guardian")
@@ -97,6 +93,10 @@ interface MemberMapper {
     @Mapping(target = "dietaryRestrictions", source = "dietaryRestrictions")
     @Mapping(target = "birthNumber", ignore = true)
     @Mapping(target = "bankAccountNumber", ignore = true)
+    @Mapping(target = "suspendedBy", ignore = true)
+    @Mapping(target = "suspendedAt", ignore = true)
+    @Mapping(target = "suspensionReason", ignore = true)
+    @Mapping(target = "suspensionNote", ignore = true)
     MemberDetailsResponse toDetailsResponseInternal(Member member);
 
     AddressResponse addressToResponse(Address address);
