@@ -119,15 +119,14 @@ class HalFormsExampleController {
 
         EntityModel<User> model = EntityModel.of(data)
                 .add(klabisLinkTo(methodOn(HalFormsExampleController.class).getUser(id)).withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(HalFormsExampleController.class).editUser(id
-                        ))));
+                        .andAffordances(klabisAfford(methodOn(HalFormsExampleController.class).editUser(id, null))));
 
         return ResponseEntity.ok(model);
     }
 
     @PutMapping(produces = MediaTypes.HAL_JSON_VALUE)
-    public ResponseEntity<Void> editUser(@RequestParam int id) {
-        LOG.info("Test edit of user with id {}", id);
+    public ResponseEntity<Void> editUser(@RequestParam int id, @RequestBody User data) {
+        LOG.info("Test edit of user with id {} and data {}", id, data);
         return ResponseEntity.noContent().build();
     }
 }
