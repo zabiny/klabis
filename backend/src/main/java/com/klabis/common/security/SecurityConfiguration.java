@@ -22,23 +22,23 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.context.SecurityContextPersistenceFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.accept.ContentNegotiationStrategy;
 import org.springframework.web.accept.HeaderContentNegotiationStrategy;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.security.KeyPair;
@@ -46,7 +46,6 @@ import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -81,11 +80,6 @@ public class SecurityConfiguration implements WebMvcConfigurer {
 
     @Value("${spring.security.oauth2.authorizationserver.issuer:https://localhost:8443}")
     private String issuer;
-
-    @Override
-    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-        WebMvcConfigurer.super.addArgumentResolvers(resolvers);
-    }
 
     @Bean
     public AuthenticationManager authenticationManager(
@@ -198,7 +192,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                         .permitAll()  // Only accessible when H2 console is enabled (dev profile)
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())  // More restrictive than disable()
                 )
@@ -220,8 +214,8 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().permitAll()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .csrf(csrf -> csrf.disable());
+                //.csrf(csrf -> csrf.ignoringRequestMatchers(htmlRequestMatcher))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }
@@ -234,7 +228,6 @@ public class SecurityConfiguration implements WebMvcConfigurer {
      * This ensures API endpoints (which typically accept application/json or application/hal+json)
      * are NOT matched by the SPA filter chain, even if they share similar path patterns.
      */
-    @SuppressWarnings("removal")  // AntPathRequestMatcher is deprecated but no alternative available yet
     private RequestMatcher createHtmlRequestMatcher() {
         ContentNegotiationStrategy negotiationStrategy = new HeaderContentNegotiationStrategy();
 
@@ -245,20 +238,22 @@ public class SecurityConfiguration implements WebMvcConfigurer {
         );
         htmlMatcher.setIgnoredMediaTypes(java.util.Set.of(MediaType.ALL));
 
+        var matcher = PathPatternRequestMatcher.withDefaults();
+
         // Apply HTML matcher to SPA route patterns
         RequestMatcher spaRoutesMatcher = new OrRequestMatcher(
-                new AntPathRequestMatcher("/"),
-                new AntPathRequestMatcher("/{path:[^\\.]*}"),
-                new AntPathRequestMatcher("/{path1}/{path2:[^\\.]*}"),
-                new AntPathRequestMatcher("/{path1}/{path2}/{path3:[^\\.]*}")
+                matcher.matcher("/"),
+                matcher.matcher("/{path}"),
+                matcher.matcher("/{path1}/{path2}"),
+                matcher.matcher("/{path1}/{path2}/{path3}")
         );
 
         // Combine: (SPA routes AND accepts HTML) OR static resources
         return new OrRequestMatcher(
                 request -> spaRoutesMatcher.matches(request) && htmlMatcher.matches(request),
-                new AntPathRequestMatcher("/static/**"),
-                new AntPathRequestMatcher("/index.html"),
-                new AntPathRequestMatcher("/favicon.ico")
+                matcher.matcher("/static/**"),
+                matcher.matcher("/index.html"),
+                matcher.matcher("/favicon.ico")
         );
     }
 
@@ -271,8 +266,11 @@ public class SecurityConfiguration implements WebMvcConfigurer {
             CorsConfigurationSource corsConfigurationSource,
             Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter,
             AccountStatusValidationFilter accountStatusValidationFilter) throws Exception {
+
+        final String[] PATHS = {"/api/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**"};
+
         http
-                .securityMatcher("/api/**", "/actuator/**", "/swagger-ui/**", "/v3/api-docs/**")
+                .securityMatcher(PATHS)
                 .authorizeHttpRequests(authorize -> authorize
                         // Actuator endpoints (public access for monitoring)
                         .requestMatchers("/actuator/**").permitAll()
@@ -286,7 +284,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
-                .addFilterAfter(accountStatusValidationFilter, SecurityContextPersistenceFilter.class)
+                .addFilterAfter(accountStatusValidationFilter, BearerTokenAuthenticationFilter.class)
                 // Enable CORS configuration
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -307,11 +305,12 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                                 .maxAgeInSeconds(31536000)
                         )
                         // Prevent browser from MIME-sniffing responses
-                        .contentTypeOptions(content -> content.disable())
+                        .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
                 )
-                // CSRF is disabled since we're using JWT stateless authentication
-                // If cookie-based auth is added in the future, reconsider this setting
-                .csrf(csrf -> csrf.disable());
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Configure CSRF to ignore stateless API and documentation endpoints,
+                // while keeping CSRF protection enabled for any other browser-facing routes.
+                .csrf(csrf -> csrf.ignoringRequestMatchers(PATHS));
 
         return http.build();
     }
