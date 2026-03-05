@@ -198,15 +198,14 @@ jasypt:
     # - Random IV for each encryption (prevents pattern analysis)
     algorithm: PBEWithHmacSHA512AndAES_256
     iv-generator-classname: org.jasypt.iv.RandomIvGenerator
-
 server:
   port: 8443
   ssl:
     enabled: true
-    key-store: ${SSL_KEYSTORE_PATH:keystore/dev-keystore.p12}
+    key-store: ${SSL_KEYSTORE_PATH:classpath:https/keystore.p12}
     key-store-password: ${SSL_KEYSTORE_PASSWORD:changeit}
     key-store-type: PKCS12
-    key-alias: localhost
+    key-alias: ${SSL_KEYSTORE_KEY_ALIAS:localhost}
   http2:
     enabled: true
   error:
@@ -252,14 +251,6 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
-# Development SSL configuration
-server:
-  ssl:
-    key-store: keystore/dev-keystore.p12
-    key-store-password: changeit
-    key-store-type: PKCS12
-    key-alias: localhost
-
 # Logging pattern configuration moved to logback-spring.xml for MDC support
 logging:
   level:
@@ -286,14 +277,6 @@ spring:
     enabled: true
     locations: classpath:db/migration
     clean-disabled: false
-
-# Test SSL configuration - uses classpath test keystore
-server:
-  ssl:
-    key-store: classpath:keystore/test-keystore.p12
-    key-store-password: test1234
-    key-store-type: PKCS12
-    key-alias: localhost
 
 # Logging pattern configuration moved to logback-spring.xml for MDC support
 logging:
@@ -324,14 +307,6 @@ spring:
 
   mail:
     host: ${SMTP_HOST}
-
-# Production SSL configuration - uses environment variable for keystore path
-server:
-  ssl:
-    key-store: ${SSL_KEYSTORE_PATH}
-    key-store-password: ${SSL_KEYSTORE_PASSWORD}
-    key-store-type: PKCS12
-    key-alias: ${SSL_KEY_ALIAS:localhost}
 
 # Production frontend CORS configuration
 # Override with your production frontend URL(s)
