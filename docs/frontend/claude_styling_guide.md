@@ -231,11 +231,11 @@ Component Library (Available)
   ---
 File Locations
 
-- Design Guide: /frontend-2/DESIGN_SYSTEM.md
-- HTML Preview: /frontend-2/design-preview.html
-- Tailwind Config: /frontend-2/tailwind.config.ts
-- Global Styles: /frontend-2/src/index.css
-- Components: /frontend-2/src/components/UI/
+- Design Guide: /frontend/DESIGN_SYSTEM.md
+- HTML Preview: /frontend/design-preview.html
+- Tailwind Config: /frontend/tailwind.config.ts
+- Global Styles: /frontend/src/index.css
+- Components: /frontend/src/components/UI/
 
   ---
 

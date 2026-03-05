@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil - Klabis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest: #2d5a27;
+            --forest-light: #4a7c42;
+            --orange: #ff6b35;
+            --cream: #faf8f5;
+            --stone: #e8e4dc;
+        }
+        * { font-family: 'DM Sans', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .font-display { font-family: 'Outfit', sans-serif; }
+        .map-pattern {
+            background-image: radial-gradient(circle at 20% 30%, rgba(45, 90, 39, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+                linear-gradient(rgba(45, 90, 39, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(45, 90, 39, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        }
+        .nav-active {
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-light) 100%);
+            color: white;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--forest);
+            box-shadow: 0 0 0 3px rgba(45, 90, 39, 0.1);
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone); }
+        ::-webkit-scrollbar-thumb { background: var(--forest-light); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--forest); }
+    </style>
+</head>
+<body class="bg-cream min-h-screen map-pattern">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-stone flex flex-col shadow-sm">
+            <div class="p-6 border-b border-stone">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-[#2d5a27] to-[#4a7c42] rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-display font-bold text-xl text-[#2d5a27]">Klabis</h1>
+                        <p class="text-xs text-gray-500">Členská sekce</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <a href="index.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                <a href="profile.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all nav-active">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span class="font-medium">Profil</span>
+                </a>
+                <a href="finances.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="font-medium">Finance</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-stone">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-[#ff6b35] to-[#ff8c61] rounded-full flex items-center justify-center text-white font-semibold">JN</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-sm text-gray-900 truncate">Jan Novák</p>
+                        <p class="text-xs text-gray-500 truncate">jan.novak@email.cz</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1 overflow-y-auto">
+            <header class="bg-white border-b border-stone sticky top-0 z-10">
+                <div class="px-8 py-4">
+                    <h2 class="text-2xl font-display font-bold text-gray-900">Můj profil</h2>
+                    <p class="text-sm text-gray-500 mt-1">Správa osobních údajů a nastavení</p>
+                </div>
+            </header>
+
+            <div class="p-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Profile card -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-stone text-center">
+                            <div class="w-24 h-24 bg-gradient-to-br from-[#ff6b35] to-[#ff8c61] rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">JN</div>
+                            <h3 class="text-xl font-display font-bold text-gray-900">Jan Novák</h3>
+                            <p class="text-gray-500">jan.novak@email.cz</p>
+                            <p class="text-sm text-gray-500 mt-1">Reg. číslo: ZMB24049</p>
+
+                            <div class="mt-6 pt-6 border-t border-stone">
+                                <div class="grid grid-cols-2 gap-4 text-left">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Datum narození</p>
+                                        <p class="font-medium">3. září 2008</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Věk</p>
+                                        <p class="font-medium">16 let</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Pohlaví</p>
+                                        <p class="font-medium">Muž</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Status</p>
+                                        <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Aktivní</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 pt-6 border-t border-stone">
+                                <p class="text-sm text-gray-500 mb-3">Tréninková skupina</p>
+                                <div class="p-3 bg-[#2d5a27]/10 rounded-lg">
+                                    <p class="font-semibold text-[#2d5a27]">Dorost</p>
+                                    <p class="text-sm text-gray-600">Vedoucí: Tomáš Drtilek</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick actions -->
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-stone mt-6">
+                            <h4 class="font-display font-semibold text-gray-900 mb-4">Rychlé akce</h4>
+                            <div class="space-y-2">
+                                <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-stone transition-colors">
+                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                                    </svg>
+                                    <span class="text-sm font-medium">Změnit heslo</span>
+                                </a>
+                                <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-stone transition-colors">
+                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                    <span class="text-sm font-medium">Nastavení soukromí</span>
+                                </a>
+                                <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-stone transition-colors">
+                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <span class="text-sm font-medium">Exportovat data</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal info form -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-stone">
+                            <h3 class="font-display font-semibold text-lg mb-6">Osobní údaje</h3>
+
+                            <form id="profile-form" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Jméno <span class="text-red-500">*</span></label>
+                                        <input type="text" value="Jan" required class="w-full px-3 py-2 border border-stone rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Příjmení <span class="text-red-500">*</span></label>
+                                        <input type="text" value="Novák" required class="w-full px-3 py-2 border border-stone rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Datum narození <span class="text-red-500">*</span></label>
+                                        <input type="date" value="2008-09-03" required class="w-full px-3 py-2 border border-stone rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Rodné číslo</label>
+                                        <input type="text" value="083903/1234" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Národnost</label>
+                                        <select class="w-full px-3 py-2 border border-stone rounded-lg">
+                                            <option value="CZ" selected>Česká republika</option>
+                                            <option value="SK">Slovensko</option>
+                                            <option value="OTHER">Jiná</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Číslo OP</label>
+                                        <input type="text" value="123456789" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Adresa</label>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <input type="text" value="Ulice č.p." placeholder="Ulice č.p." class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        <input type="text" value="602 00" placeholder="PSČ" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        <input type="text" value="Brno" placeholder="Město" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-stone pt-6">
+                                    <h4 class="font-medium text-gray-900 mb-4">Kontaktní údaje</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                                            <input type="email" value="jan.novak@email.cz" required class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Telefon <span class="text-red-500">*</span></label>
+                                            <input type="tel" value="+420 777 345 678" required class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-stone pt-6">
+                                    <h4 class="font-medium text-gray-900 mb-4">Zákonný zástupce</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Jméno a příjmení</label>
+                                            <input type="text" value="Petr Novák" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                                            <input type="tel" value="+420 777 123 456" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                            <input type="email" value="petr.novak@email.cz" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-stone pt-6">
+                                    <h4 class="font-medium text-gray-900 mb-4">Další údaje</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Číslo čipu SI</label>
+                                            <input type="text" value="102349" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Číslo bankovního účtu</label>
+                                            <input type="text" value="123456789/2010" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Skupina řidičského oprávnění</label>
+                                            <select class="w-full px-3 py-2 border border-stone rounded-lg">
+                                                <option value="">Nemám</option>
+                                                <option value="B">B</option>
+                                                <option value="BE">BE</option>
+                                                <option value="C" selected>C</option>
+                                                <option value="CE">CE</option>
+                                                <option value="D">D</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Diety</label>
+                                            <input type="text" placeholder="např. bez lepku, vegetariánské" class="w-full px-3 py-2 border border-stone rounded-lg">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-4 pt-6 border-t border-stone">
+                                    <button type="button" class="px-6 py-2 border border-stone rounded-lg text-gray-700 font-medium hover:bg-stone transition-colors">
+                                        Zrušit
+                                    </button>
+                                    <button type="submit" class="px-6 py-2 bg-[#2d5a27] text-white font-medium rounded-lg hover:bg-[#4a7c42] transition-colors">
+                                        Uložit změny
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Privacy settings -->
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-stone mt-6">
+                            <h3 class="font-display font-semibold text-lg mb-6">Nastavení soukromí</h3>
+
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 border border-stone rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Zobrazit email ostatním</p>
+                                        <p class="text-sm text-gray-500">Členové klubu uvidí váš email v seznamu členů</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2d5a27]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2d5a27]"></div>
+                                    </label>
+                                </div>
+
+                                <div class="flex items-center justify-between p-4 border border-stone rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Zobrazit telefon ostatním</p>
+                                        <p class="text-sm text-gray-500">Členové klubu uvidí váš telefon v seznamu členů</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2d5a27]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2d5a27]"></div>
+                                    </label>
+                                </div>
+
+                                <div class="flex items-center justify-between p-4 border border-stone rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Zobrazit adresu ostatním</p>
+                                        <p class="text-sm text-gray-500">Členové klubu uvidí vaši adresu v seznamu členů</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2d5a27]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2d5a27]"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('profile-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Demo: Změny by byly uloženy.\n\nV reálné aplikaci by došlo k:\n1. Validaci formuláře\n2. Odeslání dat na server\n3. Synchronizaci s ORIS/CUS\n4. Zobrazení potvrzení');
+        });
+    </script>
+</body>
+</html>

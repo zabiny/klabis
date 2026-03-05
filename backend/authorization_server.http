@@ -1,8 +1,11 @@
 ### OIDC metadata
 GET {{host}}/.well-known/openid-configuration
 
-### OIDC UserInfo
-GET {{host}}/oidc/userinfo
+### OIDC UserInfo - Scope-based claims (profile/email scopes required for full profile)
+# openid scope only: returns 'sub'
+# + profile scope: adds 'given_name', 'family_name', 'registrationNumber', 'updated_at'
+# + email scope: adds 'email', 'email_verified'
+GET {{host}}/oauth2/userinfo
 Authorization: Bearer {{$auth.token("frontend@Local")}}
 
 ### OAuth2 token introspection - ID token

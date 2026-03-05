@@ -1,0 +1,507 @@
+### event-errors.http
+###
+### Event API Error Scenarios
+### Tests for error handling and edge cases
+###
+### Usage: Use with IntelliJ HTTP Client or similar tools
+### Requires: Variable `apiBaseUrl` defined in http-client.env.json
+###
+
+### Scenario 1: Authentication and Authorization Errors
+
+### 1.1 Try to access event management without authentication
+GET {{apiBaseUrl}}/events
+Accept: {{halContentType}}
+
+> {%
+    client.test("Unauthorized request returns 401", function () {
+        client.assert(response.status === 401, "Expected 401 Unauthorized");
+    });
+%}
+
+###
+
+### 1.2 Try to create event without EVENTS:MANAGE authority
+# Note: This test requires a token without EVENTS:MANAGE scope
+# Adjust the token config to use a token with limited scope
+GET {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsRegistration")}}
+Accept: {{halContentType}}
+
+> {%
+    client.test("Request with limited scope works for GET", function () {
+        client.assert(response.status === 200 || response.status === 403, "May succeed or return 403");
+    });
+%}
+
+###
+
+### 1.3 Try to create event without proper authority
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsRegistration")}}
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Event",
+  "eventDate": "2026-08-01",
+  "location": "Test",
+  "organizer": "OOB",
+  "websiteUrl": null,
+  "eventCoordinatorId": null
+}
+
+> {%
+    client.test("Create without EVENTS:MANAGE returns 403", function () {
+        client.assert(response.status === 403, "Expected 403 Forbidden");
+    });
+%}
+
+###
+
+### Scenario 2: Validation Errors
+
+### 2.1 Create event with missing required fields
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "eventDate": "invalid",
+  "location": "",
+  "organizer": "INVALIDLONGCODE"
+}
+
+> {%
+    client.test("Invalid data returns 400", function () {
+        client.assert(response.status === 400, "Expected 400 Bad Request");
+        client.assert(response.body.detail !== undefined, "Should have error details");
+    });
+%}
+
+###
+
+### 2.2 Create event with blank name
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "   ",
+  "eventDate": "2026-09-01",
+  "location": "Test",
+  "organizer": "OOB"
+}
+
+> {%
+    client.test("Blank name rejected", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###
+
+### 2.3 Create event with invalid date format
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Date Test",
+  "eventDate": "not-a-date",
+  "location": "Test",
+  "organizer": "OOB"
+}
+
+> {%
+    client.test("Invalid date format rejected", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###
+
+### 2.4 Create event with organizer code too long
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Organizer Test",
+  "eventDate": "2026-09-01",
+  "location": "Test",
+  "organizer": "VERYLONGORG"
+}
+
+> {%
+    client.test("Organizer code too long rejected", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###
+
+### 2.5 Create event with invalid website URL
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Invalid URL Test",
+  "eventDate": "2026-09-01",
+  "location": "Test",
+  "organizer": "OOB",
+  "websiteUrl": "not-a-valid-url"
+}
+
+> {%
+    client.test("Invalid URL rejected", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###
+
+### Scenario 3: Not Found Errors
+
+### 3.1 Get non-existent event
+GET {{apiBaseUrl}}/events/00000000-0000-0000-0000-000000000001
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Accept: {{halContentType}}
+
+> {%
+    client.test("Non-existent event returns 404", function () {
+        client.assert(response.status === 404, "Expected 404 Not Found");
+        client.assert(response.body.title === "Event Not Found", "Should have proper error title");
+    });
+%}
+
+###
+
+### 3.2 Update non-existent event
+PATCH {{apiBaseUrl}}/events/00000000-0000-0000-0000-000000000002
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Should not update"
+}
+
+> {%
+    client.test("Update non-existent event returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### 3.3 Publish non-existent event
+POST {{apiBaseUrl}}/events/00000000-0000-0000-0000-000000000003/publish
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+> {%
+    client.test("Publish non-existent event returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### 3.4 Cancel non-existent event
+POST {{apiBaseUrl}}/events/00000000-0000-0000-0000-000000000004/cancel
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+> {%
+    client.test("Cancel non-existent event returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### 3.5 Finish non-existent event
+POST {{apiBaseUrl}}/events/00000000-0000-0000-0000-000000000005/finish
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+> {%
+    client.test("Finish non-existent event returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### 3.6 Get registrations for non-existent event
+GET {{apiBaseUrl}}/events/00000000-0000-0000-0000-000000000006/registrations
+Authorization: Bearer {{$auth.token("EventsRegistration")}}
+Accept: {{halContentType}}
+
+> {%
+    client.test("Registrations for non-existent event returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### 3.7 Register for non-existent event
+POST {{apiBaseUrl}}/events/00000000-0000-0000-0000-000000000007/registrations
+Authorization: Bearer {{$auth.token("EventsRegistration")}}
+Content-Type: application/json
+
+{
+  "siCardNumber": "123456"
+}
+
+> {%
+    client.test("Register for non-existent event returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### Scenario 4: Business Logic Violations (Illegal State)
+
+### 4.1 Try to publish already published event
+# First, create and publish an event
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Double Publish Test",
+  "eventDate": "2026-10-01",
+  "location": "Test",
+  "organizer": "OOB"
+}
+
+> {%
+    client.global.set('doublePublishEventId', response.body.id);
+%}
+
+###
+
+POST {{apiBaseUrl}}/events/{{doublePublishEventId}}/publish
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+> {%
+    client.test("First publish succeeds", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+###
+
+POST {{apiBaseUrl}}/events/{{doublePublishEventId}}/publish
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+> {%
+    client.test("Second publish fails", function () {
+        client.assert(response.status === 400, "Expected 400 Bad Request");
+        client.assert(response.body.detail !== undefined, "Should explain error");
+    });
+%}
+
+###
+
+### 4.2 Try to cancel already cancelled event
+POST {{apiBaseUrl}}/events/{{doublePublishEventId}}/cancel
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+> {%
+    client.test("First cancel succeeds", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+###
+
+POST {{apiBaseUrl}}/events/{{doublePublishEventId}}/cancel
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+> {%
+    client.test("Second cancel fails", function () {
+        client.assert(response.status === 400, "Expected 400 Bad Request");
+    });
+%}
+
+###
+
+### 4.3 Try to update FINISHED event
+POST {{apiBaseUrl}}/events/{{doublePublishEventId}}/finish
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+###
+
+PATCH {{apiBaseUrl}}/events/{{doublePublishEventId}}
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Should not update finished event"
+}
+
+> {%
+    client.test("Cannot update FINISHED event", function () {
+        client.assert(response.status === 400, "Expected 400 Bad Request");
+    });
+%}
+
+###
+
+### 4.4 Try to update CANCELLED event
+# Already cancelled above, try to update
+PATCH {{apiBaseUrl}}/events/{{doublePublishEventId}}
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Should not update cancelled event"
+}
+
+> {%
+    client.test("Cannot update CANCELLED event", function () {
+        client.assert(response.status === 400, "Expected 400 Bad Request");
+    });
+%}
+
+###
+
+### Scenario 5: Registration Errors
+
+### 5.1 Register for non-ACTIVE event (DRAFT)
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Draft Registration Error Test",
+  "eventDate": "2026-11-01",
+  "location": "Test",
+  "organizer": "PRG"
+}
+
+> {%
+    client.global.set('draftRegEventId', response.body.id);
+%}
+
+###
+
+POST {{apiBaseUrl}}/events/{{draftRegEventId}}/registrations
+Authorization: Bearer {{$auth.token("EventsRegistration")}}
+Content-Type: application/json
+
+{
+  "siCardNumber": "111222"
+}
+
+> {%
+    client.test("Cannot register for DRAFT event", function () {
+        client.assert(response.status === 400, "Expected 400 Bad Request");
+        client.assert(response.body.detail.includes("ACTIVE"), "Error should mention ACTIVE status");
+    });
+%}
+
+###
+
+### 5.2 Register with invalid SI card number
+POST {{apiBaseUrl}}/events/{{doublePublishEventId}}/registrations
+Authorization: Bearer {{$auth.token("EventsRegistration")}}
+Content-Type: application/json
+
+{
+  "siCardNumber": "ABC"
+}
+
+> {%
+    client.test("Invalid SI card rejected", function () {
+        client.assert(response.status === 400, "Expected 400 Bad Request");
+    });
+%}
+
+###
+
+### 5.3 Try to unregister when not registered
+POST {{apiBaseUrl}}/events
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+{
+  "name": "Unregister Error Test",
+  "eventDate": "2026-12-01",
+  "location": "Test",
+  "organizer": "BRN"
+}
+
+> {%
+    client.global.set('unregisterErrorEventId', response.body.id);
+%}
+
+###
+
+POST {{apiBaseUrl}}/events/{{unregisterErrorEventId}}/publish
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Content-Type: application/json
+
+###
+
+DELETE {{apiBaseUrl}}/events/{{unregisterErrorEventId}}/registrations
+Authorization: Bearer {{$auth.token("EventsRegistration")}}
+
+> {%
+    client.test("Unregister when not registered returns 404", function () {
+        client.assert(response.status === 404, "Expected 404 Not Found");
+    });
+%}
+
+###
+
+### Scenario 6: Pagination and Filtering Errors
+
+### 6.1 Invalid page number (negative)
+GET {{apiBaseUrl}}/events?page=-1
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Accept: {{halContentType}}
+
+> {%
+    client.test("Negative page number handled", function () {
+        client.assert(response.status === 400 || response.status === 200, "May validate or default to 0");
+    });
+%}
+
+###
+
+### 6.2 Invalid page size (too large)
+GET {{apiBaseUrl}}/events?size=1000
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Accept: {{halContentType}}
+
+> {%
+    client.test("Large page size handled", function () {
+        client.assert(response.status === 200, "Should cap to max size");
+    });
+%}
+
+###
+
+### 6.3 Invalid date format in filter
+GET {{apiBaseUrl}}/events?eventDateFrom=invalid-date
+Authorization: Bearer {{$auth.token("EventsManagement")}}
+Accept: {{halContentType}}
+
+> {%
+    client.test("Invalid date format in filter returns 400", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###

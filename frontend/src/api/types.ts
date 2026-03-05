@@ -1,0 +1,116 @@
+import type {components} from "./klabisApi";
+
+export type Link = components["schemas"]["Link"];
+
+export type PageMetadata = {
+    size: number,
+    totalElements: number,
+    totalPages: number,
+    number: number
+};
+export type SortDirection = 'asc' | 'desc';
+
+export type KlabisActionName = string;
+export type KlabisAction = KlabisActionName | Link;
+export type KlabisActions = Array<KlabisActionName> | Record<string, Link>;
+
+export interface KlabisHateoasObject {
+    _actions?: KlabisActions
+}
+
+// Specific embedded resource type - allows typed access to known embedded structures
+export interface HalEmbeddedResources {
+    [key: string]: unknown | unknown[];
+}
+
+export type HalResourceLinks = Link | Array<Link>;
+
+export interface HalResponse {
+    _links?: {
+        [rel: string]: HalResourceLinks;
+    }
+    _embedded?: HalEmbeddedResources;
+    _templates?: {
+        [name: string]: HalFormsTemplate;
+    };
+
+    // allow arbitrary additional properties
+    [key: string]: unknown;
+}
+
+export interface HalCollectionResponse extends HalResponse {
+    page: PageMetadata
+}
+
+export interface HalFormsResponse extends HalResponse {
+    _templates: {
+        [name: string]: HalFormsTemplate;
+    };
+}
+
+// --- Typy ---
+
+export type HalFormsOptionValue = string | number;
+
+export type HalFormsOptionType = OptionItem | HalFormsOptionValue;
+
+/// http://rwcbook.com/hal-forms/#options-element
+export interface HalFormsOption {
+    inline?: HalFormsOptionType[]
+    link?: Link
+}
+
+export interface OptionItem {
+    value: HalFormsOptionValue;
+    prompt?: string;
+}
+
+export interface HalFormsProperty {
+    name: string;
+    prompt?: string;
+    type: string; // "text" | "number" | "email" | "textarea" | "radioGroup" | "checkboxGroup"
+    value?: string | number;
+    required?: boolean;
+    regex?: string;
+    readOnly?: boolean;
+    options?: HalFormsOption;
+    multiple?: boolean;
+}
+
+// only update methods as template represents "request body"
+export type HalFormsTemplateMethod = "POST" | "PUT" | "DELETE" | "PATCH";
+
+export interface HalFormsTemplate {
+    method?: HalFormsTemplateMethod
+    target?: string,
+    contentType?: string;
+    title?: string;
+    properties: Array<HalFormsProperty>
+}
+
+export type EntityModel<T> = T & { _links: { [rel: string]: Link | Link[] } };
+// Type guards for HAL responses with specific structures
+
+// Check if response has templates
+// Calendar item specific embedded resource type (matches backend CalendarItemDto)
+export interface CalendarItemEmbedded extends HalEmbeddedResources {
+    calendarItemDtoList?: Array<{
+        id: string;
+        name: string;
+        description: string;
+        startDate: string;
+        endDate: string;
+        eventId: string | null;
+        _links: {
+            event?: { href: string };
+            self: { href: string };
+        };
+    }>;
+}
+
+// Type guard for calendar items structure (matches backend response)
+export function hasCalendarItems(data: unknown): data is HalResponse & { _embedded: CalendarItemEmbedded } {
+    return typeof data === 'object' && data !== null &&
+        '_embedded' in data && typeof (data as any)._embedded === 'object' &&
+        'calendarItemDtoList' in (data as any)._embedded;
+}

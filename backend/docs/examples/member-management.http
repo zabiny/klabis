@@ -1,0 +1,207 @@
+### member-management.http
+###
+### Member Management API scenarios
+### Tests for creating, reading, updating members
+###
+### Usage: Use with IntelliJ HTTP Client or similar tools
+### Requires: Variable `apiBaseUrl` defined in http-client.env.json
+###
+
+### Test 1: Create minimal member (required fields only)
+POST {{apiBaseUrl}}/members
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Content-Type: application/json
+
+{
+  "firstName": "Tomas",
+  "lastName": "Cerny",
+  "gender": "MALE",
+  "nationality": "CZ",
+  "dateOfBirth": "1992-03-10",
+  "address": {
+    "street": "Test 1",
+    "city": "Ostrava",
+    "postalCode": "70000",
+    "country": "CZ"
+  },
+  "email": "tomas.cerny@example.com",
+  "phone": "+420603111222"
+}
+
+> {%
+    client.global.set('memberId', response.body.id)
+%}
+
+###
+
+### Test 2: Create member with optional fields (birthPlace and notes)
+POST {{apiBaseUrl}}/members
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Content-Type: application/json
+
+{
+  "firstName": "Petra",
+  "lastName": "Dvorakova",
+  "gender": "FEMALE",
+  "nationality": "CZ",
+  "dateOfBirth": "1988-12-05",
+  "birthPlace": "Brno",
+  "address": {
+    "street": "Hlavna 1",
+    "city": "Brno",
+    "postalCode": "60000",
+    "country": "CZ"
+  },
+  "contact": {
+    "email": "petra.dvorakova@example.com",
+    "phone": "+420604333444"
+  },
+  "notes": "Former member, rejoining the club"
+}
+
+###
+
+### Test 3: Create member with national ID number (rodné číslo)
+### Note: This field is encrypted in the database
+POST {{apiBaseUrl}}/members
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Content-Type: application/json
+
+{
+  "firstName": "Lukas",
+  "lastName": "Krejci",
+  "gender": "MALE",
+  "nationality": "CZ",
+  "dateOfBirth": "1995-07-25",
+  "nationalIdNumber": "9507251234",
+  "address": {
+    "street": "Mala 5",
+    "city": "Olomouc",
+    "postalCode": "77000",
+    "country": "CZ"
+  },
+  "contact": {
+    "email": "lukas.krejci@example.com",
+    "phone": "+420605555666"
+  }
+}
+
+###
+
+### Test 4: Create member with all optional fields
+POST {{apiBaseUrl}}/members
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Content-Type: application/json
+
+{
+  "firstName": "Eva",
+  "lastName": "Horakova",
+  "gender": "FEMALE",
+  "nationality": "CZ",
+  "dateOfBirth": "1991-09-18",
+  "birthPlace": "Plzen",
+  "nationalIdNumber": "9109185678",
+  "address": {
+    "street": "Riegrova 42",
+    "city": "Plzen",
+    "postalCode": "30100",
+    "country": "CZ"
+  },
+  "contact": {
+    "email": "eva.horakova@example.com",
+    "phone": "+420606777888"
+  },
+  "notes": "Experienced orienteer, interested in coaching"
+}
+
+###
+
+### Test 5: Validation error - missing required fields (address and contact)
+POST {{apiBaseUrl}}/members
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Content-Type: application/json
+
+{
+  "firstName": "Invalid",
+  "lastName": "Member",
+  "gender": "MALE",
+  "nationality": "CZ",
+  "dateOfBirth": "1990-01-01"
+}
+
+### Expected: 400 Bad Request - missing address and contact
+
+###
+
+### Test 6: List members with pagination
+GET {{apiBaseUrl}}/members?page=0&size=5&sort=lastName,asc
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Accept: application/prs.hal-forms+json
+
+###
+
+### Test 7: List members with different sort order
+GET {{apiBaseUrl}}/members?page=0&size=10&sort=registrationNumber,desc
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Accept: application/prs.hal-forms+json
+
+###
+
+### Test 8: Get specific member by UUID
+GET {{apiBaseUrl}}/members/{{memberId}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Accept: application/prs.hal-forms+json
+
+### Note: Replace UUID with actual member ID from your database
+
+###
+
+### Test 9: Get non-existent member (404 error test)
+GET {{apiBaseUrl}}/members/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Accept: application/prs.hal-forms+json
+
+### Expected: 404 Not Found
+
+###
+
+### Test 10: Update member (partial update)
+PATCH {{apiBaseUrl}}/members/{{memberId}}
+Authorization: Bearer {{$auth.token("AuthorizationCodeMember")}}
+Content-Type: application/json
+
+{
+  "notes": "Updated notes - active member since 2024"
+}
+
+### Note: Replace UUID with actual member ID from your database
+
+###
+
+### Test 11: Update member with multiple fields
+PATCH {{apiBaseUrl}}/members/{{memberId}}
+Authorization: Bearer {{$auth.token("AuthorizationCodeMember")}}
+Content-Type: application/json
+
+{
+  "firstName": "Jan Pavel",
+  "birthPlace": "Praha",
+  "notes": "Updated with additional information"
+}
+
+### Note: Replace UUID with actual member ID from your database
+
+###
+
+### Test 12: Update member - invalid UUID format
+PATCH {{apiBaseUrl}}/members/invalid-uuid-format
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Content-Type: application/json
+
+{
+  "notes": "This should fail with invalid UUID"
+}
+
+### Expected: 400 Bad Request - invalid UUID format
+
+###

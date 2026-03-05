@@ -1,0 +1,426 @@
+/* ============================================
+   KLABIS PREMIUM DESIGN SYSTEM
+   Light: Organic Clubhouse Elegance
+   Dark: Sophisticated Night Luxury
+   ============================================ */
+
+/* Font imports - Distinctive, characterful choices */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   BASE STYLES WITH CUSTOM FONT PAIRING
+   ============================================ */
+@layer base {
+    :root {
+        /* Font pairing: Space Grotesk (display/headings) + Plus Jakarta Sans (body) */
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        line-height: 1.6;
+        font-weight: 400;
+        color-scheme: light dark;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-text-size-adjust: 100%;
+
+        /* ============================================
+           LIGHT THEME - "Organic Clubhouse"
+           Warm cream base, sage accents, premium elegant feel
+           ============================================ */
+
+        /* Background system - warm cream palette */
+        --color-bg-base: #FAF8F5;              /* Cream white - warm premium base */
+        --color-bg-elevated: #FFFFFF;            /* Pure white - cards/raised surfaces */
+        --color-bg-subtle: #F5F3F0;           /* Subtle cream - nested sections */
+
+        /* Text system - warm grays */
+        --color-text-primary: #1A1915;         /* Near black - primary text */
+        --color-text-secondary: #5C5A57;       /* Warm gray - secondary text */
+        --color-text-tertiary: #8A8983;        /* Muted gray - subtle text */
+
+        /* Border system - subtle elegance */
+        --color-border-subtle: #E8E5E0;        /* Very subtle border */
+        --color-border-default: #D4CFC6;        /* Default border */
+        --color-border-strong: #B8B2A8;         /* Strong borders/dividers */
+
+        /* Primary action - refined sage green */
+        --color-primary: #2D6A4F;                /* Sage green - sophisticated primary */
+        --color-primary-hover: #3A7F63;          /* Lighter sage */
+        --color-primary-active: #245A3D;          /* Darker sage */
+        --color-primary-subtle: rgba(45, 106, 79, 0.12); /* Sage tint */
+
+        /* Secondary action - warm amber */
+        --color-secondary: #D4915C;              /* Warm amber - complementary */
+        --color-secondary-hover: #E07D3D;         /* Lighter amber */
+        --color-secondary-active: #B8763A;        /* Darker amber */
+        --color-secondary-subtle: rgba(212, 145, 92, 0.15);
+
+        /* Accent - terracotta warmth */
+        --color-accent: #C96A4E;                 /* Terracotta - warmth accent */
+        --color-accent-hover: #D87A5F;           /* Lighter terracotta */
+        --color-accent-subtle: rgba(201, 106, 78, 0.12);
+
+        /* Semantic colors - refined palette */
+        --color-success: #2D7A4F;               /* Green - success */
+        --color-success-bg: #E8F5EB;             /* Success background */
+        --color-warning: #C4912D;               /* Warm orange - warning */
+        --color-warning-bg: #FDF3E8;             /* Warning background */
+        --color-error: #D44A4F;                 /* Soft red - error */
+        --color-error-bg: #FAEBE8;               /* Error background */
+        --color-info: #3D7FA4;                  /* Teal - info */
+        --color-info-bg: #EBF5F1;                /* Info background */
+
+        /* Shadow system - warm subtle */
+        --color-shadow-sm: rgba(26, 25, 21, 0.06);
+        --color-shadow-md: rgba(26, 25, 21, 0.10);
+        --color-shadow-lg: rgba(26, 25, 21, 0.15);
+    }
+
+    /* ============================================
+       DARK THEME - "Sophisticated Night"
+       Deep blues, premium gradients, modern luxury
+       ============================================ */
+    .dark {
+        /* Background system - deep blue-slate */
+        --color-bg-base: #0F1419;               /* Deepest blue - premium base */
+        --color-bg-elevated: #1A1F28;           /* Elevated surfaces */
+        --color-bg-subtle: #151A21;             /* Subtle sections */
+
+        /* Text system - crisp whites */
+        --color-text-primary: #F8F7F4;           /* Warm white - primary */
+        --color-text-secondary: #A8A5A0;         /* Muted gray - secondary */
+        --color-text-tertiary: #6A675F;         /* Dim gray - subtle */
+
+        /* Border system - subtle separation */
+        --color-border-subtle: rgba(255, 255, 255, 0.06);
+        --color-border-default: rgba(255, 255, 255, 0.10);
+        --color-border-strong: rgba(255, 255, 255, 0.15);
+
+        /* Primary action - electric emerald gradient */
+        --color-primary: #10D89E;                 /* Electric emerald */
+        --color-primary-hover: #15E8A8;           /* Brighter emerald */
+        --color-primary-active: #0CB87D;           /* Deeper emerald */
+        --color-primary-subtle: rgba(16, 216, 158, 0.15);
+
+        /* Secondary action - lavender purple gradient */
+        --color-secondary: #A78BFA;               /* Lavender */
+        --color-secondary-hover: #B89DFF;          /* Lighter lavender */
+        --color-secondary-active: #8F6FDD;         /* Darker lavender */
+        --color-secondary-subtle: rgba(167, 139, 250, 0.15);
+
+        /* Accent - coral warmth for dark mode */
+        --color-accent: #FF8A65;                 /* Coral accent */
+        --color-accent-hover: #FF9A7A;           /* Lighter coral */
+        --color-accent-subtle: rgba(255, 138, 101, 0.15);
+
+        /* Semantic colors - elevated */
+        --color-success: #2DDF6F;               /* Bright green */
+        --color-success-bg: rgba(45, 223, 111, 0.15);
+        --color-warning: #FFB347;               /* Bright orange */
+        --color-warning-bg: rgba(255, 179, 71, 0.15);
+        --color-error: #FF6B8A;                 /* Bright red-pink */
+        --color-error-bg: rgba(255, 107, 138, 0.15);
+        --color-info: #4DDFF8;                  /* Bright teal */
+        --color-info-bg: rgba(77, 223, 248, 0.15);
+
+        /* Shadow system - cool depth */
+        --color-shadow-sm: rgba(0, 0, 0, 0.20);
+        --color-shadow-md: rgba(0, 0, 0, 0.35);
+        --color-shadow-lg: rgba(0, 0, 0, 0.50);
+    }
+
+    /* Default theme application */
+    body {
+        @apply bg-[var(--color-bg-base)] text-[var(--color-text-primary)];
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+    }
+
+    #root {
+        @apply w-full;
+    }
+
+    /* ============================================
+       TYPOGRAPHY SYSTEM
+       Display headings: Space Grotesk (bold, distinctive)
+       Body text: Plus Jakarta Sans (refined, readable)
+       ============================================ */
+
+    /* Display headings - Space Grotesk */
+    h1, h2, h3, .font-display {
+        font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
+        letter-spacing: -0.02em;
+    }
+
+    h1 {
+        @apply text-4xl lg:text-5xl font-bold text-[var(--color-text-primary)];
+        line-height: 1.2;
+    }
+
+    h2 {
+        @apply text-2xl lg:text-3xl font-bold text-[var(--color-text-primary)];
+        line-height: 1.3;
+    }
+
+    h3 {
+        @apply text-xl lg:text-2xl font-semibold text-[var(--color-text-primary)];
+        line-height: 1.4;
+    }
+
+    h4 {
+        @apply text-lg font-semibold text-[var(--color-text-primary)];
+        line-height: 1.5;
+    }
+
+    h5 {
+        @apply text-base font-semibold text-[var(--color-text-primary)];
+    }
+
+    h6 {
+        @apply text-sm font-semibold uppercase tracking-wider text-[var(--color-text-secondary)];
+    }
+
+    /* Body text - Plus Jakarta Sans */
+    p {
+        @apply text-base text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary)];
+        line-height: 1.7;
+        max-width: 75ch;
+    }
+
+    /* Link styles with accent color */
+    a {
+        @apply text-[var(--color-primary)] hover:text-[var(--color-primary-hover)];
+        @apply transition-colors duration-fast;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    a:hover {
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    /* List styles */
+    ul, ol {
+        @apply ml-5 space-y-2;
+    }
+
+    li {
+        @apply text-base text-[var(--color-text-secondary)];
+    }
+}
+
+/* ============================================
+   COMPONENT LAYER - Reusable UI patterns
+   ============================================ */
+@layer components {
+    /* ==========================================
+       FORM INPUT STYLES
+       ========================================== */
+    .form-input {
+        @apply w-full px-4 py-3 rounded-lg font-normal text-base;
+        @apply bg-[var(--color-bg-base)] border border-[var(--color-border-default)];
+        @apply text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)];
+        @apply focus:outline-none focus:border-[var(--color-primary)];
+        @apply focus:ring-2 focus:ring-[var(--color-primary-subtle)];
+        @apply disabled:opacity-50 disabled:cursor-not-allowed;
+        @apply transition-all duration-base;
+    }
+
+    .form-input:hover {
+        @apply border-[var(--color-border-strong)];
+    }
+
+    .form-input.error {
+        @apply border-[var(--color-error)] focus:ring-[var(--color-error-bg)];
+    }
+
+    /* ==========================================
+       BUTTON SYSTEM
+       ========================================== */
+    .btn-base {
+        @apply inline-flex items-center justify-center gap-2;
+        @apply px-5 py-2.5 rounded-lg font-semibold text-base;
+        @apply transition-all duration-fast;
+        @apply focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-subtle)] focus:ring-offset-2;
+        @apply disabled:opacity-50 disabled:cursor-not-allowed;
+        @apply active:scale-[0.98];
+    }
+
+    /* Primary button - sage green (light), electric emerald (dark) */
+    .btn-primary {
+        @apply btn-base bg-[var(--color-primary)] text-white;
+        @apply hover:bg-[var(--color-primary-hover)];
+        @apply shadow-md hover:shadow-lg;
+        @apply shadow-[var(--color-shadow-sm)];
+    }
+
+    /* Secondary button - warm amber (light), lavender (dark) */
+    .btn-secondary {
+        @apply btn-base bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)];
+        @apply border border-[var(--color-border-default)];
+        @apply hover:bg-[var(--color-bg-subtle)] hover:border-[var(--color-border-strong)];
+        @apply hover:text-[var(--color-secondary)];
+    }
+
+    /* Danger button - soft red */
+    .btn-danger {
+        @apply btn-base bg-[var(--color-error)] text-white;
+        @apply hover:bg-[var(--color-error)] hover:brightness-110;
+        @apply shadow-md;
+    }
+
+    /* Ghost button - subtle */
+    .btn-ghost {
+        @apply btn-base bg-transparent text-[var(--color-text-secondary)];
+        @apply hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)];
+    }
+
+    /* ==========================================
+       CARD SYSTEM
+       ========================================== */
+    .card {
+        @apply bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-subtle)];
+        @apply shadow-sm hover:shadow-md;
+        @apply transition-all duration-base;
+    }
+
+    .card-hoverable {
+        @apply card cursor-pointer hover:border-[var(--color-border-default)];
+        @apply hover:shadow-md hover:-translate-y-0.5;
+    }
+
+    /* ==========================================
+       ALERT SYSTEM
+       ========================================== */
+    .alert {
+        @apply w-full px-4 py-3 rounded-lg border-l-4;
+        @apply flex items-start gap-3;
+    }
+
+    .alert-info {
+        @apply bg-[var(--color-info-bg)] border-l-[var(--color-info)];
+        @apply text-[var(--color-text-primary)];
+    }
+
+    .alert-success {
+        @apply bg-[var(--color-success-bg)] border-l-[var(--color-success)];
+        @apply text-[var(--color-text-primary)];
+    }
+
+    .alert-warning {
+        @apply bg-[var(--color-warning-bg)] border-l-[var(--color-warning)];
+        @apply text-[var(--color-text-primary)];
+    }
+
+    .alert-error {
+        @apply bg-[var(--color-error-bg)] border-l-[var(--color-error)];
+        @apply text-[var(--color-text-primary)];
+    }
+
+    /* ==========================================
+       BADGE SYSTEM
+       ========================================== */
+    .badge {
+        @apply inline-flex items-center px-2.5 py-1 rounded-full;
+        @apply text-xs font-semibold;
+    }
+
+    .badge-primary {
+        @apply bg-[var(--color-primary-subtle)] text-[var(--color-primary)];
+    }
+
+    .badge-success {
+        @apply bg-[var(--color-success-bg)] text-[var(--color-success)];
+    }
+
+    .badge-warning {
+        @apply bg-[var(--color-warning-bg)] text-[var(--color-warning)];
+    }
+
+    .badge-error {
+        @apply bg-[var(--color-error-bg)] text-[var(--color-error)];
+    }
+
+    /* ==========================================
+       TABLE SYSTEM
+       ========================================== */
+    .table-container {
+        @apply w-full overflow-x-auto rounded-xl border border-[var(--color-border-subtle)];
+    }
+
+    .table {
+        @apply w-full divide-y divide-[var(--color-border-subtle)];
+    }
+
+    .table thead {
+        @apply bg-[var(--color-bg-subtle)];
+    }
+
+    .table th {
+        @apply px-4 py-3 text-left text-xs font-bold uppercase tracking-wider;
+        @apply text-[var(--color-text-secondary)] border-b border-[var(--color-border-subtle)];
+    }
+
+    .table tbody {
+        @apply bg-[var(--color-bg-elevated)] divide-y divide-[var(--color-border-subtle)];
+    }
+
+    .table td {
+        @apply px-4 py-3 text-sm text-[var(--color-text-primary)];
+    }
+
+    .table tbody tr {
+        @apply transition-colors duration-fast;
+    }
+
+    .table tbody tr:hover {
+        @apply bg-[var(--color-bg-subtle)];
+    }
+
+    /* ==========================================
+       UTILITY CLASSES
+       ========================================== */
+    .truncate-lines-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .truncate-lines-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Gradient text for headings */
+    .text-gradient-primary {
+        @apply bg-clip-text text-transparent bg-gradient-to-r;
+        @apply from-[var(--color-primary)] to-[var(--color-secondary)];
+    }
+
+    /* Glass morphism effect */
+    .glass {
+        @apply bg-[var(--color-bg-elevated)] backdrop-blur-md bg-opacity-80;
+        @apply border border-[var(--color-border-subtle)];
+    }
+
+    /* Subtle noise texture overlay */
+    .texture-noise::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        opacity: 0.4;
+        pointer-events: none;
+    }
+}

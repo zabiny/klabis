@@ -1,0 +1,7 @@
+# Flyway database migration scripts
+#
+# Naming convention: V{version}__{description}.sql
+# Example: V1__initial_schema.sql
+#          V2__add_member_registration.sql
+#
+# Scripts will be executed in order by version number.

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail člena - Klabis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest: #2d5a27;
+            --forest-light: #4a7c42;
+            --orange: #ff6b35;
+            --orange-light: #ff8c61;
+            --cream: #faf8f5;
+            --stone: #e8e4dc;
+        }
+        * { font-family: 'DM Sans', sans-serif; }
+        h1, h2, h3, h4, h5, h6, .font-display { font-family: 'Outfit', sans-serif; }
+        .map-pattern {
+            background-image: radial-gradient(circle at 20% 30%, rgba(45, 90, 39, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+                linear-gradient(rgba(45, 90, 39, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(45, 90, 39, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        }
+        .nav-active {
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-light) 100%);
+            color: white;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--stone); }
+        ::-webkit-scrollbar-thumb { background: var(--forest-light); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--forest); }
+    </style>
+</head>
+<body class="bg-cream min-h-screen map-pattern">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-stone flex flex-col shadow-sm">
+            <div class="p-6 border-b border-stone">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-[#2d5a27] to-[#4a7c42] rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-display font-bold text-xl text-[#2d5a27]">Klabis</h1>
+                        <p class="text-xs text-gray-500">Členská sekce</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <a href="index.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                <a href="members.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all nav-active">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span class="font-medium">Členové</span>
+                </a>
+                <a href="profile.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-stone transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span class="font-medium">Profil</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-stone">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-[#ff6b35] to-[#ff8c61] rounded-full flex items-center justify-center text-white font-semibold">JN</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-sm text-gray-900 truncate">Jan Novák</p>
+                        <p class="text-xs text-gray-500 truncate">jan.novak@email.cz</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1 overflow-y-auto">
+            <header class="bg-white border-b border-stone sticky top-0 z-10">
+                <div class="px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <a href="members.html" class="p-2 hover:bg-stone rounded-lg transition-colors">
+                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </a>
+                            <div>
+                                <h2 class="text-2xl font-display font-bold text-gray-900">Eva Svobodová</h2>
+                                <p class="text-sm text-gray-500 mt-1">Detail člena</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button class="flex items-center gap-2 px-4 py-2 bg-[#2d5a27] text-white text-sm font-medium rounded-lg hover:bg-[#4a7c42] transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 0L21 12l-4.35 4.35a2.5 2.5 0 11-3.536 3.536L3 21l3.536-3.536a2.5 2.5 0 010-3.536l2.036-5.036z"/>
+                                </svg>
+                                Upravit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-8">
+                <!-- Profile header -->
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-stone mb-6">
+                    <div class="flex items-start gap-6">
+                        <div class="w-24 h-24 bg-gradient-to-br from-[#ff6b35] to-[#ff8c61] rounded-full flex items-center justify-center text-white font-bold text-3xl">
+                            ES
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h3 class="font-display font-bold text-2xl text-gray-900">Eva Svobodová</h3>
+                                    <p class="text-gray-500 mt-1">narozena 22. července 2011 (13 let)</p>
+                                </div>
+                                <span class="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">Aktivní</span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                <div>
+                                    <p class="text-xs text-gray-500">Registrační číslo</p>
+                                    <p class="font-medium text-gray-900">ZBM24015</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Tréninková skupina</p>
+                                    <p class="font-medium text-gray-900">Dorost</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">ŽUP</p>
+                                    <p class="font-medium text-gray-900">123456789</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Číslo čipu</p>
+                                    <p class="font-medium text-gray-900">SI 202456</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal information -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-stone">
+                        <h4 class="font-display font-semibold text-lg text-gray-900 mb-4">Osobní údaje</h4>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-xs text-gray-500">Jméno</p>
+                                    <p class="font-medium text-gray-900">Eva</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Příjmení</p>
+                                    <p class="font-medium text-gray-900">Svobodová</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Datum narození</p>
+                                <p class="font-medium text-gray-900">22. července 2011</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Rodné číslo</p>
+                                <p class="font-medium text-gray-900">112207/123</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Národnost</p>
+                                <p class="font-medium text-gray-900">Česká republika</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Pohlaví</p>
+                                <p class="font-medium text-gray-900">Žena</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-stone">
+                        <h4 class="font-display font-semibold text-lg text-gray-900 mb-4">Kontaktní údaje</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs text-gray-500">Email</p>
+                                <p class="font-medium text-gray-900">eva.svobodova@email.cz</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Telefon</p>
+                                <p class="font-medium text-gray-900">+420 777 234 567</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Adresa</p>
+                                <p class="font-medium text-gray-900">Ulice 123, 602 00 Brno</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Zákonný zástupce</p>
+                                <p class="font-medium text-gray-900">Marie Svobodová (matka)</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Číslo bankovního účtu</p>
+                                <p class="font-medium text-gray-900">123456789/0300</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent events and payments -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-stone">
+                        <h4 class="font-display font-semibold text-lg text-gray-900 mb-4">Nedávné akce</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-stone rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">Ligový závod - Lesní hřbitov</p>
+                                    <p class="text-xs text-gray-500">15. únor 2025</p>
+                                </div>
+                                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Přihlášena</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-stone rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">Večerní mapový trénink</p>
+                                    <p class="text-xs text-gray-500">13. únor 2025</p>
+                                </div>
+                                <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Účast</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-stone rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">Jarní soustředění</p>
+                                    <p class="text-xs text-gray-500">21-23. březen 2025</p>
+                                </div>
+                                <span class="px-2 py-1 bg-[#ff6b35]/10 text-[#ff6b35] text-xs rounded-full">Přihláška</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-stone">
+                        <h4 class="font-display font-semibold text-lg text-gray-900 mb-4">Finanční přehled</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-stone rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">Zůstatek účtu</p>
+                                </div>
+                                <p class="font-display font-semibold text-gray-900">1 850 Kč</p>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-stone rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">Členský příspěvek</p>
+                                    <p class="text-xs text-gray-500">Leden - Červen 2025</p>
+                                </div>
+                                <p class="font-display font-semibold text-gray-900">Zaplaceno</p>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-stone rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900 text-sm">Rezervace akcí</p>
+                                    <p class="text-xs text-gray-500">3 akce</p>
+                                </div>
+                                <p class="font-display font-semibold text-red-600">-800 Kč</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

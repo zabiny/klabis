@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Správa členů - Klabis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+          rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0A1628;
+            --navy-light: #1A2B45;
+            --cyan: #00D9FF;
+            --cyan-dark: #00A8CC;
+            --cream: #FAF8F5;
+            --cream-dark: #F0EDE8;
+            --gray: #6B7280;
+            --gray-light: #E5E7EB;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--cream);
+            color: var(--navy);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 400px;
+            background: linear-gradient(135deg, rgba(10, 22, 40, 0.03) 0%, rgba(0, 217, 255, 0.02) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--navy);
+            color: var(--white);
+            padding: 40px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 30px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--white) 0%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo .subtitle {
+            font-size: 13px;
+            color: var(--cyan);
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .nav-section {
+            margin-bottom: 35px;
+        }
+
+        .nav-title {
+            padding: 0 30px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 12px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 30px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            position: relative;
+            font-size: 15px;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--white);
+            transform: translateX(4px);
+        }
+
+        .nav-link.active {
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--cyan);
+            font-weight: 500;
+        }
+
+        .nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--cyan);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: scaleY(0);
+            }
+            to {
+                transform: scaleY(1);
+            }
+        }
+
+        .nav-link .icon {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            margin-right: 14px;
+            opacity: 0.4;
+            transition: opacity 0.2s ease;
+        }
+
+        .nav-link:hover .icon,
+        .nav-link.active .icon {
+            opacity: 1;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 60px 80px;
+            max-width: 1400px;
+        }
+
+        .breadcrumb {
+            font-size: 13px;
+            color: var(--gray);
+            margin-bottom: 24px;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .breadcrumb a {
+            color: var(--cyan-dark);
+            text-decoration: none;
+            position: relative;
+        }
+
+        .breadcrumb a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--cyan-dark);
+            transition: width 0.3s ease;
+        }
+
+        .breadcrumb a:hover::after {
+            width: 100%;
+        }
+
+        .hero {
+            margin-bottom: 60px;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease 0.1s forwards;
+        }
+
+        .hero h2 {
+            font-size: 42px;
+            font-weight: 600;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+            line-height: 1.2;
+            position: relative;
+        }
+
+        .hero h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan) 0%, var(--cyan-dark) 100%);
+            border-radius: 2px;
+        }
+
+        .hero .lead {
+            font-size: 18px;
+            color: var(--gray);
+            font-weight: 300;
+            max-width: 700px;
+            line-height: 1.6;
+            margin-top: 20px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--cyan-dark);
+            margin-bottom: 24px;
+            margin-top: 50px;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .section-title:first-of-type {
+            margin-top: 0;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .feature-item {
+            background: var(--white);
+            border: 1px solid var(--gray-light);
+            padding: 24px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--cyan) 0%, var(--cyan-dark) 100%);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(10, 22, 40, 0.08);
+        }
+
+        .feature-item:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-item h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--navy);
+            margin-bottom: 8px;
+        }
+
+        .feature-item p {
+            font-size: 14px;
+            color: var(--gray);
+            line-height: 1.5;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(0, 168, 204, 0.05) 100%);
+            border-left: 3px solid var(--cyan);
+            padding: 24px;
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .highlight-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .highlight-box:hover::before {
+            opacity: 1;
+        }
+
+        .highlight-box h4 {
+            color: var(--navy);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .highlight-box p {
+            color: var(--gray);
+            font-size: 14px;
+            position: relative;
+        }
+
+        .api-section {
+            background: var(--navy-light);
+            padding: 32px;
+            border-radius: 2px;
+            margin-top: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .api-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(0, 217, 255, 0.1), transparent 60%);
+            pointer-events: none;
+        }
+
+        .api-section h3 {
+            color: var(--white);
+            font-size: 18px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .api-endpoint {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .api-endpoint:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .method {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 2px;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .method.get {
+            background: #22c55e;
+            color: white;
+        }
+
+        .method.post {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .method.put {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .method.patch {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .method.delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .endpoint {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--cyan);
+            flex: 1;
+        }
+
+        .description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+        }
+
+        .token-flow {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 30px 0;
+            padding: 24px;
+            background: var(--white);
+            border: 1px solid var(--gray-light);
+            border-radius: 2px;
+            flex-wrap: wrap;
+        }
+
+        .token-step {
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .token-step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--cyan);
+            color: var(--navy);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin: 0 auto 12px;
+        }
+
+        .token-step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--navy);
+            margin-bottom: 4px;
+        }
+
+        .token-step-desc {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .token-arrow {
+            font-size: 24px;
+            color: var(--cyan);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .feature-list li {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--cyan-dark) 100%);
+            color: var(--navy);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .feature-list li strong {
+            color: var(--navy);
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 40px 24px;
+            }
+
+            .hero h2 {
+                font-size: 32px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .token-flow {
+                flex-direction: column;
+            }
+
+            .token-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        .feature-item {
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .feature-item:nth-child(1) {
+            animation-delay: 0.2s;
+        }
+
+        .feature-item:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .feature-item:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .feature-item:nth-child(4) {
+            animation-delay: 0.5s;
+        }
+
+        .feature-item:nth-child(5) {
+            animation-delay: 0.6s;
+        }
+
+        .feature-item:nth-child(6) {
+            animation-delay: 0.7s;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="sidebar">
+        <div class="logo">
+            <h1>Klabis</h1>
+            <div class="subtitle">Dokumentace funkcí</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-title">Přehled</div>
+            <a href="index.html" class="nav-link">
+                <span class="icon"></span>
+                Úvodní stránka
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-title">Specifikace</div>
+            <a href="members.html" class="nav-link active">
+                <span class="icon"></span>
+                Správa členů
+            </a>
+            <a href="users.html" class="nav-link">
+                <span class="icon"></span>
+                Uživatelé a autentizace
+            </a>
+            <a href="email-service.html" class="nav-link">
+                <span class="icon"></span>
+                E-mailová služba
+            </a>
+            <a href="event-driven-architecture.html" class="nav-link">
+                <span class="icon"></span>
+                Událostmi řízená architektura
+            </a>
+            <a href="server-configuration.html" class="nav-link">
+                <span class="icon"></span>
+                Konfigurace serveru
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="breadcrumb">
+            <a href="index.html">Úvodní stránka</a> / Správa členů
+        </div>
+
+        <div class="hero">
+            <h2>Správa členů</h2>
+            <p class="lead">
+                Kompletní životní cyklus člena klubu včetně registrace, generování registračních čísel, správy kontaktů
+                a údajů s ověřením dat a řízeným přístupem.
+            </p>
+        </div>
+
+        <div class="highlight-box">
+            <h4>Registrace člena</h4>
+            <p>
+                Při registraci se vytváří jak User (uživatelský) agregát pro přihlášení, tak Member (členský) agregát se
+                sdíleným UserId. Člen dostane unikátní registrační číslo ve formátu XXXYYDD.
+            </p>
+        </div>
+
+        <div class="section-title">Hlavní funkce</div>
+
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>Registrační číslo ZBM</h4>
+                <p>
+                    Automatické generování unikátního čísla ve formátu XXXYYDD (kód klubu + rok narození + pořadové
+                    číslo).
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Ověřené údaje</h4>
+                <p>
+                    Povinné osobní údaje včetně jména, data narození, adresy. Podmínečně rodné číslo pro české občany.
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Správa kontaktů</h4>
+                <p>
+                    Jedna e-mailová adresa a jedno telefonní číslo. Pro dospělé vlastní, pro nezletilé kontakt na
+                    zákonného zástupce.
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Aktivace účtu</h4>
+                <p>
+                    Vícefázový proces: registrace → e-mail s aktivačním odkazem → nastavení hesla → aktivace účtu.
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Seznam členů</h4>
+                <p>
+                    Stránkovaný a řazený výpis všech členů s možností filtrace dle jména, příjmení a registračního
+                    čísla.
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Editace údajů</h4>
+                <p>
+                    Členi mohou editovat vybrané údaje (Čip, Adresa, Kontakt), administrátoři mají plný přístup včetně
+                    jména a data narození.
+                </p>
+            </div>
+        </div>
+
+        <div class="section-title">Proces registrace člena</div>
+
+        <div class="token-flow">
+            <div class="token-step">
+                <div class="token-step-number">1</div>
+                <div class="token-step-title">Odeslání údajů</div>
+                <div class="token-step-desc">Admin vyplní formulář s osobními údaji</div>
+            </div>
+            <div class="token-arrow">→</div>
+            <div class="token-step">
+                <div class="token-step-number">2</div>
+                <div class="token-step-title">Vytvoření záznamů</div>
+                <div class="token-step-desc">User a Member entity v databázi</div>
+            </div>
+            <div class="token-arrow">→</div>
+            <div class="token-step">
+                <div class="token-step-number">3</div>
+                <div class="token-step-title">Generování tokenu</div>
+                <div class="token-step-desc">Password setup token a e-mail</div>
+            </div>
+            <div class="token-arrow">→</div>
+            <div class="token-step">
+                <div class="token-step-number">4</div>
+                <div class="token-step-title">Aktivace</div>
+                <div class="token-step-desc">Člen si nastaví heslo a aktivuje účet</div>
+            </div>
+        </div>
+
+        <div class="section-title">API endpointy</div>
+
+        <div class="api-section">
+            <h3>Členi</h3>
+
+            <div class="api-endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint">/api/members</span>
+                <span class="description">Vytvoření nového člena (vyžaduje MEMBERS:CREATE)</span>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint">/api/members</span>
+                <span class="description">Stránkovaný seznam členů (MEMBERS:READ)</span>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint">/api/members/{id}</span>
+                <span class="description">Detail člena podle ID (MEMBERS:READ)</span>
+            </div>
+
+            <div class="api-endpoint">
+                <span class="method patch">PATCH</span>
+                <span class="endpoint">/api/members/{id}</span>
+                <span class="description">Aktualizace údajů člena (MEMBERS:UPDATE nebo self-edit)</span>
+            </div>
+        </div>
+
+        <div class="section-title">Povinné osobní údaje</div>
+
+        <ul class="feature-list">
+            <li><strong>Jméno a příjmení</strong> - vyžadováno pro všechny členy</li>
+            <li><strong>Datum narození</strong> - ve formátu ISO-8601 (YYYY-MM-DD)</li>
+            <li><strong>Státní příslušnost</strong> - ISO 3166-1 alpha-2 kód (např. CZ, SK)</li>
+            <li><strong>Pohlaví</strong> - MALE, FEMALE nebo OTHER</li>
+            <li><strong>Adresa</strong> - ulice, město, PSČ, stát (vše povinné)</li>
+        </ul>
+
+        <div class="section-title">Registrační číslo</div>
+
+        <div class="highlight-box">
+            <h4>Formát XXXYYDD</h4>
+            <p>
+                <strong>XXX</strong> = kód klubu (např. ZBM)<br>
+                <strong>YY</strong> = poslední 2 číslice roku narození<br>
+                <strong>DD</strong> = pořadové číslo člena narozeného v daném roce (01, 02, 03...)<br><br>
+                Příklad: ZBM0101 (první člen klubu ZBM narozený v roce 2001)
+            </p>
+        </div>
+
+        <div class="section-title">Rodné číslo (podmínečné)</div>
+
+        <div class="highlight-box">
+            <h4>Pouze pro české občany</h4>
+            <p>
+                Pole rodné číslo je povoleno pouze při výběru české státní příslušnosti. Pro jiné státy je pole
+                neaktivní a hodnota se vymaže. Validace formátu pro české rodné číslo.
+            </p>
+        </div>
+
+        <div class="section-title">Kontaktní údaje</div>
+
+        <ul class="feature-list">
+            <li><strong>Dospělí (18+):</strong> vyžadován 1 e-mail a 1 telefon člena</li>
+            <li><strong>Nezletilí:</strong> vyžadován 1 e-mail a 1 telefon zákonného zástupce</li>
+            <li><strong>Validace:</strong> E-mail podle RFC 5322, telefon ve formátu E.164 (+420...)</li>
+        </ul>
+
+        <div class="section-title">Volitelné údaje</div>
+
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>Číslo čipu</h4>
+                <p>
+                    Číselný údaj pro identifikaci člena (např. pro vstupový systém).
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Bankovní účet</h4>
+                <p>
+                    Číslo bankovního účtu pro platby (např. členské příspěvky).
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Průkaz totožnosti</h4>
+                <p>
+                    Číslo a datum platnosti občanského průkazu.
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Vodičský průkaz</h4>
+                <p>
+                    Skupiny řidičského průkazu (B, BE, C, C1, D, D1, atd.).
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Lékařská prohlídka</h4>
+                <p>
+                    Datum dokončení a volitelně datum platnosti.
+                </p>
+            </div>
+
+            <div class="feature-item">
+                <h4>Trenérská licence</h4>
+                <p>
+                    Číslo licence a datum platnosti.
+                </p>
+            </div>
+        </div>
+
+        <div class="section-title">Stránkování a řazení</div>
+
+        <div class="highlight-box">
+            <h4>GET /api/members</h4>
+            <p>
+                <strong>Stránkování:</strong> <code>page</code> (číslující od 0), <code>size</code> (výchozí 10, max
+                100)<br>
+                <strong>Řazení:</strong> <code>sort=lastName,asc|desc</code> nebo <code>sort=firstName,asc|desc</code>
+                nebo <code>sort=registrationNumber,asc|desc</code><br>
+                <strong>Více polí:</strong> <code>sort=lastName,asc&sort=firstName,asc</code> (primární, sekundární)
+            </p>
+        </div>
+
+        <div class="section-title">Oprávnění k editaci</div>
+
+        <ul class="feature-list">
+            <li><strong>Self-edit:</strong> Člen může editovat vlastní údaje, pokud OAuth2 subject odpovídá member ID
+            </li>
+            <li><strong>Admin:</strong> Uživatel s oprávněním MEMBERS:UPDATE může editovat jakéhokoli člena</li>
+            <li><strong>Členská pole:</strong> Čip, národnost, adresa, e-mail, telefon, bankovní účet, průkaz, řidičák,
+                lékařská, licence, diety
+            </li>
+            <li><strong>Admin pole:</strong> Jméno, příjmení, datum narození (pouze pro adminy)</li>
+        </ul>
+
+    </main>
+</div>
+</body>
+</html>

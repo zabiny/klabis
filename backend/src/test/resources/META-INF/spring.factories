@@ -1,0 +1,3 @@
+# Test auto-configurations
+org.springframework.boot.test.context.SpringBootTestContextBootstrapper=\
+com.klabis.TestApplicationConfiguration
