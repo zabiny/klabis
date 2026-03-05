@@ -4,10 +4,8 @@ import com.klabis.common.users.Authority;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -41,10 +39,6 @@ public class BootstrapDataLoader implements ApplicationRunner {
         bootstrapDataInitializers.forEach(this::bootstrapData);
     }
 
-    /**
-     * @param bootstrapDataInitializer
-     * @return true if data are successfully set up
-     */
     private boolean bootstrapData(BootstrapDataInitializer bootstrapDataInitializer) {
         try {
             if (bootstrapDataInitializer.requiresBootstrap()) {
@@ -64,46 +58,34 @@ public class BootstrapDataLoader implements ApplicationRunner {
 }
 
 
-/**
- * Required environment variables (with defaults):
- * - OAUTH2_CLIENT_ID: OAuth2 client ID (default: "klabis-web")
- * - OAUTH2_CLIENT_SECRET: OAuth2 client secret (default: generate random)
- * - OAUTH2_CLIENT_ID_UUID: OAuth2 client UUID (default: random UUID)
- * - OAUTH2_CLIENT_REDIRECT_URIS: Comma-separated redirect URIs (default: "https://localhost:3000/callback,https://localhost:8443/auth/callback.html")
- */
 @Component
 class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
     private final RegisteredClientRepository registeredClientRepository;
-    private final Environment environment;
+    private final OAuth2ClientProperties clientProperties;
     private static final Logger LOG = LoggerFactory.getLogger(OidcRegisteredClientsBootstrap.class);
     private final PasswordEncoder passwordEncoder;
-    private static final String DEFAULT_OAUTH2_CLIENT_ID = "klabis-web";
     private final PasswordGenerator passwordGenerator;
 
-    @Value("${oauth2.client.id:" + DEFAULT_OAUTH2_CLIENT_ID + "}")
-    private String CLIENT_ID;
-
-    OidcRegisteredClientsBootstrap(RegisteredClientRepository registeredClientRepository, Environment environment, PasswordEncoder passwordEncoder, PasswordGenerator passwordGenerator) {
+    OidcRegisteredClientsBootstrap(RegisteredClientRepository registeredClientRepository, OAuth2ClientProperties clientProperties, PasswordEncoder passwordEncoder, PasswordGenerator passwordGenerator) {
         this.registeredClientRepository = registeredClientRepository;
-        this.environment = environment;
+        this.clientProperties = clientProperties;
         this.passwordEncoder = passwordEncoder;
         this.passwordGenerator = passwordGenerator;
     }
 
     @Override
     public boolean requiresBootstrap() {
-        return registeredClientRepository.findByClientId(DEFAULT_OAUTH2_CLIENT_ID) == null;
+        return registeredClientRepository.findByClientId(clientProperties.getId()) == null;
     }
 
     @Override
     public void bootstrapData() {
-        String clientId = environment.getProperty("oauth2.client.id", DEFAULT_OAUTH2_CLIENT_ID);
-        String clientSecret = environment.getProperty("oauth2.client.secret");
-        String clientUuid = environment.getProperty("oauth2.client.id.uuid", clientId);
-        Set<String> redirectUris = Arrays.stream(environment.getProperty("oauth2.client.redirect-uris",
-                "http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback"
-        ).split(",")).map(String::trim).collect(Collectors.toSet());
-
+        String clientId = clientProperties.getId();
+        String clientSecret = clientProperties.getSecret();
+        String clientUuid = StringUtils.isNotBlank(clientProperties.getUuid()) ? clientProperties.getUuid() : clientId;
+        Set<String> redirectUris = Arrays.stream(clientProperties.getRedirectUris().split(","))
+                .map(String::trim)
+                .collect(Collectors.toSet());
 
         createOAuth2Client(clientUuid, clientId, clientSecret, redirectUris);
         createOAuth2Client("apispec",
@@ -114,31 +96,23 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
 
     private void createOAuth2Client(String clientUuid, String clientId, String clientSecret, Set<String> redirectUris) {
 
-        // Generate secure random secret if not provided
         if (StringUtils.isBlank(clientSecret)) {
-            LOG.warn("OAUTH2_CLIENT_SECRET not set, generating random secret. Check logs for the generated secret.");
+            LOG.warn("KLABIS_OAUTH2_CLIENT_SECRET not set, generating random secret.");
             clientSecret = passwordGenerator.generateSecurePassword();
             LOG.info("Generated OAuth2 client secret for client '{}': {}", clientId, clientSecret);
-            LOG.warn(
-                    "Please save this secret securely and set OAUTH2_CLIENT_SECRET environment variable for future deployments");
         }
 
         String clientSecretHash = passwordEncoder.encode(clientSecret);
 
-        // Get scopes from environment or use default
-        // Note: Using Authority enum values for type safety, plus 'openid' for OIDC support
         String defaultScopes = String.join(",",
-                "openid",  // OpenID Connect scope
-                "profile", // OIDC standard scope for profile claims
-                "email",   // OIDC standard scope for email claims
+                "openid",
+                "profile",
+                "email",
                 Authority.MEMBERS_SCOPE,
                 Authority.EVENTS_SCOPE
         );
 
-        String scopes = environment.getProperty(
-                "oauth2.client.scopes",
-                defaultScopes
-        );
+        String scopes = StringUtils.isNotBlank(clientProperties.getScopes()) ? clientProperties.getScopes() : defaultScopes;
 
         RegisteredClient c = RegisteredClient.withId(clientUuid)
                 .clientId(clientId)
@@ -156,8 +130,7 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 .redirectUris(items -> {
                     items.addAll(redirectUris);
                 })
-                .postLogoutRedirectUri(environment.getProperty("oauth2.client.post-logout-redirect-uris",
-                        "https://localhost:8443"))
+                .postLogoutRedirectUri(clientProperties.getPostLogoutRedirectUri())
                 .scopes(items -> items.addAll(Arrays.stream(scopes.split(","))
                         .map(String::trim)
                         .collect(Collectors.toList())))

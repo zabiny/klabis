@@ -47,9 +47,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestApplicationConfiguration.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "bootstrap.admin.username=" + OidcUserInfoEndpointTest.ADMIN_USERNAME,
-        "bootstrap.admin.password=" + OidcUserInfoEndpointTest.ADMIN_PASSWORD,
-        "oauth2.client.secret=" + OidcUserInfoEndpointTest.CLIENT_SECRET
+        "klabis.bootstrap.admin.username=" + OidcUserInfoEndpointTest.ADMIN_USERNAME,
+        "klabis.bootstrap.admin.password=" + OidcUserInfoEndpointTest.ADMIN_PASSWORD,
+        "klabis.oauth2.client.secret=" + OidcUserInfoEndpointTest.CLIENT_SECRET
 })
 @CleanupTestData
 @DisplayName("OIDC UserInfo Endpoint Tests")

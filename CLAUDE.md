@@ -22,9 +22,10 @@
 ```bash
 # Start backend (serves API)
 cd backend
-BOOTSTRAP_ADMIN_USERNAME='admin' \
-BOOTSTRAP_ADMIN_PASSWORD='admin123' \
-OAUTH2_CLIENT_SECRET='test-secret-123' \
+KLABIS_ADMIN_USERNAME='admin' \
+KLABIS_ADMIN_PASSWORD='admin123' \
+KLABIS_OAUTH2_CLIENT_SECRET='test-secret-123' \
+KLABIS_JASYPT_PASSWORD='test-key-123' \
 ./gradlew bootRun
 
 # Start modern frontend (React SPA on http://localhost:3000)

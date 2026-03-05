@@ -142,8 +142,8 @@ All examples use the following default configuration:
 
 ```bash
 export BACKEND_URL=https://localhost:8443
-export BOOTSTRAP_ADMIN_PASSWORD=admin123
-export OAUTH2_CLIENT_SECRET=test-secret-123
+export KLABIS_ADMIN_PASSWORD=admin123
+export KLABIS_OAUTH2_CLIENT_SECRET=test-secret-123
 ```
 
 ## API Endpoints Used

@@ -3,6 +3,7 @@ package com.klabis;
 import com.klabis.members.MemberCreatedEvent;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.modulith.Modulithic;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -43,6 +44,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         sharedModules = {"common"}  // Always included in module tests (users because of UserDetailsService implementation)
 )
 @SpringBootApplication
+@ConfigurationPropertiesScan
 @EnableAspectJAutoProxy
 @EnableAsync
 @EnableScheduling

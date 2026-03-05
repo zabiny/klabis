@@ -51,9 +51,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestApplicationConfiguration.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "bootstrap.admin.username=" + OidcFlowE2ETest.ADMIN_USERNAME,
-        "bootstrap.admin.password=" + OidcFlowE2ETest.ADMIN_PASSWORD,
-        "oauth2.client.secret="+OidcFlowE2ETest.CLIENT_SECRET,
+        "klabis.bootstrap.admin.username=" + OidcFlowE2ETest.ADMIN_USERNAME,
+        "klabis.bootstrap.admin.password=" + OidcFlowE2ETest.ADMIN_PASSWORD,
+        "klabis.oauth2.client.secret=" + OidcFlowE2ETest.CLIENT_SECRET,
         "logging.level.org.springframework.security=TRACE"
 })
 @DisplayName("OIDC Complete Flow E2E Test")

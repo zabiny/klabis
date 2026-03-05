@@ -94,20 +94,20 @@ The backend automatically creates OAuth2 clients and bootstrap admin user on sta
 **Default OAuth2 Clients:**
 
 - Client ID: `klabis-web` (for UI mockup testing)
-    - Client Secret: `test-secret-123` (set via `OAUTH2_CLIENT_SECRET` env var)
+    - Client Secret: `test-secret-123` (set via `KLABIS_OAUTH2_CLIENT_SECRET` env var)
 - Client ID: `klabis-web` (for production use)
     - Client Secret: auto-generated on first startup
 
 **Bootstrap Admin User:**
 
 - Registration Number: `admin`
-- Password: `admin123` (set via `BOOTSTRAP_ADMIN_PASSWORD` env var)
+- Password: `admin123` (set via `KLABIS_ADMIN_PASSWORD` env var)
 - Authorities: All permissions (MEMBERS:CREATE, MEMBERS:READ, MEMBERS:UPDATE, MEMBERS:DELETE, MEMBERS:PERMISSIONS)
 
 > **⚠️ Important:** Always set environment variables for consistent development credentials:
 > ```bash
-> export BOOTSTRAP_ADMIN_PASSWORD='admin123'
-> export OAUTH2_CLIENT_SECRET='test-secret-123'
+> export KLABIS_ADMIN_PASSWORD='admin123'
+> export KLABIS_OAUTH2_CLIENT_SECRET='test-secret-123'
 > ```
 
 **For detailed OAuth2 flows, JWT structure, and security implementation**,

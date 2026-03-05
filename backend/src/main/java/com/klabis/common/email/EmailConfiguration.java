@@ -4,14 +4,12 @@ import com.klabis.common.templating.ThymeleafTemplateRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.thymeleaf.TemplateEngine;
 
 @Configuration
-@EnableConfigurationProperties(EmailProperties.class)
 public class EmailConfiguration {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmailConfiguration.class);

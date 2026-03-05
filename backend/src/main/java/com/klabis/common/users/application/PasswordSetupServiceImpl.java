@@ -1,5 +1,6 @@
 package com.klabis.common.users.application;
 
+import com.klabis.common.ClubProperties;
 import com.klabis.common.PIDataMaskingUtil;
 import com.klabis.common.email.EmailMessage;
 import com.klabis.common.email.EmailService;
@@ -10,7 +11,6 @@ import com.klabis.common.users.domain.*;
 import com.klabis.common.users.infrastructure.PasswordSetupTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,15 +32,8 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordComplexityValidator passwordValidator;
     private final PerKeyRateLimiter rateLimiter;
-
-    @Value("${password-setup.token.expiration-hours:4}")
-    private int tokenExpirationHours;
-
-    @Value("${password-setup.email.base-url:https://localhost:8443}")
-    private String baseUrl;
-
-    @Value("${klabis.club.name:Klabis}")
-    private String clubName;
+    private final PasswordSetupProperties passwordSetupProperties;
+    private final ClubProperties clubProperties;
 
     PasswordSetupServiceImpl(
             PasswordSetupTokenRepository tokenRepository,
@@ -49,7 +42,9 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
             ThymeleafTemplateRenderer templateRenderer,
             PasswordEncoder passwordEncoder,
             PasswordComplexityValidator passwordValidator,
-            PerKeyRateLimiter rateLimiter) {
+            PerKeyRateLimiter rateLimiter,
+            PasswordSetupProperties passwordSetupProperties,
+            ClubProperties clubProperties) {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
@@ -57,6 +52,8 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         this.passwordEncoder = passwordEncoder;
         this.passwordValidator = passwordValidator;
         this.rateLimiter = rateLimiter;
+        this.passwordSetupProperties = passwordSetupProperties;
+        this.clubProperties = clubProperties;
     }
 
     @Override
@@ -68,7 +65,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
 
         tokenRepository.invalidateAllForUser(user.getId());
 
-        Duration validity = Duration.ofHours(tokenExpirationHours);
+        Duration validity = Duration.ofHours(passwordSetupProperties.getToken().getExpirationHours());
         PasswordSetupToken token = PasswordSetupToken.generateFor(user.getId(), validity);
         tokenRepository.save(token);
 
@@ -88,8 +85,8 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         Map<String, Object> templateVariables = Map.of(
                 "firstName", firstName,
                 "setupUrl", setupUrl,
-                "expirationHours", tokenExpirationHours,
-                "clubName", clubName
+                "expirationHours", passwordSetupProperties.getToken().getExpirationHours(),
+                "clubName", clubProperties.getName()
         );
 
         String htmlBody = templateRenderer.renderHtml(EmailTemplate.PASSWORD_SETUP, templateVariables);
@@ -97,7 +94,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
 
         EmailMessage message = EmailMessage.multipart(
                 email,
-                "Set Your Password for " + clubName,
+                "Set Your Password for " + clubProperties.getName(),
                 htmlBody,
                 textBody
         );
@@ -119,8 +116,8 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         Map<String, Object> templateVariables = Map.of(
                 "firstName", username,
                 "setupUrl", setupUrl,
-                "expirationHours", tokenExpirationHours,
-                "clubName", clubName
+                "expirationHours", passwordSetupProperties.getToken().getExpirationHours(),
+                "clubName", clubProperties.getName()
         );
 
         String htmlBody = templateRenderer.renderHtml(EmailTemplate.PASSWORD_SETUP, templateVariables);
@@ -128,7 +125,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
 
         EmailMessage message = EmailMessage.multipart(
                 email,
-                "Set Your Password for " + clubName,
+                "Set Your Password for " + clubProperties.getName(),
                 htmlBody,
                 textBody
         );
@@ -205,7 +202,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
     }
 
     private String buildSetupUrl(String plainToken) {
-        return UriComponentsBuilder.fromHttpUrl(baseUrl)
+        return UriComponentsBuilder.fromHttpUrl(passwordSetupProperties.getBaseUrl())
                 .path("/password-setup")
                 .queryParam("token", plainToken)
                 .build()

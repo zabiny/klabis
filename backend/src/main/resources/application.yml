@@ -9,37 +9,12 @@ spring:
     problemdetails:
       enabled: true
 
-  # Spring Modulith configuration for event-driven architecture
   modulith:
-    # Only detect modules that are explicitly annotated with @ApplicationModule
     detection-strategy: explicitly-annotated
-    # Enable event publication and persistence
     events:
       enabled: true
-      # Event completion mode: UPDATE marks events as complete after successful processing
       completion-mode: UPDATE
-      # Republish incomplete events on application restart (set to false in multi-instance deployments)
       republish-outstanding-events-on-restart: false
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/klabis
-    username: ${DB_USERNAME:klabis}
-    password: ${DB_PASSWORD:klabis}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      # Connection pool settings optimized for production
-      # Maximum pool size: max number of connections in the pool
-      # Adjust based on your database and application load
-      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
-      # Minimum number of idle connections kept in the pool
-      minimum-idle: ${DB_POOL_MIN_IDLE:5}
-      # Maximum time to wait for a connection from the pool (milliseconds)
-      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
-      # Maximum time a connection can sit idle in the pool (milliseconds)
-      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
-      # Maximum lifetime of a connection in the pool (milliseconds)
-      # Connections older than this will be closed and removed from pool
-      max-lifetime: ${DB_MAX_LIFETIME:1800000}
 
   flyway:
     enabled: true
@@ -47,10 +22,9 @@ spring:
     locations: classpath:db/migration
 
   mail:
-    #host: ${SMTP_HOST:null}  // disabling email in default as we don't have SMTP server yet
-    port: ${SMTP_PORT:587}
-    username: ${SMTP_USERNAME}
-    password: ${SMTP_PASSWORD}
+    port: ${KLABIS_SMTP_PORT:587}
+    username: ${KLABIS_SMTP_USERNAME:}
+    password: ${KLABIS_SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -62,39 +36,26 @@ spring:
   security:
     oauth2:
       authorizationserver:
-        issuer: ${OAUTH2_ISSUER:https://localhost:8443}
-        # OAuth2 client registration is now managed by BootstrapDataLoader
-        # which reads credentials from environment variables for better security
-        # See: com.klabis.common.bootstrap.BootstrapDataLoader
+        issuer: ${KLABIS_OAUTH2_ISSUER:https://localhost:8443}
 
-  # Cache configuration for rate limiting
   cache:
     type: simple
     cache-names: rateLimitCache
-    # Simple cache (in-memory) with time-to-live matching rate limit duration
-    # Note: In production, consider using Redis for distributed rate limiting
 
-  # Actuator configuration for monitoring and management endpoints
 management:
   endpoints:
     web:
-      # Expose actuator endpoints (health, info, modulith) for monitoring
       exposure:
         include: health,info,modulith,prometheus,metrics
-      # Enable actuator endpoints at /actuator path
       base-path: /actuator
   endpoint:
-    # Enable Spring Modulith endpoint for event publication metrics
     modulith:
       access: read_only
-    # Enable health endpoint for health checks
     health:
       access: unrestricted
-    # Enable info endpoint for application information
     info:
       access: read_only
 
-# Resilience4j configuration for rate limiting
 resilience4j:
   ratelimiter:
     configs:
@@ -120,7 +81,6 @@ springdoc:
       client-id: apispec
       client-secret: apispec
       scopes: openid,profile
-    #url: /klabis-api-spec.yaml
   show-actuator: true
   api-docs:
     groups:
@@ -151,84 +111,77 @@ springdoc:
       paths-to-match:
         - /actuator/**
 
-# Klabis specific configuration
 klabis:
   club:
-    code: ${CLUB_CODE:ZBM}
-    name: ${CLUB_NAME:Klub orientačního běhu}
-
-  password-reset-token:
-    token-validity-hours: ${EMAIL_ACTIVATION_TOKEN_VALIDITY_HOURS:72}
-    base-url: ${KLABIS_BASE_URL:https://localhost:8443}
+    code: ${KLABIS_CLUB_CODE:ZBM}
+    name: ${KLABIS_CLUB_NAME:Klub orientačního běhu}
 
   email:
-    enabled: ${EMAIL_ENABLED:false}
-    from: ${EMAIL_FROM:noreply@klabis.cz}
+    enabled: ${KLABIS_EMAIL_ENABLED:false}
+    from: ${KLABIS_EMAIL_FROM:noreply@klabis.cz}
 
-  # Event lifecycle logging configuration
   events:
     logging:
-      enabled: ${EVENT_LOGGING_ENABLED:true}
+      enabled: ${KLABIS_EVENT_LOGGING_ENABLED:true}
 
-# Password setup configuration
-password-setup:
-  token:
-    expiration-hours: ${PASSWORD_SETUP_TOKEN_EXPIRATION_HOURS:4}
-    hash-algorithm: SHA-256
-  rate-limit:
-    # Rate limiting per registration number
-    requests: 3                          # Max requests per time window per registration number
-    duration-seconds: 3600               # Time window: 1 hour (3600 seconds)
-  email:
-    base-url: ${APP_BASE_URL:https://localhost:8443}
+  frontend:
+    allowed-origins: ${KLABIS_FRONTEND_ALLOWED_ORIGINS:http://localhost:3000,https://localhost:8443}
+    allow-credentials: ${KLABIS_FRONTEND_ALLOW_CREDENTIALS:true}
 
-# Frontend CORS configuration
-frontend:
-  allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:3000,https://localhost:8443}
-  allow-credentials: ${FRONTEND_ALLOW_CREDENTIALS:true}
+  bootstrap:
+    admin:
+      username: ${KLABIS_ADMIN_USERNAME:admin}
+      password: ${KLABIS_ADMIN_PASSWORD:}
 
-# Jasypt encryption for GDPR sensitive fields
+  oauth2:
+    client:
+      id: ${KLABIS_OAUTH2_CLIENT_ID:klabis-web}
+      secret: ${KLABIS_OAUTH2_CLIENT_SECRET:}
+      uuid: ${KLABIS_OAUTH2_CLIENT_UUID:}
+      redirect-uris: ${KLABIS_OAUTH2_CLIENT_REDIRECT_URIS:http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback}
+      post-logout-redirect-uri: ${KLABIS_OAUTH2_POST_LOGOUT_REDIRECT_URI:https://localhost:8443}
+      scopes: ${KLABIS_OAUTH2_CLIENT_SCOPES:}
+
+  password-setup:
+    base-url: ${KLABIS_BASE_URL:https://localhost:8443}
+    token:
+      expiration-hours: ${KLABIS_PASSWORD_SETUP_TOKEN_EXPIRATION_HOURS:4}
+      hash-algorithm: SHA-256
+    rate-limit:
+      requests: 3
+      duration-seconds: 3600
+
 jasypt:
   encryptor:
-    password: ${JASYPT_ENCRYPTOR_PASSWORD}
-    # Upgraded from PBEWithMD5AndDES (weak/broken) to PBEWithHmacSHA512AndAES_256
-    # PBEWithHmacSHA512AndAES_256 provides:
-    # - HMAC-SHA512 for key derivation (cryptographically strong)
-    # - AES-256 for encryption (256-bit key, approved for top secret data)
-    # - Random IV for each encryption (prevents pattern analysis)
+    password: ${KLABIS_JASYPT_PASSWORD}
     algorithm: PBEWithHmacSHA512AndAES_256
     iv-generator-classname: org.jasypt.iv.RandomIvGenerator
+
 server:
   port: 8443
   ssl:
     enabled: true
-    key-store: ${SSL_KEYSTORE_PATH:classpath:https/keystore.p12}
-    key-store-password: ${SSL_KEYSTORE_PASSWORD:changeit}
+    key-store: ${KLABIS_SSL_KEYSTORE_PATH:classpath:https/keystore.p12}
+    key-store-password: ${KLABIS_SSL_KEYSTORE_PASSWORD:changeit}
     key-store-type: PKCS12
-    key-alias: ${SSL_KEYSTORE_KEY_ALIAS:localhost}
+    key-alias: ${KLABIS_SSL_KEY_ALIAS:localhost}
   http2:
     enabled: true
   error:
     include-message: always
     include-binding-errors: always
 
-# Application information for /actuator/info endpoint
 info:
   app:
     name: Klabis Backend API
     description: Klabis Membership Management System
     version: 0.1.0-SNAPSHOT
 
-# Logging pattern configuration moved to logback-spring.xml for MDC support
-# Log levels can still be overridden here if needed
 logging:
   level:
     com.klabis: DEBUG
     org.springframework.web: INFO
-    # Enable DEBUG level to see Spring Modulith event lifecycle (persisted, published, completed, failed)
-    # Provides observability for event delivery issues
-    # Configurable via EVENT_LOGGING_LEVEL environment variable (default: DEBUG)
-    org.springframework.modulith.events: ${EVENT_LOGGING_LEVEL:DEBUG}
+    org.springframework.modulith.events: ${KLABIS_EVENT_LOGGING_LEVEL:DEBUG}
 
 
 ---
@@ -247,14 +200,8 @@ spring:
       enabled: true
       path: /h2-console
 
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-
-# Logging pattern configuration moved to logback-spring.xml for MDC support
 logging:
   level:
-    com.klabis: DEBUG
     org.springframework.security: DEBUG
 
 ---
@@ -268,20 +215,12 @@ spring:
     url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
     hikari:
-      # Tests typically need fewer connections
       maximum-pool-size: 5
       minimum-idle: 2
       connection-timeout: 10000
 
   flyway:
-    enabled: true
-    locations: classpath:db/migration
     clean-disabled: false
-
-# Logging pattern configuration moved to logback-spring.xml for MDC support
-logging:
-  level:
-    com.klabis: DEBUG
 
 ---
 # Production profile
@@ -290,32 +229,29 @@ spring:
     activate:
       on-profile: prod
 
-  # H2 console is disabled in production for security
   h2:
     console:
       enabled: false
 
-  # Production-optimized HikariCP settings
   datasource:
+    url: jdbc:postgresql://localhost:5432/klabis
+    username: ${KLABIS_DB_USERNAME:klabis}
+    password: ${KLABIS_DB_PASSWORD:klabis}
+    driver-class-name: org.postgresql.Driver
     hikari:
-      # Production databases typically handle more concurrent connections
-      maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
-      minimum-idle: ${DB_POOL_MIN_IDLE:10}
-      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
-      idle-timeout: ${DB_IDLE_TIMEOUT:300000}  # 5 minutes
-      max-lifetime: ${DB_MAX_LIFETIME:1800000}  # 30 minutes
+      maximum-pool-size: ${KLABIS_DB_POOL_MAX_SIZE:20}
+      minimum-idle: ${KLABIS_DB_POOL_MIN_IDLE:10}
+      connection-timeout: ${KLABIS_DB_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${KLABIS_DB_IDLE_TIMEOUT:300000}
+      max-lifetime: ${KLABIS_DB_MAX_LIFETIME:1800000}
 
   mail:
-    host: ${SMTP_HOST}
+    host: ${KLABIS_SMTP_HOST}
 
-# Production frontend CORS configuration
-# Override with your production frontend URL(s)
-frontend:
-  allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:https://your-frontend-domain.com}
-  allow-credentials: ${FRONTEND_ALLOW_CREDENTIALS:true}
+klabis:
+  frontend:
+    allowed-origins: ${KLABIS_FRONTEND_ALLOWED_ORIGINS:https://your-frontend-domain.com}
 
-
-# Logging pattern configuration moved to logback-spring.xml for MDC support
 logging:
   level:
     com.klabis: INFO

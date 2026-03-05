@@ -23,9 +23,10 @@ Backend REST API for orienteering club management system with HATEOAS hypermedia
 ./generate-dev-cert.sh
 
 # 2. Set required environment variables
-export BOOTSTRAP_ADMIN_USERNAME='admin'
-export BOOTSTRAP_ADMIN_PASSWORD='admin123'
-export OAUTH2_CLIENT_SECRET='test-secret-123'
+export KLABIS_ADMIN_USERNAME='admin'
+export KLABIS_ADMIN_PASSWORD='admin123'
+export KLABIS_OAUTH2_CLIENT_SECRET='test-secret-123'
+export KLABIS_JASYPT_PASSWORD='test-key-123'
 
 # 3. Run the application
 ./gradlew bootRun
@@ -74,28 +75,28 @@ cp .env.example .env
 
 ```bash
 # Encryption (REQUIRED for GDPR fields)
-JASYPT_ENCRYPTOR_PASSWORD=your_secret_key_min_32_chars
+KLABIS_JASYPT_PASSWORD=your_secret_key_min_32_chars
 
 # Bootstrap Admin User
-BOOTSTRAP_ADMIN_USERNAME=admin
-BOOTSTRAP_ADMIN_PASSWORD=admin123
+KLABIS_ADMIN_USERNAME=admin
+KLABIS_ADMIN_PASSWORD=admin123
 
 # OAuth2 Client Secret
-OAUTH2_CLIENT_SECRET=test-secret-123
+KLABIS_OAUTH2_CLIENT_SECRET=test-secret-123
 ```
 
 **Optional Variables:**
 
 ```bash
 # Database (PostgreSQL for production)
-DB_USERNAME=klabis
-DB_PASSWORD=your_secure_password
+KLABIS_DB_USERNAME=klabis
+KLABIS_DB_PASSWORD=your_secure_password
 
 # SMTP Email
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=your-smtp-user
-SMTP_PASSWORD=your-smtp-password
+KLABIS_SMTP_HOST=smtp.example.com
+KLABIS_SMTP_PORT=587
+KLABIS_SMTP_USERNAME=your-smtp-user
+KLABIS_SMTP_PASSWORD=your-smtp-password
 KLABIS_EMAIL_FROM=noreply@klabis.cz
 ```
 
@@ -262,8 +263,8 @@ rm keystore/dev-keystore.p12
 grep "Bootstrap data" /path/to/server.log
 
 # Verify environment variables set
-echo $BOOTSTRAP_ADMIN_PASSWORD
-echo $OAUTH2_CLIENT_SECRET
+echo $KLABIS_ADMIN_PASSWORD
+echo $KLABIS_OAUTH2_CLIENT_SECRET
 ```
 
 ### Email not sending
