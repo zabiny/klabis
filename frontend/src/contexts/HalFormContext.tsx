@@ -1,5 +1,5 @@
 import {createContext, type ReactElement, type ReactNode, useContext, useEffect, useState} from 'react';
-import {useSearchParams as useSearchParamsRouter} from 'react-router-dom';
+import {useLocation, useNavigate, useSearchParams as useSearchParamsRouter} from 'react-router-dom';
 import type {RenderFormCallback} from '../components/HalNavigator2/halforms';
 
 /**
@@ -24,7 +24,7 @@ interface HalFormContextValue {
     currentFormRequest: HalFormRequest | null;
 
     /** Request to display a form */
-    requestForm: (request: HalFormRequest) => void;
+    displayHalForm: (request: HalFormRequest) => void;
 
     /** Close the currently displayed form */
     closeForm: () => void;
@@ -43,9 +43,24 @@ function useSafeSearchParams() {
     try {
         return useSearchParamsRouter();
     } catch {
-        // Not in a Router context, return empty URLSearchParams
         return [new URLSearchParams(), () => {
         }] as const;
+    }
+}
+
+function useSafeLocation() {
+    try {
+        return useLocation();
+    } catch {
+        return {pathname: '/', search: '', hash: '', state: null, key: 'default'};
+    }
+}
+
+function useSafeNavigate() {
+    try {
+        return useNavigate();
+    } catch {
+        return (() => {}) as ReturnType<typeof useNavigate>;
     }
 }
 
@@ -60,6 +75,8 @@ function useSafeSearchParams() {
 export function HalFormProvider({children}: { children: ReactNode }): ReactElement {
     const [currentFormRequest, setCurrentFormRequest] = useState<HalFormRequest | null>(null);
     const [searchParams] = useSafeSearchParams();
+    const {pathname} = useSafeLocation();
+    const navigate = useSafeNavigate();
 
     // Detect inline form requests from URL query parameter
     useEffect(() => {
@@ -79,7 +96,12 @@ export function HalFormProvider({children}: { children: ReactNode }): ReactEleme
     }, [searchParams]);
 
     const requestForm = (request: HalFormRequest) => {
-        setCurrentFormRequest(request);
+        if (request.modal) {
+            setCurrentFormRequest(request);
+        } else {
+            // Display form inline on current page (target URL only used for form data/submission)
+            navigate(`${pathname}?form=${request.templateName}`);
+        }
     };
 
     const closeForm = () => {
@@ -88,7 +110,7 @@ export function HalFormProvider({children}: { children: ReactNode }): ReactEleme
 
     const value: HalFormContextValue = {
         currentFormRequest,
-        requestForm,
+        displayHalForm: requestForm,
         closeForm,
     };
 

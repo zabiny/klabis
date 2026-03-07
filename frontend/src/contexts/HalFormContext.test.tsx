@@ -5,21 +5,18 @@ import {describe, expect, it, vi} from 'vitest';
 import type {ReactNode} from 'react';
 import type {RenderFormCallback} from '../components/HalNavigator2/halforms';
 
-// Helper to wrap provider with required Router context
 const createWrapper = () => ({children}: { children: ReactNode }) => (
     <BrowserRouter>
         <HalFormProvider>{children}</HalFormProvider>
     </BrowserRouter>
 );
 
-// Helper to create wrapper with specific URL for testing query parameters
 const createWrapperWithUrl = (initialUrl: string) => ({children}: { children: ReactNode }) => (
     <MemoryRouter initialEntries={[initialUrl]}>
         <HalFormProvider>{children}</HalFormProvider>
     </MemoryRouter>
 );
 
-// Helper to create wrapper without Router (testing graceful degradation)
 const createWrapperWithoutRouter = () => ({children}: { children: ReactNode }) => (
     <HalFormProvider>{children}</HalFormProvider>
 );
@@ -27,7 +24,6 @@ const createWrapperWithoutRouter = () => ({children}: { children: ReactNode }) =
 describe('HalFormContext', () => {
     describe('useHalForm Hook', () => {
         it('should throw error when used outside HalFormProvider', () => {
-            // Suppress console.error for this test
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
             });
 
@@ -43,7 +39,7 @@ describe('HalFormContext', () => {
 
             expect(result.current).toBeDefined();
             expect(result.current).toHaveProperty('currentFormRequest');
-            expect(result.current).toHaveProperty('requestForm');
+            expect(result.current).toHaveProperty('displayHalForm');
             expect(result.current).toHaveProperty('closeForm');
         });
 
@@ -55,7 +51,7 @@ describe('HalFormContext', () => {
     });
 
     describe('requestForm Function', () => {
-        it('should update currentFormRequest when called', () => {
+        it('should update currentFormRequest when modal form is requested', () => {
             const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
             const formRequest: HalFormRequest = {
@@ -64,7 +60,7 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(formRequest);
+                result.current.displayHalForm(formRequest);
             });
 
             expect(result.current.currentFormRequest).toEqual(formRequest);
@@ -81,7 +77,7 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(formRequest);
+                result.current.displayHalForm(formRequest);
             });
 
             expect(result.current.currentFormRequest).toEqual(formRequest);
@@ -102,41 +98,33 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(formRequest1);
+                result.current.displayHalForm(formRequest1);
             });
 
             expect(result.current.currentFormRequest?.templateName).toBe('edit');
 
             act(() => {
-                result.current.requestForm(formRequest2);
+                result.current.displayHalForm(formRequest2);
             });
 
             expect(result.current.currentFormRequest?.templateName).toBe('delete');
         });
 
-        it('should support both modal and inline requests', () => {
-            const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
-
-            const modalRequest: HalFormRequest = {
-                templateName: 'edit',
-                modal: true,
-            };
-
-            act(() => {
-                result.current.requestForm(modalRequest);
-            });
-
-            expect(result.current.currentFormRequest?.modal).toBe(true);
+        it('should navigate with query parameter when inline (non-modal) form is requested', () => {
+            const {result} = renderHook(() => useHalForm(), {wrapper: createWrapperWithUrl('/members/123')});
 
             const inlineRequest: HalFormRequest = {
-                templateName: 'view',
+                templateName: 'edit',
                 modal: false,
             };
 
             act(() => {
-                result.current.requestForm(inlineRequest);
+                result.current.displayHalForm(inlineRequest);
             });
 
+            // Inline request triggers URL navigation rather than direct state update
+            // The URL change via navigate() sets ?form=edit, which the useEffect detects
+            expect(result.current.currentFormRequest?.templateName).toBe('edit');
             expect(result.current.currentFormRequest?.modal).toBe(false);
         });
     });
@@ -151,7 +139,7 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(formRequest);
+                result.current.displayHalForm(formRequest);
             });
 
             expect(result.current.currentFormRequest).not.toBeNull();
@@ -180,7 +168,6 @@ describe('HalFormContext', () => {
         it('should render children', () => {
             const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
-            // Verify provider is working by checking that the hook returns expected value
             expect(result.current).toBeDefined();
             expect(result.current.currentFormRequest).toBeNull();
         });
@@ -198,10 +185,9 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(formRequest);
+                result.current.displayHalForm(formRequest);
             });
 
-            // The hook should return the updated state
             expect(result.current.currentFormRequest).toEqual(formRequest);
         });
     });
@@ -211,14 +197,14 @@ describe('HalFormContext', () => {
             const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
             expect(result.current).toHaveProperty('currentFormRequest');
-            expect(result.current).toHaveProperty('requestForm');
+            expect(result.current).toHaveProperty('displayHalForm');
             expect(result.current).toHaveProperty('closeForm');
         });
 
         it('should have correct property types', () => {
             const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
-            expect(typeof result.current.requestForm).toBe('function');
+            expect(typeof result.current.displayHalForm).toBe('function');
             expect(typeof result.current.closeForm).toBe('function');
             expect(result.current.currentFormRequest === null || typeof result.current.currentFormRequest === 'object').toBe(true);
         });
@@ -234,7 +220,7 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(formRequest);
+                result.current.displayHalForm(formRequest);
             });
 
             expect(result.current.currentFormRequest?.templateName).toBe('testTemplate');
@@ -245,14 +231,14 @@ describe('HalFormContext', () => {
 
             const formRequest: HalFormRequest = {
                 templateName: 'test',
-                modal: false,
+                modal: true,
             };
 
             act(() => {
-                result.current.requestForm(formRequest);
+                result.current.displayHalForm(formRequest);
             });
 
-            expect(result.current.currentFormRequest?.modal).toBe(false);
+            expect(result.current.currentFormRequest?.modal).toBe(true);
         });
 
         it('should optionally contain customLayout in form request', () => {
@@ -266,7 +252,7 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(formRequest);
+                result.current.displayHalForm(formRequest);
             });
 
             expect(result.current.currentFormRequest?.customLayout).toBeDefined();
@@ -311,7 +297,7 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(modalRequest);
+                result.current.displayHalForm(modalRequest);
             });
 
             expect(result.current.currentFormRequest?.modal).toBe(true);
@@ -329,7 +315,7 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(modalRequest);
+                result.current.displayHalForm(modalRequest);
             });
 
             expect(result.current.currentFormRequest?.modal).toBe(true);
@@ -360,12 +346,11 @@ describe('HalFormContext', () => {
                 wrapper: createWrapperWithoutRouter(),
             });
 
-            // Should gracefully handle being outside Router
             expect(result.current).toBeDefined();
             expect(result.current.currentFormRequest).toBeNull();
         });
 
-        it('should allow requestForm to work outside Router context', () => {
+        it('should allow modal requestForm to work outside Router context', () => {
             const {result} = renderHook(() => useHalForm(), {
                 wrapper: createWrapperWithoutRouter(),
             });
@@ -376,11 +361,46 @@ describe('HalFormContext', () => {
             };
 
             act(() => {
-                result.current.requestForm(modalRequest);
+                result.current.displayHalForm(modalRequest);
             });
 
             expect(result.current.currentFormRequest?.templateName).toBe('edit');
             expect(result.current.currentFormRequest?.modal).toBe(true);
+        });
+    });
+
+    describe('Inline Form Navigation', () => {
+        it('should use current pathname when navigating for inline form', () => {
+            const {result} = renderHook(() => useHalForm(), {
+                wrapper: createWrapperWithUrl('/members/123'),
+            });
+
+            act(() => {
+                result.current.displayHalForm({
+                    templateName: 'edit',
+                    modal: false,
+                });
+            });
+
+            // After navigate, useEffect picks up ?form=edit from URL
+            expect(result.current.currentFormRequest?.templateName).toBe('edit');
+            expect(result.current.currentFormRequest?.modal).toBe(false);
+        });
+
+        it('should not set state directly for inline requests (navigates instead)', () => {
+            const {result} = renderHook(() => useHalForm(), {
+                wrapper: createWrapperWithUrl('/members/123'),
+            });
+
+            act(() => {
+                result.current.displayHalForm({
+                    templateName: 'create',
+                    modal: false,
+                });
+            });
+
+            // Inline form is detected through URL parameter, not direct state
+            expect(result.current.currentFormRequest?.modal).toBe(false);
         });
     });
 });

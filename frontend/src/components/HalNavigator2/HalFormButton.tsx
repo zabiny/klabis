@@ -9,7 +9,6 @@
  */
 
 import {type ReactElement, type ReactNode} from 'react';
-import {useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
@@ -50,9 +49,8 @@ export interface HalFormButtonProps {
  * <HalFormButton name="edit" modal={false} />
  */
 export function HalFormButton({name, modal = true, customLayout}: HalFormButtonProps): ReactElement | null {
-    const {resourceData, route} = useHalPageData();
-    const navigate = useNavigate();
-    const {requestForm} = useHalForm();
+    const {resourceData} = useHalPageData();
+    const {displayHalForm} = useHalForm();
 
     // Check if template exists
     if (!resourceData?._templates?.[name]) {
@@ -62,17 +60,12 @@ export function HalFormButton({name, modal = true, customLayout}: HalFormButtonP
     const template = resourceData._templates[name];
 
     const handleButtonClick = () => {
-        if (modal) {
-            // Request form display via context (HalFormsPageLayout will render the modal)
-            requestForm({
-                templateName: name,
-                modal: true,
-                customLayout
-            });
-        } else {
-            // Display form inline on current page (target URL only used for form data/submission)
-            navigate(`${route.pathname}?form=${name}`);
-        }
+        // Request form display via context (HalFormsPageLayout will render the modal)
+        displayHalForm({
+            templateName: name,
+            modal: modal,
+            customLayout
+        });
     };
 
     return (
