@@ -1,8 +1,6 @@
 import {expandHalFormsFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
 import React, {type ReactElement} from "react";
 import {HalFormsInput, HalFormsMemberId} from "./HalNavigator2/halforms/fields";
-import {FieldArray, type FieldArrayRenderProps, useFormikContext} from "formik";
-import {Button} from "./UI";
 
 const FormGroupWrapper: React.FC<{ label: string; children: ReactElement | ReactElement[] }> = ({label, children}) => (
     <div className="border-2 border-red-500 rounded p-4 mb-4">
@@ -11,65 +9,56 @@ const FormGroupWrapper: React.FC<{ label: string; children: ReactElement | React
     </div>
 );
 
-const ContactDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
-    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
-        {[
-            <HalFormsInput key="email" {...props.subElementProps("email", {prompt: "Email"})} />,
-            <HalFormsInput key="phone" {...props.subElementProps("phone", {prompt: "Telefon"})} />,
-            <HalFormsInput key="note" {...props.subElementProps("note", {prompt: "Poznamka"})} />,
-        ]}
-    </FormGroupWrapper>;
-}
-
-
 const AddressDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
     return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
         {[
-            <HalFormsInput key="street" {...props.subElementProps("streetAndNumber", {prompt: "Ulice"})} />,
-            <HalFormsInput key="city" {...props.subElementProps("city", {prompt: "Mesto"})} />,
-            <HalFormsInput key="postal" {...props.subElementProps("postalCode", {prompt: "PSC"})} />,
-            <HalFormsInput key="country" {...props.subElementProps("country", {prompt: "Stat"})} />,
+            <HalFormsInput key="street" {...props.subElementProps("street", {prompt: "Ulice"})} />,
+            <HalFormsInput key="city" {...props.subElementProps("city", {prompt: "Město"})} />,
+            <HalFormsInput key="postal" {...props.subElementProps("postalCode", {prompt: "PSČ"})} />,
+            <HalFormsInput key="country" {...props.subElementProps("country", {prompt: "Stát"})} />,
         ]}
     </FormGroupWrapper>;
 }
 
-const IdentityCardApiDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
+const IdentityCardDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
     return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
         {[
-            <HalFormsInput key="number" {...props.subElementProps("number", {prompt: "Cislo"})} />,
-            <HalFormsInput key="expiry" {...props.subElementProps("expiryDate", {
-                prompt: "Platnost do",
+            <HalFormsInput key="cardNumber" {...props.subElementProps("cardNumber", {prompt: "Číslo OP"})} />,
+            <HalFormsInput key="validityDate" {...props.subElementProps("validityDate", {
+                prompt: "Platnost OP",
                 type: "date"
             })} />,
         ]}
     </FormGroupWrapper>;
 }
 
-const LegalGuardiansField: React.FC<HalFormsInputProps> = ({prop, subElementProps}): ReactElement => {
-    const {getFieldMeta} = useFormikContext();
+const GuardianDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
+    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
+        {[
+            <HalFormsInput key="firstName" {...props.subElementProps("firstName", {prompt: "Jméno"})} />,
+            <HalFormsInput key="lastName" {...props.subElementProps("lastName", {prompt: "Příjmení"})} />,
+            <HalFormsInput key="relationship" {...props.subElementProps("relationship", {prompt: "Vztah"})} />,
+            <HalFormsInput key="email" {...props.subElementProps("email", {prompt: "E-mail", type: "email"})} />,
+            <HalFormsInput key="phone" {...props.subElementProps("phone", {prompt: "Telefon", type: "tel"})} />,
+        ]}
+    </FormGroupWrapper>;
+}
 
-    /// https://formik.org/docs/examples/field-arrays
-    const metaVal = getFieldMeta(prop.name).value;
-    const fieldValue: object[] = Array.isArray(metaVal) ? metaVal : [];
+const MedicalCourseDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
+    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
+        {[
+            <HalFormsInput key="completionDate" {...props.subElementProps("completionDate", {prompt: "Datum absolvování", type: "date"})} />,
+            <HalFormsInput key="validityDate" {...props.subElementProps("validityDate", {prompt: "Platnost", type: "date"})} />,
+        ]}
+    </FormGroupWrapper>;
+}
 
-    // WIP
-
-    return <FormGroupWrapper label={prop.prompt || prop.name}>
-        <FieldArray name={prop.name}>
-            {(arrayHelpers: FieldArrayRenderProps) => (
-                <div className="space-y-3">
-                    {fieldValue.map((_, index) => (
-                        <div key={index} className="border border-gray-300 rounded p-3 space-y-3">
-                            <HalFormsInput {...subElementProps("[" + index + "].firstName", {prompt: "Jmeno"})} />
-                            <HalFormsInput {...subElementProps("[" + index + "].lastName", {prompt: "Prijmeni"})} />
-                            <ContactDtoField {...subElementProps("[" + index + "].contact", {prompt: "Kontakt"})} />
-                            <Button variant="danger" size="sm" onClick={() => arrayHelpers.remove(index)}>Odeber</Button>
-                        </div>
-                    ))}
-                    <Button variant="primary" size="sm" onClick={() => arrayHelpers.push({})}>Pridej</Button>
-                </div>
-            )}
-        </FieldArray>
+const TrainerLicenseDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
+    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
+        {[
+            <HalFormsInput key="licenseNumber" {...props.subElementProps("licenseNumber", {prompt: "Číslo licence"})} />,
+            <HalFormsInput key="validityDate" {...props.subElementProps("validityDate", {prompt: "Platnost", type: "date"})} />,
+        ]}
     </FormGroupWrapper>;
 }
 
@@ -84,8 +73,6 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
     switch (fieldType) {
         case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
         case "MemberId": {
-            // Create a modified prop with remote options for member selection
-            // HalFormsMemberId automatically adds a "clear selection" option
             const propWithOptions = {
                 ...conf.prop,
                 options: {
@@ -98,14 +85,15 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
         }
         case "AddressRequest":
             return <AddressDtoField {...conf}/>;
-        case "ContactApiDto":
-            return <ContactDtoField {...conf}/>;
         case "GuardianDTO":
-            return <LegalGuardiansField {...conf}/>;
-        case "IdentityCardApiDto":
-            return <IdentityCardApiDtoField {...conf}/>;
+            return <GuardianDtoField {...conf}/>;
+        case "IdentityCardDto":
+            return <IdentityCardDtoField {...conf}/>;
+        case "MedicalCourseDto":
+            return <MedicalCourseDtoField {...conf}/>;
+        case "TrainerLicenseDto":
+            return <TrainerLicenseDtoField {...conf}/>;
         default:
             return null;
     }
 });
-
