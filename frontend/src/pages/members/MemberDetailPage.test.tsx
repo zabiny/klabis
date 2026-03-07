@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormProvider} from '../../contexts/HalFormContext';
@@ -8,10 +9,24 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
-import type {HalResponse} from '../../api';
+import type {HalFormsTemplate, HalResponse} from '../../api';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
+}));
+
+vi.mock('../../hooks/useAuthorizedFetch', () => ({
+    useAuthorizedMutation: vi.fn(() => ({
+        mutate: vi.fn(),
+        isPending: false,
+        error: null,
+    })),
+}));
+
+vi.mock('../../hooks/useFormCacheInvalidation', () => ({
+    useFormCacheInvalidation: vi.fn(() => ({
+        invalidateAllCaches: vi.fn().mockResolvedValue(undefined),
+    })),
 }));
 
 vi.mock('../../api/klabisUserManager', () => ({
@@ -174,7 +189,8 @@ describe('MemberDetailPage', () => {
         });
         renderPage(createMockPageData(data));
         expect(screen.getByText('ZÁKONNÝ ZÁSTUPCE')).toBeInTheDocument();
-        expect(screen.getByText('Marie Nováková')).toBeInTheDocument();
+        expect(screen.getByText('Marie')).toBeInTheDocument();
+        expect(screen.getByText('Nováková')).toBeInTheDocument();
         expect(screen.getByText('matka')).toBeInTheDocument();
         expect(screen.getByText('marie@email.cz')).toBeInTheDocument();
         expect(screen.getByText('+420777999888')).toBeInTheDocument();
@@ -235,5 +251,138 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
         expect(screen.getByText('Odhlášení')).toBeInTheDocument();
         expect(screen.getByText('Osobní důvody')).toBeInTheDocument();
+    });
+
+    describe('inline editing', () => {
+        const editTemplate: HalFormsTemplate = {
+            method: 'PUT',
+            target: '/api/members/123e4567-e89b-12d3-a456-426614174000',
+            properties: [
+                {name: 'firstName', type: 'text', prompt: 'Jméno'},
+                {name: 'lastName', type: 'text', prompt: 'Příjmení'},
+                {name: 'email', type: 'email', prompt: 'E-mail'},
+                {name: 'phone', type: 'tel', prompt: 'Telefon'},
+                {name: 'registrationNumber', type: 'text', readOnly: true},
+            ],
+        };
+
+        const memberWithEditTemplate = () => mockMemberDetailData({
+            _templates: {default: editTemplate},
+        });
+
+        it('clicking "Upravit" switches fields to editable inputs', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(memberWithEditTemplate()));
+
+            expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('Novák')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('jan.novak@email.cz')).toBeInTheDocument();
+        });
+
+        it('shows "Uložit" and "Zrušit" buttons in edit mode', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(memberWithEditTemplate()));
+
+            await user.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByRole('button', {name: /uložit/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /zrušit/i})).toBeInTheDocument();
+        });
+
+        it('hides "Upravit" button in edit mode', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(memberWithEditTemplate()));
+
+            await user.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
+        });
+
+        it('readOnly fields stay read-only in edit mode', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(memberWithEditTemplate()));
+
+            await user.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getAllByText('SKI2601').length).toBeGreaterThanOrEqual(1);
+            expect(screen.queryByDisplayValue('SKI2601')).not.toBeInTheDocument();
+        });
+
+        it('clicking "Zrušit" exits edit mode and restores read-only display', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(memberWithEditTemplate()));
+
+            await user.click(screen.getByRole('button', {name: /upravit/i}));
+            expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /zrušit/i}));
+
+            expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
+        });
+
+        it('hides terminate and reactivate HalFormButtons in edit mode', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {
+                    default: editTemplate,
+                    terminate: mockHalFormsTemplate({title: 'Terminate'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByRole('button', {name: /ukončit členství/i})).not.toBeInTheDocument();
+        });
+
+        it('fields not in template stay read-only in edit mode', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {
+                    default: {
+                        method: 'PUT' as const,
+                        properties: [
+                            {name: 'firstName', type: 'text'},
+                        ],
+                    },
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
+            expect(screen.getByText('jan.novak@email.cz')).toBeInTheDocument();
+            expect(screen.queryByDisplayValue('jan.novak@email.cz')).not.toBeInTheDocument();
+        });
+
+        it('renders address sub-fields as editable inputs when address is in template', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {
+                    default: {
+                        method: 'PUT' as const,
+                        properties: [
+                            {name: 'firstName', type: 'text'},
+                            {name: 'address', type: 'AddressRequest'},
+                        ],
+                    },
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByDisplayValue('Hlavní 15')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('Praha')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('11000')).toBeInTheDocument();
+        });
     });
 });
