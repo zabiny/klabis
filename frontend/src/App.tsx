@@ -15,6 +15,7 @@ import {EventsPage} from "./pages/events/EventsPage.tsx";
 import {MemberFinancePage} from "./pages/finances/FinancesPage.tsx";
 import {MembersPage} from "./pages/members/MembersPage.tsx";
 import {MemberDetailPage} from "./pages/members/MemberDetailPage.tsx";
+import {MemberRegistrationPage} from "./pages/members/MemberRegistrationPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 
@@ -73,6 +74,7 @@ function App() {
                                     <Route path="/calendar-items" element={<CalendarPage/>}/>
                                     <Route path="/member/:memberId/finance-account" element={<MemberFinancePage/>}/>
                                     <Route path="/members" element={<MembersPage/>}/>
+                                    <Route path="/members/new" element={<MemberRegistrationPage/>}/>
                                     <Route path="/members/:id" element={<MemberDetailPage/>}/>
                                     <Route path="/events" element={<EventsPage/>}/>
                                 </Route>

@@ -2,8 +2,6 @@ import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {HalFormProvider} from '../../contexts/HalFormContext';
-import {HalFormsPageLayout} from '../../components/HalNavigator2/HalFormsPageLayout';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembersPage} from './MembersPage';
@@ -12,37 +10,6 @@ import type {HalResponse} from '../../api';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
-}));
-
-vi.mock('../../api/klabisUserManager', () => ({
-    klabisAuthUserManager: {
-        getUser: vi.fn().mockResolvedValue({
-            access_token: 'test-token',
-            token_type: 'Bearer',
-        }),
-    },
-}));
-
-vi.mock('../../api/hateoas', () => ({
-    submitHalFormsData: vi.fn(),
-    isFormValidationError: vi.fn((error) => {
-        return error && typeof error === 'object' && 'validationErrors' in error;
-    }),
-}));
-
-vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, onClose}: any) => (
-        <div data-testid="hal-forms-display">
-            <h3>{template.title || templateName}</h3>
-            <button onClick={onClose} data-testid="close-form-button">Close</button>
-        </div>
-    ),
-}));
-
-vi.mock('../../components/UI/ModalOverlay.tsx', () => ({
-    ModalOverlay: ({isOpen, children, onClose}: any) => (
-        isOpen ? <div data-testid="modal-overlay" role="dialog">{children}<button onClick={onClose}>Close</button></div> : null
-    ),
 }));
 
 const createMockPageData = (resourceData: HalResponse | null, overrides?: any) => ({
@@ -76,11 +43,7 @@ const renderPage = (pageData: any) => {
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={['/members']}>
-                <HalFormProvider>
-                    <HalFormsPageLayout>
-                        <MembersPage/>
-                    </HalFormsPageLayout>
-                </HalFormProvider>
+                <MembersPage/>
             </MemoryRouter>
         </QueryClientProvider>
     );
@@ -96,7 +59,7 @@ describe('MembersPage', () => {
         expect(screen.getByText('Členové')).toBeInTheDocument();
     });
 
-    it('renders "Registrovat člena" button when template exists (label overrides template title)', () => {
+    it('renders "Registrovat člena" link navigating to /members/new when template exists', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
             _templates: {
@@ -104,16 +67,17 @@ describe('MembersPage', () => {
             },
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /registrovat člena/i})).toBeInTheDocument();
-        expect(screen.queryByText('Create Member')).not.toBeInTheDocument();
+        const link = screen.getByRole('link', {name: /registrovat člena/i});
+        expect(link).toBeInTheDocument();
+        expect(link).toHaveAttribute('href', '/members/new');
     });
 
-    it('does NOT render "Registrovat člena" button when template does not exist', () => {
+    it('does NOT render "Registrovat člena" link when template does not exist', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.queryByRole('button', {name: /registrovat člena/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: /registrovat člena/i})).not.toBeInTheDocument();
     });
 
     it('renders table columns', () => {
