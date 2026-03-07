@@ -20,6 +20,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calendar-items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get calendar item by ID
+         * @description Retrieves detailed calendar item information by ID. Returns HATEOAS links based on whether the item is manually created or event-linked.
+         */
+        get: operations["getCalendarItem"];
+        /**
+         * Update a manual calendar item
+         * @description Updates calendar item information. Only allowed for manual items (not event-linked).
+         *     Event-linked items are read-only and managed automatically.
+         *     Returns HATEOAS links for resource navigation.
+         *
+         */
+        put: operations["updateCalendarItem"];
+        post?: never;
+        /**
+         * Delete a manual calendar item
+         * @description Deletes a manual calendar item. Only allowed for manual items (not event-linked). Event-linked items are read-only and managed automatically.
+         */
+        delete: operations["deleteCalendarItem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members": {
         parameters: {
             query?: never;
@@ -35,9 +66,29 @@ export interface paths {
         put?: never;
         /**
          * Register a new member
-         * @description Creates a new member with personal information, contact details, and optional guardian information for minors. Automatically generates a unique registration number in format XXXYYSS (club code, birth year, sequence). Returns HATEOAS links for resource navigation.
+         * @description Creates a new member with personal information, contact details, and optional guardian information for minors. Automatically generates a unique registration number in format XXXYYSS (club code, birth year, sequence).
          */
         post: operations["registerMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{id}/terminate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Terminate member membership
+         * @description Terminates a member's membership with a specified reason. Requires MEMBERS:UPDATE authority (admin-only). Sets active status to false and records termination details including timestamp and user who performed termination.
+         */
+        post: operations["terminateMember"];
         delete?: never;
         options?: never;
         head?: never;
@@ -53,7 +104,11 @@ export interface paths {
         };
         /**
          * List events with pagination and filtering
-         * @description Retrieves a paginated list of events. Supports filtering by status and sorting by various fields. Default: page=0, size=10, sort=eventDate,desc. Allowed sort fields: id, name, eventDate, location, organizer, status.
+         * @description Retrieves a paginated list of events.
+         *     Supports filtering by status and sorting by various fields.
+         *     Default: page=0, size=10, sort=eventDate,desc.
+         *     Allowed sort fields: id, name, eventDate, location, organizer, status.
+         *
          */
         get: operations["listEvents"];
         put?: never;
@@ -137,7 +192,9 @@ export interface paths {
         };
         /**
          * List event registrations
-         * @description List all registrations for an event. SI card numbers are not included for privacy protection.
+         * @description List all registrations for an event.
+         *     SI card numbers are not included for privacy protection.
+         *
          */
         get: operations["listRegistrations"];
         put?: never;
@@ -148,9 +205,39 @@ export interface paths {
         post: operations["registerForEvent"];
         /**
          * Unregister from an event
-         * @description Unregister the authenticated member from an event. Only allowed before the event date.
+         * @description Unregister the authenticated member from an event.
+         *     Only allowed before the event date.
+         *
          */
         delete: operations["unregisterFromEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calendar-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List calendar items with date range filtering
+         * @description Retrieves a list of calendar items filtered by date range.
+         *     If dates not provided, defaults to current month.
+         *     Maximum date range is 1 year (366 days).
+         *     Default sort: startDate,asc. Allowed fields: id, name, startDate, endDate.
+         *
+         */
+        get: operations["listCalendarItems"];
+        put?: never;
+        /**
+         * Create a new manual calendar item
+         * @description Creates a new manual calendar item (not linked to an event). Manual items can be updated and deleted. Returns HATEOAS links for resource navigation.
+         */
+        post: operations["createCalendarItem"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -215,7 +302,7 @@ export interface paths {
         head?: never;
         /**
          * Update member information (partial update)
-         * @description Updates member information with PATCH semantics (partial update). Supports dual authorization: members can edit their own information (limited fields), users with MEMBERS:UPDATE authority can edit any member (all fields). Only provided fields are updated; null/missing fields keep existing values. Member-editable fields: email, phone, address, dietaryRestrictions. Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup. Returns HATEOAS links for resource navigation.
+         * @description Updates member information with PATCH semantics (partial update). Supports dual authorization: members can edit their own information (limited fields), users with MEMBERS:UPDATE authority can edit any member (all fields). Only provided fields are updated; null/missing fields keep existing values. Member-editable fields: email, phone, address, dietaryRestrictions. Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup.
          */
         patch: operations["updateMember"];
         trace?: never;
@@ -239,7 +326,9 @@ export interface paths {
         head?: never;
         /**
          * Update an event
-         * @description Updates event information. Only allowed for DRAFT and ACTIVE events. Returns HATEOAS links for resource navigation.
+         * @description Updates event information. Only allowed for DRAFT and ACTIVE events.
+         *     Returns HATEOAS links for resource navigation.
+         *
          */
         patch: operations["updateEvent"];
         trace?: never;
@@ -300,17 +389,164 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/actuator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Actuator root web endpoint */
+        get: operations["links"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actuator/modulith": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Actuator web endpoint 'modulith' */
+        get: operations["getApplicationModules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actuator/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Actuator web endpoint 'metrics' */
+        get: operations["listNames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actuator/metrics/{requiredMetricName}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Actuator web endpoint 'metrics-requiredMetricName' */
+        get: operations["metric"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actuator/info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Actuator web endpoint 'info' */
+        get: operations["info"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actuator/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Actuator web endpoint 'health' */
+        get: operations["health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ProblemDetail: {
+            /** Format: uri */
+            type?: string;
+            title?: string;
+            /** Format: int32 */
+            status?: number;
+            detail?: string;
+            /** Format: uri */
+            instance?: string;
+            properties?: {
+                [key: string]: unknown;
+            };
+        };
         UpdatePermissionsRequest: {
-            authorities: ("MEMBERS:CREATE" | "MEMBERS:READ" | "MEMBERS:UPDATE" | "MEMBERS:DELETE" | "MEMBERS:PERMISSIONS" | "EVENTS:MANAGE")[];
+            authorities: ("CALENDAR:MANAGE" | "MEMBERS:CREATE" | "MEMBERS:READ" | "MEMBERS:UPDATE" | "MEMBERS:DELETE" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE")[];
+        };
+        Link: {
+            href?: string;
+            hreflang?: string;
+            title?: string;
+            type?: string;
+            deprecation?: string;
+            profile?: string;
+            name?: string;
+            templated?: boolean;
         };
         PermissionsResponseModel: {
             /** Format: uuid */
             userId?: string;
             authorities?: string[];
+            _links?: components["schemas"]["Links"];
+        };
+        /** @description Calendar item update data */
+        UpdateCalendarItemCommand: {
+            name: string;
+            description: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+        };
+        EntityModelCalendarItemDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            description?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
+            /** Format: uuid */
+            eventId?: string;
             _links?: components["schemas"]["Links"];
         };
         AddressRequest: {
@@ -392,38 +628,22 @@ export interface components {
             address: components["schemas"]["AddressRequest"];
             /** @description Guardian information (required for minors under 18) */
             guardian?: components["schemas"]["GuardianDTO"];
+            /**
+             * @description Birth number (rodné číslo) - only for Czech nationals, format RRMMDD/XXXX or RRMMDDXXXX
+             * @example 900101/1234
+             */
+            birthNumber?: string;
+            /**
+             * @description Bank account number (IBAN or domestic Czech format)
+             * @example CZ6508000000192000145399
+             */
+            bankAccountNumber?: string;
         };
-        /** @description Member registration response with HATEOAS links */
-        MemberRegistrationResponse: {
-            /**
-             * Format: uuid
-             * @description Unique member identifier (UUID)
-             * @example 123e4567-e89b-12d3-a456-426614174000
-             */
-            id?: string;
-            /**
-             * @description Member's first name
-             * @example Jan
-             */
-            firstName?: string;
-            /**
-             * @description Member's last name
-             * @example Novák
-             */
-            lastName?: string;
-        };
-        ProblemDetail: {
-            /** Format: uri */
-            type?: string;
-            title?: string;
-            /** Format: int32 */
-            status?: number;
-            detail?: string;
-            /** Format: uri */
-            instance?: string;
-            properties?: {
-                [key: string]: unknown;
-            };
+        /** @description Termination request */
+        TerminateMembershipRequest: {
+            /** @enum {string} */
+            reason?: "ODHLASKA" | "PRESTUP" | "OTHER";
+            note?: string;
         };
         /** @description Event creation data */
         CreateEventCommand: {
@@ -435,20 +655,6 @@ export interface components {
             websiteUrl?: string;
             /** Format: uuid */
             eventCoordinatorId?: string;
-        };
-        EventDto: {
-            /** Format: uuid */
-            id?: string;
-            name?: string;
-            /** Format: date */
-            eventDate?: string;
-            location?: string;
-            organizer?: string;
-            websiteUrl?: string;
-            /** Format: uuid */
-            eventCoordinatorId?: string;
-            /** @enum {string} */
-            status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
         };
         EntityModelEventDto: {
             /** Format: uuid */
@@ -469,12 +675,22 @@ export interface components {
         RegisterForEventCommand: {
             siCardNumber: string;
         };
-        OwnRegistrationDto: {
+        EntityModelOwnRegistrationDto: {
             firstName?: string;
             lastName?: string;
             siCardNumber?: string;
             /** Format: date-time */
             registeredAt?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        /** @description Calendar item creation data */
+        CreateCalendarItemCommand: {
+            name: string;
+            description: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
         };
         /** @description Request for a new password setup token */
         TokenRequestRequest: {
@@ -494,14 +710,6 @@ export interface components {
             /**
              * @description Success message
              * @example If your account is pending activation, you will receive an email with a new setup link.
-             */
-            message?: string;
-        };
-        /** @description Error response for password setup API errors */
-        ErrorResponse: {
-            /**
-             * @description Error message describing what went wrong
-             * @example Invalid token
              */
             message?: string;
         };
@@ -570,6 +778,63 @@ export interface components {
             /** @enum {string} */
             drivingLicenseGroup?: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
             dietaryRestrictions?: string;
+            birthNumber?: string;
+            bankAccountNumber?: string;
+        };
+        /** @description Event update data */
+        UpdateEventCommand: {
+            name: string;
+            /** Format: date */
+            eventDate: string;
+            location: string;
+            organizer: string;
+            websiteUrl?: string;
+            /** Format: uuid */
+            eventCoordinatorId?: string;
+        };
+        EntityModelRootModel: {
+            _links?: components["schemas"]["Links"];
+        };
+        EntityModelMemberSummaryResponse: {
+            /**
+             * Format: uuid
+             * @description Unique member identifier (UUID)
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            id?: string;
+            /**
+             * @description Member's first name
+             * @example Jan
+             */
+            firstName?: string;
+            /**
+             * @description Member's last name
+             * @example Novák
+             */
+            lastName?: string;
+            /**
+             * @description Member's unique registration number
+             * @example ZBM0501
+             */
+            registrationNumber?: string;
+            _links?: components["schemas"]["Links"];
+        };
+        PageMetadata: {
+            /** Format: int64 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int64 */
+            totalPages?: number;
+            /** Format: int64 */
+            number?: number;
+        };
+        PagedModelEntityModelMemberSummaryResponse: {
+            _embedded?: {
+                memberSummaryResponseList?: components["schemas"]["EntityModelMemberSummaryResponse"][];
+            };
+            _links?: components["schemas"]["Links"];
+            page?: components["schemas"]["PageMetadata"];
         };
         AddressResponse: {
             street?: string;
@@ -577,7 +842,7 @@ export interface components {
             postalCode?: string;
             country?: string;
         };
-        MemberDetailsResponse: {
+        EntityModelMemberDetailsResponse: {
             /** Format: uuid */
             id?: string;
             registrationNumber?: string;
@@ -600,53 +865,17 @@ export interface components {
             /** @enum {string} */
             drivingLicenseGroup?: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
             dietaryRestrictions?: string;
-        };
-        /** @description Event update data */
-        UpdateEventCommand: {
-            name: string;
-            /** Format: date */
-            eventDate: string;
-            location: string;
-            organizer: string;
-            websiteUrl?: string;
-            /** Format: uuid */
-            eventCoordinatorId?: string;
-        };
-        EntityModelRootModel: {
+            birthNumber?: string;
+            bankAccountNumber?: string;
+            /** @enum {string} */
+            deactivationReason?: "ODHLASKA" | "PRESTUP" | "OTHER";
+            /** Format: date-time */
+            deactivatedAt?: string;
+            deactivatedBy?: string;
+            deactivationNote?: string;
             _links?: components["schemas"]["Links"];
         };
-        Pageable: {
-            /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            size?: number;
-            sort?: string[];
-        };
-        /** @description Member summary with essential information and HATEOAS links */
-        MemberSummaryResponse: {
-            /**
-             * Format: uuid
-             * @description Unique member identifier (UUID)
-             * @example 123e4567-e89b-12d3-a456-426614174000
-             */
-            id?: string;
-            /**
-             * @description Member's first name
-             * @example Jan
-             */
-            firstName?: string;
-            /**
-             * @description Member's last name
-             * @example Novák
-             */
-            lastName?: string;
-            /**
-             * @description Member's unique registration number
-             * @example ZBM0501
-             */
-            registrationNumber?: string;
-        };
-        EventSummaryDto: {
+        EntityModelEventSummaryDto: {
             /** Format: uuid */
             id?: string;
             name?: string;
@@ -656,12 +885,14 @@ export interface components {
             organizer?: string;
             /** @enum {string} */
             status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
+            _links?: components["schemas"]["Links"];
         };
-        RegistrationDto: {
-            firstName?: string;
-            lastName?: string;
-            /** Format: date-time */
-            registeredAt?: string;
+        PagedModelEntityModelEventSummaryDto: {
+            _embedded?: {
+                eventSummaryDtoList?: components["schemas"]["EntityModelEventSummaryDto"][];
+            };
+            _links?: components["schemas"]["Links"];
+            page?: components["schemas"]["PageMetadata"];
         };
         CollectionModelRegistrationDto: {
             _embedded?: {
@@ -669,12 +900,16 @@ export interface components {
             };
             _links?: components["schemas"]["Links"];
         };
-        EntityModelOwnRegistrationDto: {
+        RegistrationDto: {
             firstName?: string;
             lastName?: string;
-            siCardNumber?: string;
             /** Format: date-time */
             registeredAt?: string;
+        };
+        CollectionModelEntityModelCalendarItemDto: {
+            _embedded?: {
+                calendarItemDtoList?: components["schemas"]["EntityModelCalendarItemDto"][];
+            };
             _links?: components["schemas"]["Links"];
         };
         /** @description Response for token validation */
@@ -690,16 +925,6 @@ export interface components {
              * @example 2024-12-31T23:59:59Z
              */
             expiresAt?: string;
-        };
-        Link: {
-            href?: string;
-            hreflang?: string;
-            title?: string;
-            type?: string;
-            deprecation?: string;
-            profile?: string;
-            name?: string;
-            templated?: boolean;
         };
         Links: {
             [key: string]: components["schemas"]["Link"];
@@ -733,6 +958,51 @@ export interface operations {
                     "*/*": components["schemas"]["PermissionsResponseModel"];
                 };
             };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     updatePermissions: {
@@ -759,30 +1029,7 @@ export interface operations {
                     "*/*": components["schemas"]["PermissionsResponseModel"];
                 };
             };
-        };
-    };
-    listMembers: {
-        parameters: {
-            query: {
-                /** @description Pagination parameters: page (default=0), size (default=10, max=100), sort (default=lastName,asc). Example: ?page=0&size=20&sort=lastName,asc&sort=firstName,asc */
-                pageable: components["schemas"]["Pageable"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Paginated list of members retrieved successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["MemberSummaryResponse"];
-                };
-            };
-            /** @description Invalid request - invalid sort field or page parameters */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -800,8 +1047,304 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions (requires MEMBERS:READ) */
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getCalendarItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Calendar item UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calendar item found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelCalendarItemDto"];
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateCalendarItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Calendar item UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCalendarItemCommand"];
+            };
+        };
+        responses: {
+            /** @description Calendar item successfully updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelCalendarItemDto"];
+                };
+            };
+            /** @description Cannot update event-linked calendar item */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    deleteCalendarItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Calendar item UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calendar item successfully deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cannot delete event-linked calendar item */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listMembers: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of members retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelMemberSummaryResponse"];
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -829,11 +1372,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["MemberRegistrationResponse"];
-                };
+                content?: never;
             };
-            /** @description Validation error - invalid request data */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -851,8 +1392,96 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions (requires MEMBERS:CREATE) */
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    terminateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Member UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerminateMembershipRequest"];
+            };
+        };
+        responses: {
+            /** @description Membership terminated successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid termination request (e.g., already terminated) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - user lacks MEMBERS:UPDATE authority */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent modification detected */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -864,11 +1493,15 @@ export interface operations {
     };
     listEvents: {
         parameters: {
-            query: {
+            query?: {
                 /** @description Filter by event status (optional) */
                 status?: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
-                /** @description Pagination parameters: page, size, sort */
-                pageable: components["schemas"]["Pageable"];
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
             };
             header?: never;
             path?: never;
@@ -882,10 +1515,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EventSummaryDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelEventSummaryDto"];
                 };
             };
-            /** @description Invalid request parameters */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -894,8 +1527,35 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions */
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -924,10 +1584,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EventDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
                 };
             };
-            /** @description Validation error - invalid request data */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -936,8 +1596,35 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions (requires EVENTS:MANAGE) */
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -968,31 +1655,49 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
                 };
             };
-            /** @description Invalid state transition */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions */
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Event not found */
+            /** @description Resource not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -1018,31 +1723,49 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
                 };
             };
-            /** @description Invalid state transition */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions */
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Event not found */
+            /** @description Resource not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -1068,31 +1791,49 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
                 };
             };
-            /** @description Invalid state transition */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions */
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Event not found */
+            /** @description Resource not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -1115,16 +1856,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["RegistrationDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelRegistrationDto"];
                 };
             };
-            /** @description Event not found */
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelRegistrationDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -1151,7 +1928,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["OwnRegistrationDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
             /** @description Unauthorized - authentication required */
@@ -1163,7 +1949,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - user must have a member profile to register for events */
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1172,7 +1958,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Event not found */
+            /** @description Resource not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1181,7 +1967,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Registration Conflict - already registered */
+            /** @description User already registered to this event */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1211,189 +1997,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Cannot unregister on or after event date */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unauthorized - authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Event or registration not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    requestNewToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TokenRequestRequest"];
-            };
-        };
-        responses: {
-            /** @description Request processed successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["TokenRequestResponse"];
-                };
-            };
-            /** @description Invalid registration number format */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    completePasswordSetup: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SetPasswordRequest"];
-            };
-        };
-        responses: {
-            /** @description Password set successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PasswordSetupResponse"];
-                };
-            };
-            /** @description Invalid request (validation failed, bad token, password mismatch) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Token expired or already used */
-            410: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Member UUID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Member found */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["MemberDetailsResponse"];
-                };
-            };
-            /** @description Unauthorized - authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Forbidden - insufficient permissions (requires MEMBERS:READ) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-            /** @description Member not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetail"];
-                };
-            };
-        };
-    };
-    updateMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Member UUID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateMemberRequest"];
-            };
-        };
-        responses: {
-            /** @description Member updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/prs.hal-forms+json": components["schemas"]["MemberDetailsResponse"];
-                };
-            };
-            /** @description Validation error - invalid request data or empty update */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1420,7 +2024,442 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Member not found */
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listCalendarItems: {
+        parameters: {
+            query?: {
+                /** @description Start date for filtering (ISO DATE format, defaults to first day of current month) */
+                startDate?: string;
+                /** @description End date for filtering (ISO DATE format, defaults to last day of current month) */
+                endDate?: string;
+                /** @description Sorting parameters (default: startDate,asc) */
+                sort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of calendar items retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelCalendarItemDto"];
+                };
+            };
+            /** @description Date range exceeds 366 days or invalid sort field */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    createCalendarItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCalendarItemCommand"];
+            };
+        };
+        responses: {
+            /** @description Calendar item successfully created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelCalendarItemDto"];
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    requestNewToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Request processed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TokenRequestResponse"];
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Token expired or already used */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    completePasswordSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password set successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PasswordSetupResponse"];
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Token expired or already used */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Member UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelMemberDetailsResponse"];
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    updateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Member UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Member updated successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1458,10 +2497,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EventDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
                 };
             };
-            /** @description Forbidden - insufficient permissions */
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1470,8 +2527,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Event not found */
+            /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1503,10 +2569,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EventDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDto"];
                 };
             };
-            /** @description Validation error or invalid state transition */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1515,7 +2581,16 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Forbidden - insufficient permissions */
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1524,8 +2599,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Event not found */
+            /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1554,6 +2638,51 @@ export interface operations {
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelRootModel"];
                 };
             };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     getOwnRegistration: {
@@ -1574,7 +2703,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["OwnRegistrationDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
             /** @description Unauthorized - authentication required */
@@ -1583,16 +2721,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
-            /** @description Event or registration not found */
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelOwnRegistrationDto"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -1621,13 +2777,49 @@ export interface operations {
                     "*/*": components["schemas"]["ValidateTokenResponse"];
                 };
             };
-            /** @description Invalid token */
+            /** @description Validation error - business rule violated */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ValidateTokenResponse"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
             /** @description Token expired or already used */
@@ -1636,7 +2828,423 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ValidateTokenResponse"];
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    links: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.spring-boot.actuator.v3+json": {
+                        [key: string]: {
+                            [key: string]: components["schemas"]["Link"];
+                        };
+                    };
+                    "application/vnd.spring-boot.actuator.v2+json": {
+                        [key: string]: {
+                            [key: string]: components["schemas"]["Link"];
+                        };
+                    };
+                    "application/json": {
+                        [key: string]: {
+                            [key: string]: components["schemas"]["Link"];
+                        };
+                    };
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    getApplicationModules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.spring-boot.actuator.v3+json": Record<string, never>;
+                    "application/vnd.spring-boot.actuator.v2+json": Record<string, never>;
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    listNames: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.spring-boot.actuator.v3+json": Record<string, never>;
+                    "application/vnd.spring-boot.actuator.v2+json": Record<string, never>;
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    metric: {
+        parameters: {
+            query?: {
+                tag?: string;
+            };
+            header?: never;
+            path: {
+                requiredMetricName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.spring-boot.actuator.v3+json": Record<string, never>;
+                    "application/vnd.spring-boot.actuator.v2+json": Record<string, never>;
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    info: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.spring-boot.actuator.v3+json": Record<string, never>;
+                    "application/vnd.spring-boot.actuator.v2+json": Record<string, never>;
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.spring-boot.actuator.v3+json": Record<string, never>;
+                    "application/vnd.spring-boot.actuator.v2+json": Record<string, never>;
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation error - business rule violated */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Unauthorized - authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Forbidden - insufficient permissions (editing other member without admin permission, or accessing admin-only fields) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Conflict - concurrent update (optimistic locking failure) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
                 };
             };
         };

@@ -13,6 +13,8 @@ import CalendarPage from "./pages/calendar/CalendarPage.tsx";
 import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 import {EventsPage} from "./pages/events/EventsPage.tsx";
 import {MemberFinancePage} from "./pages/finances/FinancesPage.tsx";
+import {MembersPage} from "./pages/members/MembersPage.tsx";
+import {MemberDetailPage} from "./pages/members/MemberDetailPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
 import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 
@@ -70,6 +72,8 @@ function App() {
                                 <Route element={<AdminModeAwareRoute allowedInAdminMode={false} />}>
                                     <Route path="/calendar-items" element={<CalendarPage/>}/>
                                     <Route path="/member/:memberId/finance-account" element={<MemberFinancePage/>}/>
+                                    <Route path="/members" element={<MembersPage/>}/>
+                                    <Route path="/members/:id" element={<MemberDetailPage/>}/>
                                     <Route path="/events" element={<EventsPage/>}/>
                                 </Route>
 
