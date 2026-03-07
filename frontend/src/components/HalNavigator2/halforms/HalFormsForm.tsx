@@ -1,11 +1,12 @@
 import * as Yup from "yup";
-import {Form, Formik} from "formik";
+import {Form, Formik, getIn, useFormikContext} from "formik";
 import React, {type ReactElement, type ReactNode, useContext, useMemo} from "react";
 import {type HalFormsProperty, type HalFormsTemplate} from "../../../api";
 import {type HalFormFieldFactory, type HalFormsInputProps, type SubElementConfiguration} from "./types.ts";
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory.tsx";
 import {Alert, Button, Spinner} from "../../UI";
 import {Box} from "../../UI/layout";
+import {FieldWrapper} from "../../UI/forms";
 import {UI_MESSAGES, VALIDATION_MESSAGES} from "../../../constants/messages.ts";
 
 type FormData = Record<string, unknown>;
@@ -96,6 +97,35 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
 }
 
 
+// --- Read-only field display ---
+const ReadOnlyField: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
+    const {values} = useFormikContext<Record<string, unknown>>();
+    const rawValue = getIn(values, prop.name);
+
+    let displayValue: string;
+    if (rawValue == null || rawValue === '') {
+        displayValue = '\u2014';
+    } else if (Array.isArray(rawValue)) {
+        displayValue = rawValue.join(', ');
+    } else if (typeof rawValue === 'object') {
+        displayValue = JSON.stringify(rawValue);
+    } else {
+        displayValue = String(rawValue);
+    }
+
+    return (
+        <FieldWrapper label={prop.prompt || prop.name}>
+            <span className="py-2.5 text-text-primary">{displayValue}</span>
+        </FieldWrapper>
+    );
+};
+
+const SIMPLE_FIELD_TYPES = new Set([
+    'text', 'email', 'number', 'date', 'url', 'tel',
+    'textarea', 'select', 'radioGroup', 'checkbox', 'checkboxGroup',
+    'boolean', 'datetime'
+]);
+
 // --- Render funkce pro pole ---
 function renderField(
     prop: HalFormsProperty,
@@ -106,6 +136,10 @@ function renderField(
     // Properly narrow error type to string
     const error = touched[prop.name] && errors[prop.name];
     const errorText: string = typeof error === 'string' ? error : '';
+
+    if (prop.readOnly === true && SIMPLE_FIELD_TYPES.has(prop.type)) {
+        return <ReadOnlyField prop={prop} />;
+    }
 
     const fieldProps: HalFormsInputProps = {
         prop: prop,
