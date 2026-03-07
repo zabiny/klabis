@@ -1,10 +1,10 @@
-import {type ReactElement, useState} from "react";
+import {type ReactElement, type ReactNode, useState} from "react";
 import {Link} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {DetailRow, Skeleton} from "../../components/UI";
 import {Badge} from "../../components/UI/Badge";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
-import {HalFormsForm} from "../../components/HalNavigator2/halforms";
+import {type FormRenderHelpers, HalFormsForm} from "../../components/HalNavigator2/halforms";
 import {klabisFieldsFactory} from "../../components/KlabisFieldsFactory";
 import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
@@ -113,15 +113,182 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const identityCard = member.identityCard;
     const medicalCourse = member.medicalCourse;
     const trainerLicense = member.trainerLicense;
-
-    const hasSupplementaryInfo = member.chipNumber || member.bankAccountNumber || member.dietaryRestrictions;
-    const hasDocuments = identityCard?.cardNumber || member.drivingLicenseGroup || medicalCourse?.completionDate || trainerLicense?.licenseNumber;
     const showDeactivation = member.active === false && member.deactivationReason;
 
-    if (isEditing && template) {
-        const enrichedTemplate = enrichTemplateWithReadOnlyFields(template, resourceData);
-        const enrichedFieldNames = new Set(enrichedTemplate.properties.map(p => p.name));
+    const enrichedTemplate = isEditing && template
+        ? enrichTemplateWithReadOnlyFields(template, resourceData)
+        : null;
+    const enrichedFieldNames = enrichedTemplate
+        ? new Set(enrichedTemplate.properties.map(p => p.name))
+        : new Set<string>();
 
+    const val = (value: ReactNode): ReactNode => value || '\u2014';
+
+    const renderContent = (helpers?: FormRenderHelpers) => {
+        const ri = (name: string): ReactNode =>
+            isEditing && enrichedFieldNames.has(name) && helpers
+                ? helpers.renderInput(name)
+                : null;
+
+        return (
+            <div className="flex flex-col gap-8">
+                <div>
+                    <Link to="/members" className="text-sm text-primary hover:text-primary-light">
+                        &larr; Zpět na seznam
+                    </Link>
+                </div>
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-3xl font-bold text-text-primary">
+                            {member.firstName} {member.lastName}
+                        </h1>
+                        <Badge variant={member.active ? 'success' : 'default'} size="sm">
+                            {member.active ? 'Aktivní' : 'Neaktivní'}
+                        </Badge>
+                    </div>
+                    <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                    {isEditing ? (
+                        <>
+                            {helpers?.renderField('submit')}
+                            <button
+                                type="button"
+                                onClick={cancelEditing}
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                            >
+                                Zrušit
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            {editForm.hasTemplate && (
+                                <button
+                                    type="button"
+                                    onClick={startEditing}
+                                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
+                                >
+                                    Upravit
+                                </button>
+                            )}
+                            <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
+                            <HalFormButton name="reactivate" modal={true} label="Reaktivovat"/>
+                            {hasLink('permissions') && (
+                                <Link
+                                    to={route.getResourceLink('permissions')?.href ?? '#'}
+                                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                                >
+                                    Správa oprávnění
+                                </Link>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                <Section title="OSOBNÍ ÚDAJE">
+                    <DetailRow label="Jméno">{ri('firstName') ?? val(member.firstName)}</DetailRow>
+                    <DetailRow label="Příjmení">{ri('lastName') ?? val(member.lastName)}</DetailRow>
+                    <DetailRow label="Datum narození">{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
+                    <DetailRow label="Pohlaví">{ri('gender') ?? val(member.gender && (GENDER_LABELS[member.gender] ?? member.gender))}</DetailRow>
+                    <DetailRow label="Státní příslušnost">{ri('nationality') ?? val(member.nationality)}</DetailRow>
+                    {(isEditing || (member.nationality === 'CZ' && member.birthNumber)) && (
+                        <DetailRow label="Rodné číslo">
+                            {isEditing
+                                ? ri('birthNumber')
+                                : <MaskedBirthNumber value={member.birthNumber!}/>}
+                        </DetailRow>
+                    )}
+                    {isEditing && (
+                        <DetailRow label="Registrační číslo">{ri('registrationNumber')}</DetailRow>
+                    )}
+                </Section>
+
+                <Section title="KONTAKT">
+                    <DetailRow label="E-mail">{ri('email') ?? val(member.email)}</DetailRow>
+                    <DetailRow label="Telefon">{ri('phone') ?? val(member.phone)}</DetailRow>
+                </Section>
+
+                <Section title="ADRESA">
+                    {isEditing ? ri('address') : (
+                        address ? (
+                            <>
+                                <DetailRow label="Ulice">{val(address.street)}</DetailRow>
+                                <DetailRow label="Město">{val(address.city)}</DetailRow>
+                                <DetailRow label="PSČ">{val(address.postalCode)}</DetailRow>
+                                <DetailRow label="Stát">{val(address.country)}</DetailRow>
+                            </>
+                        ) : <span className="text-sm text-text-tertiary">{'\u2014'}</span>
+                    )}
+                </Section>
+
+                <Section title="DOPLŇKOVÉ INFORMACE">
+                    <DetailRow label="Číslo čipu">{ri('chipNumber') ?? val(member.chipNumber)}</DetailRow>
+                    <DetailRow label="Číslo bankovního účtu">{ri('bankAccountNumber') ?? val(member.bankAccountNumber)}</DetailRow>
+                    <DetailRow label="Stravovací omezení">{ri('dietaryRestrictions') ?? val(member.dietaryRestrictions)}</DetailRow>
+                </Section>
+
+                <Section title="DOKLADY A LICENCE">
+                    {isEditing ? ri('identityCard') : (
+                        <>
+                            <DetailRow label="Číslo OP">{val(identityCard?.cardNumber)}</DetailRow>
+                            {identityCard?.validityDate && (
+                                <DetailRow label="Platnost OP">{formatDate(identityCard.validityDate)}</DetailRow>
+                            )}
+                        </>
+                    )}
+                    <DetailRow label="Řidičský průkaz">{ri('drivingLicenseGroup') ?? val(member.drivingLicenseGroup)}</DetailRow>
+                    {isEditing ? ri('medicalCourse') : (
+                        <>
+                            <DetailRow label="Zdravotní kurz">{val(medicalCourse?.completionDate && formatDate(medicalCourse.completionDate))}</DetailRow>
+                            {medicalCourse?.validityDate && (
+                                <DetailRow label="Platnost ZK">{formatDate(medicalCourse.validityDate)}</DetailRow>
+                            )}
+                        </>
+                    )}
+                    {isEditing ? ri('trainerLicense') : (
+                        <>
+                            <DetailRow label="Trenérská licence">{val(trainerLicense?.licenseNumber)}</DetailRow>
+                            {trainerLicense?.validityDate && (
+                                <DetailRow label="Platnost TL">{formatDate(trainerLicense.validityDate)}</DetailRow>
+                            )}
+                        </>
+                    )}
+                </Section>
+
+                {(guardian || (isEditing && enrichedFieldNames.has('guardian'))) && (
+                    <Section title="ZÁKONNÝ ZÁSTUPCE">
+                        {isEditing ? ri('guardian') : (
+                            <>
+                                <DetailRow label="Jméno">{val(guardian?.firstName)}</DetailRow>
+                                <DetailRow label="Příjmení">{val(guardian?.lastName)}</DetailRow>
+                                <DetailRow label="Vztah">{val(guardian?.relationship)}</DetailRow>
+                                <DetailRow label="E-mail">{val(guardian?.email)}</DetailRow>
+                                <DetailRow label="Telefon">{val(guardian?.phone)}</DetailRow>
+                            </>
+                        )}
+                    </Section>
+                )}
+
+                {showDeactivation && (
+                    <Section title="DEAKTIVACE">
+                        <DetailRow label="Důvod">
+                            {member.deactivationReason && (DEACTIVATION_REASON_LABELS[member.deactivationReason] ?? member.deactivationReason)}
+                        </DetailRow>
+                        {member.deactivatedAt && (
+                            <DetailRow label="Datum">{formatDate(member.deactivatedAt)}</DetailRow>
+                        )}
+                        {member.deactivationNote && (
+                            <DetailRow label="Poznámka">{member.deactivationNote}</DetailRow>
+                        )}
+                    </Section>
+                )}
+            </div>
+        );
+    };
+
+    if (isEditing && enrichedTemplate) {
         return (
             <HalFormsForm
                 data={resourceData as Record<string, unknown>}
@@ -130,250 +297,10 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                 fieldsFactory={klabisFieldsFactory}
                 submitButtonLabel="Uložit"
                 isSubmitting={editForm.isSubmitting}
-                renderForm={({renderInput, renderField}) => {
-                    const ri = (name: string) =>
-                        enrichedFieldNames.has(name) ? renderInput(name) : null;
-                    return (
-                    <div className="flex flex-col gap-8">
-                        <div>
-                            <Link to="/members" className="text-sm text-primary hover:text-primary-light">
-                                &larr; Zpět na seznam
-                            </Link>
-                        </div>
-
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-center gap-4">
-                                <h1 className="text-3xl font-bold text-text-primary">
-                                    {member.firstName} {member.lastName}
-                                </h1>
-                                <Badge variant={member.active ? 'success' : 'default'} size="sm">
-                                    {member.active ? 'Aktivní' : 'Neaktivní'}
-                                </Badge>
-                            </div>
-                            <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                            {renderField('submit')}
-                            <button
-                                type="button"
-                                onClick={cancelEditing}
-                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                            >
-                                Zrušit
-                            </button>
-                        </div>
-
-                        <Section title="OSOBNÍ ÚDAJE">
-                            <DetailRow label="Jméno">{ri('firstName')}</DetailRow>
-                            <DetailRow label="Příjmení">{ri('lastName')}</DetailRow>
-                            <DetailRow label="Datum narození">{ri('dateOfBirth')}</DetailRow>
-                            <DetailRow label="Pohlaví">{ri('gender')}</DetailRow>
-                            <DetailRow label="Státní příslušnost">{ri('nationality')}</DetailRow>
-                            <DetailRow label="Rodné číslo">{ri('birthNumber')}</DetailRow>
-                            <DetailRow label="Registrační číslo">{ri('registrationNumber')}</DetailRow>
-                        </Section>
-
-                        <Section title="KONTAKT">
-                            <DetailRow label="E-mail">{ri('email')}</DetailRow>
-                            <DetailRow label="Telefon">{ri('phone')}</DetailRow>
-                        </Section>
-
-                        <Section title="ADRESA">
-                            {ri('address')}
-                        </Section>
-
-                        <Section title="DOPLŇKOVÉ INFORMACE">
-                            <DetailRow label="Číslo čipu">{ri('chipNumber')}</DetailRow>
-                            <DetailRow label="Číslo bankovního účtu">{ri('bankAccountNumber')}</DetailRow>
-                            <DetailRow label="Stravovací omezení">{ri('dietaryRestrictions')}</DetailRow>
-                        </Section>
-
-                        <Section title="DOKLADY A LICENCE">
-                            {ri('identityCard')}
-                            <DetailRow label="Řidičský průkaz">{ri('drivingLicenseGroup')}</DetailRow>
-                            {ri('medicalCourse')}
-                            {ri('trainerLicense')}
-                        </Section>
-
-                        {(guardian || enrichedFieldNames.has('guardian')) && (
-                            <Section title="ZÁKONNÝ ZÁSTUPCE">
-                                {ri('guardian')}
-                            </Section>
-                        )}
-
-                        {showDeactivation && (
-                            <Section title="DEAKTIVACE">
-                                <DetailRow label="Důvod">
-                                    {member.deactivationReason && (DEACTIVATION_REASON_LABELS[member.deactivationReason] ?? member.deactivationReason)}
-                                </DetailRow>
-                                {member.deactivatedAt && (
-                                    <DetailRow label="Datum">{formatDate(member.deactivatedAt)}</DetailRow>
-                                )}
-                                {member.deactivationNote && (
-                                    <DetailRow label="Poznámka">{member.deactivationNote}</DetailRow>
-                                )}
-                            </Section>
-                        )}
-                    </div>
-                    );
-                }}
+                renderForm={(helpers) => renderContent(helpers) as ReactElement}
             />
         );
     }
 
-    return (
-        <div className="flex flex-col gap-8">
-            <div>
-                <Link to="/members" className="text-sm text-primary hover:text-primary-light">
-                    &larr; Zpět na seznam
-                </Link>
-            </div>
-
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-bold text-text-primary">
-                        {member.firstName} {member.lastName}
-                    </h1>
-                    <Badge variant={member.active ? 'success' : 'default'} size="sm">
-                        {member.active ? 'Aktivní' : 'Neaktivní'}
-                    </Badge>
-                </div>
-                <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-                {editForm.hasTemplate && (
-                    <button
-                        type="button"
-                        onClick={startEditing}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                    >
-                        Upravit
-                    </button>
-                )}
-                <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
-                <HalFormButton name="reactivate" modal={true} label="Reaktivovat"/>
-                {hasLink('permissions') && (
-                    <Link
-                        to={route.getResourceLink('permissions')?.href ?? '#'}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                    >
-                        Správa oprávnění
-                    </Link>
-                )}
-            </div>
-
-            <Section title="OSOBNÍ ÚDAJE">
-                <DetailRow label="Jméno">{member.firstName}</DetailRow>
-                <DetailRow label="Příjmení">{member.lastName}</DetailRow>
-                {member.dateOfBirth && (
-                    <DetailRow label="Datum narození">{formatDate(member.dateOfBirth)}</DetailRow>
-                )}
-                {member.gender && (
-                    <DetailRow label="Pohlaví">{GENDER_LABELS[member.gender] ?? member.gender}</DetailRow>
-                )}
-                {member.nationality && (
-                    <DetailRow label="Státní příslušnost">{member.nationality}</DetailRow>
-                )}
-                {member.nationality === 'CZ' && member.birthNumber && (
-                    <DetailRow label="Rodné číslo"><MaskedBirthNumber value={member.birthNumber}/></DetailRow>
-                )}
-            </Section>
-
-            <Section title="KONTAKT">
-                {member.email && (
-                    <DetailRow label="E-mail">{member.email}</DetailRow>
-                )}
-                {member.phone && (
-                    <DetailRow label="Telefon">{member.phone}</DetailRow>
-                )}
-            </Section>
-
-            {address && (
-                <Section title="ADRESA">
-                    {address.street && <DetailRow label="Ulice">{address.street}</DetailRow>}
-                    {address.city && <DetailRow label="Město">{address.city}</DetailRow>}
-                    {address.postalCode && <DetailRow label="PSČ">{address.postalCode}</DetailRow>}
-                    {address.country && <DetailRow label="Stát">{address.country}</DetailRow>}
-                </Section>
-            )}
-
-            {hasSupplementaryInfo && (
-                <Section title="DOPLŇKOVÉ INFORMACE">
-                    {member.chipNumber && (
-                        <DetailRow label="Číslo čipu">{member.chipNumber}</DetailRow>
-                    )}
-                    {member.bankAccountNumber && (
-                        <DetailRow label="Číslo bankovního účtu">{member.bankAccountNumber}</DetailRow>
-                    )}
-                    {member.dietaryRestrictions && (
-                        <DetailRow label="Stravovací omezení">{member.dietaryRestrictions}</DetailRow>
-                    )}
-                </Section>
-            )}
-
-            {hasDocuments && (
-                <Section title="DOKLADY A LICENCE">
-                    {identityCard?.cardNumber && (
-                        <>
-                            <DetailRow label="Číslo OP">{identityCard.cardNumber}</DetailRow>
-                            {identityCard.validityDate && (
-                                <DetailRow label="Platnost OP">{formatDate(identityCard.validityDate)}</DetailRow>
-                            )}
-                        </>
-                    )}
-                    {member.drivingLicenseGroup && (
-                        <DetailRow label="Řidičský průkaz">{member.drivingLicenseGroup}</DetailRow>
-                    )}
-                    {medicalCourse?.completionDate && (
-                        <>
-                            <DetailRow label="Zdravotní kurz">{formatDate(medicalCourse.completionDate)}</DetailRow>
-                            {medicalCourse.validityDate && (
-                                <DetailRow label="Platnost ZK">{formatDate(medicalCourse.validityDate)}</DetailRow>
-                            )}
-                        </>
-                    )}
-                    {trainerLicense?.licenseNumber && (
-                        <>
-                            <DetailRow label="Trenérská licence">{trainerLicense.licenseNumber}</DetailRow>
-                            {trainerLicense.validityDate && (
-                                <DetailRow label="Platnost TL">{formatDate(trainerLicense.validityDate)}</DetailRow>
-                            )}
-                        </>
-                    )}
-                </Section>
-            )}
-
-            {guardian && (
-                <Section title="ZÁKONNÝ ZÁSTUPCE">
-                    <DetailRow label="Jméno">{guardian.firstName}</DetailRow>
-                    <DetailRow label="Příjmení">{guardian.lastName}</DetailRow>
-                    {guardian.relationship && (
-                        <DetailRow label="Vztah">{guardian.relationship}</DetailRow>
-                    )}
-                    {guardian.email && (
-                        <DetailRow label="E-mail">{guardian.email}</DetailRow>
-                    )}
-                    {guardian.phone && (
-                        <DetailRow label="Telefon">{guardian.phone}</DetailRow>
-                    )}
-                </Section>
-            )}
-
-            {showDeactivation && (
-                <Section title="DEAKTIVACE">
-                    <DetailRow label="Důvod">
-                        {member.deactivationReason && (DEACTIVATION_REASON_LABELS[member.deactivationReason] ?? member.deactivationReason)}
-                    </DetailRow>
-                    {member.deactivatedAt && (
-                        <DetailRow label="Datum">{formatDate(member.deactivatedAt)}</DetailRow>
-                    )}
-                    {member.deactivationNote && (
-                        <DetailRow label="Poznámka">{member.deactivationNote}</DetailRow>
-                    )}
-                </Section>
-            )}
-        </div>
-    );
+    return renderContent() as ReactElement;
 };
