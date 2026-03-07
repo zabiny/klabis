@@ -1,5 +1,8 @@
 # Frontend Development Guide
 
+## Recommended skills
+- `hal-navigator-patterns`: use always when working with UI code. It contains knowledge about how to work with Hal+HalForms in the frontend. 
+
 ## Technology Stack
 
 - **Framework:** React 19.1.1 + TypeScript 5.8.3
