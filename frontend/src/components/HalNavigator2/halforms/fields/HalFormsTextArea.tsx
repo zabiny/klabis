@@ -11,6 +11,7 @@ import type {HalFormsInputProps} from '../types.ts'
 export const HalFormsTextArea = ({
                                      prop,
                                      errorText,
+                                     renderMode = 'field',
                                  }: HalFormsInputProps): ReactElement => {
     return (
         <Field name={prop.name} validate={() => undefined}>
@@ -20,7 +21,7 @@ export const HalFormsTextArea = ({
                     <TextAreaField
                         {...field}
                         value={fieldValue}
-                        label={prop.prompt || prop.name}
+                        label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
                         disabled={prop.readOnly || false}
                         required={prop.required}
                         error={errorText}

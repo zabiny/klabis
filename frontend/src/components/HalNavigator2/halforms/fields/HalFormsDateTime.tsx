@@ -79,6 +79,7 @@ const convertToISODatetimeWithTimezone = (value: string | undefined): string => 
 export const HalFormsDateTime = ({
                                      prop,
                                      errorText,
+                                     renderMode = 'field',
                                  }: HalFormsInputProps): ReactElement => {
     return (
         <Field name={prop.name} validate={() => undefined}>
@@ -101,7 +102,7 @@ export const HalFormsDateTime = ({
                         value={convertedValue}
                         onChange={handleChange}
                         type="datetime-local"
-                        label={prop.prompt || prop.name}
+                        label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
                         disabled={prop.readOnly || false}
                         required={prop.required}
                         error={errorText}

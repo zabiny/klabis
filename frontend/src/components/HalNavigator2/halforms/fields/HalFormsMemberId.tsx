@@ -11,7 +11,7 @@ import type {HalFormsInputProps} from '../types.ts'
  * Displays a select dropdown for member selection with a clear button (X icon)
  * that appears only when a value is selected. Clicking the X clears the selection.
  */
-export const HalFormsMemberId = ({prop, errorText}: HalFormsInputProps): ReactElement => {
+export const HalFormsMemberId = ({prop, errorText, renderMode = 'field'}: HalFormsInputProps): ReactElement => {
     const {options, isLoading} = useHalFormOptions(prop.options)
 
     return (
@@ -37,7 +37,7 @@ export const HalFormsMemberId = ({prop, errorText}: HalFormsInputProps): ReactEl
                             {...field}
                             id={`field-${prop.name}`}
                             value={selectValue}
-                            label={prop.prompt || prop.name}
+                            label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
                             placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
                             disabled={prop.readOnly || isLoading || false}
                             required={prop.required}

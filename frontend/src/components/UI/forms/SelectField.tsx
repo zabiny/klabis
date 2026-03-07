@@ -4,7 +4,7 @@ import {FieldWrapper} from './FieldWrapper.tsx'
 import type {SelectFieldProps} from './types.ts'
 
 const selectBaseClasses = clsx(
-    'w-full px-4 py-2.5 border rounded-lg font-normal',
+    'w-full px-3 py-1.5 border rounded-md font-normal text-sm',
     'text-text-primary',
     'bg-surface-base',
     'border-border',

@@ -722,7 +722,7 @@ describe('HalFormDisplay Component', () => {
             // Mock fetch for target data
             fetchSpy.mockResolvedValueOnce(createMockResponse({id: 1, name: 'John Doe'}));
 
-            const customLayout: RenderFormCallback = (renderField) => (
+            const customLayout: RenderFormCallback = ({renderField}) => (
                 <div data-testid="custom-callback-layout">
                     <div>
                         <label>Callback Custom Layout</label>

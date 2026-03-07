@@ -8,13 +8,13 @@ import type {HalFormsInputProps} from '../types.ts'
  * HalFormsCheckbox component - single checkbox for HAL+Forms
  * Uses Formik Field and FormFields CheckboxField abstraction
  */
-export const HalFormsCheckbox = ({prop, errorText}: HalFormsInputProps): ReactElement => {
+export const HalFormsCheckbox = ({prop, errorText, renderMode = 'field'}: HalFormsInputProps): ReactElement => {
     return (
         <Field name={prop.name} type="checkbox" validate={() => undefined}>
             {({field, form}: FieldProps<unknown>) => (
                 <CheckboxField
                     name={prop.name}
-                    label={prop.prompt || prop.name}
+                    label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
                     required={prop.required}
                     disabled={prop.readOnly || false}
                     error={errorText}

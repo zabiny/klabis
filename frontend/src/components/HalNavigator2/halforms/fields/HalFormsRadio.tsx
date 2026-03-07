@@ -12,7 +12,7 @@ import type {HalFormsInputProps} from '../types.ts'
  * Options are fetched via useHalFormOptions which handles both inline
  * and link-based options with automatic React Query caching.
  */
-export const HalFormsRadio = ({prop, errorText}: HalFormsInputProps): ReactElement => {
+export const HalFormsRadio = ({prop, errorText, renderMode = 'field'}: HalFormsInputProps): ReactElement => {
     const {options, isLoading} = useHalFormOptions(prop.options)
 
     return (
@@ -21,7 +21,7 @@ export const HalFormsRadio = ({prop, errorText}: HalFormsInputProps): ReactEleme
                 const fieldValue = field.value as string | number | undefined;
                 return (
                     <RadioGroup
-                        label={prop.prompt || prop.name}
+                        label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
                         name={prop.name}
                         required={prop.required}
                         disabled={prop.readOnly || isLoading || false}

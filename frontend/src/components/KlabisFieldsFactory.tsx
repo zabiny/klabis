@@ -1,66 +1,68 @@
 import {expandHalFormsFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
 import React, {type ReactElement} from "react";
 import {HalFormsInput, HalFormsMemberId} from "./HalNavigator2/halforms/fields";
+import {DetailRow} from "./UI";
 
 const FormGroupWrapper: React.FC<{ label: string; children: ReactElement | ReactElement[] }> = ({label, children}) => (
-    <div className="border-2 border-red-500 rounded p-4 mb-4">
+    <div className="rounded p-4 mb-4">
         <label className="block text-sm font-semibold mb-2">{label}</label>
         <div className="space-y-3">{children}</div>
     </div>
 );
 
-const AddressDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
-    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
-        {[
-            <HalFormsInput key="street" {...props.subElementProps("street", {prompt: "Ulice"})} />,
-            <HalFormsInput key="city" {...props.subElementProps("city", {prompt: "Město"})} />,
-            <HalFormsInput key="postal" {...props.subElementProps("postalCode", {prompt: "PSČ"})} />,
-            <HalFormsInput key="country" {...props.subElementProps("country", {prompt: "Stát"})} />,
-        ]}
-    </FormGroupWrapper>;
+interface SubField {
+    key: string;
+    attr: string;
+    prompt: string;
+    type?: string;
 }
 
-const IdentityCardDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
+const renderCompositeField = (props: HalFormsInputProps, subFields: SubField[]): ReactElement => {
+    if (props.renderMode === 'input') {
+        return <>
+            {subFields.map(sf => (
+                <DetailRow key={sf.key} label={sf.prompt}>
+                    <HalFormsInput {...props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type})} />
+                </DetailRow>
+            ))}
+        </>;
+    }
     return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
-        {[
-            <HalFormsInput key="cardNumber" {...props.subElementProps("cardNumber", {prompt: "Číslo OP"})} />,
-            <HalFormsInput key="validityDate" {...props.subElementProps("validityDate", {
-                prompt: "Platnost OP",
-                type: "date"
-            })} />,
-        ]}
+        {subFields.map(sf => (
+            <HalFormsInput key={sf.key} {...props.subElementProps(sf.attr, {prompt: sf.prompt, type: sf.type})} />
+        ))}
     </FormGroupWrapper>;
-}
+};
 
-const GuardianDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
-    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
-        {[
-            <HalFormsInput key="firstName" {...props.subElementProps("firstName", {prompt: "Jméno"})} />,
-            <HalFormsInput key="lastName" {...props.subElementProps("lastName", {prompt: "Příjmení"})} />,
-            <HalFormsInput key="relationship" {...props.subElementProps("relationship", {prompt: "Vztah"})} />,
-            <HalFormsInput key="email" {...props.subElementProps("email", {prompt: "E-mail", type: "email"})} />,
-            <HalFormsInput key="phone" {...props.subElementProps("phone", {prompt: "Telefon", type: "tel"})} />,
-        ]}
-    </FormGroupWrapper>;
-}
+const ADDRESS_FIELDS: SubField[] = [
+    {key: "street", attr: "street", prompt: "Ulice"},
+    {key: "city", attr: "city", prompt: "Město"},
+    {key: "postal", attr: "postalCode", prompt: "PSČ"},
+    {key: "country", attr: "country", prompt: "Stát"},
+];
 
-const MedicalCourseDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
-    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
-        {[
-            <HalFormsInput key="completionDate" {...props.subElementProps("completionDate", {prompt: "Datum absolvování", type: "date"})} />,
-            <HalFormsInput key="validityDate" {...props.subElementProps("validityDate", {prompt: "Platnost", type: "date"})} />,
-        ]}
-    </FormGroupWrapper>;
-}
+const IDENTITY_CARD_FIELDS: SubField[] = [
+    {key: "cardNumber", attr: "cardNumber", prompt: "Číslo OP"},
+    {key: "validityDate", attr: "validityDate", prompt: "Platnost OP", type: "date"},
+];
 
-const TrainerLicenseDtoField: React.FC<HalFormsInputProps> = (props): ReactElement => {
-    return <FormGroupWrapper label={props.prop.prompt || props.prop.name}>
-        {[
-            <HalFormsInput key="licenseNumber" {...props.subElementProps("licenseNumber", {prompt: "Číslo licence"})} />,
-            <HalFormsInput key="validityDate" {...props.subElementProps("validityDate", {prompt: "Platnost", type: "date"})} />,
-        ]}
-    </FormGroupWrapper>;
-}
+const GUARDIAN_FIELDS: SubField[] = [
+    {key: "firstName", attr: "firstName", prompt: "Jméno"},
+    {key: "lastName", attr: "lastName", prompt: "Příjmení"},
+    {key: "relationship", attr: "relationship", prompt: "Vztah"},
+    {key: "email", attr: "email", prompt: "E-mail", type: "email"},
+    {key: "phone", attr: "phone", prompt: "Telefon", type: "tel"},
+];
+
+const MEDICAL_COURSE_FIELDS: SubField[] = [
+    {key: "completionDate", attr: "completionDate", prompt: "Datum absolvování", type: "date"},
+    {key: "validityDate", attr: "validityDate", prompt: "Platnost", type: "date"},
+];
+
+const TRAINER_LICENSE_FIELDS: SubField[] = [
+    {key: "licenseNumber", attr: "licenseNumber", prompt: "Číslo licence"},
+    {key: "validityDate", attr: "validityDate", prompt: "Platnost", type: "date"},
+];
 
 const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFormsInputProps => {
     return {
@@ -84,15 +86,15 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
             return <HalFormsMemberId {...conf} prop={propWithOptions}/>;
         }
         case "AddressRequest":
-            return <AddressDtoField {...conf}/>;
+            return renderCompositeField(conf, ADDRESS_FIELDS);
         case "GuardianDTO":
-            return <GuardianDtoField {...conf}/>;
+            return renderCompositeField(conf, GUARDIAN_FIELDS);
         case "IdentityCardDto":
-            return <IdentityCardDtoField {...conf}/>;
+            return renderCompositeField(conf, IDENTITY_CARD_FIELDS);
         case "MedicalCourseDto":
-            return <MedicalCourseDtoField {...conf}/>;
+            return renderCompositeField(conf, MEDICAL_COURSE_FIELDS);
         case "TrainerLicenseDto":
-            return <TrainerLicenseDtoField {...conf}/>;
+            return renderCompositeField(conf, TRAINER_LICENSE_FIELDS);
         default:
             return null;
     }

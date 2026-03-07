@@ -2,7 +2,7 @@ import * as Yup from "yup";
 import {Form, Formik, getIn, useFormikContext} from "formik";
 import React, {type ReactElement, type ReactNode, useContext, useMemo} from "react";
 import {type HalFormsProperty, type HalFormsTemplate} from "../../../api";
-import {type HalFormFieldFactory, type HalFormsInputProps, type SubElementConfiguration} from "./types.ts";
+import {type HalFormFieldFactory, type HalFormsInputProps, type RenderMode, type SubElementConfiguration} from "./types.ts";
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory.tsx";
 import {Alert, Button, Spinner} from "../../UI";
 import {Box} from "../../UI/layout";
@@ -120,6 +120,24 @@ const ReadOnlyField: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
     );
 };
 
+const ReadOnlyValue: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
+    const {values} = useFormikContext<Record<string, unknown>>();
+    const rawValue = getIn(values, prop.name);
+
+    let displayValue: string;
+    if (rawValue == null || rawValue === '') {
+        displayValue = '\u2014';
+    } else if (Array.isArray(rawValue)) {
+        displayValue = rawValue.join(', ');
+    } else if (typeof rawValue === 'object') {
+        displayValue = JSON.stringify(rawValue);
+    } else {
+        displayValue = String(rawValue);
+    }
+
+    return <span className="text-text-primary">{displayValue}</span>;
+};
+
 const SIMPLE_FIELD_TYPES = new Set([
     'text', 'email', 'number', 'date', 'url', 'tel',
     'textarea', 'select', 'radioGroup', 'checkbox', 'checkboxGroup',
@@ -127,23 +145,27 @@ const SIMPLE_FIELD_TYPES = new Set([
 ]);
 
 // --- Render funkce pro pole ---
-function renderField(
+function renderFieldInternal(
     prop: HalFormsProperty,
     errors: Record<string, unknown>,
     touched: Record<string, unknown>,
-    fieldFactory?: HalFormFieldFactory
+    fieldFactory?: HalFormFieldFactory,
+    renderMode: RenderMode = 'field'
 ): ReactNode {
-    // Properly narrow error type to string
     const error = touched[prop.name] && errors[prop.name];
     const errorText: string = typeof error === 'string' ? error : '';
 
     if (prop.readOnly === true && SIMPLE_FIELD_TYPES.has(prop.type)) {
+        if (renderMode === 'input') {
+            return <ReadOnlyValue prop={prop} />;
+        }
         return <ReadOnlyField prop={prop} />;
     }
 
     const fieldProps: HalFormsInputProps = {
         prop: prop,
         errorText: errorText || undefined,
+        renderMode,
         subElementProps: (attrName, conf) => {
             return subElementInputProps(attrName, fieldProps, conf);
         }
@@ -162,9 +184,13 @@ function renderField(
     );
 }
 
-type FieldRenderFunc = (fieldName: string) => ReactNode;
+export interface FormRenderHelpers {
+    renderField: (fieldName: string) => ReactElement;
+    renderInput: (fieldName: string) => ReactElement;
+    renderLabel: (fieldName: string) => string | undefined;
+}
 
-export type RenderFormCallback = (renderField: (fieldName: string) => ReactElement) => ReactElement;
+export type RenderFormCallback = (helpers: FormRenderHelpers) => ReactElement;
 
 interface HalFormsFormProps {
     data: Record<string, unknown>,
@@ -180,7 +206,11 @@ interface HalFormsFormProps {
 
 // TODO: upravit HAL+FORMS: zobrazit "item" vzdy jako read only. Pokud je defalt template pro aktivni metodu, tak zobrazit tlacitko EDIT ktere prepne do editacniho rezimu. Pokud je default template pro GET metodu, tak jen pouzit policka s readonly pro lepsi zobrazeni. Na backendu pridat "default" affordanci pokud pro selflink zadna neexistuje (pouze pro ITEM).
 
-const HalFormsFormContext = React.createContext<HalFormsFormContextType>({renderField: (name) => `${name}`});
+const HalFormsFormContext = React.createContext<HalFormsFormContextType>({
+    renderField: (name: string) => <>{name}</> as ReactElement,
+    renderInput: (name: string) => <>{name}</> as ReactElement,
+    renderLabel: () => undefined,
+});
 
 // --- Hlavní komponenta ---
 const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
@@ -224,71 +254,92 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
             {({isSubmitting: formikIsSubmitting, errors, touched}) => {
                 const isFormProcessing = formikIsSubmitting || externalIsSubmitting;
 
-                const createRenderFieldCallback = (): ((fieldName: string) => ReactElement) => {
-                    return (fieldName: string) => {
-                        if (fieldName === "submit") {
-                            return <Button
-                                type="submit"
-                                disabled={isFormProcessing}
-                                variant="primary"
-                                size="md"
-                                loading={isFormProcessing}
-                                startIcon={isFormProcessing ? <Spinner size="sm"/> : undefined}
-                            >
-                                {isFormProcessing ? UI_MESSAGES.SUBMITTING : submitButtonLabel}
-                            </Button>;
-                        }
+                const renderPseudoField = (fieldName: string): ReactElement | null => {
+                    if (fieldName === "submit") {
+                        return <Button
+                            type="submit"
+                            disabled={isFormProcessing}
+                            variant="primary"
+                            size="md"
+                            loading={isFormProcessing}
+                            startIcon={isFormProcessing ? <Spinner size="sm"/> : undefined}
+                        >
+                            {isFormProcessing ? UI_MESSAGES.SUBMITTING : submitButtonLabel}
+                        </Button>;
+                    }
+                    if (fieldName === "cancel") {
+                        return <Button
+                            type="button"
+                            disabled={isFormProcessing || !onCancel}
+                            variant="secondary"
+                            size="md"
+                            onClick={() => onCancel && onCancel()}
+                        >
+                            {UI_MESSAGES.CLOSE}
+                        </Button>;
+                    }
+                    return null;
+                };
 
-                        if (fieldName === "cancel") {
-                            return <Button
-                                type="button"
-                                disabled={isFormProcessing || !onCancel}
-                                variant="secondary"
-                                size="md"
-                                onClick={() => onCancel && onCancel()}
-                            >
-                                {UI_MESSAGES.CLOSE}
-                            </Button>;
-                        }
-
+                const createFormHelpers = (): FormRenderHelpers => {
+                    const renderFieldCallback = (fieldName: string): ReactElement => {
+                        const pseudo = renderPseudoField(fieldName);
+                        if (pseudo) return pseudo;
                         const prop = template.properties.find(p => p.name === fieldName);
                         if (!prop) {
                             return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
                         }
-                        return renderField(prop, errors, touched, fieldsFactory) as ReactElement;
+                        return renderFieldInternal(prop, errors, touched, fieldsFactory) as ReactElement;
+                    };
+
+                    const renderInputCallback = (fieldName: string): ReactElement => {
+                        const pseudo = renderPseudoField(fieldName);
+                        if (pseudo) return pseudo;
+                        const prop = template.properties.find(p => p.name === fieldName);
+                        if (!prop) {
+                            return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
+                        }
+                        return renderFieldInternal(prop, errors, touched, fieldsFactory, 'input') as ReactElement;
+                    };
+
+                    const renderLabelCallback = (fieldName: string): string | undefined => {
+                        const prop = template.properties.find(p => p.name === fieldName);
+                        return prop?.prompt || prop?.name;
+                    };
+
+                    return {
+                        renderField: renderFieldCallback,
+                        renderInput: renderInputCallback,
+                        renderLabel: renderLabelCallback,
                     };
                 };
 
                 let formContent: ReactElement;
                 if (children) {
-                    // Important: formikIsSubmitting and externalIsSubmitting must be in dependencies
-                    // so that when submission errors occur, the memoized renderField is recalculated.
-                    // Without them, the submit button would remain disabled even after an error response.
                     const contextValue: HalFormsFormContextType = useMemo(
-                        () => ({
-                            renderField: createRenderFieldCallback()
-                        }),
+                        () => createFormHelpers(),
                         [template, errors, touched, fieldsFactory, formikIsSubmitting, externalIsSubmitting]
                     );
                     formContent = <HalFormsFormContext value={contextValue}>
                         {children}
                     </HalFormsFormContext>;
                 } else if (renderForm) {
-                    formContent = renderForm(createRenderFieldCallback());
+                    formContent = renderForm(createFormHelpers());
                 } else {
+                    const helpers = createFormHelpers();
                     formContent = <>
                         {(template.title ? <h2 className="mb-6">{template.title}</h2> : <></>)}
 
                         {template.properties.map((prop) => (
                             <div key={prop.name}
                                  className={`transition-all duration-200 ${isFormProcessing ? 'opacity-60 pointer-events-none' : ''}`}>
-                                {renderField(prop, errors, touched, fieldsFactory)}
+                                {renderFieldInternal(prop, errors, touched, fieldsFactory)}
                             </div>
                         ))}
 
                         <div className="flex gap-3 mt-6">
-                            {createRenderFieldCallback()('submit')}
-                            {onCancel && createRenderFieldCallback()('cancel')}
+                            {helpers.renderField('submit')}
+                            {onCancel && helpers.renderField('cancel')}
                         </div>
                     </>;
                 }
@@ -308,9 +359,12 @@ export const HalFormsFormField: React.FC<{ fieldName: string }> = ({fieldName}) 
     return renderField(fieldName);
 }
 
-interface HalFormsFormContextType {
-    renderField: FieldRenderFunc
+export const HalFormsFormInput: React.FC<{ fieldName: string }> = ({fieldName}) => {
+    const {renderInput} = useContext(HalFormsFormContext);
+    return renderInput(fieldName);
 }
+
+type HalFormsFormContextType = FormRenderHelpers;
 
 export type {HalFormsFormProps};
 export {HalFormsForm, HalFormsFormContext};

@@ -12,7 +12,7 @@ import type {HalFormsInputProps} from '../types.ts'
  * Options are fetched via useHalFormOptions which handles both inline
  * and link-based options with automatic React Query caching.
  */
-export const HalFormsSelect = ({prop, errorText}: HalFormsInputProps): ReactElement => {
+export const HalFormsSelect = ({prop, errorText, renderMode = 'field'}: HalFormsInputProps): ReactElement => {
     const {options, isLoading} = useHalFormOptions(prop.options)
 
     return (
@@ -23,7 +23,7 @@ export const HalFormsSelect = ({prop, errorText}: HalFormsInputProps): ReactElem
                     <SelectField
                         {...field}
                         value={fieldValue}
-                        label={prop.prompt || prop.name}
+                        label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
                         placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
                         disabled={prop.readOnly || isLoading || false}
                         required={prop.required}

@@ -7,6 +7,7 @@ import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
 import {useToast} from '../../contexts/ToastContext';
 import {HalFormsForm} from '../../components/HalNavigator2/halforms';
 import {klabisFieldsFactory} from '../../components/KlabisFieldsFactory';
+import {DetailRow} from '../../components/UI';
 
 interface SectionProps {
     title: string;
@@ -30,6 +31,21 @@ const TRAINER_LICENSE_TYPE = 'TrainerLicenseDto';
 const DOCUMENT_FIELDS = ['drivingLicenseGroup'];
 const DOCUMENT_TYPES = [IDENTITY_CARD_TYPE, MEDICAL_COURSE_TYPE, TRAINER_LICENSE_TYPE];
 const GUARDIAN_TYPE = 'GuardianDTO';
+
+const FIELD_LABELS: Record<string, string> = {
+    firstName: 'Jméno',
+    lastName: 'Příjmení',
+    dateOfBirth: 'Datum narození',
+    gender: 'Pohlaví',
+    nationality: 'Státní příslušnost',
+    birthNumber: 'Rodné číslo',
+    email: 'E-mail',
+    phone: 'Telefon',
+    chipNumber: 'Číslo čipu',
+    bankAccountNumber: 'Číslo bankovního účtu',
+    dietaryRestrictions: 'Stravovací omezení',
+    drivingLicenseGroup: 'Řidičský průkaz',
+};
 
 interface RegistrationFormProps {
     template: HalFormsTemplate;
@@ -77,7 +93,7 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
             fieldsFactory={klabisFieldsFactory}
             submitButtonLabel="Registrovat"
             isSubmitting={isPending}
-            renderForm={(renderField) => (
+            renderForm={({renderInput, renderField}) => (
                 <div className="flex flex-col gap-8">
                     <div>
                         <Link to="/members" className="text-sm text-primary hover:text-primary-light">
@@ -103,7 +119,7 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         <Section title="OSOBNÍ ÚDAJE">
                             {template.properties
                                 .filter(p => PERSONAL_FIELDS.includes(p.name))
-                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
+                                .map(p => <DetailRow key={p.name} label={FIELD_LABELS[p.name] || p.prompt || p.name}>{renderInput(p.name)}</DetailRow>)}
                         </Section>
                     )}
 
@@ -111,7 +127,7 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         <Section title="KONTAKT">
                             {template.properties
                                 .filter(p => CONTACT_FIELDS.includes(p.name))
-                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
+                                .map(p => <DetailRow key={p.name} label={FIELD_LABELS[p.name] || p.prompt || p.name}>{renderInput(p.name)}</DetailRow>)}
                         </Section>
                     )}
 
@@ -119,7 +135,7 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         <Section title="ADRESA">
                             {template.properties
                                 .filter(p => p.type === ADDRESS_TYPE)
-                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
+                                .map(p => <div key={p.name}>{renderInput(p.name)}</div>)}
                         </Section>
                     )}
 
@@ -127,15 +143,18 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         <Section title="DOPLŇKOVÉ INFORMACE">
                             {template.properties
                                 .filter(p => SUPPLEMENTARY_FIELDS.includes(p.name))
-                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
+                                .map(p => <DetailRow key={p.name} label={FIELD_LABELS[p.name] || p.prompt || p.name}>{renderInput(p.name)}</DetailRow>)}
                         </Section>
                     )}
 
                     {hasDocumentFields && (
                         <Section title="DOKLADY A LICENCE">
                             {template.properties
-                                .filter(p => DOCUMENT_FIELDS.includes(p.name) || DOCUMENT_TYPES.includes(p.type))
-                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
+                                .filter(p => DOCUMENT_FIELDS.includes(p.name))
+                                .map(p => <DetailRow key={p.name} label={FIELD_LABELS[p.name] || p.prompt || p.name}>{renderInput(p.name)}</DetailRow>)}
+                            {template.properties
+                                .filter(p => DOCUMENT_TYPES.includes(p.type))
+                                .map(p => <div key={p.name}>{renderInput(p.name)}</div>)}
                         </Section>
                     )}
 
@@ -143,7 +162,7 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         <Section title="ZÁKONNÝ ZÁSTUPCE">
                             {template.properties
                                 .filter(p => p.type === GUARDIAN_TYPE)
-                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
+                                .map(p => <div key={p.name}>{renderInput(p.name)}</div>)}
                         </Section>
                     )}
                 </div>

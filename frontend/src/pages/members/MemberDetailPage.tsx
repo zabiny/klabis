@@ -1,7 +1,7 @@
 import {type ReactElement, useState} from "react";
 import {Link} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {Skeleton} from "../../components/UI";
+import {DetailRow, Skeleton} from "../../components/UI";
 import {Badge} from "../../components/UI/Badge";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {HalFormsForm} from "../../components/HalNavigator2/halforms";
@@ -23,18 +23,6 @@ const GENDER_LABELS: Record<string, string> = {
     MALE: 'Muž',
     FEMALE: 'Žena',
 };
-
-interface DetailRowProps {
-    label: string;
-    children: React.ReactNode;
-}
-
-const DetailRow = ({label, children}: DetailRowProps) => (
-    <div className="flex flex-col sm:flex-row sm:gap-4 py-2 border-b border-border last:border-b-0">
-        <dt className="text-sm text-text-secondary sm:w-48 shrink-0">{label}</dt>
-        <dd className="text-sm text-text-primary">{children}</dd>
-    </div>
-);
 
 interface SectionProps {
     title: string;
@@ -66,10 +54,6 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
         </span>
     );
 };
-
-const COMPOSITE_TYPES = new Set([
-    'AddressRequest', 'GuardianDTO', 'IdentityCardDto', 'MedicalCourseDto', 'TrainerLicenseDto',
-]);
 
 function enrichTemplateWithReadOnlyFields(
     template: HalFormsTemplate,
@@ -136,10 +120,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
 
     if (isEditing && template) {
         const enrichedTemplate = enrichTemplateWithReadOnlyFields(template, resourceData);
-
         const enrichedFieldNames = new Set(enrichedTemplate.properties.map(p => p.name));
-        const templateHasComposite = (name: string) =>
-            template.properties.some(p => p.name === name && COMPOSITE_TYPES.has(p.type));
 
         return (
             <HalFormsForm
@@ -149,9 +130,9 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                 fieldsFactory={klabisFieldsFactory}
                 submitButtonLabel="Uložit"
                 isSubmitting={editForm.isSubmitting}
-                renderForm={(rf) => {
-                    const renderField = (name: string) =>
-                        (name === 'submit' || enrichedFieldNames.has(name)) ? rf(name) : null;
+                renderForm={({renderInput, renderField}) => {
+                    const ri = (name: string) =>
+                        enrichedFieldNames.has(name) ? renderInput(name) : null;
                     return (
                     <div className="flex flex-col gap-8">
                         <div>
@@ -184,85 +165,40 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                         </div>
 
                         <Section title="OSOBNÍ ÚDAJE">
-                            {renderField('firstName')}
-                            {renderField('lastName')}
-                            {renderField('dateOfBirth')}
-                            {renderField('gender')}
-                            {renderField('nationality')}
-                            {renderField('birthNumber')}
-                            {renderField('registrationNumber')}
+                            <DetailRow label="Jméno">{ri('firstName')}</DetailRow>
+                            <DetailRow label="Příjmení">{ri('lastName')}</DetailRow>
+                            <DetailRow label="Datum narození">{ri('dateOfBirth')}</DetailRow>
+                            <DetailRow label="Pohlaví">{ri('gender')}</DetailRow>
+                            <DetailRow label="Státní příslušnost">{ri('nationality')}</DetailRow>
+                            <DetailRow label="Rodné číslo">{ri('birthNumber')}</DetailRow>
+                            <DetailRow label="Registrační číslo">{ri('registrationNumber')}</DetailRow>
                         </Section>
 
                         <Section title="KONTAKT">
-                            {renderField('email')}
-                            {renderField('phone')}
+                            <DetailRow label="E-mail">{ri('email')}</DetailRow>
+                            <DetailRow label="Telefon">{ri('phone')}</DetailRow>
                         </Section>
 
                         <Section title="ADRESA">
-                            {templateHasComposite('address')
-                                ? renderField('address')
-                                : (
-                                    <>
-                                        {address?.street && <DetailRow label="Ulice">{address.street}</DetailRow>}
-                                        {address?.city && <DetailRow label="Město">{address.city}</DetailRow>}
-                                        {address?.postalCode && <DetailRow label="PSČ">{address.postalCode}</DetailRow>}
-                                        {address?.country && <DetailRow label="Stát">{address.country}</DetailRow>}
-                                    </>
-                                )
-                            }
+                            {ri('address')}
                         </Section>
 
                         <Section title="DOPLŇKOVÉ INFORMACE">
-                            {renderField('chipNumber')}
-                            {renderField('bankAccountNumber')}
-                            {renderField('dietaryRestrictions')}
+                            <DetailRow label="Číslo čipu">{ri('chipNumber')}</DetailRow>
+                            <DetailRow label="Číslo bankovního účtu">{ri('bankAccountNumber')}</DetailRow>
+                            <DetailRow label="Stravovací omezení">{ri('dietaryRestrictions')}</DetailRow>
                         </Section>
 
                         <Section title="DOKLADY A LICENCE">
-                            {templateHasComposite('identityCard')
-                                ? renderField('identityCard')
-                                : (
-                                    <>
-                                        {identityCard?.cardNumber && <DetailRow label="Číslo OP">{identityCard.cardNumber}</DetailRow>}
-                                        {identityCard?.validityDate && <DetailRow label="Platnost OP">{formatDate(identityCard.validityDate)}</DetailRow>}
-                                    </>
-                                )
-                            }
-                            {renderField('drivingLicenseGroup')}
-                            {templateHasComposite('medicalCourse')
-                                ? renderField('medicalCourse')
-                                : (
-                                    <>
-                                        {medicalCourse?.completionDate && <DetailRow label="Zdravotní kurz">{formatDate(medicalCourse.completionDate)}</DetailRow>}
-                                        {medicalCourse?.validityDate && <DetailRow label="Platnost ZK">{formatDate(medicalCourse.validityDate)}</DetailRow>}
-                                    </>
-                                )
-                            }
-                            {templateHasComposite('trainerLicense')
-                                ? renderField('trainerLicense')
-                                : (
-                                    <>
-                                        {trainerLicense?.licenseNumber && <DetailRow label="Trenérská licence">{trainerLicense.licenseNumber}</DetailRow>}
-                                        {trainerLicense?.validityDate && <DetailRow label="Platnost TL">{formatDate(trainerLicense.validityDate)}</DetailRow>}
-                                    </>
-                                )
-                            }
+                            {ri('identityCard')}
+                            <DetailRow label="Řidičský průkaz">{ri('drivingLicenseGroup')}</DetailRow>
+                            {ri('medicalCourse')}
+                            {ri('trainerLicense')}
                         </Section>
 
                         {(guardian || enrichedFieldNames.has('guardian')) && (
                             <Section title="ZÁKONNÝ ZÁSTUPCE">
-                                {templateHasComposite('guardian')
-                                    ? renderField('guardian')
-                                    : (
-                                        <>
-                                            {guardian?.firstName && <DetailRow label="Jméno">{guardian.firstName}</DetailRow>}
-                                            {guardian?.lastName && <DetailRow label="Příjmení">{guardian.lastName}</DetailRow>}
-                                            {guardian?.relationship && <DetailRow label="Vztah">{guardian.relationship}</DetailRow>}
-                                            {guardian?.email && <DetailRow label="E-mail">{guardian.email}</DetailRow>}
-                                            {guardian?.phone && <DetailRow label="Telefon">{guardian.phone}</DetailRow>}
-                                        </>
-                                    )
-                                }
+                                {ri('guardian')}
                             </Section>
                         )}
 
