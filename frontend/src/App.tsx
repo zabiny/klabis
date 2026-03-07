@@ -8,11 +8,9 @@ import {ThemeProvider} from "./theme/ThemeContext.tsx";
 import {AdminModeProvider, useAdminMode} from "./contexts/AdminModeContext.tsx";
 import ErrorFallback from './components/ErrorFallback';
 import {GenericHalPage} from "./pages/GenericHalPage.tsx";
-import {MemberDetailsPage} from "./pages/members/MemberDetailsPage.tsx";
 import HomePage from "./pages/HomePage.tsx";
 import CalendarPage from "./pages/calendar/CalendarPage.tsx";
 import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
-import {MembersPage} from "./pages/members/MembersPage.tsx";
 import {EventsPage} from "./pages/events/EventsPage.tsx";
 import {MemberFinancePage} from "./pages/finances/FinancesPage.tsx";
 import PasswordSetupPage from "./pages/PasswordSetupPage";
@@ -71,8 +69,6 @@ function App() {
                                 {/* Trasy zakázané v admin módu */}
                                 <Route element={<AdminModeAwareRoute allowedInAdminMode={false} />}>
                                     <Route path="/calendar-items" element={<CalendarPage/>}/>
-                                    <Route path="/members" element={<MembersPage/>}/>
-                                    <Route path="/members/:memberId" element={<MemberDetailsPage/>}/>
                                     <Route path="/member/:memberId/finance-account" element={<MemberFinancePage/>}/>
                                     <Route path="/events" element={<EventsPage/>}/>
                                 </Route>
