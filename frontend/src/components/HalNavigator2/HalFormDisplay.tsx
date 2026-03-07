@@ -15,6 +15,7 @@ import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
 import {buttonStyles, containerStyles, layoutStyles} from '../../theme/designTokens';
+import {useToast} from '../../contexts/ToastContext';
 
 /**
  * Props for HalFormDisplay component
@@ -55,12 +56,14 @@ export const HalFormDisplay = ({
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
     const {invalidateAllCaches} = useFormCacheInvalidation();
+    const {addToast} = useToast();
 
     const {mutate: submitForm, isPending: isSubmitting, error: rawError} = useAuthorizedMutation({
         method: template.method || 'POST',
         onSuccess: async () => {
             await invalidateAllCaches();
             await route.refetch();
+            addToast(template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo', 'success');
             onSubmitSuccess?.();
             onClose();
         },

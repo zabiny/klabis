@@ -9,6 +9,22 @@ import {useAuth} from '../contexts/AuthContext2'
 import {useRootNavigation} from '../hooks/useRootNavigation'
 import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx"
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
+import {ToastProvider, useToast} from '../contexts/ToastContext.tsx'
+import {Toast} from '../components/UI'
+
+const LayoutToasts = () => {
+    const {toasts, removeToast} = useToast();
+    if (toasts.length === 0) return null;
+    return (
+        <div className="fixed top-20 right-4 z-[60] flex flex-col gap-2 max-w-sm pointer-events-none">
+            {toasts.map(toast => (
+                <div key={toast.id} className="pointer-events-auto">
+                    <Toast toast={toast} onClose={removeToast}/>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 const Layout = () => {
     const navigate = useNavigate()
@@ -235,13 +251,16 @@ const Layout = () => {
             {/* ==========================================
                 MAIN CONTENT AREA
                 ========================================== */}
-            <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 py-6 lg:pl-80 overflow-auto">
-                <HalFormProvider>
-                    <HalFormsPageLayout>
-                        <Outlet />
-                    </HalFormsPageLayout>
-                </HalFormProvider>
-            </main>
+            <ToastProvider>
+                <LayoutToasts />
+                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 py-6 lg:pl-80 overflow-auto">
+                    <HalFormProvider>
+                        <HalFormsPageLayout>
+                            <Outlet />
+                        </HalFormsPageLayout>
+                    </HalFormProvider>
+                </main>
+            </ToastProvider>
         </div>
     )
 }
