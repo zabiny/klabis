@@ -223,7 +223,7 @@ describe('KlabisTableWithQuery - Data Loading Wrapper', () => {
             })
 
             // Find and click the next page button (pagination component)
-            const nextButton = screen.getByRole('button', {name: /next/i})
+            const nextButton = screen.getByRole('button', {name: /další/i})
             await user.click(nextButton)
 
             // Verify a new query was made with page=1

@@ -59,7 +59,7 @@ describe('KlabisTable - Pure UI Component', () => {
                 </KlabisTable>
             )
 
-            expect(screen.getByText(/1-2 z 2/)).toBeInTheDocument()
+            expect(screen.getByText(/1–2 z 2/)).toBeInTheDocument()
         })
 
         it('does not render pagination when page data is not provided', () => {
@@ -69,7 +69,7 @@ describe('KlabisTable - Pure UI Component', () => {
                 </KlabisTable>
             )
 
-            expect(screen.queryByText(/\d+-\d+ z \d+/)).not.toBeInTheDocument()
+            expect(screen.queryByText(/\d+–\d+ z \d+/)).not.toBeInTheDocument()
         })
     })
 
@@ -272,7 +272,7 @@ describe('KlabisTable - Pure UI Component', () => {
                 </KlabisTable>
             )
 
-            const nextButton = screen.getByRole('button', {name: /Next/i})
+            const nextButton = screen.getByRole('button', {name: /Další/i})
             await user.click(nextButton)
 
             expect(onPageChange).toHaveBeenCalledWith(1)

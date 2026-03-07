@@ -253,8 +253,6 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                     onPageChange={(newPage) => handlePageChange(newPage)}
                     onRowsPerPageChange={(newRowsPerPage) => handleRowsPerPageChange(newRowsPerPage)}
                     rowsPerPageOptions={effectiveRowsPerPageOptions}
-                    labelRowsPerPage="Řádků na stránku:"
-                    labelDisplayedRows={({from, to, count}) => `${from}-${to} z ${count}`}
                 />
             )}
         </div>

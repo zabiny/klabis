@@ -24,7 +24,7 @@ export const Pagination = ({
                                onPageChange,
                                onRowsPerPageChange,
                                rowsPerPageOptions = [5, 10, 25, 50],
-                               labelRowsPerPage = 'Rows per page:',
+                               labelRowsPerPage = 'Řádků na stránku:',
                                labelDisplayedRows,
                                className = ''
                            }: PaginationProps) => {
@@ -34,7 +34,7 @@ export const Pagination = ({
     const canPreviousPage = page > 0
     const canNextPage = page < totalPages - 1
 
-    const defaultDisplayedRows = `${from}-${to} of ${count}`
+    const defaultDisplayedRows = `${from}–${to} z ${count}`
     const displayedRows = labelDisplayedRows ? labelDisplayedRows({from, to, count}) : defaultDisplayedRows
 
     const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -77,10 +77,10 @@ export const Pagination = ({
                     disabled={!canPreviousPage}
                     className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    ← Previous
+                    ← Předchozí
                 </Button>
                 <span className="text-sm text-text-secondary px-2">
-          Page {page + 1} of {totalPages}
+          Stránka {page + 1} / {totalPages} ({count})
         </span>
                 <Button
                     variant="ghost"
@@ -89,7 +89,7 @@ export const Pagination = ({
                     disabled={!canNextPage}
                     className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Next →
+                    Další →
                 </Button>
             </div>
         </div>
