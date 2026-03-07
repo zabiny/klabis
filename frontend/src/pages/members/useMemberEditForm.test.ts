@@ -6,6 +6,7 @@ import {useMemberEditForm} from './useMemberEditForm';
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedMutation: vi.fn(() => ({
         mutate: vi.fn(),
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
         isPending: false,
         error: null,
     })),
@@ -87,35 +88,6 @@ describe('useMemberEditForm', () => {
         const data = makeMemberData({_templates: undefined});
         const {result} = renderHook(() => useMemberEditForm(data));
         expect(result.current.template).toBeNull();
-    });
-
-    it('builds initial values from member data based on template properties', () => {
-        const data = makeMemberData();
-        const {result} = renderHook(() => useMemberEditForm(data));
-        expect(result.current.initialValues).toEqual({
-            firstName: 'Jan',
-            lastName: 'Novák',
-            email: 'jan@test.cz',
-        });
-    });
-
-    it('builds initial values with nested composites', () => {
-        const data = makeMemberData({
-            address: {street: 'Hlavní 15', city: 'Praha', postalCode: '11000', country: 'CZ'},
-            _templates: {
-                default: makeTemplate([
-                    {name: 'firstName', type: 'text'},
-                    {name: 'address', type: 'AddressRequest'},
-                ]),
-            },
-        });
-        const {result} = renderHook(() => useMemberEditForm(data));
-        expect(result.current.initialValues.address).toEqual({
-            street: 'Hlavní 15',
-            city: 'Praha',
-            postalCode: '11000',
-            country: 'CZ',
-        });
     });
 
     it('provides handleSubmit function', () => {

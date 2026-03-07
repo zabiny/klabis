@@ -18,6 +18,7 @@ vi.mock('../../hooks/useHalPageData', () => ({
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedMutation: vi.fn(() => ({
         mutate: vi.fn(),
+        mutateAsync: vi.fn().mockResolvedValue(undefined),
         isPending: false,
         error: null,
     })),

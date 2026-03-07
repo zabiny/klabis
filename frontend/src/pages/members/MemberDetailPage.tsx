@@ -1,14 +1,14 @@
-import {type ReactElement, type ReactNode, useState} from "react";
+import {type ReactElement, useState} from "react";
 import {Link} from "react-router-dom";
-import {Formik, Form} from "formik";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {Skeleton} from "../../components/UI";
 import {Badge} from "../../components/UI/Badge";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
+import {HalFormsForm} from "../../components/HalNavigator2/halforms";
+import {klabisFieldsFactory} from "../../components/KlabisFieldsFactory";
 import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
-import type {HalResponse} from "../../api";
-import {EditableDetailRow} from "./EditableDetailRow";
+import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
 import {useMemberEditForm} from "./useMemberEditForm";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
@@ -67,29 +67,33 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
     );
 };
 
-interface ERowProps {
-    label: string;
-    fieldName: string;
-    isEditing: boolean;
-    template: ReturnType<typeof useMemberEditForm>['template'];
-    children: ReactNode;
-}
+const COMPOSITE_TYPES = new Set([
+    'AddressRequest', 'GuardianDTO', 'IdentityCardDto', 'MedicalCourseDto', 'TrainerLicenseDto',
+]);
 
-const ERow = ({label, fieldName, isEditing, template, children}: ERowProps) => {
-    if (!isEditing || !template) {
-        return <DetailRow label={label}>{children}</DetailRow>;
-    }
-    return (
-        <EditableDetailRow
-            label={label}
-            fieldName={fieldName}
-            template={template}
-            isEditing={isEditing}
-        >
-            {children}
-        </EditableDetailRow>
-    );
-};
+function enrichTemplateWithReadOnlyFields(
+    template: HalFormsTemplate,
+    resourceData: Record<string, unknown>
+): HalFormsTemplate {
+    const templateFieldNames = new Set(template.properties.map(p => p.name));
+
+    const readOnlyProps: HalFormsProperty[] = Object.keys(resourceData)
+        .filter(key => !templateFieldNames.has(key) && !key.startsWith('_'))
+        .filter(key => {
+            const value = resourceData[key];
+            return value === null || value === undefined || typeof value !== 'object';
+        })
+        .map(key => ({
+            name: key,
+            type: 'text',
+            readOnly: true,
+        }));
+
+    return {
+        ...template,
+        properties: [...template.properties, ...readOnlyProps],
+    };
+}
 
 export const MemberDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error, hasLink, route} = useHalPageData<MemberDetail>();
@@ -117,7 +121,7 @@ interface MemberDetailContentProps {
 
 const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContentProps) => {
     const editForm = useMemberEditForm(resourceData);
-    const {isEditing, startEditing, cancelEditing, handleSubmit, template, initialValues, validationSchema} = editForm;
+    const {isEditing, startEditing, cancelEditing, handleSubmit, template} = editForm;
 
     const member = resourceData;
     const address = member.address;
@@ -130,7 +134,159 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const hasDocuments = identityCard?.cardNumber || member.drivingLicenseGroup || medicalCourse?.completionDate || trainerLicense?.licenseNumber;
     const showDeactivation = member.active === false && member.deactivationReason;
 
-    const pageContent = (
+    if (isEditing && template) {
+        const enrichedTemplate = enrichTemplateWithReadOnlyFields(template, resourceData);
+
+        const enrichedFieldNames = new Set(enrichedTemplate.properties.map(p => p.name));
+        const templateHasComposite = (name: string) =>
+            template.properties.some(p => p.name === name && COMPOSITE_TYPES.has(p.type));
+
+        return (
+            <HalFormsForm
+                data={resourceData as Record<string, unknown>}
+                template={enrichedTemplate}
+                onSubmit={handleSubmit}
+                fieldsFactory={klabisFieldsFactory}
+                submitButtonLabel="Uložit"
+                isSubmitting={editForm.isSubmitting}
+                renderForm={(rf) => {
+                    const renderField = (name: string) =>
+                        (name === 'submit' || enrichedFieldNames.has(name)) ? rf(name) : null;
+                    return (
+                    <div className="flex flex-col gap-8">
+                        <div>
+                            <Link to="/members" className="text-sm text-primary hover:text-primary-light">
+                                &larr; Zpět na seznam
+                            </Link>
+                        </div>
+
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-4">
+                                <h1 className="text-3xl font-bold text-text-primary">
+                                    {member.firstName} {member.lastName}
+                                </h1>
+                                <Badge variant={member.active ? 'success' : 'default'} size="sm">
+                                    {member.active ? 'Aktivní' : 'Neaktivní'}
+                                </Badge>
+                            </div>
+                            <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                            {renderField('submit')}
+                            <button
+                                type="button"
+                                onClick={cancelEditing}
+                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                            >
+                                Zrušit
+                            </button>
+                        </div>
+
+                        <Section title="OSOBNÍ ÚDAJE">
+                            {renderField('firstName')}
+                            {renderField('lastName')}
+                            {renderField('dateOfBirth')}
+                            {renderField('gender')}
+                            {renderField('nationality')}
+                            {renderField('birthNumber')}
+                            {renderField('registrationNumber')}
+                        </Section>
+
+                        <Section title="KONTAKT">
+                            {renderField('email')}
+                            {renderField('phone')}
+                        </Section>
+
+                        <Section title="ADRESA">
+                            {templateHasComposite('address')
+                                ? renderField('address')
+                                : (
+                                    <>
+                                        {address?.street && <DetailRow label="Ulice">{address.street}</DetailRow>}
+                                        {address?.city && <DetailRow label="Město">{address.city}</DetailRow>}
+                                        {address?.postalCode && <DetailRow label="PSČ">{address.postalCode}</DetailRow>}
+                                        {address?.country && <DetailRow label="Stát">{address.country}</DetailRow>}
+                                    </>
+                                )
+                            }
+                        </Section>
+
+                        <Section title="DOPLŇKOVÉ INFORMACE">
+                            {renderField('chipNumber')}
+                            {renderField('bankAccountNumber')}
+                            {renderField('dietaryRestrictions')}
+                        </Section>
+
+                        <Section title="DOKLADY A LICENCE">
+                            {templateHasComposite('identityCard')
+                                ? renderField('identityCard')
+                                : (
+                                    <>
+                                        {identityCard?.cardNumber && <DetailRow label="Číslo OP">{identityCard.cardNumber}</DetailRow>}
+                                        {identityCard?.validityDate && <DetailRow label="Platnost OP">{formatDate(identityCard.validityDate)}</DetailRow>}
+                                    </>
+                                )
+                            }
+                            {renderField('drivingLicenseGroup')}
+                            {templateHasComposite('medicalCourse')
+                                ? renderField('medicalCourse')
+                                : (
+                                    <>
+                                        {medicalCourse?.completionDate && <DetailRow label="Zdravotní kurz">{formatDate(medicalCourse.completionDate)}</DetailRow>}
+                                        {medicalCourse?.validityDate && <DetailRow label="Platnost ZK">{formatDate(medicalCourse.validityDate)}</DetailRow>}
+                                    </>
+                                )
+                            }
+                            {templateHasComposite('trainerLicense')
+                                ? renderField('trainerLicense')
+                                : (
+                                    <>
+                                        {trainerLicense?.licenseNumber && <DetailRow label="Trenérská licence">{trainerLicense.licenseNumber}</DetailRow>}
+                                        {trainerLicense?.validityDate && <DetailRow label="Platnost TL">{formatDate(trainerLicense.validityDate)}</DetailRow>}
+                                    </>
+                                )
+                            }
+                        </Section>
+
+                        {(guardian || enrichedFieldNames.has('guardian')) && (
+                            <Section title="ZÁKONNÝ ZÁSTUPCE">
+                                {templateHasComposite('guardian')
+                                    ? renderField('guardian')
+                                    : (
+                                        <>
+                                            {guardian?.firstName && <DetailRow label="Jméno">{guardian.firstName}</DetailRow>}
+                                            {guardian?.lastName && <DetailRow label="Příjmení">{guardian.lastName}</DetailRow>}
+                                            {guardian?.relationship && <DetailRow label="Vztah">{guardian.relationship}</DetailRow>}
+                                            {guardian?.email && <DetailRow label="E-mail">{guardian.email}</DetailRow>}
+                                            {guardian?.phone && <DetailRow label="Telefon">{guardian.phone}</DetailRow>}
+                                        </>
+                                    )
+                                }
+                            </Section>
+                        )}
+
+                        {showDeactivation && (
+                            <Section title="DEAKTIVACE">
+                                <DetailRow label="Důvod">
+                                    {member.deactivationReason && (DEACTIVATION_REASON_LABELS[member.deactivationReason] ?? member.deactivationReason)}
+                                </DetailRow>
+                                {member.deactivatedAt && (
+                                    <DetailRow label="Datum">{formatDate(member.deactivatedAt)}</DetailRow>
+                                )}
+                                {member.deactivationNote && (
+                                    <DetailRow label="Poznámka">{member.deactivationNote}</DetailRow>
+                                )}
+                            </Section>
+                        )}
+                    </div>
+                    );
+                }}
+            />
+        );
+    }
+
+    return (
         <div className="flex flex-col gap-8">
             <div>
                 <Link to="/members" className="text-sm text-primary hover:text-primary-light">
@@ -151,135 +307,72 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
             </div>
 
             <div className="flex flex-wrap gap-3">
-                {isEditing ? (
-                    <>
-                        <button
-                            type="submit"
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                        >
-                            Uložit
-                        </button>
-                        <button
-                            type="button"
-                            onClick={cancelEditing}
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                        >
-                            Zrušit
-                        </button>
-                    </>
-                ) : (
-                    <>
-                        {editForm.hasTemplate && (
-                            <button
-                                type="button"
-                                onClick={startEditing}
-                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                            >
-                                Upravit
-                            </button>
-                        )}
-                        <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
-                        <HalFormButton name="reactivate" modal={true} label="Reaktivovat"/>
-                        {hasLink('permissions') && (
-                            <Link
-                                to={route.getResourceLink('permissions')?.href ?? '#'}
-                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                            >
-                                Správa oprávnění
-                            </Link>
-                        )}
-                    </>
+                {editForm.hasTemplate && (
+                    <button
+                        type="button"
+                        onClick={startEditing}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
+                    >
+                        Upravit
+                    </button>
+                )}
+                <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
+                <HalFormButton name="reactivate" modal={true} label="Reaktivovat"/>
+                {hasLink('permissions') && (
+                    <Link
+                        to={route.getResourceLink('permissions')?.href ?? '#'}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                    >
+                        Správa oprávnění
+                    </Link>
                 )}
             </div>
 
             <Section title="OSOBNÍ ÚDAJE">
-                <ERow label="Jméno" fieldName="firstName" isEditing={isEditing} template={template}>
-                    {member.firstName}
-                </ERow>
-                <ERow label="Příjmení" fieldName="lastName" isEditing={isEditing} template={template}>
-                    {member.lastName}
-                </ERow>
+                <DetailRow label="Jméno">{member.firstName}</DetailRow>
+                <DetailRow label="Příjmení">{member.lastName}</DetailRow>
                 {member.dateOfBirth && (
-                    <ERow label="Datum narození" fieldName="dateOfBirth" isEditing={isEditing} template={template}>
-                        {formatDate(member.dateOfBirth)}
-                    </ERow>
+                    <DetailRow label="Datum narození">{formatDate(member.dateOfBirth)}</DetailRow>
                 )}
                 {member.gender && (
-                    <ERow label="Pohlaví" fieldName="gender" isEditing={isEditing} template={template}>
-                        {GENDER_LABELS[member.gender] ?? member.gender}
-                    </ERow>
+                    <DetailRow label="Pohlaví">{GENDER_LABELS[member.gender] ?? member.gender}</DetailRow>
                 )}
                 {member.nationality && (
-                    <ERow label="Státní příslušnost" fieldName="nationality" isEditing={isEditing} template={template}>
-                        {member.nationality}
-                    </ERow>
+                    <DetailRow label="Státní příslušnost">{member.nationality}</DetailRow>
                 )}
                 {member.nationality === 'CZ' && member.birthNumber && (
-                    <ERow label="Rodné číslo" fieldName="birthNumber" isEditing={isEditing} template={template}>
-                        {isEditing ? member.birthNumber : <MaskedBirthNumber value={member.birthNumber}/>}
-                    </ERow>
-                )}
-                {isEditing && (
-                    <ERow label="Registrační číslo" fieldName="registrationNumber" isEditing={isEditing} template={template}>
-                        {member.registrationNumber}
-                    </ERow>
+                    <DetailRow label="Rodné číslo"><MaskedBirthNumber value={member.birthNumber}/></DetailRow>
                 )}
             </Section>
 
             <Section title="KONTAKT">
                 {member.email && (
-                    <ERow label="E-mail" fieldName="email" isEditing={isEditing} template={template}>
-                        {member.email}
-                    </ERow>
+                    <DetailRow label="E-mail">{member.email}</DetailRow>
                 )}
                 {member.phone && (
-                    <ERow label="Telefon" fieldName="phone" isEditing={isEditing} template={template}>
-                        {member.phone}
-                    </ERow>
+                    <DetailRow label="Telefon">{member.phone}</DetailRow>
                 )}
             </Section>
 
-            {(address || isEditing) && (
+            {address && (
                 <Section title="ADRESA">
-                    {(address?.street || isEditing) && (
-                        <ERow label="Ulice" fieldName="address.street" isEditing={isEditing} template={template}>
-                            {address?.street}
-                        </ERow>
-                    )}
-                    {(address?.city || isEditing) && (
-                        <ERow label="Město" fieldName="address.city" isEditing={isEditing} template={template}>
-                            {address?.city}
-                        </ERow>
-                    )}
-                    {(address?.postalCode || isEditing) && (
-                        <ERow label="PSČ" fieldName="address.postalCode" isEditing={isEditing} template={template}>
-                            {address?.postalCode}
-                        </ERow>
-                    )}
-                    {(address?.country || isEditing) && (
-                        <ERow label="Stát" fieldName="address.country" isEditing={isEditing} template={template}>
-                            {address?.country}
-                        </ERow>
-                    )}
+                    {address.street && <DetailRow label="Ulice">{address.street}</DetailRow>}
+                    {address.city && <DetailRow label="Město">{address.city}</DetailRow>}
+                    {address.postalCode && <DetailRow label="PSČ">{address.postalCode}</DetailRow>}
+                    {address.country && <DetailRow label="Stát">{address.country}</DetailRow>}
                 </Section>
             )}
 
             {hasSupplementaryInfo && (
                 <Section title="DOPLŇKOVÉ INFORMACE">
                     {member.chipNumber && (
-                        <ERow label="Číslo čipu" fieldName="chipNumber" isEditing={isEditing} template={template}>
-                            {member.chipNumber}
-                        </ERow>
+                        <DetailRow label="Číslo čipu">{member.chipNumber}</DetailRow>
                     )}
                     {member.bankAccountNumber && (
-                        <ERow label="Číslo bankovního účtu" fieldName="bankAccountNumber" isEditing={isEditing} template={template}>
-                            {member.bankAccountNumber}
-                        </ERow>
+                        <DetailRow label="Číslo bankovního účtu">{member.bankAccountNumber}</DetailRow>
                     )}
                     {member.dietaryRestrictions && (
-                        <ERow label="Stravovací omezení" fieldName="dietaryRestrictions" isEditing={isEditing} template={template}>
-                            {member.dietaryRestrictions}
-                        </ERow>
+                        <DetailRow label="Stravovací omezení">{member.dietaryRestrictions}</DetailRow>
                     )}
                 </Section>
             )}
@@ -288,42 +381,28 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                 <Section title="DOKLADY A LICENCE">
                     {identityCard?.cardNumber && (
                         <>
-                            <ERow label="Číslo OP" fieldName="identityCard.cardNumber" isEditing={isEditing} template={template}>
-                                {identityCard.cardNumber}
-                            </ERow>
+                            <DetailRow label="Číslo OP">{identityCard.cardNumber}</DetailRow>
                             {identityCard.validityDate && (
-                                <ERow label="Platnost OP" fieldName="identityCard.validityDate" isEditing={isEditing} template={template}>
-                                    {formatDate(identityCard.validityDate)}
-                                </ERow>
+                                <DetailRow label="Platnost OP">{formatDate(identityCard.validityDate)}</DetailRow>
                             )}
                         </>
                     )}
                     {member.drivingLicenseGroup && (
-                        <ERow label="Řidičský průkaz" fieldName="drivingLicenseGroup" isEditing={isEditing} template={template}>
-                            {member.drivingLicenseGroup}
-                        </ERow>
+                        <DetailRow label="Řidičský průkaz">{member.drivingLicenseGroup}</DetailRow>
                     )}
                     {medicalCourse?.completionDate && (
                         <>
-                            <ERow label="Zdravotní kurz" fieldName="medicalCourse.completionDate" isEditing={isEditing} template={template}>
-                                {formatDate(medicalCourse.completionDate)}
-                            </ERow>
+                            <DetailRow label="Zdravotní kurz">{formatDate(medicalCourse.completionDate)}</DetailRow>
                             {medicalCourse.validityDate && (
-                                <ERow label="Platnost ZK" fieldName="medicalCourse.validityDate" isEditing={isEditing} template={template}>
-                                    {formatDate(medicalCourse.validityDate)}
-                                </ERow>
+                                <DetailRow label="Platnost ZK">{formatDate(medicalCourse.validityDate)}</DetailRow>
                             )}
                         </>
                     )}
                     {trainerLicense?.licenseNumber && (
                         <>
-                            <ERow label="Trenérská licence" fieldName="trainerLicense.licenseNumber" isEditing={isEditing} template={template}>
-                                {trainerLicense.licenseNumber}
-                            </ERow>
+                            <DetailRow label="Trenérská licence">{trainerLicense.licenseNumber}</DetailRow>
                             {trainerLicense.validityDate && (
-                                <ERow label="Platnost TL" fieldName="trainerLicense.validityDate" isEditing={isEditing} template={template}>
-                                    {formatDate(trainerLicense.validityDate)}
-                                </ERow>
+                                <DetailRow label="Platnost TL">{formatDate(trainerLicense.validityDate)}</DetailRow>
                             )}
                         </>
                     )}
@@ -332,26 +411,16 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
 
             {guardian && (
                 <Section title="ZÁKONNÝ ZÁSTUPCE">
-                    <ERow label="Jméno" fieldName="guardian.firstName" isEditing={isEditing} template={template}>
-                        {guardian.firstName}
-                    </ERow>
-                    <ERow label="Příjmení" fieldName="guardian.lastName" isEditing={isEditing} template={template}>
-                        {guardian.lastName}
-                    </ERow>
+                    <DetailRow label="Jméno">{guardian.firstName}</DetailRow>
+                    <DetailRow label="Příjmení">{guardian.lastName}</DetailRow>
                     {guardian.relationship && (
-                        <ERow label="Vztah" fieldName="guardian.relationship" isEditing={isEditing} template={template}>
-                            {guardian.relationship}
-                        </ERow>
+                        <DetailRow label="Vztah">{guardian.relationship}</DetailRow>
                     )}
                     {guardian.email && (
-                        <ERow label="E-mail" fieldName="guardian.email" isEditing={isEditing} template={template}>
-                            {guardian.email}
-                        </ERow>
+                        <DetailRow label="E-mail">{guardian.email}</DetailRow>
                     )}
                     {guardian.phone && (
-                        <ERow label="Telefon" fieldName="guardian.phone" isEditing={isEditing} template={template}>
-                            {guardian.phone}
-                        </ERow>
+                        <DetailRow label="Telefon">{guardian.phone}</DetailRow>
                     )}
                 </Section>
             )}
@@ -371,21 +440,4 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
             )}
         </div>
     );
-
-    if (isEditing) {
-        return (
-            <Formik
-                initialValues={initialValues}
-                validationSchema={validationSchema}
-                enableReinitialize
-                onSubmit={(values) => handleSubmit(values)}
-            >
-                <Form>
-                    {pageContent}
-                </Form>
-            </Formik>
-        );
-    }
-
-    return pageContent;
 };

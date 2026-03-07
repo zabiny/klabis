@@ -1,10 +1,9 @@
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useState} from 'react';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
 import {useToast} from '../../contexts/ToastContext';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {buildInitialValues, buildValidationSchema} from './formUtils';
 
 function getSelfHref(resourceData: HalResponse): string | undefined {
     const selfLink = resourceData._links?.self;
@@ -21,31 +20,25 @@ export function useMemberEditForm(resourceData: HalResponse) {
 
     const template: HalFormsTemplate | null = resourceData?._templates?.default ?? null;
 
-    const {mutate, isPending, error} = useAuthorizedMutation({
+    const {mutateAsync, isPending, error} = useAuthorizedMutation({
         method: template?.method || 'PUT',
         onSuccess: () => {
-            invalidateAllCaches().then(() => route.refetch());
-            addToast('Usp\u011B\u0161n\u011B ulo\u017Eeno', 'success');
+            invalidateAllCaches().then(() => route.refetch()).catch(console.error);
+            addToast('Úspěšně uloženo', 'success');
             setIsEditing(false);
         },
     });
 
-    const initialValues = useMemo(() => {
-        if (!template) return {};
-        return buildInitialValues(resourceData, template);
-    }, [resourceData, template]);
-
-    const validationSchema = useMemo(() => {
-        if (!template) return undefined;
-        return buildValidationSchema(template);
-    }, [template]);
-
     const handleSubmit = useCallback(
-        (values: Record<string, unknown>) => {
+        async (values: Record<string, unknown>) => {
             const url = template?.target || getSelfHref(resourceData) || ('/api' + route.pathname);
-            mutate({url, data: values});
+            const editableFieldNames = new Set(template?.properties.map(p => p.name) ?? []);
+            const payload = Object.fromEntries(
+                Object.entries(values).filter(([key]) => editableFieldNames.has(key))
+            );
+            await mutateAsync({url, data: payload});
         },
-        [template, route.pathname, mutate]
+        [template, resourceData, route.pathname, mutateAsync]
     );
 
     const startEditing = useCallback(() => setIsEditing(true), []);
@@ -56,8 +49,6 @@ export function useMemberEditForm(resourceData: HalResponse) {
         startEditing,
         cancelEditing,
         template,
-        initialValues,
-        validationSchema,
         handleSubmit,
         isSubmitting: isPending,
         submitError: error,
