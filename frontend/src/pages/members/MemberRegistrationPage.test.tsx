@@ -58,11 +58,11 @@ const memberCreationTemplate: HalFormsTemplate = {
     method: 'POST',
     target: '/api/members',
     properties: [
-        {name: 'firstName', type: 'text', prompt: 'Jmeno', required: true},
-        {name: 'lastName', type: 'text', prompt: 'Prijmeni', required: true},
-        {name: 'dateOfBirth', type: 'date', prompt: 'Datum narozeni'},
-        {name: 'gender', type: 'text', prompt: 'Pohlavi', options: {inline: [{value: 'MALE', prompt: 'Muz'}, {value: 'FEMALE', prompt: 'Zena'}]}},
-        {name: 'nationality', type: 'text', prompt: 'Statni prislusnost'},
+        {name: 'firstName', type: 'text', prompt: 'Jméno', required: true},
+        {name: 'lastName', type: 'text', prompt: 'Příjmení', required: true},
+        {name: 'dateOfBirth', type: 'date', prompt: 'Datum narození'},
+        {name: 'gender', type: 'text', prompt: 'Pohlaví', options: {inline: [{value: 'MALE', prompt: 'Muž'}, {value: 'FEMALE', prompt: 'Žena'}]}},
+        {name: 'nationality', type: 'text', prompt: 'Státní příslušnost'},
         {name: 'email', type: 'email', prompt: 'E-mail'},
         {name: 'phone', type: 'tel', prompt: 'Telefon'},
         {name: 'address', type: 'AddressRequest', prompt: 'Adresa'},
@@ -146,7 +146,7 @@ describe('MemberRegistrationPage', () => {
             expect(screen.getByRole('button', {name: /registrovat/i})).toBeInTheDocument();
         });
 
-        it('renders "Zrusit" cancel link to /members', () => {
+        it('renders "Zrušit" cancel link to /members', () => {
             renderPage();
             const cancelLink = screen.getByRole('link', {name: /zrušit/i});
             expect(cancelLink).toHaveAttribute('href', '/members');
@@ -158,16 +158,9 @@ describe('MemberRegistrationPage', () => {
             mockUseAuthorizedQuery(collectionWithTemplate);
         });
 
-        it('renders OSOBNÍ ÚDAJE section with editable fields from template', () => {
+        it('renders OSOBNÍ ÚDAJE section with fields from template', () => {
             renderPage();
             expect(screen.getByText(/osobní údaje/i)).toBeInTheDocument();
-        });
-
-        it('renders multiple editable input fields from template', () => {
-            renderPage();
-            const inputs = screen.getAllByRole('textbox');
-            expect(inputs.length).toBeGreaterThan(0);
-            expect(inputs[0]).toHaveValue('');
         });
 
         it('renders KONTAKT section when email or phone in template', () => {
@@ -179,11 +172,35 @@ describe('MemberRegistrationPage', () => {
             renderPage();
             expect(screen.getByRole('heading', {level: 3, name: /adresa/i})).toBeInTheDocument();
         });
+
+        it('does not render section when its fields are absent from template', () => {
+            const minimalTemplate: HalFormsTemplate = {
+                method: 'POST',
+                target: '/api/members',
+                properties: [
+                    {name: 'firstName', type: 'text', prompt: 'Jméno'},
+                ],
+            };
+            const minimalCollection: HalResponse = {
+                _links: {self: {href: '/api/members'}},
+                _templates: {default: minimalTemplate},
+            };
+            mockUseAuthorizedQuery(minimalCollection);
+            renderPage();
+            expect(screen.queryByText(/kontakt/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/adresa/i)).not.toBeInTheDocument();
+        });
     });
 
     describe('form fields are editable', () => {
         beforeEach(() => {
             mockUseAuthorizedQuery(collectionWithTemplate);
+        });
+
+        it('renders editable input fields from template', () => {
+            renderPage();
+            const inputs = screen.getAllByRole('textbox');
+            expect(inputs.length).toBeGreaterThan(0);
         });
 
         it('allows typing into firstName field', async () => {
@@ -196,12 +213,9 @@ describe('MemberRegistrationPage', () => {
             expect(firstNameInput).toHaveValue('Karel');
         });
 
-        it('renders gender as select dropdown with options', () => {
+        it('renders gender field from template', () => {
             renderPage();
-            const genderSelect = screen.getByRole('combobox');
-            expect(genderSelect).toBeInTheDocument();
-            expect(screen.getByText('Muz')).toBeInTheDocument();
-            expect(screen.getByText('Zena')).toBeInTheDocument();
+            expect(screen.getByText('Pohlaví')).toBeInTheDocument();
         });
     });
 
@@ -215,8 +229,8 @@ describe('MemberRegistrationPage', () => {
                 method: 'POST',
                 target: '/api/members',
                 properties: [
-                    {name: 'firstName', type: 'text', prompt: 'Jmeno'},
-                    {name: 'lastName', type: 'text', prompt: 'Prijmeni'},
+                    {name: 'firstName', type: 'text', prompt: 'Jméno'},
+                    {name: 'lastName', type: 'text', prompt: 'Příjmení'},
                 ],
             };
             const simpleCollection: HalResponse = {

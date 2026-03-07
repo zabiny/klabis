@@ -1,18 +1,16 @@
-import {type ReactElement, useMemo} from 'react';
+import {type ReactElement, type ReactNode} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
-import {Formik, Form} from 'formik';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas';
 import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
 import {useToast} from '../../contexts/ToastContext';
-import {EditableDetailRow} from './EditableDetailRow';
-import {buildEmptyInitialValues, buildValidationSchema} from './formUtils';
-import {COMPOSITE_SUBFIELDS} from './compositeTypes';
+import {HalFormsForm} from '../../components/HalNavigator2/halforms';
+import {klabisFieldsFactory} from '../../components/KlabisFieldsFactory';
 
 interface SectionProps {
     title: string;
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
 const Section = ({title, children}: SectionProps) => (
@@ -26,42 +24,12 @@ const PERSONAL_FIELDS = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'nati
 const CONTACT_FIELDS = ['email', 'phone'];
 const ADDRESS_TYPE = 'AddressRequest';
 const SUPPLEMENTARY_FIELDS = ['chipNumber', 'bankAccountNumber', 'dietaryRestrictions'];
-const IDENTITY_CARD_TYPE = 'IdentityCardRequest';
-const MEDICAL_COURSE_TYPE = 'MedicalCourseRequest';
-const TRAINER_LICENSE_TYPE = 'TrainerLicenseRequest';
+const IDENTITY_CARD_TYPE = 'IdentityCardDto';
+const MEDICAL_COURSE_TYPE = 'MedicalCourseDto';
+const TRAINER_LICENSE_TYPE = 'TrainerLicenseDto';
 const DOCUMENT_FIELDS = ['drivingLicenseGroup'];
 const DOCUMENT_TYPES = [IDENTITY_CARD_TYPE, MEDICAL_COURSE_TYPE, TRAINER_LICENSE_TYPE];
-const GUARDIAN_TYPE = 'GuardianRequest';
-
-const FIELD_LABELS: Record<string, string> = {
-    firstName: 'Jméno',
-    lastName: 'Příjmení',
-    dateOfBirth: 'Datum narození',
-    gender: 'Pohlaví',
-    nationality: 'Státní příslušnost',
-    birthNumber: 'Rodné číslo',
-    email: 'E-mail',
-    phone: 'Telefon',
-    'address.street': 'Ulice',
-    'address.city': 'Město',
-    'address.postalCode': 'PSČ',
-    'address.country': 'Stát',
-    chipNumber: 'Číslo čipu',
-    bankAccountNumber: 'Číslo bankovního účtu',
-    dietaryRestrictions: 'Stravovací omezení',
-    'identityCard.cardNumber': 'Číslo OP',
-    'identityCard.validityDate': 'Platnost OP',
-    drivingLicenseGroup: 'Řidičský průkaz',
-    'medicalCourse.completionDate': 'Zdravotní kurz',
-    'medicalCourse.validityDate': 'Platnost ZK',
-    'trainerLicense.licenseNumber': 'Trenérská licence',
-    'trainerLicense.validityDate': 'Platnost TL',
-    'guardian.firstName': 'Jméno',
-    'guardian.lastName': 'Příjmení',
-    'guardian.relationship': 'Vztah',
-    'guardian.email': 'E-mail',
-    'guardian.phone': 'Telefon',
-};
+const GUARDIAN_TYPE = 'GuardianDTO';
 
 interface RegistrationFormProps {
     template: HalFormsTemplate;
@@ -87,45 +55,29 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
         },
     });
 
-    const initialValues = useMemo(() => buildEmptyInitialValues(template), [template]);
-    const validationSchema = useMemo(() => buildValidationSchema(template), [template]);
-
-    const handleSubmit = (values: Record<string, unknown>) => {
+    const handleSubmit = async (values: Record<string, unknown>) => {
         const url = template.target || '/api/members';
         mutate({url, data: values});
     };
 
-    const personalProps = template.properties.filter(p => PERSONAL_FIELDS.includes(p.name));
-    const contactProps = template.properties.filter(p => CONTACT_FIELDS.includes(p.name));
-    const addressProp = template.properties.find(p => p.type === ADDRESS_TYPE);
-    const supplementaryProps = template.properties.filter(p => SUPPLEMENTARY_FIELDS.includes(p.name));
-    const documentProps = template.properties.filter(p => DOCUMENT_FIELDS.includes(p.name) || DOCUMENT_TYPES.includes(p.type));
-    const guardianProp = template.properties.find(p => p.type === GUARDIAN_TYPE);
+    const hasFields = (fieldNames: string[]) =>
+        template.properties.some(p => fieldNames.includes(p.name));
 
-    const renderField = (fieldName: string, label?: string) => (
-        <EditableDetailRow
-            key={fieldName}
-            label={label || FIELD_LABELS[fieldName] || fieldName}
-            fieldName={fieldName}
-            template={template}
-            isEditing={true}
-        >
-            {''}
-        </EditableDetailRow>
-    );
+    const hasType = (type: string) =>
+        template.properties.some(p => p.type === type);
 
-    const renderCompositeFields = (propName: string, propType: string) => {
-        const subfields = COMPOSITE_SUBFIELDS[propType] || [];
-        return subfields.map(sf => renderField(`${propName}.${sf}`, FIELD_LABELS[`${propName}.${sf}`]));
-    };
+    const hasDocumentFields = hasFields(DOCUMENT_FIELDS) ||
+        template.properties.some(p => DOCUMENT_TYPES.includes(p.type));
 
     return (
-        <Formik
-            initialValues={initialValues}
-            validationSchema={validationSchema}
+        <HalFormsForm
+            data={{}}
+            template={template}
             onSubmit={handleSubmit}
-        >
-            <Form>
+            fieldsFactory={klabisFieldsFactory}
+            submitButtonLabel="Registrovat"
+            isSubmitting={isPending}
+            renderForm={(renderField) => (
                 <div className="flex flex-col gap-8">
                     <div>
                         <Link to="/members" className="text-sm text-primary hover:text-primary-light">
@@ -138,13 +90,7 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                     </h1>
 
                     <div className="flex flex-wrap gap-3">
-                        <button
-                            type="submit"
-                            disabled={isPending}
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                        >
-                            Registrovat
-                        </button>
+                        {renderField('submit')}
                         <Link
                             to="/members"
                             className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
@@ -153,49 +99,56 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         </Link>
                     </div>
 
-                    {personalProps.length > 0 && (
+                    {hasFields(PERSONAL_FIELDS) && (
                         <Section title="OSOBNÍ ÚDAJE">
-                            {personalProps.map(p => renderField(p.name))}
+                            {template.properties
+                                .filter(p => PERSONAL_FIELDS.includes(p.name))
+                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
                         </Section>
                     )}
 
-                    {contactProps.length > 0 && (
+                    {hasFields(CONTACT_FIELDS) && (
                         <Section title="KONTAKT">
-                            {contactProps.map(p => renderField(p.name))}
+                            {template.properties
+                                .filter(p => CONTACT_FIELDS.includes(p.name))
+                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
                         </Section>
                     )}
 
-                    {addressProp && (
+                    {hasType(ADDRESS_TYPE) && (
                         <Section title="ADRESA">
-                            {renderCompositeFields(addressProp.name, addressProp.type)}
+                            {template.properties
+                                .filter(p => p.type === ADDRESS_TYPE)
+                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
                         </Section>
                     )}
 
-                    {supplementaryProps.length > 0 && (
+                    {hasFields(SUPPLEMENTARY_FIELDS) && (
                         <Section title="DOPLŇKOVÉ INFORMACE">
-                            {supplementaryProps.map(p => renderField(p.name))}
+                            {template.properties
+                                .filter(p => SUPPLEMENTARY_FIELDS.includes(p.name))
+                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
                         </Section>
                     )}
 
-                    {documentProps.length > 0 && (
+                    {hasDocumentFields && (
                         <Section title="DOKLADY A LICENCE">
-                            {documentProps.map(p => {
-                                if (DOCUMENT_TYPES.includes(p.type)) {
-                                    return renderCompositeFields(p.name, p.type);
-                                }
-                                return renderField(p.name);
-                            })}
+                            {template.properties
+                                .filter(p => DOCUMENT_FIELDS.includes(p.name) || DOCUMENT_TYPES.includes(p.type))
+                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
                         </Section>
                     )}
 
-                    {guardianProp && (
+                    {hasType(GUARDIAN_TYPE) && (
                         <Section title="ZÁKONNÝ ZÁSTUPCE">
-                            {renderCompositeFields(guardianProp.name, guardianProp.type)}
+                            {template.properties
+                                .filter(p => p.type === GUARDIAN_TYPE)
+                                .map(p => <div key={p.name}>{renderField(p.name)}</div>)}
                         </Section>
                     )}
                 </div>
-            </Form>
-        </Formik>
+            )}
+        />
     );
 };
 
