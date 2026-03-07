@@ -17,6 +17,9 @@ export interface HalFormTemplateButtonProps {
     /** Click handler */
     onClick: () => void;
 
+    /** Optional explicit label — overrides template.title and templateName */
+    label?: string;
+
     /** Optional additional CSS classes */
     className?: string;
 }
@@ -36,9 +39,10 @@ export function HalFormTemplateButton({
                                           template,
                                           templateName,
                                           onClick,
+                                          label,
                                           className = '',
                                       }: HalFormTemplateButtonProps): ReactElement {
-    const displayText = template.title || templateName;
+    const displayText = label || template.title || templateName;
 
     return (
         <Button

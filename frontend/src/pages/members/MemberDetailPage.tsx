@@ -111,9 +111,9 @@ export const MemberDetailPage = (): ReactElement => {
             </div>
 
             <div className="flex flex-wrap gap-3">
-                <HalFormButton name="default" modal={false}/>
-                <HalFormButton name="terminate" modal={true}/>
-                <HalFormButton name="reactivate" modal={true}/>
+                <HalFormButton name="default" modal={false} label="Upravit"/>
+                <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
+                <HalFormButton name="reactivate" modal={true} label="Reaktivovat"/>
                 {hasLink('permissions') && (
                     <Link
                         to={route.getResourceLink('permissions')?.href ?? '#'}

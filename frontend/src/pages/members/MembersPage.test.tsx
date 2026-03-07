@@ -96,23 +96,24 @@ describe('MembersPage', () => {
         expect(screen.getByText('Členové')).toBeInTheDocument();
     });
 
-    it('renders "Přidat člena" button when template exists', () => {
+    it('renders "Registrovat člena" button when template exists (label overrides template title)', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
             _templates: {
-                default: mockHalFormsTemplate({title: 'Přidat člena'}),
+                default: mockHalFormsTemplate({title: 'Create Member'}),
             },
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByRole('button', {name: /přidat člena/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /registrovat člena/i})).toBeInTheDocument();
+        expect(screen.queryByText('Create Member')).not.toBeInTheDocument();
     });
 
-    it('does NOT render "Přidat člena" button when template does not exist', () => {
+    it('does NOT render "Registrovat člena" button when template does not exist', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.queryByRole('button', {name: /přidat člena/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /registrovat člena/i})).not.toBeInTheDocument();
     });
 
     it('renders table columns', () => {

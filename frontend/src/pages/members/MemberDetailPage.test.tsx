@@ -185,14 +185,15 @@ describe('MemberDetailPage', () => {
         expect(screen.queryByText('ZÁKONNÝ ZÁSTUPCE')).not.toBeInTheDocument();
     });
 
-    it('shows "Upravit" button when edit template exists', () => {
+    it('shows "Upravit" button when edit template exists (label overrides template title)', () => {
         const data = mockMemberDetailData({
             _templates: {
-                default: mockHalFormsTemplate({title: 'Upravit'}),
+                default: mockHalFormsTemplate({title: 'Edit Member'}),
             },
         });
         renderPage(createMockPageData(data));
         expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
+        expect(screen.queryByText('Edit Member')).not.toBeInTheDocument();
     });
 
     it('does NOT show "Upravit" button when edit template missing', () => {
@@ -200,15 +201,16 @@ describe('MemberDetailPage', () => {
         expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
     });
 
-    it('shows "Ukončit členství" button when terminate template exists', () => {
+    it('shows "Ukončit členství" button when terminate template exists (label overrides template title)', () => {
         const data = mockMemberDetailData({
             active: true,
             _templates: {
-                terminate: mockHalFormsTemplate({title: 'Ukončit členství'}),
+                terminate: mockHalFormsTemplate({title: 'Terminate'}),
             },
         });
         renderPage(createMockPageData(data));
         expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
+        expect(screen.queryByText('Terminate')).not.toBeInTheDocument();
     });
 
     it('shows birth number masked when nationality is CZ', () => {

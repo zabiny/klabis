@@ -553,6 +553,51 @@ describe('HalFormButton Component', () => {
         });
     });
 
+    describe('Label Prop', () => {
+        it('should display explicit label instead of template title', () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create Member'}),
+                },
+            };
+            renderWithPageData(
+                <HalFormButton name="create" modal={true} label="Registrovat člena"/>,
+                createMockPageData(resourceData)
+            );
+            expect(screen.getByText('Registrovat člena')).toBeInTheDocument();
+            expect(screen.queryByText('Create Member')).not.toBeInTheDocument();
+        });
+
+        it('should fall back to template title when label is not provided', () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create Member'}),
+                },
+            };
+            renderWithPageData(
+                <HalFormButton name="create" modal={true}/>,
+                createMockPageData(resourceData)
+            );
+            expect(screen.getByText('Create Member')).toBeInTheDocument();
+        });
+
+        it('should fall back to template name when neither label nor title is provided', () => {
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: undefined}),
+                },
+            };
+            renderWithPageData(
+                <HalFormButton name="create" modal={true}/>,
+                createMockPageData(resourceData)
+            );
+            expect(screen.getByText('create')).toBeInTheDocument();
+        });
+    });
+
     describe('Default Props', () => {
         it('should use modal=true as default', async () => {
             const user = userEvent.setup();

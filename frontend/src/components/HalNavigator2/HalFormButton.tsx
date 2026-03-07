@@ -24,6 +24,9 @@ export interface HalFormButtonProps {
     /** If true, opens form in modal overlay. If false, displays form inline on current page */
     modal?: boolean;
 
+    /** Optional explicit button label — overrides template.title and templateName */
+    label?: string;
+
     /** Optional custom form layout - children or render callback */
     customLayout?: ReactNode | RenderFormCallback;
 }
@@ -48,7 +51,7 @@ export interface HalFormButtonProps {
  * // Inline mode (requires HalFormsPageLayout in parent tree)
  * <HalFormButton name="edit" modal={false} />
  */
-export function HalFormButton({name, modal = true, customLayout}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, label, customLayout}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
@@ -72,6 +75,7 @@ export function HalFormButton({name, modal = true, customLayout}: HalFormButtonP
         <HalFormTemplateButton
             template={template}
             templateName={name}
+            label={label}
             onClick={handleButtonClick}
         />
     );
