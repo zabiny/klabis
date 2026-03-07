@@ -92,6 +92,7 @@ function subElementInputProps(attrName: string, parentProps: HalFormsInputProps,
     return {
         prop: subElementProp(parentProps.prop, attrName, conf?.prompt),
         errorText: undefined,
+        renderMode: parentProps.renderMode,
         subElementProps: parentProps.subElementProps
     };
 }

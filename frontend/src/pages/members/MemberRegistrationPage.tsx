@@ -32,21 +32,6 @@ const DOCUMENT_FIELDS = ['drivingLicenseGroup'];
 const DOCUMENT_TYPES = [IDENTITY_CARD_TYPE, MEDICAL_COURSE_TYPE, TRAINER_LICENSE_TYPE];
 const GUARDIAN_TYPE = 'GuardianDTO';
 
-const FIELD_LABELS: Record<string, string> = {
-    firstName: 'Jméno',
-    lastName: 'Příjmení',
-    dateOfBirth: 'Datum narození',
-    gender: 'Pohlaví',
-    nationality: 'Státní příslušnost',
-    birthNumber: 'Rodné číslo',
-    email: 'E-mail',
-    phone: 'Telefon',
-    chipNumber: 'Číslo čipu',
-    bankAccountNumber: 'Číslo bankovního účtu',
-    dietaryRestrictions: 'Stravovací omezení',
-    drivingLicenseGroup: 'Řidičský průkaz',
-};
-
 interface RegistrationFormProps {
     template: HalFormsTemplate;
 }
@@ -75,6 +60,9 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
         const url = template.target || '/api/members';
         mutate({url, data: values});
     };
+
+    const hasField = (fieldName: string) =>
+        template.properties.some(p => p.name === fieldName);
 
     const hasFields = (fieldNames: string[]) =>
         template.properties.some(p => fieldNames.includes(p.name));
@@ -117,52 +105,48 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
 
                     {hasFields(PERSONAL_FIELDS) && (
                         <Section title="OSOBNÍ ÚDAJE">
-                            {template.properties
-                                .filter(p => PERSONAL_FIELDS.includes(p.name))
-                                .map(p => <DetailRow key={p.name} label={FIELD_LABELS[p.name] || p.prompt || p.name}>{renderInput(p.name)}</DetailRow>)}
+                            {hasField('firstName') && <DetailRow label="Jméno">{renderInput('firstName')}</DetailRow>}
+                            {hasField('lastName') && <DetailRow label="Příjmení">{renderInput('lastName')}</DetailRow>}
+                            {hasField('dateOfBirth') && <DetailRow label="Datum narození">{renderInput('dateOfBirth')}</DetailRow>}
+                            {hasField('gender') && <DetailRow label="Pohlaví">{renderInput('gender')}</DetailRow>}
+                            {hasField('nationality') && <DetailRow label="Státní příslušnost">{renderInput('nationality')}</DetailRow>}
+                            {hasField('birthNumber') && <DetailRow label="Rodné číslo">{renderInput('birthNumber')}</DetailRow>}
                         </Section>
                     )}
 
                     {hasFields(CONTACT_FIELDS) && (
                         <Section title="KONTAKT">
-                            {template.properties
-                                .filter(p => CONTACT_FIELDS.includes(p.name))
-                                .map(p => <DetailRow key={p.name} label={FIELD_LABELS[p.name] || p.prompt || p.name}>{renderInput(p.name)}</DetailRow>)}
+                            {hasField('email') && <DetailRow label="E-mail">{renderInput('email')}</DetailRow>}
+                            {hasField('phone') && <DetailRow label="Telefon">{renderInput('phone')}</DetailRow>}
                         </Section>
                     )}
 
                     {hasType(ADDRESS_TYPE) && (
                         <Section title="ADRESA">
-                            {template.properties
-                                .filter(p => p.type === ADDRESS_TYPE)
-                                .map(p => <div key={p.name}>{renderInput(p.name)}</div>)}
+                            {renderInput('address')}
                         </Section>
                     )}
 
                     {hasFields(SUPPLEMENTARY_FIELDS) && (
                         <Section title="DOPLŇKOVÉ INFORMACE">
-                            {template.properties
-                                .filter(p => SUPPLEMENTARY_FIELDS.includes(p.name))
-                                .map(p => <DetailRow key={p.name} label={FIELD_LABELS[p.name] || p.prompt || p.name}>{renderInput(p.name)}</DetailRow>)}
+                            {hasField('chipNumber') && <DetailRow label="Číslo čipu">{renderInput('chipNumber')}</DetailRow>}
+                            {hasField('bankAccountNumber') && <DetailRow label="Číslo bankovního účtu">{renderInput('bankAccountNumber')}</DetailRow>}
+                            {hasField('dietaryRestrictions') && <DetailRow label="Stravovací omezení">{renderInput('dietaryRestrictions')}</DetailRow>}
                         </Section>
                     )}
 
                     {hasDocumentFields && (
                         <Section title="DOKLADY A LICENCE">
-                            {template.properties
-                                .filter(p => DOCUMENT_FIELDS.includes(p.name))
-                                .map(p => <DetailRow key={p.name} label={FIELD_LABELS[p.name] || p.prompt || p.name}>{renderInput(p.name)}</DetailRow>)}
-                            {template.properties
-                                .filter(p => DOCUMENT_TYPES.includes(p.type))
-                                .map(p => <div key={p.name}>{renderInput(p.name)}</div>)}
+                            {hasType(IDENTITY_CARD_TYPE) && renderInput('identityCard')}
+                            {hasField('drivingLicenseGroup') && <DetailRow label="Řidičský průkaz">{renderInput('drivingLicenseGroup')}</DetailRow>}
+                            {hasType(MEDICAL_COURSE_TYPE) && renderInput('medicalCourse')}
+                            {hasType(TRAINER_LICENSE_TYPE) && renderInput('trainerLicense')}
                         </Section>
                     )}
 
                     {hasType(GUARDIAN_TYPE) && (
                         <Section title="ZÁKONNÝ ZÁSTUPCE">
-                            {template.properties
-                                .filter(p => p.type === GUARDIAN_TYPE)
-                                .map(p => <div key={p.name}>{renderInput(p.name)}</div>)}
+                            {renderInput('guardian')}
                         </Section>
                     )}
                 </div>
