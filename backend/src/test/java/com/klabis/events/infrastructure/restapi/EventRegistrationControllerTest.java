@@ -193,6 +193,19 @@ class EventRegistrationControllerTest {
                     )
                     .andExpect(status().isUnauthorized());
         }
+
+        @Test
+        @DisplayName("should return 403 Forbidden when user has no member profile")
+        @WithKlabisMockUser
+        void shouldReturn403WhenUserHasNoMemberProfile() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(
+                            delete("/api/events/{eventId}/registrations", eventId)
+                    )
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.title").value("Authorization Failed"));
+        }
     }
 
     @Nested

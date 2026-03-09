@@ -98,6 +98,9 @@ class EventRegistrationController {
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @CurrentUser CurrentUserData currentUser) {
 
+        if (currentUser.memberId() == null) {
+            throw new MemberProfileRequiredException();
+        }
         registrationService.unregisterMember(new EventId(eventId), currentUser.memberId(), LocalDate.now());
         return ResponseEntity.noContent().build();
     }

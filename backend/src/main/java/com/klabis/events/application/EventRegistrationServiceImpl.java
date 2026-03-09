@@ -6,9 +6,9 @@ import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.members.MemberId;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -24,10 +24,7 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
     }
 
     @Override
-    public void registerMember(EventId eventId, MemberId memberId, Event.RegisterCommand command) {
-        Assert.notNull(eventId, "Event id must not be null");
-        Assert.notNull(memberId, "Member id must not be null");
-
+    public void registerMember(@NonNull EventId eventId, @NonNull MemberId memberId, Event.RegisterCommand command) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
@@ -40,7 +37,7 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
     }
 
     @Override
-    public void unregisterMember(EventId eventId, MemberId memberId, LocalDate currentDate) {
+    public void unregisterMember(@NonNull EventId eventId, @NonNull MemberId memberId, @NonNull LocalDate currentDate) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
@@ -54,7 +51,7 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EventRegistration> listRegistrations(EventId eventId) {
+    public List<EventRegistration> listRegistrations(@NonNull EventId eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
@@ -63,7 +60,7 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
 
     @Override
     @Transactional(readOnly = true)
-    public EventRegistration getOwnRegistration(EventId eventId, MemberId memberId) {
+    public EventRegistration getOwnRegistration(@NonNull EventId eventId, @NonNull MemberId memberId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
