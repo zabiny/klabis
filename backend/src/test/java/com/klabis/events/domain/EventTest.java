@@ -1019,6 +1019,83 @@ class EventTest {
     }
 
     @Nested
+    @DisplayName("areRegistrationsOpen()")
+    class AreRegistrationsOpen {
+
+        @Test
+        @DisplayName("should return true when event is ACTIVE and eventDate is in the future")
+        void shouldReturnTrueWhenActiveAndDateInFuture() {
+            // Arrange
+            LocalDate futureDate = LocalDate.now().plusDays(1);
+            Event event = Event.create("Race 2026", futureDate, "Forest", "Club", null, null);
+            event.publish();
+
+            // Act & Assert
+            assertThat(event.areRegistrationsOpen()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return false when event is ACTIVE but eventDate is today")
+        void shouldReturnFalseWhenActiveAndDateIsToday() {
+            // Arrange
+            LocalDate today = LocalDate.now();
+            Event event = Event.create("Race Today", today, "Forest", "Club", null, null);
+            event.publish();
+
+            // Act & Assert
+            assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when event is ACTIVE but eventDate is in the past")
+        void shouldReturnFalseWhenActiveAndDateInPast() {
+            // Arrange
+            LocalDate pastDate = LocalDate.now().minusDays(1);
+            Event event = Event.create("Past Race", pastDate, "Forest", "Club", null, null);
+            event.publish();
+
+            // Act & Assert
+            assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when event is DRAFT even if eventDate is in the future")
+        void shouldReturnFalseWhenDraftAndDateInFuture() {
+            // Arrange
+            LocalDate futureDate = LocalDate.now().plusDays(7);
+            Event event = Event.create("Future Draft", futureDate, "Forest", "Club", null, null);
+
+            // Act & Assert
+            assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when event is CANCELLED even if eventDate is in the future")
+        void shouldReturnFalseWhenCancelledAndDateInFuture() {
+            // Arrange
+            LocalDate futureDate = LocalDate.now().plusDays(7);
+            Event event = Event.create("Cancelled Race", futureDate, "Forest", "Club", null, null);
+            event.cancel();
+
+            // Act & Assert
+            assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when event is FINISHED even if eventDate is in the future")
+        void shouldReturnFalseWhenFinishedAndDateInFuture() {
+            // Arrange
+            LocalDate futureDate = LocalDate.now().plusDays(7);
+            Event event = Event.create("Finished Race", futureDate, "Forest", "Club", null, null);
+            event.publish();
+            event.finish();
+
+            // Act & Assert
+            assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("Domain Events (getDomainEvents, clearDomainEvents)")
     class DomainEvents {
 

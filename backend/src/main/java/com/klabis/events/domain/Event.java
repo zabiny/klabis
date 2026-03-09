@@ -391,6 +391,14 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         registerEvent(EventUpdatedEvent.fromAggregate(this));
     }
 
+    /**
+     * Returns true when registrations are open: the event is ACTIVE and the event date is strictly in the future.
+     * Covers both the registration rule (ACTIVE status required) and the unregistration rule (before event date).
+     */
+    public boolean areRegistrationsOpen() {
+        return status == EventStatus.ACTIVE && eventDate.isAfter(LocalDate.now());
+    }
+
     // ========== Registration Methods ==========
 
     /**
