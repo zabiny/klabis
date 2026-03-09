@@ -6,16 +6,8 @@ context: |
 
   **Tech Stack:** Java 17+, Spring Boot 3.5.9, Spring MVC, Spring Data JDBC, Spring Modulith 1.4.6, Maven
   **API Design:** REST with HATEOAS (mandatory), HAL+FORMS media type, hypermedia navigation
-  **Architecture:** Clean Architecture + DDD, dependency rule inward, hybrid package structure (not layered), KISS
-  **Testing:** TDD required (write tests first), JUnit 5 + AssertJ + Mockito, >80% coverage
-  **Git:** Conventional Commits, branches `feature/[issue-id]-description` or `bugfix/[issue-id]-description`
-
-  **Package Structure (Hybrid):**
-  - Module root: `{Aggregate}.java`, `{Aggregate}s.java` (public query API), value objects, domain enums, entities, domain events
-  - `{feature}/` packages: Service, controller, DTOs, exceptions co-located (@NamedInterface)
-  - `persistence/` package: Repository interfaces (internal, hidden from other modules)
-  - `persistence/jdbc/` package: JDBC repositories, mementos, adapters, converters (internal)
-  - `shared/` package: Utilities, validators (internal)
+  **Architecture:** Clean Architecture + DDD, dependency rule inward, KISS
+  **Testing:** Red-Green-Refactor TDD required (write tests, implement with minimal version, refactor), JUnit 5 + AssertJ + Mockito, >80% coverage
 
   **Key Constraints:**
   - All API responses must include `_links` (HATEOAS compliance)
@@ -33,9 +25,8 @@ rules:
     - "every module shall have single specs.md file"
 
   tasks:
-    - "Follow TDD: write failing test, implement, refactor"
+    - "Follow Red-Green-Refactor TDD: write failing test, implement, refactor"
     - "Aim for >80% tests coverage coverage, 100% for domain logic"
-    - "Use ubiquitous language (UserId, EmailAddress) not Java patterns (record, factory method)"
     - "If tasks are created from github issue, add task to add label 'BackendCompleted' to that issue"
 
   design:
