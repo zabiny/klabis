@@ -7,12 +7,14 @@ Connect enables:
 
 - ID tokens for user identity verification (authentication vs authorization)
 - Standard discovery mechanism for clients to find provider configuration
-- UserInfo endpoint for retrieving user profile information
+- UserInfo endpoint for retrieving user profile information with membership status detection (`is_member` claim)
 - RP-initiated logout for single sign-out scenarios
 - Federation with external identity providers (future requirement)
 
 OpenID Connect builds on the existing OAuth2 authorization infrastructure, adding identity layer capabilities without
-breaking existing OAuth2 flows. Clients can opt-in to OIDC features by requesting the `openid` scope.
+breaking existing OAuth2 flows. Clients can opt-in to OIDC features by requesting the `openid` scope. The UserInfo
+endpoint determines membership status by checking for the existence of a Member aggregate matching the authenticated
+user's username.
 
 ## Requirements
 
@@ -433,3 +435,41 @@ Client configuration settings:
 - **AND** client supports `authorization_code` grant type
 - **AND** client supports `code` and `id_token` response types
 - **AND** client can perform OIDC authentication out of the box
+
+### Requirement: Membership status claim in userinfo response
+
+The OIDC userinfo endpoint SHALL include an `is_member` boolean claim when the `profile` scope is authorized, indicating whether the authenticated user has an associated Member profile.
+
+#### Scenario: Member user requests userinfo with profile scope
+- **WHEN** a user with an associated Member profile requests the `/userinfo` endpoint with `profile` scope authorized
+- **THEN** the response SHALL include `"is_member": true` claim
+- **AND** the response SHALL include standard profile claims (`given_name`, `family_name`, `updated_at`)
+
+#### Scenario: Admin user requests userinfo with profile scope
+- **WHEN** a user without an associated Member profile requests the `/userinfo` endpoint with `profile` scope authorized
+- **THEN** the response SHALL include `"is_member": false` claim
+- **AND** the response SHALL NOT include Member-specific profile claims (`given_name`, `family_name`, `updated_at`)
+
+#### Scenario: User requests userinfo without profile scope
+- **WHEN** a user requests the `/userinfo` endpoint without `profile` scope authorized
+- **THEN** the response SHALL NOT include the `is_member` claim
+- **AND** the response SHALL only include the `sub` claim
+
+### Requirement: Membership detection based on Member aggregate existence
+
+The system SHALL determine membership status by checking for the existence of a Member aggregate with a registration number matching the authenticated user's username.
+
+#### Scenario: Username matches registration number format and Member exists
+- **WHEN** the authenticated username matches the registration number format (XXXYYDD)
+- **AND** a Member aggregate exists with that registration number
+- **THEN** the system SHALL set `is_member` to `true`
+
+#### Scenario: Username matches registration number format but Member does not exist
+- **WHEN** the authenticated username matches the registration number format (XXXYYDD)
+- **AND** no Member aggregate exists with that registration number
+- **THEN** the system SHALL set `is_member` to `false`
+
+#### Scenario: Username does not match registration number format
+- **WHEN** the authenticated username does not match the registration number format
+- **THEN** the system SHALL set `is_member` to `false`
+- **AND** the system SHALL NOT query the Member repository

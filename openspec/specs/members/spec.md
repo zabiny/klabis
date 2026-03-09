@@ -5,7 +5,9 @@
 This specification defines requirements for the club member registration and management system. It encompasses the
 complete member lifecycle including registration with mandatory and conditional personal information, registration
 number generation (ZBM format), contact details management, and secure data handling for sensitive information like
-birth numbers and contact data.
+birth numbers and contact data. It also covers membership termination workflow with reason tracking and audit trail,
+birth number (rodné číslo) management with GDPR-compliant encryption, and bank account number storage for expense
+reimbursement.
 
 ## Requirements
 
@@ -1626,4 +1628,302 @@ The system SHALL maintain a 1:1 relationship between member and user identifiers
 - **THEN** the member identifier and user identifier reference the same underlying value
 - **AND** the system can convert between member and user identifiers when explicitly required
 - **AND** no automatic conversion occurs (requires explicit code)
+
+### Requirement: Birth number for Czech nationals only
+
+The system SHALL allow birth number (rodné číslo) to be entered ONLY when member nationality is Czech (CZ).
+
+#### Scenario: Czech national can enter birth number
+- **WHEN** user creates or updates a member with Czech (CZ) nationality
+- **THEN** birth number field is available and can be entered
+
+#### Scenario: Non-Czech national cannot enter birth number
+- **WHEN** user creates or updates a member with non-Czech nationality
+- **THEN** birth number field is disabled and any previously entered value is cleared
+
+#### Scenario: Changing nationality clears birth number
+- **WHEN** user changes member nationality from Czech to non-Czech
+- **THEN** birth number is automatically cleared
+
+### Requirement: Birth number format validation
+
+The system SHALL validate birth number format according to Czech standards.
+
+Birth number format:
+- **Standard format**: RRMMDD/XXXX (10 digits with slash separator)
+- **Alternative format**: RRMMDDXXXX (10 digits without separator)
+- **RR**: Year of birth (last 2 digits)
+- **MM**: Month of birth (01-12 for males, 51-62 for females born after 1954, 21-32 for males born after 2004, 71-82 for females born after 2004)
+- **DD**: Day of birth (01-31)
+- **XXXX**: Sequential number
+
+#### Scenario: Valid birth number with slash is accepted
+- **WHEN** user enters birth number in format "RRMMDD/XXXX" (e.g., "901231/1234")
+- **THEN** system accepts the birth number
+
+#### Scenario: Valid birth number without slash is accepted
+- **WHEN** user enters birth number in format "RRMMDDXXXX" (e.g., "9012311234")
+- **THEN** system accepts the birth number and normalizes it to format with slash
+
+#### Scenario: Invalid birth number format is rejected
+- **WHEN** user enters birth number not matching valid format (e.g., "abc123", "90123", "901231/12345")
+- **THEN** system rejects the input with error message "Birth number must be in format RRMMDD/XXXX or RRMMDDXXXX"
+
+#### Scenario: Birth number with invalid date is rejected
+- **WHEN** user enters birth number with invalid date components (e.g., "901332/1234" - day 32)
+- **THEN** system rejects the input with error message "Birth number contains invalid date"
+
+### Requirement: Birth number encryption in database
+
+The system SHALL encrypt birth numbers when storing in database to comply with GDPR requirements.
+
+#### Scenario: Birth number is encrypted at rest
+- **WHEN** member with birth number is saved to database
+- **THEN** birth number column contains encrypted value using AES-256 encryption
+
+#### Scenario: Birth number is decrypted on retrieval
+- **WHEN** member data is loaded from database
+- **THEN** birth number is automatically decrypted for application use
+
+### Requirement: Birth number derivation validation
+
+The system SHOULD validate consistency between birth number and member's date of birth and gender.
+
+#### Scenario: Birth number date matches member date of birth
+- **WHEN** user enters birth number with date components matching member's date of birth
+- **THEN** system accepts the birth number
+
+#### Scenario: Birth number date conflicts with member date of birth
+- **WHEN** user enters birth number with date components NOT matching member's date of birth
+- **THEN** system shows warning "Birth number date (DD.MM.RRRR) does not match member's date of birth"
+
+#### Scenario: Birth number gender matches member gender
+- **WHEN** user enters birth number with month indicating gender matching member's gender
+- **THEN** system accepts the birth number
+
+#### Scenario: Birth number gender conflicts with member gender
+- **WHEN** user enters birth number with month indicating gender NOT matching member's gender
+- **THEN** system shows warning "Birth number indicates different gender than selected"
+
+### Requirement: Birth number API exposure
+
+The system SHALL include birth number in member API responses with appropriate access control.
+
+#### Scenario: Birth number included in member detail response
+- **WHEN** authorized user requests member details (GET /api/members/{id})
+- **THEN** response includes birthNumber field (or null if not set)
+
+#### Scenario: Birth number included in member registration request
+- **WHEN** user creates new member (POST /api/members)
+- **THEN** request accepts optional birthNumber field
+
+#### Scenario: Birth number included in member update request
+- **WHEN** user updates member (PATCH /api/members/{id})
+- **THEN** request accepts optional birthNumber field
+
+### Requirement: Birth number audit trail
+
+The system SHALL log all access to birth numbers for GDPR compliance.
+
+#### Scenario: Birth number access is logged
+- **WHEN** user retrieves member data containing birth number
+- **THEN** system creates audit log entry with: user ID, member ID, timestamp, action "VIEW_BIRTH_NUMBER"
+
+#### Scenario: Birth number modification is logged
+- **WHEN** user creates or updates birth number
+- **THEN** system creates audit log entry with: user ID, member ID, timestamp, action "MODIFY_BIRTH_NUMBER"
+
+### Requirement: Optional bank account number field
+
+The system SHALL allow members to have an optional bank account number for expense reimbursement purposes.
+
+#### Scenario: Member can be created without bank account
+- **WHEN** user creates new member without providing bank account number
+- **THEN** member is created successfully with null bank account number
+
+#### Scenario: Member can be created with bank account
+- **WHEN** user creates new member with valid bank account number
+- **THEN** member is created successfully with provided bank account number
+
+#### Scenario: Member can update bank account number
+- **WHEN** user updates existing member with new bank account number
+- **THEN** member bank account number is updated
+
+#### Scenario: Member can remove bank account number
+- **WHEN** user updates existing member with null/empty bank account number
+- **THEN** member bank account number is set to null
+
+### Requirement: Bank account number format validation
+
+The system SHALL validate bank account number format and accept both IBAN and Czech domestic format.
+
+#### Scenario: Valid IBAN format is accepted
+- **WHEN** user enters bank account number in valid IBAN format (e.g., "CZ6508000000192000145399")
+- **THEN** system accepts the bank account number
+- **AND** format is detected as IBAN
+
+#### Scenario: IBAN with spaces is accepted and normalized
+- **WHEN** user enters IBAN with spaces (e.g., "CZ65 0800 0000 1920 0014 5399")
+- **THEN** system accepts and normalizes to format without spaces
+
+#### Scenario: Valid domestic format is accepted
+- **WHEN** user enters bank account in Czech domestic format (e.g., "123456/0800")
+- **THEN** system accepts the bank account number
+- **AND** format is detected as DOMESTIC
+
+#### Scenario: Domestic format with long account number is accepted
+- **WHEN** user enters domestic format with up to 10-digit account number (e.g., "1234567890/0800")
+- **THEN** system accepts the bank account number
+
+#### Scenario: Invalid IBAN format is rejected
+- **WHEN** user enters invalid IBAN format (e.g., "CZXX1234", "CZ12")
+- **THEN** system rejects with error message "Invalid IBAN: {value}"
+
+#### Scenario: IBAN with invalid checksum is rejected
+- **WHEN** user enters IBAN with invalid checksum digits
+- **THEN** system rejects with error message "Invalid IBAN: {value}"
+
+#### Scenario: Invalid domestic format is rejected
+- **WHEN** user enters domestic format with invalid bank code (e.g., "123456/08", "123456/08000")
+- **THEN** system rejects with error message "Invalid domestic format: {value}"
+
+#### Scenario: Invalid domestic format missing slash is rejected
+- **WHEN** user enters account number without slash separator (e.g., "1234560800")
+- **THEN** system rejects with error message "Cannot detect account format: {value}"
+
+### Requirement: Bank account number storage
+
+The system SHALL store bank account numbers in plain text (non-encrypted) as they are not considered personally sensitive information under GDPR.
+
+#### Scenario: Bank account number stored as-is
+- **WHEN** member with bank account number is saved to database
+- **THEN** bank account number is stored in normalized IBAN format without spaces
+
+### Requirement: Bank account number API exposure
+
+The system SHALL include bank account number in member API responses.
+
+#### Scenario: Bank account included in member detail response
+- **WHEN** authorized user requests member details (GET /api/members/{id})
+- **THEN** response includes bankAccountNumber field (or null if not set)
+
+#### Scenario: Bank account included in member registration request
+- **WHEN** user creates new member (POST /api/members)
+- **THEN** request accepts optional bankAccountNumber field
+
+#### Scenario: Bank account included in member update request
+- **WHEN** user updates member (PATCH /api/members/{id})
+- **THEN** request accepts optional bankAccountNumber field
+
+### Requirement: Bank account number usage documentation
+
+The system SHALL provide clear indication that bank account is used for expense reimbursement.
+
+#### Scenario: Help text explains purpose
+- **WHEN** user views bank account field in UI
+- **THEN** help text states "For reimbursement of travel expenses and other club-related costs"
+
+#### Scenario: Bank account optional nature is clear
+- **WHEN** user views bank account field
+- **THEN** field is marked as optional (not required)
+
+### Requirement: Membership Termination Request
+
+The system SHALL accept membership termination requests with reason and optional note. Termination takes effect immediately upon request.
+
+#### Scenario: Valid termination request
+
+- **WHEN** authenticated user with MEMBERS:UPDATE permission submits POST request to /api/members/{id}/terminate
+- **AND** request contains valid deactivation reason (ODHLASKA, PRESTUP, OTHER)
+- **THEN** membership termination is processed immediately
+- **AND** HTTP 200 OK status is returned
+- **AND** response includes updated member resource with termination details
+- **AND** deactivatedAt is set to current timestamp
+
+#### Scenario: Missing required reason field
+
+- **WHEN** authenticated user submits termination request without reason field
+- **THEN** HTTP 400 Bad Request is returned
+- **AND** error message indicates reason is required
+- **AND** no changes are made to the member
+
+#### Scenario: Invalid deactivation reason
+
+- **WHEN** authenticated user submits termination request with invalid reason value
+- **THEN** HTTP 400 Bad Request is returned
+- **AND** error message lists valid reason values (ODHLASKA, PRESTUP, OTHER)
+
+#### Scenario: Unauthorized user attempts termination
+
+- **WHEN** authenticated user without MEMBERS:UPDATE permission attempts to terminate membership
+- **THEN** HTTP 403 Forbidden is returned
+- **AND** error response indicates insufficient permissions
+
+### Requirement: Membership Status Update
+
+The system SHALL update member status from active to inactive upon successful termination.
+
+#### Scenario: Member status changes to inactive
+
+- **WHEN** membership termination is processed successfully
+- **THEN** member active status is set to false
+- **AND** deactivation reason is stored
+- **AND** deactivation timestamp is stored
+- **AND** deactivation note is stored if provided
+- **AND** terminator user ID is stored
+
+#### Scenario: Already terminated member termination attempt
+
+- **WHEN** user attempts to terminate a member that is already inactive
+- **THEN** HTTP 400 Bad Request is returned
+- **AND** error message indicates member is already terminated
+- **AND** no changes are made to the member
+
+#### Scenario: Concurrent termination attempts
+
+- **WHEN** two users attempt to terminate the same member simultaneously
+- **THEN** the first termination succeeds
+- **AND** the second termination receives HTTP 409 Conflict
+- **AND** error message indicates member was already terminated
+
+### Requirement: Termination Response Format
+
+The system SHALL return complete termination information in HATEOAS-compliant HAL+FORMS format.
+
+#### Scenario: Response includes termination details
+
+- **WHEN** membership termination is successful
+- **THEN** response Content-Type is application/prs.hal-forms+json
+- **AND** response includes all member fields with updated status
+- **AND** response includes deactivationReason (ODHLASKA, PRESTUP, OTHER)
+- **AND** response includes deactivatedAt as ISO-8601 datetime string
+- **AND** response includes deactivationNote if provided
+- **AND** response includes deactivatedBy (user ID of terminator)
+
+#### Scenario: Response includes hypermedia links
+
+- **WHEN** membership termination succeeds
+- **THEN** response includes `self` link to the updated member resource
+- **AND** response includes `collection` link to members list
+- **AND** response does NOT include `terminate` link (member already terminated)
+
+### Requirement: Termination Domain Event Publishing
+
+The system SHALL publish a domain event upon successful membership termination for integration with other modules.
+
+#### Scenario: MemberTerminatedEvent is published
+
+- **WHEN** membership termination is successfully committed to database
+- **THEN** MemberTerminatedEvent is published
+- **AND** event contains memberId
+- **AND** event contains deactivationReason
+- **AND** event contains deactivatedAt timestamp
+- **AND** event contains terminatedBy user ID
+
+#### Scenario: Event publishing failure does not block termination
+
+- **WHEN** membership termination succeeds but event publishing fails
+- **THEN** member termination is committed
+- **AND** event failure is logged for retry
+- **AND** response indicates member was terminated successfully
 
