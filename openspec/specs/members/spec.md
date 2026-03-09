@@ -69,11 +69,11 @@ The system SHALL require the following personal information fields for all new m
 
 ### Requirement: Registration Number Generation
 
-The system SHALL automatically generate a unique registration number in format XXXYYDD where:
+The system SHALL automatically generate a unique registration number in format XXXYYSS where:
 
 - XXX = club code (3-character alphanumeric, configured by system administrator)
 - YY = member's birth year (last 2 digits)
-- DD = sequential number for members born in the same year (2 digits, starting at 00)
+- SS = sequential number for members born in the same year (2 digits, starting at 00)
 
 #### Scenario: Generate registration number for first member with given birth year
 
@@ -96,28 +96,40 @@ The system SHALL automatically generate a unique registration number in format X
 - **THEN** system verifies uniqueness across all members
 - **AND** prevents duplicate registration numbers
 
-### Requirement: Conditional "Rodne Cislo" Field
+### Requirement: Birth Number Management
 
-The system SHALL conditionally enable the "rodne cislo" (Czech ID number) field based on nationality with complete format validation and encryption:
+The system SHALL manage birth numbers (rodné číslo) for Czech nationals with conditional availability, format validation, GDPR-compliant encryption, consistency validation, API exposure, and audit trail.
 
 - Available only when Czech nationality is selected
-- Disabled/unavailable for non-Czech nationalities
+- Disabled/unavailable for non-Czech nationalities; changing nationality from Czech to non-Czech clears any stored birth number
 - Must validate format RRMMDD/XXXX or RRMMDDXXXX
 - Must encrypt birth number in database using AES-256
 - Should validate consistency with date of birth and gender
 
-#### Scenario: Czech nationality selected
+Birth number format:
+- **Standard format**: RRMMDD/XXXX (10 digits with slash separator)
+- **Alternative format**: RRMMDDXXXX (10 digits without separator)
+- **RR**: Year of birth (last 2 digits)
+- **MM**: Month of birth (01-12 for males, 51-62 for females born after 1954, 21-32 for males born after 2004, 71-82 for females born after 2004)
+- **DD**: Day of birth (01-31)
+- **XXXX**: Sequential number
 
-- **WHEN** user selects Czech (CZ) as nationality
-- **THEN** "rodne cislo" field is enabled and available for input
+#### Scenario: Czech national can enter birth number
 
-#### Scenario: Non-Czech nationality selected
+- **WHEN** user creates or updates a member with Czech (CZ) nationality
+- **THEN** birth number field is available and can be entered
 
-- **WHEN** user selects any non-Czech nationality
-- **THEN** "rodne cislo" field is disabled and cannot be entered
-- **AND** any previously entered value is cleared
+#### Scenario: Non-Czech national cannot enter birth number
 
-#### Scenario: Valid birth number format is accepted
+- **WHEN** user creates or updates a member with non-Czech nationality
+- **THEN** birth number field is disabled and any previously entered value is cleared
+
+#### Scenario: Changing nationality clears birth number
+
+- **WHEN** user changes member nationality from Czech to non-Czech
+- **THEN** birth number is automatically cleared
+
+#### Scenario: Valid birth number with slash is accepted
 
 - **WHEN** user enters birth number in format "RRMMDD/XXXX" (e.g., "901231/1234")
 - **THEN** system accepts the birth number
@@ -125,36 +137,76 @@ The system SHALL conditionally enable the "rodne cislo" (Czech ID number) field 
 #### Scenario: Valid birth number without slash is normalized
 
 - **WHEN** user enters birth number in format "RRMMDDXXXX" (e.g., "9012311234")
-- **THEN** system accepts and normalizes to format with slash "RRMMDD/XXXX"
+- **THEN** system accepts the birth number and normalizes it to format with slash "RRMMDD/XXXX"
 
 #### Scenario: Invalid birth number format is rejected
 
-- **WHEN** user enters birth number not matching valid format
+- **WHEN** user enters birth number not matching valid format (e.g., "abc123", "90123", "901231/12345")
 - **THEN** validation fails with HTTP 400
 - **AND** error message states "Birth number must be in format RRMMDD/XXXX or RRMMDDXXXX"
 
 #### Scenario: Birth number with invalid date is rejected
 
-- **WHEN** user enters birth number with invalid date components (e.g., month 13 or day 32)
+- **WHEN** user enters birth number with invalid date components (e.g., "901332/1234" - day 32)
 - **THEN** validation fails with HTTP 400
 - **AND** error message states "Birth number contains invalid date"
+
+#### Scenario: Birth number date matches member date of birth
+
+- **WHEN** user enters birth number with date components matching member's date of birth
+- **THEN** system accepts the birth number
 
 #### Scenario: Birth number date conflicts with member date of birth
 
 - **WHEN** user enters birth number with date NOT matching member's date of birth
-- **THEN** system shows warning "Birth number date does not match member's date of birth"
+- **THEN** system shows warning "Birth number date (DD.MM.RRRR) does not match member's date of birth"
 - **AND** member creation/update proceeds
 
-#### Scenario: Birth number is encrypted in database
+#### Scenario: Birth number gender matches member gender
+
+- **WHEN** user enters birth number with month indicating gender matching member's gender
+- **THEN** system accepts the birth number
+
+#### Scenario: Birth number gender conflicts with member gender
+
+- **WHEN** user enters birth number with month indicating gender NOT matching member's gender
+- **THEN** system shows warning "Birth number indicates different gender than selected"
+- **AND** member creation/update proceeds
+
+#### Scenario: Birth number is encrypted at rest
 
 - **WHEN** member with birth number is saved to database
-- **THEN** birth number is encrypted using AES-256 encryption
-- **AND** encrypted value is stored in birth_number column
+- **THEN** birth number column contains encrypted value using AES-256 encryption
 
 #### Scenario: Birth number is decrypted on retrieval
 
 - **WHEN** member data is loaded from database
-- **THEN** birth number is automatically decrypted for API response
+- **THEN** birth number is automatically decrypted for application use
+
+#### Scenario: Birth number included in member detail response
+
+- **WHEN** authorized user requests member details (GET /api/members/{id})
+- **THEN** response includes birthNumber field (or null if not set)
+
+#### Scenario: Birth number included in member registration request
+
+- **WHEN** user creates new member (POST /api/members)
+- **THEN** request accepts optional birthNumber field
+
+#### Scenario: Birth number included in member update request
+
+- **WHEN** user updates member (PATCH /api/members/{id})
+- **THEN** request accepts optional birthNumber field
+
+#### Scenario: Birth number access is logged
+
+- **WHEN** user retrieves member data containing birth number
+- **THEN** system creates audit log entry with: user ID, member ID, timestamp, action "VIEW_BIRTH_NUMBER"
+
+#### Scenario: Birth number modification is logged
+
+- **WHEN** user creates or updates birth number
+- **THEN** system creates audit log entry with: user ID, member ID, timestamp, action "MODIFY_BIRTH_NUMBER"
 
 ### Requirement: Contact Information
 
@@ -188,7 +240,7 @@ The system SHALL require one email address and one phone number, either:
 The system SHALL accept the following optional fields with enhanced validation:
 
 - Chip number (numeric only)
-- Bank account number (with IBAN and domestic format validation)
+- Bank account number (see "Bank Account Management" requirement)
 
 #### Scenario: Submit member with optional fields
 
@@ -208,38 +260,105 @@ The system SHALL accept the following optional fields with enhanced validation:
 - **THEN** validation fails with HTTP 400
 - **AND** error indicates chip number must be numeric
 
-#### Scenario: Valid IBAN bank account is accepted
+### Requirement: Bank Account Management
 
-- **WHEN** user provides bank account in valid IBAN format (e.g., "CZ6508000000192000145399")
-- **THEN** bank account is accepted and stored
+The system SHALL allow members to have an optional bank account number for expense reimbursement purposes, with format validation supporting both IBAN and Czech domestic format, plain text storage, and API exposure.
 
-#### Scenario: IBAN with spaces is normalized
+#### Scenario: Member can be created without bank account
 
-- **WHEN** user provides IBAN with spaces (e.g., "CZ65 0800 0000 1920 0014 5399")
-- **THEN** bank account is accepted and normalized to format without spaces
+- **WHEN** user creates new member without providing bank account number
+- **THEN** member is created successfully with null bank account number
+
+#### Scenario: Member can be created with bank account
+
+- **WHEN** user creates new member with valid bank account number
+- **THEN** member is created successfully with provided bank account number
+
+#### Scenario: Member can update bank account number
+
+- **WHEN** user updates existing member with new bank account number
+- **THEN** member bank account number is updated
+
+#### Scenario: Member can remove bank account number
+
+- **WHEN** user updates existing member with null/empty bank account number
+- **THEN** member bank account number is set to null
+
+#### Scenario: Valid IBAN format is accepted
+
+- **WHEN** user enters bank account number in valid IBAN format (e.g., "CZ6508000000192000145399")
+- **THEN** system accepts the bank account number
+- **AND** format is detected as IBAN
+
+#### Scenario: IBAN with spaces is accepted and normalized
+
+- **WHEN** user enters IBAN with spaces (e.g., "CZ65 0800 0000 1920 0014 5399")
+- **THEN** system accepts and normalizes to format without spaces
 
 #### Scenario: Valid domestic format is accepted
 
-- **WHEN** user provides bank account in Czech domestic format (e.g., "123456/0800")
-- **THEN** bank account is accepted and stored
+- **WHEN** user enters bank account in Czech domestic format (e.g., "123456/0800")
+- **THEN** system accepts the bank account number
+- **AND** format is detected as DOMESTIC
+
+#### Scenario: Domestic format with long account number is accepted
+
+- **WHEN** user enters domestic format with up to 10-digit account number (e.g., "1234567890/0800")
+- **THEN** system accepts the bank account number
 
 #### Scenario: Invalid IBAN format is rejected
 
-- **WHEN** user provides invalid IBAN format
+- **WHEN** user enters invalid IBAN format (e.g., "CZXX1234", "CZ12")
 - **THEN** validation fails with HTTP 400
 - **AND** error message states "Invalid IBAN: {value}"
 
 #### Scenario: IBAN with invalid checksum is rejected
 
-- **WHEN** user provides IBAN with invalid checksum digits
+- **WHEN** user enters IBAN with invalid checksum digits
 - **THEN** validation fails with HTTP 400
 - **AND** error message states "Invalid IBAN: {value}"
 
 #### Scenario: Invalid domestic format is rejected
 
-- **WHEN** user provides domestic format with invalid structure (e.g., "123456/08")
+- **WHEN** user enters domestic format with invalid bank code (e.g., "123456/08", "123456/08000")
 - **THEN** validation fails with HTTP 400
 - **AND** error message states "Invalid domestic format: {value}"
+
+#### Scenario: Invalid domestic format missing slash is rejected
+
+- **WHEN** user enters account number without slash separator (e.g., "1234560800")
+- **THEN** validation fails with HTTP 400
+- **AND** error message states "Cannot detect account format: {value}"
+
+#### Scenario: Bank account number stored as-is
+
+- **WHEN** member with bank account number is saved to database
+- **THEN** bank account number is stored in normalized IBAN format without spaces
+
+#### Scenario: Bank account included in member detail response
+
+- **WHEN** authorized user requests member details (GET /api/members/{id})
+- **THEN** response includes bankAccountNumber field (or null if not set)
+
+#### Scenario: Bank account included in member registration request
+
+- **WHEN** user creates new member (POST /api/members)
+- **THEN** request accepts optional bankAccountNumber field
+
+#### Scenario: Bank account included in member update request
+
+- **WHEN** user updates member (PATCH /api/members/{id})
+- **THEN** request accepts optional bankAccountNumber field
+
+#### Scenario: Help text explains purpose
+
+- **WHEN** user views bank account field in UI
+- **THEN** help text states "For reimbursement of travel expenses and other club-related costs"
+
+#### Scenario: Bank account optional nature is clear
+
+- **WHEN** user views bank account field
+- **THEN** field is marked as optional (not required)
 
 ### Requirement: Welcome Email
 
@@ -580,8 +699,8 @@ identifier, including termination details if membership has been terminated.
     - Gender
     - Address (street, city, postal code, country)
     - Rodne cislo (if Czech nationality)
-    - Email addresses (all)
-    - Phone numbers (all)
+    - Email address
+    - Phone number
     - Guardian information (if applicable)
     - Chip number (if provided)
     - Bank account number (if provided)
@@ -612,8 +731,8 @@ identifier, including termination details if membership has been terminated.
     - Gender
     - Address (street, city, postal code, country)
     - Rodne cislo (if Czech nationality)
-    - Email addresses (all)
-    - Phone numbers (all)
+    - Email address
+    - Phone number
     - Guardian information (if applicable)
     - Chip number (if provided)
     - Bank account number (if provided)
@@ -669,6 +788,11 @@ The member details endpoint SHALL return complete member information in a HATEOA
     - `phone` - Single phone number string
     - `chipNumber` - Chip number (present if provided)
     - `bankAccountNumber` - Bank account number (present if provided)
+    - `identityCard` - Identity card object containing cardNumber and validityDate (present if provided)
+    - `drivingLicenseGroup` - Driving license group (present if provided)
+    - `medicalCourse` - Medical course object containing completionDate and optional validityDate (present if provided)
+    - `trainerLicense` - Trainer license object containing licenseNumber and validityDate (present if provided)
+    - `dietaryRestrictions` - Dietary restrictions text (present if provided)
     - `active` - Boolean true
     - `deactivationReason` - null
     - `deactivatedAt` - null
@@ -693,31 +817,16 @@ The member details endpoint SHALL return complete member information in a HATEOA
     - `phone` - Single phone number string
     - `chipNumber` - Chip number (present if provided)
     - `bankAccountNumber` - Bank account number (present if provided)
+    - `identityCard` - Identity card object containing cardNumber and validityDate (present if provided)
+    - `drivingLicenseGroup` - Driving license group (present if provided)
+    - `medicalCourse` - Medical course object containing completionDate and optional validityDate (present if provided)
+    - `trainerLicense` - Trainer license object containing licenseNumber and validityDate (present if provided)
+    - `dietaryRestrictions` - Dietary restrictions text (present if provided)
     - `active` - Boolean false
     - `deactivationReason` - One of: ODHLASKA, PRESTUP, OTHER
     - `deactivatedAt` - ISO-8601 datetime string (YYYY-MM-DDTHH:MM:SS)
     - `deactivationNote` - Text string or null
     - `deactivatedBy` - User ID (UUID) of the user who performed termination
-    - `guardian` - Guardian information object (present if member has guardian)
-
-#### Scenario: Response contains all personal information with structured address
-
-- **WHEN** a member details response is returned
-- **THEN** the response SHALL include:
-    - `id` - Member's unique identifier (UUID), also UserId due to 1:1 relationship
-    - `registrationNumber` - Unique registration number in format XXXYYSS
-    - `firstName` - Member's first name
-    - `lastName` - Member's last name
-    - `dateOfBirth` - Member's date of birth as ISO-8601 date string (YYYY-MM-DD)
-    - `nationality` - Member's nationality code (ISO 3166-1 alpha-2)
-    - `gender` - Member's gender (MALE, FEMALE, OTHER)
-    - `address` - Object containing street, city, postalCode, country (ISO 3166-1 alpha-2)
-    - `rodneCislo` - Czech ID number (present only for Czech nationality)
-    - `email` - Single email address string
-    - `phone` - Single phone number string
-    - `chipNumber` - Chip number (present if provided)
-    - `bankAccountNumber` - Bank account number (present if provided)
-    - `active` - Boolean indicating if member is active
     - `guardian` - Guardian information object (present if member has guardian)
 
 #### Scenario: Address serialized as structured object
@@ -1628,204 +1737,6 @@ The system SHALL maintain a 1:1 relationship between member and user identifiers
 - **THEN** the member identifier and user identifier reference the same underlying value
 - **AND** the system can convert between member and user identifiers when explicitly required
 - **AND** no automatic conversion occurs (requires explicit code)
-
-### Requirement: Birth number for Czech nationals only
-
-The system SHALL allow birth number (rodné číslo) to be entered ONLY when member nationality is Czech (CZ).
-
-#### Scenario: Czech national can enter birth number
-- **WHEN** user creates or updates a member with Czech (CZ) nationality
-- **THEN** birth number field is available and can be entered
-
-#### Scenario: Non-Czech national cannot enter birth number
-- **WHEN** user creates or updates a member with non-Czech nationality
-- **THEN** birth number field is disabled and any previously entered value is cleared
-
-#### Scenario: Changing nationality clears birth number
-- **WHEN** user changes member nationality from Czech to non-Czech
-- **THEN** birth number is automatically cleared
-
-### Requirement: Birth number format validation
-
-The system SHALL validate birth number format according to Czech standards.
-
-Birth number format:
-- **Standard format**: RRMMDD/XXXX (10 digits with slash separator)
-- **Alternative format**: RRMMDDXXXX (10 digits without separator)
-- **RR**: Year of birth (last 2 digits)
-- **MM**: Month of birth (01-12 for males, 51-62 for females born after 1954, 21-32 for males born after 2004, 71-82 for females born after 2004)
-- **DD**: Day of birth (01-31)
-- **XXXX**: Sequential number
-
-#### Scenario: Valid birth number with slash is accepted
-- **WHEN** user enters birth number in format "RRMMDD/XXXX" (e.g., "901231/1234")
-- **THEN** system accepts the birth number
-
-#### Scenario: Valid birth number without slash is accepted
-- **WHEN** user enters birth number in format "RRMMDDXXXX" (e.g., "9012311234")
-- **THEN** system accepts the birth number and normalizes it to format with slash
-
-#### Scenario: Invalid birth number format is rejected
-- **WHEN** user enters birth number not matching valid format (e.g., "abc123", "90123", "901231/12345")
-- **THEN** system rejects the input with error message "Birth number must be in format RRMMDD/XXXX or RRMMDDXXXX"
-
-#### Scenario: Birth number with invalid date is rejected
-- **WHEN** user enters birth number with invalid date components (e.g., "901332/1234" - day 32)
-- **THEN** system rejects the input with error message "Birth number contains invalid date"
-
-### Requirement: Birth number encryption in database
-
-The system SHALL encrypt birth numbers when storing in database to comply with GDPR requirements.
-
-#### Scenario: Birth number is encrypted at rest
-- **WHEN** member with birth number is saved to database
-- **THEN** birth number column contains encrypted value using AES-256 encryption
-
-#### Scenario: Birth number is decrypted on retrieval
-- **WHEN** member data is loaded from database
-- **THEN** birth number is automatically decrypted for application use
-
-### Requirement: Birth number derivation validation
-
-The system SHOULD validate consistency between birth number and member's date of birth and gender.
-
-#### Scenario: Birth number date matches member date of birth
-- **WHEN** user enters birth number with date components matching member's date of birth
-- **THEN** system accepts the birth number
-
-#### Scenario: Birth number date conflicts with member date of birth
-- **WHEN** user enters birth number with date components NOT matching member's date of birth
-- **THEN** system shows warning "Birth number date (DD.MM.RRRR) does not match member's date of birth"
-
-#### Scenario: Birth number gender matches member gender
-- **WHEN** user enters birth number with month indicating gender matching member's gender
-- **THEN** system accepts the birth number
-
-#### Scenario: Birth number gender conflicts with member gender
-- **WHEN** user enters birth number with month indicating gender NOT matching member's gender
-- **THEN** system shows warning "Birth number indicates different gender than selected"
-
-### Requirement: Birth number API exposure
-
-The system SHALL include birth number in member API responses with appropriate access control.
-
-#### Scenario: Birth number included in member detail response
-- **WHEN** authorized user requests member details (GET /api/members/{id})
-- **THEN** response includes birthNumber field (or null if not set)
-
-#### Scenario: Birth number included in member registration request
-- **WHEN** user creates new member (POST /api/members)
-- **THEN** request accepts optional birthNumber field
-
-#### Scenario: Birth number included in member update request
-- **WHEN** user updates member (PATCH /api/members/{id})
-- **THEN** request accepts optional birthNumber field
-
-### Requirement: Birth number audit trail
-
-The system SHALL log all access to birth numbers for GDPR compliance.
-
-#### Scenario: Birth number access is logged
-- **WHEN** user retrieves member data containing birth number
-- **THEN** system creates audit log entry with: user ID, member ID, timestamp, action "VIEW_BIRTH_NUMBER"
-
-#### Scenario: Birth number modification is logged
-- **WHEN** user creates or updates birth number
-- **THEN** system creates audit log entry with: user ID, member ID, timestamp, action "MODIFY_BIRTH_NUMBER"
-
-### Requirement: Optional bank account number field
-
-The system SHALL allow members to have an optional bank account number for expense reimbursement purposes.
-
-#### Scenario: Member can be created without bank account
-- **WHEN** user creates new member without providing bank account number
-- **THEN** member is created successfully with null bank account number
-
-#### Scenario: Member can be created with bank account
-- **WHEN** user creates new member with valid bank account number
-- **THEN** member is created successfully with provided bank account number
-
-#### Scenario: Member can update bank account number
-- **WHEN** user updates existing member with new bank account number
-- **THEN** member bank account number is updated
-
-#### Scenario: Member can remove bank account number
-- **WHEN** user updates existing member with null/empty bank account number
-- **THEN** member bank account number is set to null
-
-### Requirement: Bank account number format validation
-
-The system SHALL validate bank account number format and accept both IBAN and Czech domestic format.
-
-#### Scenario: Valid IBAN format is accepted
-- **WHEN** user enters bank account number in valid IBAN format (e.g., "CZ6508000000192000145399")
-- **THEN** system accepts the bank account number
-- **AND** format is detected as IBAN
-
-#### Scenario: IBAN with spaces is accepted and normalized
-- **WHEN** user enters IBAN with spaces (e.g., "CZ65 0800 0000 1920 0014 5399")
-- **THEN** system accepts and normalizes to format without spaces
-
-#### Scenario: Valid domestic format is accepted
-- **WHEN** user enters bank account in Czech domestic format (e.g., "123456/0800")
-- **THEN** system accepts the bank account number
-- **AND** format is detected as DOMESTIC
-
-#### Scenario: Domestic format with long account number is accepted
-- **WHEN** user enters domestic format with up to 10-digit account number (e.g., "1234567890/0800")
-- **THEN** system accepts the bank account number
-
-#### Scenario: Invalid IBAN format is rejected
-- **WHEN** user enters invalid IBAN format (e.g., "CZXX1234", "CZ12")
-- **THEN** system rejects with error message "Invalid IBAN: {value}"
-
-#### Scenario: IBAN with invalid checksum is rejected
-- **WHEN** user enters IBAN with invalid checksum digits
-- **THEN** system rejects with error message "Invalid IBAN: {value}"
-
-#### Scenario: Invalid domestic format is rejected
-- **WHEN** user enters domestic format with invalid bank code (e.g., "123456/08", "123456/08000")
-- **THEN** system rejects with error message "Invalid domestic format: {value}"
-
-#### Scenario: Invalid domestic format missing slash is rejected
-- **WHEN** user enters account number without slash separator (e.g., "1234560800")
-- **THEN** system rejects with error message "Cannot detect account format: {value}"
-
-### Requirement: Bank account number storage
-
-The system SHALL store bank account numbers in plain text (non-encrypted) as they are not considered personally sensitive information under GDPR.
-
-#### Scenario: Bank account number stored as-is
-- **WHEN** member with bank account number is saved to database
-- **THEN** bank account number is stored in normalized IBAN format without spaces
-
-### Requirement: Bank account number API exposure
-
-The system SHALL include bank account number in member API responses.
-
-#### Scenario: Bank account included in member detail response
-- **WHEN** authorized user requests member details (GET /api/members/{id})
-- **THEN** response includes bankAccountNumber field (or null if not set)
-
-#### Scenario: Bank account included in member registration request
-- **WHEN** user creates new member (POST /api/members)
-- **THEN** request accepts optional bankAccountNumber field
-
-#### Scenario: Bank account included in member update request
-- **WHEN** user updates member (PATCH /api/members/{id})
-- **THEN** request accepts optional bankAccountNumber field
-
-### Requirement: Bank account number usage documentation
-
-The system SHALL provide clear indication that bank account is used for expense reimbursement.
-
-#### Scenario: Help text explains purpose
-- **WHEN** user views bank account field in UI
-- **THEN** help text states "For reimbursement of travel expenses and other club-related costs"
-
-#### Scenario: Bank account optional nature is clear
-- **WHEN** user views bank account field
-- **THEN** field is marked as optional (not required)
 
 ### Requirement: Membership Termination Request
 
