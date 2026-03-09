@@ -385,7 +385,8 @@ body {
     </div>
     <div style="padding: 8px 10px; border-bottom: 1px solid var(--border);">
       <select class="change-sel" id="changeSel" onchange="loadChange(this.value)">
-        <option value="">— select a change —</option>
+        <option value="">— select a source —</option>
+        <option value="current-specs">Current Specs (specs/)</option>
         <option value="member-termination">member-termination (active)</option>
         <option value="custom">Custom / paste below</option>
       </select>
@@ -782,6 +783,18 @@ The system SHALL provide a REST API endpoint to retrieve complete details of a s
   }
 };
 
+// ══ Known spec modules (loaded from specs/ folder) ════════════════════════
+const SPEC_MODULES = [
+  'calendar-items',
+  'email-service',
+  'event-registrations',
+  'events',
+  'members',
+  'server-configuration',
+  'users',
+  'users-authentication',
+];
+
 // ══ Load change ════════════════════════════════════════════════════════════
 function loadChange(changeId) {
   S.currentChange = changeId;
@@ -790,10 +803,40 @@ function loadChange(changeId) {
   S.activeTab = null;
   S.showForm = false;
 
+  if (changeId === 'current-specs') {
+    loadCurrentSpecs();
+    return;
+  }
+
   if (changeId && CHANGES[changeId]) {
     S.docs = CHANGES[changeId].docs.map(d => ({ ...d }));
   }
 
+  renderTree();
+  renderTabs();
+  renderDoc();
+  renderCritique();
+}
+
+async function loadCurrentSpecs() {
+  S.docs = [];
+  const results = await Promise.allSettled(
+    SPEC_MODULES.map(mod =>
+      fetch('specs/' + mod + '/spec.md')
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(content => ({
+          id: 'spec-' + mod,
+          name: mod + '/spec.md',
+          type: 'spec',
+          group: 'specs/',
+          path: 'openspec/specs/' + mod + '/spec.md',
+          content,
+        }))
+    )
+  );
+  for (const r of results) {
+    if (r.status === 'fulfilled') S.docs.push(r.value);
+  }
   renderTree();
   renderTabs();
   renderDoc();

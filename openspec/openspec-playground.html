@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenSpec Playground - Klabis</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-hover: #79c0ff;
+  --green: #3fb950;
+  --green-bg: rgba(63, 185, 80, 0.1);
+  --amber: #d29922;
+  --amber-bg: rgba(210, 153, 34, 0.1);
+  --red: #f85149;
+  --red-bg: rgba(248, 81, 73, 0.1);
+  --purple: #bc8cff;
+  --purple-bg: rgba(188, 140, 255, 0.1);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 260px 1fr 380px;
+  grid-template-rows: 48px 1fr 220px;
+  height: 100vh;
+}
+
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+
+.header h1 { font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+.mode-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.mode-tab {
+  padding: 4px 12px;
+  font-size: 12px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.mode-tab.active { background: var(--accent); color: #fff; }
+
+.header-actions { margin-left: auto; display: flex; gap: 8px; }
+
+.sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.sidebar h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.module-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.module-item:hover { background: var(--bg-tertiary); }
+.module-item.active { background: var(--accent); color: #fff; }
+
+.module-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.module-icon.spec { background: var(--green-bg); color: var(--green); }
+.module-icon.change { background: var(--amber-bg); color: var(--amber); }
+.module-icon.new { background: var(--purple-bg); color: var(--purple); }
+
+.sidebar-divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+.btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn:hover { border-color: var(--text-muted); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-sm { padding: 4px 8px; font-size: 11px; }
+.btn-full { width: 100%; justify-content: center; }
+
+.editor-area {
+  overflow-y: auto;
+  padding: 24px 32px;
+  background: var(--bg);
+}
+
+.editor-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.requirement-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.requirement-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.requirement-header:hover { background: var(--bg-tertiary); }
+
+.chevron {
+  color: var(--text-muted);
+  font-size: 10px;
+  transition: transform 0.15s;
+}
+
+.chevron.open { transform: rotate(90deg); }
+
+.requirement-body { padding: 0 14px 14px; display: none; }
+.requirement-body.open { display: block; }
+
+.requirement-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.scenario-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.scenario-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.scenario-step { display: flex; gap: 8px; margin-bottom: 3px; line-height: 1.4; }
+
+.scenario-step .kw {
+  color: var(--amber);
+  font-weight: 600;
+  font-size: 11px;
+  min-width: 42px;
+  flex-shrink: 0;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  width: 100%;
+  font-family: inherit;
+}
+
+.add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.properties-panel {
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.properties-panel h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+
+.prop-group { margin-bottom: 16px; }
+
+.prop-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.prop-textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.prop-textarea:focus { outline: none; border-color: var(--accent); }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tag-spec { background: var(--green-bg); color: var(--green); }
+.tag-proposal { background: var(--amber-bg); color: var(--amber); }
+.tag-new { background: var(--purple-bg); color: var(--purple); }
+
+.prompt-area {
+  grid-column: 1 / -1;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.prompt-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.prompt-header span { font-size: 12px; color: var(--text-muted); }
+
+.prompt-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.copy-feedback {
+  color: var(--green);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.copy-feedback.show { opacity: 1; }
+
+.form-group { margin-bottom: 16px; }
+
+.form-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+
+.form-hint { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.form-input:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.checkbox-label.checked { border-color: var(--accent); background: rgba(88, 166, 255, 0.1); }
+
+.inline-edit {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: inherit;
+  font-family: inherit;
+  padding: 2px 6px;
+  width: 100%;
+}
+
+.inline-edit:focus { outline: none; }
+
+.raw-editor {
+  width: 100%;
+  min-height: 400px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 16px;
+  resize: vertical;
+}
+
+.raw-editor:focus { outline: none; border-color: var(--accent); }
+
+.view-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.view-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.view-btn.active { background: var(--bg); color: var(--text); }
+
+.prop-select {
+  padding: 2px 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: inherit;
+}
+
+.prop-select:focus { outline: none; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>OpenSpec Playground</h1>
+    <div class="mode-tabs" id="modeTabs"></div>
+    <div class="header-actions">
+      <div class="view-toggle" id="viewToggle" style="display:none">
+        <button class="view-btn active" data-view="structured" onclick="setView('structured')">Structured</button>
+        <button class="view-btn" data-view="raw" onclick="setView('raw')">Markdown</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar" id="sidebar"></div>
+  <div class="editor-area" id="editorArea"></div>
+  <div class="properties-panel" id="propertiesPanel"></div>
+
+  <div class="prompt-area">
+    <div class="prompt-header">
+      <span>Prompt Output</span>
+      <button class="btn btn-sm" onclick="copyPrompt()">Copy</button>
+      <span class="copy-feedback" id="copyFeedback">Copied!</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--text-muted)" id="promptInfo"></span>
+    </div>
+    <div class="prompt-content" id="promptOutput">Make changes above to generate a prompt...</div>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+
+const SPEC_MODULES = [
+  'calendar-items',
+  'email-service',
+  'event-registrations',
+  'events',
+  'members',
+  'server-configuration',
+  'users',
+  'users-authentication',
+];
+
+const MODULES = {};
+let MODULE_NAMES = [];
+
+function parseSpecMarkdown(md) {
+  const lines = md.split('\n');
+  let purpose = '';
+  let requirements = [];
+  let currentReq = null;
+  let currentScenario = null;
+  let inPurpose = false;
+  let purposeLines = [];
+  let descLines = [];
+  let inDesc = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (/^## Purpose/.test(line)) {
+      inPurpose = true;
+      inDesc = false;
+      continue;
+    }
+    if (/^## Requirements/.test(line)) {
+      inPurpose = false;
+      inDesc = false;
+      purpose = purposeLines.join(' ').trim();
+      continue;
+    }
+    if (inPurpose) {
+      const t = line.trim();
+      if (t) purposeLines.push(t);
+      continue;
+    }
+
+    if (/^### Requirement: /.test(line)) {
+      if (currentReq) {
+        if (inDesc && descLines.length) currentReq.description = descLines.join('\n').trim();
+        requirements.push(currentReq);
+      }
+      currentReq = { name: line.replace(/^### Requirement:\s*/, '').trim(), description: '', scenarios: [] };
+      currentScenario = null;
+      descLines = [];
+      inDesc = true;
+      continue;
+    }
+
+    if (/^#### Scenario: /.test(line)) {
+      if (currentReq && inDesc && descLines.length) {
+        currentReq.description = descLines.join('\n').trim();
+        inDesc = false;
+      }
+      currentScenario = { title: line.replace(/^#### Scenario:\s*/, '').trim(), steps: [] };
+      if (currentReq) currentReq.scenarios.push(currentScenario);
+      continue;
+    }
+
+    if (currentScenario && /^- \*\*(\w+)\*\*\s+(.*)/.test(line)) {
+      const m = line.match(/^- \*\*(\w+)\*\*\s+(.*)/);
+      if (m) {
+        currentScenario.steps.push({ kw: m[1], text: m[2].trim() });
+      }
+      continue;
+    }
+
+    // Continuation line for multi-line steps (indented with spaces)
+    if (currentScenario && currentScenario.steps.length > 0 && /^\s{2,}/.test(line) && line.trim()) {
+      const lastStep = currentScenario.steps[currentScenario.steps.length - 1];
+      lastStep.text += ' ' + line.trim();
+      continue;
+    }
+
+    if (inDesc && currentReq && !currentScenario) {
+      descLines.push(line);
+    }
+  }
+  if (currentReq) {
+    if (inDesc && descLines.length) currentReq.description = descLines.join('\n').trim();
+    requirements.push(currentReq);
+  }
+
+  return { purpose, requirements };
+}
+
+async function loadSpecs() {
+  const results = await Promise.allSettled(
+    SPEC_MODULES.map(mod =>
+      fetch('specs/' + mod + '/spec.md')
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(content => ({ mod, data: parseSpecMarkdown(content) }))
+    )
+  );
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      MODULES[r.value.mod] = r.value.data;
+    }
+  }
+  MODULE_NAMES = Object.keys(MODULES);
+}
+
+// ===================== STATE =====================
+
+const state = {
+  mode: "browse",
+  view: "structured",
+  selectedModule: null,
+  editedSpecs: {},
+  proposal: {
+    title: "",
+    why: "",
+    whatChanges: "",
+    affectedModules: [],
+    impact: "",
+    specUpdates: {},
+  },
+  expandedReqs: new Set(),
+};
+
+// ===================== SAFE DOM HELPERS =====================
+
+function el(tag, attrs, children) {
+  const e = document.createElement(tag);
+  if (attrs) {
+    Object.entries(attrs).forEach(([k, v]) => {
+      if (k === 'class') e.className = v;
+      else if (k === 'style' && typeof v === 'string') e.setAttribute('style', v);
+      else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
+      else if (k === 'checked') { if (v) e.checked = true; }
+      else if (k === 'value') e.value = v;
+      else if (k === 'type') e.type = v;
+      else if (k === 'placeholder') e.placeholder = v;
+      else if (k === 'dataset') Object.entries(v).forEach(([dk, dv]) => e.dataset[dk] = dv);
+      else e.setAttribute(k, v);
+    });
+  }
+  if (children !== undefined && children !== null) {
+    if (Array.isArray(children)) {
+      children.forEach(c => {
+        if (c === null || c === undefined) return;
+        if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+        else e.appendChild(c);
+      });
+    } else if (typeof children === 'string') {
+      e.textContent = children;
+    } else {
+      e.appendChild(children);
+    }
+  }
+  return e;
+}
+
+function clearAndAppend(parent, ...children) {
+  parent.textContent = '';
+  children.forEach(c => {
+    if (c) parent.appendChild(c);
+  });
+}
+
+// ===================== RENDER =====================
+
+function setMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  document.getElementById('viewToggle').style.display = (mode === 'edit') ? 'flex' : 'none';
+  renderSidebar();
+  renderEditor();
+  renderProperties();
+  updatePrompt();
+}
+
+function setView(view) {
+  state.view = view;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  renderEditor();
+}
+
+function selectModule(name) {
+  state.selectedModule = name;
+  state.expandedReqs.clear();
+  renderSidebar();
+  renderEditor();
+  renderProperties();
+  updatePrompt();
+}
+
+function renderModeTabs() {
+  const tabs = document.getElementById('modeTabs');
+  clearAndAppend(tabs,
+    ...['browse', 'edit', 'proposal'].map(mode => {
+      const labels = { browse: 'Browse Specs', edit: 'Edit Spec', proposal: 'New Proposal' };
+      const btn = el('button', {
+        class: 'mode-tab' + (state.mode === mode ? ' active' : ''),
+        dataset: { mode },
+        onclick: () => setMode(mode)
+      }, labels[mode]);
+      return btn;
+    })
+  );
+}
+
+function renderSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.textContent = '';
+
+  if (state.mode === 'proposal') {
+    sb.appendChild(el('h3', {}, 'Affected Modules'));
+    sb.appendChild(el('p', { style: 'font-size:12px;color:var(--text-muted);margin-bottom:12px' }, 'Select modules this proposal affects'));
+
+    MODULE_NAMES.forEach(m => {
+      const isChecked = state.proposal.affectedModules.includes(m);
+      const label = el('div', {
+        class: 'checkbox-label' + (isChecked ? ' checked' : ''),
+        style: 'margin-bottom:4px;display:flex',
+        onclick: () => toggleAffectedModule(m)
+      }, [
+        el('span', { class: 'module-icon spec' }, 'S'),
+        document.createTextNode(' ' + m),
+      ]);
+      sb.appendChild(label);
+    });
+
+    sb.appendChild(el('div', { class: 'sidebar-divider' }));
+    sb.appendChild(el('h3', {}, 'Proposal Sections'));
+
+    const proposalItem = el('div', {
+      class: 'module-item' + (!state.selectedModule ? ' active' : ''),
+      onclick: () => selectProposalSection(null)
+    }, [
+      el('span', { class: 'module-icon change' }, 'P'),
+      document.createTextNode(' Proposal'),
+    ]);
+    sb.appendChild(proposalItem);
+
+    state.proposal.affectedModules.forEach(m => {
+      const item = el('div', {
+        class: 'module-item' + (state.selectedModule === m ? ' active' : ''),
+        onclick: () => selectProposalSection(m)
+      }, [
+        el('span', { class: 'module-icon new' }, '\u0394'),
+        document.createTextNode(' ' + m + ' spec changes'),
+      ]);
+      sb.appendChild(item);
+    });
+
+    return;
+  }
+
+  sb.appendChild(el('h3', {}, 'Module Specs'));
+
+  MODULE_NAMES.forEach(m => {
+    const isEdited = state.editedSpecs[m];
+    const item = el('div', {
+      class: 'module-item' + (state.selectedModule === m ? ' active' : ''),
+      onclick: () => selectModule(m)
+    }, [
+      el('span', { class: 'module-icon spec' }, 'S'),
+      document.createTextNode(' ' + m),
+      isEdited ? el('span', { style: 'color:var(--amber);font-size:10px;margin-left:auto' }, '\u25cf') : null,
+    ].filter(Boolean));
+    sb.appendChild(item);
+  });
+
+  if (state.mode === 'edit') {
+    sb.appendChild(el('div', { class: 'sidebar-divider' }));
+    sb.appendChild(el('button', { class: 'btn btn-full', onclick: addNewModule }, '+ Add Module'));
+  }
+}
+
+function getModuleData(name) {
+  return state.editedSpecs[name] || MODULES[name];
+}
+
+function renderEditor() {
+  const area = document.getElementById('editorArea');
+  area.textContent = '';
+
+  if (state.mode === 'proposal') {
+    renderProposalForm(area);
+    return;
+  }
+
+  if (!state.selectedModule || !MODULES[state.selectedModule]) {
+    const welcome = el('div', { style: 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-muted);gap:12px' }, [
+      el('div', { style: 'font-size:48px;opacity:0.3' }, '\u2630'),
+      el('p', { style: 'font-size:14px' }, 'Select a module spec from the sidebar to browse or edit'),
+      el('p', { style: 'font-size:12px' }, 'Or switch to "New Proposal" to create a change proposal'),
+    ]);
+    area.appendChild(welcome);
+    return;
+  }
+
+  const mod = getModuleData(state.selectedModule);
+  const isEdit = state.mode === 'edit';
+
+  if (isEdit && state.view === 'raw') {
+    area.appendChild(el('h2', {}, state.selectedModule));
+    area.appendChild(el('div', { class: 'editor-meta' }, mod.purpose));
+    const textarea = el('textarea', {
+      class: 'raw-editor',
+      value: specToMarkdown(state.selectedModule, mod),
+      oninput: function() { onRawEdit(this.value); }
+    });
+    area.appendChild(textarea);
+    return;
+  }
+
+  // Title with tag
+  const titleRow = el('h2', {}, [
+    document.createTextNode(state.selectedModule + ' '),
+    el('span', { class: 'tag tag-spec' }, 'spec'),
+  ]);
+  area.appendChild(titleRow);
+
+  // Purpose
+  if (isEdit) {
+    const purposeInput = el('input', {
+      class: 'inline-edit',
+      value: mod.purpose,
+      style: 'width:100%;margin-bottom:20px',
+      onchange: function() { editPurpose(this.value); }
+    });
+    area.appendChild(purposeInput);
+  } else {
+    area.appendChild(el('div', { class: 'editor-meta' }, mod.purpose));
+  }
+
+  // Requirements
+  mod.requirements.forEach((req, ri) => {
+    const isOpen = state.expandedReqs.has(ri);
+    const block = el('div', { class: 'requirement-block' });
+
+    // Header
+    const header = el('div', { class: 'requirement-header', onclick: () => { toggleReq(ri); renderEditor(); } });
+    header.appendChild(el('span', { class: 'chevron' + (isOpen ? ' open' : '') }, '\u25B6'));
+
+    if (isEdit) {
+      const nameInput = el('input', {
+        class: 'inline-edit',
+        value: req.name,
+        style: 'flex:1',
+        onclick: function(e) { e.stopPropagation(); },
+        onchange: function() { editReqName(ri, this.value); }
+      });
+      header.appendChild(nameInput);
+    } else {
+      header.appendChild(document.createTextNode(req.name));
+    }
+
+    const countSpan = el('span', { style: 'color:var(--text-muted);font-size:11px;margin-left:auto' },
+      req.scenarios.length + ' scenario' + (req.scenarios.length !== 1 ? 's' : ''));
+    header.appendChild(countSpan);
+    block.appendChild(header);
+
+    // Body
+    const body = el('div', { class: 'requirement-body' + (isOpen ? ' open' : '') });
+
+    if (isEdit) {
+      const descTextarea = el('textarea', {
+        class: 'prop-textarea',
+        style: 'margin-bottom:12px',
+        value: req.description,
+        onchange: function() { editReqDesc(ri, this.value); }
+      });
+      body.appendChild(descTextarea);
+    } else {
+      body.appendChild(el('div', { class: 'requirement-desc' }, req.description));
+    }
+
+    // Scenarios
+    req.scenarios.forEach((sc, si) => {
+      const scItem = el('div', { class: 'scenario-item' });
+
+      const titleDiv = el('div', { class: 'scenario-title' });
+      if (isEdit) {
+        titleDiv.appendChild(el('input', {
+          class: 'inline-edit',
+          value: sc.title,
+          style: 'width:calc(100% - 60px)',
+          onchange: function() { editScenarioTitle(ri, si, this.value); }
+        }));
+        const removeBtn = el('button', {
+          class: 'btn btn-sm',
+          style: 'color:var(--red);float:right',
+          onclick: () => { removeScenario(ri, si); }
+        }, '\u2715');
+        titleDiv.appendChild(removeBtn);
+      } else {
+        titleDiv.textContent = 'Scenario: ' + sc.title;
+      }
+      scItem.appendChild(titleDiv);
+
+      // Steps
+      sc.steps.forEach((step, sti) => {
+        const stepDiv = el('div', { class: 'scenario-step' });
+        if (isEdit) {
+          const select = el('select', {
+            class: 'prop-select',
+            style: 'width:60px;padding:2px 4px;font-size:11px',
+            onchange: function() { editStepKw(ri, si, sti, this.value); }
+          });
+          ['GIVEN', 'WHEN', 'THEN', 'AND'].forEach(k => {
+            const opt = el('option', {}, k);
+            if (step.kw === k) opt.selected = true;
+            select.appendChild(opt);
+          });
+          stepDiv.appendChild(select);
+
+          stepDiv.appendChild(el('input', {
+            class: 'inline-edit',
+            value: step.text,
+            style: 'flex:1',
+            onchange: function() { editStepText(ri, si, sti, this.value); }
+          }));
+
+          stepDiv.appendChild(el('button', {
+            class: 'btn btn-sm',
+            style: 'color:var(--red)',
+            onclick: () => { removeStep(ri, si, sti); }
+          }, '\u2715'));
+        } else {
+          stepDiv.appendChild(el('span', { class: 'kw' }, step.kw));
+          stepDiv.appendChild(document.createTextNode(' ' + step.text));
+        }
+        scItem.appendChild(stepDiv);
+      });
+
+      if (isEdit) {
+        scItem.appendChild(el('button', {
+          class: 'add-btn',
+          style: 'margin-top:6px',
+          onclick: () => { addStep(ri, si); }
+        }, '+ Add step'));
+      }
+
+      body.appendChild(scItem);
+    });
+
+    if (isEdit) {
+      body.appendChild(el('button', {
+        class: 'add-btn',
+        onclick: () => { addScenario(ri); }
+      }, '+ Add scenario'));
+    }
+
+    block.appendChild(body);
+    area.appendChild(block);
+  });
+
+  if (isEdit) {
+    area.appendChild(el('button', {
+      class: 'add-btn',
+      style: 'margin-top:8px',
+      onclick: addRequirement
+    }, '+ Add requirement'));
+  }
+}
+
+function renderProposalForm(area) {
+  if (state.selectedModule) {
+    const modSpec = state.proposal.specUpdates[state.selectedModule] || '';
+    const container = el('div', {});
+    container.appendChild(el('h2', {}, [
+      document.createTextNode('Spec Changes: ' + state.selectedModule + ' '),
+      el('span', { class: 'tag tag-new' }, 'delta'),
+    ]));
+    container.appendChild(el('div', { class: 'editor-meta' }, 'Describe what changes to the ' + state.selectedModule + ' spec this proposal introduces'));
+
+    const group = el('div', { class: 'form-group' });
+    group.appendChild(el('label', { class: 'form-label' }, 'Delta Spec (Markdown)'));
+    group.appendChild(el('div', { class: 'form-hint' }, 'Write the new/modified requirements and scenarios for this module'));
+    const ta = el('textarea', {
+      class: 'form-textarea',
+      style: 'min-height:350px',
+      value: modSpec,
+      placeholder: '### Requirement: New Feature Name\n\nThe system SHALL...\n\n#### Scenario: Happy path\n\n- **WHEN** ...\n- **THEN** ...\n- **AND** ...',
+      oninput: function() { updateSpecDelta(state.selectedModule, this.value); }
+    });
+    group.appendChild(ta);
+    container.appendChild(group);
+    area.appendChild(container);
+    return;
+  }
+
+  const form = el('div', { style: 'padding:0' });
+
+  form.appendChild(el('h2', {}, [
+    document.createTextNode('New Change Proposal '),
+    el('span', { class: 'tag tag-proposal' }, 'proposal'),
+  ]));
+  form.appendChild(el('div', { class: 'editor-meta' }, 'Define a new change proposal following OpenSpec conventions'));
+
+  // Title
+  const titleGroup = el('div', { class: 'form-group' });
+  titleGroup.appendChild(el('label', { class: 'form-label' }, 'Title'));
+  titleGroup.appendChild(el('div', { class: 'form-hint' }, 'Short, descriptive title (e.g., "Add member photo upload")'));
+  titleGroup.appendChild(el('input', {
+    class: 'form-input',
+    value: state.proposal.title,
+    placeholder: 'e.g., Add event results import',
+    oninput: function() { state.proposal.title = this.value; updatePrompt(); }
+  }));
+  form.appendChild(titleGroup);
+
+  // Why
+  const whyGroup = el('div', { class: 'form-group' });
+  whyGroup.appendChild(el('label', { class: 'form-label' }, 'Why'));
+  whyGroup.appendChild(el('div', { class: 'form-hint' }, 'Business justification - what problem does this solve?'));
+  whyGroup.appendChild(el('textarea', {
+    class: 'form-textarea',
+    value: state.proposal.why,
+    placeholder: 'Describe the business need and current pain points...',
+    oninput: function() { state.proposal.why = this.value; updatePrompt(); }
+  }));
+  form.appendChild(whyGroup);
+
+  // What Changes
+  const whatGroup = el('div', { class: 'form-group' });
+  whatGroup.appendChild(el('label', { class: 'form-label' }, 'What Changes'));
+  whatGroup.appendChild(el('div', { class: 'form-hint' }, 'High-level summary of new, modified, or removed capabilities'));
+  whatGroup.appendChild(el('textarea', {
+    class: 'form-textarea',
+    value: state.proposal.whatChanges,
+    placeholder: '- New: ...\n- Modified: ...\n- Removed: ...',
+    oninput: function() { state.proposal.whatChanges = this.value; updatePrompt(); }
+  }));
+  form.appendChild(whatGroup);
+
+  // Impact
+  const impactGroup = el('div', { class: 'form-group' });
+  impactGroup.appendChild(el('label', { class: 'form-label' }, 'Impact'));
+  impactGroup.appendChild(el('div', { class: 'form-hint' }, 'Code areas affected, API changes, migration risk'));
+  impactGroup.appendChild(el('textarea', {
+    class: 'form-textarea',
+    value: state.proposal.impact,
+    placeholder: 'Affected code areas, API changes, migration risk level...',
+    oninput: function() { state.proposal.impact = this.value; updatePrompt(); }
+  }));
+  form.appendChild(impactGroup);
+
+  area.appendChild(form);
+}
+
+function renderProperties() {
+  const panel = document.getElementById('propertiesPanel');
+  panel.textContent = '';
+
+  if (state.mode === 'proposal') {
+    const p = state.proposal;
+    panel.appendChild(el('h3', {}, 'Proposal Summary'));
+
+    const titleGroup = el('div', { class: 'prop-group' });
+    titleGroup.appendChild(el('div', { class: 'prop-label' }, 'Title'));
+    titleGroup.appendChild(el('div', { style: 'font-size:13px' }, p.title || 'Not set'));
+    panel.appendChild(titleGroup);
+
+    const modGroup = el('div', { class: 'prop-group' });
+    modGroup.appendChild(el('div', { class: 'prop-label' }, 'Affected Modules'));
+    const modTags = el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px;margin-top:4px' });
+    if (p.affectedModules.length) {
+      p.affectedModules.forEach(m => modTags.appendChild(el('span', { class: 'tag tag-spec' }, m)));
+    } else {
+      modTags.appendChild(el('em', { style: 'color:var(--text-muted);font-size:12px' }, 'None selected'));
+    }
+    modGroup.appendChild(modTags);
+    panel.appendChild(modGroup);
+
+    const deltaGroup = el('div', { class: 'prop-group' });
+    deltaGroup.appendChild(el('div', { class: 'prop-label' }, 'Spec Deltas'));
+    p.affectedModules.forEach(m => {
+      const status = p.specUpdates[m] ? 'defined' : 'empty';
+      const color = p.specUpdates[m] ? 'var(--green)' : 'var(--text-muted)';
+      deltaGroup.appendChild(el('div', { style: 'font-size:12px;margin-top:4px' }, [
+        document.createTextNode(m + ': '),
+        el('span', { style: 'color:' + color }, status),
+      ]));
+    });
+    panel.appendChild(deltaGroup);
+
+    panel.appendChild(el('div', { class: 'sidebar-divider' }));
+
+    const presetGroup = el('div', { class: 'prop-group' });
+    presetGroup.appendChild(el('div', { class: 'prop-label' }, 'Presets'));
+    presetGroup.appendChild(el('button', { class: 'btn btn-full btn-sm', style: 'margin-bottom:4px', onclick: () => loadPreset('feature') }, 'Feature Preset'));
+    presetGroup.appendChild(el('button', { class: 'btn btn-full btn-sm', style: 'margin-bottom:4px', onclick: () => loadPreset('refactor') }, 'Refactoring Preset'));
+    presetGroup.appendChild(el('button', { class: 'btn btn-full btn-sm', onclick: () => loadPreset('bugfix') }, 'Bug Fix Preset'));
+    panel.appendChild(presetGroup);
+    return;
+  }
+
+  if (!state.selectedModule) {
+    panel.appendChild(el('h3', {}, 'Properties'));
+    panel.appendChild(el('p', { style: 'font-size:12px;color:var(--text-muted)' }, 'Select a module'));
+    return;
+  }
+
+  const mod = getModuleData(state.selectedModule);
+  const totalScenarios = mod.requirements.reduce((sum, r) => sum + r.scenarios.length, 0);
+  const isEdited = !!state.editedSpecs[state.selectedModule];
+
+  panel.appendChild(el('h3', {}, state.selectedModule));
+
+  const statusGroup = el('div', { class: 'prop-group' });
+  statusGroup.appendChild(el('div', { class: 'prop-label' }, 'Status'));
+  statusGroup.appendChild(el('span', { class: 'tag ' + (isEdited ? 'tag-proposal' : 'tag-spec') }, isEdited ? 'modified' : 'original'));
+  panel.appendChild(statusGroup);
+
+  const reqGroup = el('div', { class: 'prop-group' });
+  reqGroup.appendChild(el('div', { class: 'prop-label' }, 'Requirements'));
+  reqGroup.appendChild(el('div', { style: 'font-size:20px;font-weight:600' }, String(mod.requirements.length)));
+  panel.appendChild(reqGroup);
+
+  const scGroup = el('div', { class: 'prop-group' });
+  scGroup.appendChild(el('div', { class: 'prop-label' }, 'Total Scenarios'));
+  scGroup.appendChild(el('div', { style: 'font-size:20px;font-weight:600' }, String(totalScenarios)));
+  panel.appendChild(scGroup);
+
+  panel.appendChild(el('div', { class: 'sidebar-divider' }));
+
+  const listGroup = el('div', { class: 'prop-group' });
+  listGroup.appendChild(el('div', { class: 'prop-label' }, 'Requirements List'));
+  mod.requirements.forEach((r, i) => {
+    const item = el('div', {
+      style: 'font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);cursor:pointer',
+      onclick: () => { toggleReq(i); renderEditor(); }
+    }, [
+      document.createTextNode(r.name + ' '),
+      el('span', { style: 'color:var(--text-muted)' }, '(' + r.scenarios.length + ')'),
+    ]);
+    listGroup.appendChild(item);
+  });
+  panel.appendChild(listGroup);
+
+  if (isEdited && state.mode === 'edit') {
+    panel.appendChild(el('div', { class: 'sidebar-divider' }));
+    panel.appendChild(el('button', {
+      class: 'btn btn-full',
+      style: 'color:var(--red)',
+      onclick: resetEdits
+    }, 'Reset Changes'));
+  }
+}
+
+// ===================== EDIT ACTIONS =====================
+
+function ensureEditable(module) {
+  if (!state.editedSpecs[module]) {
+    state.editedSpecs[module] = JSON.parse(JSON.stringify(MODULES[module]));
+  }
+  return state.editedSpecs[module];
+}
+
+function editPurpose(val) {
+  ensureEditable(state.selectedModule).purpose = val;
+  updatePrompt();
+}
+
+function editReqName(ri, val) {
+  ensureEditable(state.selectedModule).requirements[ri].name = val;
+  updatePrompt();
+}
+
+function editReqDesc(ri, val) {
+  ensureEditable(state.selectedModule).requirements[ri].description = val;
+  updatePrompt();
+}
+
+function editScenarioTitle(ri, si, val) {
+  ensureEditable(state.selectedModule).requirements[ri].scenarios[si].title = val;
+  updatePrompt();
+}
+
+function editStepKw(ri, si, sti, val) {
+  ensureEditable(state.selectedModule).requirements[ri].scenarios[si].steps[sti].kw = val;
+  updatePrompt();
+}
+
+function editStepText(ri, si, sti, val) {
+  ensureEditable(state.selectedModule).requirements[ri].scenarios[si].steps[sti].text = val;
+  updatePrompt();
+}
+
+function addStep(ri, si) {
+  ensureEditable(state.selectedModule).requirements[ri].scenarios[si].steps.push({ kw: "AND", text: "" });
+  renderEditor();
+  updatePrompt();
+}
+
+function removeStep(ri, si, sti) {
+  ensureEditable(state.selectedModule).requirements[ri].scenarios[si].steps.splice(sti, 1);
+  renderEditor();
+  updatePrompt();
+}
+
+function addScenario(ri) {
+  ensureEditable(state.selectedModule).requirements[ri].scenarios.push({
+    title: "New Scenario",
+    steps: [{ kw: "WHEN", text: "" }, { kw: "THEN", text: "" }]
+  });
+  state.expandedReqs.add(ri);
+  renderEditor();
+  updatePrompt();
+}
+
+function removeScenario(ri, si) {
+  ensureEditable(state.selectedModule).requirements[ri].scenarios.splice(si, 1);
+  renderEditor();
+  updatePrompt();
+}
+
+function addRequirement() {
+  const mod = ensureEditable(state.selectedModule);
+  const ri = mod.requirements.length;
+  mod.requirements.push({
+    name: "New Requirement",
+    description: "The system SHALL ...",
+    scenarios: [{ title: "Happy path", steps: [{ kw: "WHEN", text: "" }, { kw: "THEN", text: "" }] }]
+  });
+  state.expandedReqs.add(ri);
+  renderEditor();
+  renderProperties();
+  updatePrompt();
+}
+
+function addNewModule() {
+  const name = prompt("Module name (lowercase, hyphenated):");
+  if (!name) return;
+  const key = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  if (MODULES[key]) { alert("Module already exists"); return; }
+  MODULES[key] = { purpose: "", requirements: [] };
+  MODULE_NAMES.push(key);
+  state.editedSpecs[key] = { purpose: "", requirements: [] };
+  state.selectedModule = key;
+  renderSidebar();
+  renderEditor();
+  renderProperties();
+  updatePrompt();
+}
+
+function resetEdits() {
+  delete state.editedSpecs[state.selectedModule];
+  renderSidebar();
+  renderEditor();
+  renderProperties();
+  updatePrompt();
+}
+
+function toggleReq(i) {
+  if (state.expandedReqs.has(i)) state.expandedReqs.delete(i);
+  else state.expandedReqs.add(i);
+}
+
+function onRawEdit(val) {
+  const mod = ensureEditable(state.selectedModule);
+  mod._rawMarkdown = val;
+  updatePrompt();
+}
+
+// ===================== PROPOSAL ACTIONS =====================
+
+function toggleAffectedModule(m) {
+  const idx = state.proposal.affectedModules.indexOf(m);
+  if (idx >= 0) {
+    state.proposal.affectedModules.splice(idx, 1);
+    delete state.proposal.specUpdates[m];
+  } else {
+    state.proposal.affectedModules.push(m);
+  }
+  renderSidebar();
+  renderProperties();
+  updatePrompt();
+}
+
+function selectProposalSection(m) {
+  state.selectedModule = m;
+  renderSidebar();
+  renderEditor();
+  updatePrompt();
+}
+
+function updateSpecDelta(module, val) {
+  state.proposal.specUpdates[module] = val;
+  renderProperties();
+  updatePrompt();
+}
+
+function loadPreset(type) {
+  if (type === 'feature') {
+    state.proposal.why = state.proposal.why || "Users need the ability to...";
+    state.proposal.whatChanges = state.proposal.whatChanges || "- New: Add new capability for...\n- Modified: Update existing... to support...";
+    state.proposal.impact = state.proposal.impact || "Affected: service layer, controller, repository\nAPI changes: New endpoint POST /api/...\nMigration risk: Low";
+  } else if (type === 'refactor') {
+    state.proposal.why = state.proposal.why || "Current implementation has technical debt in...\nThis makes the code harder to...";
+    state.proposal.whatChanges = state.proposal.whatChanges || "- Modified: Restructure... for better...\n- No API contract changes\n- No database changes";
+    state.proposal.impact = state.proposal.impact || "Affected: internal code structure only\nAPI changes: None (external contract unchanged)\nMigration risk: Low - internal refactoring only";
+  } else if (type === 'bugfix') {
+    state.proposal.why = state.proposal.why || "Bug: When... the system incorrectly...\nExpected: ...\nActual: ...";
+    state.proposal.whatChanges = state.proposal.whatChanges || "- Fix: Correct the behavior of... when...";
+    state.proposal.impact = state.proposal.impact || "Affected: specific module/service\nMigration risk: Minimal";
+  }
+  renderEditor();
+  updatePrompt();
+}
+
+// ===================== PROMPT GENERATION =====================
+
+function updatePrompt() {
+  const promptEl = document.getElementById('promptOutput');
+  const info = document.getElementById('promptInfo');
+
+  if (state.mode === 'proposal') {
+    const p = state.proposal;
+    if (!p.title && !p.why && !p.whatChanges) {
+      promptEl.textContent = "Fill in the proposal fields to generate a prompt...";
+      info.textContent = "";
+      return;
+    }
+
+    let text = 'Please create an OpenSpec change proposal for the Klabis project.\n\n';
+    text += '## Proposal: ' + (p.title || '[Title needed]') + '\n\n';
+    if (p.why) text += '### Why\n' + p.why + '\n\n';
+    if (p.whatChanges) text += '### What Changes\n' + p.whatChanges + '\n\n';
+    if (p.affectedModules.length) {
+      text += '### Affected Modules\n' + p.affectedModules.map(m => '- ' + m).join('\n') + '\n\n';
+    }
+    if (p.impact) text += '### Impact\n' + p.impact + '\n\n';
+
+    const deltas = Object.entries(p.specUpdates).filter(([,v]) => v && v.trim());
+    if (deltas.length) {
+      text += '### Spec Changes\n\n';
+      deltas.forEach(([mod, val]) => {
+        text += '#### ' + mod + '\n```markdown\n' + val + '\n```\n\n';
+      });
+    }
+
+    text += 'Please generate the complete proposal with:\n';
+    text += '1. proposal.md (Why / What Changes / Capabilities / Impact)\n';
+    text += '2. design.md with architecture decisions and Mermaid diagrams\n';
+    text += '3. Delta specs for affected modules\n';
+    text += '4. tasks.md with implementation checklist\n\n';
+    text += 'Follow the OpenSpec conventions: specs in English, business-focused WHEN/THEN scenarios, HAL+FORMS compliance, TDD tasks.';
+
+    promptEl.textContent = text;
+    info.textContent = text.length + ' chars';
+    return;
+  }
+
+  const editedModules = Object.keys(state.editedSpecs);
+  if (editedModules.length === 0) {
+    promptEl.textContent = state.mode === 'edit'
+      ? "Edit a spec to generate an update prompt..."
+      : "Switch to Edit mode to make changes, or use New Proposal to create a change.";
+    info.textContent = "";
+    return;
+  }
+
+  let text = 'Please update the following OpenSpec specifications in the Klabis project:\n\n';
+
+  editedModules.forEach(mod => {
+    const edited = state.editedSpecs[mod];
+    const original = MODULES[mod];
+
+    if (edited._rawMarkdown) {
+      text += '## ' + mod + ' (raw update)\n\n';
+      text += 'Replace the contents of `openspec/specs/' + mod + '/spec.md` with:\n\n';
+      text += '```markdown\n' + edited._rawMarkdown + '\n```\n\n';
+      return;
+    }
+
+    text += '## ' + mod + '\n\n';
+
+    if (edited.purpose !== original.purpose) {
+      text += 'Update purpose to: "' + edited.purpose + '"\n\n';
+    }
+
+    edited.requirements.forEach((req, i) => {
+      const origReq = original.requirements[i];
+      if (!origReq) {
+        text += 'Add new requirement: "' + req.name + '"\n';
+        text += 'Description: ' + req.description + '\n';
+        req.scenarios.forEach(sc => {
+          text += '  Scenario: ' + sc.title + '\n';
+          sc.steps.forEach(st => text += '    - **' + st.kw + '** ' + st.text + '\n');
+        });
+        text += '\n';
+      } else if (JSON.stringify(req) !== JSON.stringify(origReq)) {
+        text += 'Modify requirement "' + req.name + '":\n';
+        if (req.description !== origReq.description) {
+          text += '  Updated description: ' + req.description + '\n';
+        }
+        req.scenarios.forEach((sc, si) => {
+          const origSc = origReq.scenarios[si];
+          if (!origSc || JSON.stringify(sc) !== JSON.stringify(origSc)) {
+            text += '  ' + (origSc ? 'Update' : 'Add') + ' scenario: "' + sc.title + '"\n';
+            sc.steps.forEach(st => text += '    - **' + st.kw + '** ' + st.text + '\n');
+          }
+        });
+        text += '\n';
+      }
+    });
+
+    if (original.requirements.length > edited.requirements.length) {
+      for (let i = edited.requirements.length; i < original.requirements.length; i++) {
+        text += 'Remove requirement: "' + original.requirements[i].name + '"\n\n';
+      }
+    }
+  });
+
+  text += 'Write the updated spec files following OpenSpec conventions: English, business-focused WHEN/THEN scenarios, no implementation details.';
+
+  promptEl.textContent = text;
+  info.textContent = editedModules.length + ' module(s) modified - ' + text.length + ' chars';
+}
+
+// ===================== HELPERS =====================
+
+function specToMarkdown(name, mod) {
+  let md = '# ' + name + ' Specification\n\n## Purpose\n\n' + mod.purpose + '\n\n## Requirements\n\n';
+  mod.requirements.forEach(req => {
+    md += '### Requirement: ' + req.name + '\n\n' + req.description + '\n\n';
+    req.scenarios.forEach(sc => {
+      md += '#### Scenario: ' + sc.title + '\n\n';
+      sc.steps.forEach(st => md += '- **' + st.kw + '** ' + st.text + '\n');
+      md += '\n';
+    });
+  });
+  return md;
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const fb = document.getElementById('copyFeedback');
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 1500);
+  });
+}
+
+// ===================== INIT =====================
+
+async function init() {
+  await loadSpecs();
+  renderModeTabs();
+  renderSidebar();
+  renderEditor();
+  renderProperties();
+  updatePrompt();
+}
+
+init();
+</script>
+</body>
+</html>
