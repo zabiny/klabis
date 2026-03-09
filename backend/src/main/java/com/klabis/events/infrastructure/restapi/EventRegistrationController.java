@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
 import com.klabis.events.application.DuplicateRegistrationException;
+import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
@@ -49,11 +50,13 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @SecurityRequirement(name = "KlabisAuth", scopes = {Authority.EVENTS_SCOPE})
 class EventRegistrationController {
 
+    private final EventManagementService eventManagementService;
     private final EventRegistrationService registrationService;
     private final Members members;
     private final EntityLinks entityLinks;
 
-    public EventRegistrationController(EventRegistrationService registrationService, Members members, EntityLinks entityLinks) {
+    public EventRegistrationController(EventManagementService eventManagementService, EventRegistrationService registrationService, Members members, EntityLinks entityLinks) {
+        this.eventManagementService = eventManagementService;
         this.registrationService = registrationService;
         this.members = members;
         this.entityLinks = entityLinks;
@@ -135,19 +138,22 @@ class EventRegistrationController {
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @CurrentUser CurrentUserData currentUser) {
 
+        Event event = eventManagementService.getEvent(new EventId(eventId));
         OwnRegistrationDto registration = toOwnRegistrationDto(
                 registrationService.getOwnRegistration(new EventId(eventId), currentUser.memberId()));
 
         EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
-        addLinksForOwnRegistration(entityModel, eventId);
+        addLinksForOwnRegistration(entityModel, eventId, event);
 
         return ResponseEntity.ok(entityModel);
     }
 
-    private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId) {
-        entityModel.add(klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).withSelfRel()
-                .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)))
-        );
+    private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId, Event event) {
+        var selfLink = klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).withSelfRel();
+        if (event.areRegistrationsOpen()) {
+            selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+        }
+        entityModel.add(selfLink);
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }
 

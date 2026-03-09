@@ -104,10 +104,11 @@ public class EventController {
     public ResponseEntity<EntityModel<EventDto>> getEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id) {
 
-        EventDto eventDto = EventDtoMapper.toDto(eventManagementService.getEvent(new EventId(id)));
+        Event event = eventManagementService.getEvent(new EventId(id));
+        EventDto eventDto = EventDtoMapper.toDto(event);
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
-        addLinksForEvent(entityModel, eventDto);
+        addLinksForEvent(entityModel, event);
 
         return ResponseEntity.ok(entityModel);
     }
@@ -214,13 +215,12 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    private void addLinksForEvent(EntityModel<?> entityModel, EventDto eventDto) {
-        UUID eventId = eventDto.id().value();
-        EventStatus status = eventDto.status();
+    private void addLinksForEvent(EntityModel<?> entityModel, Event event) {
+        UUID eventId = event.getId().value();
 
         Link selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
 
-        switch (status) {
+        switch (event.getStatus()) {
             case DRAFT:
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
@@ -240,7 +240,13 @@ public class EventController {
 
         entityModel.add(selfLink);
         entityModel.add(klabisLinkTo(methodOn(EventController.class).listEvents(null, null)).withRel("collection"));
-        entityModel.add(Link.of("/api/events/" + eventId + "/registrations").withRel("registrations"));
+
+        Link registrationsLink = Link.of("/api/events/" + eventId + "/registrations").withRel("registrations");
+        if (event.areRegistrationsOpen()) {
+            registrationsLink = registrationsLink
+                    .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
+        }
+        entityModel.add(registrationsLink);
     }
 
 }

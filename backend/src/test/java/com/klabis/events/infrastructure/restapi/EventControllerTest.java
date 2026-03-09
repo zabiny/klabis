@@ -272,6 +272,69 @@ class EventControllerTest {
                     )
                     .andExpect(status().isNotFound());
         }
+
+        @Test
+        @DisplayName("should include POST affordance on registrations link for ACTIVE event with future date")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldIncludeRegisterAffordanceForActiveEvent() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementService.getEvent(any())).thenReturn(activeEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.registrations.href").exists())
+                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("should not include POST affordance on registrations link for DRAFT event")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeRegisterAffordanceForDraftEvent() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event draftEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+
+            when(eventManagementService.getEvent(any())).thenReturn(draftEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.registrations.href").exists())
+                    .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should not include POST affordance on registrations link for FINISHED event")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeRegisterAffordanceForFinishedEvent() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event finishedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .build();
+            finishedEvent.publish();
+            finishedEvent.finish();
+
+            when(eventManagementService.getEvent(any())).thenReturn(finishedEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.registrations.href").exists())
+                    .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
+        }
     }
 
     @Nested

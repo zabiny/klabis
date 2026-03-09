@@ -6,7 +6,9 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.common.users.UserService;
+import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.DuplicateRegistrationException;
+import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.application.RegistrationNotFoundException;
@@ -63,6 +65,9 @@ class EventRegistrationControllerTest {
 
     @TestBean
     private EntityLinks entityLinksMock;
+
+    @MockitoBean
+    private EventManagementService eventManagementServiceMock;
 
     @MockitoBean
     private EventRegistrationService registrationServiceMock;
@@ -228,15 +233,21 @@ class EventRegistrationControllerTest {
     class GetOwnRegistrationTests {
 
         @Test
-        @DisplayName("should return full registration with SI card")
+        @DisplayName("should return full registration with SI card and DELETE affordance when event is ACTIVE")
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturnOwnRegistrationWithSiCard() throws Exception {
             final UUID eventId = UUID.randomUUID();
             final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            activeEvent.publish();
+
             EventRegistration registration = EventRegistration.reconstruct(
                     UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
 
+            when(eventManagementServiceMock.getEvent(new EventId(eventId))).thenReturn(activeEvent);
             when(registrationServiceMock.getOwnRegistration(new EventId(eventId), memberId)).thenReturn(registration);
             when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
 
@@ -251,6 +262,37 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.event.href").exists())
                     .andExpect(jsonPath("$._templates.default.method").value("DELETE")); // UNREGISTER
+        }
+
+        @Test
+        @DisplayName("should return registration without DELETE affordance when event is not ACTIVE")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturnOwnRegistrationWithoutDeleteAffordanceWhenEventNotActive() throws Exception {
+            final UUID eventId = UUID.randomUUID();
+            final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            Event finishedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .build();
+            finishedEvent.publish();
+            finishedEvent.finish();
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId))).thenReturn(finishedEvent);
+            when(registrationServiceMock.getOwnRegistration(new EventId(eventId), memberId)).thenReturn(registration);
+            when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/me", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.firstName").value("John"))
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._links.event.href").exists())
+                    .andExpect(jsonPath("$._templates.default.method").doesNotExist()); // no DELETE
         }
 
         @Test
