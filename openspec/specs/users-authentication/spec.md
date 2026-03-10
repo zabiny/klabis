@@ -455,6 +455,68 @@ The OIDC userinfo endpoint SHALL include an `is_member` boolean claim when the `
 - **THEN** the response SHALL NOT include the `is_member` claim
 - **AND** the response SHALL only include the `sub` claim
 
+### Requirement: Secure Activation Tokens
+
+The system SHALL generate secure, time-limited activation tokens for email-based account activation.
+
+The system SHALL:
+
+- Generate tokens using cryptographically secure random generator
+- Expire tokens after 72 hours
+- Invalidate tokens after single use (activation)
+- Return appropriate error messages for expired or invalid tokens
+
+#### Scenario: Successful account activation
+
+- **GIVEN** a member received a welcome email with activation link
+- **WHEN** they click the activation link within 72 hours
+- **THEN** their account is activated
+- **AND** the activation token is invalidated
+
+#### Scenario: Expired activation token
+
+- **GIVEN** a member received a welcome email with activation link
+- **WHEN** they click the activation link after 72 hours
+- **THEN** they receive an error message "Activation link has expired"
+- **AND** the account remains inactive
+
+#### Scenario: Already used activation token
+
+- **GIVEN** a member has already activated their account
+- **WHEN** they click the activation link again
+- **THEN** they receive an error message "Invalid activation link"
+
+### Requirement: Account Activation Endpoint
+
+The system SHALL provide a REST endpoint for account activation via token.
+
+Endpoint: `GET /api/activate?token={token}`
+
+Success response (200 OK):
+
+- Returns JSON with activation confirmation and registration number
+
+Error responses:
+
+- 400 Bad Request for expired tokens (type: activation-token-expired)
+- 400 Bad Request for invalid/used tokens (type: activation-token-invalid)
+
+#### Scenario: Successful activation via endpoint
+
+- **GIVEN** a valid, unexpired activation token
+- **WHEN** GET /api/activate?token={valid-token}
+- **THEN** response status is 200 OK
+- **AND** response contains "Account activated successfully"
+
+#### Scenario: Expired token via endpoint
+
+- **GIVEN** an expired activation token
+- **WHEN** GET /api/activate?token={expired-token}
+- **THEN** response status is 400 Bad Request
+- **AND** response type is "activation-token-expired"
+
+---
+
 ### Requirement: Membership detection based on Member aggregate existence
 
 The system SHALL determine membership status by checking for the existence of a Member aggregate with a registration number matching the authenticated user's username.

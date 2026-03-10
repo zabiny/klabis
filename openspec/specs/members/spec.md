@@ -360,29 +360,42 @@ The system SHALL allow members to have an optional bank account number for expen
 - **WHEN** user views bank account field
 - **THEN** field is marked as optional (not required)
 
-### Requirement: Welcome Email
+### Requirement: Welcome Email on Registration
 
-The system SHALL send a welcome email with account activation link upon successful member creation.
+When a new member is successfully registered, the system SHALL send a welcome email to the member's primary email
+address (or guardian's email for minors without email).
 
-#### Scenario: Successful member creation triggers welcome email
+The system SHALL:
 
-- **WHEN** member is successfully created
-- **THEN** welcome email sending is initiated
-- **AND** email contains link to account activation
-- **AND** email is sent to member's primary email address (or guardian's email for minors)
+- Send email asynchronously after transaction commits
+- Include member's name and registration number in the email
+- Include activation link with secure token
+- Send email in both HTML and plain-text formats
+- Not fail member registration if email delivery fails
 
-#### Scenario: Email failure does not block creation
+#### Scenario: Adult member receives welcome email
 
-- **WHEN** member creation succeeds but email sending fails
-- **THEN** member creation is committed
-- **AND** email failure is logged for retry
-- **AND** response indicates member was created successfully
+- **GIVEN** a user with MEMBERS:CREATE authority
+- **WHEN** they register an adult member with email "jan@example.com"
+- **THEN** the member is created successfully
+- **AND** a welcome email is sent to "jan@example.com"
+- **AND** the email contains an activation link that expires in 72 hours
 
-#### Scenario: Resend welcome email
+#### Scenario: Minor member welcome email sent to guardian
 
-- **WHEN** admin requests to resend welcome email for existing member
-- **THEN** new welcome email sending is initiated
-- **AND** previous activation links remain valid
+- **GIVEN** a user with MEMBERS:CREATE authority
+- **WHEN** they register a minor member without email
+- **AND** the guardian has email "parent@example.com"
+- **THEN** the member is created successfully
+- **AND** a welcome email is sent to "parent@example.com"
+
+#### Scenario: Member without any email address
+
+- **GIVEN** a user with MEMBERS:CREATE authority
+- **WHEN** they register an adult member without email
+- **THEN** the member is created successfully
+- **AND** no welcome email is sent
+- **AND** a warning is logged
 
 ### Requirement: HATEOAS Hypermedia Controls
 
