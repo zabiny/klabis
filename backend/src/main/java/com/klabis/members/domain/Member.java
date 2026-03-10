@@ -336,18 +336,11 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         boolean guardianHasEmail = guardian != null; // guardian.getEmail() never null
         boolean guardianHasPhone = guardian != null; // guardian.getPhone() never null
 
-        // At least one email and one phone required (from member OR guardian)
         boolean hasEmail = memberHasEmail || guardianHasEmail;
         boolean hasPhone = memberHasPhone || guardianHasPhone;
 
-        // If both missing, throw combined error
-        if (!hasEmail && !hasPhone) {
-            Assert.isTrue(false, "At least one email and one phone required (member or guardian)");
-        }
-
-        // Otherwise check individually
-        Assert.isTrue(hasEmail, "At least one email is required (member or guardian)");
-        Assert.isTrue(hasPhone, "At least one phone is required (member or guardian)");
+        Assert.isTrue(hasEmail, "At least one email address is required (member or guardian)");
+        Assert.isTrue(hasPhone, "At least one phone number is required (member or guardian)");
     }
 
     /**

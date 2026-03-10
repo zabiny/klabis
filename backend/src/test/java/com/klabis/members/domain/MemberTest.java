@@ -289,7 +289,7 @@ class MemberTest {
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("At least one email and one phone required");
+                    .hasMessageContaining("At least one email address is required (member or guardian)");
         }
 
         @Test
@@ -325,7 +325,7 @@ class MemberTest {
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("At least one email");
+                    .hasMessageContaining("At least one email address is required (member or guardian)");
         }
 
         @Test
@@ -361,7 +361,7 @@ class MemberTest {
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("At least one phone");
+                    .hasMessageContaining("At least one phone number is required (member or guardian)");
         }
 
         @Test
@@ -510,460 +510,6 @@ class MemberTest {
                     .hasMessageContaining("Nationality");
         }
     }
-
-    private Member createTestMember() {
-        return aMember()
-                .withRegistrationNumber("ZBM9001")
-                .withName("Jan", "Novák")
-                .withDateOfBirth(LocalDate.of(1990, 5, 15))
-                .withNationality("CZ")
-                .withGender(Gender.MALE)
-                .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                .withEmail("jan.novak@example.com")
-                .withPhone("+420123456789")
-                .withNoGuardian()
-                .build();
-    }
-
-    // DEAD CODE: UpdateContactInformation command removed - tests commented out
-    // TODO: Delete this commented code block after confirming no regression
-    /*
-    @Nested
-    @DisplayName("UpdateContactInformation command")
-    class UpdateContactInformationCommand {
-
-        @Test
-        @DisplayName("should update email when provided")
-        void shouldUpdateEmailWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-            EmailAddress newEmail = EmailAddress.of("new.email@example.com");
-
-            // Act - modifies member in-place, returns void
-            member.handle(new Member.UpdateContactInformation(newEmail, null, null));
-
-            // Assert
-            MemberAssert.assertThat(member)
-                    .hasEmail(EmailAddress.of("new.email@example.com"));
-            assertThat(member.getPhone().value()).isEqualTo("+420123456789"); // unchanged
-            assertThat(member.getAddress().street()).isEqualTo("Hlavní 123"); // unchanged
-        }
-
-        @Test
-        @DisplayName("should update phone when provided")
-        void shouldUpdatePhoneWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-            PhoneNumber newPhone = PhoneNumber.of("+420987654321");
-
-            // Act
-            member.handle(new Member.UpdateContactInformation(null, newPhone, null));
-
-            // Assert
-            assertThat(member.getPhone().value()).isEqualTo("+420987654321");
-            assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com"); // unchanged
-        }
-
-        @Test
-        @DisplayName("should update address when provided")
-        void shouldUpdateAddressWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-            Address newAddress = Address.of("Nová 456", "Brno", "60200", "CZ");
-
-            // Act
-            member.handle(new Member.UpdateContactInformation(null, null, newAddress));
-
-            // Assert
-            assertThat(member.getAddress().street()).isEqualTo("Nová 456");
-            assertThat(member.getAddress().city()).isEqualTo("Brno");
-            assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com"); // unchanged
-        }
-
-        @Test
-        @DisplayName("should update all contact fields when all provided")
-        void shouldUpdateAllContactFieldsWhenAllProvided() {
-            // Arrange
-            Member member = createTestMember();
-            EmailAddress newEmail = EmailAddress.of("new.email@example.com");
-            PhoneNumber newPhone = PhoneNumber.of("+420987654321");
-            Address newAddress = Address.of("Nová 456", "Brno", "60200", "CZ");
-
-            // Act
-            member.handle(new Member.UpdateContactInformation(newEmail, newPhone, newAddress));
-
-            // Assert
-            assertThat(member.getEmail().value()).isEqualTo("new.email@example.com");
-            assertThat(member.getPhone().value()).isEqualTo("+420987654321");
-            assertThat(member.getAddress().street()).isEqualTo("Nová 456");
-        }
-
-        @Test
-        @DisplayName("should modify same instance (mutable)")
-        void shouldModifySameInstance() {
-            // Arrange
-            Member member = createTestMember();
-            EmailAddress newEmail = EmailAddress.of("new.email@example.com");
-
-            // Act
-            member.handle(new Member.UpdateContactInformation(newEmail, null, null));
-
-            // Assert - same instance is modified
-            assertThat(member.getEmail().value()).isEqualTo("new.email@example.com");
-        }
-
-        @Test
-        @DisplayName("should preserve other fields when updating contact info")
-        void shouldPreserveOtherFields() {
-            // Arrange
-            Member member = createTestMember();
-            MemberId originalId = member.getId();
-            RegistrationNumber originalRegNum = member.getRegistrationNumber();
-            String originalFirstName = member.getFirstName();
-            String originalLastName = member.getLastName();
-            LocalDate originalDob = member.getDateOfBirth();
-
-            // Act
-            member.handle(new Member.UpdateContactInformation(EmailAddress.of("new@example.com"), null, null));
-
-            // Assert
-            assertThat(member.getId()).isEqualTo(originalId);
-            assertThat(member.getRegistrationNumber()).isEqualTo(originalRegNum);
-            assertThat(member.getFirstName()).isEqualTo(originalFirstName);
-            assertThat(member.getLastName()).isEqualTo(originalLastName);
-            assertThat(member.getDateOfBirth()).isEqualTo(originalDob);
-        }
-
-        @Test
-        @DisplayName("should preserve existing email when null is passed")
-        void shouldPreserveExistingEmailWhenNullIsPassed() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act - null means "keep existing value", not "remove"
-            member.handle(new Member.UpdateContactInformation(null, null, null));
-
-            // Assert - Email is preserved, not removed
-            assertThat(member.getEmail()).isNotNull();
-            assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
-            assertThat(member.getPhone().value()).isEqualTo("+420123456789"); // unchanged
-            assertThat(member.getAddress().street()).isEqualTo("Hlavní 123"); // unchanged
-        }
-    }
-    */
-
-    // DEAD CODE: UpdateDocuments command removed - tests commented out
-    // TODO: Delete this commented code block after confirming no regression
-    /*
-    @Nested
-    @DisplayName("UpdateDocuments command")
-    class UpdateDocumentsCommand {
-
-        @Test
-        @DisplayName("should update identity card when provided")
-        void shouldUpdateIdentityCardWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-            IdentityCard identityCard = IdentityCard.of(
-                    "AB123456",
-                    LocalDate.now().plusYears(5)
-            );
-
-            // Act
-            member.handle(new Member.UpdateDocuments(identityCard, null, null));
-
-            // Assert
-            assertThat(member.getIdentityCard()).isNotNull();
-            assertThat(member.getIdentityCard().cardNumber()).isEqualTo("AB123456");
-        }
-
-        @Test
-        @DisplayName("should update medical course when provided")
-        void shouldUpdateMedicalCourseWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-            MedicalCourse medicalCourse = MedicalCourse.of(
-                    LocalDate.of(2023, 1, 15),
-                    Optional.of(LocalDate.of(2025, 1, 15))
-            );
-
-            // Act
-            member.handle(new Member.UpdateDocuments(null, medicalCourse, null));
-
-            // Assert
-            assertThat(member.getMedicalCourse()).isNotNull();
-            assertThat(member.getMedicalCourse().completionDate())
-                    .isEqualTo(LocalDate.of(2023, 1, 15));
-        }
-
-        @Test
-        @DisplayName("should update trainer license when provided")
-        void shouldUpdateTrainerLicenseWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-            TrainerLicense trainerLicense = TrainerLicense.of(
-                    "TRAINER001",
-                    LocalDate.now().plusYears(3)
-            );
-
-            // Act
-            member.handle(new Member.UpdateDocuments(null, null, trainerLicense));
-
-            // Assert
-            assertThat(member.getTrainerLicense()).isNotNull();
-            assertThat(member.getTrainerLicense().licenseNumber()).isEqualTo("TRAINER001");
-        }
-
-        @Test
-        @DisplayName("should update all documents when all provided")
-        void shouldUpdateAllDocumentsWhenAllProvided() {
-            // Arrange
-            Member member = createTestMember();
-            IdentityCard identityCard = IdentityCard.of(
-                    "AB123456",
-                    LocalDate.now().plusYears(5)
-            );
-            MedicalCourse medicalCourse = MedicalCourse.of(
-                    LocalDate.of(2023, 1, 15),
-                    Optional.of(LocalDate.of(2025, 1, 15))
-            );
-            TrainerLicense trainerLicense = TrainerLicense.of(
-                    "TRAINER001",
-                    LocalDate.now().plusYears(3)
-            );
-
-            // Act
-            member.handle(new Member.UpdateDocuments(identityCard, medicalCourse, trainerLicense));
-
-            // Assert
-            assertThat(member.getIdentityCard()).isNotNull();
-            assertThat(member.getMedicalCourse()).isNotNull();
-            assertThat(member.getTrainerLicense()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("should modify same instance (mutable)")
-        void shouldModifySameInstance() {
-            // Arrange
-            Member member = createTestMember();
-            IdentityCard identityCard = IdentityCard.of(
-                    "AB123456",
-                    LocalDate.now().plusYears(5)
-            );
-
-            // Act
-            member.handle(new Member.UpdateDocuments(identityCard, null, null));
-
-            // Assert - same instance is modified
-            assertThat(member.getIdentityCard()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("should not validate existing documents when updating different document")
-        void shouldNotValidateExistingDocumentsWhenUpdatingDifferentDocument() {
-            // Arrange - Create member with a valid identity card
-            LocalDate futureDate = LocalDate.now().plusYears(5);
-            IdentityCard validIdentityCard = IdentityCard.of("VALID123", futureDate);
-
-            Member memberWithDoc = MemberTestDataBuilder.aMember()
-                    .withIdentityCard(validIdentityCard).build();
-
-            MedicalCourse medicalCourse = MedicalCourse.of(
-                    LocalDate.of(2023, 1, 15),
-                    Optional.empty()
-            );
-
-            // Act - Update a different document (medical course, not identity card)
-            // This should NOT trigger validation of the existing identity card
-            memberWithDoc.handle(new Member.UpdateDocuments(null, medicalCourse, null));
-
-            // Assert - Medical course is updated, identity card is unchanged
-            assertThat(memberWithDoc.getMedicalCourse()).isNotNull();
-            assertThat(memberWithDoc.getIdentityCard()).isNotNull();
-            assertThat(memberWithDoc.getIdentityCard().cardNumber()).isEqualTo("VALID123"); // unchanged
-            assertThat(memberWithDoc.getIdentityCard().validityDate()).isEqualTo(futureDate); // unchanged
-        }
-    }
-    */
-
-    // DEAD CODE: UpdateMemberDetails command removed - tests commented out
-    // TODO: Delete this commented code block after confirming no regression
-    /*
-    @Nested
-    @DisplayName("UpdateMemberDetails command")
-    class UpdateMemberDetailsCommand {
-
-        @Test
-        @DisplayName("should update gender when provided")
-        void shouldUpdateGenderWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act
-            member.handle(new Member.UpdateMemberDetails(
-                    null, null, null, null, null,
-                    null, null, null, null, null, Gender.FEMALE
-            ));
-
-            // Assert
-            assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
-            assertThat(member.getFirstName()).isEqualTo("Jan"); // unchanged
-        }
-
-        @Test
-        @DisplayName("should update chip number when provided")
-        void shouldUpdateChipNumberWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act
-            member.handle(new Member.UpdateMemberDetails(
-                    null, null, null, null, null,
-                    "12345", null, null, null, null, null
-            ));
-
-            // Assert
-            assertThat(member.getChipNumber()).isEqualTo("12345");
-        }
-
-        @Test
-        @DisplayName("should update driving license group when provided")
-        void shouldUpdateDrivingLicenseGroupWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act
-            member.handle(new Member.UpdateMemberDetails(
-                    null, null, null, null, null,
-                    null, DrivingLicenseGroup.A, null, null, null, null
-            ));
-
-            // Assert
-            assertThat(member.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.A);
-        }
-
-        @Test
-        @DisplayName("should update dietary restrictions when provided")
-        void shouldUpdateDietaryRestrictionsWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act
-            member.handle(new Member.UpdateMemberDetails(
-                    null, null, null, null, null,
-                    null, null, "Vegetarian, no nuts", null, null, null
-            ));
-
-            // Assert
-            assertThat(member.getDietaryRestrictions()).isEqualTo("Vegetarian, no nuts");
-        }
-
-        @Test
-        @DisplayName("should update multiple fields when multiple provided")
-        void shouldUpdateMultipleFieldsWhenMultipleProvided() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act
-            member.handle(new Member.UpdateMemberDetails(
-                    null, null, null, null, null,
-                    "12345", DrivingLicenseGroup.A, "No dairy", null, null, Gender.FEMALE
-            ));
-
-            // Assert
-            assertThat(member.getChipNumber()).isEqualTo("12345");
-            assertThat(member.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.A);
-            assertThat(member.getDietaryRestrictions()).isEqualTo("No dairy");
-            assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
-        }
-
-        @Test
-        @DisplayName("should update all personal information when provided")
-        void shouldUpdateAllPersonalInformationWhenProvided() {
-            // Arrange
-            Member member = createTestMember();
-            PersonalInformation newPersonalInfo = PersonalInformation.of(
-                    "Petr",
-                    "Svoboda",
-                    LocalDate.of(1985, 3, 20),
-                    "CZ",
-                    Gender.MALE
-            );
-            Address newAddress = Address.of("Nová 1", "Brno", "60200", "CZ");
-            EmailAddress newEmail = EmailAddress.of("petr.svoboda@example.com");
-            PhoneNumber newPhone = PhoneNumber.of("+420555555555");
-
-            // Act
-            member.handle(new Member.UpdateMemberDetails(
-                    newPersonalInfo, newAddress, newEmail, newPhone, null,
-                    "999", DrivingLicenseGroup.B, "No gluten", null, null, null
-            ));
-
-            // Assert
-            assertThat(member.getFirstName()).isEqualTo("Petr");
-            assertThat(member.getLastName()).isEqualTo("Svoboda");
-            assertThat(member.getAddress().street()).isEqualTo("Nová 1");
-            assertThat(member.getEmail().value()).isEqualTo("petr.svoboda@example.com");
-            assertThat(member.getPhone().value()).isEqualTo("+420555555555");
-            assertThat(member.getChipNumber()).isEqualTo("999");
-            assertThat(member.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
-            assertThat(member.getDietaryRestrictions()).isEqualTo("No gluten");
-        }
-
-        @Test
-        @DisplayName("should preserve guardian when updating other fields")
-        void shouldPreserveGuardianWhenUpdatingOtherFields() {
-            // Arrange - Create member with guardian
-            LocalDate minorDob = LocalDate.now().minusYears(10);
-            GuardianInformation guardian = new GuardianInformation(
-                    "Jan",
-                    "Novák",
-                    "PARENT",
-                    EmailAddress.of("jan.novak@example.com"),
-                    PhoneNumber.of("+420111111111")
-            );
-
-            Member minor = aMember()
-                    .withRegistrationNumber("ZBM9002")
-                    .withName("Anna", "Nováková")
-                    .withDateOfBirth(minorDob)
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(createTestMember().getAddress())
-                    .withEmail(createTestMember().getEmail())
-                    .withPhone(createTestMember().getPhone())
-                    .withGuardian(guardian)
-                    .build();
-
-            // Act
-            minor.handle(new Member.UpdateMemberDetails(
-                    null, null, null, null, null,
-                    "123", null, "No nuts", null, null, null
-            ));
-
-            // Assert
-            assertThat(minor.getGuardian()).isNotNull();
-            assertThat(minor.getGuardian().getFirstName()).isEqualTo("Jan");
-            assertThat(minor.getChipNumber()).isEqualTo("123");
-        }
-
-        @Test
-        @DisplayName("should modify same instance (mutable)")
-        void shouldModifySameInstance() {
-            // Arrange
-            Member member = createTestMember();
-
-            // Act
-            member.handle(new Member.UpdateMemberDetails(
-                    null, null, null, null, null,
-                    "12345", null, null, null, null, null
-            ));
-
-            // Assert - same instance is modified
-            assertThat(member.getChipNumber()).isEqualTo("12345");
-        }
-    }
-    */
 
     @Nested
     @DisplayName("handle(SuspendMembership) method")
@@ -1545,6 +1091,160 @@ class MemberTest {
             ));
 
             assertThat(member.getBirthNumber()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should allow update when guardian provides email coverage")
+        void shouldAllowUpdateWhenGuardianProvidesEmailCoverage() {
+            Member member = createAdultMember();
+
+            member.handle(new Member.UpdateMemberByAdmin(
+                    EmailAddress.of("temp@example.com"), null, null, null, null, null,
+                    null, null, null, null, null, new GuardianInformation("Jane", "Doe", "PARENT",
+                            EmailAddress.of("jane@example.com"), PhoneNumber.of("+420111222333")),
+                    null, null, null, null, null
+            ));
+
+            assertThat(member.getEmail()).isEqualTo(EmailAddress.of("temp@example.com"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Contact information cross-validation")
+    class ContactInformationCrossValidation {
+
+        private GuardianInformation aGuardian() {
+            return new GuardianInformation("Petr", "Novák", "PARENT",
+                    EmailAddress.of("petr@example.com"), PhoneNumber.of("+420987654321"));
+        }
+
+        @Test
+        @DisplayName("adult member without email at creation should fail with exact message")
+        void adultMemberWithoutEmailAtCreationShouldFail() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            PersonalInformation personalInfo = PersonalInformation.of(
+                    "Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE);
+
+            assertThatThrownBy(() -> Member.register(new Member.RegisterMember(
+                    memberId, new RegistrationNumber("ZBM9001"), personalInfo,
+                    Address.of("Ulice 1", "Praha", "11000", "CZ"),
+                    null, PhoneNumber.of("+420123456789"), null, null, null
+            )))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("At least one email address is required (member or guardian)");
+        }
+
+        @Test
+        @DisplayName("adult member without phone at creation should fail with exact message")
+        void adultMemberWithoutPhoneAtCreationShouldFail() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            PersonalInformation personalInfo = PersonalInformation.of(
+                    "Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE);
+
+            assertThatThrownBy(() -> Member.register(new Member.RegisterMember(
+                    memberId, new RegistrationNumber("ZBM9001"), personalInfo,
+                    Address.of("Ulice 1", "Praha", "11000", "CZ"),
+                    EmailAddress.of("jan@example.com"), null, null, null, null
+            )))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("At least one phone number is required (member or guardian)");
+        }
+
+        @Test
+        @DisplayName("minor with only guardian email and phone at creation should succeed")
+        void minorWithOnlyGuardianContactAtCreationShouldSucceed() {
+            LocalDate dateOfBirth = LocalDate.now().minusYears(12);
+            int birthYear = dateOfBirth.getYear() % 100;
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            PersonalInformation personalInfo = PersonalInformation.of(
+                    "Anna", "Nováková", dateOfBirth, "CZ", Gender.FEMALE);
+
+            Member member = Member.register(new Member.RegisterMember(
+                    memberId,
+                    new RegistrationNumber(String.format("ZBM%02d01", birthYear)),
+                    personalInfo,
+                    Address.of("Ulice 1", "Praha", "11000", "CZ"),
+                    null, null,
+                    aGuardian(),
+                    null, null
+            ));
+
+            assertThat(member.getGuardian()).isNotNull();
+            assertThat(member.getEmail()).isNull();
+            assertThat(member.getPhone()).isNull();
+        }
+
+        @Test
+        @DisplayName("SelfUpdate that sets new email when guardian exists should succeed")
+        void selfUpdateSettingNewEmailWhenGuardianExistsShouldSucceed() {
+            Member member = aMember()
+                    .withEmail("jan@example.com")
+                    .withPhone("+420123456789")
+                    .withGuardian(aGuardian())
+                    .build();
+
+            member.handle(new Member.SelfUpdate(
+                    EmailAddress.of("new@example.com"), null, null, null, null, null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getEmail()).isEqualTo(EmailAddress.of("new@example.com"));
+        }
+
+        @Test
+        @DisplayName("admin update that would leave no email when no guardian should fail")
+        void adminUpdateLeavingNoEmailAndNoGuardianShouldFail() {
+            EmailAddress noEmail = null;
+            Member memberWithNoEmail = aMember()
+                    .withEmail(noEmail)
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
+
+            assertThatThrownBy(() -> memberWithNoEmail.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, null, null, null, null
+            )))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("At least one email address is required (member or guardian)");
+        }
+
+        @Test
+        @DisplayName("admin update that would leave no phone when no guardian should fail")
+        void adminUpdateLeavingNoPhoneAndNoGuardianShouldFail() {
+            PhoneNumber noPhone = null;
+            Member memberWithNoPhone = aMember()
+                    .withEmail("jan@example.com")
+                    .withPhone(noPhone)
+                    .withNoGuardian()
+                    .build();
+
+            assertThatThrownBy(() -> memberWithNoPhone.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    null, null, null, null, null
+            )))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("At least one phone number is required (member or guardian)");
+        }
+
+        @Test
+        @DisplayName("member with no email but guardian email should pass update validation")
+        void memberWithNoEmailButGuardianEmailShouldPassUpdateValidation() {
+            EmailAddress noEmail = null;
+            Member member = aMember()
+                    .withEmail(noEmail)
+                    .withPhone("+420123456789")
+                    .withGuardian(aGuardian())
+                    .build();
+
+            member.handle(new Member.SelfUpdate(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getGuardian()).isNotNull();
         }
     }
 }
