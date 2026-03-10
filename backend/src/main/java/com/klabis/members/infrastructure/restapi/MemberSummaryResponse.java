@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.MemberId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * <p>
  * This response will be enriched with HATEOAS links when returned as part of a collection.
  */
+@RecordBuilder
 @Schema(description = "Member summary with essential information and HATEOAS links")
 public record MemberSummaryResponse(
         @Schema(description = "Unique member identifier (UUID)", example = "123e4567-e89b-12d3-a456-426614174000")

@@ -1,5 +1,7 @@
 package com.klabis.events;
 
+import io.soabase.recordbuilder.core.RecordBuilder;
+
 import java.time.LocalDate;
 
 /**
@@ -14,6 +16,7 @@ import java.time.LocalDate;
  * @param organizer   event organizer
  * @param websiteUrl  event website URL (may be null)
  */
+@RecordBuilder
 public record EventData(
         String name,
         LocalDate eventDate,

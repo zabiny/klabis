@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.domain.Gender;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
  * <p>
  * Represents the JSON payload for POST /api/members
  */
+@RecordBuilder
 @Schema(description = "Member registration request")
 public record RegisterMemberRequest(
         @Schema(description = "Member's first name", example = "Jan", requiredMode = Schema.RequiredMode.REQUIRED)

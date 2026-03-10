@@ -2,6 +2,7 @@ package com.klabis.events;
 
 import com.klabis.events.domain.Event;
 import com.klabis.members.MemberId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -11,6 +12,7 @@ import java.util.UUID;
 /**
  * Domain event published when a member unregisters from an event.
  */
+@RecordBuilder
 @DomainEvent
 public record MemberUnregisteredFromEventEvent(
         UUID occurrenceId,

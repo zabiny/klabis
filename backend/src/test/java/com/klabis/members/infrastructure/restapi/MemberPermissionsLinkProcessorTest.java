@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.members.MemberId;
+import com.klabis.members.infrastructure.restapi.MemberDetailsResponseBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -122,32 +123,17 @@ class MemberPermissionsLinkProcessorTest {
      * Helper method to create a minimal MemberDetailsResponse for testing.
      */
     private MemberDetailsResponse createMemberDetailsResponse(UUID id) {
-        return new MemberDetailsResponse(
-                new MemberId(id),
-                "ZBM0101",
-                "Jan",
-                "Novák",
-                LocalDate.of(1990, 1, 1),
-                "CZ",
-                null,
-                "test@example.com",
-                "+420777123456",
-                null,
-                null,
-                true,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
+        return MemberDetailsResponseBuilder.builder()
+                .id(new MemberId(id))
+                .registrationNumber("ZBM0101")
+                .firstName("Jan")
+                .lastName("Novák")
+                .dateOfBirth(LocalDate.of(1990, 1, 1))
+                .nationality("CZ")
+                .email("test@example.com")
+                .phone("+420777123456")
+                .active(true)
+                .build();
     }
 
     /**

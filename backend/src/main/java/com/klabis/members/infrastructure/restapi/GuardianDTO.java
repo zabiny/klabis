@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.domain.GuardianInformation;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -18,6 +19,7 @@ import jakarta.validation.constraints.Size;
  * - RegisterMemberRequest (presentation layer)
  * - MemberDetailsResponse (presentation layer)
  */
+@RecordBuilder
 @Schema(description = "Guardian information for minors")
 public record GuardianDTO(
         @Schema(description = "Guardian's first name", example = "Pavel", requiredMode = Schema.RequiredMode.REQUIRED)

@@ -4,6 +4,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.RegistrationNumber;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -35,6 +36,7 @@ import java.util.UUID;
  * @see <a href="https://microservices.io/patterns/data/transactional-outbox.html">Transactional Outbox Pattern</a>
  * @see <a href="https://spring.io/projects/spring-modulith">Spring Modulith</a>
  */
+@RecordBuilder
 @DomainEvent
 public record MemberSuspendedEvent(
         UUID eventId,

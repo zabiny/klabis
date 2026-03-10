@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.ui.HalForms;
+import io.soabase.recordbuilder.core.RecordBuilder;
 
 import java.time.Instant;
 
@@ -15,6 +16,7 @@ import java.time.Instant;
  * @param siCardNumber member's SI card number for this event
  * @param registeredAt timestamp when registration was created
  */
+@RecordBuilder
 public record OwnRegistrationDto(
         @HalForms(access = HalForms.Access.READ_ONLY) String firstName,
         @HalForms(access = HalForms.Access.READ_ONLY) String lastName,

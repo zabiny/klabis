@@ -56,18 +56,14 @@ class MemberTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act
-            Member.RegisterMember command = new Member.RegisterMember(
-                    memberId,
-                    registrationNumber,
-                    personalInformation,
-                    address,
-                    email,
-                    phone,
-                    null, // no guardian for adult
-                    null, // no birthNumber
-                    null, // no bankAccountNumber
-                    null  // registeredBy
-            );
+            Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                    .id(memberId)
+                    .registrationNumber(registrationNumber)
+                    .personalInformation(personalInformation)
+                    .address(address)
+                    .email(email)
+                    .phone(phone)
+                    .build();
             Member member = Member.register(command);
 
             // Assert
@@ -134,18 +130,13 @@ class MemberTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act
-            Member.RegisterMember command = new Member.RegisterMember(
-                    memberId,
-                    registrationNumber,
-                    personalInformation,
-                    address,
-                    null, // no member email
-                    null, // no member phone
-                    guardian,
-                    null,
-                    null,
-                    null  // registeredBy
-            );
+            Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                    .id(memberId)
+                    .registrationNumber(registrationNumber)
+                    .personalInformation(personalInformation)
+                    .address(address)
+                    .guardian(guardian)
+                    .build();
             Member member = Member.register(command);
 
             // Assert
@@ -198,17 +189,14 @@ class MemberTest {
                     PhoneNumber.of("+420777111222")
             );
 
-            Member.RegisterMember command = new Member.RegisterMember(
-                    new MemberId(UUID.randomUUID()),
-                    registrationNumber,
-                    PersonalInformation.of("Anna", "Novakova", dateOfBirth, "CZ", Gender.FEMALE),
-                    address,
-                    null, null,
-                    guardian,
-                    BirthNumber.of("150102/1234"),
-                    null,
-                    null  // registeredBy
-            );
+            Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                    .id(new MemberId(UUID.randomUUID()))
+                    .registrationNumber(registrationNumber)
+                    .personalInformation(PersonalInformation.of("Anna", "Novakova", dateOfBirth, "CZ", Gender.FEMALE))
+                    .address(address)
+                    .guardian(guardian)
+                    .birthNumber(BirthNumber.of("150102/1234"))
+                    .build();
 
             // Act
             Member member = Member.register(command);
@@ -243,18 +231,14 @@ class MemberTest {
 
             // Act & Assert - register() validates business rules
             assertThatThrownBy(() -> {
-                Member.RegisterMember command = new Member.RegisterMember(
-                        memberId,
-                        registrationNumber,
-                        personalInformation,
-                        address,
-                        email,
-                        phone,
-                        null, // no guardian
-                        null, // no birthNumber
-                        null, // no bankAccountNumber
-                        null  // registeredBy
-                );
+                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                        .id(memberId)
+                        .registrationNumber(registrationNumber)
+                        .personalInformation(personalInformation)
+                        .address(address)
+                        .email(email)
+                        .phone(phone)
+                        .build();
                 Member.register(command);
             })
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -279,18 +263,12 @@ class MemberTest {
 
             // Act & Assert
             assertThatThrownBy(() -> {
-                Member.RegisterMember command = new Member.RegisterMember(
-                        memberId,
-                        registrationNumber,
-                        personalInformation,
-                        address,
-                        null, // no email
-                        null, // no phone
-                        null, // no guardian
-                        null,
-                        null,
-                        null  // registeredBy
-                );
+                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                        .id(memberId)
+                        .registrationNumber(registrationNumber)
+                        .personalInformation(personalInformation)
+                        .address(address)
+                        .build();
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
@@ -316,18 +294,13 @@ class MemberTest {
 
             // Act & Assert
             assertThatThrownBy(() -> {
-                Member.RegisterMember command = new Member.RegisterMember(
-                        memberId,
-                        registrationNumber,
-                        personalInformation,
-                        address,
-                        null, // no email
-                        phone,
-                        null, // no guardian
-                        null,
-                        null,
-                        null  // registeredBy
-                );
+                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                        .id(memberId)
+                        .registrationNumber(registrationNumber)
+                        .personalInformation(personalInformation)
+                        .address(address)
+                        .phone(phone)
+                        .build();
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
@@ -353,18 +326,13 @@ class MemberTest {
 
             // Act & Assert
             assertThatThrownBy(() -> {
-                Member.RegisterMember command = new Member.RegisterMember(
-                        memberId,
-                        registrationNumber,
-                        personalInformation,
-                        address,
-                        email,
-                        null, // no phone
-                        null, // no guardian
-                        null,
-                        null,
-                        null  // registeredBy
-                );
+                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                        .id(memberId)
+                        .registrationNumber(registrationNumber)
+                        .personalInformation(personalInformation)
+                        .address(address)
+                        .email(email)
+                        .build();
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
@@ -398,18 +366,13 @@ class MemberTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             // Act
-            Member.RegisterMember command = new Member.RegisterMember(
-                    memberId,
-                    registrationNumber,
-                    personalInformation,
-                    address,
-                    null, // no member email
-                    null, // no member phone
-                    guardian,
-                    null,
-                    null,
-                    null  // registeredBy
-            );
+            Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                    .id(memberId)
+                    .registrationNumber(registrationNumber)
+                    .personalInformation(personalInformation)
+                    .address(address)
+                    .guardian(guardian)
+                    .build();
             Member member = Member.register(command);
 
             // Assert - should not throw
@@ -433,18 +396,14 @@ class MemberTest {
                         "CZ",
                         Gender.MALE
                 );
-                Member.RegisterMember command = new Member.RegisterMember(
-                        memberId,
-                        registrationNumber,
-                        personalInformation,
-                        address,
-                        email,
-                        phone,
-                        null,
-                        null,
-                        null,
-                        null  // registeredBy
-                );
+                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                        .id(memberId)
+                        .registrationNumber(registrationNumber)
+                        .personalInformation(personalInformation)
+                        .address(address)
+                        .email(email)
+                        .phone(phone)
+                        .build();
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
@@ -468,18 +427,14 @@ class MemberTest {
                         "CZ",
                         Gender.MALE
                 );
-                Member.RegisterMember command = new Member.RegisterMember(
-                        memberId,
-                        registrationNumber,
-                        personalInformation,
-                        address,
-                        email,
-                        phone,
-                        null,
-                        null,
-                        null,
-                        null  // registeredBy
-                );
+                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                        .id(memberId)
+                        .registrationNumber(registrationNumber)
+                        .personalInformation(personalInformation)
+                        .address(address)
+                        .email(email)
+                        .phone(phone)
+                        .build();
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
@@ -503,18 +458,14 @@ class MemberTest {
                         "",
                         Gender.MALE
                 );
-                Member.RegisterMember command = new Member.RegisterMember(
-                        memberId,
-                        registrationNumber,
-                        personalInformation,
-                        address,
-                        email,
-                        phone,
-                        null,
-                        null,
-                        null,
-                        null  // registeredBy
-                );
+                Member.RegisterMember command = MemberRegisterMemberBuilder.builder()
+                        .id(memberId)
+                        .registrationNumber(registrationNumber)
+                        .personalInformation(personalInformation)
+                        .address(address)
+                        .email(email)
+                        .phone(phone)
+                        .build();
                 Member.register(command);
             })
                     .isInstanceOf(IllegalArgumentException.class)
@@ -806,10 +757,7 @@ class MemberTest {
             Member member = createAdultMember();
             EmailAddress newEmail = EmailAddress.of("new@example.com");
 
-            member.handle(new Member.SelfUpdate(
-                    newEmail, null, null, null, null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().email(newEmail).build());
 
             assertThat(member.getEmail()).isEqualTo(newEmail);
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
@@ -821,10 +769,7 @@ class MemberTest {
             Member member = createAdultMember();
             PhoneNumber newPhone = PhoneNumber.of("+420999888777");
 
-            member.handle(new Member.SelfUpdate(
-                    null, newPhone, null, null, null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().phone(newPhone).build());
 
             assertThat(member.getPhone()).isEqualTo(newPhone);
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
@@ -836,10 +781,7 @@ class MemberTest {
             Member member = createAdultMember();
             Address newAddress = Address.of("Nová 1", "Brno", "60200", "CZ");
 
-            member.handle(new Member.SelfUpdate(
-                    null, null, newAddress, null, null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().address(newAddress).build());
 
             assertThat(member.getAddress().street()).isEqualTo("Nová 1");
         }
@@ -849,10 +791,7 @@ class MemberTest {
         void shouldUpdateChipNumberWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(new Member.SelfUpdate(
-                    null, null, null, "99887", null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().chipNumber("99887").build());
 
             assertThat(member.getChipNumber()).isEqualTo("99887");
         }
@@ -862,10 +801,7 @@ class MemberTest {
         void shouldUpdateNationalityWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(new Member.SelfUpdate(
-                    null, null, null, null, "SK", null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().nationality("SK").build());
 
             assertThat(member.getNationality()).isEqualTo("SK");
         }
@@ -875,10 +811,7 @@ class MemberTest {
         void shouldUpdateDietaryRestrictionsWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(new Member.SelfUpdate(
-                    null, null, null, null, null, null,
-                    null, null, null, null, "Vegan", null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().dietaryRestrictions("Vegan").build());
 
             assertThat(member.getDietaryRestrictions()).isEqualTo("Vegan");
         }
@@ -888,10 +821,9 @@ class MemberTest {
         void shouldNotChangeAdminOnlyFields() {
             Member member = createAdultMember();
 
-            member.handle(new Member.SelfUpdate(
-                    EmailAddress.of("changed@example.com"), null, null, null, null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder()
+                    .email(EmailAddress.of("changed@example.com"))
+                    .build());
 
             assertThat(member.getFirstName()).isEqualTo("Jan");
             assertThat(member.getLastName()).isEqualTo("Novák");
@@ -904,10 +836,7 @@ class MemberTest {
         void shouldPreserveExistingValuesWhenNullPassed() {
             Member member = createAdultMember();
 
-            member.handle(new Member.SelfUpdate(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().build());
 
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
@@ -928,10 +857,10 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> minorWithoutGuardian.handle(new Member.SelfUpdate(
-                    null, null, Address.of("Nová 5", "Brno", "60200", "CZ"), null, null, null,
-                    null, null, null, null, null, null
-            ))).isInstanceOf(BusinessRuleViolationException.class)
+            assertThatThrownBy(() -> minorWithoutGuardian.handle(MemberSelfUpdateBuilder.builder()
+                    .address(Address.of("Nová 5", "Brno", "60200", "CZ"))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
         }
 
@@ -953,10 +882,7 @@ class MemberTest {
 
             assertThat(member.getBirthNumber()).isNotNull();
 
-            member.handle(new Member.SelfUpdate(
-                    null, null, null, null, "SK", null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().nationality("SK").build());
 
             assertThat(member.getNationality()).isEqualTo("SK");
             assertThat(member.getBirthNumber()).isNull();
@@ -978,10 +904,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            memberWithCZ.handle(new Member.SelfUpdate(
-                    null, null, null, null, "CZE", null,
-                    null, null, null, null, null, null
-            ));
+            memberWithCZ.handle(MemberSelfUpdateBuilder.builder().nationality("CZE").build());
 
             assertThat(memberWithCZ.getNationality()).isEqualTo("CZE");
             assertThat(memberWithCZ.getBirthNumber()).isNotNull();
@@ -1005,10 +928,7 @@ class MemberTest {
 
             assertThat(member.getBirthNumber()).isNotNull();
 
-            member.handle(new Member.SelfUpdate(
-                    null, null, null, null, "SK", null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().nationality("SK").build());
 
             assertThat(member.getNationality()).isEqualTo("SK");
             assertThat(member.getBirthNumber()).isNull();
@@ -1039,11 +959,7 @@ class MemberTest {
         void shouldUpdateFirstNameWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    "Petr", null, null, null, null, null
-            ));
+            member.handle(MemberUpdateMemberByAdminBuilder.builder().firstName("Petr").build());
 
             assertThat(member.getFirstName()).isEqualTo("Petr");
             assertThat(member.getLastName()).isEqualTo("Novák");
@@ -1054,11 +970,7 @@ class MemberTest {
         void shouldUpdateLastNameWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, "Svoboda", null, null, null, null
-            ));
+            member.handle(MemberUpdateMemberByAdminBuilder.builder().lastName("Svoboda").build());
 
             assertThat(member.getLastName()).isEqualTo("Svoboda");
             assertThat(member.getFirstName()).isEqualTo("Jan");
@@ -1070,11 +982,7 @@ class MemberTest {
             Member member = createAdultMember();
             LocalDate newDob = LocalDate.of(1985, 3, 20);
 
-            member.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, null, newDob, null, null, null
-            ));
+            member.handle(MemberUpdateMemberByAdminBuilder.builder().dateOfBirth(newDob).build());
 
             assertThat(member.getDateOfBirth()).isEqualTo(newDob);
         }
@@ -1084,11 +992,7 @@ class MemberTest {
         void shouldUpdateGenderWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, null, null, Gender.FEMALE, null, null
-            ));
+            member.handle(MemberUpdateMemberByAdminBuilder.builder().gender(Gender.FEMALE).build());
 
             assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
         }
@@ -1100,11 +1004,10 @@ class MemberTest {
             EmailAddress newEmail = EmailAddress.of("admin.set@example.com");
             PhoneNumber newPhone = PhoneNumber.of("+420111222333");
 
-            member.handle(new Member.UpdateMemberByAdmin(
-                    newEmail, newPhone, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberUpdateMemberByAdminBuilder.builder()
+                    .email(newEmail)
+                    .phone(newPhone)
+                    .build());
 
             assertThat(member.getEmail()).isEqualTo(newEmail);
             assertThat(member.getPhone()).isEqualTo(newPhone);
@@ -1115,11 +1018,10 @@ class MemberTest {
         void shouldPreserveUnchangedFieldsWhenUpdatingAdminOnlyFields() {
             Member member = createAdultMember();
 
-            member.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    "Petr", "Svoboda", null, null, null, null
-            ));
+            member.handle(MemberUpdateMemberByAdminBuilder.builder()
+                    .firstName("Petr")
+                    .lastName("Svoboda")
+                    .build());
 
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
@@ -1132,11 +1034,10 @@ class MemberTest {
             Member member = createAdultMember();
             LocalDate minorDateOfBirth = LocalDate.now().minusYears(10);
 
-            assertThatThrownBy(() -> member.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, null, minorDateOfBirth, null, null, null
-            ))).isInstanceOf(BusinessRuleViolationException.class)
+            assertThatThrownBy(() -> member.handle(MemberUpdateMemberByAdminBuilder.builder()
+                    .dateOfBirth(minorDateOfBirth)
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
         }
 
@@ -1155,11 +1056,9 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> member.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, null, null, null, BirthNumber.of("9005151234"), null
-            )))
+            assertThatThrownBy(() -> member.handle(MemberUpdateMemberByAdminBuilder.builder()
+                    .birthNumber(BirthNumber.of("9005151234"))
+                    .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Birth number is only allowed for Czech nationals");
         }
@@ -1169,11 +1068,9 @@ class MemberTest {
         void shouldAllowSettingBirthNumberOnCzechMember() {
             Member member = createAdultMember();
 
-            member.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, null, null, null, BirthNumber.of("9005151234"), null
-            ));
+            member.handle(MemberUpdateMemberByAdminBuilder.builder()
+                    .birthNumber(BirthNumber.of("9005151234"))
+                    .build());
 
             assertThat(member.getBirthNumber()).isNotNull();
         }
@@ -1183,12 +1080,11 @@ class MemberTest {
         void shouldAllowUpdateWhenGuardianProvidesEmailCoverage() {
             Member member = createAdultMember();
 
-            member.handle(new Member.UpdateMemberByAdmin(
-                    EmailAddress.of("temp@example.com"), null, null, null, null, null,
-                    null, null, null, null, null, new GuardianInformation("Jane", "Doe", "PARENT",
-                            EmailAddress.of("jane@example.com"), PhoneNumber.of("+420111222333")),
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberUpdateMemberByAdminBuilder.builder()
+                    .email(EmailAddress.of("temp@example.com"))
+                    .guardian(new GuardianInformation("Jane", "Doe", "PARENT",
+                            EmailAddress.of("jane@example.com"), PhoneNumber.of("+420111222333")))
+                    .build());
 
             assertThat(member.getEmail()).isEqualTo(EmailAddress.of("temp@example.com"));
         }
@@ -1209,11 +1105,10 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> minorWithoutGuardian.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, "NEW_CHIP", null, null,
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null
-            ))).isInstanceOf(BusinessRuleViolationException.class)
+            assertThatThrownBy(() -> minorWithoutGuardian.handle(MemberUpdateMemberByAdminBuilder.builder()
+                    .chipNumber("NEW_CHIP")
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
         }
     }
@@ -1234,11 +1129,13 @@ class MemberTest {
             PersonalInformation personalInfo = PersonalInformation.of(
                     "Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE);
 
-            assertThatThrownBy(() -> Member.register(new Member.RegisterMember(
-                    memberId, new RegistrationNumber("ZBM9001"), personalInfo,
-                    Address.of("Ulice 1", "Praha", "11000", "CZ"),
-                    null, PhoneNumber.of("+420123456789"), null, null, null, null
-            )))
+            assertThatThrownBy(() -> Member.register(MemberRegisterMemberBuilder.builder()
+                    .id(memberId)
+                    .registrationNumber(new RegistrationNumber("ZBM9001"))
+                    .personalInformation(personalInfo)
+                    .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
+                    .phone(PhoneNumber.of("+420123456789"))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
         }
@@ -1250,11 +1147,13 @@ class MemberTest {
             PersonalInformation personalInfo = PersonalInformation.of(
                     "Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE);
 
-            assertThatThrownBy(() -> Member.register(new Member.RegisterMember(
-                    memberId, new RegistrationNumber("ZBM9001"), personalInfo,
-                    Address.of("Ulice 1", "Praha", "11000", "CZ"),
-                    EmailAddress.of("jan@example.com"), null, null, null, null, null
-            )))
+            assertThatThrownBy(() -> Member.register(MemberRegisterMemberBuilder.builder()
+                    .id(memberId)
+                    .registrationNumber(new RegistrationNumber("ZBM9001"))
+                    .personalInformation(personalInfo)
+                    .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
+                    .email(EmailAddress.of("jan@example.com"))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
         }
@@ -1268,15 +1167,13 @@ class MemberTest {
             PersonalInformation personalInfo = PersonalInformation.of(
                     "Anna", "Nováková", dateOfBirth, "CZ", Gender.FEMALE);
 
-            Member member = Member.register(new Member.RegisterMember(
-                    memberId,
-                    new RegistrationNumber(String.format("ZBM%02d01", birthYear)),
-                    personalInfo,
-                    Address.of("Ulice 1", "Praha", "11000", "CZ"),
-                    null, null,
-                    aGuardian(),
-                    null, null, null
-            ));
+            Member member = Member.register(MemberRegisterMemberBuilder.builder()
+                    .id(memberId)
+                    .registrationNumber(new RegistrationNumber(String.format("ZBM%02d01", birthYear)))
+                    .personalInformation(personalInfo)
+                    .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
+                    .guardian(aGuardian())
+                    .build());
 
             assertThat(member.getGuardian()).isNotNull();
             assertThat(member.getEmail()).isNull();
@@ -1292,10 +1189,9 @@ class MemberTest {
                     .withGuardian(aGuardian())
                     .build();
 
-            member.handle(new Member.SelfUpdate(
-                    EmailAddress.of("new@example.com"), null, null, null, null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder()
+                    .email(EmailAddress.of("new@example.com"))
+                    .build());
 
             assertThat(member.getEmail()).isEqualTo(EmailAddress.of("new@example.com"));
         }
@@ -1310,11 +1206,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> memberWithNoEmail.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null
-            )))
+            assertThatThrownBy(() -> memberWithNoEmail.handle(MemberUpdateMemberByAdminBuilder.builder().build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
         }
@@ -1329,11 +1221,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> memberWithNoPhone.handle(new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null
-            )))
+            assertThatThrownBy(() -> memberWithNoPhone.handle(MemberUpdateMemberByAdminBuilder.builder().build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
         }
@@ -1348,10 +1236,7 @@ class MemberTest {
                     .withGuardian(aGuardian())
                     .build();
 
-            member.handle(new Member.SelfUpdate(
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null
-            ));
+            member.handle(MemberSelfUpdateBuilder.builder().build());
 
             assertThat(member.getGuardian()).isNotNull();
         }

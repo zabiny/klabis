@@ -7,6 +7,7 @@ import com.klabis.common.validation.ValidPatchFieldSize;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
+import io.soabase.recordbuilder.core.RecordBuilder;
 
 import java.time.LocalDate;
 
@@ -45,6 +46,7 @@ import java.time.LocalDate;
  * @param bankAccountNumber   Member's new bank account number (optional, admin-only)
  * @param guardian            Member's new guardian information (optional)
  */
+@RecordBuilder
 public record UpdateMemberRequest(
         PatchField<String> email,
 

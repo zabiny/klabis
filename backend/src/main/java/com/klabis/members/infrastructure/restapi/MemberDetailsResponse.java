@@ -5,6 +5,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
+import io.soabase.recordbuilder.core.RecordBuilder;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,6 +41,7 @@ import java.time.LocalDate;
  * @param suspendedBy         ID of user who suspended the membership (nullable, present only if active=false)
  * @param suspensionNote      Optional note about suspension (nullable, present only if active=false)
  */
+@RecordBuilder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record MemberDetailsResponse(
         MemberId id,

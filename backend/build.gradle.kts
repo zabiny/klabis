@@ -80,6 +80,12 @@ dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
     testAnnotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
 
+    // RecordBuilder for type-safe record builders
+    compileOnly("io.soabase.record-builder:record-builder-core:44")
+    annotationProcessor("io.soabase.record-builder:record-builder-processor:44")
+    testCompileOnly("io.soabase.record-builder:record-builder-core:44")
+    testAnnotationProcessor("io.soabase.record-builder:record-builder-processor:44")
+
     // Jasypt for encryption (GDPR - rodne cislo)
     implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5")
 

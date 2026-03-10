@@ -1,6 +1,7 @@
 package com.klabis.members;
 
 import com.klabis.common.users.UserId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.util.UUID;
  * <p>This event is intentionally intra-module — it stays in the members root package
  * for visibility within the module but is not consumed by other modules.
  */
+@RecordBuilder
 @DomainEvent
 public record BirthNumberAccessedEvent(
         UUID eventId,

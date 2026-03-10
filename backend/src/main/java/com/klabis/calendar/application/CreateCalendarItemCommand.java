@@ -1,11 +1,13 @@
 package com.klabis.calendar.application;
 
+import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
+@RecordBuilder
 public record CreateCalendarItemCommand(
         @NotBlank(message = "Calendar item name is required")
         @Size(max = 200, message = "Calendar item name must not exceed 200 characters")

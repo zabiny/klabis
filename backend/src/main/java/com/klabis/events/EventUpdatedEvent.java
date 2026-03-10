@@ -2,6 +2,7 @@ package com.klabis.events;
 
 import com.klabis.events.domain.Event;
 import com.klabis.events.WebsiteUrl;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
@@ -25,6 +26,7 @@ import java.util.UUID;
  *
  * <p>Domain events are immutable and represent facts that have already occurred.
  */
+@RecordBuilder
 @DomainEvent
 public record EventUpdatedEvent(
         UUID occurrenceId,

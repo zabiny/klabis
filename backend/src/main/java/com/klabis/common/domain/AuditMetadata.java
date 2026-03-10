@@ -1,5 +1,6 @@
 package com.klabis.common.domain;
 
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.time.Instant;
@@ -17,6 +18,7 @@ import java.util.Objects;
  * @param lastModifiedBy identifier of who last modified the entity
  * @param version        optimistic locking version
  */
+@RecordBuilder
 @ValueObject
 public record AuditMetadata(
         Instant createdAt,

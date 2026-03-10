@@ -8,6 +8,8 @@ import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
+import com.klabis.members.domain.MemberUpdateMemberByAdminBuilder;
+import com.klabis.members.domain.MemberSelfUpdateBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -71,13 +73,10 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should update member birth number via admin command")
         void shouldUpdateMemberWithBirthNumberViaAdminCommand() {
-            var command = new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null,
-                    BankAccountNumber.of("12345/5678"),
-                    null, null, null, null, null, null,
-                    null, null, null, null,
-                    BirthNumber.of("900101/1234"), null
-            );
+            var command = MemberUpdateMemberByAdminBuilder.builder()
+                    .bankAccountNumber(BankAccountNumber.of("12345/5678"))
+                    .birthNumber(BirthNumber.of("900101/1234"))
+                    .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -91,12 +90,9 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should update member bank account number via admin command")
         void shouldUpdateMemberWithBankAccountNumberViaAdminCommand() {
-            var command = new Member.UpdateMemberByAdmin(
-                    null, null, null, null, null,
-                    BankAccountNumber.of("12345/5678"),
-                    null, null, null, null, null, null,
-                    null, null, null, null, null, null
-            );
+            var command = MemberUpdateMemberByAdminBuilder.builder()
+                    .bankAccountNumber(BankAccountNumber.of("12345/5678"))
+                    .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -115,10 +111,9 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should update member contact info via self-update command")
         void shouldUpdateMemberContactInfoViaSelfUpdateCommand() {
-            var command = new Member.SelfUpdate(
-                    EmailAddress.of("new@example.com"),
-                    null, null, null, null, null, null, null, null, null, null, null
-            );
+            var command = MemberSelfUpdateBuilder.builder()
+                    .email(EmailAddress.of("new@example.com"))
+                    .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));

@@ -9,6 +9,7 @@ import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
@@ -72,6 +73,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * This command is used when the Member ID needs to be shared with another aggregate
      * (e.g., User aggregate) to ensure both aggregates use the same identifier.
      */
+    @RecordBuilder
     public record RegisterMember(
             MemberId id,
             RegistrationNumber registrationNumber,
@@ -91,6 +93,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * Contains only fields that a member is permitted to change on their own account.
      * Fields set to null retain the current value (PATCH semantics).
      */
+    @RecordBuilder
     public record SelfUpdate(
             EmailAddress email,
             PhoneNumber phone,
@@ -113,6 +116,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * firstName, lastName, dateOfBirth, gender, and birthNumber.
      * Fields set to null retain the current value (PATCH semantics).
      */
+    @RecordBuilder
     public record UpdateMemberByAdmin(
             EmailAddress email,
             PhoneNumber phone,

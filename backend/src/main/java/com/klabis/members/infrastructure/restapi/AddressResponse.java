@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.domain.Address;
+import io.soabase.recordbuilder.core.RecordBuilder;
 
 /**
  * Response DTO for address information.
@@ -13,6 +14,7 @@ import com.klabis.members.domain.Address;
  * @param postalCode postal code
  * @param country    ISO 3166-1 alpha-2 country code (2 letters, uppercase)
  */
+@RecordBuilder
 public record AddressResponse(
         String street,
         String city,
