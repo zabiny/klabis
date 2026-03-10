@@ -254,5 +254,19 @@ class PermissionControllerTest {
                             .content("{}"))
                     .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @DisplayName("should accept authorities in colon-format string (e.g. MEMBERS:READ)")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
+        void shouldAcceptColonFormatAuthorities() throws Exception {
+            when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ)));
+
+            mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"authorities\":[\"MEMBERS:READ\",\"EVENTS:READ\"]}"))
+                    .andExpect(status().isNoContent());
+        }
     }
 }

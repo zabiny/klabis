@@ -92,7 +92,14 @@ public class UserPermissionsMemento implements Persistable<UUID> {
         memento.userId = permissions.getUserId().uuid();
         memento.authoritiesJson = serializeAuthorities(permissions.getDirectAuthorities());
         memento.version = permissions.getVersion();
-        memento.isNew = permissions.getAuditMetadata() == null;
+        AuditMetadata auditMetadata = permissions.getAuditMetadata();
+        memento.isNew = auditMetadata == null;
+        if (auditMetadata != null) {
+            memento.createdAt = auditMetadata.createdAt();
+            memento.createdBy = auditMetadata.createdBy();
+            memento.modifiedAt = auditMetadata.lastModifiedAt();
+            memento.lastModifiedBy = auditMetadata.lastModifiedBy();
+        }
         return memento;
     }
 
@@ -119,12 +126,7 @@ public class UserPermissionsMemento implements Persistable<UUID> {
      */
     private static String serializeAuthorities(Set<Authority> authorities) {
         try {
-            // Convert Authority enum to string values
-            Set<String> authorityStrings = authorities.stream()
-                    .map(Authority::getValue)
-                    .collect(java.util.stream.Collectors.toSet());
-
-            return objectMapper.writeValueAsString(authorityStrings);
+            return objectMapper.writeValueAsString(authorities);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize authorities to JSON", e);
         }
@@ -144,12 +146,7 @@ public class UserPermissionsMemento implements Persistable<UUID> {
         }
 
         try {
-            // Parse JSON array of strings to Authority enum
-            Set<String> authorityStrings = objectMapper.readValue(json, new TypeReference<Set<String>>() {
-            });
-            return authorityStrings.stream()
-                    .map(Authority::fromString)
-                    .collect(java.util.stream.Collectors.toSet());
+            return objectMapper.readValue(json, new TypeReference<Set<Authority>>() {});
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to deserialize authorities from JSON: " + json, e);
         }

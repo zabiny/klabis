@@ -1,5 +1,8 @@
 package com.klabis.common.users;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -70,6 +73,7 @@ public enum Authority {
      *
      * @return the colon-separated string representation (e.g., "MEMBERS:CREATE")
      */
+    @JsonValue
     public String getValue() {
         return value;
     }
@@ -83,6 +87,7 @@ public enum Authority {
      * @return the corresponding Authority enum
      * @throws IllegalArgumentException if the value is not a valid authority
      */
+    @JsonCreator
     public static Authority fromString(String value) {
         for (Authority authority : values()) {
             if (authority.value.equals(value)) {
