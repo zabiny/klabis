@@ -42,6 +42,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -1253,6 +1254,121 @@ class MemberControllerApiTest {
 
             mockMvc.perform(postMemberIdResume(memberId))
                     .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("X-Warnings header for birth number consistency")
+    class BirthNumberConsistencyWarningsTests {
+
+        private final String REGISTER_BODY = """
+                {
+                    "firstName": "Jana",
+                    "lastName": "Nováková",
+                    "dateOfBirth": "1990-05-15",
+                    "nationality": "CZ",
+                    "gender": "FEMALE",
+                    "email": "jana.novakova@example.com",
+                    "phone": "+420777123456",
+                    "address": {
+                        "street": "Hlavní 123",
+                        "city": "Praha",
+                        "postalCode": "11000",
+                        "country": "CZ"
+                    },
+                    "birthNumber": "905101/1239"
+                }
+                """;
+
+        @Test
+        @DisplayName("POST /api/members should include X-Warnings header when birth number date mismatches dateOfBirth")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        void shouldIncludeWarningsHeaderWhenBirthNumberDateMismatches() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            // Member with dateOfBirth 1990-05-15 but birth number 905101 implies 1990-01-01 → date mismatch
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(java.time.LocalDate.of(1990, 5, 15))
+                    .withGender(Gender.FEMALE)
+                    .withNationality("CZ")
+                    .withBirthNumber("905101/1239")
+                    .withNoGuardian()
+                    .build();
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(post("/api/members")
+                            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                            .content(REGISTER_BODY))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists("X-Warnings"));
+        }
+
+        @Test
+        @DisplayName("POST /api/members should not include X-Warnings header when birth number is consistent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        void shouldNotIncludeWarningsHeaderWhenBirthNumberIsConsistent() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            // Member with dateOfBirth 1990-01-01 and birth number 905101 (female, 1990-01-01) → consistent
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(java.time.LocalDate.of(1990, 1, 1))
+                    .withGender(Gender.FEMALE)
+                    .withNationality("CZ")
+                    .withBirthNumber("905101/1239")
+                    .withNoGuardian()
+                    .build();
+            when(registrationService.registerMember(any(RegistrationService.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(post("/api/members")
+                            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                            .content(REGISTER_BODY))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().doesNotExist("X-Warnings"));
+        }
+
+        @Test
+        @DisplayName("PATCH /api/members/{id} should include X-Warnings header when birth number gender mismatches")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+        void shouldIncludeWarningsHeaderOnUpdateWhenGenderMismatches() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            // Member is MALE but birth number 905101 indicates FEMALE → gender mismatch warning
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(java.time.LocalDate.of(1990, 1, 1))
+                    .withGender(Gender.MALE)
+                    .withNationality("CZ")
+                    .withBirthNumber("905101/1239")
+                    .withNoGuardian()
+                    .build();
+            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMemberByAdmin.class))).thenReturn(member);
+
+            mockMvc.perform(patch("/api/members/{id}", memberId)
+                            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                        "birthNumber": "905101/1239"
+                                    }
+                                    """))
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().exists("X-Warnings"));
+        }
+
+        @Test
+        @DisplayName("PATCH /api/members/{id} should not include X-Warnings when no birth number provided")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+        void shouldNotIncludeWarningsWhenNoBirthNumberOnUpdate() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withNoGuardian()
+                    .build();
+            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMemberByAdmin.class))).thenReturn(member);
+
+            mockMvc.perform(patch("/api/members/{id}", memberId)
+                            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                        "email": "new@example.com"
+                                    }
+                                    """))
+                    .andExpect(status().isNoContent())
+                    .andExpect(header().doesNotExist("X-Warnings"));
         }
     }
 }

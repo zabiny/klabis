@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * REST controller for Member resources.
  * <p>
@@ -70,9 +72,15 @@ class RegistrationController {
         RegistrationService.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request, currentUserId);
         Member member = registrationService.registerMember(serviceCommand);
 
-        return ResponseEntity
-                .created(entityLinks.linkToItemResource(Member.class, member.getId().uuid()).toUri())
-                .build();
+        ResponseEntity.BodyBuilder response = ResponseEntity
+                .created(entityLinks.linkToItemResource(Member.class, member.getId().uuid()).toUri());
+
+        List<String> warnings = member.birthNumberConsistencyWarnings();
+        if (!warnings.isEmpty()) {
+            response.header("X-Warnings", warnings.toArray(String[]::new));
+        }
+
+        return response.build();
     }
 
 }

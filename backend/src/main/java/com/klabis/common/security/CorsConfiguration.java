@@ -25,6 +25,7 @@ public class CorsConfiguration {
         configuration.addAllowedMethod("*");
         configuration.addExposedHeader("Authorization");
         configuration.addExposedHeader("Location");
+        configuration.addExposedHeader("X-Warnings");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

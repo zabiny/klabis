@@ -1258,4 +1258,134 @@ class MemberTest {
             assertThat(member.getGuardian()).isNotNull();
         }
     }
+
+    @Nested
+    @DisplayName("BirthNumber consistency warning tests")
+    class BirthNumberConsistencyWarningTests {
+
+        @Test
+        @DisplayName("should return no warnings when birth number is null")
+        void shouldReturnNoWarningsWhenBirthNumberIsNull() {
+            Member member = aMember()
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withGender(Gender.MALE)
+                    .withNationality("CZE")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.birthNumberConsistencyWarnings()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return no warnings when birth number matches date of birth and gender")
+        void shouldReturnNoWarningsWhenBirthNumberMatchesDateOfBirthAndGender() {
+            // 900101/XXXX = year 1990, month 01 (male), day 01 → matches dateOfBirth 1990-01-01, MALE
+            Member member = aMember()
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withGender(Gender.MALE)
+                    .withNationality("CZE")
+                    .withBirthNumber("900101/1235")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.birthNumberConsistencyWarnings()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return date mismatch warning when birth number date does not match dateOfBirth")
+        void shouldReturnDateMismatchWarningWhenBirthNumberDateDoesNotMatchDateOfBirth() {
+            // 900101/XXXX = 1990-01-01, but member dateOfBirth is 1990-05-15
+            Member member = aMember()
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withGender(Gender.MALE)
+                    .withNationality("CZE")
+                    .withBirthNumber("900101/1235")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.birthNumberConsistencyWarnings())
+                    .hasSize(1)
+                    .first().asString().contains("does not match member's date of birth");
+        }
+
+        @Test
+        @DisplayName("should return gender mismatch warning when birth number indicates different gender")
+        void shouldReturnGenderMismatchWarningWhenBirthNumberIndicatesDifferentGender() {
+            // 905101/XXXX = month 51 → FEMALE, but member is MALE
+            Member member = aMember()
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withGender(Gender.MALE)
+                    .withNationality("CZE")
+                    .withBirthNumber("905101/1239")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.birthNumberConsistencyWarnings())
+                    .hasSize(1)
+                    .first().asString().contains("indicates different gender");
+        }
+
+        @Test
+        @DisplayName("should return both warnings when both date and gender mismatch")
+        void shouldReturnBothWarningsWhenBothDateAndGenderMismatch() {
+            // 905101/XXXX = 1990-01-01 female, but member is MALE born 1990-05-15
+            Member member = aMember()
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withGender(Gender.MALE)
+                    .withNationality("CZE")
+                    .withBirthNumber("905101/1239")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.birthNumberConsistencyWarnings()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("should return no warnings for female member with female birth number matching date")
+        void shouldReturnNoWarningsForFemaleMatchingBirthNumber() {
+            // 905115/XXXX = month 51 → FEMALE, day 15, year 1990 → 1990-01-15
+            Member member = aMember()
+                    .withDateOfBirth(LocalDate.of(1990, 1, 15))
+                    .withGender(Gender.FEMALE)
+                    .withNationality("CZE")
+                    .withBirthNumber("905115/1239")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.birthNumberConsistencyWarnings()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should use two-digit year of dateOfBirth to resolve century when extracting date")
+        void shouldUseTwoDigitYearOfDateOfBirthToResolveDate() {
+            // 000101/XXXX = year 00, month 01, day 01 → matches 2000-01-01
+            Member member = aMember()
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withGender(Gender.MALE)
+                    .withNationality("CZE")
+                    .withBirthNumber("000101/1235")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.birthNumberConsistencyWarnings()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return date mismatch warning when birth number year differs from dateOfBirth year")
+        void shouldReturnDateMismatchWarningWhenBirthNumberYearDiffers() {
+            // 800515/XXXX encodes year 1980, month 05, day 15
+            // member dateOfBirth is 1990-05-15 → year mismatch, even though month and day match
+            Member member = aMember()
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withGender(Gender.MALE)
+                    .withNationality("CZE")
+                    .withBirthNumber("800515/1235")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.birthNumberConsistencyWarnings())
+                    .hasSize(1)
+                    .first().asString().contains("does not match member's date of birth");
+        }
+    }
 }

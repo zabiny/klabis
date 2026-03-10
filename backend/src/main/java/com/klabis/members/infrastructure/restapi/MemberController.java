@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -124,7 +125,14 @@ class MemberController {
         if (hasAuthority(authentication, Authority.MEMBERS_UPDATE)) {
             UserId currentUserId = extractUserId(authentication);
             var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request, currentUserId);
-            managementService.updateMember(memberId, adminCommand);
+            Member updatedMember = managementService.updateMember(memberId, adminCommand);
+
+            List<String> warnings = updatedMember.birthNumberConsistencyWarnings();
+            if (!warnings.isEmpty()) {
+                return ResponseEntity.noContent()
+                        .header("X-Warnings", warnings.toArray(String[]::new))
+                        .build();
+            }
         } else {
             UserId currentUserId = extractUserId(authentication);
             if (!currentUserId.uuid().equals(id)) {

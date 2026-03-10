@@ -17,6 +17,9 @@ import org.springframework.util.Assert;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -672,6 +675,40 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.suspendedBy = null;
 
         registerEvent(MemberResumedEvent.fromAggregate(this, command));
+    }
+
+    /**
+     * Checks for inconsistencies between the stored birth number and the member's date of birth and gender.
+     * Returns warnings (not errors) — the data is already persisted; these are advisory notices.
+     *
+     * @return list of warning messages, empty when birth number is absent or fully consistent
+     */
+    public List<String> birthNumberConsistencyWarnings() {
+        if (birthNumber == null) {
+            return Collections.emptyList();
+        }
+
+        LocalDate dateOfBirth = getDateOfBirth();
+        Gender gender = getGender();
+
+        if (dateOfBirth == null || gender == null) {
+            return Collections.emptyList();
+        }
+
+        List<String> warnings = new ArrayList<>();
+
+        LocalDate encodedDate = birthNumber.extractDate(dateOfBirth.getYear());
+        if (!encodedDate.equals(dateOfBirth)) {
+            warnings.add("Birth number date (%02d.%02d.%d) does not match member's date of birth".formatted(
+                    encodedDate.getDayOfMonth(), encodedDate.getMonthValue(), encodedDate.getYear()));
+        }
+
+        Gender indicatedGender = birthNumber.indicatesGender();
+        if (indicatedGender != gender) {
+            warnings.add("Birth number indicates different gender than selected");
+        }
+
+        return Collections.unmodifiableList(warnings);
     }
 
     @Override
