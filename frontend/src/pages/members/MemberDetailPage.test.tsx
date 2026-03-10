@@ -22,6 +22,11 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
         isPending: false,
         error: null,
     })),
+    useAuthorizedQuery: vi.fn(() => ({
+        data: undefined,
+        isLoading: false,
+        error: null,
+    })),
 }));
 
 vi.mock('../../hooks/useFormCacheInvalidation', () => ({

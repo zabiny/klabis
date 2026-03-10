@@ -1,4 +1,5 @@
 import {type ReactElement, type ReactNode, useState} from "react";
+import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {Link} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {DetailRow, Skeleton} from "../../components/UI";
@@ -106,6 +107,7 @@ interface MemberDetailContentProps {
 const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContentProps) => {
     const editForm = useMemberEditForm(resourceData);
     const {isEditing, startEditing, cancelEditing, handleSubmit, template} = editForm;
+    const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
 
     const member = resourceData;
     const address = member.address;
@@ -176,12 +178,13 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                             <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
                             <HalFormButton name="reactivate" modal={true} label="Reaktivovat"/>
                             {hasLink('permissions') && (
-                                <Link
-                                    to={route.getResourceLink('permissions')?.href ?? '#'}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPermissionsDialogOpen(true)}
                                     className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
                                 >
                                     Správa oprávnění
-                                </Link>
+                                </button>
                             )}
                         </>
                     )}
@@ -293,19 +296,27 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
         );
     };
 
-    if (isEditing && enrichedTemplate) {
-        return (
-            <HalFormsForm
-                data={resourceData as Record<string, unknown>}
-                template={enrichedTemplate}
-                onSubmit={handleSubmit}
-                fieldsFactory={klabisFieldsFactory}
-                submitButtonLabel="Uložit"
-                isSubmitting={editForm.isSubmitting}
-                renderForm={(helpers) => renderContent(helpers) as ReactElement}
-            />
-        );
-    }
+    const permissionsUrl = route.getResourceLink('permissions')?.href ?? '';
 
-    return renderContent() as ReactElement;
+    return (
+        <>
+            <PermissionsDialog
+                isOpen={isPermissionsDialogOpen}
+                onClose={() => setIsPermissionsDialogOpen(false)}
+                permissionsUrl={permissionsUrl}
+                memberName={`${member.firstName} ${member.lastName}`}
+            />
+            {isEditing && enrichedTemplate ? (
+                <HalFormsForm
+                    data={resourceData as Record<string, unknown>}
+                    template={enrichedTemplate}
+                    onSubmit={handleSubmit}
+                    fieldsFactory={klabisFieldsFactory}
+                    submitButtonLabel="Uložit"
+                    isSubmitting={editForm.isSubmitting}
+                    renderForm={(helpers) => renderContent(helpers) as ReactElement}
+                />
+            ) : renderContent() as ReactElement}
+        </>
+    );
 };
