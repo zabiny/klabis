@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -193,11 +194,22 @@ public class AuthorizationServerConfiguration {
         return http.build();
     }
 
+    /**
+     * Security filter chain for the login page.
+     * <p>
+     * Redirects unauthenticated users to the React SPA /login route.
+     * Processes POST /login form submissions from the SPA.
+     * Session is required so Spring Security can save and restore the OAuth2 authorization request.
+     * CSRF is disabled for /login to allow the React SPA to submit credentials without a CSRF token.
+     */
     @Bean
     @Order(2)
     public SecurityFilterChain authorizationServerLoginSecurityFilterChain(HttpSecurity http) throws Exception {
         http.securityMatcher("/login")
-                .formLogin(Customizer.withDefaults());
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+                .formLogin(form -> form.loginPage("/login").permitAll())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/login"));
 
         return http.build();
     }

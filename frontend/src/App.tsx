@@ -1,4 +1,5 @@
-import {Navigate, Outlet, Route, Routes} from 'react-router-dom';
+import {useEffect} from 'react';
+import {Outlet, Route, Routes} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
 import {AuthProvider, useAuth} from './contexts/AuthContext2';
 import Layout from './pages/Layout';
@@ -21,14 +22,18 @@ import PasswordExpiredPage from "./pages/PasswordExpiredPage";
 
 // Protected route component
 const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
-    const {isAuthenticated, isLoading} = useAuth();
+    const {isAuthenticated, isLoading, login} = useAuth();
 
-    if (isLoading) {
-        return <div>Loading...</div>;
-    }
+    useEffect(() => {
+        if (!isAuthenticated && !isLoading) {
+            // Trigger OIDC authorization code flow — Spring will redirect to /login (React SPA)
+            // after storing the OAuth2 authorization request state in session
+            login();
+        }
+    }, [isAuthenticated, isLoading, login]);
 
-    if (!isAuthenticated) {
-        return <Navigate to="/login"/>;
+    if (isLoading || !isAuthenticated) {
+        return null;
     }
 
     return <>{children}</>;

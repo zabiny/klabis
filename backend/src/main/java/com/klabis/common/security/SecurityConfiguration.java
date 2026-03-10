@@ -180,7 +180,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    @Order(3)
+    @Order(4)
     @ConditionalOnProperty(value = "spring.h2.console.enabled", havingValue = "true")
     public SecurityFilterChain h2FilterChain(HttpSecurity http) throws Exception {
         http
@@ -203,7 +203,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain spaFilterChain(HttpSecurity http) throws Exception {
         // Custom matcher that only applies to HTML requests (text/html Accept header)
         // This prevents conflicts with API endpoints that might match the same path patterns
@@ -258,7 +258,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     }
 
     @Bean
-    @Order(4)
+    @Order(5)
     public SecurityFilterChain defaultSecurityFilterChain(
             HttpSecurity http,
             AuthenticationEntryPoint authenticationEntryPoint,
