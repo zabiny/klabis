@@ -24,3 +24,5 @@ backend/local.env
 /ukolovnik.md
 /TODOS.md
 /tasks/**
+/.playwright-mcp/*
+/node_modules/*
