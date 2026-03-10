@@ -113,8 +113,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
     const logout = async () => {
         if (!userManager) return;
         try {
+            sessionStorage.setItem('just_logged_out', 'true');
             await userManager.signoutRedirect();
         } catch (err) {
+            sessionStorage.removeItem('just_logged_out');
             console.error('Logout error:', err);
         }
     };

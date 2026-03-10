@@ -7,6 +7,9 @@ const LoginPage = () => {
     const {login, isAuthenticated, isLoading} = useAuth();
     const navigate = useNavigate();
 
+    const justLoggedOut = sessionStorage.getItem('just_logged_out') === 'true';
+    sessionStorage.removeItem('just_logged_out');
+
     // Redirect to home if already authenticated
     useEffect(() => {
         if (isAuthenticated) {
@@ -14,12 +17,11 @@ const LoginPage = () => {
         }
     }, [isAuthenticated, navigate]);
 
-    // // Automaticky zahájí login, pokud není autentizováno a není načítání
     useEffect(() => {
-        if (!isAuthenticated && !isLoading) {
+        if (!isAuthenticated && !isLoading && !justLoggedOut) {
             login();
         }
-    }, [isAuthenticated, isLoading, login]);
+    }, [isAuthenticated, isLoading, login, justLoggedOut]);
 
     if (!isAuthenticated && !isLoading) {
         return (
