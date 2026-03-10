@@ -5,7 +5,7 @@ import com.klabis.common.users.domain.AccountStatus;
 import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenHash;
 import com.klabis.common.users.domain.UserCreatedEvent;
-import com.klabis.common.users.infrastructure.PasswordSetupTokenRepository;
+import com.klabis.common.users.domain.PasswordSetupTokenRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

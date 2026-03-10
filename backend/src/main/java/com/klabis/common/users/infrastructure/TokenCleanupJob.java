@@ -1,5 +1,6 @@
 package com.klabis.common.users.infrastructure;
 
+import com.klabis.common.users.domain.PasswordSetupTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;

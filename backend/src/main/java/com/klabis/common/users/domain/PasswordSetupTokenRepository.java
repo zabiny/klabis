@@ -1,9 +1,7 @@
-package com.klabis.common.users.infrastructure;
+package com.klabis.common.users.domain;
 
 import com.klabis.common.users.PasswordSetupTokenId;
 import com.klabis.common.users.UserId;
-import com.klabis.common.users.domain.PasswordSetupToken;
-import com.klabis.common.users.domain.TokenHash;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.util.List;

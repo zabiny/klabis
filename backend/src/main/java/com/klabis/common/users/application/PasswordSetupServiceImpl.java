@@ -8,7 +8,7 @@ import com.klabis.common.email.EmailTemplate;
 import com.klabis.common.ratelimit.PerKeyRateLimiter;
 import com.klabis.common.templating.ThymeleafTemplateRenderer;
 import com.klabis.common.users.domain.*;
-import com.klabis.common.users.infrastructure.PasswordSetupTokenRepository;
+import com.klabis.common.users.domain.PasswordSetupTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;

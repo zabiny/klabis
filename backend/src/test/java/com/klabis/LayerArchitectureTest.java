@@ -60,6 +60,29 @@ class LayerArchitectureTest {
                 .that().resideInAPackage("..application..")
                 .should().dependOnClassesThat()
                 .resideInAPackage("..infrastructure..")
-                .because("Application layer must not depend on infrastructure layer — dependency direction is infrastructure → application");
+                .because("Application layer must not depend on infrastructure layer — dependency direction is infrastructure → application")
+                .check(classes);
+    }
+
+    @Test
+    @DisplayName("Domain layer should not depend on Jackson/JSON classes")
+    void domainLayerShouldNotDependOnJackson() {
+        noClasses()
+                .that().resideInAPackage("..domain..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage("com.fasterxml.jackson..", "org.json..", "jakarta.json..")
+                .because("Domain layer must not depend on serialization frameworks — domain objects are pure business logic")
+                .check(classes);
+    }
+
+    @Test
+    @DisplayName("Application layer should not depend on Jackson/JSON classes")
+    void applicationLayerShouldNotDependOnJackson() {
+        noClasses()
+                .that().resideInAPackage("..application..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage("com.fasterxml.jackson..", "org.json..", "jakarta.json..")
+                .because("Application layer must not depend on serialization frameworks — serialization belongs to infrastructure layer")
+                .check(classes);
     }
 }

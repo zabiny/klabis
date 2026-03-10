@@ -4,7 +4,7 @@ import com.klabis.common.users.PasswordSetupTokenId;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenHash;
-import com.klabis.common.users.infrastructure.PasswordSetupTokenRepository;
+import com.klabis.common.users.domain.PasswordSetupTokenRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 

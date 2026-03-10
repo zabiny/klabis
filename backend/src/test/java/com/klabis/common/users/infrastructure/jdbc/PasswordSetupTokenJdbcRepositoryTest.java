@@ -7,7 +7,7 @@ import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenHash;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserRepository;
-import com.klabis.common.users.infrastructure.PasswordSetupTokenRepository;
+import com.klabis.common.users.domain.PasswordSetupTokenRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

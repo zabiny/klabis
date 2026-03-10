@@ -4,7 +4,7 @@ import com.klabis.common.email.EmailService;
 import com.klabis.common.ratelimit.PerKeyRateLimiter;
 import com.klabis.common.templating.ThymeleafTemplateRenderer;
 import com.klabis.common.users.domain.UserRepository;
-import com.klabis.common.users.infrastructure.PasswordSetupTokenRepository;
+import com.klabis.common.users.domain.PasswordSetupTokenRepository;
 import com.klabis.common.users.passwordsetup.TestConfigurationHelper;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
