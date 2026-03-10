@@ -4,15 +4,12 @@ import type {EntityModel} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {Badge} from "../../components/UI/Badge";
 
 interface MemberSummaryData extends EntityModel<{
     id: string,
     registrationNumber: string,
     lastName: string,
     firstName: string,
-    email: string,
-    active: boolean,
 }> {
 }
 
@@ -40,16 +37,6 @@ export const MembersPage = (): ReactElement => {
                 <TableCell sortable column={"registrationNumber"}>Reg. číslo</TableCell>
                 <TableCell sortable column={"lastName"}>Příjmení</TableCell>
                 <TableCell sortable column={"firstName"}>Jméno</TableCell>
-                <TableCell column={"email"} dataRender={({value}) => (
-                    <span className="truncate max-w-[200px] block" title={String(value ?? '')}>
-                        {String(value ?? '')}
-                    </span>
-                )}>E-mail</TableCell>
-                <TableCell column={"active"} dataRender={({value}) => (
-                    <Badge variant={value ? 'success' : 'default'} size="sm">
-                        {value ? 'Aktivní' : 'Neaktivní'}
-                    </Badge>
-                )}>Stav</TableCell>
             </HalEmbeddedTable>
         </div>
     </div>;

@@ -88,8 +88,8 @@ describe('MembersPage', () => {
         expect(screen.getByText('Reg. číslo')).toBeInTheDocument();
         expect(screen.getByText('Příjmení')).toBeInTheDocument();
         expect(screen.getByText('Jméno')).toBeInTheDocument();
-        expect(screen.getByText('E-mail')).toBeInTheDocument();
-        expect(screen.getByText('Stav')).toBeInTheDocument();
+        expect(screen.queryByText('E-mail')).not.toBeInTheDocument();
+        expect(screen.queryByText('Stav')).not.toBeInTheDocument();
     });
 
     it('shows loading state when data is loading', () => {
