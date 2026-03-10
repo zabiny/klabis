@@ -86,15 +86,19 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
         Set<String> redirectUris = Arrays.stream(clientProperties.getRedirectUris().split(","))
                 .map(String::trim)
                 .collect(Collectors.toSet());
+        Set<String> postLogoutRedirectUris = Arrays.stream(clientProperties.getPostLogoutRedirectUris().split(","))
+                .map(String::trim)
+                .collect(Collectors.toSet());
 
-        createOAuth2Client(clientUuid, clientId, clientSecret, redirectUris);
+        createOAuth2Client(clientUuid, clientId, clientSecret, redirectUris, postLogoutRedirectUris);
         createOAuth2Client("apispec",
                 "apispec",
                 "apispec",
-                Set.of("https://localhost:8443/swagger-ui/oauth2-redirect.html"));
+                Set.of("https://localhost:8443/swagger-ui/oauth2-redirect.html"),
+                Set.of());
     }
 
-    private void createOAuth2Client(String clientUuid, String clientId, String clientSecret, Set<String> redirectUris) {
+    private void createOAuth2Client(String clientUuid, String clientId, String clientSecret, Set<String> redirectUris, Set<String> postLogoutRedirectUris) {
 
         if (StringUtils.isBlank(clientSecret)) {
             LOG.warn("KLABIS_OAUTH2_CLIENT_SECRET not set, generating random secret.");
@@ -130,7 +134,9 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 .redirectUris(items -> {
                     items.addAll(redirectUris);
                 })
-                .postLogoutRedirectUri(clientProperties.getPostLogoutRedirectUri())
+                .postLogoutRedirectUris(items -> {
+                    items.addAll(postLogoutRedirectUris);
+                })
                 .scopes(items -> items.addAll(Arrays.stream(scopes.split(","))
                         .map(String::trim)
                         .collect(Collectors.toList())))

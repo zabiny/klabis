@@ -110,8 +110,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         userManager?.signinRedirect();
     };
 
-    const logout = () => {
-        userManager?.signoutRedirect();
+    const logout = async () => {
+        if (!userManager) return;
+        try {
+            await userManager.signoutRedirect();
+        } catch (err) {
+            console.error('Logout error:', err);
+        }
     };
 
     const getUser = async (): Promise<AuthUserDetails | null> => {

@@ -9,7 +9,7 @@ public class OAuth2ClientProperties {
     private String secret;
     private String uuid;
     private String redirectUris = "http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback";
-    private String postLogoutRedirectUri = "https://localhost:8443";
+    private String postLogoutRedirectUris = "http://localhost:3000,https://localhost:8443";
     private String scopes;
 
     public String getId() {
@@ -44,12 +44,12 @@ public class OAuth2ClientProperties {
         this.redirectUris = redirectUris;
     }
 
-    public String getPostLogoutRedirectUri() {
-        return postLogoutRedirectUri;
+    public String getPostLogoutRedirectUris() {
+        return postLogoutRedirectUris;
     }
 
-    public void setPostLogoutRedirectUri(String postLogoutRedirectUri) {
-        this.postLogoutRedirectUri = postLogoutRedirectUri;
+    public void setPostLogoutRedirectUris(String postLogoutRedirectUris) {
+        this.postLogoutRedirectUris = postLogoutRedirectUris;
     }
 
     public String getScopes() {

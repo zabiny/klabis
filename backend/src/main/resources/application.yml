@@ -139,7 +139,7 @@ klabis:
       secret: ${KLABIS_OAUTH2_CLIENT_SECRET:}
       uuid: ${KLABIS_OAUTH2_CLIENT_UUID:}
       redirect-uris: ${KLABIS_OAUTH2_CLIENT_REDIRECT_URIS:http://localhost:3000/auth/callback,https://localhost:8443/mock/auth/callback.html,https://localhost:8443/auth/callback}
-      post-logout-redirect-uri: ${KLABIS_OAUTH2_POST_LOGOUT_REDIRECT_URI:https://localhost:8443}
+      post-logout-redirect-uris: ${KLABIS_OAUTH2_POST_LOGOUT_REDIRECT_URIS:http://localhost:3000,https://localhost:8443}
       scopes: ${KLABIS_OAUTH2_CLIENT_SCOPES:}
 
   password-setup:

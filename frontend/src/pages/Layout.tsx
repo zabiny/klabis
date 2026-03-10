@@ -63,7 +63,6 @@ const Layout = () => {
 
     const handleLogout = () => {
         logout()
-        navigate('/login')
     }
 
     const handleUserNameClick = () => {

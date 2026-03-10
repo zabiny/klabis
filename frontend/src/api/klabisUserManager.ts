@@ -20,7 +20,7 @@ export const authConfig: AuthConfig = {
     client_id: 'klabis-web',
     client_secret: 'test-secret-123',
     redirect_uri: '/auth/callback', // must match OIDC config
-    post_logout_redirect_uri: 'http://localhost:3000',
+    post_logout_redirect_uri: window.location.origin,
     response_type: 'code',
     scope: 'openid profile MEMBERS EVENTS'
 };
@@ -41,6 +41,7 @@ export const createUserManager = ({
         userStore: new WebStorageStateStore({store: window.sessionStorage}),
         automaticSilentRenew: true,
         redirect_uri: normalizeUrl(config.redirect_uri),
+        post_logout_redirect_uri: normalizeUrl(config.post_logout_redirect_uri),
         silent_redirect_uri: normalizeUrl(config.redirect_uri), // Required for silent renew
     };
 
