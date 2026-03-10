@@ -225,7 +225,12 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
 
                 <Section title="DOPLŇKOVÉ INFORMACE">
                     <DetailRow label="Číslo čipu">{ri('chipNumber') ?? val(member.chipNumber)}</DetailRow>
-                    <DetailRow label="Číslo bankovního účtu">{ri('bankAccountNumber') ?? val(member.bankAccountNumber)}</DetailRow>
+                    <DetailRow label={isEditing ? "Číslo bankovního účtu (nepovinné)" : "Číslo bankovního účtu"}>
+                        {ri('bankAccountNumber') ?? val(member.bankAccountNumber)}
+                        {isEditing && (
+                            <p className="mt-1 text-sm text-text-tertiary">Pro proplácení cestovních nákladů a dalších výdajů spojených s klubem</p>
+                        )}
+                    </DetailRow>
                     <DetailRow label="Stravovací omezení">{ri('dietaryRestrictions') ?? val(member.dietaryRestrictions)}</DetailRow>
                 </Section>
 

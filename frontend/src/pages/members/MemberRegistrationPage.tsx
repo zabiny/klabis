@@ -130,7 +130,12 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                     {hasFields(SUPPLEMENTARY_FIELDS) && (
                         <Section title="DOPLŇKOVÉ INFORMACE">
                             {hasField('chipNumber') && <DetailRow label="Číslo čipu">{renderInput('chipNumber')}</DetailRow>}
-                            {hasField('bankAccountNumber') && <DetailRow label="Číslo bankovního účtu">{renderInput('bankAccountNumber')}</DetailRow>}
+                            {hasField('bankAccountNumber') && (
+                                <DetailRow label="Číslo bankovního účtu (nepovinné)">
+                                    {renderInput('bankAccountNumber')}
+                                    <p className="mt-1 text-sm text-text-tertiary">Pro proplácení cestovních nákladů a dalších výdajů spojených s klubem</p>
+                                </DetailRow>
+                            )}
                             {hasField('dietaryRestrictions') && <DetailRow label="Stravovací omezení">{renderInput('dietaryRestrictions')}</DetailRow>}
                         </Section>
                     )}
