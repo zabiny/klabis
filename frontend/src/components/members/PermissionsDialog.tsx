@@ -58,13 +58,20 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName}:
     const {addToast} = useToast();
     const [selectedAuthorities, setSelectedAuthorities] = useState<Set<string>>(new Set());
 
-    const {data, isLoading} = useAuthorizedQuery<PermissionsResponse>(permissionsUrl, {enabled: isOpen && !!permissionsUrl});
+    const {data, isLoading} = useAuthorizedQuery<PermissionsResponse>(permissionsUrl, {
+        enabled: isOpen && !!permissionsUrl,
+        staleTime: 60_000,
+    });
 
     useEffect(() => {
+        if (!isOpen) {
+            setSelectedAuthorities(new Set());
+            return;
+        }
         if (data?.authorities) {
             setSelectedAuthorities(new Set(data.authorities));
         }
-    }, [data]);
+    }, [data, isOpen]);
 
     const putUrl = data?._links?.self?.href ?? permissionsUrl;
 
@@ -92,33 +99,31 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName}:
         mutate({url: putUrl, data: {authorities: Array.from(selectedAuthorities)}});
     };
 
-    const footer = (
-        <>
-            <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-            >
-                Zrušit
-            </button>
-            <button
-                type="button"
-                onClick={handleSave}
-                disabled={isLoading || isPending}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {isPending ? <Spinner/> : 'Uložit oprávnění'}
-            </button>
-        </>
-    );
-
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
             title="Oprávnění uživatele"
             size="lg"
-            footer={footer}
+            footer={
+                <>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                    >
+                        Zrušit
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={isLoading || isPending}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isPending ? <Spinner/> : 'Uložit oprávnění'}
+                    </button>
+                </>
+            }
         >
             <p className="text-xs text-text-secondary mb-1 -mt-1">{memberName}</p>
             <p className="text-sm text-text-secondary mb-4">
