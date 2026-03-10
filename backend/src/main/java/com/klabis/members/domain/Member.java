@@ -545,6 +545,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 this.personalInformation.getGender()
         );
 
+        validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
+
         this.email = newEmail;
         this.phone = newPhone;
         this.address = newAddress;
@@ -559,7 +561,9 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
 
-        if ("CZ".equals(oldNationality) && !newNationality.equals(oldNationality) && this.birthNumber != null) {
+        boolean wasCzech = "CZ".equals(oldNationality) || "CZE".equals(oldNationality);
+        boolean isNowCzech = "CZ".equals(newNationality) || "CZE".equals(newNationality);
+        if (wasCzech && !isNowCzech && this.birthNumber != null) {
             this.birthNumber = null;
         }
     }
@@ -595,9 +599,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         BirthNumber newBirthNumber = command.birthNumber() != null ? command.birthNumber() : this.birthNumber;
         validateBirthNumberNationality(newNationality, newBirthNumber);
 
-        if (command.guardian() != null || !newPersonalInfo.getDateOfBirth().equals(this.personalInformation.getDateOfBirth())) {
-            validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
-        }
+        validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
 
         this.email = newEmail;
         this.phone = newPhone;

@@ -914,6 +914,80 @@ class MemberTest {
         }
 
         @Test
+        @DisplayName("should reject self-update on minor without guardian")
+        void shouldRejectSelfUpdateOnMinorWithoutGuardian() {
+            Member minorWithoutGuardian = aMember()
+                    .withRegistrationNumber("ZBM1002")
+                    .withName("Anna", "Malá")
+                    .withDateOfBirth(LocalDate.now().minusYears(12))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(Address.of("Dětská 2", "Praha", "11000", "CZ"))
+                    .withEmail("guardian@example.com")
+                    .withPhone("+420222000222")
+                    .withNoGuardian()
+                    .build();
+
+            assertThatThrownBy(() -> minorWithoutGuardian.handle(new Member.SelfUpdate(
+                    null, null, Address.of("Nová 5", "Brno", "60200", "CZ"), null, null, null,
+                    null, null, null, null, null, null
+            ))).isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Guardian is required for minors");
+        }
+
+        @Test
+        @DisplayName("should clear birth number when nationality changes from CZE to non-Czech")
+        void shouldClearBirthNumberWhenNationalityChangesFromCZEToNonCzech() {
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM9002")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("CZE")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withBirthNumber("9005151234")
+                    .withNoGuardian()
+                    .build();
+
+            assertThat(member.getBirthNumber()).isNotNull();
+
+            member.handle(new Member.SelfUpdate(
+                    null, null, null, null, "SK", null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(member.getNationality()).isEqualTo("SK");
+            assertThat(member.getBirthNumber()).isNull();
+        }
+
+        @Test
+        @DisplayName("should preserve birth number when nationality changes between CZ and CZE")
+        void shouldPreserveBirthNumberWhenNationalityChangesBetweenCZAndCZE() {
+            Member memberWithCZ = aMember()
+                    .withRegistrationNumber("ZBM9003")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withBirthNumber("9005151234")
+                    .withNoGuardian()
+                    .build();
+
+            memberWithCZ.handle(new Member.SelfUpdate(
+                    null, null, null, null, "CZE", null,
+                    null, null, null, null, null, null
+            ));
+
+            assertThat(memberWithCZ.getNationality()).isEqualTo("CZE");
+            assertThat(memberWithCZ.getBirthNumber()).isNotNull();
+        }
+
+        @Test
         @DisplayName("should clear birth number when nationality changes from CZ to non-CZ")
         void shouldClearBirthNumberWhenNationalityChangesFromCZToNonCZ() {
             Member member = aMember()
@@ -1117,6 +1191,30 @@ class MemberTest {
             ));
 
             assertThat(member.getEmail()).isEqualTo(EmailAddress.of("temp@example.com"));
+        }
+
+        @Test
+        @DisplayName("should reject unrelated admin update on existing minor without guardian")
+        void shouldRejectUnrelatedAdminUpdateOnExistingMinorWithoutGuardian() {
+            // Minor reconstructed without guardian (data integrity gap from legacy import)
+            Member minorWithoutGuardian = aMember()
+                    .withRegistrationNumber("ZBM1001")
+                    .withName("Jana", "Malá")
+                    .withDateOfBirth(LocalDate.now().minusYears(10))
+                    .withNationality("CZ")
+                    .withGender(Gender.FEMALE)
+                    .withAddress(Address.of("Dětská 1", "Praha", "11000", "CZ"))
+                    .withEmail("guardian@example.com")
+                    .withPhone("+420111000111")
+                    .withNoGuardian()
+                    .build();
+
+            assertThatThrownBy(() -> minorWithoutGuardian.handle(new Member.UpdateMemberByAdmin(
+                    null, null, null, "NEW_CHIP", null, null,
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null
+            ))).isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Guardian is required for minors");
         }
     }
 

@@ -56,6 +56,7 @@ class ManagementServiceTest {
                 .withFirstName("John")
                 .withLastName("Doe")
                 .withRegistrationNumber("ZBM1234")
+                .withDateOfBirth(java.time.LocalDate.of(1990, 5, 15))
                 .withEmail("john.doe@example.com")
                 .withPhone("+420123456789")
                 .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
