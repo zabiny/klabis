@@ -9,10 +9,10 @@ interface AlertProps {
 }
 
 const severityClasses = {
-    success: 'bg-alert-success border-l-4 border-l-feedback-success border-b border-r border-feedback-success text-alert-text-success',
-    error: 'bg-alert-error border-l-4 border-l-feedback-error border-b border-r border-feedback-error text-alert-text-error',
-    warning: 'bg-alert-warning border-l-4 border-l-feedback-warning border-b border-r border-feedback-warning text-alert-text-warning',
-    info: 'bg-alert-info border-l-4 border-l-feedback-info border-b border-r border-feedback-info text-alert-text-info',
+    success: 'bg-success-bg border-l-success border-success text-text-primary',
+    error: 'bg-error-bg border-l-error border-error text-text-primary',
+    warning: 'bg-warning-bg border-l-warning border-warning text-text-primary',
+    info: 'bg-info-bg border-l-info border-info text-text-primary',
 }
 
 /**

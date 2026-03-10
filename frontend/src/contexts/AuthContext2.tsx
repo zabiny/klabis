@@ -1,4 +1,4 @@
-import React, {createContext, type ReactNode, useContext, useEffect, useState,} from 'react';
+import React, {createContext, type ReactNode, useCallback, useContext, useEffect, useState,} from 'react';
 import {User, UserManager,} from 'oidc-client-ts';
 import {type AuthConfig, createUserManager} from '../api/klabisUserManager.ts';
 import {normalizeUrl} from "../api/hateoas.ts";
@@ -106,11 +106,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         }
     }, [userManager, config]);
 
-    const login = () => {
+    const login = useCallback(() => {
         userManager?.signinRedirect();
-    };
+    }, [userManager]);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         if (!userManager) return;
         try {
             sessionStorage.setItem('just_logged_out', 'true');
@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
             sessionStorage.removeItem('just_logged_out');
             console.error('Logout error:', err);
         }
-    };
+    }, [userManager]);
 
     const getUser = async (): Promise<AuthUserDetails | null> => {
         return authUserDetails;

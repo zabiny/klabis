@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
-import {Alert} from '../components/UI'
+import {Alert, Toast} from '../components/UI'
 import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
 import {AdminToggle} from '../components/AdminToggle/AdminToggle'
@@ -10,7 +10,6 @@ import {useRootNavigation} from '../hooks/useRootNavigation'
 import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx"
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider, useToast} from '../contexts/ToastContext.tsx'
-import {Toast} from '../components/UI'
 
 const LayoutToasts = () => {
     const {toasts, removeToast} = useToast();
@@ -72,12 +71,12 @@ const Layout = () => {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-bg-base">
+        <div className="flex flex-col min-h-screen bg-slate-100 dark:bg-zinc-950">
             {/* ==========================================
                 PREMIUM HEADER - ELEVATED, GLASS EFFECT
                 ========================================== */}
-            <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border-subtle">
-                <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-6">
                     {/* Left side: Logo + mobile menu toggle */}
                     <div className="flex items-center gap-3 sm:gap-4">
                         {/* Toggle button - hide on lg screens */}
@@ -96,14 +95,17 @@ const Layout = () => {
 
                         {/* Logo/Title */}
                         <NavLink to="/" className="flex items-center gap-3 group">
-                            {/* Logo icon */}
-                            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-base">
-                                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2L2 7l10 5 10 10l-10-5-5 10 5-5-5 10 10 5 5-5-5 5 10z"/>
+                            {/* Logo icon - solid blue square with compass */}
+                            <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                                     fill="none" stroke="currentColor" strokeWidth="2"
+                                     strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
                                 </svg>
                             </div>
 
-                            <h1 className="text-lg sm:text-xl font-display font-bold text-text-primary group-hover:text-primary transition-colors duration-fast">
+                            <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
                                 Klabis
                             </h1>
                         </NavLink>
@@ -117,27 +119,27 @@ const Layout = () => {
                                 userDetails.isMember ? (
                                     <button
                                         onClick={handleUserNameClick}
-                                        className="hidden sm:flex px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-subtle rounded-lg transition-all duration-fast"
+                                        className="hidden sm:flex px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-all duration-fast"
                                         title="Zobrazit detail člena"
                                     >
-                                        <span className="text-text-primary font-semibold">{userDetails.firstName} {userDetails.lastName}</span>
-                                        <span className="text-text-tertiary ml-2">[{userDetails.userName}]</span>
+                                        <span className="font-medium">{userDetails.firstName} {userDetails.lastName}</span>
+                                        <span className="ml-2">[{userDetails.userName}]</span>
                                     </button>
                                 ) : (
-                                    <div className="hidden sm:flex px-3 py-2 text-sm text-text-secondary">
-                                        <span className="font-medium text-text-primary">{userDetails.firstName} {userDetails.lastName}</span>
-                                        <span className="text-text-tertiary ml-2">[{userDetails.userName}]</span>
+                                    <div className="hidden sm:flex px-3 py-2 text-sm text-zinc-500">
+                                        <span className="font-medium">{userDetails.firstName} {userDetails.lastName}</span>
+                                        <span className="ml-2">[{userDetails.userName}]</span>
                                     </div>
                                 )
                             ) : (
-                                <span className="hidden sm:inline-flex px-3 py-2 text-sm text-text-secondary">
+                                <span className="hidden sm:inline-flex px-3 py-2 text-sm text-zinc-500">
                                     [{userDetails.userName}]
                                 </span>
                             )
                         )}
 
                         {/* Theme toggle */}
-                        <ThemeToggle className="hidden sm:block" />
+                        <ThemeToggle className="hidden sm:block border border-zinc-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800" />
 
                         {/* Admin mode toggle */}
                         <AdminToggle />
@@ -145,11 +147,11 @@ const Layout = () => {
                         {/* Logout button */}
                         <button
                             onClick={handleLogout}
-                            className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-subtle rounded-lg transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-error focus:ring-offset-2"
+                            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-950 rounded-lg transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
                             title="Odhlásit"
                             type="button"
                         >
-                            <LogoutIcon size={18} className="mr-2"/>
+                            <LogoutIcon size={16} className="text-red-600"/>
                             <span className="hidden lg:inline">Odhlásit</span>
                         </button>
 
@@ -157,7 +159,7 @@ const Layout = () => {
                         <div className="sm:hidden flex items-center gap-2">
                             <button
                                 onClick={handleLogout}
-                                className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-subtle transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
                                 aria-label="Odhlásit"
                                 type="button"
                             >
@@ -183,11 +185,12 @@ const Layout = () => {
                 SIDEBAR - NAVIGAČNÍ MENU
                 ========================================== */}
             <aside
-                className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-72 bg-bg-elevated border-r border-border-subtle shadow-lg transform transition-all duration-300 ease-in-out z-30 ${
+                className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-60 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 shadow-sm transform transition-all duration-300 ease-in-out z-30 flex flex-col ${
                     isLargeScreen ? 'translate-x-0' : (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
                 }`}
             >
-                <nav className="flex flex-col p-3 gap-1 overflow-y-auto">
+                <nav className="flex flex-col px-3 py-4 gap-1 overflow-y-auto flex-1">
+                    <p className="px-2 pb-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">Navigace</p>
                     {menuLoading ? (
                         <div className="flex items-center gap-3 px-4 py-3 text-text-tertiary text-sm">
                             <div className="w-5 h-5 rounded border-2 border-border-current border-t-transparent animate-spin" />
@@ -209,25 +212,13 @@ const Layout = () => {
                                     }
                                 }}
                                 className={({isActive}: {isActive: boolean}) => {
-                                    const base = "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-fast"
-                                    const active = "bg-primary-subtle text-primary border-l-2 border-primary"
-                                    const inactive = "text-text-secondary hover:text-text-primary hover:bg-bg-subtle border-l-2 border-transparent"
+                                    const base = "flex items-center gap-3 px-3 rounded-lg text-sm transition-all duration-fast h-10"
+                                    const active = "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-semibold"
+                                    const inactive = "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium"
                                     return `${base} ${isActive ? active : inactive}`
                                 }}
-                                children={({isActive}: {isActive: boolean}) => (
-                                    <>
-                                        {/* Active indicator dot */}
-                                        {isActive && (
-                                            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-sm shadow-primary/50" />
-                                        )}
-
-                                        <span className="flex-1">{item.label}</span>
-
-                                        {/* Arrow icon on hover/active */}
-                                        <svg className="w-4 h-4 transition-transform duration-fast opacity-0 -translate-x-0.5 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </>
+                                children={() => (
+                                    <span className="flex-1">{item.label}</span>
                                 )}
                             />
                         ))
@@ -239,10 +230,10 @@ const Layout = () => {
                 </nav>
 
                 {/* Sidebar footer - app info */}
-                <div className="mt-auto p-4 border-t border-border-subtle">
-                    <div className="text-xs text-text-tertiary">
-                        <div className="font-medium text-text-secondary mb-1">Klabis Club Manager</div>
-                        <div>Versi 1.0.0</div>
+                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
+                    <div className="text-xs">
+                        <div className="font-semibold text-zinc-500 dark:text-zinc-400 mb-0.5">Klabis Club Manager</div>
+                        <div className="text-zinc-400 dark:text-zinc-500">Verze 1.0.0</div>
                     </div>
                 </div>
             </aside>
@@ -252,7 +243,7 @@ const Layout = () => {
                 ========================================== */}
             <ToastProvider>
                 <LayoutToasts />
-                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 py-6 lg:pl-80 overflow-auto">
+                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 py-6 lg:pl-60 overflow-auto bg-slate-100 dark:bg-zinc-950 min-h-screen">
                     <HalFormProvider>
                         <HalFormsPageLayout>
                             <Outlet />

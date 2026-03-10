@@ -34,45 +34,45 @@
            Warm cream base, sage accents, premium elegant feel
            ============================================ */
 
-        /* Background system - warm cream palette */
-        --color-bg-base: #FAF8F5;              /* Cream white - warm premium base */
-        --color-bg-elevated: #FFFFFF;            /* Pure white - cards/raised surfaces */
-        --color-bg-subtle: #F5F3F0;           /* Subtle cream - nested sections */
+        /* Background system - matches design (#F1F5F9 base, white cards) */
+        --color-bg-base: #F1F5F9;              /* slate-100 - page background */
+        --color-bg-elevated: #FFFFFF;            /* white - cards/raised surfaces */
+        --color-bg-subtle: #F8FAFC;           /* slate-50 - nested sections */
 
-        /* Text system - warm grays */
-        --color-text-primary: #1A1915;         /* Near black - primary text */
-        --color-text-secondary: #5C5A57;       /* Warm gray - secondary text */
-        --color-text-tertiary: #8A8983;        /* Muted gray - subtle text */
+        /* Text system */
+        --color-text-primary: #18181B;         /* zinc-900 */
+        --color-text-secondary: #71717A;       /* zinc-500 */
+        --color-text-tertiary: #A1A1AA;        /* zinc-400 */
 
-        /* Border system - subtle elegance */
-        --color-border-subtle: #E8E5E0;        /* Very subtle border */
-        --color-border-default: #D4CFC6;        /* Default border */
-        --color-border-strong: #B8B2A8;         /* Strong borders/dividers */
+        /* Border system */
+        --color-border-subtle: #E4E4E7;        /* zinc-200 */
+        --color-border-default: #D4D4D8;        /* zinc-300 */
+        --color-border-strong: #A1A1AA;         /* zinc-400 */
 
-        /* Primary action - refined sage green */
-        --color-primary: #2D6A4F;                /* Sage green - sophisticated primary */
-        --color-primary-hover: #3A7F63;          /* Lighter sage */
-        --color-primary-active: #245A3D;          /* Darker sage */
-        --color-primary-subtle: rgba(45, 106, 79, 0.12); /* Sage tint */
+        /* Primary action - blue (matches design) */
+        --color-primary: #2563EB;                /* Blue - primary */
+        --color-primary-hover: #1D4ED8;          /* Darker blue */
+        --color-primary-active: #1E40AF;          /* Even darker blue */
+        --color-primary-subtle: rgba(37, 99, 235, 0.10); /* Blue tint */
 
-        /* Secondary action - warm amber */
-        --color-secondary: #D4915C;              /* Warm amber - complementary */
-        --color-secondary-hover: #E07D3D;         /* Lighter amber */
-        --color-secondary-active: #B8763A;        /* Darker amber */
-        --color-secondary-subtle: rgba(212, 145, 92, 0.15);
+        /* Secondary action */
+        --color-secondary: #6B7280;              /* Gray */
+        --color-secondary-hover: #4B5563;         /* Darker gray */
+        --color-secondary-active: #374151;        /* Even darker gray */
+        --color-secondary-subtle: rgba(107, 114, 128, 0.15);
 
-        /* Accent - terracotta warmth */
-        --color-accent: #C96A4E;                 /* Terracotta - warmth accent */
-        --color-accent-hover: #D87A5F;           /* Lighter terracotta */
-        --color-accent-subtle: rgba(201, 106, 78, 0.12);
+        /* Accent */
+        --color-accent: #2563EB;                 /* blue - accent */
+        --color-accent-hover: #1D4ED8;           /* Darker blue */
+        --color-accent-subtle: rgba(37, 99, 235, 0.10);
 
         /* Semantic colors - refined palette */
         --color-success: #2D7A4F;               /* Green - success */
         --color-success-bg: #E8F5EB;             /* Success background */
         --color-warning: #C4912D;               /* Warm orange - warning */
         --color-warning-bg: #FDF3E8;             /* Warning background */
-        --color-error: #D44A4F;                 /* Soft red - error */
-        --color-error-bg: #FAEBE8;               /* Error background */
+        --color-error: #DC2626;                 /* red-600 - error */
+        --color-error-bg: #FEF2F2;               /* red-50 - error background */
         --color-info: #3D7FA4;                  /* Teal - info */
         --color-info-bg: #EBF5F1;                /* Info background */
 
@@ -102,22 +102,22 @@
         --color-border-default: rgba(255, 255, 255, 0.10);
         --color-border-strong: rgba(255, 255, 255, 0.15);
 
-        /* Primary action - electric emerald gradient */
-        --color-primary: #10D89E;                 /* Electric emerald */
-        --color-primary-hover: #15E8A8;           /* Brighter emerald */
-        --color-primary-active: #0CB87D;           /* Deeper emerald */
-        --color-primary-subtle: rgba(16, 216, 158, 0.15);
+        /* Primary action - blue (matches design, visible on dark bg) */
+        --color-primary: #3B82F6;                 /* Blue-500 - visible on dark */
+        --color-primary-hover: #60A5FA;           /* Blue-400 - lighter on hover */
+        --color-primary-active: #2563EB;           /* Blue-600 */
+        --color-primary-subtle: rgba(59, 130, 246, 0.15);
 
-        /* Secondary action - lavender purple gradient */
-        --color-secondary: #A78BFA;               /* Lavender */
-        --color-secondary-hover: #B89DFF;          /* Lighter lavender */
-        --color-secondary-active: #8F6FDD;         /* Darker lavender */
-        --color-secondary-subtle: rgba(167, 139, 250, 0.15);
+        /* Secondary action */
+        --color-secondary: #9CA3AF;               /* Gray-400 */
+        --color-secondary-hover: #D1D5DB;          /* Gray-300 */
+        --color-secondary-active: #6B7280;         /* Gray-500 */
+        --color-secondary-subtle: rgba(156, 163, 175, 0.15);
 
-        /* Accent - coral warmth for dark mode */
-        --color-accent: #FF8A65;                 /* Coral accent */
-        --color-accent-hover: #FF9A7A;           /* Lighter coral */
-        --color-accent-subtle: rgba(255, 138, 101, 0.15);
+        /* Accent - blue for dark mode */
+        --color-accent: #3B82F6;                 /* blue-500 */
+        --color-accent-hover: #60A5FA;           /* blue-400 */
+        --color-accent-subtle: rgba(59, 130, 246, 0.20);
 
         /* Semantic colors - elevated */
         --color-success: #2DDF6F;               /* Bright green */

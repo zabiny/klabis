@@ -19,19 +19,19 @@ describe('Alert Component', () => {
         it('should render alert with error severity', () => {
             const {container} = render(<Alert severity="error">Error message</Alert>);
             const alertElement = container.querySelector('[role="alert"]');
-            expect(alertElement).toHaveClass('bg-alert-error');
+            expect(alertElement).toHaveClass('bg-error-bg');
         });
 
         it('should render alert with warning severity', () => {
             const {container} = render(<Alert severity="warning">Warning message</Alert>);
             const alertElement = container.querySelector('[role="alert"]');
-            expect(alertElement).toHaveClass('bg-alert-warning');
+            expect(alertElement).toHaveClass('bg-warning-bg');
         });
 
         it('should render alert with success severity', () => {
             const {container} = render(<Alert severity="success">Success message</Alert>);
             const alertElement = container.querySelector('[role="alert"]');
-            expect(alertElement).toHaveClass('bg-alert-success');
+            expect(alertElement).toHaveClass('bg-success-bg');
         });
 
         it('should render with custom className', () => {
