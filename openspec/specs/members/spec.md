@@ -5,7 +5,7 @@
 This specification defines requirements for the club member registration and management system. It encompasses the
 complete member lifecycle including registration with mandatory and conditional personal information, registration
 number generation (ZBM format), contact details management, and secure data handling for sensitive information like
-birth numbers and contact data. It also covers membership termination workflow with reason tracking and audit trail,
+birth numbers and contact data. It also covers membership suspension workflow with reason tracking and audit trail,
 birth number (rodné číslo) management with GDPR-compliant encryption, and bank account number storage for expense
 reimbursement.
 
@@ -393,7 +393,7 @@ The system SHALL include hypermedia links in all member-related API responses fo
 - `collection` - Link to members collection
 - Form templates for available actions
 
-**Note**: Links for member deactivation/activation will be added in a separate change.
+**Note**: Links for member suspension/resumption will be added in a separate change.
 
 #### Scenario: Member creation response includes hypermedia links
 
@@ -681,7 +681,7 @@ The enhanced member list endpoint SHALL maintain backward compatibility with cli
 ### Requirement: Get Member by ID
 
 The system SHALL provide a REST API endpoint to retrieve complete details of a specific member by their unique
-identifier, including termination details if membership has been terminated.
+identifier, including suspension details if membership has been suspended.
 
 #### Scenario: Retrieve existing active member by ID
 
@@ -705,21 +705,21 @@ identifier, including termination details if membership has been terminated.
     - Chip number (if provided)
     - Bank account number (if provided)
     - Active status: true
-    - Deactivation reason: null
-    - Deactivated at: null
-    - Deactivation note: null
-    - Deactivated by: null
+    - Suspension reason: null
+    - Suspended at: null
+    - Suspension note: null
+    - Suspended by: null
 - **AND** the response SHALL include HATEOAS links:
     - `self` - Link to the current member resource
     - `collection` - Link to the members list
     - `edit` - Link to update member (if user has MEMBERS:UPDATE permission)
-    - `terminate` - Link to terminate membership (if user has MEMBERS:UPDATE permission and member is active)
+    - `suspend` - Link to suspend membership (if user has MEMBERS:UPDATE permission and member is active)
 
-#### Scenario: Retrieve existing terminated member by ID
+#### Scenario: Retrieve existing suspended member by ID
 
 - **WHEN** an authenticated user with MEMBERS:READ permission makes a GET request to /api/members/{id}
 - **AND** the member with the given ID exists
-- **AND** the member is terminated (inactive)
+- **AND** the member is suspended (inactive)
 - **THEN** the system SHALL return HTTP 200 OK
 - **AND** the response SHALL include all member details:
     - Unique identifier (UUID)
@@ -737,15 +737,15 @@ identifier, including termination details if membership has been terminated.
     - Chip number (if provided)
     - Bank account number (if provided)
     - Active status: false
-    - Deactivation reason: one of ODHLASKA, PRESTUP, OTHER
-    - Deactivated at: ISO-8601 datetime string
-    - Deactivation note: text string or null
-    - Deactivated by: user ID (UUID)
+    - Suspension reason: one of ODHLASKA, PRESTUP, OTHER
+    - Suspended at: ISO-8601 datetime string
+    - Suspension note: text string or null
+    - Suspended by: user ID (UUID)
 - **AND** the response SHALL include HATEOAS links:
     - `self` - Link to the current member resource
     - `collection` - Link to the members list
     - `edit` - Link to update member (if user has MEMBERS:UPDATE permission)
-    - Termination link SHALL NOT be present (member already terminated)
+    - Suspend link SHALL NOT be present (member already suspended)
 
 #### Scenario: Member not found
 
@@ -769,7 +769,7 @@ identifier, including termination details if membership has been terminated.
 
 ### Requirement: Member Details Response Format
 
-The member details endpoint SHALL return complete member information in a HATEOAS-compliant HAL+FORMS format with proper ISO-8601 date serialization, structured address and contact information, and termination details when applicable.
+The member details endpoint SHALL return complete member information in a HATEOAS-compliant HAL+FORMS format with proper ISO-8601 date serialization, structured address and contact information, and suspension details when applicable.
 
 #### Scenario: Active member response contains all fields
 
@@ -781,7 +781,7 @@ The member details endpoint SHALL return complete member information in a HATEOA
     - `lastName` - Member's last name
     - `dateOfBirth` - Member's date of birth as ISO-8601 date string (YYYY-MM-DD)
     - `nationality` - Member's nationality code (ISO 3166-1 alpha-2)
-    - `gender` - Member's gender (MALE, FEMALE, OTHER)
+    - `gender` - Member's gender (MALE, FEMALE)
     - `address` - Object containing street, city, postalCode, country (ISO 3166-1 alpha-2)
     - `rodneCislo` - Czech ID number (present only for Czech nationality)
     - `email` - Single email address string
@@ -794,15 +794,15 @@ The member details endpoint SHALL return complete member information in a HATEOA
     - `trainerLicense` - Trainer license object containing licenseNumber and validityDate (present if provided)
     - `dietaryRestrictions` - Dietary restrictions text (present if provided)
     - `active` - Boolean true
-    - `deactivationReason` - null
-    - `deactivatedAt` - null
-    - `deactivationNote` - null
-    - `deactivatedBy` - null
+    - `suspensionReason` - null
+    - `suspendedAt` - null
+    - `suspensionNote` - null
+    - `suspendedBy` - null
     - `guardian` - Guardian information object (present if member has guardian)
 
-#### Scenario: Terminated member response contains termination details
+#### Scenario: Suspended member response contains suspension details
 
-- **WHEN** a member details response is returned for a terminated member
+- **WHEN** a member details response is returned for a suspended member
 - **THEN** the response SHALL include:
     - `id` - Member's unique identifier (UUID)
     - `registrationNumber` - Unique registration number in format XXXYYSS
@@ -810,7 +810,7 @@ The member details endpoint SHALL return complete member information in a HATEOA
     - `lastName` - Member's last name
     - `dateOfBirth` - Member's date of birth as ISO-8601 date string (YYYY-MM-DD)
     - `nationality` - Member's nationality code (ISO 3166-1 alpha-2)
-    - `gender` - Member's gender (MALE, FEMALE, OTHER)
+    - `gender` - Member's gender (MALE, FEMALE)
     - `address` - Object containing street, city, postalCode, country
     - `rodneCislo` - Czech ID number (present only for Czech nationality)
     - `email` - Single email address string
@@ -823,10 +823,10 @@ The member details endpoint SHALL return complete member information in a HATEOA
     - `trainerLicense` - Trainer license object containing licenseNumber and validityDate (present if provided)
     - `dietaryRestrictions` - Dietary restrictions text (present if provided)
     - `active` - Boolean false
-    - `deactivationReason` - One of: ODHLASKA, PRESTUP, OTHER
-    - `deactivatedAt` - ISO-8601 datetime string (YYYY-MM-DDTHH:MM:SS)
-    - `deactivationNote` - Text string or null
-    - `deactivatedBy` - User ID (UUID) of the user who performed termination
+    - `suspensionReason` - One of: ODHLASKA, PRESTUP, OTHER
+    - `suspendedAt` - ISO-8601 datetime string (YYYY-MM-DDTHH:MM:SS)
+    - `suspensionNote` - Text string or null
+    - `suspendedBy` - User ID (UUID) of the user who performed suspension
     - `guardian` - Guardian information object (present if member has guardian)
 
 #### Scenario: Address serialized as structured object
@@ -900,23 +900,23 @@ The member details response SHALL include hypermedia links following HAL+FORMS s
 - **THEN** the response SHALL NOT include a `permissions` link
 - **AND** only links for authorized actions are included
 
-#### Scenario: Terminate link included for active members
+#### Scenario: Suspend link included for active members
 
 - **WHEN** a user with MEMBERS:UPDATE permission views an active member
-- **THEN** the response SHALL include a `terminate` link
-- **AND** the link SHALL point to POST /api/members/{id}/terminate
-- **AND** the link SHALL use the rel "terminate"
+- **THEN** the response SHALL include a `suspend` link
+- **AND** the link SHALL point to POST /api/members/{id}/suspend
+- **AND** the link SHALL use the rel "suspend"
 
-#### Scenario: Terminate link excluded for terminated members
+#### Scenario: Suspend link excluded for suspended members
 
-- **WHEN** a user views a terminated member
-- **THEN** the response SHALL NOT include a `terminate` link
+- **WHEN** a user views a suspended member
+- **THEN** the response SHALL NOT include a `suspend` link
 - **AND** only links for available actions are included
 
-#### Scenario: Terminate link excluded for users without permission
+#### Scenario: Suspend link excluded for users without permission
 
 - **WHEN** an authenticated user without MEMBERS:UPDATE permission views a member
-- **THEN** the response SHALL NOT include a `terminate` link
+- **THEN** the response SHALL NOT include a `suspend` link
 - **AND** only links for authorized actions are included
 
 #### Scenario: Unauthenticated users receive no permissions link
@@ -1122,18 +1122,16 @@ access control.
 - **AND** the {id} matches the authenticated user's member ID (OAuth2 subject match)
 - **AND** request contains valid updates to member-editable fields
 - **THEN** member information is updated
-- **AND** HTTP 200 OK status is returned
-- **AND** response includes updated member representation
-- **AND** response includes HAL+FORMS links (self, edit, collection)
+- **AND** HTTP 204 No Content status is returned
+- **AND** response includes Location header pointing to the updated member resource
 
 #### Scenario: Admin updates member information successfully
 
 - **WHEN** authenticated user with MEMBERS:UPDATE permission submits PATCH request to /api/members/{id}
 - **AND** request contains valid updates to any editable field (including admin-only fields)
 - **THEN** member information is updated
-- **AND** HTTP 200 OK status is returned
-- **AND** response includes updated member representation
-- **AND** response includes HAL+FORMS links (self, edit, collection)
+- **AND** HTTP 204 No Content status is returned
+- **AND** response includes Location header pointing to the updated member resource
 
 #### Scenario: Member attempts to edit another member's information without admin permission
 
@@ -1216,42 +1214,42 @@ The system SHALL allow members to update the following fields on their own recor
 - **WHEN** authenticated member submits PATCH request to /api/members/{id} with chipNumber field
 - **AND** the {id} matches the authenticated user's member ID
 - **THEN** chip number is updated
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member updates identity card
 
 - **WHEN** authenticated member submits PATCH request with identityCard (cardNumber, validityDate)
 - **AND** the {id} matches the authenticated user's member ID
 - **THEN** identity card information is updated
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member updates driving license group
 
 - **WHEN** authenticated member submits PATCH request with drivingLicenseGroup field
 - **AND** the {id} matches the authenticated user's member ID
 - **THEN** driving license group is updated
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member updates medical course
 
 - **WHEN** authenticated member submits PATCH request with medicalCourse (completionDate, optional validityDate)
 - **AND** the {id} matches the authenticated user's member ID
 - **THEN** medical course information is updated
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member updates trainer license
 
 - **WHEN** authenticated member submits PATCH request with trainerLicense (licenseNumber, validityDate)
 - **AND** the {id} matches the authenticated user's member ID
 - **THEN** trainer license information is updated
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member updates nationality
 
 - **WHEN** authenticated member submits PATCH request with nationality field
 - **AND** the {id} matches the authenticated user's member ID
 - **THEN** nationality is updated
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member changes nationality from Czech to non-Czech and birth number is cleared
 
@@ -1259,21 +1257,21 @@ The system SHALL allow members to update the following fields on their own recor
 - **AND** the member previously had a birth number stored
 - **THEN** birth number is cleared
 - **AND** nationality is updated
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member updates guardian contact information
 
 - **WHEN** authenticated member submits PATCH request with guardian email and/or phone
 - **AND** the {id} matches the authenticated user's member ID
 - **THEN** guardian contact information is updated
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member updates subset of fields
 
 - **WHEN** member submits PATCH request with only some member-editable fields
 - **THEN** only provided fields are updated
 - **AND** non-provided fields remain unchanged
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Member attempts to update admin-only fields
 
@@ -1281,7 +1279,7 @@ The system SHALL allow members to update the following fields on their own recor
 - **AND** the user does NOT have MEMBERS:UPDATE permission
 - **THEN** these fields are silently ignored
 - **AND** only member-editable fields are processed
-- **AND** HTTP 200 OK is returned if at least one valid member-editable field is present
+- **AND** HTTP 204 No Content is returned if at least one valid member-editable field is present
 
 ### Requirement: Admin-Only Fields
 
@@ -1290,7 +1288,7 @@ The system SHALL allow users with MEMBERS:UPDATE permission to update the follow
 - First name (required, not blank)
 - Last name (required, not blank)
 - Date of birth (required, valid ISO-8601 date, not in the future)
-- Gender (MALE, FEMALE, OTHER)
+- Gender (MALE, FEMALE)
 - Birth number (Czech ID number — only for Czech nationality, cryptographically validated format)
 
 #### Scenario: Admin updates firstName on member record
@@ -1298,14 +1296,14 @@ The system SHALL allow users with MEMBERS:UPDATE permission to update the follow
 - **WHEN** authenticated user with MEMBERS:UPDATE permission submits PATCH request with firstName field
 - **THEN** firstName is updated
 - **AND** validation ensures firstName is not blank
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Admin updates lastName on member record
 
 - **WHEN** authenticated user with MEMBERS:UPDATE permission submits PATCH request with lastName field
 - **THEN** lastName is updated
 - **AND** validation ensures lastName is not blank
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Admin updates dateOfBirth on member record
 
@@ -1313,20 +1311,20 @@ The system SHALL allow users with MEMBERS:UPDATE permission to update the follow
 - **THEN** dateOfBirth is updated
 - **AND** validation ensures dateOfBirth is valid ISO-8601 date format
 - **AND** validation ensures dateOfBirth is not in the future
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Admin updates gender on member record
 
 - **WHEN** authenticated user with MEMBERS:UPDATE permission submits PATCH request with gender field
-- **THEN** gender is updated to one of MALE, FEMALE, OTHER
-- **AND** HTTP 200 OK is returned with updated member representation
+- **THEN** gender is updated to one of MALE, FEMALE
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Admin updates birth number on Czech member
 
 - **WHEN** authenticated user with MEMBERS:UPDATE permission submits PATCH request with birthNumber field
 - **AND** member has Czech nationality (CZ)
 - **THEN** birth number is validated, encrypted, and stored
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Admin attempts to set birth number on non-Czech member
 
@@ -1340,14 +1338,14 @@ The system SHALL allow users with MEMBERS:UPDATE permission to update the follow
 - **WHEN** authenticated user with MEMBERS:UPDATE permission submits PATCH request with firstName, lastName, dateOfBirth, gender
 - **THEN** all fields are updated
 - **AND** all validation rules are enforced
-- **AND** HTTP 200 OK is returned with updated member representation
+- **AND** HTTP 204 No Content is returned with Location header
 
 #### Scenario: Non-admin attempts to update admin-only fields
 
 - **WHEN** authenticated user without MEMBERS:UPDATE permission submits PATCH request with firstName, lastName, dateOfBirth, gender, or birthNumber
 - **THEN** these fields are silently ignored
 - **AND** only member-editable fields are processed if present
-- **AND** HTTP 200 OK is returned if at least one valid member-editable field is present
+- **AND** HTTP 204 No Content is returned if at least one valid member-editable field is present
 
 ### Requirement: Contact Information Validation
 
@@ -1373,7 +1371,7 @@ member or their legal guardian.
 - **WHEN** member updates their email or phone while maintaining at least one of each
 - **THEN** update succeeds
 - **AND** new contact information is saved
-- **AND** HTTP 200 OK is returned
+- **AND** HTTP 204 No Content is returned
 
 ### Requirement: Nationality and Rodne Cislo Validation
 
@@ -1571,46 +1569,22 @@ The system SHALL support HTTP PATCH semantics where only fields present in the r
 
 ### Requirement: Member Update Response Format
 
-The member update endpoint SHALL return complete updated member information in HATEOAS-compliant HAL+FORMS format.
+The member update endpoint SHALL return HTTP 204 No Content with a Location header pointing to the updated member resource. The client can follow the Location header to retrieve the updated member representation with HAL+FORMS templates.
 
-#### Scenario: Response includes updated member data
+#### Scenario: Successful update response
 
 - **WHEN** member information is successfully updated via PATCH
-- **THEN** response Content-Type is application/prs.hal-forms+json
-- **AND** response includes all member fields with updated values
-- **AND** response includes _links object with hypermedia controls
-- **AND** response includes _templates object for further actions
+- **THEN** HTTP 204 No Content is returned
+- **AND** response includes Location header pointing to the updated member resource (/api/members/{id})
+- **AND** response body is empty
 
-#### Scenario: Response includes hypermedia links
+#### Scenario: Client retrieves updated member after PATCH
 
-- **WHEN** member update succeeds
-- **THEN** response includes `self` link to the updated member resource
-- **AND** response includes `edit` link for further updates
-- **AND** response includes `collection` link to members list
-
-#### Scenario: Response includes dynamic HAL+FORMS templates based on user role
-
-- **WHEN** member update succeeds
-- **THEN** response includes _templates with update template
-- **AND** template shows all updatable fields based on user role
+- **WHEN** client follows the Location header from a successful PATCH response
+- **THEN** GET request returns the updated member with HAL+FORMS representation
+- **AND** response includes _templates reflecting available actions based on user role
 - **AND** for members: template shows member-editable fields only
 - **AND** for admins: template shows both member-editable and admin-only fields
-- **AND** template indicates required vs optional fields
-- **AND** template indicates which fields are read-only for current user
-
-#### Scenario: Admin response includes admin-only fields in template
-
-- **WHEN** authenticated user with MEMBERS:UPDATE permission retrieves member update template
-- **THEN** template includes firstName, lastName, and dateOfBirth fields
-- **AND** template includes all member-editable fields
-- **AND** all fields are marked as editable
-
-#### Scenario: Member response excludes admin-only fields from template
-
-- **WHEN** authenticated member without admin permission retrieves update template
-- **THEN** template excludes firstName, lastName, and dateOfBirth fields
-- **AND** template includes only member-editable fields
-- **AND** member-editable fields are marked as editable
 
 ### Requirement: Update Error Responses
 
@@ -1711,7 +1685,7 @@ The system SHALL enforce type-safe member identification to prevent confusion be
 
 #### Scenario: Member services require member-specific identifier
 
-- **WHEN** calling member update, termination, or query services
+- **WHEN** calling member update, suspension, or query services
 - **THEN** services require a member-specific identifier
 - **AND** the system prevents accidental use of user or event identifiers where member identifier is required
 
@@ -1723,7 +1697,7 @@ The system SHALL enforce type-safe member identification to prevent confusion be
 
 #### Scenario: Member events contain member identifier
 
-- **WHEN** a member-related domain event is published (MemberCreatedEvent, MemberTerminatedEvent)
+- **WHEN** a member-related domain event is published (MemberCreatedEvent, MemberSuspendedEvent)
 - **THEN** the event contains member-specific identifier
 - **AND** event consumers receive type-safe member reference
 
@@ -1738,103 +1712,103 @@ The system SHALL maintain a 1:1 relationship between member and user identifiers
 - **AND** the system can convert between member and user identifiers when explicitly required
 - **AND** no automatic conversion occurs (requires explicit code)
 
-### Requirement: Membership Termination Request
+### Requirement: Membership Suspension Request
 
-The system SHALL accept membership termination requests with reason and optional note. Termination takes effect immediately upon request.
+The system SHALL accept membership suspension requests with reason and optional note. Suspension takes effect immediately upon request.
 
-#### Scenario: Valid termination request
+#### Scenario: Valid suspension request
 
-- **WHEN** authenticated user with MEMBERS:UPDATE permission submits POST request to /api/members/{id}/terminate
-- **AND** request contains valid deactivation reason (ODHLASKA, PRESTUP, OTHER)
-- **THEN** membership termination is processed immediately
-- **AND** HTTP 200 OK status is returned
-- **AND** response includes updated member resource with termination details
-- **AND** deactivatedAt is set to current timestamp
+- **WHEN** authenticated user with MEMBERS:UPDATE permission submits POST request to /api/members/{id}/suspend
+- **AND** request contains valid suspension reason (ODHLASKA, PRESTUP, OTHER)
+- **THEN** membership suspension is processed immediately
+- **AND** HTTP 204 No Content status is returned
+- **AND** response includes Location header pointing to the member resource
+- **AND** suspendedAt is set to current timestamp
 
 #### Scenario: Missing required reason field
 
-- **WHEN** authenticated user submits termination request without reason field
+- **WHEN** authenticated user submits suspension request without reason field
 - **THEN** HTTP 400 Bad Request is returned
 - **AND** error message indicates reason is required
 - **AND** no changes are made to the member
 
-#### Scenario: Invalid deactivation reason
+#### Scenario: Invalid suspension reason
 
-- **WHEN** authenticated user submits termination request with invalid reason value
+- **WHEN** authenticated user submits suspension request with invalid reason value
 - **THEN** HTTP 400 Bad Request is returned
 - **AND** error message lists valid reason values (ODHLASKA, PRESTUP, OTHER)
 
-#### Scenario: Unauthorized user attempts termination
+#### Scenario: Unauthorized user attempts suspension
 
-- **WHEN** authenticated user without MEMBERS:UPDATE permission attempts to terminate membership
+- **WHEN** authenticated user without MEMBERS:UPDATE permission attempts to suspend membership
 - **THEN** HTTP 403 Forbidden is returned
 - **AND** error response indicates insufficient permissions
 
 ### Requirement: Membership Status Update
 
-The system SHALL update member status from active to inactive upon successful termination.
+The system SHALL update member status from active to inactive upon successful suspension.
 
 #### Scenario: Member status changes to inactive
 
-- **WHEN** membership termination is processed successfully
+- **WHEN** membership suspension is processed successfully
 - **THEN** member active status is set to false
-- **AND** deactivation reason is stored
-- **AND** deactivation timestamp is stored
-- **AND** deactivation note is stored if provided
-- **AND** terminator user ID is stored
+- **AND** suspension reason is stored
+- **AND** suspension timestamp is stored
+- **AND** suspension note is stored if provided
+- **AND** suspender user ID is stored
 
-#### Scenario: Already terminated member termination attempt
+#### Scenario: Already suspended member suspension attempt
 
-- **WHEN** user attempts to terminate a member that is already inactive
+- **WHEN** user attempts to suspend a member that is already inactive
 - **THEN** HTTP 400 Bad Request is returned
-- **AND** error message indicates member is already terminated
+- **AND** error message indicates member is already suspended
 - **AND** no changes are made to the member
 
-#### Scenario: Concurrent termination attempts
+#### Scenario: Concurrent suspension attempts
 
-- **WHEN** two users attempt to terminate the same member simultaneously
-- **THEN** the first termination succeeds
-- **AND** the second termination receives HTTP 409 Conflict
-- **AND** error message indicates member was already terminated
+- **WHEN** two users attempt to suspend the same member simultaneously
+- **THEN** the first suspension succeeds
+- **AND** the second suspension receives HTTP 409 Conflict
+- **AND** error message indicates member was already suspended
 
-### Requirement: Termination Response Format
+### Requirement: Suspension Response Format
 
-The system SHALL return complete termination information in HATEOAS-compliant HAL+FORMS format.
+The system SHALL return HTTP 204 No Content with Location header upon successful membership suspension.
 
-#### Scenario: Response includes termination details
+#### Scenario: Successful suspension response
 
-- **WHEN** membership termination is successful
-- **THEN** response Content-Type is application/prs.hal-forms+json
-- **AND** response includes all member fields with updated status
-- **AND** response includes deactivationReason (ODHLASKA, PRESTUP, OTHER)
-- **AND** response includes deactivatedAt as ISO-8601 datetime string
-- **AND** response includes deactivationNote if provided
-- **AND** response includes deactivatedBy (user ID of terminator)
+- **WHEN** membership suspension is successful
+- **THEN** HTTP 204 No Content is returned
+- **AND** response includes Location header pointing to the member resource (/api/members/{id})
+- **AND** response body is empty
 
-#### Scenario: Response includes hypermedia links
+#### Scenario: Client retrieves member after suspension
 
-- **WHEN** membership termination succeeds
-- **THEN** response includes `self` link to the updated member resource
-- **AND** response includes `collection` link to members list
-- **AND** response does NOT include `terminate` link (member already terminated)
+- **WHEN** client follows the Location header from a successful suspension response
+- **THEN** GET request returns the member with updated suspension details
+- **AND** response includes suspensionReason (ODHLASKA, PRESTUP, OTHER)
+- **AND** response includes suspendedAt as ISO-8601 datetime string
+- **AND** response includes suspensionNote if provided
+- **AND** response includes suspendedBy (user ID of suspender)
+- **AND** response does NOT include `suspend` link (member already suspended)
 
-### Requirement: Termination Domain Event Publishing
+### Requirement: Suspension Domain Event Publishing
 
-The system SHALL publish a domain event upon successful membership termination for integration with other modules.
+The system SHALL publish a domain event upon successful membership suspension for integration with other modules.
 
-#### Scenario: MemberTerminatedEvent is published
+#### Scenario: MemberSuspendedEvent is published
 
-- **WHEN** membership termination is successfully committed to database
-- **THEN** MemberTerminatedEvent is published
+- **WHEN** membership suspension is successfully committed to database
+- **THEN** MemberSuspendedEvent is published
 - **AND** event contains memberId
-- **AND** event contains deactivationReason
-- **AND** event contains deactivatedAt timestamp
-- **AND** event contains terminatedBy user ID
+- **AND** event contains suspensionReason
+- **AND** event contains suspendedAt timestamp
+- **AND** event contains suspendedBy user ID
 
-#### Scenario: Event publishing failure does not block termination
+#### Scenario: Event publishing failure does not block suspension
 
-- **WHEN** membership termination succeeds but event publishing fails
-- **THEN** member termination is committed
+- **WHEN** membership suspension succeeds but event publishing fails
+- **THEN** member suspension is committed
 - **AND** event failure is logged for retry
-- **AND** response indicates member was terminated successfully
+- **AND** response indicates member was suspended successfully
 
