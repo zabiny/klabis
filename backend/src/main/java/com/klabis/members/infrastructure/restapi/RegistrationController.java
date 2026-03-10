@@ -2,6 +2,9 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.common.users.UserId;
+import com.klabis.members.CurrentUser;
+import com.klabis.members.application.BirthNumberAuditPublisher;
 import com.klabis.members.application.RegistrationService;
 import com.klabis.members.domain.Member;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,11 +38,14 @@ class RegistrationController {
     private final RegistrationService registrationService;
     private final EntityLinks entityLinks;
     private final MemberMapper memberMapper;
+    private final BirthNumberAuditPublisher birthNumberAuditPublisher;
 
-    public RegistrationController(RegistrationService registrationService, EntityLinks entityLinks, MemberMapper memberMapper) {
+    public RegistrationController(RegistrationService registrationService, EntityLinks entityLinks,
+                                  MemberMapper memberMapper, BirthNumberAuditPublisher birthNumberAuditPublisher) {
         this.registrationService = registrationService;
         this.entityLinks = entityLinks;
         this.memberMapper = memberMapper;
+        this.birthNumberAuditPublisher = birthNumberAuditPublisher;
     }
 
     /**
@@ -60,13 +66,16 @@ class RegistrationController {
     @ApiResponse(responseCode = "201", description = "Member successfully registered")
     public ResponseEntity<Void> registerMember(
             @Parameter(description = "Member registration data including personal information, contacts, and optional guardian")
-            @Valid @RequestBody RegisterMemberRequest request) {
+            @Valid @RequestBody RegisterMemberRequest request,
+            @CurrentUser UserId currentUserId) {
 
-        // Map request to service command
         RegistrationService.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request);
-
-        // Register member
         Member member = registrationService.registerMember(serviceCommand);
+
+        if (serviceCommand.birthNumber() != null) {
+            birthNumberAuditPublisher.publishModified(currentUserId, member.getId());
+        }
+
         return ResponseEntity
                 .created(entityLinks.linkToItemResource(Member.class, member.getId().uuid()).toUri())
                 .build();

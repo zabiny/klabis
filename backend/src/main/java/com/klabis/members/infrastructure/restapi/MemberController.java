@@ -7,6 +7,7 @@ import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.MemberId;
+import com.klabis.members.application.BirthNumberAuditPublisher;
 import com.klabis.members.application.ManagementService;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.Member;
@@ -66,16 +67,19 @@ class MemberController {
     private final MemberRepository memberRepository;
     private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
+    private final BirthNumberAuditPublisher birthNumberAuditPublisher;
 
     public MemberController(
             ManagementService managementService,
             MemberRepository memberRepository,
             PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
-            MemberMapper memberMapper) {
+            MemberMapper memberMapper,
+            BirthNumberAuditPublisher birthNumberAuditPublisher) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.memberMapper = memberMapper;
+        this.birthNumberAuditPublisher = birthNumberAuditPublisher;
     }
 
     /**
@@ -125,6 +129,9 @@ class MemberController {
         if (hasAuthority(authentication, Authority.MEMBERS_UPDATE)) {
             var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request);
             managementService.updateMember(memberId, adminCommand);
+            if (request.birthNumber().isProvided()) {
+                birthNumberAuditPublisher.publishModified(extractUserId(authentication), memberId);
+            }
         } else {
             UserId currentUserId = extractUserId(authentication);
             if (!currentUserId.uuid().equals(id)) {
@@ -256,14 +263,14 @@ class MemberController {
                 memberPage.map(memberMapper::toSummaryResponse),
                 response -> {
                     EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
-                    model.add(klabisLinkTo(methodOn(MemberController.class).getMember(response.id().uuid())).withSelfRel());
+                    model.add(klabisLinkTo(methodOn(MemberController.class).getMember(response.id().uuid(), null)).withSelfRel());
                     return model;
                 }
         );
 
         pagedModel.mapLink(IanaLinkRelations.SELF,
                 oldLink -> klabisLinkTo(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null)))
+                        .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)))
         );
 
         return ResponseEntity.ok(pagedModel);
@@ -308,18 +315,23 @@ class MemberController {
     )
     @ApiResponse(responseCode = "200", description = "Member found")
     public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id) {
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @CurrentUser UserId currentUserId) {
 
         MemberId memberId = new MemberId(id);
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
+
+        if (member.getBirthNumber() != null) {
+            birthNumberAuditPublisher.publishViewed(currentUserId, memberId);
+        }
 
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
         if (member.isActive()) {
             entityModel.add(
-                    klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
+                    klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).withSelfRel()
                             .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
                                     (UpdateMemberRequest) null,
                                     null)))
@@ -329,7 +341,7 @@ class MemberController {
             );
         } else {
             entityModel.add(
-                    klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
+                    klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).withSelfRel()
                             .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
                                     (UpdateMemberRequest) null,
                                     null)))

@@ -326,6 +326,32 @@ COMMENT ON COLUMN calendar_items.last_modified_by IS 'User who last modified the
 COMMENT ON COLUMN calendar_items.version IS 'Optimistic locking version';
 
 -- ============================================================================
+-- 9. BIRTH_NUMBER_AUDIT_LOG TABLE
+-- GDPR audit trail for birth number (rodné číslo) access and modification
+-- ============================================================================
+
+CREATE TABLE birth_number_audit_log
+(
+    id          UUID PRIMARY KEY,
+    user_id     UUID         NOT NULL,
+    member_id   UUID         NOT NULL,
+    action      VARCHAR(30)  NOT NULL,
+    occurred_at TIMESTAMP    NOT NULL
+);
+
+-- Indexes for birth_number_audit_log
+CREATE INDEX idx_bn_audit_member_id ON birth_number_audit_log (member_id);
+CREATE INDEX idx_bn_audit_user_id ON birth_number_audit_log (user_id);
+CREATE INDEX idx_bn_audit_occurred_at ON birth_number_audit_log (occurred_at);
+
+-- Comments for birth_number_audit_log
+COMMENT ON TABLE birth_number_audit_log IS 'GDPR-compliant audit trail for birth number (rodné číslo) access and modification';
+COMMENT ON COLUMN birth_number_audit_log.user_id IS 'ID of the user who accessed or modified the birth number';
+COMMENT ON COLUMN birth_number_audit_log.member_id IS 'ID of the member whose birth number was accessed or modified (no FK – audit records are retained after member deletion)';
+COMMENT ON COLUMN birth_number_audit_log.action IS 'Action type: VIEW_BIRTH_NUMBER or MODIFY_BIRTH_NUMBER';
+COMMENT ON COLUMN birth_number_audit_log.occurred_at IS 'Timestamp when the action occurred';
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.
