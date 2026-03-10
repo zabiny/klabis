@@ -11,9 +11,9 @@ import java.util.regex.Pattern;
  * Format: XXXYYDD
  * - XXX: Club code (3 alphanumeric characters)
  * - YY: Birth year (last 2 digits)
- * - DD: Sequential number (01-99)
+ * - DD: Sequential number (00-99)
  * <p>
- * Examples: ZBM0501, ABC9915
+ * Examples: ZBM0500, ABC9915
  * <p>
  * Immutable value object with format validation.
  */

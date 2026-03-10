@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
  * <p>
  * Tests registration number generation logic:
  * - Format: XXXYYDD (club code + birth year + sequence)
- * - Sequence numbers start at 01 for each birth year
+ * - Sequence numbers start at 00 for each birth year
  * - Sequence numbers increment for same birth year
  */
 @ExtendWith(MockitoExtension.class)
@@ -37,8 +37,8 @@ class RegistrationNumberGeneratorTest {
     }
 
     @Test
-    @DisplayName("should generate registration number with sequence 01 for first member of birth year")
-    void shouldGenerateRegistrationNumberWithSequence01ForFirstMember() {
+    @DisplayName("should generate registration number with sequence 00 for first member of birth year")
+    void shouldGenerateRegistrationNumberWithSequence00ForFirstMember() {
         // Arrange
         LocalDate dateOfBirth = LocalDate.of(2005, 3, 15);
         when(memberRepositoryMock.countByBirthYear(2005)).thenReturn(0);

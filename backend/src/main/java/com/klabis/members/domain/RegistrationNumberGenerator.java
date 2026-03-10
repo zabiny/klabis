@@ -9,9 +9,9 @@ import java.util.Objects;
  * Generates registration numbers in format XXXYYDD where:
  * - XXX: Club code (3 characters)
  * - YY: Birth year (last 2 digits)
- * - DD: Sequential number (01-99)
+ * - DD: Sequential number (00-99)
  * <p>
- * Example: ZBM0501 = ZBM club, born 2005, 1st member of that birth year
+ * Example: ZBM0500 = ZBM club, born 2005, 1st member of that birth year
  */
 public class RegistrationNumberGenerator {
 
