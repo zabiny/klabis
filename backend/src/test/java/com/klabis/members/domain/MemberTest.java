@@ -65,7 +65,8 @@ class MemberTest {
                     phone,
                     null, // no guardian for adult
                     null, // no birthNumber
-                    null  // no bankAccountNumber
+                    null, // no bankAccountNumber
+                    null  // registeredBy
             );
             Member member = Member.register(command);
 
@@ -142,7 +143,8 @@ class MemberTest {
                     null, // no member phone
                     guardian,
                     null,
-                    null
+                    null,
+                    null  // registeredBy
             );
             Member member = Member.register(command);
 
@@ -204,7 +206,8 @@ class MemberTest {
                     null, null,
                     guardian,
                     BirthNumber.of("150102/1234"),
-                    null
+                    null,
+                    null  // registeredBy
             );
 
             // Act
@@ -249,7 +252,8 @@ class MemberTest {
                         phone,
                         null, // no guardian
                         null, // no birthNumber
-                        null  // no bankAccountNumber
+                        null, // no bankAccountNumber
+                        null  // registeredBy
                 );
                 Member.register(command);
             })
@@ -284,7 +288,8 @@ class MemberTest {
                         null, // no phone
                         null, // no guardian
                         null,
-                        null
+                        null,
+                        null  // registeredBy
                 );
                 Member.register(command);
             })
@@ -320,7 +325,8 @@ class MemberTest {
                         phone,
                         null, // no guardian
                         null,
-                        null
+                        null,
+                        null  // registeredBy
                 );
                 Member.register(command);
             })
@@ -356,7 +362,8 @@ class MemberTest {
                         null, // no phone
                         null, // no guardian
                         null,
-                        null
+                        null,
+                        null  // registeredBy
                 );
                 Member.register(command);
             })
@@ -400,7 +407,8 @@ class MemberTest {
                     null, // no member phone
                     guardian,
                     null,
-                    null
+                    null,
+                    null  // registeredBy
             );
             Member member = Member.register(command);
 
@@ -434,7 +442,8 @@ class MemberTest {
                         phone,
                         null,
                         null,
-                        null
+                        null,
+                        null  // registeredBy
                 );
                 Member.register(command);
             })
@@ -468,7 +477,8 @@ class MemberTest {
                         phone,
                         null,
                         null,
-                        null
+                        null,
+                        null  // registeredBy
                 );
                 Member.register(command);
             })
@@ -502,7 +512,8 @@ class MemberTest {
                         phone,
                         null,
                         null,
-                        null
+                        null,
+                        null  // registeredBy
                 );
                 Member.register(command);
             })
@@ -957,7 +968,7 @@ class MemberTest {
             member.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    "Petr", null, null, null, null
+                    "Petr", null, null, null, null, null
             ));
 
             assertThat(member.getFirstName()).isEqualTo("Petr");
@@ -972,7 +983,7 @@ class MemberTest {
             member.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, "Svoboda", null, null, null
+                    null, "Svoboda", null, null, null, null
             ));
 
             assertThat(member.getLastName()).isEqualTo("Svoboda");
@@ -988,7 +999,7 @@ class MemberTest {
             member.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, null, newDob, null, null
+                    null, null, newDob, null, null, null
             ));
 
             assertThat(member.getDateOfBirth()).isEqualTo(newDob);
@@ -1002,7 +1013,7 @@ class MemberTest {
             member.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, null, null, Gender.FEMALE, null
+                    null, null, null, Gender.FEMALE, null, null
             ));
 
             assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
@@ -1018,7 +1029,7 @@ class MemberTest {
             member.handle(new Member.UpdateMemberByAdmin(
                     newEmail, newPhone, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, null, null, null, null
+                    null, null, null, null, null, null
             ));
 
             assertThat(member.getEmail()).isEqualTo(newEmail);
@@ -1033,7 +1044,7 @@ class MemberTest {
             member.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    "Petr", "Svoboda", null, null, null
+                    "Petr", "Svoboda", null, null, null, null
             ));
 
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
@@ -1050,7 +1061,7 @@ class MemberTest {
             assertThatThrownBy(() -> member.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, null, minorDateOfBirth, null, null
+                    null, null, minorDateOfBirth, null, null, null
             ))).isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
         }
@@ -1073,7 +1084,7 @@ class MemberTest {
             assertThatThrownBy(() -> member.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, null, null, null, BirthNumber.of("9005151234")
+                    null, null, null, null, BirthNumber.of("9005151234"), null
             )))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Birth number is only allowed for Czech nationals");
@@ -1087,7 +1098,7 @@ class MemberTest {
             member.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, null, null, null, BirthNumber.of("9005151234")
+                    null, null, null, null, BirthNumber.of("9005151234"), null
             ));
 
             assertThat(member.getBirthNumber()).isNotNull();
@@ -1102,7 +1113,7 @@ class MemberTest {
                     EmailAddress.of("temp@example.com"), null, null, null, null, null,
                     null, null, null, null, null, new GuardianInformation("Jane", "Doe", "PARENT",
                             EmailAddress.of("jane@example.com"), PhoneNumber.of("+420111222333")),
-                    null, null, null, null, null
+                    null, null, null, null, null, null
             ));
 
             assertThat(member.getEmail()).isEqualTo(EmailAddress.of("temp@example.com"));
@@ -1128,7 +1139,7 @@ class MemberTest {
             assertThatThrownBy(() -> Member.register(new Member.RegisterMember(
                     memberId, new RegistrationNumber("ZBM9001"), personalInfo,
                     Address.of("Ulice 1", "Praha", "11000", "CZ"),
-                    null, PhoneNumber.of("+420123456789"), null, null, null
+                    null, PhoneNumber.of("+420123456789"), null, null, null, null
             )))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
@@ -1144,7 +1155,7 @@ class MemberTest {
             assertThatThrownBy(() -> Member.register(new Member.RegisterMember(
                     memberId, new RegistrationNumber("ZBM9001"), personalInfo,
                     Address.of("Ulice 1", "Praha", "11000", "CZ"),
-                    EmailAddress.of("jan@example.com"), null, null, null, null
+                    EmailAddress.of("jan@example.com"), null, null, null, null, null
             )))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
@@ -1166,7 +1177,7 @@ class MemberTest {
                     Address.of("Ulice 1", "Praha", "11000", "CZ"),
                     null, null,
                     aGuardian(),
-                    null, null
+                    null, null, null
             ));
 
             assertThat(member.getGuardian()).isNotNull();
@@ -1204,7 +1215,7 @@ class MemberTest {
             assertThatThrownBy(() -> memberWithNoEmail.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, null, null, null, null
+                    null, null, null, null, null, null
             )))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
@@ -1223,7 +1234,7 @@ class MemberTest {
             assertThatThrownBy(() -> memberWithNoPhone.handle(new Member.UpdateMemberByAdmin(
                     null, null, null, null, null, null,
                     null, null, null, null, null, null,
-                    null, null, null, null, null
+                    null, null, null, null, null, null
             )))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");

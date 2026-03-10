@@ -4,6 +4,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
+import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberResumedEvent;
@@ -77,7 +78,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             PhoneNumber phone,
             GuardianInformation guardian,
             BirthNumber birthNumber,
-            BankAccountNumber bankAccountNumber
+            BankAccountNumber bankAccountNumber,
+            UserId registeredBy
     ) {}
 
     /**
@@ -125,7 +127,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             String lastName,
             LocalDate dateOfBirth,
             Gender gender,
-            BirthNumber birthNumber
+            BirthNumber birthNumber,
+            UserId updatedBy
     ) {}
 
     /**
@@ -319,6 +322,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
         // Register domain event
         member.registerEvent(MemberCreatedEvent.fromAggregate(member));
+
+        if (command.birthNumber() != null && command.registeredBy() != null) {
+            member.registerEvent(BirthNumberAccessedEvent.modified(command.registeredBy(), member.getId()));
+        }
 
         return member;
     }
@@ -603,6 +610,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
         if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
+
+        if (command.birthNumber() != null && command.updatedBy() != null) {
+            registerEvent(BirthNumberAccessedEvent.modified(command.updatedBy(), this.id));
+        }
     }
 
     /**

@@ -58,6 +58,7 @@ class RegisterMemberAutoProvisioningTest {
                 phone,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -98,6 +99,7 @@ class RegisterMemberAutoProvisioningTest {
                 phone,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -129,6 +131,7 @@ class RegisterMemberAutoProvisioningTest {
                 phone1,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -145,6 +148,7 @@ class RegisterMemberAutoProvisioningTest {
                 address2,
                 email2,
                 phone2,
+                null,
                 null,
                 null,
                 null

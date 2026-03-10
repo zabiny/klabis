@@ -1,6 +1,9 @@
-package com.klabis.members.infrastructure.jdbc;
+package com.klabis.members.infrastructure.listeners;
 
 import com.klabis.members.BirthNumberAccessedEvent;
+import com.klabis.members.infrastructure.jdbc.BirthNumberAuditLogJdbcRepository;
+import com.klabis.members.infrastructure.jdbc.BirthNumberAuditLogMemento;
+import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Component;
  * so audit log failures never affect the primary operation.
  */
 @Component
+@PrimaryAdapter
 class BirthNumberAuditService {
 
     private static final Logger log = LoggerFactory.getLogger(BirthNumberAuditService.class);

@@ -1,5 +1,6 @@
 package com.klabis.members.application;
 
+import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.domain.*;
 
@@ -25,7 +26,8 @@ public interface RegistrationService {
             PhoneNumber phone,
             GuardianInformation guardian,
             BirthNumber birthNumber,
-            BankAccountNumber bankAccountNumber
+            BankAccountNumber bankAccountNumber,
+            UserId registeredBy
     ) {}
 
     /**

@@ -7,9 +7,7 @@ import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.MemberId;
-import com.klabis.members.application.BirthNumberAuditPublisher;
 import com.klabis.members.application.ManagementService;
-import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -67,19 +65,16 @@ class MemberController {
     private final MemberRepository memberRepository;
     private final PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler;
     private final MemberMapper memberMapper;
-    private final BirthNumberAuditPublisher birthNumberAuditPublisher;
 
     public MemberController(
             ManagementService managementService,
             MemberRepository memberRepository,
             PagedResourcesAssembler<MemberSummaryResponse> pagedResourcesAssembler,
-            MemberMapper memberMapper,
-            BirthNumberAuditPublisher birthNumberAuditPublisher) {
+            MemberMapper memberMapper) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.memberMapper = memberMapper;
-        this.birthNumberAuditPublisher = birthNumberAuditPublisher;
     }
 
     /**
@@ -105,7 +100,7 @@ class MemberController {
      * @param id             member ID
      * @param request        partial update request (only fields to update should be provided)
      * @param authentication Spring Security authentication for authority checking
-     * @return 200 OK with updated member resource
+     * @return 204 No Content on success
      */
     @PatchMapping(value = "/{id}", consumes = "application/json")
     @PreAuthorize("isAuthenticated()")
@@ -127,11 +122,9 @@ class MemberController {
 
         MemberId memberId = new MemberId(id);
         if (hasAuthority(authentication, Authority.MEMBERS_UPDATE)) {
-            var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request);
+            UserId currentUserId = extractUserId(authentication);
+            var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request, currentUserId);
             managementService.updateMember(memberId, adminCommand);
-            if (request.birthNumber().isProvided()) {
-                birthNumberAuditPublisher.publishModified(extractUserId(authentication), memberId);
-            }
         } else {
             UserId currentUserId = extractUserId(authentication);
             if (!currentUserId.uuid().equals(id)) {
@@ -303,10 +296,10 @@ class MemberController {
      * GET /api/members/{id}
      *
      * @param id member ID
+     * @param currentUserId the authenticated user requesting the member details
      * @return member resource with full details
      */
     @GetMapping("/{id}")
-    @Transactional(readOnly = true)
     @HasAuthority(Authority.MEMBERS_READ)
     @Operation(
             summary = "Get member by ID",
@@ -319,12 +312,7 @@ class MemberController {
             @CurrentUser UserId currentUserId) {
 
         MemberId memberId = new MemberId(id);
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberNotFoundException(memberId));
-
-        if (member.getBirthNumber() != null) {
-            birthNumberAuditPublisher.publishViewed(currentUserId, memberId);
-        }
+        Member member = managementService.getMemberAndRecordView(memberId, currentUserId);
 
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);

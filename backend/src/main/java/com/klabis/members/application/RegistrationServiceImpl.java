@@ -88,7 +88,8 @@ public class RegistrationServiceImpl implements RegistrationService {
                 command.phone(),
                 command.guardian(),
                 command.birthNumber(),
-                command.bankAccountNumber()
+                command.bankAccountNumber(),
+                command.registeredBy()
         );
 
         Member member = Member.register(domainCommand);

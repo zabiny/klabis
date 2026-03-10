@@ -4,5 +4,5 @@ import org.springframework.data.repository.CrudRepository;
 
 import java.util.UUID;
 
-interface BirthNumberAuditLogJdbcRepository extends CrudRepository<BirthNumberAuditLogMemento, UUID> {
+public interface BirthNumberAuditLogJdbcRepository extends CrudRepository<BirthNumberAuditLogMemento, UUID> {
 }

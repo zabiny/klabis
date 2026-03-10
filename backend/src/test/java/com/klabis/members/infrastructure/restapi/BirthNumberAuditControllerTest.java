@@ -6,15 +6,16 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
-import com.klabis.members.application.BirthNumberAuditPublisher;
 import com.klabis.members.application.ManagementService;
 import com.klabis.members.application.RegistrationService;
 import com.klabis.members.domain.BirthNumber;
-import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.domain.Member;
+import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -26,11 +27,13 @@ import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,6 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Tests for GDPR birth number audit event publishing from REST controllers.
+ * Verifies that audit-triggering calls are delegated correctly to services
+ * so they are captured by Spring Modulith outbox within a transaction.
  */
 @DisplayName("Birth Number Audit – Controller Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
@@ -57,9 +62,6 @@ class BirthNumberAuditControllerTest {
     @MockitoBean
     private RegistrationService registrationService;
 
-    @MockitoBean
-    private BirthNumberAuditPublisher birthNumberAuditPublisher;
-
     @TestBean
     private EntityLinks entityLinks;
 
@@ -72,9 +74,9 @@ class BirthNumberAuditControllerTest {
     class GetMemberAuditTests {
 
         @Test
-        @DisplayName("should publish VIEW_BIRTH_NUMBER event when member has birth number")
+        @DisplayName("should delegate to getMemberAndRecordView so VIEW audit runs in transaction")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
-        void shouldPublishViewEventWhenMemberHasBirthNumber() throws Exception {
+        void shouldCallGetMemberAndRecordViewForViewAudit() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNationality("CZ")
@@ -82,30 +84,13 @@ class BirthNumberAuditControllerTest {
                     .withNoGuardian()
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class)))
+                    .thenReturn(member);
 
             mockMvc.perform(get("/api/members/{id}", memberId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            verify(birthNumberAuditPublisher).publishViewed(any(), eq(new MemberId(memberId)));
-        }
-
-        @Test
-        @DisplayName("should NOT publish audit event when member has no birth number")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
-        void shouldNotPublishEventWhenMemberHasNoBirthNumber() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withNationality("CZ")
-                    .withNoGuardian()
-                    .build();
-
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
-
-            mockMvc.perform(get("/api/members/{id}", memberId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk());
-
-            verifyNoInteractions(birthNumberAuditPublisher);
+            verify(managementService).getMemberAndRecordView(eq(new MemberId(memberId)), any(UserId.class));
         }
     }
 
@@ -114,9 +99,9 @@ class BirthNumberAuditControllerTest {
     class PatchMemberAuditTests {
 
         @Test
-        @DisplayName("should publish MODIFY_BIRTH_NUMBER event when birthNumber field is provided")
+        @DisplayName("should pass non-null updatedBy in admin command when birthNumber is in request")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_UPDATE})
-        void shouldPublishModifyEventWhenBirthNumberIsProvided() throws Exception {
+        void shouldPassUpdatedByWhenBirthNumberIsProvided() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member existingMember = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNationality("CZ")
@@ -131,13 +116,19 @@ class BirthNumberAuditControllerTest {
                             .content("{\"birthNumber\": \"900101/1234\"}"))
                     .andExpect(status().isNoContent());
 
-            verify(birthNumberAuditPublisher).publishModified(any(), eq(new MemberId(memberId)));
+            ArgumentCaptor<Member.UpdateMemberByAdmin> commandCaptor =
+                    ArgumentCaptor.forClass(Member.UpdateMemberByAdmin.class);
+            verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
+
+            Member.UpdateMemberByAdmin command = commandCaptor.getValue();
+            assertThat(command.birthNumber()).isNotNull();
+            assertThat(command.updatedBy()).isNotNull();
         }
 
         @Test
-        @DisplayName("should NOT publish audit event when birthNumber field is not provided")
+        @DisplayName("should pass non-null updatedBy in admin command even when birthNumber is absent")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_UPDATE})
-        void shouldNotPublishEventWhenBirthNumberNotInRequest() throws Exception {
+        void shouldPassUpdatedByEvenWhenBirthNumberNotInRequest() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member existingMember = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNationality("CZ")
@@ -152,7 +143,13 @@ class BirthNumberAuditControllerTest {
                             .content("{\"email\": \"new@example.com\"}"))
                     .andExpect(status().isNoContent());
 
-            verifyNoInteractions(birthNumberAuditPublisher);
+            ArgumentCaptor<Member.UpdateMemberByAdmin> commandCaptor =
+                    ArgumentCaptor.forClass(Member.UpdateMemberByAdmin.class);
+            verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
+
+            Member.UpdateMemberByAdmin command = commandCaptor.getValue();
+            assertThat(command.birthNumber()).isNull();
+            assertThat(command.updatedBy()).isNotNull();
         }
     }
 
@@ -161,9 +158,9 @@ class BirthNumberAuditControllerTest {
     class RegisterMemberAuditTests {
 
         @Test
-        @DisplayName("should publish MODIFY_BIRTH_NUMBER event when birthNumber is provided during registration")
+        @DisplayName("should pass non-null registeredBy in registration command when birthNumber is provided")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_CREATE})
-        void shouldPublishModifyEventWhenBirthNumberProvidedOnRegistration() throws Exception {
+        void shouldPassRegisteredByWhenBirthNumberProvidedOnRegistration() throws Exception {
             UUID newMemberId = UUID.randomUUID();
             Member registeredMember = MemberTestDataBuilder.aMemberWithId(newMemberId)
                     .withNationality("CZ")
@@ -190,13 +187,19 @@ class BirthNumberAuditControllerTest {
                                     """))
                     .andExpect(status().isCreated());
 
-            verify(birthNumberAuditPublisher).publishModified(any(), eq(new MemberId(newMemberId)));
+            ArgumentCaptor<RegistrationService.RegisterNewMember> commandCaptor =
+                    ArgumentCaptor.forClass(RegistrationService.RegisterNewMember.class);
+            verify(registrationService).registerMember(commandCaptor.capture());
+
+            RegistrationService.RegisterNewMember command = commandCaptor.getValue();
+            assertThat(command.birthNumber()).isNotNull();
+            assertThat(command.registeredBy()).isNotNull();
         }
 
         @Test
-        @DisplayName("should NOT publish audit event when birthNumber is not provided during registration")
+        @DisplayName("should pass non-null registeredBy in registration command even without birthNumber")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_CREATE})
-        void shouldNotPublishEventWhenNoBirthNumberOnRegistration() throws Exception {
+        void shouldPassRegisteredByEvenWhenNoBirthNumberOnRegistration() throws Exception {
             UUID newMemberId = UUID.randomUUID();
             Member registeredMember = MemberTestDataBuilder.aMemberWithId(newMemberId)
                     .withNationality("CZ")
@@ -221,7 +224,13 @@ class BirthNumberAuditControllerTest {
                                     """))
                     .andExpect(status().isCreated());
 
-            verifyNoInteractions(birthNumberAuditPublisher);
+            ArgumentCaptor<RegistrationService.RegisterNewMember> commandCaptor =
+                    ArgumentCaptor.forClass(RegistrationService.RegisterNewMember.class);
+            verify(registrationService).registerMember(commandCaptor.capture());
+
+            RegistrationService.RegisterNewMember command = commandCaptor.getValue();
+            assertThat(command.birthNumber()).isNull();
+            assertThat(command.registeredBy()).isNotNull();
         }
     }
 }

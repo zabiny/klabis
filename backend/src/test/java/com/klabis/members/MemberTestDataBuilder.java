@@ -231,7 +231,8 @@ public class MemberTestDataBuilder {
                 this.phone,
                 this.guardian,
                 birthNumber,
-                bankAccountNumber);
+                bankAccountNumber,
+                null);
     }
 
     /**

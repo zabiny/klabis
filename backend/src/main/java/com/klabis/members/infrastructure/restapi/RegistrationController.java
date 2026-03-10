@@ -4,7 +4,6 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUser;
-import com.klabis.members.application.BirthNumberAuditPublisher;
 import com.klabis.members.application.RegistrationService;
 import com.klabis.members.domain.Member;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,14 +37,12 @@ class RegistrationController {
     private final RegistrationService registrationService;
     private final EntityLinks entityLinks;
     private final MemberMapper memberMapper;
-    private final BirthNumberAuditPublisher birthNumberAuditPublisher;
 
     public RegistrationController(RegistrationService registrationService, EntityLinks entityLinks,
-                                  MemberMapper memberMapper, BirthNumberAuditPublisher birthNumberAuditPublisher) {
+                                  MemberMapper memberMapper) {
         this.registrationService = registrationService;
         this.entityLinks = entityLinks;
         this.memberMapper = memberMapper;
-        this.birthNumberAuditPublisher = birthNumberAuditPublisher;
     }
 
     /**
@@ -54,6 +51,7 @@ class RegistrationController {
      * POST /api/members
      *
      * @param request registration request
+     * @param currentUserId the authenticated user performing the registration
      * @return 201 Created with Location header and member resource
      */
     @PostMapping(consumes = "application/json")
@@ -69,12 +67,8 @@ class RegistrationController {
             @Valid @RequestBody RegisterMemberRequest request,
             @CurrentUser UserId currentUserId) {
 
-        RegistrationService.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request);
+        RegistrationService.RegisterNewMember serviceCommand = memberMapper.toRegisterNewMemberCommand(request, currentUserId);
         Member member = registrationService.registerMember(serviceCommand);
-
-        if (serviceCommand.birthNumber() != null) {
-            birthNumberAuditPublisher.publishModified(currentUserId, member.getId());
-        }
 
         return ResponseEntity
                 .created(entityLinks.linkToItemResource(Member.class, member.getId().uuid()).toUri())

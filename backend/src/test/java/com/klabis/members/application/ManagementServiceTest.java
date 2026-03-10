@@ -3,6 +3,7 @@ package com.klabis.members.application;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
+import org.springframework.context.ApplicationEventPublisher;
 import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
 import com.klabis.members.MemberTestDataBuilder;
@@ -38,13 +39,16 @@ class ManagementServiceTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private ManagementService testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementServiceImpl(memberRepository, userService);
+        testedSubject = new ManagementServiceImpl(memberRepository, userService, eventPublisher);
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -71,7 +75,7 @@ class ManagementServiceTest {
                     BankAccountNumber.of("12345/5678"),
                     null, null, null, null, null, null,
                     null, null, null, null,
-                    BirthNumber.of("900101/1234")
+                    BirthNumber.of("900101/1234"), null
             );
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
@@ -90,7 +94,7 @@ class ManagementServiceTest {
                     null, null, null, null, null,
                     BankAccountNumber.of("12345/5678"),
                     null, null, null, null, null, null,
-                    null, null, null, null, null
+                    null, null, null, null, null, null
             );
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));

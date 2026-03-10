@@ -1,13 +1,16 @@
 package com.klabis.members.application;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -23,10 +26,13 @@ public class ManagementServiceImpl implements ManagementService {
 
     private final MemberRepository memberRepository;
     private final UserService userService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public ManagementServiceImpl(MemberRepository memberRepository, UserService userService) {
+    public ManagementServiceImpl(MemberRepository memberRepository, UserService userService,
+                                 ApplicationEventPublisher eventPublisher) {
         this.memberRepository = memberRepository;
         this.userService = userService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -92,6 +98,19 @@ public class ManagementServiceImpl implements ManagementService {
         log.info("Membership resumed: memberId={}, resumedBy={}", saved.getId(), command.resumedBy());
 
         return saved;
+    }
+
+    @Transactional
+    @Override
+    public Member getMemberAndRecordView(MemberId memberId, UserId viewedBy) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
+
+        if (member.getBirthNumber() != null) {
+            eventPublisher.publishEvent(BirthNumberAccessedEvent.viewed(viewedBy, memberId));
+        }
+
+        return member;
     }
 
     private Member loadMember(MemberId memberId) {

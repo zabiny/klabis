@@ -1,5 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.domain.*;
 
@@ -11,7 +12,7 @@ class UpdateMemberRequestMapper {
 
     private UpdateMemberRequestMapper() {}
 
-    static Member.UpdateMemberByAdmin toAdminCommand(UpdateMemberRequest request) {
+    static Member.UpdateMemberByAdmin toAdminCommand(UpdateMemberRequest request, UserId updatedBy) {
         try {
             EmailAddress email = toEmailAddress(request.email());
             PhoneNumber phone = toPhoneNumber(request.phone());
@@ -35,7 +36,7 @@ class UpdateMemberRequestMapper {
                     email, phone, address, chipNumber, nationality,
                     bankAccountNumber, identityCard, drivingLicenseGroup,
                     medicalCourse, trainerLicense, dietaryRestrictions, guardian,
-                    firstName, lastName, dateOfBirth, gender, birthNumber
+                    firstName, lastName, dateOfBirth, gender, birthNumber, updatedBy
             );
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);

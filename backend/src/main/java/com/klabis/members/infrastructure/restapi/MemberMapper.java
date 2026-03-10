@@ -1,5 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.mapstruct.Mapper;
@@ -139,27 +140,27 @@ interface MemberMapper {
      * Maps RegisterMemberRequest to RegisterNewMember service command.
      *
      * @param request the source registration request
+     * @param registeredBy the user performing the registration
      * @return mapped service command
      */
-    @Mapping(target = "personalInformation", expression = "java(createPersonalInformation(request.firstName(), request.lastName(), request.dateOfBirth(), request.gender(), request.nationality()))")
-    @Mapping(target = "address", expression = "java(request.address() != null ? new Address(request.address().street(), request.address().city(), request.address().postalCode(), request.address().country()) : null)")
-    @Mapping(target = "email", expression = "java(EmailAddress.of(request.email()))")
-    @Mapping(target = "phone", expression = "java(PhoneNumber.of(request.phone()))")
-    @Mapping(target = "guardian", expression = "java(request.guardian() != null ? new GuardianInformation(request.guardian().firstName(), request.guardian().lastName(), request.guardian().relationship(), request.guardian().email(), request.guardian().phone()) : null)")
-    @Mapping(target = "birthNumber", expression = "java(request.birthNumber() != null ? BirthNumber.of(request.birthNumber()) : null)")
-    @Mapping(target = "bankAccountNumber", expression = "java(request.bankAccountNumber() != null ? BankAccountNumber.of(request.bankAccountNumber()) : null)")
-    com.klabis.members.application.RegistrationService.RegisterNewMember toRegisterNewMemberCommand(RegisterMemberRequest request);
+    default com.klabis.members.application.RegistrationService.RegisterNewMember toRegisterNewMemberCommand(
+            RegisterMemberRequest request, UserId registeredBy) {
+        return new com.klabis.members.application.RegistrationService.RegisterNewMember(
+                createPersonalInformation(request.firstName(), request.lastName(),
+                        request.dateOfBirth(), request.gender(), request.nationality()),
+                request.address() != null ? new Address(request.address().street(), request.address().city(),
+                        request.address().postalCode(), request.address().country()) : null,
+                EmailAddress.of(request.email()),
+                PhoneNumber.of(request.phone()),
+                request.guardian() != null ? new GuardianInformation(request.guardian().firstName(),
+                        request.guardian().lastName(), request.guardian().relationship(),
+                        request.guardian().email(), request.guardian().phone()) : null,
+                request.birthNumber() != null ? BirthNumber.of(request.birthNumber()) : null,
+                request.bankAccountNumber() != null ? BankAccountNumber.of(request.bankAccountNumber()) : null,
+                registeredBy
+        );
+    }
 
-    /**
-     * Creates PersonalInformation from primitive values.
-     *
-     * @param firstName the first name
-     * @param lastName the last name
-     * @param dateOfBirth the date of birth
-     * @param gender the gender
-     * @param nationality the nationality
-     * @return PersonalInformation
-     */
     default PersonalInformation createPersonalInformation(
             String firstName,
             String lastName,

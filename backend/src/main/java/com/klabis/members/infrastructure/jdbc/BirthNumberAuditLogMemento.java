@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Table("birth_number_audit_log")
-class BirthNumberAuditLogMemento implements Persistable<UUID> {
+public class BirthNumberAuditLogMemento implements Persistable<UUID> {
 
     @Id
     @Column("id")
@@ -31,7 +31,7 @@ class BirthNumberAuditLogMemento implements Persistable<UUID> {
     protected BirthNumberAuditLogMemento() {
     }
 
-    static BirthNumberAuditLogMemento of(UUID userId, UUID memberId, BirthNumberAction action, Instant occurredAt) {
+    public static BirthNumberAuditLogMemento of(UUID userId, UUID memberId, BirthNumberAction action, Instant occurredAt) {
         BirthNumberAuditLogMemento memento = new BirthNumberAuditLogMemento();
         memento.id = UUID.randomUUID();
         memento.userId = userId;

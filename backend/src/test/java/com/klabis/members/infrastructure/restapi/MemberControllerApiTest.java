@@ -9,6 +9,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementService;
+import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.application.RegistrationService;
 import com.klabis.members.application.ValidationPatterns;
 import com.klabis.members.domain.*;
@@ -36,7 +37,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -124,7 +124,7 @@ class MemberControllerApiTest {
                     .withNationality("CZ")
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(member.getId()))
                     .andDo(MockMvcResultHandlers.print())
@@ -153,7 +153,8 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturn404WhenMemberNotFound() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.empty());
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class)))
+                    .thenThrow(new MemberNotFoundException(new MemberId(nonExistentId)));
 
             mockMvc.perform(getMemberById(nonExistentId))
                     .andDo(MockMvcResultHandlers.print())
@@ -194,7 +195,7 @@ class MemberControllerApiTest {
                             "+420777111222"))
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -216,7 +217,7 @@ class MemberControllerApiTest {
                     .withAddress(new Address("Main Street 123", "Bratislava", "81101", "SK"))
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -249,7 +250,7 @@ class MemberControllerApiTest {
                     .withEmail(email)
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -269,7 +270,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -287,7 +288,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -306,7 +307,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -328,7 +329,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(memberRepository.findById(any(MemberId.class))).thenReturn(Optional.of(member));
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())

@@ -72,6 +72,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 PhoneNumber.of(phone),
                 null,
                 null,
+                null,
                 null
         ));
 

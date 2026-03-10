@@ -135,6 +135,7 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     null,
+                    null,
                     null
             );
 
@@ -190,6 +191,7 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     null,
+                    null,
                     null
             );
 
@@ -235,6 +237,7 @@ class RegistrationServiceTest {
                     phone,
                     guardian,
                     null,
+                    null,
                     null
             );
 
@@ -275,6 +278,7 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     null,
+                    null,
                     null
             );
 
@@ -310,6 +314,7 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
+                    null,
                     null,
                     null,
                     null
@@ -348,6 +353,7 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     null,
+                    null,
                     null
             );
 
@@ -383,6 +389,7 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     birthNumber,
+                    null,
                     null
             );
 
@@ -424,7 +431,8 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     null,
-                    bankAccountNumber
+                    bankAccountNumber,
+                    null
             );
 
             mockUserCreation(testSharedId);
@@ -466,7 +474,8 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     birthNumber,
-                    bankAccountNumber
+                    bankAccountNumber,
+                    null
             );
 
             mockUserCreation(testSharedId);
@@ -506,6 +515,7 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
+                    null,
                     null,
                     null,
                     null
