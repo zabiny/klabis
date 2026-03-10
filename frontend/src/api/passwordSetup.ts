@@ -4,12 +4,12 @@
  */
 
 import type {
-    SetPasswordRequest,
+    ErrorResponse,
     PasswordSetupResponse,
+    SetPasswordRequest,
     TokenRequestRequest,
     TokenRequestResponse,
     ValidateTokenResponse,
-    ErrorResponse,
 } from './index';
 
 // Re-export types for convenience
@@ -37,7 +37,7 @@ export async function validateToken(token: string): Promise<ValidateTokenRespons
     if (!response.ok) {
         const errorData: ErrorResponse = await response.json().catch(() => ({ message: response.statusText }));
         throw new TokenValidationError(
-            errorData.message || 'Token validation failed',
+            errorData.detail || 'Token validation failed',
             response.status,
             errorData
         );
@@ -63,7 +63,7 @@ export async function completePasswordSetup(request: SetPasswordRequest): Promis
     if (!response.ok) {
         const errorData: ErrorResponse = await response.json().catch(() => ({ message: response.statusText }));
         throw new PasswordSetupError(
-            errorData.message || 'Password setup failed',
+            errorData.detail || 'Password setup failed',
             response.status,
             errorData
         );
@@ -98,7 +98,7 @@ export async function requestNewToken(request: TokenRequestRequest): Promise<Tok
     if (!response.ok) {
         const errorData: ErrorResponse = await response.json().catch(() => ({ message: response.statusText }));
         throw new TokenRequestError(
-            errorData.message || 'Token request failed',
+            errorData.detail || 'Token request failed',
             response.status,
             errorData
         );
@@ -143,7 +143,7 @@ export class PasswordSetupError extends Error {
      * Extracts error message from the response detail
      */
     getErrorMessage(): string {
-        return this.detail.message || 'Neznámá chyba';
+        return this.detail.detail || 'Neznámá chyba';
     }
 }
 

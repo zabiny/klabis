@@ -28,5 +28,5 @@ export type PasswordSetupResponse = components["schemas"]["PasswordSetupResponse
 export type TokenRequestRequest = components["schemas"]["TokenRequestRequest"];
 export type TokenRequestResponse = components["schemas"]["TokenRequestResponse"];
 export type ValidateTokenResponse = components["schemas"]["ValidateTokenResponse"];
-export type ErrorResponse = components["schemas"]["ErrorResponse"];
+export type ErrorResponse = components["schemas"]["ProblemDetail"];
 

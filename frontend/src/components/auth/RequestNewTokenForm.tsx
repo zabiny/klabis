@@ -1,7 +1,7 @@
-import { useState, type FormEvent, type ChangeEvent } from 'react';
-import { Button, Card, Alert } from '../UI';
-import { TextField } from '../UI/forms/TextField';
-import { requestNewToken, RateLimitError, TokenRequestError, type TokenRequestRequest } from '../../api/passwordSetup';
+import {type ChangeEvent, type FormEvent, useState} from 'react';
+import {Alert, Button, Card} from '../UI';
+import {TextField} from '../UI/forms/TextField';
+import {RateLimitError, requestNewToken, TokenRequestError, type TokenRequestRequest} from '../../api/passwordSetup';
 
 interface RequestNewTokenFormProps {
     onSuccess: () => void;
@@ -70,7 +70,7 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
                     : 'Zkuste to prosím později.';
                 setServerError(`Požadavek byl omezen. ${retryText}`);
             } else if (error instanceof TokenRequestError) {
-                setServerError(error.detail.message || 'Požadavek selhal.');
+                setServerError(error.detail.detail || 'Požadavek selhal.');
             } else {
                 setServerError('Došlo k neočekávané chybě. Zkuste to prosím znovu.');
             }

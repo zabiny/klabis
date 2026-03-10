@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Alert, Spinner } from '../components/UI';
-import { PasswordSetupForm } from '../components/auth/PasswordSetupForm';
-import { validateToken, TokenValidationError } from '../api/passwordSetup';
+import {useEffect, useState} from 'react';
+import {useNavigate, useSearchParams} from 'react-router-dom';
+import {Alert, Spinner} from '../components/UI';
+import {PasswordSetupForm} from '../components/auth/PasswordSetupForm';
+import {TokenValidationError, validateToken} from '../api/passwordSetup';
 
 /**
  * PasswordSetupPage - Public page for setting up password via token from email
@@ -35,7 +35,7 @@ const PasswordSetupPage = () => {
                     } else if (error.status === 404) {
                         setValidationError('Neplatný token. Požádejte si o nový.');
                     } else {
-                        setValidationError(error.detail.message || 'Token nelze ověřit.');
+                        setValidationError(error.detail.detail || 'Token nelze ověřit.');
                     }
                 } else {
                     setValidationError('Došlo k neočekávané chybě při ověřování tokenu.');
