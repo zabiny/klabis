@@ -88,12 +88,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             UserId registeredBy
     ) {}
 
-    /**
-     * Command for a member editing their own profile.
-     * <p>
-     * Contains only fields that a member is permitted to change on their own account.
-     * Fields set to null retain the current value (PATCH semantics).
-     */
     @RecordBuilder
     public record SelfUpdate(
             EmailAddress email,
@@ -528,16 +522,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
     // ========== Command Handlers (Domain Methods) ==========
 
-    /**
-     * Handles SelfUpdate command.
-     * <p>
-     * Applies changes to the subset of fields a member is allowed to edit on their own account.
-     * Personal information fields (firstName, lastName, dateOfBirth, gender) and birthNumber
-     * are intentionally excluded — those require admin authority.
-     *
-     * @param command the self-update command
-     * @throws IllegalArgumentException if resulting contact information is invalid
-     */
     public void handle(SelfUpdate command) {
         EmailAddress newEmail = command.email() != null ? command.email() : this.email;
         PhoneNumber newPhone = command.phone() != null ? command.phone() : this.phone;
@@ -547,9 +531,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         validateContactInformation(newEmail, newPhone, newGuardian);
 
         String oldNationality = this.personalInformation.getNationalityCode();
-        String newNationality = command.nationality() != null
-                ? command.nationality()
-                : oldNationality;
+        String newNationality = command.nationality() != null ? command.nationality() : oldNationality;
         PersonalInformation newPersonalInfo = PersonalInformation.of(
                 this.personalInformation.getFirstName(),
                 this.personalInformation.getLastName(),
@@ -572,12 +554,11 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.drivingLicenseGroup() != null) this.drivingLicenseGroup = command.drivingLicenseGroup();
         if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
         if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
-        // refereeLicense is admin-only — ignored in self-update
+        if (command.refereeLicense() != null) this.refereeLicense = command.refereeLicense();
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
 
-        if (Nationality.of(oldNationality).isCzech() && !Nationality.of(newNationality).isCzech() && this.birthNumber != null) {
-            this.birthNumber = null;
-        }
+        if (!Nationality.of(oldNationality).isCzech() || Nationality.of(newNationality).isCzech()) return;
+        if (this.birthNumber != null) this.birthNumber = null;
     }
 
     /**

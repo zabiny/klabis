@@ -1,7 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.UserId;
-import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -10,97 +9,25 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.time.LocalDate;
 
-/**
- * MapStruct mapper for Member entity to DTO transformations.
- * <p>
- * Replaces manual mapping methods in MemberController with compile-time generated code.
- */
 @Mapper(
         componentModel = "spring",
         nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL,
-        imports = MemberId.class
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL
 )
 interface MemberMapper {
 
-    /**
-     * Maps Member domain object to MemberSummaryResponse.
-     *
-     * @param member the source member domain object
-     * @return mapped summary response
-     */
-    @Mapping(target = "id", expression = "java(MemberId.fromUserId(member.getUserId()))")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     MemberSummaryResponse toSummaryResponse(Member member);
 
-    /**
-     * Maps Member domain object to MemberDetailsResponse.
-     * <p>
-     * Uses expression mappings for AddressResponse and GuardianDTO.
-     *
-     * @param member the source member domain object
-     * @return mapped details response
-     */
-    default MemberDetailsResponse toDetailsResponse(Member member) {
-        if (member == null) {
-            return null;
-        }
-        MemberDetailsResponse response = toDetailsResponseInternal(member);
-        return new MemberDetailsResponse(
-                response.id(),
-                response.registrationNumber(),
-                response.firstName(),
-                response.lastName(),
-                response.dateOfBirth(),
-                response.nationality(),
-                response.gender(),
-                member.getEmail() != null ? member.getEmail().value() : null,
-                member.getPhone() != null ? member.getPhone().value() : null,
-                response.address(),
-                response.guardian(),
-                response.active(),
-                response.chipNumber(),
-                response.identityCard(),
-                response.medicalCourse(),
-                response.trainerLicense(),
-                response.refereeLicense(),
-                response.drivingLicenseGroup(),
-                response.dietaryRestrictions(),
-                member.getBirthNumber() != null ? member.getBirthNumber().value() : null,
-                member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null,
-                member.getSuspensionReason(),
-                member.getSuspendedAt(),
-                member.getSuspendedBy() != null ? member.getSuspendedBy().uuid().toString() : null,
-                member.getSuspensionNote()
-        );
-    }
-
-    @Mapping(target = "id", expression = "java(MemberId.fromUserId(member.getUserId()))")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "address", source = "address")
-    @Mapping(target = "guardian", source="guardian")
-    @Mapping(target = "email", ignore = true)
-    @Mapping(target = "phone", ignore = true)
-    @Mapping(target = "firstName", source = "firstName")
-    @Mapping(target = "lastName", source = "lastName")
-    @Mapping(target = "dateOfBirth", source = "dateOfBirth")
-    @Mapping(target = "nationality", source = "nationality")
-    @Mapping(target = "gender", source = "gender")
-    @Mapping(target = "active", source = "active")
-    @Mapping(target = "chipNumber", source = "chipNumber")
-    @Mapping(target = "identityCard", source = "identityCard")
-    @Mapping(target = "medicalCourse", source = "medicalCourse")
-    @Mapping(target = "trainerLicense", source = "trainerLicense")
-    @Mapping(target = "refereeLicense", source = "refereeLicense")
-    @Mapping(target = "drivingLicenseGroup", source = "drivingLicenseGroup")
-    @Mapping(target = "dietaryRestrictions", source = "dietaryRestrictions")
-    @Mapping(target = "birthNumber", ignore = true)
-    @Mapping(target = "bankAccountNumber", ignore = true)
-    @Mapping(target = "suspendedBy", ignore = true)
-    @Mapping(target = "suspendedAt", ignore = true)
-    @Mapping(target = "suspensionReason", ignore = true)
-    @Mapping(target = "suspensionNote", ignore = true)
-    MemberDetailsResponse toDetailsResponseInternal(Member member);
+    @Mapping(target = "guardian", source = "guardian")
+    @Mapping(target = "email", expression = "java(member.getEmail() != null ? member.getEmail().value() : null)")
+    @Mapping(target = "phone", expression = "java(member.getPhone() != null ? member.getPhone().value() : null)")
+    @Mapping(target = "birthNumber", expression = "java(member.getBirthNumber() != null ? member.getBirthNumber().value() : null)")
+    @Mapping(target = "bankAccountNumber", expression = "java(member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null)")
+    @Mapping(target = "suspendedBy", expression = "java(member.getSuspendedBy() != null ? member.getSuspendedBy().uuid().toString() : null)")
+    MemberDetailsResponse toDetailsResponse(Member member);
 
     AddressResponse addressToResponse(Address address);
 
@@ -108,53 +35,14 @@ interface MemberMapper {
         return GuardianDTO.from(guardianInformation);
     }
 
-    /**
-     * Maps IdentityCard domain object to IdentityCardDto.
-     *
-     * @param identityCard the source identity card
-     * @return mapped DTO, or null if source is null
-     */
-    @Mapping(target = "cardNumber", source = "cardNumber")
-    @Mapping(target = "validityDate", source = "validityDate")
     IdentityCardDto identityCardToDto(IdentityCard identityCard);
 
-    /**
-     * Maps MedicalCourse domain object to MedicalCourseDto.
-     *
-     * @param medicalCourse the source medical course
-     * @return mapped DTO, or null if source is null
-     */
-    @Mapping(target = "completionDate", source = "completionDate")
-    @Mapping(target = "validityDate", source = "validityDate")
     MedicalCourseDto medicalCourseToDto(MedicalCourse medicalCourse);
 
-    /**
-     * Maps TrainerLicense domain object to TrainerLicenseDto.
-     *
-     * @param trainerLicense the source trainer license
-     * @return mapped DTO, or null if source is null
-     */
-    @Mapping(target = "level", source = "level")
-    @Mapping(target = "validityDate", source = "validityDate")
     TrainerLicenseDto trainerLicenseToDto(TrainerLicense trainerLicense);
 
-    /**
-     * Maps RefereeLicense domain object to RefereeLicenseDto.
-     *
-     * @param refereeLicense the source referee license
-     * @return mapped DTO, or null if source is null
-     */
-    @Mapping(target = "level", source = "level")
-    @Mapping(target = "validityDate", source = "validityDate")
     RefereeLicenseDto refereeLicenseToDto(RefereeLicense refereeLicense);
 
-    /**
-     * Maps RegisterMemberRequest to RegisterNewMember service command.
-     *
-     * @param request the source registration request
-     * @param registeredBy the user performing the registration
-     * @return mapped service command
-     */
     default com.klabis.members.application.RegistrationService.RegisterNewMember toRegisterNewMemberCommand(
             RegisterMemberRequest request, UserId registeredBy) {
         return new com.klabis.members.application.RegistrationService.RegisterNewMember(

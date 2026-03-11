@@ -310,7 +310,7 @@ class ManagementServiceTest {
                         new UserId(adminUserId), DeactivationReason.ODHLASKA, null
                 );
                 assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(nonExistentId), command))
-                        .isInstanceOf(InvalidUpdateException.class)
+                        .isInstanceOf(MemberNotFoundException.class)
                         .hasMessageContaining("Member not found");
 
                 verify(memberRepository, never()).save(any(Member.class));

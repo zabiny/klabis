@@ -140,8 +140,8 @@ class UpdateMemberIntegrationTest {
     @Test
     @WithKlabisMockUser(userId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-    @DisplayName("member: admin-only fields sent in self-update should be silently ignored")
-    void adminOnlyFieldsShouldBeIgnoredInSelfUpdate() throws Exception {
+    @DisplayName("member: self-update should apply all non-admin fields including chipNumber and nationality")
+    void selfUpdateShouldApplyNonAdminFields() throws Exception {
         mockMvc.perform(
                         patch("/api/members/{id}", TEST_MEMBER_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -155,11 +155,38 @@ class UpdateMemberIntegrationTest {
                 )
                 .andExpect(status().isNoContent());
 
-        // Admin-only fields must not be updated; only allowed fields (email) are applied
         mockMvc.perform(get("/api/members/{id}", TEST_MEMBER_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("self-updated@example.com"))
-                .andExpect(jsonPath("$.chipNumber").doesNotExist()); // chipNumber remains absent (was null in test data)
+                .andExpect(jsonPath("$.chipNumber").value("123456"))
+                .andExpect(jsonPath("$.nationality").value("SK"));
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+    @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @DisplayName("member: admin-only fields (firstName, lastName, gender) should be silently ignored in self-update")
+    void adminOnlyFieldsShouldBeIgnoredInSelfUpdate() throws Exception {
+        mockMvc.perform(
+                        patch("/api/members/{id}", TEST_MEMBER_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "email": "self-updated@example.com",
+                                            "firstName": "Hacked",
+                                            "lastName": "Name",
+                                            "gender": "FEMALE"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/members/{id}", TEST_MEMBER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("self-updated@example.com"))
+                .andExpect(jsonPath("$.firstName").value("Test"))
+                .andExpect(jsonPath("$.lastName").value("User"))
+                .andExpect(jsonPath("$.gender").value("MALE"));
     }
 
     @Test

@@ -17,21 +17,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Memento pattern implementation for Member aggregate persistence.
- * <p>
- * This class acts as a bridge between the pure domain {@link Member} entity
- * and Spring Data JDBC persistence. It contains:
- * <ul>
- *   <li>All JDBC annotations for persistence</li>
- *   <li>Flat primitive fields matching the database schema</li>
- *   <li>Conversion methods to/from Member</li>
- *   <li>Domain event delegation for Spring Modulith</li>
- * </ul>
- * <p>
- * The Member entity remains a pure domain object without Spring annotations,
- * while this memento handles all infrastructure concerns.
- */
 @Table("members")
 class MemberMemento implements Persistable<UUID> {
 
@@ -42,7 +27,6 @@ class MemberMemento implements Persistable<UUID> {
     @Column("registration_number")
     private String registrationNumber;
 
-    // Personal information fields (flattened)
     @Column("first_name")
     private String firstName;
 
@@ -58,7 +42,6 @@ class MemberMemento implements Persistable<UUID> {
     @Column("gender")
     private Gender gender;
 
-    // Address fields (flattened)
     @Column("street")
     private String street;
 
@@ -71,14 +54,12 @@ class MemberMemento implements Persistable<UUID> {
     @Column("country")
     private String country;
 
-    // Contact fields
     @Column("email")
     private String email;
 
     @Column("phone")
     private String phone;
 
-    // Guardian fields (flattened)
     @Column("guardian_first_name")
     private String guardianFirstName;
 
@@ -94,35 +75,30 @@ class MemberMemento implements Persistable<UUID> {
     @Column("guardian_phone")
     private String guardianPhone;
 
-    // Status and other fields
     @Column("is_active")
     private boolean active;
 
     @Column("chip_number")
     private String chipNumber;
 
-    // Identity card fields (flattened)
     @Column("identity_card_number")
     private String identityCardNumber;
 
     @Column("identity_card_validity_date")
     private LocalDate identityCardValidityDate;
 
-    // Medical course fields (flattened)
     @Column("medical_course_completion_date")
     private LocalDate medicalCourseCompletionDate;
 
     @Column("medical_course_validity_date")
     private LocalDate medicalCourseValidityDate;
 
-    // Trainer license fields (flattened)
     @Column("trainer_license_level")
     private TrainerLevel trainerLicenseLevel;
 
     @Column("trainer_license_validity_date")
     private LocalDate trainerLicenseValidityDate;
 
-    // Referee license fields (flattened)
     @Column("referee_license_level")
     private RefereeLevel refereeLicenseLevel;
 
@@ -141,7 +117,6 @@ class MemberMemento implements Persistable<UUID> {
     @Column("bank_account_number")
     private String bankAccountNumber;
 
-    // Suspension fields
     @Column("suspension_reason")
     private DeactivationReason suspensionReason;
 
@@ -154,7 +129,6 @@ class MemberMemento implements Persistable<UUID> {
     @Column("suspended_by")
     private String suspendedBy;
 
-    // Audit fields
     @CreatedDate
     @Column("created_at")
     private Instant createdAt;
@@ -175,67 +149,23 @@ class MemberMemento implements Persistable<UUID> {
     @Column("version")
     private Long version;
 
-    // Transient reference to Member for domain event delegation
     @Transient
     private Member member;
 
-    // Transient flag for Persistable<UUID>
     @Transient
     private boolean isNew = true;
 
-    /**
-     * Default constructor required by Spring Data JDBC.
-     */
     protected MemberMemento() {
     }
 
-    /**
-     * Creates a MemberMemento from a Member entity (for save operations).
-     *
-     * @param member the Member entity to convert
-     * @return a new MemberMemento with all fields copied from the Member
-     */
     public static MemberMemento from(Member member) {
         MemberMemento memento = new MemberMemento();
 
-        copyIdAndRegistrationNumber(member, memento);
-        copyPersonalInfo(member, memento);
-        copyAddress(member, memento);
-        copyContactInfo(member, memento);
-        copyGuardian(member, memento);
-        copyStatusFields(member, memento);
-        copyIdentityCard(member, memento);
-        copyMedicalCourse(member, memento);
-        copyTrainerLicense(member, memento);
-        copyRefereeLicense(member, memento);
-        copyOtherFields(member, memento);
-        copyAuditMetadata(member, memento);
-
-        // Store transient reference to Member for domain event delegation
-        memento.member = member;
-
-        // Set isNew flag based on whether member has audit metadata
-        // New members (no audit metadata yet) -> INSERT (isNew = true)
-        // Existing members (have audit metadata) -> UPDATE (isNew = false)
-        memento.isNew = (member.getAuditMetadata() == null);
-
-        return memento;
-    }
-
-    /**
-     * Copies ID and registration number from Member to memento.
-     */
-    private static void copyIdAndRegistrationNumber(Member member, MemberMemento memento) {
         memento.id = member.getId() != null ? member.getId().uuid() : null;
         memento.registrationNumber = member.getRegistrationNumber() != null
                 ? member.getRegistrationNumber().getValue()
                 : null;
-    }
 
-    /**
-     * Copies personal information fields from Member to memento.
-     */
-    private static void copyPersonalInfo(Member member, MemberMemento memento) {
         PersonalInformation personalInfo = member.getPersonalInformation();
         if (personalInfo != null) {
             memento.firstName = personalInfo.getFirstName();
@@ -244,12 +174,7 @@ class MemberMemento implements Persistable<UUID> {
             memento.nationality = personalInfo.getNationalityCode();
             memento.gender = personalInfo.getGender();
         }
-    }
 
-    /**
-     * Copies address fields from Member to memento.
-     */
-    private static void copyAddress(Member member, MemberMemento memento) {
         Address address = member.getAddress();
         if (address != null) {
             memento.street = address.street();
@@ -257,20 +182,10 @@ class MemberMemento implements Persistable<UUID> {
             memento.postalCode = address.postalCode();
             memento.country = address.country();
         }
-    }
 
-    /**
-     * Copies contact information (email and phone) from Member to memento.
-     */
-    private static void copyContactInfo(Member member, MemberMemento memento) {
         memento.email = member.getEmail() != null ? member.getEmail().value() : null;
         memento.phone = member.getPhone() != null ? member.getPhone().value() : null;
-    }
 
-    /**
-     * Copies guardian information from Member to memento.
-     */
-    private static void copyGuardian(Member member, MemberMemento memento) {
         GuardianInformation guardian = member.getGuardian();
         if (guardian != null) {
             memento.guardianFirstName = guardian.getFirstName();
@@ -279,64 +194,34 @@ class MemberMemento implements Persistable<UUID> {
             memento.guardianEmail = guardian.getEmailValue();
             memento.guardianPhone = guardian.getPhoneValue();
         }
-    }
 
-    /**
-     * Copies status fields from Member to memento.
-     */
-    private static void copyStatusFields(Member member, MemberMemento memento) {
         memento.active = member.isActive();
         memento.chipNumber = member.getChipNumber();
-    }
 
-    /**
-     * Copies identity card information from Member to memento.
-     */
-    private static void copyIdentityCard(Member member, MemberMemento memento) {
         IdentityCard identityCard = member.getIdentityCard();
         if (identityCard != null) {
             memento.identityCardNumber = identityCard.cardNumber();
             memento.identityCardValidityDate = identityCard.validityDate();
         }
-    }
 
-    /**
-     * Copies medical course information from Member to memento.
-     */
-    private static void copyMedicalCourse(Member member, MemberMemento memento) {
         MedicalCourse medicalCourse = member.getMedicalCourse();
         if (medicalCourse != null) {
             memento.medicalCourseCompletionDate = medicalCourse.completionDate();
             memento.medicalCourseValidityDate = medicalCourse.validityDate().orElse(null);
         }
-    }
 
-    /**
-     * Copies trainer license information from Member to memento.
-     */
-    private static void copyTrainerLicense(Member member, MemberMemento memento) {
         TrainerLicense trainerLicense = member.getTrainerLicense();
         if (trainerLicense != null) {
             memento.trainerLicenseLevel = trainerLicense.level();
             memento.trainerLicenseValidityDate = trainerLicense.validityDate();
         }
-    }
 
-    /**
-     * Copies referee license information from Member to memento.
-     */
-    private static void copyRefereeLicense(Member member, MemberMemento memento) {
         RefereeLicense refereeLicense = member.getRefereeLicense();
         if (refereeLicense != null) {
             memento.refereeLicenseLevel = refereeLicense.level();
             memento.refereeLicenseValidityDate = refereeLicense.validityDate();
         }
-    }
 
-    /**
-     * Copies other member fields from Member to memento.
-     */
-    private static void copyOtherFields(Member member, MemberMemento memento) {
         memento.drivingLicenseGroup = member.getDrivingLicenseGroup();
         memento.dietaryRestrictions = member.getDietaryRestrictions();
         memento.birthNumber = member.getBirthNumber() != null ? EncryptedString.of(member.getBirthNumber().value()) : null;
@@ -345,12 +230,7 @@ class MemberMemento implements Persistable<UUID> {
         memento.suspendedAt = member.getSuspendedAt();
         memento.suspensionNote = member.getSuspensionNote();
         memento.suspendedBy = member.getSuspendedBy() != null ? member.getSuspendedBy().uuid().toString() : null;
-    }
 
-    /**
-     * Copies audit metadata from Member to memento.
-     */
-    private static void copyAuditMetadata(Member member, MemberMemento memento) {
         if (member.getAuditMetadata() != null) {
             memento.createdAt = member.getCreatedAt();
             memento.createdBy = member.getCreatedBy();
@@ -358,15 +238,14 @@ class MemberMemento implements Persistable<UUID> {
             memento.lastModifiedBy = member.getLastModifiedBy();
             memento.version = member.getVersion();
         }
+
+        memento.member = member;
+        memento.isNew = (member.getAuditMetadata() == null);
+
+        return memento;
     }
 
-    /**
-     * Converts this memento to a Member entity (for load operations).
-     *
-     * @return a Member entity reconstructed from this memento
-     */
     public Member toMember() {
-        // Reconstruct PersonalInformation
         PersonalInformation personalInfo = null;
         if (this.firstName != null) {
             personalInfo = PersonalInformation.of(
@@ -378,7 +257,6 @@ class MemberMemento implements Persistable<UUID> {
             );
         }
 
-        // Reconstruct Address
         Address address = null;
         if (this.street != null) {
             address = Address.of(
@@ -389,11 +267,9 @@ class MemberMemento implements Persistable<UUID> {
             );
         }
 
-        // Reconstruct EmailAddress and PhoneNumber
         EmailAddress email = this.email != null ? EmailAddress.of(this.email) : null;
         PhoneNumber phone = this.phone != null ? PhoneNumber.of(this.phone) : null;
 
-        // Reconstruct GuardianInformation
         GuardianInformation guardian = null;
         if (this.guardianFirstName != null) {
             guardian = new GuardianInformation(
@@ -405,7 +281,6 @@ class MemberMemento implements Persistable<UUID> {
             );
         }
 
-        // Reconstruct IdentityCard
         IdentityCard identityCard = null;
         if (this.identityCardNumber != null && this.identityCardValidityDate != null) {
             identityCard = IdentityCard.of(
@@ -414,7 +289,6 @@ class MemberMemento implements Persistable<UUID> {
             );
         }
 
-        // Reconstruct MedicalCourse
         MedicalCourse medicalCourse = null;
         if (this.medicalCourseCompletionDate != null) {
             medicalCourse = MedicalCourse.of(
@@ -423,7 +297,6 @@ class MemberMemento implements Persistable<UUID> {
             );
         }
 
-        // Reconstruct TrainerLicense
         TrainerLicense trainerLicense = null;
         if (this.trainerLicenseLevel != null && this.trainerLicenseValidityDate != null) {
             trainerLicense = TrainerLicense.of(
@@ -432,7 +305,6 @@ class MemberMemento implements Persistable<UUID> {
             );
         }
 
-        // Reconstruct RefereeLicense
         RefereeLicense refereeLicense = null;
         if (this.refereeLicenseLevel != null && this.refereeLicenseValidityDate != null) {
             refereeLicense = RefereeLicense.of(
@@ -441,20 +313,14 @@ class MemberMemento implements Persistable<UUID> {
             );
         }
 
-        // Reconstruct RegistrationNumber
         RegistrationNumber registrationNumber = this.registrationNumber != null
                 ? new RegistrationNumber(this.registrationNumber)
                 : null;
-
-        // Reconstruct BirthNumber
         BirthNumber birthNumber = this.birthNumber != null ? BirthNumber.of(this.birthNumber.value()) : null;
-
-        // Reconstruct BankAccountNumber
         BankAccountNumber bankAccountNumber = this.bankAccountNumber != null
                 ? BankAccountNumber.of(this.bankAccountNumber)
                 : null;
 
-        // Create Member using reconstruct method (bypasses validation)
         MemberId memberId = this.id != null ? new MemberId(this.id) : null;
         Member member = Member.reconstruct(
                 memberId,
@@ -481,20 +347,11 @@ class MemberMemento implements Persistable<UUID> {
                 getAuditMetadata()
         );
 
-        // Store transient reference for domain event delegation
         this.member = member;
 
         return member;
     }
 
-    /**
-     * Returns domain events from the associated Member entity.
-     * <p>
-     * Annotated with @DomainEvents to enable Spring Modulith automatic event publishing.
-     * Spring Data JDBC will collect and publish these events via the outbox pattern.
-     *
-     * @return list of domain events from the Member entity
-     */
     @DomainEvents
     public List<Object> getDomainEvents() {
         if (this.member != null) {
@@ -503,12 +360,6 @@ class MemberMemento implements Persistable<UUID> {
         return List.of();
     }
 
-    /**
-     * Clears domain events from the associated Member entity.
-     * <p>
-     * Annotated with @AfterDomainEventPublication to ensure events are cleared
-     * after they have been successfully published to the outbox.
-     */
     @AfterDomainEventPublication
     public void clearDomainEvents() {
         if (this.member != null) {
@@ -516,34 +367,16 @@ class MemberMemento implements Persistable<UUID> {
         }
     }
 
-    /**
-     * Check if this entity is new (not yet persisted).
-     * Used by Spring Data JDBC to determine whether to perform INSERT or UPDATE.
-     *
-     * @return true if this is a new entity, false if already persisted
-     */
     @Override
     public boolean isNew() {
         return this.isNew;
     }
 
-    /**
-     * Get the entity's unique identifier.
-     *
-     * @return the UUID of this entity
-     */
     @Override
     public UUID getId() {
         return this.id;
     }
 
-    /**
-     * Get the audit metadata as an AuditMetadata value object.
-     * <p>
-     * Returns null if createdAt is null (new member not yet persisted).
-     *
-     * @return the audit metadata, or null if not available
-     */
     public AuditMetadata getAuditMetadata() {
         if (this.createdAt == null) {
             return null;

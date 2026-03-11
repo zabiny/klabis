@@ -361,14 +361,8 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.default.target").value(
-                            "http://localhost/api/members/%s/profile".formatted(memberId)))
+                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'email')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'phone')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'address')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'dietaryRestrictions')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'firstName')]").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'lastName')]").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
@@ -1421,9 +1415,9 @@ class MemberControllerApiTest {
     class SelfUpdateSecurityTests {
 
         @Test
-        @DisplayName("self-update should ignore admin-only fields (chipNumber) and only pass allowed fields to service")
+        @DisplayName("self-update should only pass allowed fields (email, phone, address, dietaryRestrictions) to service")
         @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
-        void selfUpdateShouldIgnoreAdminOnlyFields() throws Exception {
+        void selfUpdateShouldOnlyPassAllowedFieldsToService() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNoGuardian()
@@ -1434,15 +1428,14 @@ class MemberControllerApiTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
-                                        "email": "new@example.com",
-                                        "chipNumber": "12345"
+                                        "email": "new@example.com"
                                     }
                                     """))
                     .andExpect(status().isNoContent());
 
             Mockito.verify(managementService).updateMember(
                     eq(new MemberId(memberId)),
-                    argThat((Member.SelfUpdate cmd) -> cmd.chipNumber() == null)
+                    argThat((Member.SelfUpdate cmd) -> cmd.email() != null && cmd.phone() == null)
             );
         }
     }

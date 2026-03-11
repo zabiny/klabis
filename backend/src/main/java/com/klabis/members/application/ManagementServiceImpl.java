@@ -115,6 +115,6 @@ public class ManagementServiceImpl implements ManagementService {
 
     private Member loadMember(MemberId memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new InvalidUpdateException("Member not found with ID: " + memberId));
+                .orElseThrow(() -> new MemberNotFoundException(memberId));
     }
 }

@@ -258,12 +258,6 @@ class MemberController {
         return ResponseEntity.ok(pagedModel);
     }
 
-    /**
-     * Validates that all sort fields are in the allowed list.
-     *
-     * @param sort the sort specification to validate
-     * @throws IllegalArgumentException if any sort field is not allowed
-     */
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("firstName", "lastName", "registrationNumber");
 
     private void validateSortFields(Sort sort) {
@@ -280,58 +274,8 @@ class MemberController {
     }
 
     /**
-     * Update member's own profile information (partial update, self-service).
-     * <p>
-     * PATCH /api/members/{id}/profile
-     * <p>
-     * Members can only update a limited subset of their own information.
-     * Admin-only fields are excluded. Only the authenticated member may call this on their own ID.
-     *
-     * @param id          member ID (must match current user's member ID)
-     * @param request     partial update request (email, phone, address, dietaryRestrictions only)
-     * @param currentUser the authenticated user performing the update
-     * @return 204 No Content on success
-     */
-    @PatchMapping(value = "/{id}/profile", consumes = "application/json")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "Update own member profile (self-service, limited fields)",
-            description = "Members can update their own profile with a limited set of fields: " +
-                          "email, phone, address, dietaryRestrictions. " +
-                          "Only the member themselves may call this endpoint (memberId from JWT must match path id)."
-    )
-    @ApiResponse(responseCode = "204", description = "Profile updated successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - can only update own profile")
-    @ApiResponse(responseCode = "404", description = "Member not found")
-    public ResponseEntity<Void> updateMemberSelf(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
-            @Parameter(description = "Self-service update request - only limited fields (email, phone, address, dietaryRestrictions)")
-            @Valid @RequestBody SelfUpdateMemberRequest request,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireSelfAccess(currentUser, id);
-
-        MemberId memberId = new MemberId(id);
-        var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
-        managementService.updateMember(memberId, selfCommand);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Get member by ID.
-     * <p>
-     * GET /api/members/{id}
-     * <p>
      * Returns a PATCH affordance conditionally based on caller's permissions:
-     * <ul>
-     *   <li>MEMBERS:MANAGE authority → full UpdateMemberRequest template (all fields)</li>
-     *   <li>Own profile (memberId from JWT matches path id) → SelfUpdateMemberRequest template (limited fields)</li>
-     *   <li>Other member → no PATCH affordance</li>
-     * </ul>
-     *
-     * @param id          member ID
-     * @param currentUser the authenticated user requesting the member details
-     * @return member resource with full details
+     * MEMBERS:MANAGE → full update affordance; own profile → self-update affordance; other → no affordance.
      */
     @GetMapping("/{id}")
     @HasAuthority(Authority.MEMBERS_READ)
@@ -372,7 +316,7 @@ class MemberController {
             }
         } else if (currentUser.isMember() && currentUser.memberId().uuid().equals(id)) {
             entityModel.add(
-                    selfLink.andAffordances(klabisAfford(methodOn(MemberController.class).updateMemberSelf(id, null, null)))
+                    selfLink.andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
             );
         } else {
             entityModel.add(selfLink);

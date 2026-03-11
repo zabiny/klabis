@@ -20,8 +20,8 @@ public record Address(String street, String city, String postalCode, String coun
     private static final int MAX_STREET_LENGTH = 200;
     private static final int MAX_CITY_LENGTH = 100;
     private static final int MAX_POSTAL_CODE_LENGTH = 20;
-    private static final String POSTAL_CODE_PATTERN = "^[A-Za-z0-9][A-Za-z0-9 -]*[A-Za-z0-9]$|^[A-Za-z0-9]$";
-    private static final String ISO_3166_ALPHA_2_PATTERN = "^[A-Za-z]{2}$";
+    public static final String POSTAL_CODE_PATTERN = "^[A-Za-z0-9][A-Za-z0-9 -]*[A-Za-z0-9]$|^[A-Za-z0-9]$";
+    public static final String ISO_3166_ALPHA_2_PATTERN = "^[A-Za-z]{2}$";
 
     /**
      * Creates an Address value object with validation.

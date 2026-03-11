@@ -260,9 +260,8 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     void shouldPassAuthorizationWhenSuspendingMemberWithUpdateAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
 
-        // This test validates that authorization passes - the endpoint returns
-        // 400 Bad Request for non-existent member IDs (service throws InvalidUpdateException)
-        // If authorization was denied, we'd get 403 before reaching the endpoint
+        // This test validates that authorization passes (not denied with 403).
+        // A non-existent member returns 404, which confirms authorization succeeded.
         mockMvc.perform(
                         post("/api/members/" + memberId + "/suspend")
                                 .contentType("application/json")
@@ -273,8 +272,6 @@ class MemberControllerSecurityTest extends SecurityTestBase {
                                         }
                                         """)
                 )
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.type").exists())
-                .andExpect(jsonPath("$.title").value("Bad Request"));
+                .andExpect(status().isNotFound());
     }
 }

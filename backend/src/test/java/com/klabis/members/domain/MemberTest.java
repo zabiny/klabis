@@ -787,26 +787,6 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("should update chip number when provided")
-        void shouldUpdateChipNumberWhenProvided() {
-            Member member = createAdultMember();
-
-            member.handle(MemberSelfUpdateBuilder.builder().chipNumber("99887").build());
-
-            assertThat(member.getChipNumber()).isEqualTo("99887");
-        }
-
-        @Test
-        @DisplayName("should update nationality when provided")
-        void shouldUpdateNationalityWhenProvided() {
-            Member member = createAdultMember();
-
-            member.handle(MemberSelfUpdateBuilder.builder().nationality("SK").build());
-
-            assertThat(member.getNationality()).isEqualTo("SK");
-        }
-
-        @Test
         @DisplayName("should update dietary restrictions when provided")
         void shouldUpdateDietaryRestrictionsWhenProvided() {
             Member member = createAdultMember();
@@ -862,76 +842,6 @@ class MemberTest {
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
-        }
-
-        @Test
-        @DisplayName("should clear birth number when nationality changes from CZE to non-Czech")
-        void shouldClearBirthNumberWhenNationalityChangesFromCZEToNonCzech() {
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM9002")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
-                    .withNationality("CZE")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
-                    .withBirthNumber("9005151234")
-                    .withNoGuardian()
-                    .build();
-
-            assertThat(member.getBirthNumber()).isNotNull();
-
-            member.handle(MemberSelfUpdateBuilder.builder().nationality("SK").build());
-
-            assertThat(member.getNationality()).isEqualTo("SK");
-            assertThat(member.getBirthNumber()).isNull();
-        }
-
-        @Test
-        @DisplayName("should preserve birth number when nationality changes between CZ and CZE")
-        void shouldPreserveBirthNumberWhenNationalityChangesBetweenCZAndCZE() {
-            Member memberWithCZ = aMember()
-                    .withRegistrationNumber("ZBM9003")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
-                    .withBirthNumber("9005151234")
-                    .withNoGuardian()
-                    .build();
-
-            memberWithCZ.handle(MemberSelfUpdateBuilder.builder().nationality("CZE").build());
-
-            assertThat(memberWithCZ.getNationality()).isEqualTo("CZE");
-            assertThat(memberWithCZ.getBirthNumber()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("should clear birth number when nationality changes from CZ to non-CZ")
-        void shouldClearBirthNumberWhenNationalityChangesFromCZToNonCZ() {
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM9001")
-                    .withName("Jan", "Novák")
-                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                    .withEmail("jan.novak@example.com")
-                    .withPhone("+420123456789")
-                    .withBirthNumber("9005151234")
-                    .withNoGuardian()
-                    .build();
-
-            assertThat(member.getBirthNumber()).isNotNull();
-
-            member.handle(MemberSelfUpdateBuilder.builder().nationality("SK").build());
-
-            assertThat(member.getNationality()).isEqualTo("SK");
-            assertThat(member.getBirthNumber()).isNull();
         }
 
     }

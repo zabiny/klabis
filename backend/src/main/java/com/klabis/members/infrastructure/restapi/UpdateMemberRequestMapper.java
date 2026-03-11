@@ -4,10 +4,6 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.domain.*;
 
-/**
- * Converts {@link UpdateMemberRequest} REST DTO to domain commands.
- * Conversion lives in the infrastructure layer; domain is kept free of REST types.
- */
 class UpdateMemberRequestMapper {
 
     private UpdateMemberRequestMapper() {}
@@ -46,29 +42,24 @@ class UpdateMemberRequestMapper {
 
     static Member.SelfUpdate toSelfUpdateCommand(UpdateMemberRequest request) {
         try {
-            return buildSelfUpdate(request.email(), request.phone(), request.address(), request.dietaryRestrictions());
+            return new Member.SelfUpdate(
+                    toEmailAddress(request.email()),
+                    toPhoneNumber(request.phone()),
+                    toAddress(request.address()),
+                    toString(request.chipNumber()),
+                    toString(request.nationality()),
+                    toBankAccountNumber(request.bankAccountNumber()),
+                    toIdentityCard(request.identityCard()),
+                    toEnum(request.drivingLicenseGroup()),
+                    toMedicalCourse(request.medicalCourse()),
+                    toTrainerLicense(request.trainerLicense()),
+                    toRefereeLicense(request.refereeLicense()),
+                    toString(request.dietaryRestrictions()),
+                    toGuardianInformation(request.guardian())
+            );
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);
         }
-    }
-
-    static Member.SelfUpdate toSelfUpdateCommand(SelfUpdateMemberRequest request) {
-        try {
-            return buildSelfUpdate(request.email(), request.phone(), request.address(), request.dietaryRestrictions());
-        } catch (IllegalArgumentException e) {
-            throw new InvalidUpdateException(e.getMessage(), e);
-        }
-    }
-
-    private static Member.SelfUpdate buildSelfUpdate(
-            com.klabis.common.patch.PatchField<String> email,
-            com.klabis.common.patch.PatchField<String> phone,
-            com.klabis.common.patch.PatchField<AddressRequest> address,
-            com.klabis.common.patch.PatchField<String> dietaryRestrictions) {
-        return new Member.SelfUpdate(
-                toEmailAddress(email), toPhoneNumber(phone), toAddress(address), null, null,
-                null, null, null, null, null, null, toString(dietaryRestrictions), null
-        );
     }
 
     private static EmailAddress toEmailAddress(com.klabis.common.patch.PatchField<String> email) {
@@ -122,15 +113,19 @@ class UpdateMemberRequestMapper {
     }
 
     private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<TrainerLicenseDto> trainerLicense) {
-        return trainerLicense.isProvided()
-            ? TrainerLicense.of(trainerLicense.throwIfNotProvided().level(), trainerLicense.throwIfNotProvided().validityDate())
-            : null;
+        if (!trainerLicense.isProvided()) {
+            return null;
+        }
+        TrainerLicenseDto dto = trainerLicense.throwIfNotProvided();
+        return TrainerLicense.of(dto.level(), dto.validityDate());
     }
 
     private static RefereeLicense toRefereeLicense(com.klabis.common.patch.PatchField<RefereeLicenseDto> refereeLicense) {
-        return refereeLicense.isProvided()
-            ? RefereeLicense.of(refereeLicense.throwIfNotProvided().level(), refereeLicense.throwIfNotProvided().validityDate())
-            : null;
+        if (!refereeLicense.isProvided()) {
+            return null;
+        }
+        RefereeLicenseDto dto = refereeLicense.throwIfNotProvided();
+        return RefereeLicense.of(dto.level(), dto.validityDate());
     }
 
     private static java.time.LocalDate toLocalDate(com.klabis.common.patch.PatchField<java.time.LocalDate> dateField) {
