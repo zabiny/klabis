@@ -1,5 +1,6 @@
 package com.klabis.common.security;
 
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -49,6 +50,12 @@ public class KlabisJwtAuthenticationToken extends JwtAuthenticationToken {
 
     public boolean hasMemberProfile() {
         return memberIdUuid != null;
+    }
+
+    public boolean hasAuthority(Authority authority) {
+        return getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals(authority.getValue()));
     }
 
     public String getUsername() {

@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -35,7 +36,6 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
@@ -122,8 +122,9 @@ class MemberController {
             Authentication authentication) {
 
         MemberId memberId = new MemberId(id);
-        if (hasAuthority(authentication, Authority.MEMBERS_MANAGE)) {
-            UserId currentUserId = extractUserId(authentication);
+        KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) authentication;
+        if (token.hasAuthority(Authority.MEMBERS_MANAGE)) {
+            UserId currentUserId = token.getUserId();
             var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request, currentUserId);
             Member updatedMember = managementService.updateMember(memberId, adminCommand);
 
@@ -134,7 +135,7 @@ class MemberController {
                         .build();
             }
         } else {
-            UserId currentUserId = extractUserId(authentication);
+            UserId currentUserId = token.getUserId();
             if (!currentUserId.uuid().equals(id)) {
                 throw new ErrorResponseException(HttpStatus.FORBIDDEN,
                         ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
@@ -144,20 +145,6 @@ class MemberController {
             managementService.updateMember(memberId, selfCommand);
         }
         return ResponseEntity.noContent().build();
-    }
-
-    private boolean hasAuthority(Authentication authentication, Authority requiredAuthority) {
-        return authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(auth -> auth.equals(requiredAuthority.getValue()));
-    }
-
-    private UserId extractUserId(Authentication authentication) {
-        if (authentication instanceof com.klabis.common.security.KlabisJwtAuthenticationToken token) {
-            return token.getUserId();
-        }
-        throw new IllegalStateException("Unable to extract user ID from authentication, got: " + authentication.getClass()
-                .getName());
     }
 
     @PostMapping("/{id}/resume")
