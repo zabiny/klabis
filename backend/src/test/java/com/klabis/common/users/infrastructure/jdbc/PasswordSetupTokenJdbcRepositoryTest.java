@@ -84,6 +84,13 @@ class PasswordSetupTokenJdbcRepositoryTest {
         return userRepository.save(user);
     }
 
+    private void insertExpiredToken(UUID tokenId, UUID userId, String tokenHash, Instant createdAt, Instant expiresAt) {
+        jdbcTemplate.update(
+                "INSERT INTO password_setup_tokens (id, user_id, token_hash, created_at, expires_at, version) VALUES (?, ?, ?, ?, ?, 0)",
+                tokenId, userId, tokenHash, createdAt, expiresAt
+        );
+    }
+
     @Nested
     @DisplayName("save() method")
     class SaveMethod {
@@ -390,18 +397,11 @@ class PasswordSetupTokenJdbcRepositoryTest {
         @Test
         @DisplayName("should delete expired tokens")
         void shouldDeleteExpiredTokens() {
-            // Given - Create expired token
+            // Given - Create expired token directly via JDBC (bypass domain — isNew=false would skip INSERT)
             User user = createTestUser("ZBM9015");
-            UUID tokenId = UUID.randomUUID();
-            UserId userId = user.getId();
-            TokenHash hash = TokenHash.hash("expired-token");
             Instant past = Instant.now().minus(Duration.ofHours(5));
             Instant expired = Instant.now().minus(Duration.ofHours(1));
-
-            PasswordSetupToken expiredToken = PasswordSetupToken.reconstruct(
-                    new PasswordSetupTokenId(tokenId), userId, hash, past, expired, null, null, null
-            );
-            tokenRepository.save(expiredToken);
+            insertExpiredToken(UUID.randomUUID(), user.getId().uuid(), TokenHash.hash("expired-token").getValue(), past, expired);
 
             // When
             int deletedCount = tokenRepository.deleteExpiredTokens();
@@ -430,20 +430,12 @@ class PasswordSetupTokenJdbcRepositoryTest {
         @Test
         @DisplayName("should return count of deleted tokens")
         void shouldReturnCountOfDeletedTokens() {
-            // Given - Create multiple expired tokens
+            // Given - Create multiple expired tokens directly via JDBC
             User user = createTestUser("ZBM9017");
-            Instant past1 = Instant.now().minus(Duration.ofHours(5));
-            Instant past2 = Instant.now().minus(Duration.ofHours(5)).minusSeconds(1);
+            Instant past = Instant.now().minus(Duration.ofHours(5));
             Instant expired = Instant.now().minus(Duration.ofHours(1));
-
-            PasswordSetupToken expiredToken1 = PasswordSetupToken.reconstruct(
-                    new PasswordSetupTokenId(UUID.randomUUID()), user.getId(), TokenHash.hash("expired1"), past1, expired, null, null, null
-            );
-            PasswordSetupToken expiredToken2 = PasswordSetupToken.reconstruct(
-                    new PasswordSetupTokenId(UUID.randomUUID()), user.getId(), TokenHash.hash("expired2"), past2, expired, null, null, null
-            );
-            tokenRepository.save(expiredToken1);
-            tokenRepository.save(expiredToken2);
+            insertExpiredToken(UUID.randomUUID(), user.getId().uuid(), TokenHash.hash("expired1").getValue(), past, expired);
+            insertExpiredToken(UUID.randomUUID(), user.getId().uuid(), TokenHash.hash("expired2").getValue(), past.minusSeconds(1), expired);
 
             // Active token
             PasswordSetupToken activeToken = PasswordSetupToken.generateFor(user.getId(), Duration.ofHours(4));

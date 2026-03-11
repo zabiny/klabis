@@ -172,16 +172,4 @@ public class PasswordSetupTokenMemento implements Persistable<UUID> {
                 this.version
         );
     }
-
-    /**
-     * Set the isNew flag for this memento.
-     * <p>
-     * Package-protected method used by the repository to override the isNew flag
-     * based on database existence check. This ensures correct INSERT vs UPDATE behavior.
-     *
-     * @param isNew true if this should be treated as a new entity (INSERT), false for UPDATE
-     */
-    void setNewFlag(boolean isNew) {
-        this.isNew = isNew;
-    }
 }

@@ -278,22 +278,6 @@ public class PasswordSetupToken extends KlabisAggregateRoot<PasswordSetupToken, 
         return super.getAuditMetadata();
     }
 
-    public Instant getLastModifiedAt() {
-        return super.getLastModifiedAt();
-    }
-
-    public String getCreatedBy() {
-        return super.getCreatedBy();
-    }
-
-    public String getLastModifiedBy() {
-        return super.getLastModifiedBy();
-    }
-
-    public Long getVersion() {
-        return super.getVersion();
-    }
-
     public LocalDateTime getCreatedAtLocal() {
         return LocalDateTime.ofInstant(createdAt, ZoneOffset.UTC);
     }

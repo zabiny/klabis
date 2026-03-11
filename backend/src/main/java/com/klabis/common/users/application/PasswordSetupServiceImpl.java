@@ -78,29 +78,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         Assert.hasText(firstName, "First name is required");
         Assert.hasText(email, "Email is required");
         Assert.hasText(plainToken, "Token is required");
-
-        String setupUrl = buildSetupUrl(plainToken);
-        String maskedEmail = PIDataMaskingUtil.maskEmail(email);
-
-        Map<String, Object> templateVariables = Map.of(
-                "firstName", firstName,
-                "setupUrl", setupUrl,
-                "expirationHours", passwordSetupProperties.getToken().getExpirationHours(),
-                "clubName", clubProperties.getName()
-        );
-
-        String htmlBody = templateRenderer.renderHtml(EmailTemplate.PASSWORD_SETUP, templateVariables);
-        String textBody = templateRenderer.renderText(EmailTemplate.PASSWORD_SETUP, templateVariables);
-
-        EmailMessage message = EmailMessage.multipart(
-                email,
-                "Set Your Password for " + clubProperties.getName(),
-                htmlBody,
-                textBody
-        );
-
-        emailService.send(message);
-        log.info("Sent password setup email to {}", maskedEmail);
+        doSendPasswordSetupEmail(firstName, email, plainToken);
     }
 
     @Override
@@ -109,12 +87,15 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         Assert.hasText(username, "Username is required");
         Assert.hasText(email, "Email is required");
         Assert.hasText(plainToken, "Token is required");
+        doSendPasswordSetupEmail(username, email, plainToken);
+    }
 
+    private void doSendPasswordSetupEmail(String displayName, String email, String plainToken) {
         String setupUrl = buildSetupUrl(plainToken);
         String maskedEmail = PIDataMaskingUtil.maskEmail(email);
 
         Map<String, Object> templateVariables = Map.of(
-                "firstName", username,
+                "firstName", displayName,
                 "setupUrl", setupUrl,
                 "expirationHours", passwordSetupProperties.getToken().getExpirationHours(),
                 "clubName", clubProperties.getName()
@@ -123,14 +104,12 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         String htmlBody = templateRenderer.renderHtml(EmailTemplate.PASSWORD_SETUP, templateVariables);
         String textBody = templateRenderer.renderText(EmailTemplate.PASSWORD_SETUP, templateVariables);
 
-        EmailMessage message = EmailMessage.multipart(
+        emailService.send(EmailMessage.multipart(
                 email,
                 "Set Your Password for " + clubProperties.getName(),
                 htmlBody,
                 textBody
-        );
-
-        emailService.send(message);
+        ));
         log.info("Sent password setup email to {}", maskedEmail);
     }
 

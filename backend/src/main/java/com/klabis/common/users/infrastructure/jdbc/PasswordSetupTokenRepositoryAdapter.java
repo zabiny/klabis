@@ -32,14 +32,7 @@ class PasswordSetupTokenRepositoryAdapter implements PasswordSetupTokenRepositor
 
     @Override
     public PasswordSetupToken save(PasswordSetupToken token) {
-        // Check if token already exists in database to determine INSERT vs UPDATE
-        boolean exists = jdbcRepository.existsById(token.getId().uuid());
-
-        // Convert PasswordSetupToken to PasswordSetupTokenMemento for persistence
         PasswordSetupTokenMemento memento = PasswordSetupTokenMemento.from(token);
-        // Override isNew flag based on database existence
-        memento.setNewFlag(!exists);
-
         PasswordSetupTokenMemento saved = jdbcRepository.save(memento);
         return saved.toPasswordSetupToken();
     }
