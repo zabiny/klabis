@@ -1,6 +1,5 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.application.EventManagementService;
@@ -21,13 +20,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import com.klabis.common.mvc.MvcComponent;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -69,7 +65,7 @@ public class EventController {
     @ApiResponse(responseCode = "201", description = "Event successfully created")
     public ResponseEntity<Void> createEvent(
             @Parameter(description = "Event creation data")
-            @Valid @RequestBody Event.CreateCommand command) {
+            @Valid @RequestBody Event.EventCommand command) {
 
         Event created = eventManagementService.createEvent(command);
 
@@ -87,7 +83,7 @@ public class EventController {
     @ApiResponse(responseCode = "204", description = "Event successfully updated")
     public ResponseEntity<Void> updateEvent(
             @Parameter(description = "Event UUID") @PathVariable UUID id,
-            @Parameter(description = "Event update data") @Valid @RequestBody Event.UpdateCommand command) {
+            @Parameter(description = "Event update data") @Valid @RequestBody Event.EventCommand command) {
 
         eventManagementService.updateEvent(new EventId(id), command);
         return ResponseEntity.noContent().build();
@@ -218,7 +214,7 @@ public class EventController {
     private void addLinksForEvent(EntityModel<?> entityModel, Event event) {
         UUID eventId = event.getId().value();
 
-        Link selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
+        var selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
 
         switch (event.getStatus()) {
             case DRAFT:
@@ -241,7 +237,7 @@ public class EventController {
         entityModel.add(selfLink);
         entityModel.add(klabisLinkTo(methodOn(EventController.class).listEvents(null, null)).withRel("collection"));
 
-        Link registrationsLink = Link.of("/api/events/" + eventId + "/registrations").withRel("registrations");
+        var registrationsLink = klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId)).withRel("registrations");
         if (event.areRegistrationsOpen()) {
             registrationsLink = registrationsLink
                     .andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
@@ -249,14 +245,4 @@ public class EventController {
         entityModel.add(registrationsLink);
     }
 
-}
-
-@MvcComponent
-class EventsRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
-
-    @Override
-    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        model.add(klabisLinkTo(methodOn(EventController.class).listEvents(null, Pageable.unpaged())).withRel("events"));
-        return model;
-    }
 }

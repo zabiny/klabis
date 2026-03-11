@@ -67,7 +67,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithValidData() throws Exception {
             Event createdEvent = EventTestDataBuilder.anEvent().withName("Spring Cup 2026").build();
-            Event.CreateCommand command = new Event.CreateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Spring Cup 2026",
                     LocalDate.of(2026, 3, 15),
                     "Forest Park",
@@ -76,7 +76,7 @@ class EventControllerTest {
                     null
             );
 
-            when(eventManagementService.createEvent(any(Event.CreateCommand.class))).thenReturn(createdEvent);
+            when(eventManagementService.createEvent(any(Event.EventCommand.class))).thenReturn(createdEvent);
 
             mockMvc.perform(
                             post("/api/events")
@@ -92,7 +92,7 @@ class EventControllerTest {
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
-            Event.CreateCommand command = new Event.CreateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Test Event",
                     LocalDate.of(2026, 5, 1),
                     "Location",
@@ -114,7 +114,7 @@ class EventControllerTest {
         @DisplayName("should return 400 with invalid data")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn400WithInvalidData() throws Exception {
-            Event.CreateCommand command = new Event.CreateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "",
                     LocalDate.of(2026, 5, 1),
                     "Location",
@@ -142,7 +142,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldUpdateEventSuccessfully() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.UpdateCommand updateCommand = new Event.UpdateCommand(
+            Event.EventCommand updateCommand = new Event.EventCommand(
                     "Updated Event",
                     LocalDate.of(2026, 5, 15),
                     "Updated Location",
@@ -165,7 +165,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenUpdatingWithoutAuthority() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.UpdateCommand command = new Event.UpdateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Updated Event",
                     LocalDate.of(2026, 5, 1),
                     "Location",

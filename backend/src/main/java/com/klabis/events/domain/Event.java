@@ -59,30 +59,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     // ========== Nested Command Records ==========
 
-    public record CreateCommand(
-            @NotBlank(message = "Event name is required")
-            @Size(max = 100, message = "Event name must not exceed 100 characters")
-            String name,
-
-            @NotNull(message = "Event date is required")
-            LocalDate eventDate,
-
-            @NotBlank(message = "Event location is required")
-            @Size(max = 100, message = "Event location must not exceed 100 characters")
-            String location,
-
-            @NotBlank(message = "Event organizer is required")
-            @Size(max = 10, message = "Event organizer must not exceed 10 characters")
-            String organizer,
-
-            @URL(message = "Website URL must be valid")
-            String websiteUrl,
-
-            MemberId eventCoordinatorId
-    ) {
-    }
-
-    public record UpdateCommand(
+    public record EventCommand(
             @NotBlank(message = "Event name is required")
             @Size(max = 100, message = "Event name must not exceed 100 characters")
             String name,
@@ -424,9 +401,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             };
         }
 
-        // Check for duplicate registration
         if (findRegistration(memberId).isPresent()) {
-            throw new IllegalStateException("Duplicate registration not allowed for this event");
+            throw new DuplicateRegistrationException(memberId, this.id);
         }
 
         // Create and add registration

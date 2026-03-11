@@ -2,6 +2,7 @@ package com.klabis.events.application;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
+import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.EventRegistration;

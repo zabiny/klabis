@@ -21,7 +21,7 @@ public class EventManagementServiceImpl implements EventManagementService {
 
     @Transactional
     @Override
-    public Event createEvent(Event.CreateCommand command) {
+    public Event createEvent(Event.EventCommand command) {
         Event event = Event.create(
                 command.name(),
                 command.eventDate(),
@@ -36,7 +36,7 @@ public class EventManagementServiceImpl implements EventManagementService {
 
     @Transactional
     @Override
-    public void updateEvent(EventId eventId, Event.UpdateCommand command) {
+    public void updateEvent(EventId eventId, Event.EventCommand command) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 

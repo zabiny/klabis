@@ -7,14 +7,14 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.security.SecurityConfiguration;
 import com.klabis.common.users.UserService;
 import com.klabis.events.EventTestDataBuilder;
-import com.klabis.events.application.DuplicateRegistrationException;
 import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
-import com.klabis.events.application.RegistrationNotFoundException;
+import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.SiCardNumber;
+import com.klabis.events.domain.EventStatus;
 import com.klabis.events.EventId;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;
@@ -35,6 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -225,8 +226,10 @@ class EventRegistrationControllerTest {
             );
 
             when(registrationServiceMock.listRegistrations(new EventId(eventId))).thenReturn(registrations);
-            when(membersMock.findById(member1Id)).thenReturn(java.util.Optional.of(new MemberDto(member1Id.value(), "John", "Doe", "john@example.com")));
-            when(membersMock.findById(member2Id)).thenReturn(java.util.Optional.of(new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")));
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+            ));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations", eventId)
@@ -252,16 +255,15 @@ class EventRegistrationControllerTest {
             final UUID eventId = UUID.randomUUID();
             final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
                     .build();
             activeEvent.publish();
 
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
-
             when(eventManagementServiceMock.getEvent(new EventId(eventId))).thenReturn(activeEvent);
-            when(registrationServiceMock.getOwnRegistration(new EventId(eventId), memberId)).thenReturn(registration);
             when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
 
             mockMvc.perform(
@@ -284,17 +286,16 @@ class EventRegistrationControllerTest {
             final UUID eventId = UUID.randomUUID();
             final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
             Event finishedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().minusDays(5))
+                    .addRegistration(registration)
                     .build();
             finishedEvent.publish();
             finishedEvent.finish();
 
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), Instant.now());
-
             when(eventManagementServiceMock.getEvent(new EventId(eventId))).thenReturn(finishedEvent);
-            when(registrationServiceMock.getOwnRegistration(new EventId(eventId), memberId)).thenReturn(registration);
             when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
 
             mockMvc.perform(
@@ -313,9 +314,12 @@ class EventRegistrationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturn404WhenNotRegistered() throws Exception {
             UUID eventId = UUID.randomUUID();
+            Event eventWithoutRegistration = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build();
+            eventWithoutRegistration.publish();
 
-            when(registrationServiceMock.getOwnRegistration(eq(new EventId(eventId)), any(MemberId.class)))
-                    .thenThrow(new RegistrationNotFoundException(new MemberId(UUID.fromString(MEMBER_1_ID)), new EventId(eventId)));
+            when(eventManagementServiceMock.getEvent(new EventId(eventId))).thenReturn(eventWithoutRegistration);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/me", eventId)

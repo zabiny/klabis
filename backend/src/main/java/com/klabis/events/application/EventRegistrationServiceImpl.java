@@ -28,10 +28,6 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
-        if (event.findRegistration(memberId).isPresent()) {
-            throw new DuplicateRegistrationException(memberId, eventId);
-        }
-
         event.registerMember(memberId, SiCardNumber.of(command.siCardNumber()));
         eventRepository.save(event);
     }

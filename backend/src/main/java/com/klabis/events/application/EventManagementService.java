@@ -10,9 +10,9 @@ import org.springframework.data.domain.Pageable;
 @PrimaryPort
 public interface EventManagementService {
 
-    Event createEvent(Event.CreateCommand command);
+    Event createEvent(Event.EventCommand command);
 
-    void updateEvent(EventId eventId, Event.UpdateCommand command);
+    void updateEvent(EventId eventId, Event.EventCommand command);
 
     void publishEvent(EventId eventId);
 

@@ -10,7 +10,10 @@ import org.jmolecules.ddd.annotation.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 class MembersImpl implements Members {
@@ -24,6 +27,13 @@ class MembersImpl implements Members {
     @Override
     public Optional<MemberDto> findById(MemberId memberId) {
         return memberRepository.findById(memberId).map(this::fromMember);
+    }
+
+    @Override
+    public Map<MemberId, MemberDto> findByIds(Collection<MemberId> memberIds) {
+        return memberIds.stream()
+                .flatMap(id -> memberRepository.findById(id).stream().map(m -> Map.entry(id, fromMember(m))))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override

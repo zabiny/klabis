@@ -50,7 +50,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Complete event lifecycle: create → publish → finish")
     void shouldCompleteEventLifecycleFromCreateToFinish() throws Exception {
         // Given: Create an event
-        Event.CreateCommand createCommand = new Event.CreateCommand(
+        Event.EventCommand createCommand = new Event.EventCommand(
                 "Spring Cup 2026",
                 LocalDate.of(2026, 3, 15),
                 "Forest Park",
@@ -114,7 +114,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Complete event lifecycle: create → cancel")
     void shouldCompleteEventLifecycleFromCreateToCancel() throws Exception {
         // Given: Create an event
-        Event.CreateCommand createCommand = new Event.CreateCommand(
+        Event.EventCommand createCommand = new Event.EventCommand(
                 "Autumn Race 2026",
                 LocalDate.of(2026, 10, 12),
                 "City Park",
@@ -156,7 +156,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event CRUD with optional websiteUrl")
     void shouldCreateEventWithOptionalWebsiteUrl() throws Exception {
         // Given: Create event with optional websiteUrl
-        Event.CreateCommand createCommand = new Event.CreateCommand(
+        Event.EventCommand createCommand = new Event.EventCommand(
                 "Summer Championship 2026",
                 LocalDate.of(2026, 7, 20),
                 "Mountain Valley",
@@ -186,7 +186,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(jsonPath("$.websiteUrl").value("https://example.com/summer-champ"));
 
         // When: Update event with new values
-        Event.UpdateCommand updateCommand = new Event.UpdateCommand(
+        Event.EventCommand updateCommand = new Event.EventCommand(
                 "Summer Championship 2026 (Updated)",
                 LocalDate.of(2026, 7, 21),
                 "Mountain Valley (Updated)",
@@ -218,7 +218,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event list with pagination and filtering by status")
     void shouldListEventsWithPaginationAndStatusFilter() throws Exception {
         // Given: Create multiple events with different statuses
-        Event.CreateCommand draftEvent = new Event.CreateCommand(
+        Event.EventCommand draftEvent = new Event.EventCommand(
                 "Draft Event",
                 LocalDate.of(2026, 5, 1),
                 "Location 1",
@@ -227,7 +227,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 null
         );
 
-        Event.CreateCommand activeEvent = new Event.CreateCommand(
+        Event.EventCommand activeEvent = new Event.EventCommand(
                 "Active Event",
                 LocalDate.of(2026, 6, 1),
                 "Location 2",
@@ -283,7 +283,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event list with filtering by organizer and date range")
     void shouldListEventsWithOrganizerAndDateRangeFilter() throws Exception {
         // Given: Create events for different organizers
-        Event.CreateCommand oobEvent = new Event.CreateCommand(
+        Event.EventCommand oobEvent = new Event.EventCommand(
                 "OOB Event",
                 LocalDate.of(2026, 3, 15),
                 "Forest",
@@ -292,7 +292,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 null
         );
 
-        Event.CreateCommand prgEvent = new Event.CreateCommand(
+        Event.EventCommand prgEvent = new Event.EventCommand(
                 "PRG Event",
                 LocalDate.of(2026, 4, 20),
                 "City",
@@ -337,7 +337,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event detail should show status-appropriate HAL+FORMS links")
     void shouldShowStatusAppropriateHateoasLinks() throws Exception {
         // Given: Create a DRAFT event
-        Event.CreateCommand createCommand = new Event.CreateCommand(
+        Event.EventCommand createCommand = new Event.EventCommand(
                 "Links Test Event",
                 LocalDate.of(2026, 8, 10),
                 "Test Location",
@@ -411,7 +411,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
     void shouldRejectUpdateForFinishedEvent() throws Exception {
         // Given: Create and finish an event
-        Event.CreateCommand createCommand = new Event.CreateCommand(
+        Event.EventCommand createCommand = new Event.EventCommand(
                 "Immutable Event",
                 LocalDate.of(2026, 9, 5),
                 "Immutable Location",
@@ -441,7 +441,7 @@ class EventManagementE2ETest extends SecurityTestBase {
         ).andExpect(status().isNoContent());
 
         // When: Try to update finished event
-        Event.UpdateCommand updateCommand = new Event.UpdateCommand(
+        Event.EventCommand updateCommand = new Event.EventCommand(
                 "Updated Name",
                 LocalDate.of(2026, 9, 6),
                 "Updated Location",

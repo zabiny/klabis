@@ -59,7 +59,7 @@ class EventManagementServiceTest {
         void shouldCreateEventWithValidCommand() {
             // Given
             MemberId coordinatorId = new MemberId(UUID.randomUUID());
-            Event.CreateCommand command = new Event.CreateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Spring Cup 2026",
                     LocalDate.of(2026, 3, 15),
                     "Forest Park",
@@ -91,7 +91,7 @@ class EventManagementServiceTest {
         @DisplayName("should create event without optional fields")
         void shouldCreateEventWithoutOptionalFields() {
             // Given
-            Event.CreateCommand command = new Event.CreateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Autumn Race 2026",
                     LocalDate.of(2026, 10, 12),
                     "City Park",
@@ -138,7 +138,7 @@ class EventManagementServiceTest {
                     null
             );
 
-            Event.UpdateCommand command = new Event.UpdateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Updated Name",
                     LocalDate.of(2026, 5, 15),
                     "Updated Location",
@@ -172,7 +172,7 @@ class EventManagementServiceTest {
             );
             event.publish();  // Transition to ACTIVE
 
-            Event.UpdateCommand command = new Event.UpdateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Updated Event",
                     LocalDate.of(2026, 6, 15),
                     "New Location",
@@ -207,7 +207,7 @@ class EventManagementServiceTest {
             event.publish();
             event.finish();  // Transition to FINISHED
 
-            Event.UpdateCommand command = new Event.UpdateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Updated Event",
                     LocalDate.of(2026, 6, 15),
                     "New Location",
@@ -239,7 +239,7 @@ class EventManagementServiceTest {
             );
             event.cancel();  // Transition to CANCELLED
 
-            Event.UpdateCommand command = new Event.UpdateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Updated Event",
                     LocalDate.of(2026, 6, 15),
                     "New Location",
@@ -261,7 +261,7 @@ class EventManagementServiceTest {
         void shouldThrowExceptionWhenEventNotFound() {
             // Given
             UUID eventId = UUID.randomUUID();
-            Event.UpdateCommand command = new Event.UpdateCommand(
+            Event.EventCommand command = new Event.EventCommand(
                     "Updated Event",
                     LocalDate.of(2026, 6, 15),
                     "New Location",

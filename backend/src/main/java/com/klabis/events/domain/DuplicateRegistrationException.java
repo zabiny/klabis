@@ -1,4 +1,4 @@
-package com.klabis.events.application;
+package com.klabis.events.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;

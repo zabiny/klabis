@@ -1,15 +1,17 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
-import com.klabis.events.application.DuplicateRegistrationException;
 import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventRegistrationService;
+import com.klabis.events.application.RegistrationNotFoundException;
+import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberDto;
+import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -117,12 +120,17 @@ class EventRegistrationController {
     public ResponseEntity<CollectionModel<RegistrationDto>> listRegistrations(
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
-        List<RegistrationDto> registrations = registrationService.listRegistrations(new EventId(eventId)).stream()
-                .map(this::toRegistrationDto)
+        List<EventRegistration> registrations = registrationService.listRegistrations(new EventId(eventId));
+
+        List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
+        Map<MemberId, MemberDto> memberIndex = members.findByIds(memberIds);
+
+        List<RegistrationDto> dtos = registrations.stream()
+                .map(r -> toRegistrationDto(r, memberIndex))
                 .toList();
 
         CollectionModel<RegistrationDto> collectionModel = CollectionModel.of(
-                registrations,
+                dtos,
                 klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
                         .withSelfRel(),
                 entityLinks.linkForItemResource(Event.class, eventId).withRel("event")
@@ -142,10 +150,10 @@ class EventRegistrationController {
             @CurrentUser CurrentUserData currentUser) {
 
         Event event = eventManagementService.getEvent(new EventId(eventId));
-        OwnRegistrationDto registration = toOwnRegistrationDto(
-                registrationService.getOwnRegistration(new EventId(eventId), currentUser.memberId()));
+        EventRegistration registration = event.findRegistration(currentUser.memberId())
+                .orElseThrow(() -> new RegistrationNotFoundException(currentUser.memberId(), new EventId(eventId)));
 
-        EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(registration);
+        EntityModel<OwnRegistrationDto> entityModel = EntityModel.of(toOwnRegistrationDto(registration));
         addLinksForOwnRegistration(entityModel, eventId, event);
 
         return ResponseEntity.ok(entityModel);
@@ -160,16 +168,21 @@ class EventRegistrationController {
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }
 
+    private MemberDto fetchMember(MemberId memberId) {
+        return members.findById(memberId)
+                .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + memberId));
+    }
 
-    private RegistrationDto toRegistrationDto(EventRegistration registration) {
-        MemberDto member = members.findById(registration.memberId())
-                .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
+    private RegistrationDto toRegistrationDto(EventRegistration registration, Map<MemberId, MemberDto> memberIndex) {
+        MemberDto member = memberIndex.getOrDefault(registration.memberId(), null);
+        if (member == null) {
+            member = fetchMember(registration.memberId());
+        }
         return new RegistrationDto(member.firstName(), member.lastName(), registration.registeredAt());
     }
 
     private OwnRegistrationDto toOwnRegistrationDto(EventRegistration registration) {
-        MemberDto member = members.findById(registration.memberId())
-                .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
+        MemberDto member = fetchMember(registration.memberId());
         return new OwnRegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(), registration.registeredAt());
     }
 

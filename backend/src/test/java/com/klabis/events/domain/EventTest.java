@@ -825,8 +825,8 @@ class EventTest {
 
             // Act & Assert
             assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("654321")))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("Duplicate registration not allowed");
+                    .isInstanceOf(DuplicateRegistrationException.class)
+                    .hasMessageContaining("already registered");
         }
 
         @Test
