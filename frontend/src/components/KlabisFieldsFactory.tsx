@@ -59,10 +59,38 @@ const MEDICAL_COURSE_FIELDS: SubField[] = [
     {key: "validityDate", attr: "validityDate", prompt: "Platnost", type: "date"},
 ];
 
-const TRAINER_LICENSE_FIELDS: SubField[] = [
-    {key: "licenseNumber", attr: "licenseNumber", prompt: "Stupeň (např. T2)"},
-    {key: "validityDate", attr: "validityDate", prompt: "Platnost", type: "date"},
+const TRAINER_LEVEL_OPTIONS = [
+    {value: "T1", prompt: "T1"},
+    {value: "T2", prompt: "T2"},
+    {value: "T3", prompt: "T3"},
 ];
+
+const REFEREE_LEVEL_OPTIONS = [
+    {value: "R1", prompt: "R1"},
+    {value: "R2", prompt: "R2"},
+    {value: "R3", prompt: "R3"},
+];
+
+const renderLicenseField = (conf: HalFormsInputProps, levelOptions: {value: string; prompt: string}[], title: string): ReactElement => {
+    const levelSubProps = conf.subElementProps("level", {prompt: "Stupeň"});
+    const levelPropWithOptions = {...levelSubProps.prop, options: {inline: levelOptions}};
+    const validitySubProps = conf.subElementProps("validityDate", {prompt: "Platnost", type: "date"});
+
+    if (conf.renderMode === 'input') {
+        return <>
+            <DetailRow key="level" label="Stupeň">
+                <HalFormsSelect {...levelSubProps} prop={levelPropWithOptions}/>
+            </DetailRow>
+            <DetailRow key="validityDate" label="Platnost">
+                <HalFormsInput {...validitySubProps}/>
+            </DetailRow>
+        </>;
+    }
+    return <FormGroupWrapper label={title}>
+        <HalFormsSelect key="level" {...levelSubProps} prop={levelPropWithOptions}/>
+        <HalFormsInput key="validityDate" {...validitySubProps}/>
+    </FormGroupWrapper>;
+};
 
 const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFormsInputProps => {
     return {
@@ -127,7 +155,9 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
         case "MedicalCourseDto":
             return renderCompositeField(conf, MEDICAL_COURSE_FIELDS);
         case "TrainerLicenseDto":
-            return renderCompositeField(conf, TRAINER_LICENSE_FIELDS);
+            return renderLicenseField(conf, TRAINER_LEVEL_OPTIONS, conf.prop.prompt || "Trenérská licence");
+        case "RefereeLicenseDto":
+            return renderLicenseField(conf, REFEREE_LEVEL_OPTIONS, conf.prop.prompt || "Rozhodcovská licence");
         default:
             return null;
     }

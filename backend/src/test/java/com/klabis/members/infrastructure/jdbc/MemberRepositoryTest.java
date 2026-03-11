@@ -1190,4 +1190,84 @@ class MemberRepositoryTest {
             assertThat(savedMember.getSuspendedBy()).isNull();
         }
     }
+
+    @Nested
+    @DisplayName("License persistence")
+    class LicensePersistence {
+
+        @Test
+        @DisplayName("should save and load TrainerLicense with level")
+        void shouldSaveAndLoadTrainerLicense() {
+            TrainerLicense trainerLicense = TrainerLicense.of(TrainerLevel.T2, LocalDate.now().plusYears(1));
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM8001")
+                    .withName("Trainer", "Test")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
+                    .withEmail("trainer.test@example.com")
+                    .withPhone("+420111111200")
+                    .withNoGuardian()
+                    .withTrainerLicense(trainerLicense)
+                    .build();
+
+            Member savedMember = memberRepository.save(member);
+            Optional<Member> loaded = memberRepository.findById(savedMember.getId());
+
+            assertThat(loaded).isPresent();
+            assertThat(loaded.get().getTrainerLicense()).isNotNull();
+            assertThat(loaded.get().getTrainerLicense().level()).isEqualTo(TrainerLevel.T2);
+            assertThat(loaded.get().getTrainerLicense().validityDate()).isEqualTo(trainerLicense.validityDate());
+        }
+
+        @Test
+        @DisplayName("should save and load RefereeLicense")
+        void shouldSaveAndLoadRefereeLicense() {
+            RefereeLicense refereeLicense = RefereeLicense.of(RefereeLevel.R1, LocalDate.now().plusYears(2));
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM8002")
+                    .withName("Referee", "Test")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
+                    .withEmail("referee.test@example.com")
+                    .withPhone("+420111111201")
+                    .withNoGuardian()
+                    .withRefereeLicense(refereeLicense)
+                    .build();
+
+            Member savedMember = memberRepository.save(member);
+            Optional<Member> loaded = memberRepository.findById(savedMember.getId());
+
+            assertThat(loaded).isPresent();
+            assertThat(loaded.get().getRefereeLicense()).isNotNull();
+            assertThat(loaded.get().getRefereeLicense().level()).isEqualTo(RefereeLevel.R1);
+            assertThat(loaded.get().getRefereeLicense().validityDate()).isEqualTo(refereeLicense.validityDate());
+        }
+
+        @Test
+        @DisplayName("should save member without licenses and load with null licenses")
+        void shouldSaveAndLoadWithNullLicenses() {
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM8003")
+                    .withName("NoLicense", "Test")
+                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Test 3", "Praha", "11000", "CZ"))
+                    .withEmail("nolicense.test@example.com")
+                    .withPhone("+420111111202")
+                    .withNoGuardian()
+                    .build();
+
+            Member savedMember = memberRepository.save(member);
+            Optional<Member> loaded = memberRepository.findById(savedMember.getId());
+
+            assertThat(loaded).isPresent();
+            assertThat(loaded.get().getTrainerLicense()).isNull();
+            assertThat(loaded.get().getRefereeLicense()).isNull();
+        }
+    }
 }

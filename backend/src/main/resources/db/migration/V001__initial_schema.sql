@@ -59,8 +59,10 @@ CREATE TABLE members
     identity_card_validity_date DATE,
     medical_course_completion_date DATE,
     medical_course_validity_date DATE,
-    trainer_license_number VARCHAR(50),
+    trainer_license_level VARCHAR(10),
     trainer_license_validity_date DATE,
+    referee_license_level VARCHAR(10),
+    referee_license_validity_date DATE,
     driving_license_group VARCHAR(10),
     dietary_restrictions  VARCHAR(500),
 
@@ -103,8 +105,10 @@ COMMENT ON COLUMN members.identity_card_number IS 'Identity card number (nullabl
 COMMENT ON COLUMN members.identity_card_validity_date IS 'Identity card validity expiration date (nullable)';
 COMMENT ON COLUMN members.medical_course_completion_date IS 'Medical course completion date (nullable)';
 COMMENT ON COLUMN members.medical_course_validity_date IS 'Medical course validity expiration date (nullable)';
-COMMENT ON COLUMN members.trainer_license_number IS 'Trainer license number (nullable, max 50 characters)';
+COMMENT ON COLUMN members.trainer_license_level IS 'Trainer license level (nullable, enum T1/T2/T3)';
 COMMENT ON COLUMN members.trainer_license_validity_date IS 'Trainer license validity expiration date (nullable)';
+COMMENT ON COLUMN members.referee_license_level IS 'Referee license level (nullable, enum R1/R2/R3)';
+COMMENT ON COLUMN members.referee_license_validity_date IS 'Referee license validity expiration date (nullable)';
 COMMENT ON COLUMN members.driving_license_group IS 'Driving license group/category (nullable, max 10 characters, e.g., BE, C1, C1E)';
 COMMENT ON COLUMN members.dietary_restrictions IS 'Dietary restrictions or food allergies (nullable, max 500 characters)';
 COMMENT ON COLUMN members.birth_number IS 'Czech birth number (rodné číslo), encrypted with Jasypt, format RRMMDD/XXXX (nullable, only for Czech nationals)';

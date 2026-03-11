@@ -75,6 +75,8 @@ public record UpdateMemberRequest(
 
         PatchField<TrainerLicenseDto> trainerLicense,
 
+        PatchField<RefereeLicenseDto> refereeLicense,
+
         PatchField<DrivingLicenseGroup> drivingLicenseGroup,
 
         @ValidPatchFieldSize(max = 500, message = "Dietary restrictions must not exceed 500 characters")

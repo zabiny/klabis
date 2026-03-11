@@ -74,7 +74,7 @@ class MemberMementoTest {
                 LocalDate.of(2023, 1, 15),
                 Optional.of(LocalDate.of(2025, 1, 15))
         );
-        TrainerLicense trainerLicense = TrainerLicense.of("TRAINER001", LocalDate.now().plusYears(3));
+        TrainerLicense trainerLicense = TrainerLicense.of(TrainerLevel.T2, LocalDate.now().plusYears(3));
         BirthNumber birthNumber = BirthNumber.of("950301/1234");
         BankAccountNumber bankAccountNumber = BankAccountNumber.of("123456/0300");
 
@@ -208,7 +208,7 @@ class MemberMementoTest {
             assertThat(reconstructed.getMedicalCourse()).isNotNull();
             assertThat(reconstructed.getMedicalCourse().completionDate()).isEqualTo(LocalDate.of(2023, 1, 15));
             assertThat(reconstructed.getTrainerLicense()).isNotNull();
-            assertThat(reconstructed.getTrainerLicense().licenseNumber()).isEqualTo("TRAINER001");
+            assertThat(reconstructed.getTrainerLicense().level()).isEqualTo(TrainerLevel.T2);
 
             // Assert - Other fields
             assertThat(reconstructed.getChipNumber()).isEqualTo("CHIP123");

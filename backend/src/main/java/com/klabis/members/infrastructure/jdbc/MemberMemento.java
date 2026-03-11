@@ -116,11 +116,18 @@ class MemberMemento implements Persistable<UUID> {
     private LocalDate medicalCourseValidityDate;
 
     // Trainer license fields (flattened)
-    @Column("trainer_license_number")
-    private String trainerLicenseNumber;
+    @Column("trainer_license_level")
+    private TrainerLevel trainerLicenseLevel;
 
     @Column("trainer_license_validity_date")
     private LocalDate trainerLicenseValidityDate;
+
+    // Referee license fields (flattened)
+    @Column("referee_license_level")
+    private RefereeLevel refereeLicenseLevel;
+
+    @Column("referee_license_validity_date")
+    private LocalDate refereeLicenseValidityDate;
 
     @Column("driving_license_group")
     private DrivingLicenseGroup drivingLicenseGroup;
@@ -200,6 +207,7 @@ class MemberMemento implements Persistable<UUID> {
         copyIdentityCard(member, memento);
         copyMedicalCourse(member, memento);
         copyTrainerLicense(member, memento);
+        copyRefereeLicense(member, memento);
         copyOtherFields(member, memento);
         copyAuditMetadata(member, memento);
 
@@ -309,8 +317,19 @@ class MemberMemento implements Persistable<UUID> {
     private static void copyTrainerLicense(Member member, MemberMemento memento) {
         TrainerLicense trainerLicense = member.getTrainerLicense();
         if (trainerLicense != null) {
-            memento.trainerLicenseNumber = trainerLicense.licenseNumber();
+            memento.trainerLicenseLevel = trainerLicense.level();
             memento.trainerLicenseValidityDate = trainerLicense.validityDate();
+        }
+    }
+
+    /**
+     * Copies referee license information from Member to memento.
+     */
+    private static void copyRefereeLicense(Member member, MemberMemento memento) {
+        RefereeLicense refereeLicense = member.getRefereeLicense();
+        if (refereeLicense != null) {
+            memento.refereeLicenseLevel = refereeLicense.level();
+            memento.refereeLicenseValidityDate = refereeLicense.validityDate();
         }
     }
 
@@ -406,10 +425,19 @@ class MemberMemento implements Persistable<UUID> {
 
         // Reconstruct TrainerLicense
         TrainerLicense trainerLicense = null;
-        if (this.trainerLicenseNumber != null && this.trainerLicenseValidityDate != null) {
+        if (this.trainerLicenseLevel != null && this.trainerLicenseValidityDate != null) {
             trainerLicense = TrainerLicense.of(
-                    this.trainerLicenseNumber,
+                    this.trainerLicenseLevel,
                     this.trainerLicenseValidityDate
+            );
+        }
+
+        // Reconstruct RefereeLicense
+        RefereeLicense refereeLicense = null;
+        if (this.refereeLicenseLevel != null && this.refereeLicenseValidityDate != null) {
+            refereeLicense = RefereeLicense.of(
+                    this.refereeLicenseLevel,
+                    this.refereeLicenseValidityDate
             );
         }
 
@@ -441,6 +469,7 @@ class MemberMemento implements Persistable<UUID> {
                 identityCard,
                 medicalCourse,
                 trainerLicense,
+                refereeLicense,
                 this.drivingLicenseGroup,
                 this.dietaryRestrictions,
                 birthNumber,

@@ -20,6 +20,9 @@ vi.mock('./HalNavigator2/halforms/fields', async () => {
                 {errorText && <span data-testid="select-error">{errorText}</span>}
             </div>
         ),
+        HalFormsSelect: ({prop}: HalFormsInputProps) => (
+            <div data-testid={`hal-select-${prop.name}`}>{prop.prompt}</div>
+        ),
     };
 });
 
@@ -230,7 +233,7 @@ describe('KlabisFieldsFactory', () => {
 
             render(result!);
 
-            expect(mockSubElementProps).toHaveBeenCalledWith('licenseNumber', {prompt: 'Stupeň (např. T2)'});
+            expect(mockSubElementProps).toHaveBeenCalledWith('level', {prompt: 'Stupeň'});
             expect(mockSubElementProps).toHaveBeenCalledWith('validityDate', {prompt: 'Platnost', type: 'date'});
         });
     });

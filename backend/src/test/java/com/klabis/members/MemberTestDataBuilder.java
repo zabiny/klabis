@@ -27,6 +27,7 @@ public class MemberTestDataBuilder {
     private IdentityCard identityCard = null;
     private MedicalCourse medicalCourse = null;
     private TrainerLicense trainerLicense = null;
+    private RefereeLicense refereeLicense = null;
     private DrivingLicenseGroup drivingLicenseGroup = null;
     private String dietaryRestrictions = null;
     private BirthNumber birthNumber = null;
@@ -153,6 +154,11 @@ public class MemberTestDataBuilder {
         return this;
     }
 
+    public MemberTestDataBuilder withRefereeLicense(RefereeLicense refereeLicense) {
+        this.refereeLicense = refereeLicense;
+        return this;
+    }
+
     public MemberTestDataBuilder withDrivingLicenseGroup(DrivingLicenseGroup drivingLicenseGroup) {
         this.drivingLicenseGroup = drivingLicenseGroup;
         return this;
@@ -208,6 +214,7 @@ public class MemberTestDataBuilder {
                 identityCard,
                 medicalCourse,
                 trainerLicense,
+                refereeLicense,
                 drivingLicenseGroup,
                 dietaryRestrictions,
                 birthNumber,

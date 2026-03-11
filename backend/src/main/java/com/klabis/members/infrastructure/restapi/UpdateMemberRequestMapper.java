@@ -24,6 +24,7 @@ class UpdateMemberRequestMapper {
             DrivingLicenseGroup drivingLicenseGroup = toEnum(request.drivingLicenseGroup());
             MedicalCourse medicalCourse = toMedicalCourse(request.medicalCourse());
             TrainerLicense trainerLicense = toTrainerLicense(request.trainerLicense());
+            RefereeLicense refereeLicense = toRefereeLicense(request.refereeLicense());
             String dietaryRestrictions = toString(request.dietaryRestrictions());
             GuardianInformation guardian = toGuardianInformation(request.guardian());
             String firstName = toString(request.firstName());
@@ -35,7 +36,7 @@ class UpdateMemberRequestMapper {
             return new Member.UpdateMemberByAdmin(
                     email, phone, address, chipNumber, nationality,
                     bankAccountNumber, identityCard, drivingLicenseGroup,
-                    medicalCourse, trainerLicense, dietaryRestrictions, guardian,
+                    medicalCourse, trainerLicense, refereeLicense, dietaryRestrictions, guardian,
                     firstName, lastName, dateOfBirth, gender, birthNumber, updatedBy
             );
         } catch (IllegalArgumentException e) {
@@ -66,7 +67,7 @@ class UpdateMemberRequestMapper {
             com.klabis.common.patch.PatchField<String> dietaryRestrictions) {
         return new Member.SelfUpdate(
                 toEmailAddress(email), toPhoneNumber(phone), toAddress(address), null, null,
-                null, null, null, null, null, toString(dietaryRestrictions), null
+                null, null, null, null, null, null, toString(dietaryRestrictions), null
         );
     }
 
@@ -116,7 +117,13 @@ class UpdateMemberRequestMapper {
 
     private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<TrainerLicenseDto> trainerLicense) {
         return trainerLicense.isProvided()
-            ? TrainerLicense.of(trainerLicense.throwIfNotProvided().licenseNumber(), trainerLicense.throwIfNotProvided().validityDate())
+            ? TrainerLicense.of(trainerLicense.throwIfNotProvided().level(), trainerLicense.throwIfNotProvided().validityDate())
+            : null;
+    }
+
+    private static RefereeLicense toRefereeLicense(com.klabis.common.patch.PatchField<RefereeLicenseDto> refereeLicense) {
+        return refereeLicense.isProvided()
+            ? RefereeLicense.of(refereeLicense.throwIfNotProvided().level(), refereeLicense.throwIfNotProvided().validityDate())
             : null;
     }
 

@@ -135,11 +135,11 @@ class MemberMappingTests {
         @Test
         @DisplayName("should map valid trainer license correctly")
         void shouldMapValidTrainerLicenseCorrectly() {
-            TrainerLicense license = new TrainerLicense("TRN-456", LocalDate.of(2026, 12, 31));
+            TrainerLicense license = new TrainerLicense(TrainerLevel.T1, LocalDate.of(2026, 12, 31));
             TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.licenseNumber()).isEqualTo("TRN-456");
+            assertThat(dto.level()).isEqualTo(TrainerLevel.T1);
             assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
         }
 
@@ -150,26 +150,38 @@ class MemberMappingTests {
             assertThat(dto).isNull();
         }
 
-        // TODO: this needs to be corrected - value object must be possible to create with date in past. That validation must be in places where editation happens (validity date must not be in past when value is edited)
-        @Disabled
-        @Test
-        @DisplayName("should map trainer license with past validity date")
-        void shouldMapTrainerLicenseWithPastValidityDate() {
-            TrainerLicense license = new TrainerLicense("OLD-001", LocalDate.of(2020, 1, 1));
-            TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
-
-            assertThat(dto.licenseNumber()).isEqualTo("OLD-001");
-            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2020, 1, 1));
-        }
-
         @Test
         @DisplayName("should map trainer license with today as validity date")
         void shouldMapTrainerLicenseWithTodayValidityDate() {
             LocalDate today = LocalDate.now();
-            TrainerLicense license = new TrainerLicense("TODAY-02", today);
+            TrainerLicense license = new TrainerLicense(TrainerLevel.T3, today);
             TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
 
+            assertThat(dto.level()).isEqualTo(TrainerLevel.T3);
             assertThat(dto.validityDate()).isEqualTo(today);
+        }
+    }
+
+    @Nested
+    @DisplayName("mapToRefereeLicenseDto()")
+    class RefereeLicenseDtoMappingTests {
+
+        @Test
+        @DisplayName("should map valid referee license correctly")
+        void shouldMapValidRefereeLicenseCorrectly() {
+            RefereeLicense license = new RefereeLicense(RefereeLevel.R2, LocalDate.of(2026, 12, 31));
+            RefereeLicenseDto dto = testedSubject.refereeLicenseToDto(license);
+
+            assertThat(dto).isNotNull();
+            assertThat(dto.level()).isEqualTo(RefereeLevel.R2);
+            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
+        }
+
+        @Test
+        @DisplayName("should return null when referee license is null")
+        void shouldReturnNullWhenRefereeLicenseIsNull() {
+            RefereeLicenseDto dto = testedSubject.refereeLicenseToDto(null);
+            assertThat(dto).isNull();
         }
     }
 
@@ -233,7 +245,7 @@ class MemberMappingTests {
                     LocalDate.of(2024, 1, 1),
                     Optional.of(LocalDate.of(2026, 1, 1))
             );
-            TrainerLicense trainerLicense = new TrainerLicense("TL456", LocalDate.of(2026, 6, 30));
+            TrainerLicense trainerLicense = new TrainerLicense(TrainerLevel.T2, LocalDate.of(2026, 6, 30));
 
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withName("Jan", "Novák")
@@ -262,7 +274,7 @@ class MemberMappingTests {
             assertThat(dto.medicalCourse()).isNotNull();
             assertThat(dto.medicalCourse().completionDate()).isEqualTo(LocalDate.of(2024, 1, 1));
             assertThat(dto.trainerLicense()).isNotNull();
-            assertThat(dto.trainerLicense().licenseNumber()).isEqualTo("TL456");
+            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLevel.T2);
             assertThat(dto.drivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
             assertThat(dto.dietaryRestrictions()).isEqualTo("No restrictions");
         }
@@ -327,7 +339,7 @@ class MemberMappingTests {
         @DisplayName("should map member with only trainer license")
         void shouldMapMemberWithOnlyTrainerLicense() {
             UUID memberId = UUID.randomUUID();
-            TrainerLicense trainerLicense = new TrainerLicense("ONLY-TL", LocalDate.of(2026, 12, 31));
+            TrainerLicense trainerLicense = new TrainerLicense(TrainerLevel.T1, LocalDate.of(2026, 12, 31));
 
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withTrainerLicense(trainerLicense)
@@ -338,7 +350,7 @@ class MemberMappingTests {
             assertThat(dto.identityCard()).isNull();
             assertThat(dto.medicalCourse()).isNull();
             assertThat(dto.trainerLicense()).isNotNull();
-            assertThat(dto.trainerLicense().licenseNumber()).isEqualTo("ONLY-TL");
+            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLevel.T1);
         }
 
         @Test
@@ -350,7 +362,7 @@ class MemberMappingTests {
                     LocalDate.of(2024, 1, 1),
                     Optional.of(LocalDate.of(2026, 1, 1))
             );
-            TrainerLicense trainerLicense = new TrainerLicense("TL-ALL", LocalDate.of(2026, 6, 30));
+            TrainerLicense trainerLicense = new TrainerLicense(TrainerLevel.T3, LocalDate.of(2026, 6, 30));
 
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withIdentityCard(identityCard)

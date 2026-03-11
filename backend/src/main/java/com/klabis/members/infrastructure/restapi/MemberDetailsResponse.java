@@ -60,6 +60,7 @@ public record MemberDetailsResponse(
         IdentityCardDto identityCard,
         MedicalCourseDto medicalCourse,
         TrainerLicenseDto trainerLicense,
+        RefereeLicenseDto refereeLicense,
         DrivingLicenseGroup drivingLicenseGroup,
         String dietaryRestrictions,
         String birthNumber,

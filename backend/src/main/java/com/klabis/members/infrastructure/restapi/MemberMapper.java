@@ -63,6 +63,7 @@ interface MemberMapper {
                 response.identityCard(),
                 response.medicalCourse(),
                 response.trainerLicense(),
+                response.refereeLicense(),
                 response.drivingLicenseGroup(),
                 response.dietaryRestrictions(),
                 member.getBirthNumber() != null ? member.getBirthNumber().value() : null,
@@ -90,6 +91,7 @@ interface MemberMapper {
     @Mapping(target = "identityCard", source = "identityCard")
     @Mapping(target = "medicalCourse", source = "medicalCourse")
     @Mapping(target = "trainerLicense", source = "trainerLicense")
+    @Mapping(target = "refereeLicense", source = "refereeLicense")
     @Mapping(target = "drivingLicenseGroup", source = "drivingLicenseGroup")
     @Mapping(target = "dietaryRestrictions", source = "dietaryRestrictions")
     @Mapping(target = "birthNumber", ignore = true)
@@ -132,9 +134,19 @@ interface MemberMapper {
      * @param trainerLicense the source trainer license
      * @return mapped DTO, or null if source is null
      */
-    @Mapping(target = "licenseNumber", source = "licenseNumber")
+    @Mapping(target = "level", source = "level")
     @Mapping(target = "validityDate", source = "validityDate")
     TrainerLicenseDto trainerLicenseToDto(TrainerLicense trainerLicense);
+
+    /**
+     * Maps RefereeLicense domain object to RefereeLicenseDto.
+     *
+     * @param refereeLicense the source referee license
+     * @return mapped DTO, or null if source is null
+     */
+    @Mapping(target = "level", source = "level")
+    @Mapping(target = "validityDate", source = "validityDate")
+    RefereeLicenseDto refereeLicenseToDto(RefereeLicense refereeLicense);
 
     /**
      * Maps RegisterMemberRequest to RegisterNewMember service command.

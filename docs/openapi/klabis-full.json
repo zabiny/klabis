@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Klabis Orienteering Club Management API",
-    "description": "RESTful API for managing orienteering club operations.\n\n## Features\n- Member registration and management\n- HATEOAS-compliant with HAL+FORMS media type\n- OAuth2 authentication and authorization\n- RFC 7807 Problem Details for errors\n\n## Authentication\nMost endpoints require OAuth2 authentication. Use the \u0027Authorize\u0027 button to authenticate.\n",
+    "description": "RESTful API for managing orienteering club operations.\n\n## Features\n- Member registration and management\n- HATEOAS-compliant with HAL+FORMS media type\n- OAuth2 authentication and authorization\n- RFC 7807 Problem Details for errors\n\n## Authentication\nMost endpoints require OAuth2 authentication. Use the 'Authorize' button to authenticate.\n",
     "contact": {
       "name": "Klabis Development Team",
       "email": "davca7@gmail.com"
@@ -524,7 +524,7 @@
           "Members "
         ],
         "summary": "List members with pagination and sorting",
-        "description": "Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). Supports pagination (page, size) and sorting (sort\u003dfield,direction). Default: page\u003d0, size\u003d10, sort\u003dlastName,asc. Allowed sort fields: firstName, lastName, registrationNumber. Returns HATEOAS links for navigation including pagination links (first, last, next, prev).",
+        "description": "Retrieves a paginated list of registered members with summary information (firstName, lastName, registrationNumber). Supports pagination (page, size) and sorting (sort=field,direction). Default: page=0, size=10, sort=lastName,asc. Allowed sort fields: firstName, lastName, registrationNumber. Returns HATEOAS links for navigation including pagination links (first, last, next, prev).",
         "operationId": "listMembers",
         "parameters": [
           {
@@ -722,7 +722,7 @@
           "Members "
         ],
         "summary": "Terminate member membership",
-        "description": "Terminates a member\u0027s membership with a specified reason. Requires MEMBERS:UPDATE authority (admin-only). Sets active status to false and records termination details including timestamp and user who performed termination.",
+        "description": "Terminates a member's membership with a specified reason. Requires MEMBERS:UPDATE authority (admin-only). Sets active status to false and records termination details including timestamp and user who performed termination.",
         "operationId": "terminateMember",
         "parameters": [
           {
@@ -816,7 +816,7 @@
           "Events"
         ],
         "summary": "List events with pagination and filtering",
-        "description": "Retrieves a paginated list of events.\nSupports filtering by status and sorting by various fields.\nDefault: page\u003d0, size\u003d10, sort\u003deventDate,desc.\nAllowed sort fields: id, name, eventDate, location, organizer, status.\n",
+        "description": "Retrieves a paginated list of events.\nSupports filtering by status and sorting by various fields.\nDefault: page=0, size=10, sort=eventDate,desc.\nAllowed sort fields: id, name, eventDate, location, organizer, status.\n",
         "operationId": "listEvents",
         "parameters": [
           {
@@ -1871,7 +1871,7 @@
           "Password Setup"
         ],
         "summary": "Complete password setup",
-        "description": "Sets the user\u0027s password and activates the account",
+        "description": "Sets the user's password and activates the account",
         "operationId": "completePasswordSetup",
         "requestBody": {
           "content": {
@@ -2418,7 +2418,7 @@
           "Event Registrations"
         ],
         "summary": "Get own registration",
-        "description": "Get the authenticated member\u0027s registration details including SI card number.",
+        "description": "Get the authenticated member's registration details including SI card number.",
         "operationId": "getOwnRegistration",
         "parameters": [
           {
@@ -2701,7 +2701,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint \u0027modulith\u0027",
+        "summary": "Actuator web endpoint 'modulith'",
         "operationId": "getApplicationModules",
         "responses": {
           "401": {
@@ -2782,7 +2782,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint \u0027metrics\u0027",
+        "summary": "Actuator web endpoint 'metrics'",
         "operationId": "listNames",
         "responses": {
           "401": {
@@ -2863,7 +2863,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint \u0027metrics-requiredMetricName\u0027",
+        "summary": "Actuator web endpoint 'metrics-requiredMetricName'",
         "operationId": "metric",
         "parameters": [
           {
@@ -2954,7 +2954,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint \u0027info\u0027",
+        "summary": "Actuator web endpoint 'info'",
         "operationId": "info",
         "responses": {
           "401": {
@@ -3035,7 +3035,7 @@
         "tags": [
           "Actuator"
         ],
-        "summary": "Actuator web endpoint \u0027health\u0027",
+        "summary": "Actuator web endpoint 'health'",
         "operationId": "health",
         "responses": {
           "401": {
@@ -3313,14 +3313,14 @@
         "properties": {
           "firstName": {
             "type": "string",
-            "description": "Guardian\u0027s first name",
+            "description": "Guardian's first name",
             "example": "Pavel",
             "maxLength": 100,
             "minLength": 0
           },
           "lastName": {
             "type": "string",
-            "description": "Guardian\u0027s last name",
+            "description": "Guardian's last name",
             "example": "Novák",
             "maxLength": 100,
             "minLength": 0
@@ -3335,12 +3335,12 @@
           "email": {
             "type": "string",
             "format": "email",
-            "description": "Guardian\u0027s email address",
+            "description": "Guardian's email address",
             "example": "pavel.novak@example.com"
           },
           "phone": {
             "type": "string",
-            "description": "Guardian\u0027s phone number",
+            "description": "Guardian's phone number",
             "example": "+420987654321",
             "pattern": "^\\+?[0-9\\s\\-()]{7,20}$"
           }
@@ -3359,14 +3359,14 @@
         "properties": {
           "firstName": {
             "type": "string",
-            "description": "Member\u0027s first name",
+            "description": "Member's first name",
             "example": "Jan",
             "maxLength": 100,
             "minLength": 0
           },
           "lastName": {
             "type": "string",
-            "description": "Member\u0027s last name",
+            "description": "Member's last name",
             "example": "Novák",
             "maxLength": 100,
             "minLength": 0
@@ -3374,7 +3374,7 @@
           "dateOfBirth": {
             "type": "string",
             "format": "date",
-            "description": "Member\u0027s date of birth",
+            "description": "Member's date of birth",
             "example": "2005-05-15"
           },
           "nationality": {
@@ -3386,7 +3386,7 @@
           },
           "gender": {
             "type": "string",
-            "description": "Member\u0027s gender",
+            "description": "Member's gender",
             "enum": [
               "MALE",
               "FEMALE"
@@ -3602,13 +3602,13 @@
         "properties": {
           "registrationNumber": {
             "type": "string",
-            "description": "The user\u0027s registration number (format: XXXYYDD)",
+            "description": "The user's registration number (format: XXXYYDD)",
             "example": 12345678,
             "pattern": "\\d{8}"
           },
           "email": {
             "type": "string",
-            "description": "The member\u0027s email address",
+            "description": "The member's email address",
             "example": "member@example.com"
           }
         },
@@ -3665,7 +3665,7 @@
           },
           "registrationNumber": {
             "type": "string",
-            "description": "The user\u0027s registration number",
+            "description": "The user's registration number",
             "example": 12345678
           }
         }
@@ -3698,8 +3698,13 @@
       "TrainerLicenseDto": {
         "type": "object",
         "properties": {
-          "licenseNumber": {
-            "type": "string"
+          "level": {
+            "type": "string",
+            "enum": [
+              "T1",
+              "T2",
+              "T3"
+            ]
           },
           "validityDate": {
             "type": "string",
@@ -3748,6 +3753,9 @@
           },
           "trainerLicense": {
             "$ref": "#/components/schemas/TrainerLicenseDto"
+          },
+          "refereeLicense": {
+            "$ref": "#/components/schemas/RefereeLicenseDto"
           },
           "drivingLicenseGroup": {
             "type": "string",
@@ -3833,17 +3841,17 @@
           },
           "firstName": {
             "type": "string",
-            "description": "Member\u0027s first name",
+            "description": "Member's first name",
             "example": "Jan"
           },
           "lastName": {
             "type": "string",
-            "description": "Member\u0027s last name",
+            "description": "Member's last name",
             "example": "Novák"
           },
           "registrationNumber": {
             "type": "string",
-            "description": "Member\u0027s unique registration number",
+            "description": "Member's unique registration number",
             "example": "ZBM0501"
           },
           "_links": {
@@ -4013,6 +4021,9 @@
           },
           "_links": {
             "$ref": "#/components/schemas/Links"
+          },
+          "refereeLicense": {
+            "$ref": "#/components/schemas/RefereeLicenseDto"
           }
         }
       },
@@ -4146,6 +4157,23 @@
         "type": "object",
         "additionalProperties": {
           "$ref": "#/components/schemas/Link"
+        }
+      },
+      "RefereeLicenseDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "R1",
+              "R2",
+              "R3"
+            ]
+          },
+          "validityDate": {
+            "type": "string",
+            "format": "date"
+          }
         }
       }
     },

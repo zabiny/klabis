@@ -54,6 +54,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     private IdentityCard identityCard;
     private MedicalCourse medicalCourse;
     private TrainerLicense trainerLicense;
+    private RefereeLicense refereeLicense;
     private DrivingLicenseGroup drivingLicenseGroup;
     private String dietaryRestrictions;
     private BirthNumber birthNumber;
@@ -105,6 +106,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             DrivingLicenseGroup drivingLicenseGroup,
             MedicalCourse medicalCourse,
             TrainerLicense trainerLicense,
+            RefereeLicense refereeLicense,
             String dietaryRestrictions,
             GuardianInformation guardian
     ) {}
@@ -128,6 +130,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             DrivingLicenseGroup drivingLicenseGroup,
             MedicalCourse medicalCourse,
             TrainerLicense trainerLicense,
+            RefereeLicense refereeLicense,
             String dietaryRestrictions,
             GuardianInformation guardian,
             String firstName,
@@ -175,6 +178,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             IdentityCard identityCard,
             MedicalCourse medicalCourse,
             TrainerLicense trainerLicense,
+            RefereeLicense refereeLicense,
             DrivingLicenseGroup drivingLicenseGroup,
             String dietaryRestrictions,
             BirthNumber birthNumber,
@@ -196,6 +200,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.identityCard = identityCard;
         this.medicalCourse = medicalCourse;
         this.trainerLicense = trainerLicense;
+        this.refereeLicense = refereeLicense;
         this.drivingLicenseGroup = drivingLicenseGroup;
         this.dietaryRestrictions = dietaryRestrictions;
         this.birthNumber = birthNumber;
@@ -251,6 +256,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             IdentityCard identityCard,
             MedicalCourse medicalCourse,
             TrainerLicense trainerLicense,
+            RefereeLicense refereeLicense,
             DrivingLicenseGroup drivingLicenseGroup,
             String dietaryRestrictions,
             BirthNumber birthNumber,
@@ -274,6 +280,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 identityCard,
                 medicalCourse,
                 trainerLicense,
+                refereeLicense,
                 drivingLicenseGroup,
                 dietaryRestrictions,
                 birthNumber,
@@ -317,6 +324,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 null, // identityCard
                 null, // medicalCourse
                 null, // trainerLicense
+                null, // refereeLicense
                 null, // drivingLicenseGroup
                 null, // dietaryRestrictions
                 command.birthNumber(),
@@ -485,6 +493,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         return trainerLicense;
     }
 
+    public RefereeLicense getRefereeLicense() {
+        return refereeLicense;
+    }
+
     public DrivingLicenseGroup getDrivingLicenseGroup() {
         return drivingLicenseGroup;
     }
@@ -563,6 +575,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.drivingLicenseGroup() != null) this.drivingLicenseGroup = command.drivingLicenseGroup();
         if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
         if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
+        // refereeLicense is admin-only — ignored in self-update
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
 
         boolean wasCzech = "CZ".equals(oldNationality) || "CZE".equals(oldNationality);
@@ -618,6 +631,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.drivingLicenseGroup() != null) this.drivingLicenseGroup = command.drivingLicenseGroup();
         if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
         if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
+        if (command.refereeLicense() != null) this.refereeLicense = command.refereeLicense();
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
 
         if (command.birthNumber() != null && command.updatedBy() != null) {

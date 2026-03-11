@@ -369,7 +369,7 @@ class UpdateMemberApiTest {
                                                         "validityDate": "%s"
                                                     },
                                                     "trainerLicense": {
-                                                        "licenseNumber": "TRAINER123",
+                                                        "level": "T1",
                                                         "validityDate": "%s"
                                                     }
                                                 }

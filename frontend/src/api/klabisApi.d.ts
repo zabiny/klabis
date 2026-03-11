@@ -756,7 +756,8 @@ export interface components {
             validityDate?: string;
         };
         TrainerLicenseDto: {
-            licenseNumber?: string;
+            /** @enum {string} */
+            level?: "T1" | "T2" | "T3";
             /** Format: date */
             validityDate?: string;
         };
@@ -775,6 +776,7 @@ export interface components {
             identityCard?: components["schemas"]["IdentityCardDto"];
             medicalCourse?: components["schemas"]["MedicalCourseDto"];
             trainerLicense?: components["schemas"]["TrainerLicenseDto"];
+            refereeLicense?: components["schemas"]["RefereeLicenseDto"];
             /** @enum {string} */
             drivingLicenseGroup?: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
             dietaryRestrictions?: string;
@@ -874,6 +876,7 @@ export interface components {
             deactivatedBy?: string;
             deactivationNote?: string;
             _links?: components["schemas"]["Links"];
+            refereeLicense?: components["schemas"]["RefereeLicenseDto"];
         };
         EntityModelEventSummaryDto: {
             /** Format: uuid */
@@ -928,6 +931,12 @@ export interface components {
         };
         Links: {
             [key: string]: components["schemas"]["Link"];
+        };
+        RefereeLicenseDto: {
+            /** @enum {string} */
+            level?: "R1" | "R2" | "R3";
+            /** Format: date */
+            validityDate?: string;
         };
     };
     responses: never;

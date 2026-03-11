@@ -119,6 +119,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const identityCard = member.identityCard;
     const medicalCourse = member.medicalCourse;
     const trainerLicense = member.trainerLicense;
+    const refereeLicense = member.refereeLicense;
     const showDeactivation = member.active === false && member.deactivationReason;
 
     const viewMode = resolveViewMode(template);
@@ -226,10 +227,25 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                         </div>
                     ) : (
                         <DetailRow label="Trenér">
-                            {trainerLicense?.licenseNumber ? (
+                            {trainerLicense?.level ? (
                                 <span className="inline-flex items-center gap-2">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-50 text-orange-700">{trainerLicense.licenseNumber}</span>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-50 text-orange-700">{trainerLicense.level}</span>
                                     {trainerLicense.validityDate && <span className="text-text-tertiary text-sm">platná do {formatDate(trainerLicense.validityDate)}</span>}
+                                </span>
+                            ) : '\u2014'}
+                        </DetailRow>
+                    )}
+                    {isEditing ? (
+                        <div>
+                            <p className="text-sm font-medium text-text-secondary mb-2">Rozhodčí</p>
+                            {ri('refereeLicense')}
+                        </div>
+                    ) : (
+                        <DetailRow label="Rozhodčí">
+                            {refereeLicense?.level ? (
+                                <span className="inline-flex items-center gap-2">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700">{refereeLicense.level}</span>
+                                    {refereeLicense.validityDate && <span className="text-text-tertiary text-sm">platná do {formatDate(refereeLicense.validityDate)}</span>}
                                 </span>
                             ) : '\u2014'}
                         </DetailRow>
