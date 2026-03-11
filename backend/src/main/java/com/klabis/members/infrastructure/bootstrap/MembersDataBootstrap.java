@@ -34,7 +34,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
 
     @Override
     public boolean requiresBootstrap() {
-        return memberRepository.findAll().isEmpty();
+        return !memberRepository.existsAny();
     }
 
     @Override

@@ -39,6 +39,11 @@ class MemberRepositoryAdapter implements MemberRepository {
     }
 
     @Override
+    public boolean existsAny() {
+        return jdbcRepository.count() > 0;
+    }
+
+    @Override
     public Member save(Member member) {
         MemberMemento savedMemento = jdbcRepository.save(MemberMemento.from(member));
         return savedMemento.toMember();

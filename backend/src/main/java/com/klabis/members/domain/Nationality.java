@@ -87,6 +87,15 @@ public record Nationality(String code) {
     }
 
     /**
+     * Checks if this nationality is Czech (CZ or CZE).
+     *
+     * @return true if the nationality code represents Czech Republic
+     */
+    public boolean isCzech() {
+        return "CZ".equals(code) || "CZE".equals(code);
+    }
+
+    /**
      * Returns the display name of this nationality (e.g., "CZE" for "Czech Republic").
      * Note: This is a placeholder implementation that returns the code.
      * A full implementation would use a locale/database mapping.

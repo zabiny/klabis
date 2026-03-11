@@ -384,9 +384,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             GuardianInformation guardian) {
 
         int age = Period.between(dateOfBirth, LocalDate.now()).getYears();
-        boolean isMinor = age < 18;
-
-        if (isMinor && guardian == null) {
+        if (age < 18 && guardian == null) {
             throw new BusinessRuleViolationException(
                     "Guardian is required for minors (under 18 years)"
             ) {
@@ -409,8 +407,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             return;
         }
 
-        boolean isCzech = "CZ".equals(nationalityCode) || "CZE".equals(nationalityCode);
-        if (!isCzech) {
+        if (!Nationality.of(nationalityCode).isCzech()) {
             throw new BusinessRuleViolationException(
                     "Birth number is only allowed for Czech nationals"
             ) {
@@ -578,9 +575,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         // refereeLicense is admin-only — ignored in self-update
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
 
-        boolean wasCzech = "CZ".equals(oldNationality) || "CZE".equals(oldNationality);
-        boolean isNowCzech = "CZ".equals(newNationality) || "CZE".equals(newNationality);
-        if (wasCzech && !isNowCzech && this.birthNumber != null) {
+        if (Nationality.of(oldNationality).isCzech() && !Nationality.of(newNationality).isCzech() && this.birthNumber != null) {
             this.birthNumber = null;
         }
     }

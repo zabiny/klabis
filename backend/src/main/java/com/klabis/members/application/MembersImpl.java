@@ -40,7 +40,7 @@ class MembersImpl implements Members {
         return new MemberDto(member.getId().uuid(),
                 member.getFirstName(),
                 member.getLastName(),
-                member.getEmail().value(),
+                member.getEmail() != null ? member.getEmail().value() : null,
                 LocalDateTime.ofInstant(member.getLastModifiedAt(), ZoneId.of("Europe/Prague")));
     }
 }

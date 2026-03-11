@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("ExpiringDocument Value Object Tests")
@@ -116,23 +117,19 @@ class ExpiringDocumentTest {
                 .hasMessageContaining("Identity card validity date");
     }
 
-    // TODO: this needs to be fixed: it must be possible to create value object with date in past. It must not be possible to "EDIT" such date to past date (validation must be on different place)
     @Test
-    @DisplayName("Should reject document with past validity date")
-    void shouldRejectDocumentWithPastValidityDate() {
+    @DisplayName("Should accept document with past validity date (used when reconstructing from persistence)")
+    void shouldAcceptDocumentWithPastValidityDate() {
         // Given
         String cardNumber = "12345678";
         LocalDate pastDate = LocalDate.now().minusDays(1);
 
-        // When & Then
-        assertThatThrownBy(() -> ExpiringDocument.of(
+        // When & Then - past dates are allowed (e.g. when loading expired documents from DB)
+        assertThatNoException().isThrownBy(() -> ExpiringDocument.of(
                 DocumentType.IDENTITY_CARD,
                 cardNumber,
                 pastDate
-        ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Identity card validity date")
-                .hasMessageContaining("past");
+        ));
     }
 
     @Test

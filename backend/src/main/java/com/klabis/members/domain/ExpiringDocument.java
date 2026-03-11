@@ -12,7 +12,7 @@ import java.time.LocalDate;
  * <p>
  * Business rules:
  * - Document number is required and cannot be blank (max 50 characters)
- * - Validity date is required and cannot be in the past
+ * - Validity date is required
  * <p>
  * Example usage:
  * <pre>{@code
@@ -50,7 +50,7 @@ public record ExpiringDocument<T extends DocumentType>(
      *
      * @param documentType type of the document
      * @param number       document number (required, not blank, max 50 characters)
-     * @param validityDate validity date of the document (required, not in the past)
+     * @param validityDate validity date of the document (required)
      * @throws IllegalArgumentException if validation fails
      */
     public ExpiringDocument {
@@ -70,10 +70,6 @@ public record ExpiringDocument<T extends DocumentType>(
             throw new IllegalArgumentException(documentTypeName + " validity date is required");
         }
 
-        // TODO: this needs to be corrected - value object must be possible to create with date in past. This validation must be in places where editation happens (validity date must not be in past when value is edited)
-        if (validityDate.isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException(documentTypeName + " validity date cannot be in the past");
-        }
     }
 
     /**

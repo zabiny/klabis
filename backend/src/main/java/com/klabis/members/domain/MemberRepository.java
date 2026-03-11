@@ -62,5 +62,7 @@ public interface MemberRepository {
      */
     int countByBirthYear(int birthYear);
 
+    boolean existsAny();
+
     Member save(Member member);
 }

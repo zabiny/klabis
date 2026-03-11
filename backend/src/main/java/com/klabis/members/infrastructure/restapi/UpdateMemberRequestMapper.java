@@ -80,9 +80,11 @@ class UpdateMemberRequestMapper {
     }
 
     private static Address toAddress(com.klabis.common.patch.PatchField<AddressRequest> address) {
-        return address.isProvided()
-            ? Address.of(address.throwIfNotProvided().street(), address.throwIfNotProvided().city(), address.throwIfNotProvided().postalCode(), address.throwIfNotProvided().country())
-            : null;
+        if (!address.isProvided()) {
+            return null;
+        }
+        AddressRequest a = address.throwIfNotProvided();
+        return Address.of(a.street(), a.city(), a.postalCode(), a.country());
     }
 
     private static String toString(com.klabis.common.patch.PatchField<String> value) {
@@ -100,9 +102,11 @@ class UpdateMemberRequestMapper {
     }
 
     private static IdentityCard toIdentityCard(com.klabis.common.patch.PatchField<IdentityCardDto> identityCard) {
-        return identityCard.isProvided()
-            ? IdentityCard.of(identityCard.throwIfNotProvided().cardNumber(), identityCard.throwIfNotProvided().validityDate())
-            : null;
+        if (!identityCard.isProvided()) {
+            return null;
+        }
+        IdentityCardDto dto = identityCard.throwIfNotProvided();
+        return IdentityCard.of(dto.cardNumber(), dto.validityDate());
     }
 
     private static <T> T toEnum(com.klabis.common.patch.PatchField<T> enumField) {
@@ -110,9 +114,11 @@ class UpdateMemberRequestMapper {
     }
 
     private static MedicalCourse toMedicalCourse(com.klabis.common.patch.PatchField<MedicalCourseDto> medicalCourse) {
-        return medicalCourse.isProvided()
-            ? MedicalCourse.of(medicalCourse.throwIfNotProvided().completionDate(), medicalCourse.throwIfNotProvided().validityDate())
-            : null;
+        if (!medicalCourse.isProvided()) {
+            return null;
+        }
+        MedicalCourseDto dto = medicalCourse.throwIfNotProvided();
+        return MedicalCourse.of(dto.completionDate(), dto.validityDate());
     }
 
     private static TrainerLicense toTrainerLicense(com.klabis.common.patch.PatchField<TrainerLicenseDto> trainerLicense) {
@@ -142,13 +148,15 @@ class UpdateMemberRequestMapper {
     }
 
     private static GuardianInformation toGuardianInformation(com.klabis.common.patch.PatchField<GuardianDTO> guardian) {
-        return guardian.isProvided()
-            ? new GuardianInformation(
-                guardian.throwIfNotProvided().firstName(),
-                guardian.throwIfNotProvided().lastName(),
-                guardian.throwIfNotProvided().relationship(),
-                guardian.throwIfNotProvided().email() != null ? EmailAddress.of(guardian.throwIfNotProvided().email()) : null,
-                guardian.throwIfNotProvided().phone() != null ? PhoneNumber.of(guardian.throwIfNotProvided().phone()) : null)
-            : null;
+        if (!guardian.isProvided()) {
+            return null;
+        }
+        GuardianDTO dto = guardian.throwIfNotProvided();
+        return new GuardianInformation(
+                dto.firstName(),
+                dto.lastName(),
+                dto.relationship(),
+                dto.email() != null ? EmailAddress.of(dto.email()) : null,
+                dto.phone() != null ? PhoneNumber.of(dto.phone()) : null);
     }
 }
