@@ -89,8 +89,8 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     }
 
     @Test
-    @DisplayName("POST /api/members with MEMBERS:CREATE authority should return 201")
-    @WithKlabisMockUser(authorities =  {Authority.MEMBERS_CREATE})
+    @DisplayName("POST /api/members with MEMBERS:MANAGE authority should return 201")
+    @WithKlabisMockUser(authorities =  {Authority.MEMBERS_MANAGE})
     void shouldReturn201WhenAuthorized() throws Exception {
 
         mockMvc.perform(
@@ -255,8 +255,8 @@ class MemberControllerSecurityTest extends SecurityTestBase {
     }
 
     @Test
-    @DisplayName("POST /api/members/{id}/suspend with MEMBERS:UPDATE authority should pass authorization")
-    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+    @DisplayName("POST /api/members/{id}/suspend with MEMBERS:MANAGE authority should pass authorization")
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
     void shouldPassAuthorizationWhenSuspendingMemberWithUpdateAuthority() throws Exception {
         UUID memberId = UUID.randomUUID();
 

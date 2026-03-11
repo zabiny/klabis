@@ -12,8 +12,8 @@ import java.util.Set;
  * Provides type-safe authority references throughout the codebase with compile-time checking.
  * Each enum constant has a corresponding string value used for storage and JWT claims.
  * <p>
- * The enum names use underscore pattern (MEMBERS_CREATE) following Java conventions,
- * while getValue() returns the colon-separated string format (MEMBERS:CREATE) for
+ * The enum names use underscore pattern (MEMBERS_MANAGE) following Java conventions,
+ * while getValue() returns the colon-separated string format (MEMBERS:MANAGE) for
  * external representation.
  * <p>
  * Benefits:
@@ -26,10 +26,8 @@ import java.util.Set;
  */
 public enum Authority {
     CALENDAR_MANAGE("CALENDAR:MANAGE", Scope.CONTEXT_SPECIFIC),
-    MEMBERS_CREATE("MEMBERS:CREATE", Scope.CONTEXT_SPECIFIC),
+    MEMBERS_MANAGE("MEMBERS:MANAGE", Scope.CONTEXT_SPECIFIC),
     MEMBERS_READ("MEMBERS:READ", Scope.CONTEXT_SPECIFIC),
-    MEMBERS_UPDATE("MEMBERS:UPDATE", Scope.CONTEXT_SPECIFIC),
-    MEMBERS_DELETE("MEMBERS:DELETE", Scope.CONTEXT_SPECIFIC),
     MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", Scope.GLOBAL),
     EVENTS_READ("EVENTS:READ", Scope.GLOBAL),
     EVENTS_MANAGE("EVENTS:MANAGE", Scope.CONTEXT_SPECIFIC);
@@ -71,7 +69,7 @@ public enum Authority {
      * <p>
      * Used for JWT claims, database storage, and Spring Security's GrantedAuthority.
      *
-     * @return the colon-separated string representation (e.g., "MEMBERS:CREATE")
+     * @return the colon-separated string representation (e.g., "MEMBERS:MANAGE")
      */
     @JsonValue
     public String getValue() {
@@ -83,7 +81,7 @@ public enum Authority {
      * <p>
      * Used for JPA/database conversion and JWT claims parsing.
      *
-     * @param value the string representation (e.g., "MEMBERS:CREATE")
+     * @param value the string representation (e.g., "MEMBERS:MANAGE")
      * @return the corresponding Authority enum
      * @throws IllegalArgumentException if the value is not a valid authority
      */

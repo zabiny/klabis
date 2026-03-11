@@ -26,7 +26,7 @@ class UserPermissionsTest {
         // Given
         Set<Authority> authorities = Set.of(
                 Authority.MEMBERS_READ,
-                Authority.MEMBERS_CREATE
+                Authority.MEMBERS_MANAGE
         );
 
         // When
@@ -36,7 +36,7 @@ class UserPermissionsTest {
         assertThat(permissions.getUserId()).isEqualTo(TEST_USER_ID);
         assertThat(permissions.getDirectAuthorities()).containsExactlyInAnyOrder(
                 Authority.MEMBERS_READ,
-                Authority.MEMBERS_CREATE
+                Authority.MEMBERS_MANAGE
         );
     }
 
@@ -74,13 +74,13 @@ class UserPermissionsTest {
         // Given
         UserPermissions permissions = UserPermissions.create(
                 TEST_USER_ID,
-                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_CREATE)
+                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE)
         );
 
         // When/Then
         assertThat(permissions.hasDirectAuthority(Authority.MEMBERS_READ)).isTrue();
-        assertThat(permissions.hasDirectAuthority(Authority.MEMBERS_CREATE)).isTrue();
-        assertThat(permissions.hasDirectAuthority(Authority.MEMBERS_DELETE)).isFalse();
+        assertThat(permissions.hasDirectAuthority(Authority.MEMBERS_MANAGE)).isTrue();
+        assertThat(permissions.hasDirectAuthority(Authority.MEMBERS_PERMISSIONS)).isFalse();
     }
 
     @Test
@@ -92,12 +92,12 @@ class UserPermissionsTest {
         );
 
         // When
-        permissions.grantAuthority(Authority.MEMBERS_CREATE);
+        permissions.grantAuthority(Authority.MEMBERS_MANAGE);
 
         // Then
         assertThat(permissions.getDirectAuthorities()).containsExactlyInAnyOrder(
                 Authority.MEMBERS_READ,
-                Authority.MEMBERS_CREATE
+                Authority.MEMBERS_MANAGE
         );
     }
 
@@ -133,11 +133,11 @@ class UserPermissionsTest {
         // Given
         UserPermissions permissions = UserPermissions.create(
                 TEST_USER_ID,
-                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_CREATE)
+                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE)
         );
 
         // When
-        permissions.revokeAuthority(Authority.MEMBERS_CREATE);
+        permissions.revokeAuthority(Authority.MEMBERS_MANAGE);
 
         // Then
         assertThat(permissions.getDirectAuthorities()).containsExactly(Authority.MEMBERS_READ);
@@ -152,8 +152,8 @@ class UserPermissionsTest {
         );
 
         // When - revoke same authority twice
-        permissions.revokeAuthority(Authority.MEMBERS_CREATE);
-        permissions.revokeAuthority(Authority.MEMBERS_CREATE);
+        permissions.revokeAuthority(Authority.MEMBERS_MANAGE);
+        permissions.revokeAuthority(Authority.MEMBERS_MANAGE);
 
         // Then - no error, authorities unchanged
         assertThat(permissions.getDirectAuthorities()).containsExactly(Authority.MEMBERS_READ);
@@ -178,20 +178,20 @@ class UserPermissionsTest {
         // Given
         UserPermissions permissions = UserPermissions.create(
                 TEST_USER_ID,
-                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_CREATE)
+                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE)
         );
 
         // When
         Set<Authority> newAuthorities = Set.of(
-                Authority.MEMBERS_UPDATE,
-                Authority.MEMBERS_DELETE
+                Authority.MEMBERS_MANAGE,
+                Authority.MEMBERS_PERMISSIONS
         );
         permissions.replaceAuthorities(newAuthorities);
 
         // Then
         assertThat(permissions.getDirectAuthorities()).containsExactlyInAnyOrder(
-                Authority.MEMBERS_UPDATE,
-                Authority.MEMBERS_DELETE
+                Authority.MEMBERS_MANAGE,
+                Authority.MEMBERS_PERMISSIONS
         );
     }
 
@@ -233,7 +233,7 @@ class UserPermissionsTest {
         Set<Authority> authorities = permissions.getDirectAuthorities();
 
         // Then - modifying returned set should throw exception
-        assertThatThrownBy(() -> authorities.add(Authority.MEMBERS_CREATE))
+        assertThatThrownBy(() -> authorities.add(Authority.MEMBERS_MANAGE))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -244,7 +244,7 @@ class UserPermissionsTest {
         UserId differentUserId = new UserId(UUID.randomUUID());
 
         UserPermissions permissions1 = UserPermissions.create(sameUserId, Set.of(Authority.MEMBERS_READ));
-        UserPermissions permissions2 = UserPermissions.create(sameUserId, Set.of(Authority.MEMBERS_CREATE));
+        UserPermissions permissions2 = UserPermissions.create(sameUserId, Set.of(Authority.MEMBERS_MANAGE));
         UserPermissions permissions3 = UserPermissions.create(differentUserId, Set.of(Authority.MEMBERS_READ));
 
         // Then
@@ -258,7 +258,7 @@ class UserPermissionsTest {
         // Given
         UserPermissions permissions = UserPermissions.create(
                 TEST_USER_ID,
-                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_CREATE)
+                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE)
         );
 
         // When

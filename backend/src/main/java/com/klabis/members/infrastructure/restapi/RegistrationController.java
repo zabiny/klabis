@@ -57,7 +57,7 @@ class RegistrationController {
      * @return 201 Created with Location header and member resource
      */
     @PostMapping(consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_CREATE)
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Register a new member",
             description = "Creates a new member with personal information, contact details, and optional guardian information for minors. " +

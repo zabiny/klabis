@@ -86,7 +86,7 @@ class MemberController {
      * Supports dual authorization model:
      * <ul>
      *   <li><b>Self-edit:</b> Authenticated members can update their own information (email, phone, address, dietaryRestrictions)</li>
-     *   <li><b>Admin edit:</b> Users with MEMBERS:UPDATE authority can update any member and all fields</li>
+     *   <li><b>Admin edit:</b> Users with MEMBERS:MANAGE authority can update any member and all fields</li>
      * </ul>
      * <p>
      * <b>PATCH Semantics:</b> Only fields provided (non-null in request) are updated.
@@ -109,7 +109,7 @@ class MemberController {
             summary = "Update member information (partial update)",
             description = "Updates member information with PATCH semantics (partial update). " +
                           "Supports dual authorization: members can edit their own information (limited fields), " +
-                          "users with MEMBERS:UPDATE authority can edit any member (all fields). " +
+                          "users with MEMBERS:MANAGE authority can edit any member (all fields). " +
                           "Only provided fields are updated; null/missing fields keep existing values. " +
                           "Member-editable fields: email, phone, address, dietaryRestrictions. " +
                           "Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup."
@@ -122,7 +122,7 @@ class MemberController {
             Authentication authentication) {
 
         MemberId memberId = new MemberId(id);
-        if (hasAuthority(authentication, Authority.MEMBERS_UPDATE)) {
+        if (hasAuthority(authentication, Authority.MEMBERS_MANAGE)) {
             UserId currentUserId = extractUserId(authentication);
             var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request, currentUserId);
             Member updatedMember = managementService.updateMember(memberId, adminCommand);
@@ -161,16 +161,16 @@ class MemberController {
     }
 
     @PostMapping("/{id}/resume")
-    @HasAuthority(Authority.MEMBERS_UPDATE)
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Resume suspended member membership",
             description = "Resumes a suspended member's membership. " +
-                          "Requires MEMBERS:UPDATE authority (admin-only). " +
+                          "Requires MEMBERS:MANAGE authority (admin-only). " +
                           "Sets active status to true and records resume timestamp and user who performed resume."
     )
     @ApiResponse(responseCode = "204", description = "Membership resumed successfully")
     @ApiResponse(responseCode = "400", description = "Invalid resume request (e.g., member is already active)")
-    @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:UPDATE authority")
+    @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:MANAGE authority")
     @ApiResponse(responseCode = "404", description = "Member not found")
     public ResponseEntity<Void> resumeMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
@@ -189,7 +189,7 @@ class MemberController {
      * POST /api/members/{id}/suspend
      * <p>
      * Admin-only endpoint for suspending a member's membership.
-     * Requires MEMBERS:UPDATE authority.
+     * Requires MEMBERS:MANAGE authority.
      * <p>
      * Sets member's active status to false and records suspension details.
      * Publishes MemberSuspendedEvent for integration with other modules.
@@ -200,16 +200,16 @@ class MemberController {
      * @return 204 No Content on success
      */
     @PostMapping(value = "/{id}/suspend", consumes = "application/json")
-    @HasAuthority(Authority.MEMBERS_UPDATE)
+    @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
             summary = "Suspend member membership",
             description = "Suspends a member's membership with a specified reason. " +
-                          "Requires MEMBERS:UPDATE authority (admin-only). " +
+                          "Requires MEMBERS:MANAGE authority (admin-only). " +
                           "Sets active status to false and records suspension details including timestamp and user who performed suspension."
     )
     @ApiResponse(responseCode = "204", description = "Membership suspended successfully")
     @ApiResponse(responseCode = "400", description = "Invalid suspension request (e.g., already suspended)")
-    @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:UPDATE authority")
+    @ApiResponse(responseCode = "403", description = "Forbidden - user lacks MEMBERS:MANAGE authority")
     @ApiResponse(responseCode = "404", description = "Member not found")
     @ApiResponse(responseCode = "409", description = "Conflict - concurrent modification detected")
     public ResponseEntity<Void> suspendMember(

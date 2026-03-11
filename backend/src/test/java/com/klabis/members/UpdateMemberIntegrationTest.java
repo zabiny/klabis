@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>
  * <b>Test Scope:</b>
  * <ul>
- *   <li>Admin update flow with MEMBERS_UPDATE authority</li>
+ *   <li>Admin update flow with MEMBERS_MANAGE authority</li>
  *   <li>Member self-update flow (own data only)</li>
  *   <li>Data persistence verification through GET endpoint</li>
  * </ul>
@@ -52,7 +52,7 @@ class UpdateMemberIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+    @WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @DisplayName("admin: should update member email, phone, address and verify data persistence")
     void shouldUpdateMemberAsAdminAndPersist() throws Exception {
@@ -86,7 +86,7 @@ class UpdateMemberIntegrationTest {
     }
 
     @Test
-    @WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+    @WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @DisplayName("admin: should update admin-only fields (firstName, lastName)")
     void shouldUpdateAdminOnlyFields() throws Exception {
@@ -179,7 +179,7 @@ class UpdateMemberIntegrationTest {
     }
 
     @Test
-    @WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+    @WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @DisplayName("admin: should update gender and birthNumber for Czech member")
     void shouldUpdateGenderAndBirthNumberForCzechMember() throws Exception {

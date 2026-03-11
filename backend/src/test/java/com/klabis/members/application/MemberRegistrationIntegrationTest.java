@@ -36,7 +36,7 @@ class MemberRegistrationIntegrationTest {
 
     @Test
     @DisplayName("Registration of member should succeed")
-    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
     void shouldCompleteRegistrationFlowForAdult() throws Exception {
         // When: Registering the member
         mockMvc.perform(
@@ -67,7 +67,7 @@ class MemberRegistrationIntegrationTest {
 
     @Test
     @DisplayName("Registration should generate unique registration numbers")
-    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+    @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
     void shouldGenerateUniqueRegistrationNumbers() throws Exception {
         // When: Registering both members
         MvcResult result1 = mockMvc.perform(

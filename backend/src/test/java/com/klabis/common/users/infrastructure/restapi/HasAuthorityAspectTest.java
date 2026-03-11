@@ -50,7 +50,7 @@ class HasAuthorityAspectTest {
         @DisplayName("should allow access when user has required authority")
         void shouldAllowAccessWithRequiredAuthority() {
             // Given
-            Authentication auth = createAuthentication("user1", Authority.MEMBERS_CREATE.getValue());
+            Authentication auth = createAuthentication("user1", Authority.MEMBERS_MANAGE.getValue());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             // When & Then
@@ -69,7 +69,7 @@ class HasAuthorityAspectTest {
             assertThatThrownBy(() -> testService.methodWithAuthority())
                     .isInstanceOf(AccessDeniedException.class)
                     .hasMessageContaining("Access denied")
-                    .hasMessageContaining(Authority.MEMBERS_CREATE.getValue());
+                    .hasMessageContaining(Authority.MEMBERS_MANAGE.getValue());
         }
 
         @Test
@@ -91,8 +91,8 @@ class HasAuthorityAspectTest {
             Authentication auth = createAuthentication(
                     "user1",
                     Authority.MEMBERS_READ.getValue(),
-                    Authority.MEMBERS_CREATE.getValue(),
-                    Authority.MEMBERS_UPDATE.getValue()
+                    Authority.MEMBERS_MANAGE.getValue(),
+                    Authority.MEMBERS_PERMISSIONS.getValue()
             );
             SecurityContextHolder.getContext().setAuthentication(auth);
 
@@ -110,21 +110,21 @@ class HasAuthorityAspectTest {
         @DisplayName("should use method-level authority when both are present")
         void shouldUseMethodLevelAuthorityWhenBothPresent() {
             // Given - user has MEMBERS_READ (class-level requirement)
-            // but calling method that requires MEMBERS_CREATE (method-level)
+            // but calling method that requires MEMBERS_MANAGE (method-level)
             Authentication auth = createAuthentication("user1", Authority.MEMBERS_READ.getValue());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            // When & Then - should fail because method requires MEMBERS_CREATE
+            // When & Then - should fail because method requires MEMBERS_MANAGE
             assertThatThrownBy(() -> testService.methodOverridingClassAuthority())
                     .isInstanceOf(AccessDeniedException.class)
-                    .hasMessageContaining(Authority.MEMBERS_CREATE.getValue());
+                    .hasMessageContaining(Authority.MEMBERS_MANAGE.getValue());
         }
 
         @Test
         @DisplayName("should pass when method-level authority requirement is met")
         void shouldPassWhenMethodLevelAuthorityRequirementIsMet() {
-            // Given - user has MEMBERS_CREATE (method-level requirement)
-            Authentication auth = createAuthentication("user1", Authority.MEMBERS_CREATE.getValue());
+            // Given - user has MEMBERS_MANAGE (method-level requirement)
+            Authentication auth = createAuthentication("user1", Authority.MEMBERS_MANAGE.getValue());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             // When & Then
@@ -153,7 +153,7 @@ class HasAuthorityAspectTest {
         @DisplayName("should deny access when user lacks class-level authority")
         void shouldDenyAccessWithoutClassLevelAuthority() {
             // Given
-            Authentication auth = createAuthentication("user1", Authority.MEMBERS_CREATE.getValue());
+            Authentication auth = createAuthentication("user1", Authority.MEMBERS_MANAGE.getValue());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             // When & Then
@@ -181,12 +181,12 @@ class HasAuthorityAspectTest {
     @Service
     public static class TestService {
 
-        @HasAuthority(Authority.MEMBERS_CREATE)
+        @HasAuthority(Authority.MEMBERS_MANAGE)
         public String methodWithAuthority() {
             return "success";
         }
 
-        @HasAuthority(Authority.MEMBERS_CREATE)
+        @HasAuthority(Authority.MEMBERS_MANAGE)
         public String methodOverridingClassAuthority() {
             return "success";
         }

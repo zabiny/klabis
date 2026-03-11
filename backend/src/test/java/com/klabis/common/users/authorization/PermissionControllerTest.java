@@ -66,14 +66,14 @@ class PermissionControllerTest {
         void shouldReturn200AndPermissionsWhenAuthorized() throws Exception {
             // Given
             when(permissionService.getUserPermissions(any(UserId.class)))
-                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)));
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));
 
             // When & Then
             mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.userId").isNotEmpty())
                     .andExpect(jsonPath("$.authorities").isArray())
-                    .andExpect(jsonPath("$.authorities", hasItems("MEMBERS:CREATE", "MEMBERS:READ")));
+                    .andExpect(jsonPath("$.authorities", hasItems("MEMBERS:MANAGE", "MEMBERS:READ")));
         }
 
         @Test
@@ -119,11 +119,11 @@ class PermissionControllerTest {
         void shouldReturn204WhenAuthorized() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_CREATE,
+                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
                             Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
-                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)));
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
@@ -139,11 +139,11 @@ class PermissionControllerTest {
         void shouldReturnLocationHeaderPointingToPermissionsResource() throws Exception {
             // Given
             PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_CREATE,
+                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
                             Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
-                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)));
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())

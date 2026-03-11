@@ -135,9 +135,9 @@ class JwtParamsTest {
         void addAuthorityShouldWorkWithEmptyAuthorities() {
             JwtParams base = JwtParams.jwtTokenParams(TEST_USERNAME, TEST_USER_ID);
 
-            JwtParams result = base.addAuthority(Authority.MEMBERS_CREATE);
+            JwtParams result = base.addAuthority(Authority.MEMBERS_MANAGE);
 
-            assertThat(result.authorities()).containsExactly(Authority.MEMBERS_CREATE);
+            assertThat(result.authorities()).containsExactly(Authority.MEMBERS_MANAGE);
         }
     }
 
@@ -219,7 +219,7 @@ class JwtParamsTest {
         void shouldIncludeAllClaimsWhenFullyPopulated() {
             JwtParams params = JwtParams.jwtTokenParams(TEST_USERNAME, TEST_USER_ID)
                     .withMemberId(TEST_MEMBER_ID)
-                    .withAuthorities(Authority.MEMBERS_CREATE, Authority.MEMBERS_UPDATE);
+                    .withAuthorities(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ);
 
             Map<String, Object> claims = params.toKlabisClaims();
 
@@ -229,7 +229,7 @@ class JwtParamsTest {
             assertThat(claims.get(KlabisOAuth2ClaimNames.CLAIM_MEMBER_ID)).isEqualTo(TEST_MEMBER_ID.toString());
             @SuppressWarnings("unchecked")
             java.util.Collection<String> authorities = (java.util.Collection<String>) claims.get(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES);
-            assertThat(authorities).containsExactlyInAnyOrder("MEMBERS:CREATE", "MEMBERS:UPDATE");
+            assertThat(authorities).containsExactlyInAnyOrder("MEMBERS:MANAGE", "MEMBERS:READ");
         }
 
         @Test

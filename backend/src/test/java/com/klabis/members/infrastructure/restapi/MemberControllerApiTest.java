@@ -166,7 +166,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return 403 when user lacks MEMBERS:READ authority")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn403WhenUnauthorized() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -300,8 +300,8 @@ class MemberControllerApiTest {
 
 
         @Test
-        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include update and suspend in active member response (no permissions)")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+        @DisplayName("HAL+FORMS: user with MEMBERS_MANAGE authority: should include update and suspend in active member response (no permissions)")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void activeMemberShouldReturnUpdateAndSuspendAffordances() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -322,8 +322,8 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("HAL+FORMS: user with MEMBERS_UPDATE authority: should include update and resume affordances for suspended member")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE})
+        @DisplayName("HAL+FORMS: user with MEMBERS_MANAGE authority: should include update and resume affordances for suspended member")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void suspendedMemberShouldReturnUpdateAndResumeAffordances() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -362,7 +362,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should call service with correct personal information arguments")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_MANAGE})
         void shouldCallServiceWithCorrectPersonalInformation() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
@@ -397,7 +397,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should call service with correct address arguments")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_MANAGE})
         void shouldCallServiceWithCorrectAddress() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
@@ -432,7 +432,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should call service with correct email and phone arguments")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_MANAGE})
         void shouldCallServiceWithCorrectEmailAndPhone() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
@@ -464,7 +464,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should call service with correct guardian arguments for minor")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldCallServiceWithCorrectGuardian() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
@@ -507,7 +507,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should call service with null guardian when not provided")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldCallServiceWithNullGuardianWhenNotProvided() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
@@ -538,7 +538,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should call service with correct birthNumber and bankAccountNumber when provided")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_MANAGE})
         void shouldCallServiceWithCorrectBirthNumberAndBankAccount() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
@@ -574,7 +574,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with valid data should return 201 with HATEOAS links")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {com.klabis.common.users.Authority.MEMBERS_MANAGE})
         void shouldCreateMemberWithValidData() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -620,7 +620,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with minor should accept guardian")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldCreateMinorWithGuardian() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -672,7 +672,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with missing first name should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenFirstNameMissing() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -700,7 +700,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid email should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenEmailInvalid() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -728,7 +728,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid phone should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenPhoneInvalid() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -757,7 +757,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with future date of birth should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenDateOfBirthInFuture() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -784,7 +784,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with missing email should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenEmailMissing() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -812,7 +812,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid guardian should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenGuardianInvalid() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -847,7 +847,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with valid address and contacts should succeed")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldCreateMemberWithValidAddressAndContacts() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -892,7 +892,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid nationality code should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenNationalityCodeInvalid() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -921,7 +921,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid address missing fields should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenAddressMissingFields() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -949,7 +949,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("with invalid address country code format should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenAddressCountryInvalid() throws Exception {
             mockMvc.perform(postMembers().content("""
                             {
@@ -1116,7 +1116,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("it should call expected service method with correct arguments")
-        @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_MANAGE})
         void shouldCallExpectedServiceMethodWithCorrectArguments() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
@@ -1142,7 +1142,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("valid suspension request should return 204 NO CONTENT response")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         void shouldSuspendMemberSuccessfully() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
@@ -1161,7 +1161,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return 400 Bad Request when service throws InvalidUpdateException")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenSuspendingAlreadySuspendedMember() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
@@ -1186,7 +1186,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("suspension with invalid reason should return 400 Bad Request")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenSuspensionReasonInvalid() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
@@ -1214,7 +1214,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("valid resume request should return 204 NO CONTENT response")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldResumeMemberSuccessfully() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -1226,7 +1226,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should call service with correct arguments")
-        @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(userId = "48e11797-a61b-4783-bc1d-1c11d1b1d288", authorities = {Authority.MEMBERS_MANAGE})
         void shouldCallServiceWithCorrectArguments() throws Exception {
             UUID memberId = UUID.randomUUID();
 
@@ -1238,7 +1238,7 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("should return 403 when user lacks MEMBERS:UPDATE authority")
+        @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenUnauthorized() throws Exception {
             UUID memberId = UUID.randomUUID();
@@ -1282,7 +1282,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("POST /api/members should include X-Warnings header when birth number date mismatches dateOfBirth")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeWarningsHeaderWhenBirthNumberDateMismatches() throws Exception {
             UUID memberId = UUID.randomUUID();
             // Member with dateOfBirth 1990-05-15 but birth number 905101 implies 1990-01-01 → date mismatch
@@ -1304,7 +1304,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("POST /api/members should not include X-Warnings header when birth number is consistent")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldNotIncludeWarningsHeaderWhenBirthNumberIsConsistent() throws Exception {
             UUID memberId = UUID.randomUUID();
             // Member with dateOfBirth 1990-01-01 and birth number 905101 (female, 1990-01-01) → consistent
@@ -1326,7 +1326,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("PATCH /api/members/{id} should include X-Warnings header when birth number gender mismatches")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeWarningsHeaderOnUpdateWhenGenderMismatches() throws Exception {
             UUID memberId = UUID.randomUUID();
             // Member is MALE but birth number 905101 indicates FEMALE → gender mismatch warning
@@ -1352,7 +1352,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("PATCH /api/members/{id} should not include X-Warnings when no birth number provided")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldNotIncludeWarningsWhenNoBirthNumberOnUpdate() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)

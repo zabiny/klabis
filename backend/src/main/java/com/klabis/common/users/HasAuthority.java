@@ -12,7 +12,7 @@ import java.lang.annotation.*;
  * <p>
  * <b>Usage:</b>
  * <pre>
- * &#64;HasAuthority(Authority.MEMBERS_CREATE)
+ * &#64;HasAuthority(Authority.MEMBERS_MANAGE)
  * &#64;PostMapping("/members")
  * public ResponseEntity&lt;?&gt; createMember(...) { ... }
  * </pre>

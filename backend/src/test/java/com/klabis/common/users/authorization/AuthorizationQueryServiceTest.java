@@ -49,7 +49,7 @@ class AuthorizationQueryServiceTest {
         // Given
         UserPermissions permissions = UserPermissions.create(
                 testUserId,
-                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_CREATE)
+                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE)
         );
         when(permissionsRepo.findById(testUserId)).thenReturn(Optional.of(permissions));
 
@@ -71,14 +71,14 @@ class AuthorizationQueryServiceTest {
         // Given
         UserPermissions permissions = UserPermissions.create(
                 testUserId,
-                Set.of(Authority.MEMBERS_READ) // Does not have MEMBERS_DELETE
+                Set.of(Authority.MEMBERS_READ) // Does not have MEMBERS_MANAGE
         );
         when(permissionsRepo.findById(testUserId)).thenReturn(Optional.of(permissions));
 
         AuthorizationContext context = new AuthorizationContext(
                 testUserId,
                 otherUserId,
-                Authority.MEMBERS_DELETE
+                Authority.MEMBERS_MANAGE
         );
 
         // When

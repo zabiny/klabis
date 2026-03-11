@@ -100,7 +100,7 @@ class BirthNumberAuditControllerTest {
 
         @Test
         @DisplayName("should pass non-null updatedBy in admin command when birthNumber is in request")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_MANAGE})
         void shouldPassUpdatedByWhenBirthNumberIsProvided() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member existingMember = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -127,7 +127,7 @@ class BirthNumberAuditControllerTest {
 
         @Test
         @DisplayName("should pass non-null updatedBy in admin command even when birthNumber is absent")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_UPDATE})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_MANAGE})
         void shouldPassUpdatedByEvenWhenBirthNumberNotInRequest() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member existingMember = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -159,7 +159,7 @@ class BirthNumberAuditControllerTest {
 
         @Test
         @DisplayName("should pass non-null registeredBy in registration command when birthNumber is provided")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_MANAGE})
         void shouldPassRegisteredByWhenBirthNumberProvidedOnRegistration() throws Exception {
             UUID newMemberId = UUID.randomUUID();
             Member registeredMember = MemberTestDataBuilder.aMemberWithId(newMemberId)
@@ -198,7 +198,7 @@ class BirthNumberAuditControllerTest {
 
         @Test
         @DisplayName("should pass non-null registeredBy in registration command even without birthNumber")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_CREATE})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_MANAGE})
         void shouldPassRegisteredByEvenWhenNoBirthNumberOnRegistration() throws Exception {
             UUID newMemberId = UUID.randomUUID();
             Member registeredMember = MemberTestDataBuilder.aMemberWithId(newMemberId)

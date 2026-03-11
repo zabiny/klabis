@@ -12,12 +12,11 @@ interface PermissionsDialogProps {
 
 const PERMISSION_LABELS: Record<string, { label: string; description: string; color: string }> = {
     'MEMBERS:READ':        {label: 'Zobrazení členů',   description: 'Přístup k seznamu a detailům členů',             color: 'bg-blue-100 text-blue-600'},
-    'MEMBERS:CREATE':      {label: 'Vytváření členů',   description: 'Registrace nových členů v klubu',                color: 'bg-green-100 text-green-600'},
-    'MEMBERS:UPDATE':      {label: 'Úprava členů',      description: 'Změna osobních a kontaktních údajů členů',       color: 'bg-purple-100 text-purple-600'},
-    'MEMBERS:TERMINATE':   {label: 'Ukončení členství', description: 'Deaktivace členů a ukončení jejich členství',    color: 'bg-orange-100 text-orange-600'},
+    'MEMBERS:MANAGE':      {label: 'Správa členů',      description: 'Registrace, úprava a mazání členů',              color: 'bg-green-100 text-green-600'},
     'MEMBERS:PERMISSIONS': {label: 'Správa oprávnění',  description: 'Přidělování a odebírání oprávnění uživatelům',   color: 'bg-red-100 text-red-600'},
     'EVENTS:READ':         {label: 'Zobrazení akcí',    description: 'Přístup k seznamu a detailům akcí',              color: 'bg-teal-100 text-teal-600'},
     'EVENTS:MANAGE':       {label: 'Správa akcí',       description: 'Vytváření a úprava akcí',                        color: 'bg-indigo-100 text-indigo-600'},
+    'CALENDAR:MANAGE':     {label: 'Správa kalendáře',  description: 'Vytváření a úprava kalendářních událostí',       color: 'bg-cyan-100 text-cyan-600'},
 };
 
 interface PermissionsResponse {

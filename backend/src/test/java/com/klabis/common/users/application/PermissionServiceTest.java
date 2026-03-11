@@ -58,14 +58,14 @@ class PermissionServiceTest {
             // When
             UserPermissions updatedPermissions = service.updateUserPermissions(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)
+                    Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)
             );
 
             // Then
             assertThat(updatedPermissions.getDirectAuthorities())
-                    .containsExactlyInAnyOrder(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ);
+                    .containsExactlyInAnyOrder(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ);
             verify(permissionsRepository).save(argThat(perms ->
-                    perms.getDirectAuthorities().equals(Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)) &&
+                    perms.getDirectAuthorities().equals(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)) &&
                     perms.getUserId().equals(USER_ID)
             ));
         }
@@ -81,14 +81,14 @@ class PermissionServiceTest {
             // When
             UserPermissions updatedPermissions = service.updateUserPermissions(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)
+                    Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)
             );
 
             // Then
             assertThat(updatedPermissions.getDirectAuthorities())
-                    .containsExactlyInAnyOrder(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ);
+                    .containsExactlyInAnyOrder(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ);
             verify(permissionsRepository).save(argThat(perms ->
-                    perms.getDirectAuthorities().equals(Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)) &&
+                    perms.getDirectAuthorities().equals(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)) &&
                     perms.getUserId().equals(USER_ID)
             ));
         }
@@ -99,7 +99,7 @@ class PermissionServiceTest {
             // Given
             UserPermissions adminPermissions = UserPermissions.create(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_CREATE)
+                    Set.of(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_MANAGE)
             );
 
             when(permissionsRepository.findById(USER_ID)).thenReturn(Optional.of(adminPermissions));
@@ -108,7 +108,7 @@ class PermissionServiceTest {
             // When & Then
             assertThatThrownBy(() -> service.updateUserPermissions(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)
+                    Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)
             ))
                     .isInstanceOf(AuthorizationPolicy.AdminLockoutException.class)
                     .hasMessageContaining("Cannot revoke MEMBERS:PERMISSIONS from user");
@@ -122,7 +122,7 @@ class PermissionServiceTest {
             // Given
             UserPermissions adminPermissions = UserPermissions.create(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_CREATE)
+                    Set.of(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_MANAGE)
             );
 
             when(permissionsRepository.findById(USER_ID)).thenReturn(Optional.of(adminPermissions));
@@ -133,15 +133,15 @@ class PermissionServiceTest {
             // When
             UserPermissions updatedPermissions = service.updateUserPermissions(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)
+                    Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)
             );
 
             // Then
             assertThat(updatedPermissions.getDirectAuthorities())
-                    .containsExactlyInAnyOrder(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)
+                    .containsExactlyInAnyOrder(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)
                     .doesNotContain(Authority.MEMBERS_PERMISSIONS);
             verify(permissionsRepository).save(argThat(perms ->
-                    perms.getDirectAuthorities().equals(Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ)) &&
+                    perms.getDirectAuthorities().equals(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)) &&
                     !perms.getDirectAuthorities().contains(Authority.MEMBERS_PERMISSIONS) &&
                     perms.getUserId().equals(USER_ID)
             ));
@@ -175,16 +175,16 @@ class PermissionServiceTest {
             // When
             UserPermissions updatedPermissions = service.updateUserPermissions(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_CREATE)
+                    Set.of(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_MANAGE)
             );
 
             // Then
             verify(permissionsRepository, never()).countUsersWithAuthority(any(Authority.class));
             assertThat(updatedPermissions.getDirectAuthorities())
-                    .contains(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_CREATE);
+                    .contains(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_MANAGE);
             verify(permissionsRepository).save(argThat(perms ->
                     perms.getDirectAuthorities()
-                            .containsAll(Set.of(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_CREATE)) &&
+                            .containsAll(Set.of(Authority.MEMBERS_PERMISSIONS, Authority.MEMBERS_MANAGE)) &&
                     perms.getUserId().equals(USER_ID)
             ));
         }
@@ -205,7 +205,7 @@ class PermissionServiceTest {
             // When
             UserPermissions updatedPermissions = service.updateUserPermissions(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE)
+                    Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)
             );
 
             // Then
@@ -213,7 +213,7 @@ class PermissionServiceTest {
             verify(permissionsRepository).save(argThat(perms ->
                     perms.getUserId().equals(USER_ID) &&
                     perms.getDirectAuthorities()
-                            .equals(Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE))
+                            .equals(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ))
             ));
         }
     }
@@ -228,7 +228,7 @@ class PermissionServiceTest {
             // Given
             UserPermissions permissions = UserPermissions.create(
                     USER_ID,
-                    Set.of(Authority.MEMBERS_CREATE, Authority.MEMBERS_READ, Authority.MEMBERS_UPDATE)
+                    Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)
             );
 
             when(permissionsRepository.findById(USER_ID)).thenReturn(Optional.of(permissions));
@@ -240,9 +240,8 @@ class PermissionServiceTest {
             assertThat(result.getUserId()).isEqualTo(USER_ID);
             assertThat(result.getDirectAuthorities())
                     .containsExactlyInAnyOrder(
-                            Authority.MEMBERS_CREATE,
-                            Authority.MEMBERS_READ,
-                            Authority.MEMBERS_UPDATE
+                            Authority.MEMBERS_MANAGE,
+                            Authority.MEMBERS_READ
                     );
             verify(permissionsRepository).findById(USER_ID);
         }
@@ -282,16 +281,14 @@ class PermissionServiceTest {
         }
 
         @Test
-        @DisplayName("should return all five authorities for admin user")
+        @DisplayName("should return all authorities for admin user")
         void shouldReturnAllFiveAuthoritiesForAdminUser() {
             // Given
             UserPermissions permissions = UserPermissions.create(
                     USER_ID,
                     Set.of(
-                            Authority.MEMBERS_CREATE,
+                            Authority.MEMBERS_MANAGE,
                             Authority.MEMBERS_READ,
-                            Authority.MEMBERS_UPDATE,
-                            Authority.MEMBERS_DELETE,
                             Authority.MEMBERS_PERMISSIONS
                     )
             );
@@ -304,13 +301,11 @@ class PermissionServiceTest {
             // Then
             assertThat(result.getDirectAuthorities())
                     .containsExactlyInAnyOrder(
-                            Authority.MEMBERS_CREATE,
+                            Authority.MEMBERS_MANAGE,
                             Authority.MEMBERS_READ,
-                            Authority.MEMBERS_UPDATE,
-                            Authority.MEMBERS_DELETE,
                             Authority.MEMBERS_PERMISSIONS
                     );
-            assertThat(result.getDirectAuthorities()).hasSize(5);
+            assertThat(result.getDirectAuthorities()).hasSize(3);
         }
     }
 }

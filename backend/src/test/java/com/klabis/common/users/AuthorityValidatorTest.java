@@ -20,7 +20,7 @@ class AuthorityValidatorTest {
         @DisplayName("should accept valid authority strings")
         void shouldAcceptValidAuthorityStrings() {
             // No exception should be thrown
-            AuthorityValidator.validate(Set.of("MEMBERS:READ", "MEMBERS:CREATE"));
+            AuthorityValidator.validate(Set.of("MEMBERS:READ", "MEMBERS:MANAGE"));
         }
 
         @Test
@@ -34,10 +34,8 @@ class AuthorityValidatorTest {
         void shouldAcceptAllValidAuthorities() {
             Set<String> allAuthorities = Set.of(
                     "CALENDAR:MANAGE",
-                    "MEMBERS:CREATE",
+                    "MEMBERS:MANAGE",
                     "MEMBERS:READ",
-                    "MEMBERS:UPDATE",
-                    "MEMBERS:DELETE",
                     "MEMBERS:PERMISSIONS",
                     "EVENTS:READ",
                     "EVENTS:MANAGE"
@@ -84,7 +82,7 @@ class AuthorityValidatorTest {
         void shouldIncludeValidAuthoritiesInErrorMessage() {
             assertThatThrownBy(() -> AuthorityValidator.validate(Set.of("BAD")))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("MEMBERS:CREATE")
+                    .hasMessageContaining("MEMBERS:MANAGE")
                     .hasMessageContaining("MEMBERS:READ");
         }
     }
@@ -96,7 +94,7 @@ class AuthorityValidatorTest {
         @Test
         @DisplayName("should accept valid authority enums")
         void shouldAcceptValidAuthorityEnums() {
-            AuthorityValidator.validateAuthorityEnums(Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_CREATE));
+            AuthorityValidator.validateAuthorityEnums(Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE));
         }
 
         @Test
