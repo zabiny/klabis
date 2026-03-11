@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +28,7 @@ class JwtParamsTest {
         @Test
         @DisplayName("should create JwtParams from CurrentUserData without memberId")
         void shouldCreateFromCurrentUserDataWithoutMemberId() {
-            CurrentUserData userData = new CurrentUserData(TEST_USERNAME, new UserId(TEST_USER_ID), null);
+            CurrentUserData userData = new CurrentUserData(TEST_USERNAME, new UserId(TEST_USER_ID), null, Set.of());
 
             JwtParams result = JwtParams.jwtTokenParams(userData);
 
@@ -40,7 +41,7 @@ class JwtParamsTest {
         @DisplayName("should create JwtParams from CurrentUserData with memberId")
         void shouldCreateFromCurrentUserDataWithMemberId() {
             MemberId memberId = new MemberId(TEST_MEMBER_ID);
-            CurrentUserData userData = new CurrentUserData(TEST_USERNAME, new UserId(TEST_USER_ID), memberId);
+            CurrentUserData userData = new CurrentUserData(TEST_USERNAME, new UserId(TEST_USER_ID), memberId, Set.of());
 
             JwtParams result = JwtParams.jwtTokenParams(userData);
 

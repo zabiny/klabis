@@ -1,12 +1,12 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUser;
+import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementService;
 import com.klabis.members.domain.Member;
@@ -35,7 +35,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
@@ -98,9 +97,9 @@ class MemberController {
      *   <li>Admin-only: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup</li>
      * </ul>
      *
-     * @param id             member ID
-     * @param request        partial update request (only fields to update should be provided)
-     * @param authentication Spring Security authentication for authority checking
+     * @param id          member ID
+     * @param request     partial update request (only fields to update should be provided)
+     * @param currentUser the authenticated user performing the update
      * @return 204 No Content on success
      */
     @PatchMapping(value = "/{id}", consumes = "application/json")
@@ -119,12 +118,11 @@ class MemberController {
             @Parameter(description = "Member UUID") @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
             @Valid @RequestBody UpdateMemberRequest request,
-            Authentication authentication) {
+            @CurrentUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
-        KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) authentication;
-        if (token.hasAuthority(Authority.MEMBERS_MANAGE)) {
-            UserId currentUserId = token.getUserId();
+        if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
+            UserId currentUserId = currentUser.userId();
             var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request, currentUserId);
             Member updatedMember = managementService.updateMember(memberId, adminCommand);
 
@@ -135,8 +133,7 @@ class MemberController {
                         .build();
             }
         } else {
-            UserId currentUserId = token.getUserId();
-            if (!currentUserId.uuid().equals(id)) {
+            if (!currentUser.userId().uuid().equals(id)) {
                 throw new ErrorResponseException(HttpStatus.FORBIDDEN,
                         ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
                                 "You can only edit your own information"), null);
