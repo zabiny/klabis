@@ -1,5 +1,6 @@
 import {type ReactElement, type ReactNode} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
+import {UserPlusIcon} from '@heroicons/react/24/outline';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas';
 import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
@@ -79,9 +80,9 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
             template={template}
             onSubmit={handleSubmit}
             fieldsFactory={klabisFieldsFactory}
-            submitButtonLabel="Registrovat"
+            submitButtonLabel="Registrovat člena"
             isSubmitting={isPending}
-            renderForm={({renderInput, renderField}) => (
+            renderForm={({renderInput}) => (
                 <div className="flex flex-col gap-8">
                     <div>
                         <Link to="/members" className="text-sm text-primary hover:text-primary-light">
@@ -93,52 +94,53 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         Registrace nového člena
                     </h1>
 
-                    <div className="flex flex-wrap gap-3">
-                        {renderField('submit')}
-                        <Link
-                            to="/members"
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                        >
-                            Zrušit
-                        </Link>
-                    </div>
-
-                    {hasFields(PERSONAL_FIELDS) && (
-                        <Section title="OSOBNÍ ÚDAJE">
-                            {hasField('firstName') && <DetailRow label="Jméno">{renderInput('firstName')}</DetailRow>}
-                            {hasField('lastName') && <DetailRow label="Příjmení">{renderInput('lastName')}</DetailRow>}
-                            {hasField('dateOfBirth') && <DetailRow label="Datum narození">{renderInput('dateOfBirth')}</DetailRow>}
-                            {hasField('gender') && <DetailRow label="Pohlaví">{renderInput('gender')}</DetailRow>}
-                            {hasField('nationality') && <DetailRow label="Státní příslušnost">{renderInput('nationality')}</DetailRow>}
-                            {hasField('birthNumber') && <DetailRow label="Rodné číslo">{renderInput('birthNumber')}</DetailRow>}
-                        </Section>
-                    )}
-
-                    {hasFields(CONTACT_FIELDS) && (
-                        <Section title="KONTAKT">
-                            {hasField('email') && <DetailRow label="E-mail">{renderInput('email')}</DetailRow>}
-                            {hasField('phone') && <DetailRow label="Telefon">{renderInput('phone')}</DetailRow>}
-                        </Section>
-                    )}
-
-                    {hasType(ADDRESS_TYPE) && (
-                        <Section title="ADRESA">
-                            {renderInput('address')}
-                        </Section>
-                    )}
-
-                    {hasFields(SUPPLEMENTARY_FIELDS) && (
-                        <Section title="DOPLŇKOVÉ INFORMACE">
-                            {hasField('chipNumber') && <DetailRow label="Číslo čipu">{renderInput('chipNumber')}</DetailRow>}
-                            {hasField('bankAccountNumber') && (
-                                <DetailRow label="Číslo bankovního účtu (nepovinné)">
-                                    {renderInput('bankAccountNumber')}
-                                    <p className="mt-1 text-sm text-text-tertiary">Pro proplácení cestovních nákladů a dalších výdajů spojených s klubem</p>
-                                </DetailRow>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <div className="flex flex-col gap-6">
+                            {hasFields(PERSONAL_FIELDS) && (
+                                <Section title="OSOBNÍ ÚDAJE">
+                                    {hasField('firstName') && <DetailRow label="Jméno">{renderInput('firstName')}</DetailRow>}
+                                    {hasField('lastName') && <DetailRow label="Příjmení">{renderInput('lastName')}</DetailRow>}
+                                    {hasField('dateOfBirth') && <DetailRow label="Datum narození">{renderInput('dateOfBirth')}</DetailRow>}
+                                    {hasField('gender') && <DetailRow label="Pohlaví">{renderInput('gender')}</DetailRow>}
+                                    {hasField('nationality') && <DetailRow label="Státní příslušnost">{renderInput('nationality')}</DetailRow>}
+                                    {hasField('birthNumber') && <DetailRow label="Rodné číslo">{renderInput('birthNumber')}</DetailRow>}
+                                </Section>
                             )}
-                            {hasField('dietaryRestrictions') && <DetailRow label="Stravovací omezení">{renderInput('dietaryRestrictions')}</DetailRow>}
-                        </Section>
-                    )}
+
+                            {hasFields(CONTACT_FIELDS) && (
+                                <Section title="KONTAKT">
+                                    {hasField('email') && <DetailRow label="E-mail">{renderInput('email')}</DetailRow>}
+                                    {hasField('phone') && <DetailRow label="Telefon">{renderInput('phone')}</DetailRow>}
+                                </Section>
+                            )}
+
+                            {hasType(ADDRESS_TYPE) && (
+                                <Section title="ADRESA">
+                                    {renderInput('address')}
+                                </Section>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col gap-6">
+                            {hasFields(SUPPLEMENTARY_FIELDS) && (
+                                <Section title="DOPLŇKOVÉ INFORMACE">
+                                    {hasField('chipNumber') && <DetailRow label="Číslo člena">{renderInput('chipNumber')}</DetailRow>}
+                                    {hasField('bankAccountNumber') && (
+                                        <DetailRow label="Bankovní účet">
+                                            {renderInput('bankAccountNumber')}
+                                        </DetailRow>
+                                    )}
+                                    {hasField('dietaryRestrictions') && <DetailRow label="Stravovací omezení">{renderInput('dietaryRestrictions')}</DetailRow>}
+                                </Section>
+                            )}
+
+                            {hasType(GUARDIAN_TYPE) && (
+                                <Section title="ZÁKONNÝ ZÁSTUPCE">
+                                    {renderInput('guardian')}
+                                </Section>
+                            )}
+                        </div>
+                    </div>
 
                     {hasDocumentFields && (
                         <Section title="DOKLADY A LICENCE">
@@ -149,11 +151,22 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         </Section>
                     )}
 
-                    {hasType(GUARDIAN_TYPE) && (
-                        <Section title="ZÁKONNÝ ZÁSTUPCE">
-                            {renderInput('guardian')}
-                        </Section>
-                    )}
+                    <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
+                        <Link
+                            to="/members"
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                        >
+                            Zrušit
+                        </Link>
+                        <button
+                            type="submit"
+                            disabled={isPending}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
+                        >
+                            <UserPlusIcon className="h-4 w-4"/>
+                            Registrovat člena
+                        </button>
+                    </div>
                 </div>
             )}
         />

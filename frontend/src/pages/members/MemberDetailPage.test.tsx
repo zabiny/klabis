@@ -66,6 +66,27 @@ vi.mock('../../components/UI/ModalOverlay.tsx', () => ({
     ),
 }));
 
+const adminEditTemplate: HalFormsTemplate = {
+    method: 'PUT',
+    target: '/api/members/123e4567-e89b-12d3-a456-426614174000',
+    properties: [
+        {name: 'firstName', type: 'text', prompt: 'Jméno'},
+        {name: 'lastName', type: 'text', prompt: 'Příjmení'},
+        {name: 'email', type: 'email', prompt: 'E-mail'},
+        {name: 'phone', type: 'tel', prompt: 'Telefon'},
+        {name: 'registrationNumber', type: 'text', readOnly: true},
+    ],
+};
+
+const selfEditTemplate: HalFormsTemplate = {
+    method: 'PATCH',
+    target: '/api/members/123e4567-e89b-12d3-a456-426614174000/profile',
+    properties: [
+        {name: 'email', type: 'email', prompt: 'E-mail'},
+        {name: 'phone', type: 'tel', prompt: 'Telefon'},
+    ],
+};
+
 const mockMemberDetailData = (overrides?: Partial<any>): HalResponse => ({
     id: '123e4567-e89b-12d3-a456-426614174000',
     registrationNumber: 'SKI2601',
@@ -160,14 +181,6 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('Neaktivní')).toBeInTheDocument();
     });
 
-    it('shows personal info section with formatted data', () => {
-        renderPage(createMockPageData(mockMemberDetailData()));
-        expect(screen.getByText('OSOBNÍ ÚDAJE')).toBeInTheDocument();
-        expect(screen.getByText('Muž')).toBeInTheDocument();
-        expect(screen.getByText('Datum narození')).toBeInTheDocument();
-        expect(screen.getByText('Státní příslušnost')).toBeInTheDocument();
-    });
-
     it('shows contact section', () => {
         renderPage(createMockPageData(mockMemberDetailData()));
         expect(screen.getByText('KONTAKT')).toBeInTheDocument();
@@ -207,42 +220,24 @@ describe('MemberDetailPage', () => {
         expect(screen.queryByText('ZÁKONNÝ ZÁSTUPCE')).not.toBeInTheDocument();
     });
 
-    it('shows "Upravit" button when edit template exists (label overrides template title)', () => {
+    it('shows birth number masked when nationality is CZ (self view)', () => {
         const data = mockMemberDetailData({
-            _templates: {
-                default: mockHalFormsTemplate({title: 'Edit Member'}),
-            },
+            nationality: 'CZ',
+            birthNumber: '9003151234',
+            _templates: {default: selfEditTemplate},
         });
         renderPage(createMockPageData(data));
-        expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
-        expect(screen.queryByText('Edit Member')).not.toBeInTheDocument();
-    });
-
-    it('does NOT show "Upravit" button when edit template missing', () => {
-        renderPage(createMockPageData(mockMemberDetailData()));
-        expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
-    });
-
-    it('shows "Ukončit členství" button when terminate template exists (label overrides template title)', () => {
-        const data = mockMemberDetailData({
-            active: true,
-            _templates: {
-                terminate: mockHalFormsTemplate({title: 'Terminate'}),
-            },
-        });
-        renderPage(createMockPageData(data));
-        expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
-        expect(screen.queryByText('Terminate')).not.toBeInTheDocument();
-    });
-
-    it('shows birth number masked when nationality is CZ', () => {
-        renderPage(createMockPageData(mockMemberDetailData({nationality: 'CZ', birthNumber: '9003151234'})));
         expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
         expect(screen.getByText(/••••••\/••••/)).toBeInTheDocument();
     });
 
-    it('does NOT show birth number when nationality is not CZ', () => {
-        renderPage(createMockPageData(mockMemberDetailData({nationality: 'SK', birthNumber: '9003151234'})));
+    it('does NOT show birth number when nationality is not CZ (self view)', () => {
+        const data = mockMemberDetailData({
+            nationality: 'SK',
+            birthNumber: '9003151234',
+            _templates: {default: selfEditTemplate},
+        });
+        renderPage(createMockPageData(data));
         expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
     });
 
@@ -259,114 +254,257 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('Osobní důvody')).toBeInTheDocument();
     });
 
-    describe('inline editing', () => {
-        const editTemplate: HalFormsTemplate = {
-            method: 'PUT',
-            target: '/api/members/123e4567-e89b-12d3-a456-426614174000',
-            properties: [
-                {name: 'firstName', type: 'text', prompt: 'Jméno'},
-                {name: 'lastName', type: 'text', prompt: 'Příjmení'},
-                {name: 'email', type: 'email', prompt: 'E-mail'},
-                {name: 'phone', type: 'tel', prompt: 'Telefon'},
-                {name: 'registrationNumber', type: 'text', readOnly: true},
-            ],
-        };
-
-        const memberWithEditTemplate = () => mockMemberDetailData({
-            _templates: {default: editTemplate},
+    describe('other member view (no template)', () => {
+        it('shows only contact and address sections, NOT personal info', () => {
+            renderPage(createMockPageData(mockMemberDetailData()));
+            expect(screen.getByText('KONTAKT')).toBeInTheDocument();
+            expect(screen.getByText('ADRESA')).toBeInTheDocument();
+            expect(screen.queryByText('OSOBNÍ ÚDAJE')).not.toBeInTheDocument();
+            expect(screen.queryByText('DOPLŇKOVÉ INFORMACE')).not.toBeInTheDocument();
+            expect(screen.queryByText('DOKLADY A LICENCE')).not.toBeInTheDocument();
         });
 
-        it('clicking "Upravit" switches fields to editable inputs', async () => {
-            const user = userEvent.setup();
-            renderPage(createMockPageData(memberWithEditTemplate()));
+        it('shows no action buttons', () => {
+            renderPage(createMockPageData(mockMemberDetailData()));
+            expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /ukončit/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /příspěvky/i})).not.toBeInTheDocument();
+        });
+    });
 
-            expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /upravit/i}));
-
-            expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
-            expect(screen.getByDisplayValue('Novák')).toBeInTheDocument();
-            expect(screen.getByDisplayValue('jan.novak@email.cz')).toBeInTheDocument();
+    describe('self profile view (template without firstName)', () => {
+        it('shows all sections including personal info', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByText('OSOBNÍ ÚDAJE')).toBeInTheDocument();
+            expect(screen.getByText('KONTAKT')).toBeInTheDocument();
+            expect(screen.getByText('ADRESA')).toBeInTheDocument();
+            expect(screen.getByText('DOPLŇKOVÉ INFORMACE')).toBeInTheDocument();
+            expect(screen.getByText('DOKLADY A LICENCE')).toBeInTheDocument();
         });
 
-        it('shows "Uložit" and "Zrušit" buttons in edit mode', async () => {
+        it('shows "Upravit profil" button with pencil icon', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('button', {name: /upravit profil/i})).toBeInTheDocument();
+        });
+
+        it('shows "Členské příspěvky" button', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('button', {name: /členské příspěvky/i})).toBeInTheDocument();
+        });
+
+        it('does NOT show "Ukončit členství" button', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.queryByRole('button', {name: /ukončit členství/i})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('admin view (template with firstName)', () => {
+        it('shows all sections', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByText('OSOBNÍ ÚDAJE')).toBeInTheDocument();
+            expect(screen.getByText('KONTAKT')).toBeInTheDocument();
+            expect(screen.getByText('ADRESA')).toBeInTheDocument();
+            expect(screen.getByText('DOPLŇKOVÉ INFORMACE')).toBeInTheDocument();
+            expect(screen.getByText('DOKLADY A LICENCE')).toBeInTheDocument();
+        });
+
+        it('shows "Upravit profil" button', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('button', {name: /upravit profil/i})).toBeInTheDocument();
+        });
+
+        it('shows "Ukončit členství" button when terminate template exists', () => {
+            const data = mockMemberDetailData({
+                _templates: {
+                    default: adminEditTemplate,
+                    terminate: mockHalFormsTemplate({title: 'Terminate'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
+        });
+
+        it('shows "Oprávnění" button when permissions link exists', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+                _links: {
+                    self: {href: '/api/members/123'},
+                    permissions: {href: '/api/members/123/permissions'},
+                },
+            });
+            const pageData = createMockPageData(data, {
+                hasLink: vi.fn((name: string) => name === 'permissions'),
+            });
+            renderPage(pageData);
+            expect(screen.getByRole('button', {name: /oprávnění/i})).toBeInTheDocument();
+        });
+
+        it('does NOT show "Oprávnění" button when permissions link missing', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.queryByRole('button', {name: /oprávnění/i})).not.toBeInTheDocument();
+        });
+    });
+
+    describe('admin edit mode', () => {
+        it('shows admin badge "Admin — editace všech polí" when editing with admin template', async () => {
             const user = userEvent.setup();
-            renderPage(createMockPageData(memberWithEditTemplate()));
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            renderPage(createMockPageData(data));
 
-            await user.click(screen.getByRole('button', {name: /upravit/i}));
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
 
-            expect(screen.getByRole('button', {name: /uložit/i})).toBeInTheDocument();
+            expect(screen.getByText(/Admin — editace všech polí/i)).toBeInTheDocument();
+        });
+
+        it('shows action bar at bottom of content with "Uložit změny" and "Zrušit"', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /zrušit/i})).toBeInTheDocument();
         });
 
-        it('hides "Upravit" button in edit mode', async () => {
+        it('switches fields to editable inputs when editing', async () => {
             const user = userEvent.setup();
-            renderPage(createMockPageData(memberWithEditTemplate()));
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            renderPage(createMockPageData(data));
 
-            await user.click(screen.getByRole('button', {name: /upravit/i}));
+            expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
 
-            expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('Novák')).toBeInTheDocument();
         });
 
-        it('readOnly fields stay read-only in edit mode', async () => {
+        it('clicking "Zrušit" exits edit mode', async () => {
             const user = userEvent.setup();
-            renderPage(createMockPageData(memberWithEditTemplate()));
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            renderPage(createMockPageData(data));
 
-            await user.click(screen.getByRole('button', {name: /upravit/i}));
-
-            expect(screen.getAllByText('SKI2601').length).toBeGreaterThanOrEqual(1);
-            expect(screen.queryByDisplayValue('SKI2601')).not.toBeInTheDocument();
-        });
-
-        it('clicking "Zrušit" exits edit mode and restores read-only display', async () => {
-            const user = userEvent.setup();
-            renderPage(createMockPageData(memberWithEditTemplate()));
-
-            await user.click(screen.getByRole('button', {name: /upravit/i}));
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
             expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
 
             await user.click(screen.getByRole('button', {name: /zrušit/i}));
 
             expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /upravit profil/i})).toBeInTheDocument();
         });
 
-        it('hides terminate and reactivate HalFormButtons in edit mode', async () => {
+        it('readOnly fields stay read-only in edit mode', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getAllByText('SKI2601').length).toBeGreaterThanOrEqual(1);
+            expect(screen.queryByDisplayValue('SKI2601')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('self edit mode', () => {
+        it('does NOT show admin badge when editing with self template', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.queryByText(/Admin — editace všech polí/i)).not.toBeInTheDocument();
+        });
+
+        it('shows self-edit badge "Vlastní profil — omezená editace"', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByText(/Vlastní profil — omezená editace/i)).toBeInTheDocument();
+        });
+
+        it('fields not in self template stay read-only', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByDisplayValue('jan.novak@email.cz')).toBeInTheDocument();
+            expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('2-column layout', () => {
+        it('uses 2-column grid layout when template exists', () => {
+            const data = mockMemberDetailData({
+                _templates: {default: adminEditTemplate},
+            });
+            const {container} = renderPage(createMockPageData(data));
+            const grid = container.querySelector('.grid.lg\\:grid-cols-2');
+            expect(grid).toBeInTheDocument();
+        });
+
+        it('uses 1-column layout for other member view (no template)', () => {
+            const {container} = renderPage(createMockPageData(mockMemberDetailData()));
+            const grid = container.querySelector('.grid.lg\\:grid-cols-2');
+            expect(grid).not.toBeInTheDocument();
+        });
+    });
+
+    describe('legacy compatibility', () => {
+        it('shows "Ukončit členství" button when terminate template exists (label overrides template title)', () => {
+            const data = mockMemberDetailData({
+                active: true,
                 _templates: {
-                    default: editTemplate,
+                    default: adminEditTemplate,
                     terminate: mockHalFormsTemplate({title: 'Terminate'}),
                 },
             });
             renderPage(createMockPageData(data));
-
             expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /upravit/i}));
-
-            expect(screen.queryByRole('button', {name: /ukončit členství/i})).not.toBeInTheDocument();
-        });
-
-        it('fields not in template stay read-only in edit mode', async () => {
-            const user = userEvent.setup();
-            const data = mockMemberDetailData({
-                _templates: {
-                    default: {
-                        method: 'PUT' as const,
-                        properties: [
-                            {name: 'firstName', type: 'text'},
-                        ],
-                    },
-                },
-            });
-            renderPage(createMockPageData(data));
-
-            await user.click(screen.getByRole('button', {name: /upravit/i}));
-
-            expect(screen.getByDisplayValue('Jan')).toBeInTheDocument();
-            expect(screen.getByText('jan.novak@email.cz')).toBeInTheDocument();
-            expect(screen.queryByDisplayValue('jan.novak@email.cz')).not.toBeInTheDocument();
+            expect(screen.queryByText('Terminate')).not.toBeInTheDocument();
         });
 
         it('renders address sub-fields as editable inputs when address is in template', async () => {
@@ -384,7 +522,7 @@ describe('MemberDetailPage', () => {
             });
             renderPage(createMockPageData(data));
 
-            await user.click(screen.getByRole('button', {name: /upravit/i}));
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
 
             expect(screen.getByDisplayValue('Hlavní 15')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Praha')).toBeInTheDocument();

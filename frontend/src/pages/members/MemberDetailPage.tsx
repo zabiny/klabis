@@ -11,6 +11,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
 import {useMemberEditForm} from "./useMemberEditForm";
+import {BanknotesIcon, PencilIcon, ShieldCheckIcon} from "@heroicons/react/24/outline";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
 
@@ -80,6 +81,18 @@ function enrichTemplateWithReadOnlyFields(
     };
 }
 
+function isAdminTemplate(template: HalFormsTemplate): boolean {
+    return template.properties.some(p => p.name === 'firstName' && !p.readOnly);
+}
+
+type ViewMode = 'other' | 'self' | 'admin';
+
+function resolveViewMode(template: HalFormsTemplate | null): ViewMode {
+    if (!template) return 'other';
+    if (isAdminTemplate(template)) return 'admin';
+    return 'self';
+}
+
 export const MemberDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error, hasLink, route} = useHalPageData<MemberDetail>();
 
@@ -117,6 +130,10 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const trainerLicense = member.trainerLicense;
     const showDeactivation = member.active === false && member.deactivationReason;
 
+    const viewMode = resolveViewMode(template);
+    const adminEdit = isEditing && viewMode === 'admin';
+    const selfEdit = isEditing && viewMode === 'self';
+
     const enrichedTemplate = isEditing && template
         ? enrichTemplateWithReadOnlyFields(template, resourceData)
         : null;
@@ -132,81 +149,27 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                 ? helpers.renderInput(name)
                 : null;
 
-        return (
+        const leftColumn = (
             <div className="flex flex-col gap-8">
-                <div>
-                    <Link to="/members" className="text-sm text-primary hover:text-primary-light">
-                        &larr; Zpět na seznam
-                    </Link>
-                </div>
-
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-3xl font-bold text-text-primary">
-                            {member.firstName} {member.lastName}
-                        </h1>
-                        <Badge variant={member.active ? 'success' : 'default'} size="sm">
-                            {member.active ? 'Aktivní' : 'Neaktivní'}
-                        </Badge>
-                    </div>
-                    <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                    {isEditing ? (
-                        <>
-                            {helpers?.renderField('submit')}
-                            <button
-                                type="button"
-                                onClick={cancelEditing}
-                                className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                            >
-                                Zrušit
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            {editForm.hasTemplate && (
-                                <button
-                                    type="button"
-                                    onClick={startEditing}
-                                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                                >
-                                    Upravit
-                                </button>
-                            )}
-                            <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
-                            <HalFormButton name="reactivate" modal={true} label="Reaktivovat"/>
-                            {hasLink('permissions') && (
-                                <button
-                                    type="button"
-                                    onClick={() => setIsPermissionsDialogOpen(true)}
-                                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                                >
-                                    Správa oprávnění
-                                </button>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                <Section title="OSOBNÍ ÚDAJE">
-                    <DetailRow label="Jméno">{ri('firstName') ?? val(member.firstName)}</DetailRow>
-                    <DetailRow label="Příjmení">{ri('lastName') ?? val(member.lastName)}</DetailRow>
-                    <DetailRow label="Datum narození">{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
-                    <DetailRow label="Pohlaví">{ri('gender') ?? val(member.gender && (GENDER_LABELS[member.gender] ?? member.gender))}</DetailRow>
-                    <DetailRow label="Státní příslušnost">{ri('nationality') ?? val(member.nationality)}</DetailRow>
-                    {(isEditing || (member.nationality === 'CZ' && member.birthNumber)) && (
-                        <DetailRow label="Rodné číslo">
-                            {isEditing
-                                ? ri('birthNumber')
-                                : <MaskedBirthNumber value={member.birthNumber!}/>}
-                        </DetailRow>
-                    )}
-                    {isEditing && (
-                        <DetailRow label="Registrační číslo">{ri('registrationNumber')}</DetailRow>
-                    )}
-                </Section>
+                {viewMode !== 'other' && (
+                    <Section title="OSOBNÍ ÚDAJE">
+                        <DetailRow label="Jméno">{ri('firstName') ?? val(member.firstName)}</DetailRow>
+                        <DetailRow label="Příjmení">{ri('lastName') ?? val(member.lastName)}</DetailRow>
+                        <DetailRow label="Datum narození">{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
+                        <DetailRow label="Pohlaví">{ri('gender') ?? val(member.gender && (GENDER_LABELS[member.gender] ?? member.gender))}</DetailRow>
+                        <DetailRow label="Státní příslušnost">{ri('nationality') ?? val(member.nationality)}</DetailRow>
+                        {(isEditing || (member.nationality === 'CZ' && member.birthNumber)) && (
+                            <DetailRow label="Rodné číslo">
+                                {isEditing
+                                    ? ri('birthNumber')
+                                    : <MaskedBirthNumber value={member.birthNumber!}/>}
+                            </DetailRow>
+                        )}
+                        {isEditing && (
+                            <DetailRow label="Registrační číslo">{ri('registrationNumber')}</DetailRow>
+                        )}
+                    </Section>
+                )}
 
                 <Section title="KONTAKT">
                     <DetailRow label="E-mail">{ri('email') ?? val(member.email)}</DetailRow>
@@ -225,7 +188,11 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                         ) : <span className="text-sm text-text-tertiary">{'\u2014'}</span>
                     )}
                 </Section>
+            </div>
+        );
 
+        const rightColumn = viewMode !== 'other' ? (
+            <div className="flex flex-col gap-8">
                 <Section title="DOPLŇKOVÉ INFORMACE">
                     <DetailRow label="Číslo čipu">{ri('chipNumber') ?? val(member.chipNumber)}</DetailRow>
                     <DetailRow label={isEditing ? "Číslo bankovního účtu (nepovinné)" : "Číslo bankovního účtu"}>
@@ -264,6 +231,101 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                         </>
                     )}
                 </Section>
+            </div>
+        ) : null;
+
+        return (
+            <div className="flex flex-col gap-8">
+                <div>
+                    <Link to="/members" className="text-sm text-primary hover:text-primary-light">
+                        &larr; Zpět na seznam
+                    </Link>
+                </div>
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-3xl font-bold text-text-primary">
+                            {member.firstName} {member.lastName}
+                        </h1>
+                        <Badge variant={member.active ? 'success' : 'default'} size="sm">
+                            {member.active ? 'Aktivní' : 'Neaktivní'}
+                        </Badge>
+                        {adminEdit && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                <ShieldCheckIcon className="w-3.5 h-3.5"/>
+                                Admin — editace všech polí
+                            </span>
+                        )}
+                        {selfEdit && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                Vlastní profil — omezená editace
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
+                </div>
+
+                {!isEditing && (
+                    <div className="flex flex-wrap gap-3">
+                        {viewMode === 'admin' && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={startEditing}
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
+                                >
+                                    <PencilIcon className="w-4 h-4"/>
+                                    Upravit profil
+                                </button>
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                                >
+                                    <BanknotesIcon className="w-4 h-4"/>
+                                    Vložit / Vybrat
+                                </button>
+                                {hasLink('permissions') && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPermissionsDialogOpen(true)}
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                                    >
+                                        <ShieldCheckIcon className="w-4 h-4"/>
+                                        Oprávnění
+                                    </button>
+                                )}
+                                <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
+                                <HalFormButton name="resumeMember" modal={true} label="Reaktivovat"/>
+                            </>
+                        )}
+                        {viewMode === 'self' && (
+                            <>
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                                >
+                                    <BanknotesIcon className="w-4 h-4"/>
+                                    Členské příspěvky
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={startEditing}
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
+                                >
+                                    <PencilIcon className="w-4 h-4"/>
+                                    Upravit profil
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {viewMode !== 'other' ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        {leftColumn}
+                        {rightColumn}
+                    </div>
+                ) : leftColumn}
 
                 {(guardian || (isEditing && enrichedFieldNames.has('guardian'))) && (
                     <Section title="ZÁKONNÝ ZÁSTUPCE">
@@ -292,6 +354,19 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                         )}
                     </Section>
                 )}
+
+                {isEditing && (
+                    <div className="flex gap-3 pt-4 border-t border-border">
+                        {helpers?.renderField('submit')}
+                        <button
+                            type="button"
+                            onClick={cancelEditing}
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                        >
+                            Zrušit
+                        </button>
+                    </div>
+                )}
             </div>
         );
     };
@@ -312,7 +387,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                     template={enrichedTemplate}
                     onSubmit={handleSubmit}
                     fieldsFactory={klabisFieldsFactory}
-                    submitButtonLabel="Uložit"
+                    submitButtonLabel="Uložit změny"
                     isSubmitting={editForm.isSubmitting}
                     renderForm={(helpers) => renderContent(helpers) as ReactElement}
                 />

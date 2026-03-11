@@ -6,27 +6,27 @@
 
 ## 2. Backend — podmíněný PATCH template v getMember
 
-- [ ] 2.1 Přidat `@CurrentUser CurrentUserData currentUser` parametr do `getMember()` v `MemberController`
-- [ ] 2.2 Implementovat logiku: pokud `currentUser.hasAuthority(MEMBERS_MANAGE)` → přidat affordanci se všemi poli; pokud `currentUser.memberId().uuid().equals(id)` → přidat affordanci pouze s poli `email`, `phone`, `address`, `dietaryRestrictions`; jinak žádná affordance
-- [ ] 2.3 Aktualizovat nebo přidat testy v `MemberControllerApiTest` pro všechny tři varianty (admin, self, other)
+- [x] 2.1 Přidat `@CurrentUser CurrentUserData currentUser` parametr do `getMember()` v `MemberController`
+- [x] 2.2 Implementovat logiku: pokud `currentUser.hasAuthority(MEMBERS_MANAGE)` → přidat affordanci se všemi poli; pokud `currentUser.memberId().uuid().equals(id)` → přidat affordanci pouze s poli `email`, `phone`, `address`, `dietaryRestrictions`; jinak žádná affordance
+- [x] 2.3 Aktualizovat nebo přidat testy v `MemberControllerApiTest` pro všechny tři varianty (admin, self, other)
 
 ## 3. Frontend — MemberDetailPage layout redesign
 
-- [ ] 3.1 Nahradit 1-sloupcový layout 2-sloupcovým gridem (`grid grid-cols-1 lg:grid-cols-2 gap-10`): levý sloupec (osobní/kontakt/adresa), pravý sloupec (doplňkové/doklady)
-- [ ] 3.2 Implementovat "other member" view: pokud `_templates.default` chybí, zobrazit pouze kontakt + adresu bez akčních tlačítek
-- [ ] 3.3 Implementovat "own profile" action bar: tlačítka "Členské příspěvky" a "Upravit profil" — viditelné když template existuje ale neobsahuje admin pole (firstName)
-- [ ] 3.4 Implementovat "admin" action bar s Lucide ikonami: "Upravit profil" (`pencil`), "Vložit / Vybrat" (`banknote`), "Oprávnění" (`shield`, podmíněně), "Ukončit členství" (`user-x`, červená) — viditelné když template obsahuje admin pole
+- [x] 3.1 Nahradit 1-sloupcový layout 2-sloupcovým gridem (`grid grid-cols-1 lg:grid-cols-2 gap-10`): levý sloupec (osobní/kontakt/adresa), pravý sloupec (doplňkové/doklady)
+- [x] 3.2 Implementovat "other member" view: pokud `_templates.default` chybí, zobrazit pouze kontakt + adresu bez akčních tlačítek
+- [x] 3.3 Implementovat "own profile" action bar: tlačítka "Členské příspěvky" a "Upravit profil" — viditelné když template existuje ale neobsahuje admin pole (firstName)
+- [x] 3.4 Implementovat "admin" action bar s heroicons ikonami: "Upravit profil" (`PencilIcon`), "Vložit / Vybrat" (`BanknotesIcon`), "Oprávnění" (`ShieldCheckIcon`, podmíněně), "Ukončit členství" (HalFormButton) — viditelné když template obsahuje admin pole
 
 ## 4. Frontend — MemberDetailPage edit mód
 
-- [ ] 4.1 Přesunout action bar (Zrušit + Uložit změny) na konec obsahu stránky
-- [ ] 4.2 Přidat admin badge "Admin — editace všech polí" (žlutý, ikona `shield`) do hlavičky při admin edit módu
-- [ ] 4.3 Ověřit že self-edit zobrazuje read-only pole pro pole která nejsou v template (existující `enrichTemplateWithReadOnlyFields` logika)
+- [x] 4.1 Přesunout action bar (Zrušit + Uložit změny) na konec obsahu stránky
+- [x] 4.2 Přidat admin badge "Admin — editace všech polí" (žlutý, ikona `ShieldCheckIcon`) + self badge "Vlastní profil — omezená editace" (zelený) do hlavičky při edit módu
+- [x] 4.3 Ověřit že self-edit zobrazuje read-only pole pro pole která nejsou v template (existující `enrichTemplateWithReadOnlyFields` logika — funguje správně)
 
 ## 5. Frontend — MemberRegistrationPage layout redesign
 
-- [ ] 5.1 Implementovat 2-sloupcový layout: levý sloupec (osobní/kontakt/adresa), pravý sloupec (pouze doplňkové informace — bez dokladů)
-- [ ] 5.2 Přesunout action bar na konec stránky: "Zrušit" (outline) + "Registrovat člena" (primary, ikona `user-plus`)
+- [x] 5.1 Implementovat 2-sloupcový layout: levý sloupec (osobní/kontakt/adresa), pravý sloupec (pouze doplňkové informace — bez dokladů)
+- [x] 5.2 Přesunout action bar na konec stránky: "Zrušit" (outline) + "Registrovat člena" (primary, ikona `user-plus`)
 
 ## 6. Testy a validace
 

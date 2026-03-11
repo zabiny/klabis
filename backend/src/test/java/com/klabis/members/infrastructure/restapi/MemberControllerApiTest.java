@@ -344,6 +344,50 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates.resumeMember.target").value(
                             "http://localhost/api/members/%s/resume".formatted(memberId)));
         }
+
+        @Test
+        @DisplayName("HAL+FORMS: member viewing own profile — should include self-update affordance with limited fields only")
+        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void ownProfileShouldReturnSelfUpdateAffordanceWithLimitedFields() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates").exists())
+                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
+                    .andExpect(jsonPath("$._templates.default.target").value(
+                            "http://localhost/api/members/%s/profile".formatted(memberId)))
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'email')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'phone')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'address')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'dietaryRestrictions')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'firstName')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'lastName')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: member viewing another member's profile — should not include any PATCH affordance")
+        @WithKlabisMockUser(username = "ZBM0101", memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.MEMBERS_READ})
+        void otherMemberProfileShouldNotReturnAnyPatchAffordance() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates").doesNotExist());
+        }
     }
 
     @Nested
@@ -1369,6 +1413,37 @@ class MemberControllerApiTest {
                                     """))
                     .andExpect(status().isNoContent())
                     .andExpect(header().doesNotExist("X-Warnings"));
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/members/{id} — self-update security")
+    class SelfUpdateSecurityTests {
+
+        @Test
+        @DisplayName("self-update should ignore admin-only fields (chipNumber) and only pass allowed fields to service")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void selfUpdateShouldIgnoreAdminOnlyFields() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withNoGuardian()
+                    .build();
+            when(managementService.updateMember(any(MemberId.class), any(Member.SelfUpdate.class))).thenReturn(member);
+
+            mockMvc.perform(patch("/api/members/{id}", memberId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                        "email": "new@example.com",
+                                        "chipNumber": "12345"
+                                    }
+                                    """))
+                    .andExpect(status().isNoContent());
+
+            Mockito.verify(managementService).updateMember(
+                    eq(new MemberId(memberId)),
+                    argThat((Member.SelfUpdate cmd) -> cmd.chipNumber() == null)
+            );
         }
     }
 }

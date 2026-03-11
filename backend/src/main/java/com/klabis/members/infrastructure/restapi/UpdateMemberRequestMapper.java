@@ -48,20 +48,29 @@ class UpdateMemberRequestMapper {
             EmailAddress email = toEmailAddress(request.email());
             PhoneNumber phone = toPhoneNumber(request.phone());
             Address address = toAddress(request.address());
-            String chipNumber = toString(request.chipNumber());
-            String nationality = toString(request.nationality());
-            BankAccountNumber bankAccountNumber = toBankAccountNumber(request.bankAccountNumber());
-            IdentityCard identityCard = toIdentityCard(request.identityCard());
-            DrivingLicenseGroup drivingLicenseGroup = toEnum(request.drivingLicenseGroup());
-            MedicalCourse medicalCourse = toMedicalCourse(request.medicalCourse());
-            TrainerLicense trainerLicense = toTrainerLicense(request.trainerLicense());
             String dietaryRestrictions = toString(request.dietaryRestrictions());
-            GuardianInformation guardian = toGuardianInformation(request.guardian());
 
             return new Member.SelfUpdate(
-                    email, phone, address, chipNumber, nationality,
-                    bankAccountNumber, identityCard, drivingLicenseGroup,
-                    medicalCourse, trainerLicense, dietaryRestrictions, guardian
+                    email, phone, address, null, null,
+                    null, null, null,
+                    null, null, dietaryRestrictions, null
+            );
+        } catch (IllegalArgumentException e) {
+            throw new InvalidUpdateException(e.getMessage(), e);
+        }
+    }
+
+    static Member.SelfUpdate toSelfUpdateCommand(SelfUpdateMemberRequest request) {
+        try {
+            EmailAddress email = toEmailAddress(request.email());
+            PhoneNumber phone = toPhoneNumber(request.phone());
+            Address address = toAddress(request.address());
+            String dietaryRestrictions = toString(request.dietaryRestrictions());
+
+            return new Member.SelfUpdate(
+                    email, phone, address, null, null,
+                    null, null, null,
+                    null, null, dietaryRestrictions, null
             );
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);

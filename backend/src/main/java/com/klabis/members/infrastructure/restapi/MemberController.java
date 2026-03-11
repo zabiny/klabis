@@ -283,12 +283,61 @@ class MemberController {
     }
 
     /**
+     * Update member's own profile information (partial update, self-service).
+     * <p>
+     * PATCH /api/members/{id}/profile
+     * <p>
+     * Members can only update a limited subset of their own information.
+     * Admin-only fields are excluded. Only the authenticated member may call this on their own ID.
+     *
+     * @param id          member ID (must match current user's member ID)
+     * @param request     partial update request (email, phone, address, dietaryRestrictions only)
+     * @param currentUser the authenticated user performing the update
+     * @return 204 No Content on success
+     */
+    @PatchMapping(value = "/{id}/profile", consumes = "application/json")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Update own member profile (self-service, limited fields)",
+            description = "Members can update their own profile with a limited set of fields: " +
+                          "email, phone, address, dietaryRestrictions. " +
+                          "Only the member themselves may call this endpoint (memberId from JWT must match path id)."
+    )
+    @ApiResponse(responseCode = "204", description = "Profile updated successfully")
+    @ApiResponse(responseCode = "403", description = "Forbidden - can only update own profile")
+    @ApiResponse(responseCode = "404", description = "Member not found")
+    public ResponseEntity<Void> updateMemberSelf(
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @Parameter(description = "Self-service update request - only limited fields (email, phone, address, dietaryRestrictions)")
+            @Valid @RequestBody SelfUpdateMemberRequest request,
+            @CurrentUser CurrentUserData currentUser) {
+
+        if (!currentUser.userId().uuid().equals(id)) {
+            throw new ErrorResponseException(HttpStatus.FORBIDDEN,
+                    ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
+                            "You can only edit your own information"), null);
+        }
+
+        MemberId memberId = new MemberId(id);
+        var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
+        managementService.updateMember(memberId, selfCommand);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Get member by ID.
      * <p>
      * GET /api/members/{id}
+     * <p>
+     * Returns a PATCH affordance conditionally based on caller's permissions:
+     * <ul>
+     *   <li>MEMBERS:MANAGE authority → full UpdateMemberRequest template (all fields)</li>
+     *   <li>Own profile (memberId from JWT matches path id) → SelfUpdateMemberRequest template (limited fields)</li>
+     *   <li>Other member → no PATCH affordance</li>
+     * </ul>
      *
-     * @param id member ID
-     * @param currentUserId the authenticated user requesting the member details
+     * @param id          member ID
+     * @param currentUser the authenticated user requesting the member details
      * @return member resource with full details
      */
     @GetMapping("/{id}")
@@ -301,32 +350,39 @@ class MemberController {
     @ApiResponse(responseCode = "200", description = "Member found")
     public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(
             @Parameter(description = "Member UUID") @PathVariable UUID id,
-            @CurrentUser UserId currentUserId) {
+            @CurrentUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
-        Member member = managementService.getMemberAndRecordView(memberId, currentUserId);
+        Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId());
 
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
-        if (member.isActive()) {
+        var selfLink = klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).withSelfRel();
+
+        if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
+            if (member.isActive()) {
+                entityModel.add(
+                        selfLink
+                                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
+                                        (UpdateMemberRequest) null, null)))
+                                .andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(id,
+                                        (SuspendMembershipRequest) null, null)))
+                );
+            } else {
+                entityModel.add(
+                        selfLink
+                                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
+                                        (UpdateMemberRequest) null, null)))
+                                .andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(id, null)))
+                );
+            }
+        } else if (currentUser.isMember() && currentUser.memberId().uuid().equals(id)) {
             entityModel.add(
-                    klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
-                                    (UpdateMemberRequest) null,
-                                    null)))
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(id,
-                                    (SuspendMembershipRequest) null,
-                                    null)))
+                    selfLink.andAffordances(klabisAfford(methodOn(MemberController.class).updateMemberSelf(id, null, null)))
             );
         } else {
-            entityModel.add(
-                    klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
-                                    (UpdateMemberRequest) null,
-                                    null)))
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(id, null)))
-            );
+            entityModel.add(selfLink);
         }
 
         entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(

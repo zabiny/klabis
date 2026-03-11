@@ -140,42 +140,26 @@ class UpdateMemberIntegrationTest {
     @Test
     @WithKlabisMockUser(userId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-    @DisplayName("member: should update extended self-edit fields (chipNumber, identityCard, drivingLicenseGroup, medicalCourse, trainerLicense, nationality)")
-    void shouldUpdateExtendedSelfEditFields() throws Exception {
+    @DisplayName("member: admin-only fields sent in self-update should be silently ignored")
+    void adminOnlyFieldsShouldBeIgnoredInSelfUpdate() throws Exception {
         mockMvc.perform(
                         patch("/api/members/{id}", TEST_MEMBER_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
+                                            "email": "self-updated@example.com",
                                             "chipNumber": "123456",
-                                            "nationality": "SK",
-                                            "identityCard": {
-                                                "cardNumber": "ABC123456",
-                                                "validityDate": "2030-12-31"
-                                            },
-                                            "drivingLicenseGroup": "C",
-                                            "medicalCourse": {
-                                                "completionDate": "2024-01-15",
-                                                "validityDate": "2030-12-31"
-                                            },
-                                            "trainerLicense": {
-                                                "licenseNumber": "TRAIN123",
-                                                "validityDate": "2030-12-31"
-                                            }
+                                            "nationality": "SK"
                                         }
                                         """)
                 )
                 .andExpect(status().isNoContent());
 
-        // Verify data persisted
+        // Admin-only fields must not be updated; only allowed fields (email) are applied
         mockMvc.perform(get("/api/members/{id}", TEST_MEMBER_ID))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chipNumber").value("123456"))
-                .andExpect(jsonPath("$.nationality").value("SK"))
-                .andExpect(jsonPath("$.identityCard.cardNumber").value("ABC123456"))
-                .andExpect(jsonPath("$.drivingLicenseGroup").value("C"))
-                .andExpect(jsonPath("$.medicalCourse.completionDate").value("2024-01-15"))
-                .andExpect(jsonPath("$.trainerLicense.licenseNumber").value("TRAIN123"));
+                .andExpect(jsonPath("$.email").value("self-updated@example.com"))
+                .andExpect(jsonPath("$.chipNumber").doesNotExist()); // chipNumber remains absent (was null in test data)
     }
 
     @Test
