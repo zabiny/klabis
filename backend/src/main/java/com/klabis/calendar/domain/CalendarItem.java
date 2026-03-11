@@ -8,7 +8,6 @@ import com.klabis.events.EventId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
-
 import org.springframework.util.Assert;
 
 import java.time.LocalDate;
@@ -155,7 +154,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
         validateName(name);
         validateDescription(description);
         validateStartDate(eventDate);
-        validateDateRange(eventDate, eventDate);
 
         if (eventId == null) {
             throw new IllegalArgumentException("Event ID is required for event-linked calendar items");
@@ -287,21 +285,6 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
         this.description = description;
         this.startDate = eventDate;
         this.endDate = eventDate;
-    }
-
-    /**
-     * Deletes the calendar item.
-     * <p>
-     * Business rule: Only manual items (eventId == null) can be deleted.
-     * Event-linked items are read-only and managed automatically via event handlers.
-     *
-     * @throws BusinessRuleViolationException if calendar item is event-linked (read-only)
-     */
-    public void delete() {
-        if (isEventLinked()) {
-            throw new BusinessRuleViolationException("Cannot manually delete event-linked calendar item") {
-            };
-        }
     }
 
     /**

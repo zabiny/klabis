@@ -16,9 +16,9 @@ public interface CalendarManagementPort {
 
     CalendarItem getCalendarItem(CalendarItemId calendarItemId);
 
-    CalendarItem createCalendarItem(CreateCalendarItemCommand command);
+    CalendarItem createCalendarItem(CalendarItemCommand command);
 
-    void updateCalendarItem(CalendarItemId calendarItemId, UpdateCalendarItemCommand command);
+    void updateCalendarItem(CalendarItemId calendarItemId, CalendarItemCommand command);
 
     void deleteCalendarItem(CalendarItemId calendarItemId);
 }

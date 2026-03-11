@@ -1,7 +1,7 @@
 package com.klabis.calendar.application;
 
-import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -18,43 +17,17 @@ class CalendarManagementService implements CalendarManagementPort {
 
     private final CalendarRepository calendarRepository;
 
+    private static final int MAX_DATE_RANGE_DAYS = 366; // 1 year (including leap year)
+
     public CalendarManagementService(CalendarRepository calendarRepository) {
         this.calendarRepository = calendarRepository;
     }
-
-    private static final int MAX_DATE_RANGE_DAYS = 366; // 1 year (including leap year)
 
     @Transactional(readOnly = true)
     @Override
     public List<CalendarItem> listCalendarItems(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Sort sort) {
         validateDateRange(startDate, endDate);
-
-        List<CalendarItem> items = calendarRepository.findByDateRange(startDate, endDate);
-
-        Comparator<CalendarItem> comparator;
-        if (sort.isSorted() && sort.iterator().hasNext()) {
-            Sort.Order order = sort.iterator().next();
-            comparator = getComparatorForField(order.getProperty());
-            if (order.isDescending()) {
-                comparator = comparator.reversed();
-            }
-        } else {
-            comparator = Comparator.comparing(CalendarItem::getStartDate);
-        }
-
-        return items.stream()
-                .sorted(comparator)
-                .toList();
-    }
-
-    private Comparator<CalendarItem> getComparatorForField(String field) {
-        return switch (field) {
-            case "id" -> Comparator.comparing(item -> item.getId().value());
-            case "name" -> Comparator.comparing(CalendarItem::getName);
-            case "startDate" -> Comparator.comparing(CalendarItem::getStartDate);
-            case "endDate" -> Comparator.comparing(CalendarItem::getEndDate);
-            default -> throw new IllegalArgumentException("Invalid sort field: " + field);
-        };
+        return calendarRepository.findByDateRange(startDate, endDate);
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
@@ -77,7 +50,7 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional
     @Override
-    public CalendarItem createCalendarItem(CreateCalendarItemCommand command) {
+    public CalendarItem createCalendarItem(CalendarItemCommand command) {
         CalendarItem calendarItem = CalendarItem.create(
                 command.name(),
                 command.description(),
@@ -90,20 +63,20 @@ class CalendarManagementService implements CalendarManagementPort {
 
     @Transactional
     @Override
-    public void updateCalendarItem(CalendarItemId calendarItemId, UpdateCalendarItemCommand command) {
+    public void updateCalendarItem(CalendarItemId calendarItemId, CalendarItemCommand command) {
         CalendarItem calendarItem = calendarRepository.findById(calendarItemId)
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
 
-        try {
-            calendarItem.update(
-                    command.name(),
-                    command.description(),
-                    command.startDate(),
-                    command.endDate()
-            );
-        } catch (com.klabis.common.exceptions.BusinessRuleViolationException e) {
+        if (calendarItem.isEventLinked()) {
             throw new CalendarItemReadOnlyException();
         }
+
+        calendarItem.update(
+                command.name(),
+                command.description(),
+                command.startDate(),
+                command.endDate()
+        );
 
         calendarRepository.save(calendarItem);
     }
@@ -114,9 +87,7 @@ class CalendarManagementService implements CalendarManagementPort {
         CalendarItem calendarItem = calendarRepository.findById(calendarItemId)
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
 
-        try {
-            calendarItem.delete();
-        } catch (com.klabis.common.exceptions.BusinessRuleViolationException e) {
+        if (calendarItem.isEventLinked()) {
             throw new CalendarItemReadOnlyException();
         }
 

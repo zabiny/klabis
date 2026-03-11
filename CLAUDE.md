@@ -35,6 +35,10 @@ npm run dev
 
 ## Development Workflow Best Practices
 
+### Check specifications when expected behavior is in question
+
+Project uses OpenSpec - check active specifications (`./openspec/specs`) to find out how application should work if expected behavior is unclear. 
+
 ### Check Before Starting Services
 
 **CRITICAL:** Always check if services are already running before starting new processes.

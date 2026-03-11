@@ -1,8 +1,8 @@
 package com.klabis.calendar.application;
 
+import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.domain.CalendarItem;
-import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.domain.CalendarRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -162,7 +162,7 @@ class CalendarManagementServiceTest {
         @Test
         @DisplayName("should create calendar item and return it")
         void shouldCreateCalendarItemAndReturnIt() {
-            CreateCalendarItemCommand command = new CreateCalendarItemCommand(
+            CalendarItemCommand command = new CalendarItemCommand(
                     "New Event",
                     "New event description",
                     LocalDate.of(2026, 3, 15),
@@ -194,7 +194,7 @@ class CalendarManagementServiceTest {
                     .withName("Old Name")
                     .buildManual();
 
-            UpdateCalendarItemCommand command = new UpdateCalendarItemCommand(
+            CalendarItemCommand command = new CalendarItemCommand(
                     "Updated Name",
                     "Updated description",
                     LocalDate.of(2026, 3, 20),
@@ -220,7 +220,7 @@ class CalendarManagementServiceTest {
                     .withEventId(eventId)
                     .build();
 
-            UpdateCalendarItemCommand command = new UpdateCalendarItemCommand(
+            CalendarItemCommand command = new CalendarItemCommand(
                     "Updated Name",
                     "Updated description",
                     LocalDate.of(2026, 3, 20),
@@ -237,7 +237,7 @@ class CalendarManagementServiceTest {
         @DisplayName("should throw CalendarNotFoundException when item not found")
         void shouldThrowExceptionWhenNotFound() {
             UUID calendarItemId = UUID.randomUUID();
-            UpdateCalendarItemCommand command = new UpdateCalendarItemCommand(
+            CalendarItemCommand command = new CalendarItemCommand(
                     "Updated Name",
                     "Updated description",
                     LocalDate.of(2026, 3, 20),

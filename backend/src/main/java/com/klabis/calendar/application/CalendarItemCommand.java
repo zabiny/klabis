@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 @RecordBuilder
-public record CreateCalendarItemCommand(
+public record CalendarItemCommand(
         @NotBlank(message = "Calendar item name is required")
         @Size(max = 200, message = "Calendar item name must not exceed 200 characters")
         String name,

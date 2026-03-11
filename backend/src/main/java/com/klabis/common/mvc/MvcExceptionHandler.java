@@ -36,6 +36,19 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 class MvcExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ApiResponse(
+            responseCode = "400",
+            description = "Bad request - invalid argument",
+            content = @Content(
+                    mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)
+            )
+    )
+    public ErrorResponse handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ErrorResponse.builder(ex, HttpStatus.BAD_REQUEST, ex.getMessage()).build();
+    }
+
     @ExceptionHandler(BusinessRuleViolationException.class)
     @ApiResponse(
             responseCode = "400",

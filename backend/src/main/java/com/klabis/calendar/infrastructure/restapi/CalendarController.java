@@ -1,12 +1,9 @@
 package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.application.CalendarItemCommand;
 import com.klabis.calendar.application.CalendarManagementPort;
-import com.klabis.calendar.application.CreateCalendarItemCommand;
-import com.klabis.calendar.application.InvalidCalendarQueryException;
-import com.klabis.calendar.application.UpdateCalendarItemCommand;
 import com.klabis.calendar.domain.CalendarItem;
-import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import io.swagger.v3.oas.annotations.Operation;
@@ -133,14 +130,14 @@ class CalendarController {
             direction = switch (dir.toLowerCase()) {
                 case "desc" -> Sort.Direction.DESC;
                 case "asc" -> Sort.Direction.ASC;
-                default -> throw new InvalidCalendarQueryException(
+                default -> throw new IllegalArgumentException(
                         "Invalid sort direction: " + dir + ". Must be 'asc' or 'desc'"
                 );
             };
         }
 
         if (!allowedSortFields.contains(field)) {
-            throw new InvalidCalendarQueryException(
+            throw new IllegalArgumentException(
                     "Invalid sort field: " + field + ". Allowed fields: " + allowedSortFields
             );
         }
@@ -177,7 +174,7 @@ class CalendarController {
     @ApiResponse(responseCode = "201", description = "Calendar item successfully created")
     public ResponseEntity<Void> createCalendarItem(
             @Parameter(description = "Calendar item creation data")
-            @Valid @RequestBody CreateCalendarItemCommand command) {
+            @Valid @RequestBody CalendarItemCommand command) {
 
         CalendarItem created = calendarManagementService.createCalendarItem(command);
 
@@ -199,7 +196,7 @@ class CalendarController {
     @ApiResponse(responseCode = "400", description = "Cannot update event-linked calendar item")
     public ResponseEntity<Void> updateCalendarItem(
             @Parameter(description = "Calendar item UUID") @PathVariable UUID id,
-            @Parameter(description = "Calendar item update data") @Valid @RequestBody UpdateCalendarItemCommand command) {
+            @Parameter(description = "Calendar item update data") @Valid @RequestBody CalendarItemCommand command) {
 
         calendarManagementService.updateCalendarItem(new CalendarItemId(id), command);
         return ResponseEntity.noContent().build();
@@ -257,15 +254,5 @@ class CalendarController {
         }
 
         entityModel.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(LocalDate.now().withDayOfMonth(1), LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()), "startDate,asc")).withRel("collection"));
-    }
-}
-
-@MvcComponent
-class CalendarRootPostprocessor implements org.springframework.hateoas.server.RepresentationModelProcessor<org.springframework.hateoas.EntityModel<com.klabis.common.ui.RootModel>> {
-
-    @Override
-    public org.springframework.hateoas.EntityModel<com.klabis.common.ui.RootModel> process(org.springframework.hateoas.EntityModel<com.klabis.common.ui.RootModel> model) {
-        model.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(LocalDate.now().withDayOfMonth(1), LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()), "startDate,asc")).withRel("calendar"));
-        return model;
     }
 }

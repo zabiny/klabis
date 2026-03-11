@@ -1,9 +1,12 @@
 package com.klabis.calendar.infrastructure.restapi;
 
-import com.klabis.calendar.CalendarItemTestDataBuilder;
-import com.klabis.calendar.application.*;
-import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.CalendarItemId;
+import com.klabis.calendar.CalendarItemTestDataBuilder;
+import com.klabis.calendar.application.CalendarItemCommand;
+import com.klabis.calendar.application.CalendarItemReadOnlyException;
+import com.klabis.calendar.application.CalendarManagementPort;
+import com.klabis.calendar.application.CalendarNotFoundException;
+import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
@@ -263,7 +266,7 @@ class CalendarControllerTest {
                     .withName("Training Session")
                     .buildManual();
 
-            when(calendarManagementService.createCalendarItem(any(CreateCalendarItemCommand.class))).thenReturn(createdItem);
+            when(calendarManagementService.createCalendarItem(any(CalendarItemCommand.class))).thenReturn(createdItem);
 
             mockMvc.perform(
                             post("/api/calendar-items")
@@ -357,7 +360,7 @@ class CalendarControllerTest {
             UUID calendarItemId = UUID.randomUUID();
 
             doThrow(new CalendarItemReadOnlyException())
-                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(UpdateCalendarItemCommand.class));
+                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(CalendarItemCommand.class));
 
             mockMvc.perform(
                             put("/api/calendar-items/{id}", calendarItemId)
@@ -404,7 +407,7 @@ class CalendarControllerTest {
             UUID calendarItemId = UUID.randomUUID();
 
             doThrow(new CalendarNotFoundException(calendarItemId))
-                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(UpdateCalendarItemCommand.class));
+                    .when(calendarManagementService).updateCalendarItem(eq(new CalendarItemId(calendarItemId)), any(CalendarItemCommand.class));
 
             mockMvc.perform(
                             put("/api/calendar-items/{id}", calendarItemId)
