@@ -231,83 +231,87 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                     </Link>
                 </div>
 
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-3xl font-bold text-text-primary">
-                            {member.firstName} {member.lastName}
-                        </h1>
-                        <Badge variant={member.active ? 'success' : 'default'} size="sm">
-                            {member.active ? 'Aktivní' : 'Neaktivní'}
-                        </Badge>
-                        {adminEdit && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                <ShieldCheckIcon className="w-3.5 h-3.5"/>
-                                Admin — editace všech polí
-                            </span>
-                        )}
-                        {selfEdit && (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                Vlastní profil — omezená editace
-                            </span>
-                        )}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-3xl font-bold text-text-primary">
+                                {member.firstName} {member.lastName}
+                            </h1>
+                            {!isEditing && (
+                                <Badge variant={member.active ? 'success' : 'default'} size="sm">
+                                    {member.active ? 'Aktivní' : 'Neaktivní'}
+                                </Badge>
+                            )}
+                            {adminEdit && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                    <ShieldCheckIcon className="w-3.5 h-3.5"/>
+                                    Admin — editace všech polí
+                                </span>
+                            )}
+                            {selfEdit && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                    Vlastní profil — omezená editace
+                                </span>
+                            )}
+                        </div>
+                        <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
                     </div>
-                    <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
-                </div>
 
-                {!isEditing && (
-                    <div className="flex flex-wrap gap-3">
-                        {viewMode === 'admin' && (
-                            <>
-                                <button
-                                    type="button"
-                                    onClick={startEditing}
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                                >
-                                    <PencilIcon className="w-4 h-4"/>
-                                    Upravit profil
-                                </button>
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                                >
-                                    <BanknotesIcon className="w-4 h-4"/>
-                                    Vložit / Vybrat
-                                </button>
-                                {hasLink('permissions') && (
+                    {!isEditing && (
+                        <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
+                            {viewMode === 'admin' && (
+                                <>
                                     <button
                                         type="button"
-                                        onClick={() => setIsPermissionsDialogOpen(true)}
+                                        onClick={startEditing}
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
+                                    >
+                                        <PencilIcon className="w-4 h-4"/>
+                                        Upravit profil
+                                    </button>
+                                    <button
+                                        type="button"
                                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
                                     >
-                                        <ShieldCheckIcon className="w-4 h-4"/>
-                                        Oprávnění
+                                        <BanknotesIcon className="w-4 h-4"/>
+                                        Vložit / Vybrat
                                     </button>
-                                )}
-                                <HalFormButton name="terminate" modal={true} label="Ukončit členství"/>
-                                <HalFormButton name="resumeMember" modal={true} label="Reaktivovat"/>
-                            </>
-                        )}
-                        {viewMode === 'self' && (
-                            <>
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                                >
-                                    <BanknotesIcon className="w-4 h-4"/>
-                                    Členské příspěvky
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={startEditing}
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                                >
-                                    <PencilIcon className="w-4 h-4"/>
-                                    Upravit profil
-                                </button>
-                            </>
-                        )}
-                    </div>
-                )}
+                                    {hasLink('permissions') && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPermissionsDialogOpen(true)}
+                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                                        >
+                                            <ShieldCheckIcon className="w-4 h-4"/>
+                                            Oprávnění
+                                        </button>
+                                    )}
+                                    <HalFormButton name="terminate" modal={true} label="Ukončit členství" variant="danger"/>
+                                    <HalFormButton name="resumeMember" modal={true} label="Reaktivovat"/>
+                                </>
+                            )}
+                            {viewMode === 'self' && (
+                                <>
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                                    >
+                                        <BanknotesIcon className="w-4 h-4"/>
+                                        Členské příspěvky
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={startEditing}
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
+                                    >
+                                        <PencilIcon className="w-4 h-4"/>
+                                        Upravit profil
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 {viewMode !== 'other' ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">

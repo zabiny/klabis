@@ -29,6 +29,12 @@ export interface HalFormButtonProps {
 
     /** Optional custom form layout - children or render callback */
     customLayout?: ReactNode | RenderFormCallback;
+
+    /** Optional additional CSS classes passed to the button */
+    className?: string;
+
+    /** Optional button variant — defaults to 'primary' */
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
 }
 
 /**
@@ -51,7 +57,7 @@ export interface HalFormButtonProps {
  * // Inline mode (requires HalFormsPageLayout in parent tree)
  * <HalFormButton name="edit" modal={false} />
  */
-export function HalFormButton({name, modal = true, label, customLayout}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, label, customLayout, className, variant}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
@@ -77,6 +83,8 @@ export function HalFormButton({name, modal = true, label, customLayout}: HalForm
             templateName={name}
             label={label}
             onClick={handleButtonClick}
+            className={className}
+            variant={variant}
         />
     );
 }

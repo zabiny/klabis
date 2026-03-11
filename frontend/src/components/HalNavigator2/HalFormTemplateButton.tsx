@@ -22,6 +22,9 @@ export interface HalFormTemplateButtonProps {
 
     /** Optional additional CSS classes */
     className?: string;
+
+    /** Optional button variant — defaults to 'primary' */
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
 }
 
 /**
@@ -41,13 +44,14 @@ export function HalFormTemplateButton({
                                           onClick,
                                           label,
                                           className = '',
+                                          variant = 'primary',
                                       }: HalFormTemplateButtonProps): ReactElement {
     const displayText = label || template.title || templateName;
 
     return (
         <Button
             onClick={onClick}
-            variant="primary"
+            variant={variant}
             size="sm"
             className={className}
             title={displayText}

@@ -1,6 +1,6 @@
 import {expandHalFormsFieldFactory, type HalFormsInputProps} from "./HalNavigator2/halforms";
 import React, {type ReactElement} from "react";
-import {HalFormsInput, HalFormsMemberId} from "./HalNavigator2/halforms/fields";
+import {HalFormsInput, HalFormsMemberId, HalFormsSelect} from "./HalNavigator2/halforms/fields";
 import {DetailRow} from "./UI";
 
 const FormGroupWrapper: React.FC<{ label: string; children: ReactElement | ReactElement[] }> = ({label, children}) => (
@@ -84,6 +84,39 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
                 }
             };
             return <HalFormsMemberId {...conf} prop={propWithOptions}/>;
+        }
+        case "Gender": {
+            const propWithGenderOptions = {
+                ...conf.prop,
+                options: {
+                    inline: [
+                        {value: "MALE", prompt: "Muž"},
+                        {value: "FEMALE", prompt: "Žena"},
+                    ]
+                }
+            };
+            return <HalFormsSelect {...conf} prop={propWithGenderOptions}/>;
+        }
+        case "DrivingLicenseGroup": {
+            const propWithDrivingOptions = {
+                ...conf.prop,
+                options: {
+                    inline: [
+                        {value: "AM", prompt: "AM"},
+                        {value: "A1", prompt: "A1"},
+                        {value: "A2", prompt: "A2"},
+                        {value: "A", prompt: "A"},
+                        {value: "B", prompt: "B"},
+                        {value: "BE", prompt: "BE"},
+                        {value: "C", prompt: "C"},
+                        {value: "C1", prompt: "C1"},
+                        {value: "D", prompt: "D"},
+                        {value: "D1", prompt: "D1"},
+                        {value: "T", prompt: "T"},
+                    ]
+                }
+            };
+            return <HalFormsSelect {...conf} prop={propWithDrivingOptions}/>;
         }
         case "AddressRequest":
             return renderCompositeField(conf, ADDRESS_FIELDS);
