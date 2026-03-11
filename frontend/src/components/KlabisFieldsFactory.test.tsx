@@ -211,7 +211,7 @@ describe('KlabisFieldsFactory', () => {
 
             render(result!);
 
-            expect(mockSubElementProps).toHaveBeenCalledWith('completionDate', {prompt: 'Datum absolvování', type: 'date'});
+            expect(mockSubElementProps).toHaveBeenCalledWith('completionDate', {prompt: 'Datum absolvování kurzu', type: 'date'});
             expect(mockSubElementProps).toHaveBeenCalledWith('validityDate', {prompt: 'Platnost', type: 'date'});
         });
     });
@@ -230,7 +230,7 @@ describe('KlabisFieldsFactory', () => {
 
             render(result!);
 
-            expect(mockSubElementProps).toHaveBeenCalledWith('licenseNumber', {prompt: 'Číslo licence'});
+            expect(mockSubElementProps).toHaveBeenCalledWith('licenseNumber', {prompt: 'Stupeň (např. T2)'});
             expect(mockSubElementProps).toHaveBeenCalledWith('validityDate', {prompt: 'Platnost', type: 'date'});
         });
     });

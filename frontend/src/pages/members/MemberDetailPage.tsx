@@ -195,29 +195,44 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
 
                 <Section title="DOKLADY A LICENCE">
                     {isEditing ? ri('identityCard') : (
-                        <>
-                            <DetailRow label="Číslo OP">{val(identityCard?.cardNumber)}</DetailRow>
-                            {identityCard?.validityDate && (
-                                <DetailRow label="Platnost OP">{formatDate(identityCard.validityDate)}</DetailRow>
-                            )}
-                        </>
+                        <DetailRow label="Občanský průkaz">
+                            {identityCard?.cardNumber
+                                ? <>{identityCard.cardNumber}{identityCard.validityDate && <span className="text-text-tertiary ml-2">(platný do {formatDate(identityCard.validityDate)})</span>}</>
+                                : '\u2014'}
+                        </DetailRow>
                     )}
                     <DetailRow label="Řidičský průkaz">{ri('drivingLicenseGroup') ?? val(member.drivingLicenseGroup)}</DetailRow>
-                    {isEditing ? ri('medicalCourse') : (
-                        <>
-                            <DetailRow label="Zdravotní kurz">{val(medicalCourse?.completionDate && formatDate(medicalCourse.completionDate))}</DetailRow>
-                            {medicalCourse?.validityDate && (
-                                <DetailRow label="Platnost ZK">{formatDate(medicalCourse.validityDate)}</DetailRow>
+                    {isEditing ? (
+                        <div>
+                            <p className="text-sm font-medium text-text-secondary mb-2">Zdravotní kurz</p>
+                            {ri('medicalCourse')}
+                        </div>
+                    ) : (
+                        <DetailRow label="Zdravotní kurz">
+                            {medicalCourse?.completionDate ? (
+                                <span className="inline-flex items-center gap-2">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">Ano</span>
+                                    {medicalCourse.validityDate && <span className="text-text-tertiary text-sm">platný do {formatDate(medicalCourse.validityDate)}</span>}
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-raised text-text-secondary">Ne</span>
                             )}
-                        </>
+                        </DetailRow>
                     )}
-                    {isEditing ? ri('trainerLicense') : (
-                        <>
-                            <DetailRow label="Trenérská licence">{val(trainerLicense?.licenseNumber)}</DetailRow>
-                            {trainerLicense?.validityDate && (
-                                <DetailRow label="Platnost TL">{formatDate(trainerLicense.validityDate)}</DetailRow>
-                            )}
-                        </>
+                    {isEditing ? (
+                        <div>
+                            <p className="text-sm font-medium text-text-secondary mb-2">Trenér</p>
+                            {ri('trainerLicense')}
+                        </div>
+                    ) : (
+                        <DetailRow label="Trenér">
+                            {trainerLicense?.licenseNumber ? (
+                                <span className="inline-flex items-center gap-2">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-50 text-orange-700">{trainerLicense.licenseNumber}</span>
+                                    {trainerLicense.validityDate && <span className="text-text-tertiary text-sm">platná do {formatDate(trainerLicense.validityDate)}</span>}
+                                </span>
+                            ) : '\u2014'}
+                        </DetailRow>
                     )}
                 </Section>
             </div>

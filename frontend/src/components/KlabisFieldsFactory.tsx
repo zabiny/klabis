@@ -55,12 +55,12 @@ const GUARDIAN_FIELDS: SubField[] = [
 ];
 
 const MEDICAL_COURSE_FIELDS: SubField[] = [
-    {key: "completionDate", attr: "completionDate", prompt: "Datum absolvování", type: "date"},
+    {key: "completionDate", attr: "completionDate", prompt: "Datum absolvování kurzu", type: "date"},
     {key: "validityDate", attr: "validityDate", prompt: "Platnost", type: "date"},
 ];
 
 const TRAINER_LICENSE_FIELDS: SubField[] = [
-    {key: "licenseNumber", attr: "licenseNumber", prompt: "Číslo licence"},
+    {key: "licenseNumber", attr: "licenseNumber", prompt: "Stupeň (např. T2)"},
     {key: "validityDate", attr: "validityDate", prompt: "Platnost", type: "date"},
 ];
 
