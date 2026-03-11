@@ -45,16 +45,7 @@ class UpdateMemberRequestMapper {
 
     static Member.SelfUpdate toSelfUpdateCommand(UpdateMemberRequest request) {
         try {
-            EmailAddress email = toEmailAddress(request.email());
-            PhoneNumber phone = toPhoneNumber(request.phone());
-            Address address = toAddress(request.address());
-            String dietaryRestrictions = toString(request.dietaryRestrictions());
-
-            return new Member.SelfUpdate(
-                    email, phone, address, null, null,
-                    null, null, null,
-                    null, null, dietaryRestrictions, null
-            );
+            return buildSelfUpdate(request.email(), request.phone(), request.address(), request.dietaryRestrictions());
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);
         }
@@ -62,19 +53,21 @@ class UpdateMemberRequestMapper {
 
     static Member.SelfUpdate toSelfUpdateCommand(SelfUpdateMemberRequest request) {
         try {
-            EmailAddress email = toEmailAddress(request.email());
-            PhoneNumber phone = toPhoneNumber(request.phone());
-            Address address = toAddress(request.address());
-            String dietaryRestrictions = toString(request.dietaryRestrictions());
-
-            return new Member.SelfUpdate(
-                    email, phone, address, null, null,
-                    null, null, null,
-                    null, null, dietaryRestrictions, null
-            );
+            return buildSelfUpdate(request.email(), request.phone(), request.address(), request.dietaryRestrictions());
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);
         }
+    }
+
+    private static Member.SelfUpdate buildSelfUpdate(
+            com.klabis.common.patch.PatchField<String> email,
+            com.klabis.common.patch.PatchField<String> phone,
+            com.klabis.common.patch.PatchField<AddressRequest> address,
+            com.klabis.common.patch.PatchField<String> dietaryRestrictions) {
+        return new Member.SelfUpdate(
+                toEmailAddress(email), toPhoneNumber(phone), toAddress(address), null, null,
+                null, null, null, null, null, toString(dietaryRestrictions), null
+        );
     }
 
     private static EmailAddress toEmailAddress(com.klabis.common.patch.PatchField<String> email) {

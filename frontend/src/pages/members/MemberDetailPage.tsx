@@ -12,6 +12,7 @@ import type {components} from "../../api/klabisApi";
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
 import {useMemberEditForm} from "./useMemberEditForm";
 import {BanknotesIcon, PencilIcon, ShieldCheckIcon} from "@heroicons/react/24/outline";
+import {Section} from "./MemberSection";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
 
@@ -26,17 +27,7 @@ const GENDER_LABELS: Record<string, string> = {
     FEMALE: 'Žena',
 };
 
-interface SectionProps {
-    title: string;
-    children: React.ReactNode;
-}
-
-const Section = ({title, children}: SectionProps) => (
-    <div className="bg-surface-raised rounded-md border border-border p-6">
-        <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{title}</h3>
-        <dl>{children}</dl>
-    </div>
-);
+const val = (value: ReactNode): ReactNode => value || '\u2014';
 
 const MaskedBirthNumber = ({value}: { value: string }) => {
     const [revealed, setRevealed] = useState(false);
@@ -140,8 +131,6 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const enrichedFieldNames = enrichedTemplate
         ? new Set(enrichedTemplate.properties.map(p => p.name))
         : new Set<string>();
-
-    const val = (value: ReactNode): ReactNode => value || '\u2014';
 
     const renderContent = (helpers?: FormRenderHelpers) => {
         const ri = (name: string): ReactNode =>

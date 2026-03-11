@@ -1,4 +1,4 @@
-import {type ReactElement, type ReactNode} from 'react';
+import {type ReactElement, useMemo} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {UserPlusIcon} from '@heroicons/react/24/outline';
 import type {HalFormsTemplate, HalResponse} from '../../api';
@@ -9,18 +9,7 @@ import {useToast} from '../../contexts/ToastContext';
 import {HalFormsForm} from '../../components/HalNavigator2/halforms';
 import {klabisFieldsFactory} from '../../components/KlabisFieldsFactory';
 import {DetailRow} from '../../components/UI';
-
-interface SectionProps {
-    title: string;
-    children: ReactNode;
-}
-
-const Section = ({title, children}: SectionProps) => (
-    <div className="bg-surface-raised rounded-md border border-border p-6">
-        <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{title}</h3>
-        <dl>{children}</dl>
-    </div>
-);
+import {Section} from './MemberSection';
 
 const PERSONAL_FIELDS = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'nationality', 'birthNumber'];
 const CONTACT_FIELDS = ['email', 'phone'];
@@ -62,17 +51,20 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
         mutate({url, data: values});
     };
 
-    const hasField = (fieldName: string) =>
-        template.properties.some(p => p.name === fieldName);
+    const fieldNameSet = useMemo(
+        () => new Set(template.properties.map(p => p.name)),
+        [template.properties]
+    );
+    const fieldTypeSet = useMemo(
+        () => new Set(template.properties.map(p => p.type)),
+        [template.properties]
+    );
 
-    const hasFields = (fieldNames: string[]) =>
-        template.properties.some(p => fieldNames.includes(p.name));
+    const hasField = (fieldName: string) => fieldNameSet.has(fieldName);
+    const hasFields = (fieldNames: string[]) => fieldNames.some(f => fieldNameSet.has(f));
+    const hasType = (type: string) => fieldTypeSet.has(type);
 
-    const hasType = (type: string) =>
-        template.properties.some(p => p.type === type);
-
-    const hasDocumentFields = hasFields(DOCUMENT_FIELDS) ||
-        template.properties.some(p => DOCUMENT_TYPES.includes(p.type));
+    const hasDocumentFields = hasFields(DOCUMENT_FIELDS) || DOCUMENT_TYPES.some(t => fieldTypeSet.has(t));
 
     return (
         <HalFormsForm

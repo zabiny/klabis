@@ -40,6 +40,7 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -133,11 +134,7 @@ class MemberController {
                         .build();
             }
         } else {
-            if (!currentUser.userId().uuid().equals(id)) {
-                throw new ErrorResponseException(HttpStatus.FORBIDDEN,
-                        ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
-                                "You can only edit your own information"), null);
-            }
+            requireSelfAccess(currentUser, id);
             var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
             managementService.updateMember(memberId, selfCommand);
         }
@@ -267,9 +264,9 @@ class MemberController {
      * @param sort the sort specification to validate
      * @throws IllegalArgumentException if any sort field is not allowed
      */
-    private void validateSortFields(Sort sort) {
-        final var ALLOWED_SORT_FIELDS = java.util.Set.of("firstName", "lastName", "registrationNumber");
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("firstName", "lastName", "registrationNumber");
 
+    private void validateSortFields(Sort sort) {
         for (Sort.Order order : sort) {
             if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
                 throw new ErrorResponseException(HttpStatus.BAD_REQUEST,
@@ -312,11 +309,7 @@ class MemberController {
             @Valid @RequestBody SelfUpdateMemberRequest request,
             @CurrentUser CurrentUserData currentUser) {
 
-        if (!currentUser.userId().uuid().equals(id)) {
-            throw new ErrorResponseException(HttpStatus.FORBIDDEN,
-                    ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
-                            "You can only edit your own information"), null);
-        }
+        requireSelfAccess(currentUser, id);
 
         MemberId memberId = new MemberId(id);
         var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
@@ -390,6 +383,14 @@ class MemberController {
         )).withRel("collection"));
 
         return ResponseEntity.ok(entityModel);
+    }
+
+    private void requireSelfAccess(CurrentUserData currentUser, UUID id) {
+        if (!currentUser.userId().uuid().equals(id)) {
+            throw new ErrorResponseException(HttpStatus.FORBIDDEN,
+                    ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
+                            "You can only edit your own information"), null);
+        }
     }
 
 }
