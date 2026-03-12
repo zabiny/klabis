@@ -283,6 +283,32 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('Osobní důvody')).toBeInTheDocument();
     });
 
+    it('shows deactivation section when member is inactive even without deactivation note', () => {
+        const data = mockMemberDetailData({
+            active: false,
+            deactivationReason: 'PRESTUP',
+            deactivatedAt: '2025-06-15',
+        });
+        renderPage(createMockPageData(data));
+        expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
+        expect(screen.getByText('Přestup')).toBeInTheDocument();
+    });
+
+    it('shows deactivation section when member is inactive even without deactivation reason', () => {
+        const data = mockMemberDetailData({
+            active: false,
+            deactivationReason: undefined,
+            deactivatedAt: '2025-06-15',
+        });
+        renderPage(createMockPageData(data));
+        expect(screen.getByText('DEAKTIVACE')).toBeInTheDocument();
+    });
+
+    it('does NOT show deactivation section when member is active', () => {
+        renderPage(createMockPageData(mockMemberDetailData({active: true})));
+        expect(screen.queryByText('DEAKTIVACE')).not.toBeInTheDocument();
+    });
+
     describe('other member view (no template)', () => {
         it('shows only contact and address sections, NOT personal info', () => {
             renderPage(createMockPageData(mockMemberDetailData()));

@@ -120,7 +120,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const medicalCourse = member.medicalCourse;
     const trainerLicense = member.trainerLicense;
     const refereeLicense = member.refereeLicense;
-    const showDeactivation = member.active === false && member.deactivationReason;
+    const showDeactivation = member.active === false;
 
     const viewMode = resolveViewMode(template);
     const adminEdit = isEditing && viewMode === 'admin';
@@ -368,9 +368,11 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
 
                 {showDeactivation && (
                     <Section title="DEAKTIVACE">
-                        <DetailRow label="Důvod">
-                            {member.deactivationReason && (DEACTIVATION_REASON_LABELS[member.deactivationReason] ?? member.deactivationReason)}
-                        </DetailRow>
+                        {member.deactivationReason && (
+                            <DetailRow label="Důvod">
+                                {DEACTIVATION_REASON_LABELS[member.deactivationReason] ?? member.deactivationReason}
+                            </DetailRow>
+                        )}
                         {member.deactivatedAt && (
                             <DetailRow label="Datum">{formatDate(member.deactivatedAt)}</DetailRow>
                         )}
