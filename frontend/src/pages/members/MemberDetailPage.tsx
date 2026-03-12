@@ -336,7 +336,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                                         </button>
                                     )}
                                     <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle="Ukončení členství"/>
-                                    <HalFormButton name="resumeMember" modal={true} label="Reaktivovat"/>
+                                    <HalFormButton name="resumeMember" modal={true} label="Reaktivovat" dialogTitle="Reaktivace člena"/>
                                 </>
                             )}
                             {viewMode === 'self' && (

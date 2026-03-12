@@ -52,9 +52,9 @@ vi.mock('../../api/hateoas', () => ({
 }));
 
 vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, onClose}: any) => (
+    HalFormDisplay: ({template, templateName, titleOverride, onClose}: any) => (
         <div data-testid="hal-forms-display">
-            <h3>{template.title || templateName}</h3>
+            <h3>{titleOverride || template.title || templateName}</h3>
             <button onClick={onClose} data-testid="close-form-button">Close</button>
         </div>
     ),
@@ -428,6 +428,22 @@ describe('MemberDetailPage', () => {
             });
             renderPage(createMockPageData(data));
             expect(screen.queryByRole('button', {name: /oprávnění/i})).not.toBeInTheDocument();
+        });
+
+        it('shows "Reaktivace člena" as dialog title when resumeMember button is clicked', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {
+                    default: adminEditTemplate,
+                    resumeMember: mockHalFormsTemplate({title: 'resumeMember'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /reaktivovat/i}));
+
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(screen.getByText('Reaktivace člena')).toBeInTheDocument();
         });
     });
 
