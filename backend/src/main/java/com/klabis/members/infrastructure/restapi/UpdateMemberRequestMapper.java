@@ -97,6 +97,7 @@ class UpdateMemberRequestMapper {
             return null;
         }
         AddressRequest a = address.throwIfNotProvided();
+        if (a == null) return null;
         return Address.of(a.street(), a.city(), a.postalCode(), a.country());
     }
 
@@ -119,6 +120,7 @@ class UpdateMemberRequestMapper {
             return null;
         }
         IdentityCardDto dto = identityCard.throwIfNotProvided();
+        if (dto == null) return null;
         return IdentityCard.of(dto.cardNumber(), dto.validityDate());
     }
 
@@ -131,6 +133,7 @@ class UpdateMemberRequestMapper {
             return null;
         }
         MedicalCourseDto dto = medicalCourse.throwIfNotProvided();
+        if (dto == null) return null;
         return MedicalCourse.of(dto.completionDate(), dto.validityDate());
     }
 
@@ -139,6 +142,7 @@ class UpdateMemberRequestMapper {
             return null;
         }
         TrainerLicenseDto dto = trainerLicense.throwIfNotProvided();
+        if (dto == null) return null;
         return TrainerLicense.of(dto.level(), dto.validityDate());
     }
 
@@ -147,6 +151,7 @@ class UpdateMemberRequestMapper {
             return null;
         }
         RefereeLicenseDto dto = refereeLicense.throwIfNotProvided();
+        if (dto == null) return null;
         return RefereeLicense.of(dto.level(), dto.validityDate());
     }
 
@@ -169,6 +174,7 @@ class UpdateMemberRequestMapper {
             return null;
         }
         GuardianDTO dto = guardian.throwIfNotProvided();
+        if (dto == null) return null;
         return new GuardianInformation(
                 dto.firstName(),
                 dto.lastName(),
