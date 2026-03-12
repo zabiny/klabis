@@ -62,6 +62,28 @@ class UpdateMemberRequestMapper {
         }
     }
 
+    static Member.SelfUpdate toSelfUpdateCommand(SelfUpdateMemberRequest request) {
+        try {
+            return new Member.SelfUpdate(
+                    toEmailAddress(request.email()),
+                    toPhoneNumber(request.phone()),
+                    toAddress(request.address()),
+                    toString(request.chipNumber()),
+                    toString(request.nationality()),
+                    toBankAccountNumber(request.bankAccountNumber()),
+                    toIdentityCard(request.identityCard()),
+                    toEnum(request.drivingLicenseGroup()),
+                    toMedicalCourse(request.medicalCourse()),
+                    toTrainerLicense(request.trainerLicense()),
+                    toRefereeLicense(request.refereeLicense()),
+                    toString(request.dietaryRestrictions()),
+                    toGuardianInformation(request.guardian())
+            );
+        } catch (IllegalArgumentException e) {
+            throw new InvalidUpdateException(e.getMessage(), e);
+        }
+    }
+
     private static EmailAddress toEmailAddress(com.klabis.common.patch.PatchField<String> email) {
         return email.isProvided() ? EmailAddress.of(email.throwIfNotProvided()) : null;
     }

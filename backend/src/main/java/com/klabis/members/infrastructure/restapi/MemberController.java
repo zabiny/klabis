@@ -141,6 +141,29 @@ class MemberController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping(value = "/{id}/self", consumes = "application/json")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Update own member information (partial update)",
+            description = "Allows authenticated members to update their own profile. " +
+                          "Only member-editable fields are accepted: email, phone, address, chipNumber, nationality, " +
+                          "bankAccountNumber, guardian, identityCard, drivingLicenseGroup, medicalCourse, trainerLicense, dietaryRestrictions. " +
+                          "Admin-only fields (firstName, lastName, dateOfBirth, gender, birthNumber) are not accepted here."
+    )
+    @ApiResponse(responseCode = "204", description = "Member updated successfully")
+    @ApiResponse(responseCode = "403", description = "Forbidden - user is not editing their own profile")
+    public ResponseEntity<Void> updateMemberSelf(
+            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @Parameter(description = "Partial self-update request - only member-editable fields")
+            @Valid @RequestBody SelfUpdateMemberRequest request,
+            @CurrentUser CurrentUserData currentUser) {
+
+        requireSelfAccess(currentUser, id);
+        var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
+        managementService.updateMember(new MemberId(id), selfCommand);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/resume")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
@@ -316,7 +339,7 @@ class MemberController {
             }
         } else if (currentUser.isMember() && currentUser.memberId().uuid().equals(id)) {
             entityModel.add(
-                    selfLink.andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
+                    selfLink.andAffordances(klabisAfford(methodOn(MemberController.class).updateMemberSelf(id, null, null)))
             );
         } else {
             entityModel.add(selfLink);
@@ -329,8 +352,8 @@ class MemberController {
         return ResponseEntity.ok(entityModel);
     }
 
-    private void requireSelfAccess(CurrentUserData currentUser, UUID id) {
-        if (!currentUser.userId().uuid().equals(id)) {
+    private void requireSelfAccess(CurrentUserData currentUser, UUID memberId) {
+        if (!currentUser.isMember() || !currentUser.memberId().uuid().equals(memberId)) {
             throw new ErrorResponseException(HttpStatus.FORBIDDEN,
                     ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
                             "You can only edit your own information"), null);

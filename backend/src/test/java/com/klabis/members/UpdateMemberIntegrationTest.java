@@ -110,7 +110,7 @@ class UpdateMemberIntegrationTest {
     }
 
     @Test
-    @WithKlabisMockUser(userId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+    @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @DisplayName("member: should update own email, phone, dietaryRestrictions and verify data persistence")
     void shouldUpdateOwnDataAsMemberAndPersist() throws Exception {
@@ -138,7 +138,7 @@ class UpdateMemberIntegrationTest {
     }
 
     @Test
-    @WithKlabisMockUser(userId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+    @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @DisplayName("member: self-update should apply all non-admin fields including chipNumber and nationality")
     void selfUpdateShouldApplyNonAdminFields() throws Exception {
@@ -163,7 +163,7 @@ class UpdateMemberIntegrationTest {
     }
 
     @Test
-    @WithKlabisMockUser(userId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+    @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @DisplayName("member: admin-only fields (firstName, lastName, gender) should be silently ignored in self-update")
     void adminOnlyFieldsShouldBeIgnoredInSelfUpdate() throws Exception {

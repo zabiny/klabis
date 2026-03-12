@@ -361,8 +361,14 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.default.target").value(
+                            org.hamcrest.Matchers.containsString("/api/members/" + memberId + "/self")))
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'email')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'firstName')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'lastName')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'dateOfBirth')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'gender')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'birthNumber')]").isEmpty())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
@@ -1437,6 +1443,45 @@ class MemberControllerApiTest {
                     eq(new MemberId(memberId)),
                     argThat((Member.SelfUpdate cmd) -> cmd.email() != null && cmd.phone() == null)
             );
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/members/{id}/self")
+    class UpdateMemberSelfTests {
+
+        @Test
+        @DisplayName("authenticated user without a member record should get 403 Forbidden")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void userWithoutMemberRecordShouldBeForbidden() throws Exception {
+            UUID anyMemberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+            mockMvc.perform(patch("/api/members/{id}/self", anyMemberId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                        "email": "new@example.com"
+                                    }
+                                    """))
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("member attempting to edit another member's profile via /self should get 403 Forbidden")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.MEMBERS_READ})
+        void memberEditingOtherMemberShouldBeForbidden() throws Exception {
+            UUID otherMemberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+            mockMvc.perform(patch("/api/members/{id}/self", otherMemberId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                        "email": "new@example.com"
+                                    }
+                                    """))
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isForbidden());
         }
     }
 }
