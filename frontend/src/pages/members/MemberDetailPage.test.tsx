@@ -87,6 +87,16 @@ const selfEditTemplate: HalFormsTemplate = {
     ],
 };
 
+const selfEditTemplateWithNationality: HalFormsTemplate = {
+    method: 'PATCH',
+    target: '/api/members/123e4567-e89b-12d3-a456-426614174000/self',
+    properties: [
+        {name: 'email', type: 'email', prompt: 'E-mail'},
+        {name: 'phone', type: 'tel', prompt: 'Telefon'},
+        {name: 'nationality', type: 'text', prompt: 'Státní příslušnost'},
+    ],
+};
+
 const mockMemberDetailData = (overrides?: Partial<any>): HalResponse => ({
     id: '123e4567-e89b-12d3-a456-426614174000',
     registrationNumber: 'SKI2601',
@@ -556,6 +566,41 @@ describe('MemberDetailPage', () => {
 
             expect(screen.getByText('Žena')).toBeInTheDocument();
             expect(screen.queryByText('FEMALE')).not.toBeInTheDocument();
+        });
+
+        it('nationality stays readonly even when self-edit template includes it as editable', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                nationality: 'CZ',
+                _templates: {default: selfEditTemplateWithNationality},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByText('CZ')).toBeInTheDocument();
+            expect(screen.queryByDisplayValue('CZ')).not.toBeInTheDocument();
+        });
+
+        it('nationality remains editable in admin edit mode', async () => {
+            const user = userEvent.setup();
+            const adminTemplateWithNationality: HalFormsTemplate = {
+                method: 'PUT',
+                target: '/api/members/123e4567-e89b-12d3-a456-426614174000',
+                properties: [
+                    {name: 'firstName', type: 'text', prompt: 'Jméno'},
+                    {name: 'nationality', type: 'text', prompt: 'Státní příslušnost'},
+                ],
+            };
+            const data = mockMemberDetailData({
+                nationality: 'CZ',
+                _templates: {default: adminTemplateWithNationality},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByDisplayValue('CZ')).toBeInTheDocument();
         });
     });
 

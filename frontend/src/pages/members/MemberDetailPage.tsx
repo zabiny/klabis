@@ -52,6 +52,8 @@ const MEMBER_FIELD_TYPES: Record<string, string> = {
     gender: 'Gender',
 };
 
+const SELF_EDIT_READONLY_FIELDS = new Set(['nationality']);
+
 function enrichTemplateWithReadOnlyFields(
     template: HalFormsTemplate,
     resourceData: Record<string, unknown>
@@ -73,6 +75,15 @@ function enrichTemplateWithReadOnlyFields(
     return {
         ...template,
         properties: [...template.properties, ...readOnlyProps],
+    };
+}
+
+function forceSelfEditReadOnlyFields(template: HalFormsTemplate): HalFormsTemplate {
+    return {
+        ...template,
+        properties: template.properties.map(p =>
+            SELF_EDIT_READONLY_FIELDS.has(p.name) ? {...p, readOnly: true} : p
+        ),
     };
 }
 
@@ -131,7 +142,10 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const selfEdit = isEditing && viewMode === 'self';
 
     const enrichedTemplate = isEditing && template
-        ? enrichTemplateWithReadOnlyFields(template, resourceData)
+        ? (() => {
+            const base = enrichTemplateWithReadOnlyFields(template, resourceData);
+            return viewMode === 'self' ? forceSelfEditReadOnlyFields(base) : base;
+        })()
         : null;
     const enrichedFieldNames = enrichedTemplate
         ? new Set(enrichedTemplate.properties.map(p => p.name))
