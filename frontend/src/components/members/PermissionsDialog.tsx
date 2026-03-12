@@ -88,11 +88,6 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
 
     const {mutate, isPending, error} = useAuthorizedMutation({
         method: 'PUT',
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ['authorized']});
-            addToast('Oprávnění uložena', 'success');
-            onClose();
-        },
     });
 
     const toggleAuthority = (authority: string) => {
@@ -108,7 +103,17 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
     };
 
     const handleSave = () => {
-        mutate({url: putUrl, data: {authorities: Array.from(selectedAuthorities)}});
+        if (isPending) return;
+        mutate(
+            {url: putUrl, data: {authorities: Array.from(selectedAuthorities)}},
+            {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({queryKey: ['authorized']});
+                    addToast('Oprávnění uložena', 'success');
+                    onClose();
+                },
+            },
+        );
     };
 
     const dialogTitle = memberRegistrationNumber

@@ -5,7 +5,6 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {PermissionsDialog, type PermissionsDialogProps} from './PermissionsDialog';
 import {ToastProvider} from '../../contexts/ToastContext';
 import {FetchError} from '../../api/authorizedFetch';
-import type {UseAuthorizedMutationOptions} from '../../hooks/useAuthorizedFetch';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(),
@@ -142,20 +141,50 @@ describe('PermissionsDialog', () => {
 
             await user.click(screen.getByText('Uložit oprávnění'));
 
-            expect(defaultMutate).toHaveBeenCalledWith({
-                url: '/api/users/1/permissions',
-                data: {authorities: expect.arrayContaining(['MEMBERS:READ', 'EVENTS:READ'])},
-            });
+            expect(defaultMutate).toHaveBeenCalledWith(
+                {
+                    url: '/api/users/1/permissions',
+                    data: {authorities: expect.arrayContaining(['MEMBERS:READ', 'EVENTS:READ'])},
+                },
+                expect.objectContaining({onSuccess: expect.any(Function)}),
+            );
         });
 
-        it('invalidates permissions query cache after successful save', () => {
+        it('calls mutate exactly once per save click', async () => {
+            const user = userEvent.setup();
+            renderDialog();
+
+            await user.click(screen.getByText('Uložit oprávnění'));
+
+            expect(defaultMutate).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not call mutate when save button is disabled during pending', async () => {
+            const user = userEvent.setup();
+            const guardedMutate = vi.fn();
+            mockUseAuthorizedMutation.mockReturnValue({
+                mutate: guardedMutate,
+                isPending: true,
+                error: null,
+            });
+            renderDialog();
+
+            const saveButton = screen.getByRole('button', {name: /Loading/i});
+            expect(saveButton).toBeDisabled();
+            await user.click(saveButton);
+
+            expect(guardedMutate).not.toHaveBeenCalled();
+        });
+
+        it('invalidates permissions query cache after successful save', async () => {
+            const user = userEvent.setup();
             const queryClient = createQueryClient();
             const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-            let capturedOnSuccess: UseAuthorizedMutationOptions['onSuccess'];
-            mockUseAuthorizedMutation.mockImplementation((options: UseAuthorizedMutationOptions) => {
-                capturedOnSuccess = options.onSuccess;
-                return {mutate: defaultMutate, isPending: false, error: null};
+            mockUseAuthorizedMutation.mockReturnValue({
+                mutate: defaultMutate,
+                isPending: false,
+                error: null,
             });
 
             render(
@@ -171,7 +200,10 @@ describe('PermissionsDialog', () => {
                 </QueryClientProvider>,
             );
 
-            capturedOnSuccess!(undefined);
+            await user.click(screen.getByText('Uložit oprávnění'));
+
+            const [, callOptions] = defaultMutate.mock.calls[0];
+            callOptions!.onSuccess(undefined);
 
             expect(invalidateQueriesSpy).toHaveBeenCalledWith(
                 expect.objectContaining({queryKey: ['authorized']}),
