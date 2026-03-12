@@ -335,7 +335,7 @@ describe('MemberDetailPage', () => {
             const data = mockMemberDetailData({
                 _templates: {
                     default: adminEditTemplate,
-                    terminate: mockHalFormsTemplate({title: 'Terminate'}),
+                    suspendMember: mockHalFormsTemplate({title: 'Terminate'}),
                 },
             });
             renderPage(createMockPageData(data));
@@ -499,7 +499,7 @@ describe('MemberDetailPage', () => {
                 active: true,
                 _templates: {
                     default: adminEditTemplate,
-                    terminate: mockHalFormsTemplate({title: 'Terminate'}),
+                    suspendMember: mockHalFormsTemplate({title: 'Terminate'}),
                 },
             });
             renderPage(createMockPageData(data));

@@ -1,5 +1,11 @@
 import {type HalFormsResponse, type HalFormsTemplate, type HalResponse, type Link} from "../../../api";
 
+export function sanitizeFormValues(values: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(values).map(([key, value]) => [key, value === '' ? null : value])
+    );
+}
+
 export const isHalFormsTemplate = (item: unknown): item is HalFormsTemplate => {
     return typeof item === 'object' && item !== null && 'properties' in item;
 }

@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type {HalFormsProperty, HalFormsTemplate} from '../../../api';
 import {HalFormsForm} from './HalFormsForm.tsx';
 import {vi} from 'vitest';
@@ -94,5 +95,49 @@ describe('HalFormsForm readOnly field rendering', () => {
         renderForm(template, {testField: {street: 'Main St'}}, mockFactory);
 
         expect(mockFactory).toHaveBeenCalled();
+    });
+});
+
+describe('HalFormsForm onSubmit value sanitization', () => {
+    it('submits null instead of empty string for unfilled text field', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'bankAccountNumber', type: 'text'});
+        const template = createTemplate([prop]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({bankAccountNumber: null})
+        );
+    });
+
+    it('submits null instead of empty string for object-type field', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'guardian', type: 'GuardianDTO'});
+        const template = createTemplate([prop]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({guardian: null})
+        );
+    });
+
+    it('preserves non-empty string values on submit', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'firstName', type: 'text'});
+        const template = createTemplate([prop]);
+
+        render(<HalFormsForm data={{firstName: 'Jan'}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({firstName: 'Jan'})
+        );
     });
 });

@@ -4,6 +4,7 @@ import React, {type ReactElement, type ReactNode, useContext, useMemo} from "rea
 import {type HalFormsProperty, type HalFormsTemplate} from "../../../api";
 import {type HalFormFieldFactory, type HalFormsInputProps, type RenderMode, type SubElementConfiguration} from "./types.ts";
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory.tsx";
+import {sanitizeFormValues} from "./utils.ts";
 import {Alert, Button, Spinner} from "../../UI";
 import {Box} from "../../UI/layout";
 import {FieldWrapper} from "../../UI/forms";
@@ -246,7 +247,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
             onSubmit={async (values, {setSubmitting}) => {
                 try {
                     if (onSubmit) {
-                        await onSubmit(values);
+                        await onSubmit(sanitizeFormValues(values));
                     }
                 } finally {
                     setSubmitting(false)
