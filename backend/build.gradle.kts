@@ -107,6 +107,9 @@ dependencies {
     implementation("org.jmolecules.integrations:jmolecules-spring")
     compileOnly("org.jmolecules.integrations:jmolecules-bytebuddy-nodep")
 
+    // Development tools (excluded from production JAR automatically)
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")

@@ -200,6 +200,10 @@ spring:
       enabled: true
       path: /h2-console
 
+  devtools:
+    livereload:
+      enabled: false
+
 logging:
   level:
     org.springframework.security: DEBUG

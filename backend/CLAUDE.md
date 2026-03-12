@@ -38,6 +38,13 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 - Health check: `curl -k https://localhost:8443/actuator/health`
 - DB resets on restart (H2 in-memory)
 
+**Spring DevTools (dev profile):**
+- Automatic restart on classpath changes — faster than full JVM restart (uses two classloaders)
+- LiveReload is disabled — frontend uses its own Vite HMR dev server
+- Restart excludes static resources and templates (changes to those don't trigger restart)
+- DevTools is NOT included in the production JAR (`developmentOnly` Gradle configuration)
+- SSL configuration (port 8443) is preserved across DevTools restarts
+
 ### Database Migrations
 
 **Migrations:** Three layers - V001 (domain: 6 tables), V002 (OAuth2: 3 tables), V003 (Modulith: 1 table). 
