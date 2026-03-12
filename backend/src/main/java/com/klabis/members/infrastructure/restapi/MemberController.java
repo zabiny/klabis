@@ -27,6 +27,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -183,7 +184,7 @@ class MemberController {
         var command = new Member.ResumeMembership(currentUserId);
         managementService.resumeMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
@@ -230,7 +231,7 @@ class MemberController {
 
         managementService.suspendMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
@@ -258,7 +259,8 @@ class MemberController {
     @ApiResponse(responseCode = "403", description = "Forbidden - user is not an active member")
     public ResponseEntity<PagedModel<EntityModel<MemberSummaryResponse>>> listMembers(
             @Parameter(description = "Pagination parameters: page, size, sort")
-            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
+            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
 
@@ -273,12 +275,19 @@ class MemberController {
                 }
         );
 
-        pagedModel.mapLink(IanaLinkRelations.SELF,
-                oldLink -> klabisLinkTo(methodOn(MemberController.class).listMembers(pageable)).withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)))
-        );
+        pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> buildCollectionSelfLink(pageable, currentUser));
 
         return ResponseEntity.ok(pagedModel);
+    }
+
+    private Link buildCollectionSelfLink(Pageable pageable, CurrentUserData currentUser) {
+        var selfLink = klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, null)).withSelfRel();
+        if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
+            selfLink = selfLink
+                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
+                    .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)));
+        }
+        return selfLink;
     }
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("firstName", "lastName", "registrationNumber");
@@ -346,7 +355,7 @@ class MemberController {
         }
 
         entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(
-                org.springframework.data.domain.PageRequest.of(0, 10)
+                org.springframework.data.domain.PageRequest.of(0, 10), null
         )).withRel("collection"));
 
         return ResponseEntity.ok(entityModel);
@@ -367,7 +376,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        model.add(klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).withRel(
+        model.add(klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).withRel(
                 "members"));
         return model;
     }

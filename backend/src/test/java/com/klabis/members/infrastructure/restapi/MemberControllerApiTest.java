@@ -1132,6 +1132,31 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("HAL+FORMS: user with MEMBERS_MANAGE should see registerMember template on collection")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void adminShouldSeeRegisterMemberTemplateOnCollection() throws Exception {
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerMember").exists())
+                    .andExpect(jsonPath("$._templates.registerMember.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: user without MEMBERS_MANAGE should not see registerMember template on collection")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void memberShouldNotSeeRegisterMemberTemplateOnCollection() throws Exception {
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerMember").doesNotExist());
+        }
+
+        @Test
         @DisplayName("should return 400 when sort field invalid")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn400WhenSortFieldInvalid() throws Exception {
