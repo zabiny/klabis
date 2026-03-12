@@ -75,6 +75,10 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 - Gradle runs in sandbox mode by default - most operations work but some may be restricted
 - Workaround: Use `dangerouslyDisableSandbox: true` for Bash tool when needed
 
+### Git Quirks
+
+- `git diff HEAD` fails with "ambiguous argument" — use `git diff HEAD -- .` instead (HEAD file exists in repo root)
+
 ### Git & 1Password Integration Issues
 
 - 1Password socket errors ("Could not connect to socket") require user intervention

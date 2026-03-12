@@ -379,6 +379,21 @@ After `npm run build`, **always** run `npm run refresh-backend-server-resources`
 - Use `src/__mocks__/` for shared mocks
 - Follow Testing Library best practices (queries by role/label)
 
+### 6. TanStack Query + StrictMode
+
+- `onSuccess` at `useMutation` hook level can fire multiple times in StrictMode (multiple observers)
+- Use per-call callbacks instead: `mutate(data, { onSuccess: () => {...} })` — fires exactly once
+
+### 7. Icon Library
+
+- Project uses `lucide-react` for icons (not `@heroicons/react`)
+- Lucide naming: `Pencil`, `Banknote`, `Shield`, `UserX`, `Check`, `UserPlus`
+
+### 8. HAL+FORMS Template Names
+
+- Template names are derived from Spring controller method names (e.g., `suspendMember`, `registerMember`, `resumeMember`)
+- Frontend must use the exact backend method name when referencing templates in `HalFormButton name="..."`
+
 ## Debugging
 
 ### React Query DevTools
