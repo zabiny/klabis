@@ -48,6 +48,10 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
     );
 };
 
+const MEMBER_FIELD_TYPES: Record<string, string> = {
+    gender: 'Gender',
+};
+
 function enrichTemplateWithReadOnlyFields(
     template: HalFormsTemplate,
     resourceData: Record<string, unknown>
@@ -62,7 +66,7 @@ function enrichTemplateWithReadOnlyFields(
         })
         .map(key => ({
             name: key,
-            type: 'text',
+            type: MEMBER_FIELD_TYPES[key] ?? 'text',
             readOnly: true,
         }));
 

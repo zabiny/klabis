@@ -529,6 +529,34 @@ describe('MemberDetailPage', () => {
             expect(screen.getByDisplayValue('jan.novak@email.cz')).toBeInTheDocument();
             expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
         });
+
+        it('shows localized gender label "Muž" instead of raw "MALE" when editing', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                gender: 'MALE',
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByText('Muž')).toBeInTheDocument();
+            expect(screen.queryByText('MALE')).not.toBeInTheDocument();
+        });
+
+        it('shows localized gender label "Žena" instead of raw "FEMALE" when editing', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                gender: 'FEMALE',
+                _templates: {default: selfEditTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByText('Žena')).toBeInTheDocument();
+            expect(screen.queryByText('FEMALE')).not.toBeInTheDocument();
+        });
     });
 
     describe('2-column layout', () => {
