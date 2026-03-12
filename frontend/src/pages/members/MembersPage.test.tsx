@@ -59,11 +59,12 @@ describe('MembersPage', () => {
         expect(screen.getByText('Členové')).toBeInTheDocument();
     });
 
-    it('renders "Registrovat člena" link navigating to /members/new when template exists', () => {
+    it('renders "Registrovat člena" link navigating to /members/new when registerMember template exists', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
             _templates: {
-                default: mockHalFormsTemplate({title: 'Create Member'}),
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
             },
         };
         renderPage(createMockPageData(resourceData));
@@ -72,7 +73,18 @@ describe('MembersPage', () => {
         expect(link).toHaveAttribute('href', '/members/new');
     });
 
-    it('does NOT render "Registrovat člena" link when template does not exist', () => {
+    it('does NOT render "Registrovat člena" link when only default template exists (MEMBERS:READ only user)', () => {
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/members'}},
+            _templates: {
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+            },
+        };
+        renderPage(createMockPageData(resourceData));
+        expect(screen.queryByRole('link', {name: /registrovat člena/i})).not.toBeInTheDocument();
+    });
+
+    it('does NOT render "Registrovat člena" link when no templates exist', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };

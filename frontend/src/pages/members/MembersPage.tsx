@@ -22,7 +22,7 @@ export const MembersPage = (): ReactElement => {
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-text-primary">Seznam členů</h2>
-                {resourceData?._templates?.default && (
+                {resourceData?._templates?.registerMember && (
                     <Link
                         to="/members/new"
                         className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
