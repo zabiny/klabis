@@ -31,9 +31,9 @@ const val = (value: ReactNode): ReactNode => value || '\u2014';
 
 const MaskedBirthNumber = ({value}: { value: string }) => {
     const [revealed, setRevealed] = useState(false);
-    const formatted = value.length >= 7
-        ? `${value.substring(0, 6)}/${value.substring(6)}`
-        : value;
+    const formatted = value.includes('/')
+        ? value
+        : (value.length >= 7 ? `${value.substring(0, 6)}/${value.substring(6)}` : value);
     return (
         <span className="inline-flex items-center gap-2">
             {revealed ? formatted : '••••••/••••'}

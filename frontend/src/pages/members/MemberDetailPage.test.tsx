@@ -231,6 +231,35 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText(/••••••\/••••/)).toBeInTheDocument();
     });
 
+    it('reveals birth number without double slash when backend already includes slash', async () => {
+        const user = userEvent.setup();
+        const data = mockMemberDetailData({
+            nationality: 'CZ',
+            birthNumber: '900515/0123',
+            _templates: {default: selfEditTemplate},
+        });
+        renderPage(createMockPageData(data));
+
+        await user.click(screen.getByRole('button', {name: /zobrazit/i}));
+
+        expect(screen.getByText('900515/0123')).toBeInTheDocument();
+        expect(screen.queryByText('900515//0123')).not.toBeInTheDocument();
+    });
+
+    it('reveals birth number with slash inserted when backend returns without slash', async () => {
+        const user = userEvent.setup();
+        const data = mockMemberDetailData({
+            nationality: 'CZ',
+            birthNumber: '9005150123',
+            _templates: {default: selfEditTemplate},
+        });
+        renderPage(createMockPageData(data));
+
+        await user.click(screen.getByRole('button', {name: /zobrazit/i}));
+
+        expect(screen.getByText('900515/0123')).toBeInTheDocument();
+    });
+
     it('does NOT show birth number when nationality is not CZ (self view)', () => {
         const data = mockMemberDetailData({
             nationality: 'SK',
