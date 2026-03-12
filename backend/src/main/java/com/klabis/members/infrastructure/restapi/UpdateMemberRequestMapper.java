@@ -107,7 +107,7 @@ class UpdateMemberRequestMapper {
     private static BankAccountNumber toBankAccountNumber(com.klabis.common.patch.PatchField<String> bankAccountNumber) {
         if (bankAccountNumber.isProvided()) {
             String value = bankAccountNumber.throwIfNotProvided();
-            if (!value.isBlank()) {
+            if (value != null && !value.isBlank()) {
                 return BankAccountNumber.of(value);
             }
         }
@@ -157,7 +157,7 @@ class UpdateMemberRequestMapper {
     private static BirthNumber toBirthNumber(com.klabis.common.patch.PatchField<String> birthNumber) {
         if (birthNumber.isProvided()) {
             String value = birthNumber.throwIfNotProvided();
-            if (!value.isBlank()) {
+            if (value != null && !value.isBlank()) {
                 return BirthNumber.of(value);
             }
         }

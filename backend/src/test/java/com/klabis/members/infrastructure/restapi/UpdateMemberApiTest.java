@@ -322,6 +322,38 @@ class UpdateMemberApiTest {
             }
 
             @Test
+            @DisplayName("sending null for birthNumber and bankAccountNumber should return 204 No Content")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldAcceptNullBirthNumberAndBankAccountNumberWhenAdmin() throws Exception {
+                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMemberByAdmin.class)))
+                        .thenReturn(stubMember());
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "birthNumber": null,
+                                                    "bankAccountNumber": null,
+                                                    "chipNumber": null,
+                                                    "dietaryRestrictions": null
+                                                }
+                                                """)
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isNoContent());
+
+                var captor = forClass(Member.UpdateMemberByAdmin.class);
+                verify(memberService).updateMember(any(MemberId.class), captor.capture());
+
+                var command = captor.getValue();
+                assertThat(command.birthNumber()).isNull();
+                assertThat(command.bankAccountNumber()).isNull();
+                assertThat(command.chipNumber()).isNull();
+                assertThat(command.dietaryRestrictions()).isNull();
+            }
+
+            @Test
             @DisplayName("updating only bank account number should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateOnlyBankAccountNumberWhenAdmin() throws Exception {
@@ -537,6 +569,37 @@ class UpdateMemberApiTest {
 
                 var command = captor.getValue();
                 assertThat(command.dietaryRestrictions()).isEqualTo("Gluten-free, no nuts");
+            }
+
+            @Test
+            @DisplayName("sending null for optional string fields should return 204 No Content")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
+            void shouldAcceptNullOptionalStringFieldsWhenSelfUpdate() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.SelfUpdate.class)))
+                        .thenReturn(stubMember());
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "chipNumber": null,
+                                                    "bankAccountNumber": null,
+                                                    "dietaryRestrictions": null
+                                                }
+                                                """)
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isNoContent());
+
+                var captor = forClass(Member.SelfUpdate.class);
+                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
+
+                var command = captor.getValue();
+                assertThat(command.chipNumber()).isNull();
+                assertThat(command.bankAccountNumber()).isNull();
+                assertThat(command.dietaryRestrictions()).isNull();
             }
 
             @Test
