@@ -84,6 +84,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                         onClose={handleCloseForm}
                         showCloseButton={true}
                         customLayout={currentFormRequest.customLayout}
+                        titleOverride={currentFormRequest.dialogTitle}
                     />
                 </ModalOverlay>
             </>

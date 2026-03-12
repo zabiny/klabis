@@ -66,9 +66,9 @@ vi.mock('../../api/hateoas', () => ({
 }));
 
 vi.mock('./HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, onClose}: any) => (
+    HalFormDisplay: ({template, templateName, onClose, titleOverride}: any) => (
         <div data-testid="hal-forms-display">
-            <h3>{template.title || templateName}</h3>
+            <h3>{titleOverride || template.title || templateName}</h3>
             <button onClick={onClose} data-testid="close-form-button">Close Form</button>
         </div>
     ),
@@ -595,6 +595,48 @@ describe('HalFormButton Component', () => {
                 createMockPageData(resourceData)
             );
             expect(screen.getByText('create')).toBeInTheDocument();
+        });
+    });
+
+    describe('Dialog Title (dialogTitle prop)', () => {
+        it('should show dialogTitle in modal header when provided', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    suspendMember: mockHalFormsTemplate({title: undefined}),
+                },
+            };
+            renderWithPageData(
+                <HalFormButton name="suspendMember" modal={true} dialogTitle="Ukončení členství"/>,
+                createMockPageData(resourceData)
+            );
+
+            const button = screen.getByRole('button');
+            await user.click(button);
+
+            expect(screen.getByText('Ukončení členství')).toBeInTheDocument();
+        });
+
+        it('should fall back to template title when dialogTitle is not provided', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    create: mockHalFormsTemplate({title: 'Create Member'}),
+                },
+            };
+            renderWithPageData(
+                <HalFormButton name="create" modal={true}/>,
+                createMockPageData(resourceData)
+            );
+
+            const button = screen.getByRole('button');
+            await user.click(button);
+
+            const modal = screen.getByTestId('modal-overlay');
+            expect(modal).toBeInTheDocument();
+            expect(modal.querySelector('h3')?.textContent).toBe('Create Member');
         });
     });
 

@@ -238,6 +238,54 @@ describe('KlabisFieldsFactory', () => {
         });
     });
 
+    describe('DeactivationReason field type', () => {
+
+        it('should render a select field for DeactivationReason type', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'reason', prompt: 'Důvod ukončení', type: 'DeactivationReason'},
+            });
+
+            const result = klabisFieldsFactory('DeactivationReason', mockConf);
+            expect(result).not.toBeNull();
+
+            render(result!);
+            expect(screen.getByTestId('hal-select-reason')).toBeInTheDocument();
+        });
+
+        it('should include ODHLASKA option', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'reason', prompt: 'Důvod', type: 'DeactivationReason'},
+            });
+
+            const result = klabisFieldsFactory('DeactivationReason', mockConf);
+            render(result!);
+
+            const select = screen.getByTestId('hal-select-reason');
+            expect(select).toBeInTheDocument();
+        });
+
+        it('should pass inline options with all three DeactivationReason values', () => {
+            let capturedProp: any = null;
+            const mockConf = createMockConf({
+                prop: {name: 'reason', prompt: 'Důvod', type: 'DeactivationReason'},
+            });
+
+            const result = klabisFieldsFactory('DeactivationReason', mockConf);
+            expect(result).not.toBeNull();
+
+            const propWithOptions = result!.props.prop;
+            capturedProp = propWithOptions;
+
+            expect(capturedProp.options).toBeDefined();
+            expect(capturedProp.options.inline).toBeDefined();
+
+            const values = capturedProp.options.inline.map((o: any) => o.value);
+            expect(values).toContain('ODHLASKA');
+            expect(values).toContain('PRESTUP');
+            expect(values).toContain('OTHER');
+        });
+    });
+
     describe('fallback behavior', () => {
 
         it('should return null for unknown field types', () => {

@@ -37,6 +37,8 @@ export interface HalFormDisplayProps {
     showCloseButton?: boolean;
     /** Optional custom form layout - children or render callback */
     customLayout?: ReactNode | RenderFormCallback;
+    /** Optional title override — shown instead of template.title or templateName */
+    titleOverride?: string;
 }
 
 
@@ -53,6 +55,7 @@ export const HalFormDisplay = ({
                                    onSubmitSuccess,
                                    showCloseButton = true,
                                    customLayout,
+                                   titleOverride,
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
     const {invalidateAllCaches} = useFormCacheInvalidation();
@@ -87,7 +90,7 @@ export const HalFormDisplay = ({
         <div data-testid="hal-forms-display">
             <div className={containerStyles.formContainer}>
                 <div className={layoutStyles.headerRow}>
-                    <h4 className="font-semibold">{template.title || templateName}</h4>
+                    <h4 className="font-semibold">{titleOverride || template.title || templateName}</h4>
                     {showCloseButton && (
                         <button
                             onClick={onClose}

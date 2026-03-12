@@ -38,6 +38,9 @@ export interface HalFormButtonProps {
 
     /** Optional icon rendered before the label */
     icon?: ReactNode;
+
+    /** Optional title shown in the dialog header (overrides template.title) */
+    dialogTitle?: string;
 }
 
 /**
@@ -60,7 +63,7 @@ export interface HalFormButtonProps {
  * // Inline mode (requires HalFormsPageLayout in parent tree)
  * <HalFormButton name="edit" modal={false} />
  */
-export function HalFormButton({name, modal = true, label, customLayout, className, variant, icon}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, label, customLayout, className, variant, icon, dialogTitle}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
@@ -76,7 +79,8 @@ export function HalFormButton({name, modal = true, label, customLayout, classNam
         displayHalForm({
             templateName: name,
             modal: modal,
-            customLayout
+            customLayout,
+            dialogTitle
         });
     };
 

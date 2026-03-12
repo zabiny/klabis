@@ -317,7 +317,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                                             Oprávnění
                                         </button>
                                     )}
-                                    <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger" icon={<UserX className="w-4 h-4"/>}/>
+                                    <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle="Ukončení členství"/>
                                     <HalFormButton name="resumeMember" modal={true} label="Reaktivovat"/>
                                 </>
                             )}

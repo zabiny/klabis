@@ -14,6 +14,9 @@ export interface HalFormRequest {
 
     /** Optional custom form layout */
     customLayout?: ReactNode | RenderFormCallback;
+
+    /** Optional title override for the dialog header */
+    dialogTitle?: string;
 }
 
 /**

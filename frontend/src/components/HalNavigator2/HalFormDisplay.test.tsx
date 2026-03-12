@@ -133,6 +133,29 @@ describe('HalFormDisplay Component', () => {
             expect(screen.getByText('Edit Member')).toBeInTheDocument();
         });
 
+        it('should display titleOverride instead of template title when provided', () => {
+            const template = mockHalFormsTemplate({title: undefined});
+            const resourceData: HalResponse = {id: 1};
+            const pageData = createMockPageData(resourceData);
+            const Wrapper = createWrapper(pageData);
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="suspendMember"
+                        resourceData={resourceData}
+                        pathname="/members/123"
+                        onClose={vi.fn()}
+                        titleOverride="Ukončení členství"
+                    />
+                </Wrapper>
+            );
+
+            expect(screen.getByText('Ukončení členství')).toBeInTheDocument();
+            expect(screen.queryByText('suspendMember')).not.toBeInTheDocument();
+        });
+
         it('should display close button by default', () => {
             renderComponent();
             expect(screen.getByTestId('close-form-button')).toBeInTheDocument();

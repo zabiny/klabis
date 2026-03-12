@@ -146,6 +146,19 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory((fieldType: string
             };
             return <HalFormsSelect {...conf} prop={propWithDrivingOptions}/>;
         }
+        case "DeactivationReason": {
+            const propWithDeactivationOptions = {
+                ...conf.prop,
+                options: {
+                    inline: [
+                        {value: "ODHLASKA", prompt: "Odhlášení"},
+                        {value: "PRESTUP", prompt: "Přestup"},
+                        {value: "OTHER", prompt: "Jiný důvod"},
+                    ]
+                }
+            };
+            return <HalFormsSelect {...conf} prop={propWithDeactivationOptions}/>;
+        }
         case "AddressRequest":
             return renderCompositeField(conf, ADDRESS_FIELDS);
         case "GuardianDTO":
