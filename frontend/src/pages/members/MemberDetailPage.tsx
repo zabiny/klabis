@@ -404,6 +404,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                 onClose={() => setIsPermissionsDialogOpen(false)}
                 permissionsUrl={permissionsUrl}
                 memberName={`${member.firstName} ${member.lastName}`}
+                memberRegistrationNumber={member.registrationNumber ?? undefined}
             />
             {isEditing && enrichedTemplate ? (
                 <HalFormsForm

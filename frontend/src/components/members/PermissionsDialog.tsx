@@ -2,12 +2,14 @@ import {useEffect, useState} from 'react';
 import {Modal, Spinner} from '../UI';
 import {useToast} from '../../contexts/ToastContext';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {FetchError} from '../../api/authorizedFetch';
 
-interface PermissionsDialogProps {
+export interface PermissionsDialogProps {
     isOpen: boolean;
     onClose: () => void;
     permissionsUrl: string;
     memberName: string;
+    memberRegistrationNumber?: string;
 }
 
 const PERMISSION_LABELS: Record<string, { label: string; description: string; color: string }> = {
@@ -34,11 +36,12 @@ const PermissionIcon = ({color}: { color: string }) => (
     </div>
 );
 
-const Toggle = ({checked, onChange, disabled}: { checked: boolean; onChange: () => void; disabled: boolean }) => (
+const Toggle = ({checked, onChange, disabled, label}: { checked: boolean; onChange: () => void; disabled: boolean; label: string }) => (
     <button
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         onClick={onChange}
         disabled={disabled}
         className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -53,7 +56,14 @@ const Toggle = ({checked, onChange, disabled}: { checked: boolean; onChange: () 
     </button>
 );
 
-export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName}: PermissionsDialogProps) => {
+function resolveErrorMessage(error: Error): string {
+    if (error instanceof FetchError && error.responseStatus === 409) {
+        return 'Nelze odebrat oprávnění správce — systém musí mít alespoň jednoho uživatele se správou oprávnění.';
+    }
+    return 'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.';
+}
+
+export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, memberRegistrationNumber}: PermissionsDialogProps) => {
     const {addToast} = useToast();
     const [selectedAuthorities, setSelectedAuthorities] = useState<Set<string>>(new Set());
 
@@ -98,11 +108,15 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName}:
         mutate({url: putUrl, data: {authorities: Array.from(selectedAuthorities)}});
     };
 
+    const dialogTitle = memberRegistrationNumber
+        ? `${memberName} – ${memberRegistrationNumber}`
+        : memberName;
+
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Oprávnění uživatele"
+            title={dialogTitle}
             size="lg"
             footer={
                 <>
@@ -124,7 +138,6 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName}:
                 </>
             }
         >
-            <p className="text-xs text-text-secondary mb-1 -mt-1">{memberName}</p>
             <p className="text-sm text-text-secondary mb-4">
                 Oprávnění určují, ke kterým funkcím aplikace má uživatel přístup. Změny se projeví okamžitě.
             </p>
@@ -137,7 +150,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName}:
                 <div>
                     {error && (
                         <div className="mb-4 p-3 rounded-md bg-feedback-error/10 text-feedback-error text-sm">
-                            {error.message || 'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.'}
+                            {resolveErrorMessage(error)}
                         </div>
                     )}
                     <div className="divide-y divide-border">
@@ -149,6 +162,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName}:
                                     <p className="text-xs text-text-secondary">{info.description}</p>
                                 </div>
                                 <Toggle
+                                    label={info.label}
                                     checked={selectedAuthorities.has(authority)}
                                     onChange={() => toggleAuthority(authority)}
                                     disabled={isLoading || isPending}
