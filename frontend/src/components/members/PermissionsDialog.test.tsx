@@ -5,6 +5,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {PermissionsDialog, type PermissionsDialogProps} from './PermissionsDialog';
 import {ToastProvider} from '../../contexts/ToastContext';
 import {FetchError} from '../../api/authorizedFetch';
+import type {UseAuthorizedMutationOptions} from '../../hooks/useAuthorizedFetch';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(),
@@ -145,6 +146,36 @@ describe('PermissionsDialog', () => {
                 url: '/api/users/1/permissions',
                 data: {authorities: expect.arrayContaining(['MEMBERS:READ', 'EVENTS:READ'])},
             });
+        });
+
+        it('invalidates permissions query cache after successful save', () => {
+            const queryClient = createQueryClient();
+            const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+            let capturedOnSuccess: UseAuthorizedMutationOptions['onSuccess'];
+            mockUseAuthorizedMutation.mockImplementation((options: UseAuthorizedMutationOptions) => {
+                capturedOnSuccess = options.onSuccess;
+                return {mutate: defaultMutate, isPending: false, error: null};
+            });
+
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <ToastProvider>
+                        <PermissionsDialog
+                            isOpen={true}
+                            onClose={vi.fn()}
+                            permissionsUrl="/api/users/1/permissions"
+                            memberName="Jan Novák"
+                        />
+                    </ToastProvider>
+                </QueryClientProvider>,
+            );
+
+            capturedOnSuccess!(undefined);
+
+            expect(invalidateQueriesSpy).toHaveBeenCalledWith(
+                expect.objectContaining({queryKey: ['authorized']}),
+            );
         });
 
         it('shows spinner in save button while pending', () => {

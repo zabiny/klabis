@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import {Modal, Spinner} from '../UI';
 import {useToast} from '../../contexts/ToastContext';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
@@ -65,6 +66,7 @@ function resolveErrorMessage(error: Error): string {
 
 export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, memberRegistrationNumber}: PermissionsDialogProps) => {
     const {addToast} = useToast();
+    const queryClient = useQueryClient();
     const [selectedAuthorities, setSelectedAuthorities] = useState<Set<string>>(new Set());
 
     const {data, isLoading} = useAuthorizedQuery<PermissionsResponse>(permissionsUrl, {
@@ -87,6 +89,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
     const {mutate, isPending, error} = useAuthorizedMutation({
         method: 'PUT',
         onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ['authorized']});
             addToast('Oprávnění uložena', 'success');
             onClose();
         },
