@@ -3,7 +3,7 @@
  * Used by both HalFormButton and HalFormsSection
  */
 
-import type {ReactElement} from 'react';
+import type {ReactElement, ReactNode} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {Button} from '../UI';
 
@@ -25,6 +25,9 @@ export interface HalFormTemplateButtonProps {
 
     /** Optional button variant — defaults to 'primary' */
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+
+    /** Optional icon rendered before the label */
+    icon?: ReactNode;
 }
 
 /**
@@ -45,6 +48,7 @@ export function HalFormTemplateButton({
                                           label,
                                           className = '',
                                           variant = 'primary',
+                                          icon,
                                       }: HalFormTemplateButtonProps): ReactElement {
     const displayText = label || template.title || templateName;
 
@@ -58,6 +62,7 @@ export function HalFormTemplateButton({
             aria-label={`Select ${displayText} form`}
             data-testid={`form-template-button-${templateName}`}
         >
+            {icon && <span className="inline-flex">{icon}</span>}
             {displayText}
         </Button>
     );

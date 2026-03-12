@@ -11,7 +11,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
 import {useMemberEditForm} from "./useMemberEditForm";
-import {BanknotesIcon, PencilIcon, ShieldCheckIcon} from "@heroicons/react/24/outline";
+import {Banknote, Check, Pencil, Shield, ShieldCheck, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
@@ -275,7 +275,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                             )}
                             {adminEdit && (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                    <ShieldCheckIcon className="w-3.5 h-3.5"/>
+                                    <ShieldCheck className="w-3.5 h-3.5"/>
                                     Admin — editace všech polí
                                 </span>
                             )}
@@ -297,14 +297,14 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                                         onClick={startEditing}
                                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
                                     >
-                                        <PencilIcon className="w-4 h-4"/>
+                                        <Pencil className="w-4 h-4"/>
                                         Upravit profil
                                     </button>
                                     <button
                                         type="button"
                                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
                                     >
-                                        <BanknotesIcon className="w-4 h-4"/>
+                                        <Banknote className="w-4 h-4 text-green-600"/>
                                         Vložit / Vybrat
                                     </button>
                                     {hasLink('permissions') && (
@@ -313,11 +313,11 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                                             onClick={() => setIsPermissionsDialogOpen(true)}
                                             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
                                         >
-                                            <ShieldCheckIcon className="w-4 h-4"/>
+                                            <Shield className="w-4 h-4"/>
                                             Oprávnění
                                         </button>
                                     )}
-                                    <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger"/>
+                                    <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger" icon={<UserX className="w-4 h-4"/>}/>
                                     <HalFormButton name="resumeMember" modal={true} label="Reaktivovat"/>
                                 </>
                             )}
@@ -327,7 +327,6 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                                         type="button"
                                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
                                     >
-                                        <BanknotesIcon className="w-4 h-4"/>
                                         Členské příspěvky
                                     </button>
                                     <button
@@ -335,7 +334,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                                         onClick={startEditing}
                                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
                                     >
-                                        <PencilIcon className="w-4 h-4"/>
+                                        <Pencil className="w-4 h-4"/>
                                         Upravit profil
                                     </button>
                                 </>
@@ -343,6 +342,8 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                         </div>
                     )}
                 </div>
+
+                <hr className="border-border"/>
 
                 {viewMode !== 'other' ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -380,8 +381,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                 )}
 
                 {isEditing && (
-                    <div className="flex gap-3 pt-4 border-t border-border">
-                        {helpers?.renderField('submit')}
+                    <div className="flex justify-end gap-3 pt-4 border-t border-border">
                         <button
                             type="button"
                             onClick={cancelEditing}
@@ -389,6 +389,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                         >
                             Zrušit
                         </button>
+                        {helpers?.renderField('submit')}
                     </div>
                 )}
             </div>
@@ -413,6 +414,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                     onSubmit={handleSubmit}
                     fieldsFactory={klabisFieldsFactory}
                     submitButtonLabel="Uložit změny"
+                    submitIcon={<Check className="w-4 h-4"/>}
                     isSubmitting={editForm.isSubmitting}
                     renderForm={(helpers) => renderContent(helpers) as ReactElement}
                 />

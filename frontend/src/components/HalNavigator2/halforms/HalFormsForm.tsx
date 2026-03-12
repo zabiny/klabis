@@ -200,6 +200,7 @@ interface HalFormsFormProps {
     onSubmit?: (values: Record<string, unknown>) => Promise<void>,
     onCancel?: () => void,
     submitButtonLabel?: string,
+    submitIcon?: ReactNode,
     fieldsFactory?: HalFormFieldFactory,
     isSubmitting?: boolean,
     renderForm?: RenderFormCallback,
@@ -222,6 +223,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                                                                 onCancel,
                                                                                 fieldsFactory = halFormsFieldsFactory,
                                                                                 submitButtonLabel = "Odeslat",
+                                                                                submitIcon,
                                                                                 isSubmitting: externalIsSubmitting = false,
                                                                                 renderForm,
                                                                                 children,
@@ -264,7 +266,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                             variant="primary"
                             size="md"
                             loading={isFormProcessing}
-                            startIcon={isFormProcessing ? <Spinner size="sm"/> : undefined}
+                            startIcon={isFormProcessing ? <Spinner size="sm"/> : submitIcon}
                         >
                             {isFormProcessing ? UI_MESSAGES.SUBMITTING : submitButtonLabel}
                         </Button>;

@@ -35,6 +35,9 @@ export interface HalFormButtonProps {
 
     /** Optional button variant — defaults to 'primary' */
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+
+    /** Optional icon rendered before the label */
+    icon?: ReactNode;
 }
 
 /**
@@ -57,7 +60,7 @@ export interface HalFormButtonProps {
  * // Inline mode (requires HalFormsPageLayout in parent tree)
  * <HalFormButton name="edit" modal={false} />
  */
-export function HalFormButton({name, modal = true, label, customLayout, className, variant}: HalFormButtonProps): ReactElement | null {
+export function HalFormButton({name, modal = true, label, customLayout, className, variant, icon}: HalFormButtonProps): ReactElement | null {
     const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
@@ -85,6 +88,7 @@ export function HalFormButton({name, modal = true, label, customLayout, classNam
             onClick={handleButtonClick}
             className={className}
             variant={variant}
+            icon={icon}
         />
     );
 }

@@ -1,6 +1,6 @@
 import {type ReactElement, useMemo} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
-import {UserPlusIcon} from '@heroicons/react/24/outline';
+import {UserPlus} from 'lucide-react';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {toHref} from '../../api/hateoas';
 import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
@@ -82,9 +82,12 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         </Link>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-text-primary">
-                        Registrace nového člena
-                    </h1>
+                    <div>
+                        <h1 className="text-3xl font-bold text-text-primary">
+                            Registrace nového člena
+                        </h1>
+                        <hr className="border-border mt-4"/>
+                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                         <div className="flex flex-col gap-6">
@@ -143,7 +146,7 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                         </Section>
                     )}
 
-                    <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
+                    <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border">
                         <Link
                             to="/members"
                             className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
@@ -155,7 +158,7 @@ const RegistrationForm = ({template}: RegistrationFormProps) => {
                             disabled={isPending}
                             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
                         >
-                            <UserPlusIcon className="h-4 w-4"/>
+                            <UserPlus className="h-4 w-4"/>
                             Registrovat člena
                         </button>
                     </div>
