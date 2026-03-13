@@ -25,9 +25,9 @@ export const PasswordStrengthIndicator = ({
 
     // Determine strength color
     const getStrengthColor = () => {
-        if (percentage < 40) return 'bg-feedback-error';
-        if (percentage < 80) return 'bg-feedback-warning';
-        return 'bg-feedback-success';
+        if (percentage < 40) return 'bg-error';
+        if (percentage < 80) return 'bg-warning';
+        return 'bg-success';
     };
 
     const getStrengthLabel = () => {
@@ -67,7 +67,7 @@ export const PasswordStrengthIndicator = ({
                         className={clsx(
                             'flex items-start gap-2 text-sm',
                             req.met
-                                ? 'text-feedback-success'
+                                ? 'text-success'
                                 : 'text-text-tertiary'
                         )}
                     >

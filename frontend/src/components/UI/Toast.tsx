@@ -32,25 +32,20 @@ export const Toast = ({toast, onClose}: ToastProps) => {
     }, [toast.id, toast.duration, onClose])
 
     const bgClass = {
-        success: 'bg-alert-success border-l-4 border-l-feedback-success border-b border-r border-feedback-success',
-        error: 'bg-alert-error border-l-4 border-l-feedback-error border-b border-r border-feedback-error',
-        warning: 'bg-alert-warning border-l-4 border-l-feedback-warning border-b border-r border-feedback-warning',
-        info: 'bg-alert-info border-l-4 border-l-feedback-info border-b border-r border-feedback-info'
+        success: 'bg-success-bg border-l-4 border-l-success border-b border-r border-success',
+        error: 'bg-error-bg border-l-4 border-l-error border-b border-r border-error',
+        warning: 'bg-warning-bg border-l-4 border-l-warning border-b border-r border-warning',
+        info: 'bg-info-bg border-l-4 border-l-info border-b border-r border-info'
     }[toast.type]
 
     const iconClass = {
-        success: 'text-feedback-success',
-        error: 'text-feedback-error',
-        warning: 'text-feedback-warning',
-        info: 'text-feedback-info'
+        success: 'text-success',
+        error: 'text-error',
+        warning: 'text-warning',
+        info: 'text-info'
     }[toast.type]
 
-    const textClass = {
-        success: 'text-alert-text-success',
-        error: 'text-alert-text-error',
-        warning: 'text-alert-text-warning',
-        info: 'text-alert-text-info'
-    }[toast.type]
+    const textClass = 'text-text-primary'
 
     const icons = {
         success: (

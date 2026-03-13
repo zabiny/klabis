@@ -33,7 +33,7 @@ export const FieldWrapper = ({
                 <label htmlFor={id}
                        className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wider">
                     {label}
-                    {required && <span className="text-feedback-error ml-1">*</span>}
+                    {required && <span className="text-error ml-1">*</span>}
                 </label>
             )}
 
@@ -44,7 +44,7 @@ export const FieldWrapper = ({
 
             {/* Error message */}
             {error && (
-                <p className="mt-1 text-sm text-feedback-error font-medium animate-fade-in">
+                <p className="mt-1 text-sm text-error font-medium animate-fade-in">
                     {error}
                 </p>
             )}

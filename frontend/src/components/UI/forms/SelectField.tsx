@@ -15,7 +15,7 @@ const selectBaseClasses = clsx(
     'transition-colors duration-200'
 )
 
-const errorSelectClasses = 'border-feedback-error focus:ring-feedback-error'
+const errorSelectClasses = 'border-error focus:ring-error'
 
 /**
  * SelectField component for dropdown selections

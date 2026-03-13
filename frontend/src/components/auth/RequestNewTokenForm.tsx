@@ -91,9 +91,9 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
         return (
             <Card className="p-8 text-center">
                 <div className="mb-4 flex justify-center">
-                    <div className="w-16 h-16 bg-feedback-success/20 rounded-full flex items-center justify-center">
+                    <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center">
                         <svg
-                            className="w-8 h-8 text-feedback-success"
+                            className="w-8 h-8 text-success"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"

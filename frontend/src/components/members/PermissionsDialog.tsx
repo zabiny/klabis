@@ -157,7 +157,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
             ) : (
                 <div>
                     {error && (
-                        <div className="mb-4 p-3 rounded-md bg-feedback-error/10 text-feedback-error text-sm">
+                        <div className="mb-4 p-3 rounded-md bg-error/10 text-error text-sm">
                             {resolveErrorMessage(error)}
                         </div>
                     )}

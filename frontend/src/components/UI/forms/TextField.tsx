@@ -14,7 +14,7 @@ const baseInputClasses = clsx(
     'transition-all duration-base'
 )
 
-const errorInputClasses = 'border-feedback-error focus:ring-feedback-error focus:ring-opacity-20 focus:border-feedback-error'
+const errorInputClasses = 'border-error focus:ring-error focus:ring-opacity-20 focus:border-error'
 
 /**
  * TextField component for text input fields

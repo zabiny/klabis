@@ -176,7 +176,7 @@ export const MemberRegistrationPage = (): ReactElement => {
     }
 
     if (error) {
-        return <div className="text-feedback-error">{(error as Error).message}</div>;
+        return <div className="text-error">{(error as Error).message}</div>;
     }
 
     const template = collectionData?._templates?.default ?? null;
@@ -187,7 +187,7 @@ export const MemberRegistrationPage = (): ReactElement => {
                 <Link to="/members" className="text-sm text-primary hover:text-primary-light">
                     &larr; Zpět na seznam
                 </Link>
-                <div className="text-feedback-error">Registrace nového člena není k dispozici.</div>
+                <div className="text-error">Registrace nového člena není k dispozici.</div>
             </div>
         );
     }

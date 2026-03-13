@@ -107,7 +107,7 @@ export const MemberDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <div className="text-feedback-error">{error.message}</div>;
+        return <div className="text-error">{error.message}</div>;
     }
 
     if (!resourceData) {

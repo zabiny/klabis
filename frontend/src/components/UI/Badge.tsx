@@ -20,10 +20,10 @@ export const Badge = ({
     const variantClass = {
         default: 'bg-surface-raised text-text-primary border border-border',
         primary: 'bg-primary/20 text-primary-light',
-        success: 'bg-feedback-success/20 text-feedback-success',
-        warning: 'bg-feedback-warning/20 text-feedback-warning',
-        error: 'bg-feedback-error/20 text-feedback-error',
-        info: 'bg-feedback-info/20 text-feedback-info'
+        success: 'bg-success/20 text-success',
+        warning: 'bg-warning/20 text-warning',
+        error: 'bg-error/20 text-error',
+        info: 'bg-info/20 text-info'
     }[variant]
 
     const sizeClass = {

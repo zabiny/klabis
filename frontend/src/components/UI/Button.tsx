@@ -14,7 +14,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantClasses = {
     primary: 'bg-primary hover:bg-primary-light text-white shadow-sm hover:shadow-md active:shadow-none disabled:opacity-50 disabled:shadow-none',
     secondary: 'bg-surface text-text-primary border border-border hover:border-border-light hover:bg-surface-raised active:bg-surface disabled:opacity-50',
-    danger: 'bg-feedback-error hover:bg-red-500 text-white shadow-sm hover:shadow-md active:shadow-none disabled:opacity-50 disabled:shadow-none',
+    danger: 'bg-error hover:bg-red-500 text-white shadow-sm hover:shadow-md active:shadow-none disabled:opacity-50 disabled:shadow-none',
     ghost: 'bg-transparent hover:bg-surface-base text-text-primary active:bg-surface-raised disabled:opacity-50',
 }
 
