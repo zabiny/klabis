@@ -1254,22 +1254,43 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("suspension with invalid reason should return 400 Bad Request")
+        @DisplayName("missing reason should return 400 with fieldErrors.reason in Czech")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn400WhenSuspensionReasonInvalid() throws Exception {
+        void shouldReturn400WithFieldErrorWhenReasonIsMissing() throws Exception {
             // Arrange
             UUID memberId = UUID.randomUUID();
 
             // Act & Assert
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
-                                "reason": null,
                                 "note": "Test note"
                             }
                             """)
                     )
                     .andDo(MockMvcResultHandlers.print())
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.reason").value("Důvod je povinný"));
+        }
+
+        @Test
+        @DisplayName("note exceeding 500 characters should return 400 with fieldErrors.note in Czech")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WithFieldErrorWhenNoteExceeds500Chars() throws Exception {
+            // Arrange
+            UUID memberId = UUID.randomUUID();
+            String longNote = "a".repeat(501);
+
+            // Act & Assert
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA",
+                                "note": "%s"
+                            }
+                            """.formatted(longNote))
+                    )
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.note").value("Poznámka nesmí přesáhnout 500 znaků"));
         }
     }
 

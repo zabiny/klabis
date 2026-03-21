@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.validation.ValidOptionalSize;
 import com.klabis.members.domain.DeactivationReason;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Optional;
 
@@ -12,14 +13,10 @@ import java.util.Optional;
  * @param note   optional note providing additional context about the suspension
  */
 public record SuspendMembershipRequest(
+        @NotNull(message = "Důvod je povinný")
         DeactivationReason reason,
 
-        @ValidOptionalSize(max = 500, message = "Suspension note must not exceed 500 characters")
+        @ValidOptionalSize(max = 500, message = "Poznámka nesmí přesáhnout 500 znaků")
         Optional<String> note
 ) {
-    public SuspendMembershipRequest {
-        if (reason == null) {
-            throw new IllegalArgumentException("Deactivation reason is required");
-        }
-    }
 }
