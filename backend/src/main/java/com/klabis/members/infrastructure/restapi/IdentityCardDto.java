@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.domain.IdentityCard;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
@@ -16,6 +17,7 @@ import java.time.LocalDate;
  * @param validityDate validity date of the card (ISO-8601 format)
  */
 public record IdentityCardDto(
+        @Size(max = 50, message = "Card number must not exceed 50 characters")
         String cardNumber,
         LocalDate validityDate
 ) {

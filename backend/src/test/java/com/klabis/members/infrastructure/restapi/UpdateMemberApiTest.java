@@ -771,6 +771,167 @@ class UpdateMemberApiTest {
                         .andExpect(status().isBadRequest())
                         .andExpect(jsonPath("$.title").value("Bad Request"));
             }
+
+            @Test
+            @DisplayName("firstName exceeding 100 characters should return 400 not 500")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenFirstNameTooLong() throws Exception {
+                String tooLongName = "A".repeat(101);
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "firstName": "%s"
+                                                }
+                                                """.formatted(tooLongName))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("lastName exceeding 100 characters should return 400 not 500")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenLastNameTooLong() throws Exception {
+                String tooLongName = "A".repeat(101);
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "lastName": "%s"
+                                                }
+                                                """.formatted(tooLongName))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("email exceeding 255 characters should return 400 not 500")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenEmailTooLong() throws Exception {
+                String tooLongEmail = "a".repeat(244) + "@example.com";
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "email": "%s"
+                                                }
+                                                """.formatted(tooLongEmail))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("phone exceeding 50 characters should return 400 not 500")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenPhoneTooLong() throws Exception {
+                String tooLongPhone = "+420" + "1".repeat(47);
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "phone": "%s"
+                                                }
+                                                """.formatted(tooLongPhone))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("nationality exceeding 3 characters should return 400 not 500")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenNationalityTooLong() throws Exception {
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "nationality": "CZEE"
+                                                }
+                                                """)
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("chipNumber exceeding 50 characters should return 400 not 500")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenChipNumberTooLong() throws Exception {
+                String tooLongChip = "1".repeat(51);
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "chipNumber": "%s"
+                                                }
+                                                """.formatted(tooLongChip))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("bankAccountNumber exceeding 50 characters should return 400 not 500")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenBankAccountNumberTooLong() throws Exception {
+                String tooLongAccount = "1".repeat(51);
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "bankAccountNumber": "%s"
+                                                }
+                                                """.formatted(tooLongAccount))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
+
+            @Test
+            @DisplayName("identityCard cardNumber exceeding 50 characters should return 400 not 500")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldReturn400WhenIdentityCardNumberTooLong() throws Exception {
+                String tooLongCardNumber = "A".repeat(51);
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "identityCard": {
+                                                        "cardNumber": "%s",
+                                                        "validityDate": "2030-01-01"
+                                                    }
+                                                }
+                                                """.formatted(tooLongCardNumber))
+                        )
+                        .andDo(MockMvcResultHandlers.print())
+                        .andExpect(status().isBadRequest())
+                        .andExpect(jsonPath("$.title").value("Bad Request"));
+            }
         }
 
         @Nested

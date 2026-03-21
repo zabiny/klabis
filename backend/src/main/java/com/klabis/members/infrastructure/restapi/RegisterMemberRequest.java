@@ -43,6 +43,7 @@ public record RegisterMemberRequest(
         @Schema(description = "Email address", example = "jan.novak@example.com", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be valid")
+        @Size(max = 255, message = "Email must not exceed 255 characters")
         String email,
 
         @Schema(description = "Phone number", example = "+420777123456", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -63,6 +64,7 @@ public record RegisterMemberRequest(
         String birthNumber,
 
         @Schema(description = "Bank account number (IBAN or domestic Czech format)", example = "CZ6508000000192000145399")
+        @Size(max = 50, message = "Bank account number must not exceed 50 characters")
         String bankAccountNumber
 ) {
 }

@@ -8,6 +8,7 @@ import com.klabis.members.application.*;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
 import io.soabase.recordbuilder.core.RecordBuilder;
+import jakarta.validation.Valid;
 
 import java.time.LocalDate;
 
@@ -48,16 +49,20 @@ import java.time.LocalDate;
  */
 @RecordBuilder
 public record UpdateMemberRequest(
+        @ValidPatchFieldSize(max = 255, message = "Email must not exceed 255 characters")
         PatchField<String> email,
 
+        @ValidPatchFieldSize(max = 50, message = "Phone must not exceed 50 characters")
         PatchField<String> phone,
 
         PatchField<AddressRequest> address,
 
         @ValidPatchFieldNotBlank(message = "First name must not be blank")
+        @ValidPatchFieldSize(max = 100, message = "First name must not exceed 100 characters")
         PatchField<String> firstName,
 
         @ValidPatchFieldNotBlank(message = "Last name must not be blank")
+        @ValidPatchFieldSize(max = 100, message = "Last name must not exceed 100 characters")
         PatchField<String> lastName,
 
         PatchField<LocalDate> dateOfBirth,
@@ -65,10 +70,13 @@ public record UpdateMemberRequest(
         PatchField<Gender> gender,
 
         @ValidPatchFieldPattern(regexp = ValidationPatterns.NUMERIC_ONLY_PATTERN, message = "Chip number must contain only digits")
+        @ValidPatchFieldSize(max = 50, message = "Chip number must not exceed 50 characters")
         PatchField<String> chipNumber,
 
+        @ValidPatchFieldSize(max = 3, message = "Nationality must not exceed 3 characters")
         PatchField<String> nationality,
 
+        @Valid
         PatchField<IdentityCardDto> identityCard,
 
         PatchField<MedicalCourseDto> medicalCourse,
@@ -84,6 +92,7 @@ public record UpdateMemberRequest(
 
         PatchField<String> birthNumber,
 
+        @ValidPatchFieldSize(max = 50, message = "Bank account number must not exceed 50 characters")
         PatchField<String> bankAccountNumber,
 
         PatchField<GuardianDTO> guardian
