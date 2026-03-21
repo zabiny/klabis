@@ -75,16 +75,18 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
         return (
             <>
                 <div className="space-y-6">{children}</div>
-                <ModalOverlay isOpen={true} onClose={handleCloseForm}>
+                <ModalOverlay
+                    isOpen={true}
+                    onClose={handleCloseForm}
+                    title={currentFormRequest.dialogTitle || template.title}
+                >
                     <HalFormDisplay
                         template={template}
                         templateName={currentFormRequest.templateName}
                         resourceData={resourceData}
                         pathname={route.pathname}
                         onClose={handleCloseForm}
-                        showCloseButton={true}
                         customLayout={currentFormRequest.customLayout}
-                        titleOverride={currentFormRequest.dialogTitle}
                     />
                 </ModalOverlay>
             </>

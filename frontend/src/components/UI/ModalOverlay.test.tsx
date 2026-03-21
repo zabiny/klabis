@@ -144,6 +144,72 @@ describe('ModalOverlay', () => {
         })
     })
 
+    describe('Title and Close Button', () => {
+        it('should not render header when title is not provided', () => {
+            render(
+                <ModalOverlay isOpen={true} onClose={() => {}}>
+                    <div>Content</div>
+                </ModalOverlay>
+            )
+            expect(screen.queryByTestId('modal-header')).not.toBeInTheDocument()
+            expect(screen.queryByTestId('modal-title')).not.toBeInTheDocument()
+            expect(screen.queryByTestId('modal-close-button')).not.toBeInTheDocument()
+        })
+
+        it('should render header with title when title is provided', () => {
+            render(
+                <ModalOverlay isOpen={true} onClose={() => {}} title="Test Title">
+                    <div>Content</div>
+                </ModalOverlay>
+            )
+            expect(screen.getByTestId('modal-header')).toBeInTheDocument()
+            expect(screen.getByTestId('modal-title')).toBeInTheDocument()
+            expect(screen.getByText('Test Title')).toBeInTheDocument()
+        })
+
+        it('should render close button in header by default when title is provided', () => {
+            render(
+                <ModalOverlay isOpen={true} onClose={() => {}} title="Test Title">
+                    <div>Content</div>
+                </ModalOverlay>
+            )
+            expect(screen.getByTestId('modal-close-button')).toBeInTheDocument()
+        })
+
+        it('should call onClose when header close button is clicked', async () => {
+            const user = userEvent.setup()
+            const onClose = vi.fn()
+
+            render(
+                <ModalOverlay isOpen={true} onClose={onClose} title="Test Title">
+                    <div>Content</div>
+                </ModalOverlay>
+            )
+
+            await user.click(screen.getByTestId('modal-close-button'))
+            expect(onClose).toHaveBeenCalledTimes(1)
+        })
+
+        it('should not render close button in header when showCloseButton is false', () => {
+            render(
+                <ModalOverlay isOpen={true} onClose={() => {}} title="Test Title" showCloseButton={false}>
+                    <div>Content</div>
+                </ModalOverlay>
+            )
+            expect(screen.getByText('Test Title')).toBeInTheDocument()
+            expect(screen.queryByTestId('modal-close-button')).not.toBeInTheDocument()
+        })
+
+        it('should still render children when title is provided', () => {
+            render(
+                <ModalOverlay isOpen={true} onClose={() => {}} title="Test Title">
+                    <div data-testid="child-content">Child Content</div>
+                </ModalOverlay>
+            )
+            expect(screen.getByTestId('child-content')).toBeInTheDocument()
+        })
+    })
+
     describe('Styling', () => {
         it('should have fixed positioning and z-index', () => {
             const {container} = render(

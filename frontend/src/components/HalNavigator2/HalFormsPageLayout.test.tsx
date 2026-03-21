@@ -20,10 +20,12 @@ vi.mock('./HalFormDisplay.tsx', () => ({
     ),
 }));
 
+
 vi.mock('../UI/ModalOverlay.tsx', () => ({
-    ModalOverlay: ({isOpen, children, onClose}: any) => (
+    ModalOverlay: ({isOpen, children, onClose, title}: any) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
+                {title && <h4 data-testid="modal-overlay-title">{title}</h4>}
                 {children}
                 <button onClick={onClose} data-testid="modal-close-button">Close Modal</button>
             </div>

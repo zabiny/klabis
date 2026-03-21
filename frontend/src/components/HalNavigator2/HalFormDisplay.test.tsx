@@ -98,7 +98,6 @@ describe('HalFormDisplay Component', () => {
         template = mockHalFormsTemplate({title: 'Test Form'}),
         onClose = vi.fn(),
         onSubmitSuccess = vi.fn(),
-        showCloseButton = true
     ) => {
         const resourceData: HalResponse = {
             id: 1,
@@ -115,7 +114,6 @@ describe('HalFormDisplay Component', () => {
                     pathname="/test/123"
                     onClose={onClose}
                     onSubmitSuccess={onSubmitSuccess}
-                    showCloseButton={showCloseButton}
                 />
             </Wrapper>
         );
@@ -127,70 +125,15 @@ describe('HalFormDisplay Component', () => {
             expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
         });
 
-        it('should display template title', () => {
+        it('should not render a title header', () => {
             const template = mockHalFormsTemplate({title: 'Edit Member'});
             renderComponent(template);
-            expect(screen.getByText('Edit Member')).toBeInTheDocument();
+            expect(screen.queryByRole('heading', {level: 4})).not.toBeInTheDocument();
         });
 
-        it('should display titleOverride instead of template title when provided', () => {
-            const template = mockHalFormsTemplate({title: undefined});
-            const resourceData: HalResponse = {id: 1};
-            const pageData = createMockPageData(resourceData);
-            const Wrapper = createWrapper(pageData);
-
-            render(
-                <Wrapper>
-                    <HalFormDisplay
-                        template={template}
-                        templateName="suspendMember"
-                        resourceData={resourceData}
-                        pathname="/members/123"
-                        onClose={vi.fn()}
-                        titleOverride="Ukončení členství"
-                    />
-                </Wrapper>
-            );
-
-            expect(screen.getByText('Ukončení členství')).toBeInTheDocument();
-            expect(screen.queryByText('suspendMember')).not.toBeInTheDocument();
-        });
-
-        it('should display close button by default', () => {
+        it('should not render a close button', () => {
             renderComponent();
-            expect(screen.getByTestId('close-form-button')).toBeInTheDocument();
-        });
-
-        it('should not display close button when showCloseButton=false', () => {
-            renderComponent(
-                mockHalFormsTemplate({title: 'Test Form'}),
-                vi.fn(),
-                vi.fn(),
-                false
-            );
             expect(screen.queryByTestId('close-form-button')).not.toBeInTheDocument();
-        });
-    });
-
-    describe('Close Functionality', () => {
-        it('should call onClose when close button is clicked', async () => {
-            const onClose = vi.fn();
-            const user = userEvent.setup();
-            renderComponent(
-                mockHalFormsTemplate({title: 'Test Form'}),
-                onClose
-            );
-
-            const closeButton = screen.getByTestId('close-form-button');
-            await user.click(closeButton);
-
-            expect(onClose).toHaveBeenCalled();
-        });
-
-        it('should have aria-label on close button', () => {
-            renderComponent();
-            const closeButton = screen.getByTestId('close-form-button');
-            expect(closeButton).toHaveAttribute('aria-label', 'Close form');
         });
     });
 
@@ -517,6 +460,111 @@ describe('HalFormDisplay Component', () => {
                 expect(mockInvalidateAllCaches).not.toHaveBeenCalled();
             });
         });
+
+        it('should pass response data to onSubmitSuccess callback', async () => {
+            const onClose = vi.fn();
+            const onSubmitSuccess = vi.fn();
+            const user = userEvent.setup();
+
+            const template = mockHalFormsTemplate({
+                title: 'Create Member',
+                target: '/api/members',
+                method: 'POST',
+                properties: [
+                    {name: 'name', prompt: 'Full Name', type: 'text', required: true},
+                ],
+            });
+
+            const pageData = createMockPageData({id: 1});
+            const Wrapper = createWrapper(pageData);
+            const responseData = {id: 99, name: 'New Member', _links: {self: {href: '/api/members/99'}}};
+
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Existing'}))
+                .mockResolvedValueOnce(createMockResponse(responseData));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="create"
+                        resourceData={{id: 1}}
+                        pathname="/members"
+                        onClose={onClose}
+                        onSubmitSuccess={onSubmitSuccess}
+                    />
+                </Wrapper>
+            );
+
+            await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+
+            const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'John Doe');
+
+            const submitButton = screen.getByRole('button', {name: /odeslat/i});
+            await user.click(submitButton);
+
+            await waitFor(() => {
+                expect(onSubmitSuccess).toHaveBeenCalledWith(responseData);
+            });
+        });
+
+        it('should apply postprocessPayload before submitting', async () => {
+            const onClose = vi.fn();
+            const user = userEvent.setup();
+
+            const template = mockHalFormsTemplate({
+                title: 'Edit Member',
+                target: '/api/members/1',
+                method: 'PATCH',
+                properties: [
+                    {name: 'name', prompt: 'Full Name', type: 'text', required: true},
+                    {name: 'readOnlyField', prompt: 'Read Only', type: 'text'},
+                ],
+            });
+
+            const pageData = createMockPageData({id: 1});
+            const Wrapper = createWrapper(pageData);
+
+            fetchSpy
+                .mockResolvedValueOnce(createMockResponse({name: 'John', readOnlyField: 'read-only'}))
+                .mockResolvedValueOnce(createMockResponse({id: 1, name: 'Jane'}));
+
+            const postprocessPayload = vi.fn((payload: Record<string, unknown>) => {
+                const {readOnlyField: _, ...rest} = payload;
+                return rest;
+            });
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="edit"
+                        resourceData={{id: 1}}
+                        pathname="/members/1"
+                        onClose={onClose}
+                        postprocessPayload={postprocessPayload}
+                    />
+                </Wrapper>
+            );
+
+            await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
+
+            const nameInput = screen.getByDisplayValue('John') as HTMLInputElement;
+            await user.clear(nameInput);
+            await user.type(nameInput, 'Jane');
+
+            const submitButton = screen.getByRole('button', {name: /odeslat/i});
+            await user.click(submitButton);
+
+            await waitFor(() => {
+                expect(postprocessPayload).toHaveBeenCalled();
+                const submittedPayload = (fetchSpy.mock.calls[1][1] as RequestInit).body as string;
+                const body = JSON.parse(submittedPayload);
+                expect(body).not.toHaveProperty('readOnlyField');
+            });
+        });
     });
 
     describe('Target Data Fetching', () => {
@@ -582,12 +630,6 @@ describe('HalFormDisplay Component', () => {
     });
 
     describe('Accessibility', () => {
-        it('should display template name in heading', () => {
-            const template = mockHalFormsTemplate({title: 'Create Member'});
-            renderComponent(template);
-            expect(screen.getByText('Create Member')).toBeInTheDocument();
-        });
-
         it('should display error alert when form data fetch fails with HTTP 500', async () => {
             const template = mockHalFormsTemplate({
                 title: 'Create Event',

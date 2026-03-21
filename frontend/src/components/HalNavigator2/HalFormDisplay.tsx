@@ -1,20 +1,15 @@
-/**
- * Component for displaying HAL Forms in both modal and inline contexts
- * Handles form data fetching, submission, and error handling
- */
-
 import {type ReactElement, type ReactNode} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {ErrorDisplay, Spinner} from '../UI';
-import {HalFormsForm, type RenderFormCallback} from './halforms';
+import {HalFormsForm, type HalFormFieldFactory, type RenderFormCallback} from './halforms';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
-import {buttonStyles, containerStyles, layoutStyles} from '../../theme/designTokens';
+import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/ToastContext';
 
 /**
@@ -31,20 +26,22 @@ export interface HalFormDisplayProps {
     pathname: string;
     /** Callback when form should be closed */
     onClose: () => void;
-    /** Optional callback when submission succeeds */
-    onSubmitSuccess?: () => void;
-    /** Whether to show close button (default: true) */
-    showCloseButton?: boolean;
+    /** Optional callback when submission succeeds — receives response data */
+    onSubmitSuccess?: (responseData?: unknown) => void;
     /** Optional custom form layout - children or render callback */
     customLayout?: ReactNode | RenderFormCallback;
-    /** Optional title override — shown instead of template.title or templateName */
-    titleOverride?: string;
+    /** Optional transform applied to payload before API submission */
+    postprocessPayload?: (payload: Record<string, unknown>, template: HalFormsTemplate) => Record<string, unknown>;
+    /** Optional custom toast message shown on successful submission */
+    successMessage?: string;
+    /** Optional custom field factory (defaults to klabisFieldsFactory) */
+    fieldsFactory?: HalFormFieldFactory;
 }
 
 
 /**
- * Displays a HAL Forms form with error handling and submission controls
- * Can be used in both modal and inline contexts
+ * Displays a HAL Forms form with error handling and submission controls.
+ * Pure form component — no modal wrapper. Wrap in ModalOverlay for modal presentation.
  */
 export const HalFormDisplay = ({
                                    template,
@@ -53,9 +50,10 @@ export const HalFormDisplay = ({
                                    pathname,
                                    onClose,
                                    onSubmitSuccess,
-                                   showCloseButton = true,
                                    customLayout,
-                                   titleOverride,
+                                   postprocessPayload,
+                                   successMessage,
+                                   fieldsFactory,
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
     const {invalidateAllCaches} = useFormCacheInvalidation();
@@ -63,16 +61,8 @@ export const HalFormDisplay = ({
 
     const {mutate: submitForm, isPending: isSubmitting, error: rawError} = useAuthorizedMutation({
         method: template.method || 'POST',
-        onSuccess: async () => {
-            await invalidateAllCaches();
-            await route.refetch();
-            addToast(template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo', 'success');
-            onSubmitSuccess?.();
-            onClose();
-        },
     });
 
-    // Convert FetchError to FormValidationError if applicable
     const submitError = rawError ? toFormValidationError(rawError) : null;
 
     const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
@@ -82,73 +72,63 @@ export const HalFormDisplay = ({
     );
 
     const handleSubmit = async (data: Record<string, unknown>) => {
+        const processed = postprocessPayload ? postprocessPayload(data, template) : data;
         const url = template.target || '/api' + pathname;
-        submitForm({url, data});
+        submitForm({url, data: processed}, {
+            onSuccess: async (responseData: unknown) => {
+                await invalidateAllCaches();
+                await route.refetch();
+                const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');
+                addToast(toastMessage, 'success');
+                onSubmitSuccess?.(responseData);
+                onClose();
+            },
+        });
     };
 
     return (
         <div data-testid="hal-forms-display">
-            <div className={containerStyles.formContainer}>
-                <div className={layoutStyles.headerRow}>
-                    <h4 className="font-semibold">{titleOverride || template.title || templateName}</h4>
-                    {showCloseButton && (
-                        <button
-                            onClick={onClose}
-                            className={buttonStyles.closeButton}
-                            data-testid="close-form-button"
-                            aria-label="Close form"
-                        >
-                            {UI_MESSAGES.CLOSE}
-                        </button>
-                    )}
+            {isLoadingTargetData && (
+                <div className={containerStyles.loadingContainer}>
+                    <Spinner size="sm"/>
+                    <span>{UI_MESSAGES.LOADING_FORM_DATA}</span>
                 </div>
+            )}
 
-                {/* Loading state while fetching target data */}
-                {isLoadingTargetData && (
-                    <div className={containerStyles.loadingContainer}>
-                        <Spinner size="sm"/>
-                        <span>{UI_MESSAGES.LOADING_FORM_DATA}</span>
-                    </div>
-                )}
+            {targetFetchError && (
+                <ErrorDisplay
+                    error={targetFetchError}
+                    title={UI_MESSAGES.FORM_DATA_LOAD_ERROR}
+                    subtitle={template.target ? `Endpoint: ${template.target}` : undefined}
+                    onRetry={refetchTargetData}
+                    onCancel={onClose}
+                    retryText={UI_MESSAGES.RETRY}
+                    cancelText={UI_MESSAGES.CANCEL}
+                />
+            )}
 
-                {/* Error state when target fetch fails */}
-                {targetFetchError && (
-                    <ErrorDisplay
-                        error={targetFetchError}
-                        title={UI_MESSAGES.FORM_DATA_LOAD_ERROR}
-                        subtitle={template.target ? `Endpoint: ${template.target}` : undefined}
-                        onRetry={refetchTargetData}
-                        onCancel={onClose}
-                        retryText={UI_MESSAGES.RETRY}
-                        cancelText={UI_MESSAGES.CANCEL}
-                    />
-                )}
+            {submitError && (
+                <ErrorDisplay
+                    error={submitError}
+                />
+            )}
 
-                {/* Form submission error (different from target fetch error) */}
-                {submitError && (
-                    <ErrorDisplay
-                        error={submitError}
-                    />
-                )}
-
-                {/* Only show form when data is ready and no target fetch error */}
-                {!isLoadingTargetData && !targetFetchError && formData && (
-                    <HalFormsForm
-                        data={formData}
-                        template={template}
-                        onSubmit={handleSubmit}
-                        onCancel={onClose}
-                        isSubmitting={isSubmitting}
-                        fieldsFactory={klabisFieldsFactory}
-                        serverValidationErrors={submitError && isFormValidationError(submitError) ? submitError.validationErrors : undefined}
-                        {...(customLayout
-                            ? (typeof customLayout === 'function'
-                                ? {renderForm: customLayout as RenderFormCallback}
-                                : {children: customLayout as ReactNode})
-                            : {})}
-                    />
-                )}
-            </div>
+            {!isLoadingTargetData && !targetFetchError && formData && (
+                <HalFormsForm
+                    data={formData}
+                    template={template}
+                    onSubmit={handleSubmit}
+                    onCancel={onClose}
+                    isSubmitting={isSubmitting}
+                    fieldsFactory={fieldsFactory ?? klabisFieldsFactory}
+                    serverValidationErrors={submitError && isFormValidationError(submitError) ? submitError.validationErrors : undefined}
+                    {...(customLayout
+                        ? (typeof customLayout === 'function'
+                            ? {renderForm: customLayout as RenderFormCallback}
+                            : {children: customLayout as ReactNode})
+                        : {})}
+                />
+            )}
         </div>
     );
 };

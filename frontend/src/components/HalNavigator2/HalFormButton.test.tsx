@@ -66,18 +66,18 @@ vi.mock('../../api/hateoas', () => ({
 }));
 
 vi.mock('./HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, onClose, titleOverride}: any) => (
+    HalFormDisplay: ({template, templateName}: any) => (
         <div data-testid="hal-forms-display">
-            <h3>{titleOverride || template.title || templateName}</h3>
-            <button onClick={onClose} data-testid="close-form-button">Close Form</button>
+            <h3>{template.title || templateName}</h3>
         </div>
     ),
 }));
 
 vi.mock('../UI/ModalOverlay.tsx', () => ({
-    ModalOverlay: ({isOpen, children, onClose}: any) => (
+    ModalOverlay: ({isOpen, children, onClose, title}: any) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
+                {title && <h4 data-testid="modal-overlay-title">{title}</h4>}
                 {children}
                 <button onClick={onClose} data-testid="modal-close-button">Close Modal</button>
             </div>
@@ -304,8 +304,8 @@ describe('HalFormButton Component', () => {
 
             expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
 
-            // Close modal via close button in form
-            const closeButton = screen.getByTestId('close-form-button');
+            // Close modal via close button in overlay
+            const closeButton = screen.getByTestId('modal-close-button');
             await user.click(closeButton);
 
             // Modal should be closed

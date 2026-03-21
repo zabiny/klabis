@@ -52,17 +52,23 @@ vi.mock('../../api/hateoas', () => ({
 }));
 
 vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, titleOverride, onClose}: any) => (
+    HalFormDisplay: ({template, templateName, onClose}: any) => (
         <div data-testid="hal-forms-display">
-            <h3>{titleOverride || template.title || templateName}</h3>
+            <h3>{template.title || templateName}</h3>
             <button onClick={onClose} data-testid="close-form-button">Close</button>
         </div>
     ),
 }));
 
 vi.mock('../../components/UI/ModalOverlay.tsx', () => ({
-    ModalOverlay: ({isOpen, children, onClose}: any) => (
-        isOpen ? <div data-testid="modal-overlay" role="dialog">{children}<button onClick={onClose}>Close</button></div> : null
+    ModalOverlay: ({isOpen, children, onClose, title}: any) => (
+        isOpen ? (
+            <div data-testid="modal-overlay" role="dialog">
+                {title && <h4>{title}</h4>}
+                {children}
+                <button onClick={onClose}>Close</button>
+            </div>
+        ) : null
     ),
 }));
 
