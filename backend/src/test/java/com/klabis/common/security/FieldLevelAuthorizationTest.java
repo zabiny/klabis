@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authorization.AuthorizationProxyFactory;
+import org.springframework.security.authorization.method.AuthorizationAdvisorProxyFactory;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = FieldLevelAuthorizationTest.TestController.class)
-@Import({NullDeniedHandler.class, MaskDeniedHandler.class})
+@Import({SecurityConfiguration.class, NullDeniedHandler.class, MaskDeniedHandler.class})
 @DisplayName("Field-level authorization on response DTOs")
 class FieldLevelAuthorizationTest {
 
@@ -73,9 +73,9 @@ class FieldLevelAuthorizationTest {
     @RestController
     static class TestController {
 
-        private final AuthorizationProxyFactory proxyFactory;
+        private final AuthorizationAdvisorProxyFactory proxyFactory;
 
-        TestController(AuthorizationProxyFactory proxyFactory) {
+        TestController(AuthorizationAdvisorProxyFactory proxyFactory) {
             this.proxyFactory = proxyFactory;
         }
 
@@ -112,21 +112,12 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("hidden field should be absent from JSON response")
-        void hiddenFieldShouldBeAbsentFromJson() throws Exception {
+        @DisplayName("hidden field absent, masked field shows mask, public field visible")
+        void shouldFilterFieldsBasedOnAuthorization() throws Exception {
             mockMvc.perform(get("/test/field-auth"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.publicField").value("public-value"))
-                    .andExpect(jsonPath("$.hiddenField").doesNotExist());
-        }
-
-        @Test
-        @WithMockUser
-        @DisplayName("masked field should contain mask value")
-        void maskedFieldShouldContainMaskValue() throws Exception {
-            mockMvc.perform(get("/test/field-auth"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hiddenField").doesNotExist())
                     .andExpect(jsonPath("$.maskedField").value(MaskDeniedHandler.MASK_VALUE));
         }
     }
