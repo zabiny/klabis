@@ -32,7 +32,7 @@
 
 - [x] 6.1 Spustit backend testy: `./gradlew test`
 - [x] 6.2 Spustit frontend testy: `npm run test`
-- [ ] 6.3 Ověřit přes Playwright na `localhost:3000` — přihlásit se jako admin a porovnat detail s mockupem `kVhxA`
-- [ ] 6.4 Ověřit přes Playwright na `localhost:3000` — přihlásit se jako člen a ověřit vlastní profil vs mockup `7Q3Kh`
-- [ ] 6.5 Ověřit přes Playwright na `localhost:3000` — přihlásit se jako člen a ověřit cizí profil vs mockup `xmQFI`
-- [ ] 6.6 Ověřit registrační formulář přes Playwright vs mockup `NIoA4`
+- [x] 6.3 Ověřit přes Playwright na `localhost:3000` — přihlásit se jako admin a porovnat detail s mockupem `kVhxA`
+- [x] 6.4 Ověřit přes Playwright na `localhost:3000` — přihlásit se jako člen a ověřit vlastní profil vs mockup `7Q3Kh`
+- [x] 6.5 Ověřit přes Playwright na `localhost:3000` — přihlásit se jako člen a ověřit cizí profil vs mockup `xmQFI`
+- [x] 6.6 Ověřit registrační formulář přes Playwright vs mockup `NIoA4`
