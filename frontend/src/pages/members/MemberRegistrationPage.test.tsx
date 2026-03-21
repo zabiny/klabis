@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {type ReactElement} from 'react';
+import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
@@ -16,20 +16,8 @@ vi.mock('react-router-dom', async () => {
     };
 });
 
-const mockMutate = vi.fn();
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(),
-    useAuthorizedMutation: vi.fn(() => ({
-        mutate: mockMutate,
-        isPending: false,
-        error: null,
-    })),
-}));
-
-vi.mock('../../hooks/useFormCacheInvalidation', () => ({
-    useFormCacheInvalidation: vi.fn(() => ({
-        invalidateAllCaches: vi.fn().mockResolvedValue(undefined),
-    })),
 }));
 
 vi.mock('../../api/klabisUserManager', () => ({
@@ -41,18 +29,19 @@ vi.mock('../../api/klabisUserManager', () => ({
     },
 }));
 
-vi.mock('../../api/hateoas', async () => {
-    const actual = await vi.importActual('../../api/hateoas');
-    return {
-        ...actual,
-        submitHalFormsData: vi.fn(),
-        isFormValidationError: vi.fn((error) => {
-            return error && typeof error === 'object' && 'validationErrors' in error;
-        }),
-    };
-});
+let capturedOnSubmitSuccess: ((data: unknown) => void) | undefined;
+let capturedCustomLayout: unknown;
 
-import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+vi.mock('../../components/HalNavigator2/HalFormDisplay', () => ({
+    HalFormDisplay: vi.fn(({onSubmitSuccess, customLayout}: any) => {
+        capturedOnSubmitSuccess = onSubmitSuccess;
+        capturedCustomLayout = customLayout;
+        return <div data-testid="hal-form-display">HalFormDisplay</div>;
+    }),
+}));
+
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay';
 
 const memberCreationTemplate: HalFormsTemplate = {
     method: 'POST',
@@ -71,7 +60,7 @@ const memberCreationTemplate: HalFormsTemplate = {
 
 const collectionWithTemplate: HalResponse = {
     _links: {self: {href: '/api/members'}},
-    _templates: {default: memberCreationTemplate},
+    _templates: {registerMember: memberCreationTemplate},
 };
 
 const collectionWithoutTemplate: HalResponse = {
@@ -102,6 +91,8 @@ const renderPage = () => {
 describe('MemberRegistrationPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        capturedOnSubmitSuccess = undefined;
+        capturedCustomLayout = undefined;
     });
 
     describe('loading and error states', () => {
@@ -117,193 +108,116 @@ describe('MemberRegistrationPage', () => {
             expect(screen.getByText(/Network error/)).toBeInTheDocument();
         });
 
-        it('shows error when collection has no creation template', () => {
+        it('shows error when collection has no registerMember template', () => {
             mockUseAuthorizedQuery(collectionWithoutTemplate);
             renderPage();
             expect(screen.getByText(/registrace.*není.*k dispozici/i)).toBeInTheDocument();
         });
     });
 
-    describe('page layout', () => {
+    describe('HalFormDisplay integration', () => {
         beforeEach(() => {
             mockUseAuthorizedQuery(collectionWithTemplate);
         });
 
-        it('renders back link to members list', () => {
+        it('renders HalFormDisplay when registerMember template is available', () => {
             renderPage();
-            const backLink = screen.getByText(/zpět na seznam/i);
-            expect(backLink).toBeInTheDocument();
-            expect(backLink.closest('a')).toHaveAttribute('href', '/members');
+            expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
         });
 
-        it('renders page title "Registrace nového člena"', () => {
+        it('passes registerMember template to HalFormDisplay', () => {
             renderPage();
-            expect(screen.getByRole('heading', {level: 1, name: /registrace nového člena/i})).toBeInTheDocument();
-        });
-
-        it('renders "Registrovat" submit button', () => {
-            renderPage();
-            expect(screen.getByRole('button', {name: /registrovat/i})).toBeInTheDocument();
-        });
-
-        it('renders "Zrušit" cancel link to /members', () => {
-            renderPage();
-            const cancelLink = screen.getByRole('link', {name: /zrušit/i});
-            expect(cancelLink).toHaveAttribute('href', '/members');
-        });
-    });
-
-    describe('form sections', () => {
-        beforeEach(() => {
-            mockUseAuthorizedQuery(collectionWithTemplate);
-        });
-
-        it('renders OSOBNÍ ÚDAJE section with fields from template', () => {
-            renderPage();
-            expect(screen.getByText(/osobní údaje/i)).toBeInTheDocument();
-        });
-
-        it('renders KONTAKT section when email or phone in template', () => {
-            renderPage();
-            expect(screen.getByText(/kontakt/i)).toBeInTheDocument();
-        });
-
-        it('renders ADRESA section when address property in template', () => {
-            renderPage();
-            expect(screen.getByRole('heading', {level: 3, name: /adresa/i})).toBeInTheDocument();
-        });
-
-        it('does not render section when its fields are absent from template', () => {
-            const minimalTemplate: HalFormsTemplate = {
-                method: 'POST',
-                target: '/api/members',
-                properties: [
-                    {name: 'firstName', type: 'text', prompt: 'Jméno'},
-                ],
-            };
-            const minimalCollection: HalResponse = {
-                _links: {self: {href: '/api/members'}},
-                _templates: {default: minimalTemplate},
-            };
-            mockUseAuthorizedQuery(minimalCollection);
-            renderPage();
-            expect(screen.queryByText(/kontakt/i)).not.toBeInTheDocument();
-            expect(screen.queryByText(/adresa/i)).not.toBeInTheDocument();
-        });
-    });
-
-    describe('form fields are editable', () => {
-        beforeEach(() => {
-            mockUseAuthorizedQuery(collectionWithTemplate);
-        });
-
-        it('renders editable input fields from template', () => {
-            renderPage();
-            const inputs = screen.getAllByRole('textbox');
-            expect(inputs.length).toBeGreaterThan(0);
-        });
-
-        it('allows typing into firstName field', async () => {
-            const user = userEvent.setup();
-            renderPage();
-
-            const inputs = screen.getAllByRole('textbox');
-            const firstNameInput = inputs[0];
-            await user.type(firstNameInput, 'Karel');
-            expect(firstNameInput).toHaveValue('Karel');
-        });
-
-        it('renders gender field from template', () => {
-            renderPage();
-            expect(screen.getByText('Pohlaví')).toBeInTheDocument();
-        });
-    });
-
-    describe('form submission', () => {
-        beforeEach(() => {
-            mockUseAuthorizedQuery(collectionWithTemplate);
-        });
-
-        it('calls mutate with POST to /api/members on submit', async () => {
-            const simpleTemplate: HalFormsTemplate = {
-                method: 'POST',
-                target: '/api/members',
-                properties: [
-                    {name: 'firstName', type: 'text', prompt: 'Jméno'},
-                    {name: 'lastName', type: 'text', prompt: 'Příjmení'},
-                ],
-            };
-            const simpleCollection: HalResponse = {
-                _links: {self: {href: '/api/members'}},
-                _templates: {default: simpleTemplate},
-            };
-            mockUseAuthorizedQuery(simpleCollection);
-
-            const user = userEvent.setup();
-            renderPage();
-
-            const inputs = screen.getAllByRole('textbox');
-            await user.type(inputs[0], 'Karel');
-            await user.type(inputs[1], 'Novak');
-
-            await user.click(screen.getByRole('button', {name: /registrovat/i}));
-
-            await waitFor(() => {
-                expect(mockMutate).toHaveBeenCalled();
-            });
-
-            expect(mockMutate).toHaveBeenCalledWith(
+            expect(vi.mocked(HalFormDisplay)).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    url: '/api/members',
-                    data: expect.objectContaining({
-                        firstName: 'Karel',
-                        lastName: 'Novak',
-                    }),
-                })
+                    template: memberCreationTemplate,
+                    templateName: 'registerMember',
+                }),
+                undefined
             );
         });
 
-        it('passes useAuthorizedMutation with method POST', () => {
+        it('passes customLayout renderForm callback to HalFormDisplay', () => {
             renderPage();
-            expect(useAuthorizedMutation).toHaveBeenCalledWith(
-                expect.objectContaining({method: 'POST'})
-            );
+            expect(capturedCustomLayout).toBeTypeOf('function');
+        });
+
+        it('does not use default template key', () => {
+            const collectionWithDefault: HalResponse = {
+                _links: {self: {href: '/api/members'}},
+                _templates: {default: memberCreationTemplate},
+            };
+            mockUseAuthorizedQuery(collectionWithDefault);
+            renderPage();
+            expect(screen.getByText(/registrace.*není.*k dispozici/i)).toBeInTheDocument();
         });
     });
 
     describe('navigation after success', () => {
-        it('onSuccess callback navigates to created member detail page', () => {
+        beforeEach(() => {
             mockUseAuthorizedQuery(collectionWithTemplate);
+        });
 
-            let capturedOnSuccess: (data: any) => void = () => {};
-            vi.mocked(useAuthorizedMutation).mockImplementation((opts: any) => {
-                capturedOnSuccess = opts.onSuccess;
-                return {mutate: mockMutate, isPending: false, error: null} as any;
-            });
-
+        it('navigates to new member detail page when onSubmitSuccess receives self link', () => {
             renderPage();
 
-            capturedOnSuccess({
+            capturedOnSubmitSuccess?.({
                 _links: {self: {href: '/api/members/new-member-uuid'}},
             });
 
             expect(mockNavigate).toHaveBeenCalledWith('/members/new-member-uuid');
         });
 
-        it('onSuccess navigates to /members when no self link in response', () => {
-            mockUseAuthorizedQuery(collectionWithTemplate);
-
-            let capturedOnSuccess: (data: any) => void = () => {};
-            vi.mocked(useAuthorizedMutation).mockImplementation((opts: any) => {
-                capturedOnSuccess = opts.onSuccess;
-                return {mutate: mockMutate, isPending: false, error: null} as any;
-            });
-
+        it('navigates to /members when onSubmitSuccess receives response without self link', () => {
             renderPage();
 
-            capturedOnSuccess({});
+            capturedOnSubmitSuccess?.({});
 
             expect(mockNavigate).toHaveBeenCalledWith('/members');
+        });
+
+        it('navigates to /members when onSubmitSuccess receives undefined', () => {
+            renderPage();
+
+            capturedOnSubmitSuccess?.(undefined);
+
+            expect(mockNavigate).toHaveBeenCalledWith('/members');
+        });
+    });
+
+    describe('page layout rendering via renderForm callback', () => {
+        const renderFormLayout = () => {
+            const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+            mockUseAuthorizedQuery(collectionWithTemplate);
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/members/new']}>
+                        <MemberRegistrationPage/>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+            const renderFn = capturedCustomLayout as (helpers: any) => ReactElement;
+            const helpers = {
+                renderInput: (name: string) => <input key={name} data-testid={`input-${name}`}/>,
+                renderField: (name: string) => <div key={name} data-testid={`field-${name}`}/>,
+                renderLabel: (name: string) => name,
+            };
+            return render(
+                <MemoryRouter>
+                    {renderFn(helpers)}
+                </MemoryRouter>
+            );
+        };
+
+        it('renders back link to members list inside custom layout', () => {
+            renderFormLayout();
+            const backLinks = screen.getAllByText(/zpět na seznam/i);
+            expect(backLinks.length).toBeGreaterThan(0);
+            expect(backLinks[0].closest('a')).toHaveAttribute('href', '/members');
+        });
+
+        it('renders page title "Registrace nového člena" inside custom layout', () => {
+            renderFormLayout();
+            expect(screen.getByRole('heading', {level: 1, name: /registrace nového člena/i})).toBeInTheDocument();
         });
     });
 });
