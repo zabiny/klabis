@@ -410,6 +410,9 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                         {member.deactivationNote && (
                             <DetailRow label="Poznámka">{member.deactivationNote}</DetailRow>
                         )}
+                        {member.deactivatedBy && (
+                            <DetailRow label="Deaktivoval/a">{member.deactivatedBy}</DetailRow>
+                        )}
                     </Section>
                 )}
 

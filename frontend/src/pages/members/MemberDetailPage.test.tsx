@@ -297,6 +297,28 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('Osobní důvody')).toBeInTheDocument();
     });
 
+    it('shows deactivatedBy when present for inactive member', () => {
+        const deactivatedByUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+        const data = mockMemberDetailData({
+            active: false,
+            deactivatedAt: '2025-06-15',
+            deactivatedBy: deactivatedByUuid,
+        });
+        renderPage(createMockPageData(data));
+        expect(screen.getByText('Deaktivoval/a')).toBeInTheDocument();
+        expect(screen.getByText(deactivatedByUuid)).toBeInTheDocument();
+    });
+
+    it('does NOT show deactivatedBy label when deactivatedBy is absent', () => {
+        const data = mockMemberDetailData({
+            active: false,
+            deactivatedAt: '2025-06-15',
+            deactivatedBy: undefined,
+        });
+        renderPage(createMockPageData(data));
+        expect(screen.queryByText('Deaktivoval/a')).not.toBeInTheDocument();
+    });
+
     it('shows deactivation section when member is inactive even without deactivation note', () => {
         const data = mockMemberDetailData({
             active: false,
