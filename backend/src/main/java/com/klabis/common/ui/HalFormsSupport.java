@@ -42,13 +42,6 @@ public class HalFormsSupport {
         return DummyInvocationUtils.getLastInvocationAware(invocation);
     }
 
-    private static boolean isAuthorizedForInvocation(MethodInvocation invocation) {
-//        AuthorizationManager<MethodInvocation> mgr = new PreAuthorizeAuthorizationManager();
-//        AuthorizationDecision decision =
-//                mgr.check(() -> SecurityContextHolder.getContext().getAuthentication(), invocation);
-//        return decision != null && decision.isGranted();
-        return true;
-    }
 
     private static Optional<AffordanceModelFactory> getHalFormsModelFactory() {
         return SpringFactoriesLoader.loadFactories(AffordanceModelFactory.class, HalFormsSupport.class.getClassLoader())
@@ -220,10 +213,12 @@ public class HalFormsSupport {
             boolean isPayloadClassRecord = inputPayloadMetadata.getType() != null && inputPayloadMetadata.getType()
                     .isRecord();
 
-            return new KlabisHalFormsPropertyMetadataWrapper(metadata,
-                    getAnnotatedElementForProperty(inputPayloadMetadata, metadata).orElseThrow(),
-                    isPayloadClassRecord,
-                    isPropertyAuthorized(inputPayloadMetadata.getType(), metadata.getName()));
+            return getAnnotatedElementForProperty(inputPayloadMetadata, metadata)
+                    .map(annotatedElement -> (AffordanceModel.PropertyMetadata) new KlabisHalFormsPropertyMetadataWrapper(metadata,
+                            annotatedElement,
+                            isPayloadClassRecord,
+                            isPropertyAuthorized(inputPayloadMetadata.getType(), metadata.getName())))
+                    .orElse(metadata);
         }
 
         private boolean isPropertyDisplayed(AffordanceModel.PropertyMetadata propertyMetadata) {
@@ -412,7 +407,7 @@ public class HalFormsSupport {
             return propertyAnnotation == null || !HalForms.Access.NONE.equals(propertyAnnotation.access());
         }
 
-        private Class<?> getEncosedClass() {
+        private Class<?> getEnclosedClass() {
             return delegate.getType().getRawClass();
         }
 
@@ -424,7 +419,7 @@ public class HalFormsSupport {
 
             String result = delegate.getInputType();
             if (result == null) {
-                result = getTypeFromClass(getEncosedClass());
+                result = getTypeFromClass(getEnclosedClass());
             }
 
             if (Optional.class.getSimpleName().equalsIgnoreCase(result) || PatchField.class.getSimpleName().equalsIgnoreCase(result)) {
