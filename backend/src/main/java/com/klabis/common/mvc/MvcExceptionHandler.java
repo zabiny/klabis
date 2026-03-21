@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.*;
+import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -22,6 +23,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -146,9 +148,31 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
         var result = super.handleHandlerMethodValidationException(ex, headers, status, request);
 
         if (result.getBody() instanceof ProblemDetail problemDetail) {
-            if (!ex.getAllErrors().isEmpty()) {
-                problemDetail.setProperty("parameterErrors",
-                        ex.getParameterValidationResults().stream().map(this::toMessage).toList());
+            Map<String, String> fieldErrors = new HashMap<>();
+            List<String> parameterErrors = new java.util.ArrayList<>();
+
+            for (ParameterValidationResult pvr : ex.getParameterValidationResults()) {
+                List<? extends MessageSourceResolvable> resolvableErrors = pvr.getResolvableErrors();
+                boolean hasFieldErrors = resolvableErrors.stream().anyMatch(e -> e instanceof FieldError);
+
+                if (hasFieldErrors) {
+                    resolvableErrors.stream()
+                            .filter(e -> e instanceof FieldError)
+                            .map(e -> (FieldError) e)
+                            .forEach(fe -> fieldErrors.put(fe.getField(), fe.getDefaultMessage()));
+                } else {
+                    String message = toMessage(pvr);
+                    if (!message.isBlank()) {
+                        parameterErrors.add(message);
+                    }
+                }
+            }
+
+            if (!fieldErrors.isEmpty()) {
+                problemDetail.setProperty("fieldErrors", fieldErrors);
+            }
+            if (!parameterErrors.isEmpty()) {
+                problemDetail.setProperty("parameterErrors", parameterErrors);
             }
         }
 
