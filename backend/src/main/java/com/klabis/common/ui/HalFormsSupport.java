@@ -14,6 +14,8 @@ import org.springframework.hateoas.server.core.MethodInvocation;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +24,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -219,7 +222,8 @@ public class HalFormsSupport {
 
             return new KlabisHalFormsPropertyMetadataWrapper(metadata,
                     getAnnotatedElementForProperty(inputPayloadMetadata, metadata).orElseThrow(),
-                    isPayloadClassRecord);
+                    isPayloadClassRecord,
+                    isPropertyAuthorized(inputPayloadMetadata.getType(), metadata.getName()));
         }
 
         private boolean isPropertyDisplayed(AffordanceModel.PropertyMetadata propertyMetadata) {
@@ -227,6 +231,55 @@ public class HalFormsSupport {
                 return wrapper.isDisplayed();
             }
             return true;
+        }
+
+        /**
+         * Checks whether the current user is authorized to see the given property in the template.
+         * Looks for @PreAuthorize on interface methods matching the property name — the same
+         * annotations that control JSON field visibility for the response DTO.
+         */
+        private static boolean isPropertyAuthorized(Class<?> payloadType, String propertyName) {
+            if (payloadType == null) {
+                return true;
+            }
+            return Arrays.stream(payloadType.getInterfaces())
+                    .flatMap(iface -> Arrays.stream(iface.getMethods()))
+                    .filter(m -> m.getName().equals(propertyName) && m.getParameterCount() == 0)
+                    .filter(m -> m.isAnnotationPresent(PreAuthorize.class))
+                    .findFirst()
+                    .map(HalFormsInputPayloadMetadata::evaluatePreAuthorize)
+                    .orElse(true);
+        }
+
+        private static boolean evaluatePreAuthorize(Method method) {
+            PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
+            String expression = annotation.value();
+            org.springframework.security.core.Authentication authentication =
+                    SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return false;
+            }
+            try {
+                org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler handler =
+                        new org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler();
+                Object dummyTarget = new Object();
+                org.aopalliance.intercept.MethodInvocation dummyInvocation = new org.aopalliance.intercept.MethodInvocation() {
+                    @Override public Method getMethod() { return method; }
+                    @Override public Object[] getArguments() { return new Object[0]; }
+                    @Override public Object getThis() { return dummyTarget; }
+                    @Override public java.lang.reflect.AccessibleObject getStaticPart() { return method; }
+                    @Override public Object proceed() { return null; }
+                };
+                org.springframework.expression.EvaluationContext evalContext =
+                        handler.createEvaluationContext(authentication, dummyInvocation);
+                Boolean result = handler.getExpressionParser()
+                        .parseExpression(expression)
+                        .getValue(evalContext, Boolean.class);
+                return Boolean.TRUE.equals(result);
+            } catch (Exception e) {
+                LOG.debug("Failed to evaluate @PreAuthorize expression '{}' on method {}: {}", expression, method.getName(), e.getMessage());
+                return false;
+            }
         }
 
         private static Optional<AnnotatedElement> getAnnotatedElementForProperty(AffordanceModel.PayloadMetadata payloadMetadata, AffordanceModel.PropertyMetadata delegate) {
@@ -286,12 +339,14 @@ public class HalFormsSupport {
         private final AffordanceModel.PropertyMetadata delegate;
         private final HalForms propertyAnnotation;
         private final boolean defaultIsReadOnly;
+        private final boolean authorized;
 
-        public KlabisHalFormsPropertyMetadataWrapper(AffordanceModel.PropertyMetadata delegate, AnnotatedElement propertyElement, boolean isRecord) {
+        public KlabisHalFormsPropertyMetadataWrapper(AffordanceModel.PropertyMetadata delegate, AnnotatedElement propertyElement, boolean isRecord, boolean authorized) {
             this.delegate = delegate;
             this.defaultIsReadOnly = isRecord ? false : delegate.isReadOnly();
             this.propertyAnnotation = propertyElement.isAnnotationPresent(HalForms.class) ? propertyElement.getAnnotation(
                     HalForms.class) : null;
+            this.authorized = authorized;
         }
 
         @Override
@@ -351,6 +406,9 @@ public class HalFormsSupport {
         }
 
         public boolean isDisplayed() {
+            if (!authorized) {
+                return false;
+            }
             return propertyAnnotation == null || !HalForms.Access.NONE.equals(propertyAnnotation.access());
         }
 
