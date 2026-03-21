@@ -273,7 +273,8 @@ describe('KlabisFieldsFactory', () => {
             const result = klabisFieldsFactory('DeactivationReason', mockConf);
             expect(result).not.toBeNull();
 
-            const propWithOptions = result!.props.prop;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const propWithOptions = (result as any).props.prop;
             capturedProp = propWithOptions;
 
             expect(capturedProp.options).toBeDefined();
