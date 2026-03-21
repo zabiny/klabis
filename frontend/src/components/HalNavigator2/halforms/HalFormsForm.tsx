@@ -37,14 +37,16 @@ type YupSchemaMap = Record<string, Yup.AnySchema>;
 function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<Record<string, any>> {
     const shape: YupSchemaMap = {};
     template.properties.forEach((prop) => {
-        let validator: Yup.AnySchema = Yup.mixed().nullable();
+        let validator: Yup.AnySchema;
 
         if (prop.type === "number") {
-            validator = Yup.number().typeError(VALIDATION_MESSAGES.MUST_BE_NUMBER).nullable();
+            validator = Yup.number().typeError(VALIDATION_MESSAGES.MUST_BE_NUMBER);
         } else if (prop.type === "email") {
-            validator = Yup.string().email(VALIDATION_MESSAGES.INVALID_EMAIL).nullable();
+            validator = Yup.string().email(VALIDATION_MESSAGES.INVALID_EMAIL);
         } else if (prop.type === "text") {
-            validator = Yup.string().nullable();
+            validator = Yup.string();
+        } else {
+            validator = Yup.mixed();
         }
 
         if (prop.multiple) {
@@ -53,6 +55,8 @@ function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<Re
 
         if (prop.required) {
             validator = validator.required(VALIDATION_MESSAGES.REQUIRED_FIELD);
+        } else {
+            validator = validator.nullable();
         }
 
         if (prop.regex) {

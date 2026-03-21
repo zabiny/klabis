@@ -98,6 +98,56 @@ describe('HalFormsForm readOnly field rendering', () => {
     });
 });
 
+describe('createValidationSchema — required field validation', () => {
+    it('blocks submit when required text field is empty', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'firstName', type: 'text', required: true, prompt: 'Jméno'});
+        const template = createTemplate([prop]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('blocks submit when required email field is empty', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'email', type: 'email', required: true, prompt: 'Email'});
+        const template = createTemplate([prop]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('allows submit when required text field is filled', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'firstName', type: 'text', required: true, prompt: 'Jméno'});
+        const template = createTemplate([prop]);
+
+        render(<HalFormsForm data={{firstName: 'Jan'}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).toHaveBeenCalled();
+    });
+
+    it('does not require optional text field', async () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        const prop = createProperty({name: 'nickname', type: 'text', required: false});
+        const template = createTemplate([prop]);
+
+        render(<HalFormsForm data={{}} template={template} onSubmit={onSubmit} />);
+
+        await userEvent.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        expect(onSubmit).toHaveBeenCalled();
+    });
+});
+
 describe('HalFormsForm onSubmit value sanitization', () => {
     it('submits null instead of empty string for unfilled text field', async () => {
         const onSubmit = vi.fn().mockResolvedValue(undefined);
