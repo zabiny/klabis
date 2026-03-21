@@ -35,6 +35,12 @@ vi.mock('../../hooks/useFormCacheInvalidation', () => ({
     })),
 }));
 
+vi.mock('../../contexts/ToastContext', () => ({
+    useToast: vi.fn(() => ({
+        addToast: vi.fn(),
+    })),
+}));
+
 vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
         getUser: vi.fn().mockResolvedValue({
@@ -49,15 +55,7 @@ vi.mock('../../api/hateoas', () => ({
     isFormValidationError: vi.fn((error) => {
         return error && typeof error === 'object' && 'validationErrors' in error;
     }),
-}));
-
-vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({template, templateName, onClose}: any) => (
-        <div data-testid="hal-forms-display">
-            <h3>{template.title || templateName}</h3>
-            <button onClick={onClose} data-testid="close-form-button">Close</button>
-        </div>
-    ),
+    toFormValidationError: vi.fn((error) => error),
 }));
 
 vi.mock('../../components/UI/ModalOverlay.tsx', () => ({

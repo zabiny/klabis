@@ -1,16 +1,15 @@
-import {type ReactElement, type ReactNode, useState} from "react";
+import {type ReactElement, type ReactNode, useMemo, useState} from "react";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {Link} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {DetailRow, Skeleton} from "../../components/UI";
 import {Badge} from "../../components/UI/Badge";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
-import {type FormRenderHelpers, HalFormsForm} from "../../components/HalNavigator2/halforms";
-import {klabisFieldsFactory} from "../../components/KlabisFieldsFactory";
+import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
-import {useMemberEditForm} from "./useMemberEditForm";
+import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Banknote, Check, Pencil, Shield, ShieldCheck, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 
@@ -124,8 +123,7 @@ interface MemberDetailContentProps {
 }
 
 const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContentProps) => {
-    const editForm = useMemberEditForm(resourceData);
-    const {isEditing, startEditing, cancelEditing, handleSubmit, template} = editForm;
+    const [isEditing, setIsEditing] = useState(false);
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
 
     const member = resourceData;
@@ -137,19 +135,34 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const refereeLicense = member.refereeLicense;
     const showDeactivation = member.active === false;
 
+    const template: HalFormsTemplate | null = resourceData?._templates?.default ?? null;
     const viewMode = resolveViewMode(template);
     const adminEdit = isEditing && viewMode === 'admin';
     const selfEdit = isEditing && viewMode === 'self';
 
-    const enrichedTemplate = isEditing && template
-        ? (() => {
-            const base = enrichTemplateWithReadOnlyFields(template, resourceData);
-            return viewMode === 'self' ? forceSelfEditReadOnlyFields(base) : base;
-        })()
-        : null;
-    const enrichedFieldNames = enrichedTemplate
-        ? new Set(enrichedTemplate.properties.map(p => p.name))
-        : new Set<string>();
+    const enrichedTemplate = useMemo(() => {
+        if (!isEditing || !template) return null;
+        const base = enrichTemplateWithReadOnlyFields(template, resourceData);
+        return viewMode === 'self' ? forceSelfEditReadOnlyFields(base) : base;
+    }, [isEditing, template, resourceData, viewMode]);
+
+    const enrichedFieldNames = useMemo(() =>
+            enrichedTemplate
+                ? new Set(enrichedTemplate.properties.map(p => p.name))
+                : new Set<string>(),
+        [enrichedTemplate]);
+
+    const startEditing = () => setIsEditing(true);
+    const cancelEditing = () => setIsEditing(false);
+
+    const originalEditableFieldNames = useMemo(() =>
+            template ? new Set(template.properties.map(p => p.name)) : new Set<string>(),
+        [template]);
+
+    const postprocessPayload = (payload: Record<string, unknown>): Record<string, unknown> =>
+        Object.fromEntries(
+            Object.entries(payload).filter(([key]) => originalEditableFieldNames.has(key))
+        );
 
     const renderContent = (helpers?: FormRenderHelpers) => {
         const ri = (name: string): ReactNode =>
@@ -428,15 +441,17 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                 memberRegistrationNumber={member.registrationNumber ?? undefined}
             />
             {isEditing && enrichedTemplate ? (
-                <HalFormsForm
-                    data={resourceData as Record<string, unknown>}
+                <HalFormDisplay
                     template={enrichedTemplate}
-                    onSubmit={handleSubmit}
-                    fieldsFactory={klabisFieldsFactory}
+                    templateName="default"
+                    resourceData={resourceData as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={cancelEditing}
+                    postprocessPayload={postprocessPayload}
+                    successMessage="Úspěšně uloženo"
                     submitButtonLabel="Uložit změny"
                     submitIcon={<Check className="w-4 h-4"/>}
-                    isSubmitting={editForm.isSubmitting}
-                    renderForm={(helpers) => renderContent(helpers) as ReactElement}
+                    customLayout={renderContent}
                 />
             ) : renderContent() as ReactElement}
         </>

@@ -36,6 +36,10 @@ export interface HalFormDisplayProps {
     successMessage?: string;
     /** Optional custom field factory (defaults to klabisFieldsFactory) */
     fieldsFactory?: HalFormFieldFactory;
+    /** Optional label for the submit button (defaults to "Odeslat") */
+    submitButtonLabel?: string;
+    /** Optional icon for the submit button */
+    submitIcon?: ReactNode;
 }
 
 
@@ -45,7 +49,6 @@ export interface HalFormDisplayProps {
  */
 export const HalFormDisplay = ({
                                    template,
-                                   templateName,
                                    resourceData,
                                    pathname,
                                    onClose,
@@ -54,6 +57,8 @@ export const HalFormDisplay = ({
                                    postprocessPayload,
                                    successMessage,
                                    fieldsFactory,
+                                   submitButtonLabel,
+                                   submitIcon,
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
     const {invalidateAllCaches} = useFormCacheInvalidation();
@@ -122,6 +127,8 @@ export const HalFormDisplay = ({
                     isSubmitting={isSubmitting}
                     fieldsFactory={fieldsFactory ?? klabisFieldsFactory}
                     serverValidationErrors={submitError && isFormValidationError(submitError) ? submitError.validationErrors : undefined}
+                    submitButtonLabel={submitButtonLabel}
+                    submitIcon={submitIcon}
                     {...(customLayout
                         ? (typeof customLayout === 'function'
                             ? {renderForm: customLayout as RenderFormCallback}
