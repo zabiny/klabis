@@ -905,7 +905,7 @@ The member details response SHALL include hypermedia links following HAL+FORMS s
 - **THEN** the response SHALL include a `permissions` link
 - **AND** the link SHALL point to /api/users/{id}/permissions (where id = member.id = userId)
 - **AND** the link SHALL use the rel "permissions"
-- **AND** the link SHALL enable navigation to user permissions management
+- **AND** the permissions management action is accessible directly from the member detail context without navigating to a separate page
 
 #### Scenario: Permissions link excluded for users without permission
 

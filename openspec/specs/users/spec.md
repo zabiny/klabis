@@ -67,15 +67,15 @@ future.**
 **Changed from previous version**: Authorization checks now query UserPermissions aggregate instead of User entity.
 Authorization is now context-aware (actor, resourceOwner, requiredAuthority).
 
-#### Scenario: User with required authority accesses endpoint
+#### Scenario: User with required authority accesses member write endpoint
 
-- **WHEN** authenticated user with MEMBERS:CREATE authority calls POST /api/members
+- **WHEN** authenticated user with MEMBERS:MANAGE authority calls POST /api/members
 - **THEN** authorization check passes (authority from UserPermissions)
 - **AND** endpoint handler executes
 
-#### Scenario: User without required authority denied access
+#### Scenario: User without required authority denied access to member write endpoint
 
-- **WHEN** authenticated user without MEMBERS:CREATE authority calls POST /api/members
+- **WHEN** authenticated user without MEMBERS:MANAGE authority calls POST /api/members
 - **THEN** authorization check fails
 - **AND** system returns HTTP 403 Forbidden with ProblemDetail
 
@@ -119,12 +119,12 @@ authorization model.
 #### Scenario: Valid authorities list
 
 - **GIVEN** the system defines these valid authorities:
-    - MEMBERS:CREATE
+    - MEMBERS:MANAGE
     - MEMBERS:READ
-    - MEMBERS:UPDATE
-    - MEMBERS:DELETE
     - MEMBERS:PERMISSIONS
     - EVENTS:MANAGE
+    - EVENTS:READ
+    - CALENDAR:MANAGE
 - **WHEN** user requests to set permissions with any combination of these authorities
 - **THEN** validation passes
 
@@ -210,7 +210,7 @@ The system SHALL issue access tokens (15 min TTL) and refresh tokens (30 day TTL
 
 - **WHEN** OAuth2 client requests token with scope "members.write"
 - **THEN** access token includes scope claim
-- **AND** scope mapped to authorities (members.write → MEMBERS:CREATE, MEMBERS:UPDATE, MEMBERS:DELETE)
+- **AND** scope mapped to authority MEMBERS:MANAGE
 - **AND** endpoint authorization uses authorities from both roles and scopes
 
 ### Requirement: OAuth2 Client Registration
@@ -384,7 +384,7 @@ The system SHALL provision an admin user with full permissions upon database ini
 #### Scenario: Admin user authenticates and creates first member
 
 - **WHEN** admin user authenticates with admin / admin123
-- **THEN** access token issued with MEMBERS:CREATE authority
+- **THEN** access token issued with MEMBERS:MANAGE authority
 - **AND** admin can call POST /api/members to create first member
 - **AND** created member can have different registrationNumber than admin user
 
