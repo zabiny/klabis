@@ -1,14 +1,14 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.patch.PatchField;
-import com.klabis.common.validation.ValidPatchFieldNotBlank;
-import com.klabis.common.validation.ValidPatchFieldPattern;
-import com.klabis.common.validation.ValidPatchFieldSize;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
@@ -49,31 +49,32 @@ import java.time.LocalDate;
  */
 @RecordBuilder
 public record UpdateMemberRequest(
-        @ValidPatchFieldSize(max = 255, message = "Email must not exceed 255 characters")
+        @Size(max = 255, message = "Email must not exceed 255 characters")
         PatchField<String> email,
 
-        @ValidPatchFieldSize(max = 50, message = "Phone must not exceed 50 characters")
+        @Size(max = 50, message = "Phone must not exceed 50 characters")
         PatchField<String> phone,
 
+        @Valid
         PatchField<AddressRequest> address,
 
-        @ValidPatchFieldNotBlank(message = "First name must not be blank")
-        @ValidPatchFieldSize(max = 100, message = "First name must not exceed 100 characters")
+        @NotBlank(message = "First name must not be blank")
+        @Size(max = 100, message = "First name must not exceed 100 characters")
         PatchField<String> firstName,
 
-        @ValidPatchFieldNotBlank(message = "Last name must not be blank")
-        @ValidPatchFieldSize(max = 100, message = "Last name must not exceed 100 characters")
+        @NotBlank(message = "Last name must not be blank")
+        @Size(max = 100, message = "Last name must not exceed 100 characters")
         PatchField<String> lastName,
 
         PatchField<LocalDate> dateOfBirth,
 
         PatchField<Gender> gender,
 
-        @ValidPatchFieldPattern(regexp = ValidationPatterns.NUMERIC_ONLY_PATTERN, message = "Chip number must contain only digits")
-        @ValidPatchFieldSize(max = 50, message = "Chip number must not exceed 50 characters")
+        @Pattern(regexp = ValidationPatterns.NUMERIC_ONLY_PATTERN, message = "Chip number must contain only digits")
+        @Size(max = 50, message = "Chip number must not exceed 50 characters")
         PatchField<String> chipNumber,
 
-        @ValidPatchFieldSize(max = 3, message = "Nationality must not exceed 3 characters")
+        @Size(max = 3, message = "Nationality must not exceed 3 characters")
         PatchField<String> nationality,
 
         @Valid
@@ -87,12 +88,12 @@ public record UpdateMemberRequest(
 
         PatchField<DrivingLicenseGroup> drivingLicenseGroup,
 
-        @ValidPatchFieldSize(max = 500, message = "Dietary restrictions must not exceed 500 characters")
+        @Size(max = 500, message = "Dietary restrictions must not exceed 500 characters")
         PatchField<String> dietaryRestrictions,
 
         PatchField<String> birthNumber,
 
-        @ValidPatchFieldSize(max = 50, message = "Bank account number must not exceed 50 characters")
+        @Size(max = 50, message = "Bank account number must not exceed 50 characters")
         PatchField<String> bankAccountNumber,
 
         PatchField<GuardianDTO> guardian
