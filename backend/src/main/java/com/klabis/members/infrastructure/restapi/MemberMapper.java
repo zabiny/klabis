@@ -17,6 +17,7 @@ import java.time.LocalDate;
 interface MemberMapper {
 
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
+    @Mapping(target = "email", expression = "java(member.getEmail() != null ? member.getEmail().value() : null)")
     MemberSummaryResponse toSummaryResponse(Member member);
 
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")

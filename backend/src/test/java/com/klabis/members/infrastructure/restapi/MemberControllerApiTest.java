@@ -1161,6 +1161,143 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(
                             "Invalid sort field")));
         }
+
+        @Test
+        @DisplayName("admin (MEMBERS:MANAGE) should see email and active in summary items")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void adminShouldSeeEmailAndActiveInSummaryItems() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withEmail("jan.novak@example.com")
+                    .withActive(true)
+                    .build();
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].email").value("jan.novak@example.com"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].active").value(true));
+        }
+
+        @Test
+        @DisplayName("non-admin (only MEMBERS:READ) should not see email and active in summary items")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void nonAdminShouldNotSeeEmailAndActiveInSummaryItems() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withEmail("jan.novak@example.com")
+                    .withActive(true)
+                    .build();
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].email").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].active").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: admin should see suspendMember template on active summary item")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void adminShouldSeeSuspendMemberTemplateOnActiveSummaryItem() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.suspendMember.method").value("POST"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.default.method").value("PATCH"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.resumeMember").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: admin should see resumeMember template on inactive summary item")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void adminShouldSeeResumeMemberTemplateOnInactiveSummaryItem() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(false)
+                    .build();
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.resumeMember.method").value("POST"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.default.method").value("PATCH"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.suspendMember").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: non-admin should not see action templates on summary items")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void nonAdminShouldNotSeeActionTemplatesOnSummaryItems() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: user with MEMBERS:PERMISSIONS should see permissions link on active summary item")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_PERMISSIONS})
+        void userWithPermissionsAuthorityShouldSeePermissionsLinkOnActiveSummaryItem() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.permissions.href")
+                            .value("http://localhost/api/users/" + memberId + "/permissions"));
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: user with MEMBERS:PERMISSIONS should not see permissions link on inactive summary item")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_PERMISSIONS})
+        void userWithPermissionsAuthorityShouldNotSeePermissionsLinkOnInactiveSummaryItem() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(false)
+                    .build();
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.permissions").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: user without MEMBERS:PERMISSIONS should not see permissions link on summary items")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void userWithoutPermissionsAuthorityShouldNotSeePermissionsLinkOnSummaryItems() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
+            when(memberRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.permissions").doesNotExist());
+        }
     }
 
     @Nested

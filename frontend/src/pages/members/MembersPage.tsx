@@ -1,6 +1,6 @@
 import {type ReactElement, useState} from "react";
 import {Link} from "react-router-dom";
-import type {EntityModel, HalFormsTemplate} from "../../api";
+import type {EntityModel, HalFormsTemplate, HalResourceLinks} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
@@ -10,18 +10,18 @@ import {ModalOverlay} from "../../components/UI";
 import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
-interface MemberSummaryData extends EntityModel<{
+type MemberSummaryData = EntityModel<{
     id: string,
     registrationNumber: string,
     lastName: string,
     firstName: string,
     email: string | null,
     active: boolean | null,
-}> {
-    _templates?: {
-        [name: string]: HalFormsTemplate;
-    };
-}
+}> & {
+    _templates?: Record<string, HalFormsTemplate>;
+    _links: Record<string, HalResourceLinks>;
+    [key: string]: unknown;
+};
 
 interface MemberActionModalState {
     member: MemberSummaryData;
@@ -48,8 +48,9 @@ export const MembersPage = (): ReactElement => {
     const openPermissionsDialog = (member: MemberSummaryData) => {
         const permissionsLink = member._links?.permissions;
         if (!permissionsLink) return;
-        const permissionsUrl = Array.isArray(permissionsLink) ? permissionsLink[0].href : (permissionsLink as {href: string}).href;
-        setPermissionsDialog({member, permissionsUrl});
+        const link = Array.isArray(permissionsLink) ? permissionsLink[0] : permissionsLink;
+        if (!link?.href) return;
+        setPermissionsDialog({member, permissionsUrl: link.href});
     };
 
     const renderActionsCell = ({item}: TableCellRenderProps) => {

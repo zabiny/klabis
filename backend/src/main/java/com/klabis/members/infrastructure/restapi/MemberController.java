@@ -183,16 +183,35 @@ class MemberController {
 
         PagedModel<EntityModel<MemberSummaryResponse>> pagedModel = pagedResourcesAssembler.toModel(
                 memberPage.map(memberMapper::toSummaryResponse),
-                response -> {
-                    EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
-                    model.add(klabisLinkTo(methodOn(MemberController.class).getMember(response.id().uuid(), null)).withSelfRel());
-                    return model;
-                }
+                response -> buildSummaryModel(response, currentUser)
         );
 
         pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> buildCollectionSelfLink(pageable, currentUser));
 
         return ResponseEntity.ok(pagedModel);
+    }
+
+    private EntityModel<MemberSummaryResponse> buildSummaryModel(MemberSummaryResponse response, CurrentUserData currentUser) {
+        UUID memberId = response.id().uuid();
+        EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
+
+        if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
+            var selfLink = klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).withSelfRel()
+                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
+            boolean isActive = Boolean.TRUE.equals(response.active());
+            if (isActive) {
+                selfLink = selfLink.andAffordances(
+                        klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
+            } else {
+                selfLink = selfLink.andAffordances(
+                        klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
+            }
+            model.add(selfLink);
+        } else {
+            model.add(klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).withSelfRel());
+        }
+
+        return model;
     }
 
     private Link buildCollectionSelfLink(Pageable pageable, CurrentUserData currentUser) {
