@@ -72,9 +72,12 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 - Annotations (`@PreAuthorize`, `@HasAuthority`, `@HandleAuthorizationDenied`) go directly on record components — no interface required
 - `@JsonInclude(NON_NULL)` + `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` on the record class acts as default deny handler
 - `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` on a component overrides the class-level handler and shows `"***"`
+- Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1 — use `RecordComponent.getAccessor().getAnnotation(...)` for discovery
 - Module registered via `@JsonComponent` on `FieldSecurityJacksonModule` — auto-discovered in both `@WebMvcTest` and full `@SpringBootTest`
 - `@OwnerVisible` + `@OwnerId` for ownership-based field/method access (OR semantics with authority)
 - `OwnershipResolver` compares owner ID with `KlabisJwtAuthenticationToken.getMemberIdUuid()` via `ConversionService`
+- `OwnershipResolver` is lazy-resolved from `ApplicationContext` in `HasAuthorityMethodInterceptor` — eager injection causes `No ServletContext set` startup error
+- Ownership tests require `@WithKlabisMockUser(memberId = "...")` — `@WithMockUser` creates plain token without `memberIdUuid`
 - See `FieldLevelAuthorizationTest` for reference implementation
 
 **Gradle Optimization**
