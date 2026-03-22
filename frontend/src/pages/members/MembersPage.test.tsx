@@ -272,7 +272,7 @@ describe('MembersPage — row data rendering', () => {
 
         const editButton = screen.getByRole('button', {name: /upravit/i});
         fireEvent.click(editButton);
-        expect(navigateToResource).toHaveBeenCalledWith(member);
+        expect(navigateToResource).toHaveBeenCalledWith(member, {state: {editing: true}});
     });
 
     it('clicking shield icon opens PermissionsDialog', () => {
