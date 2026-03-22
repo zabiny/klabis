@@ -734,8 +734,8 @@ class MemberTest {
     }
 
     @Nested
-    @DisplayName("handle(SelfUpdate) command")
-    class HandleSelfUpdate {
+    @DisplayName("handle(UpdateMember) command — owner-editable fields")
+    class HandleUpdateMemberOwnerFields {
 
         private Member createAdultMember() {
             return aMember()
@@ -757,7 +757,7 @@ class MemberTest {
             Member member = createAdultMember();
             EmailAddress newEmail = EmailAddress.of("new@example.com");
 
-            member.handle(MemberSelfUpdateBuilder.builder().email(newEmail).build());
+            member.handle(MemberUpdateMemberBuilder.builder().email(newEmail).build());
 
             assertThat(member.getEmail()).isEqualTo(newEmail);
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
@@ -769,7 +769,7 @@ class MemberTest {
             Member member = createAdultMember();
             PhoneNumber newPhone = PhoneNumber.of("+420999888777");
 
-            member.handle(MemberSelfUpdateBuilder.builder().phone(newPhone).build());
+            member.handle(MemberUpdateMemberBuilder.builder().phone(newPhone).build());
 
             assertThat(member.getPhone()).isEqualTo(newPhone);
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
@@ -781,7 +781,7 @@ class MemberTest {
             Member member = createAdultMember();
             Address newAddress = Address.of("Nová 1", "Brno", "60200", "CZ");
 
-            member.handle(MemberSelfUpdateBuilder.builder().address(newAddress).build());
+            member.handle(MemberUpdateMemberBuilder.builder().address(newAddress).build());
 
             assertThat(member.getAddress().street()).isEqualTo("Nová 1");
         }
@@ -791,17 +791,17 @@ class MemberTest {
         void shouldUpdateDietaryRestrictionsWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberSelfUpdateBuilder.builder().dietaryRestrictions("Vegan").build());
+            member.handle(MemberUpdateMemberBuilder.builder().dietaryRestrictions("Vegan").build());
 
             assertThat(member.getDietaryRestrictions()).isEqualTo("Vegan");
         }
 
         @Test
-        @DisplayName("should not change firstName lastName dateOfBirth or gender")
-        void shouldNotChangeAdminOnlyFields() {
+        @DisplayName("should preserve firstName lastName dateOfBirth and gender when not provided")
+        void shouldPreservePersonalInfoFieldsWhenNotProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberSelfUpdateBuilder.builder()
+            member.handle(MemberUpdateMemberBuilder.builder()
                     .email(EmailAddress.of("changed@example.com"))
                     .build());
 
@@ -816,15 +816,15 @@ class MemberTest {
         void shouldPreserveExistingValuesWhenNullPassed() {
             Member member = createAdultMember();
 
-            member.handle(MemberSelfUpdateBuilder.builder().build());
+            member.handle(MemberUpdateMemberBuilder.builder().build());
 
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
         }
 
         @Test
-        @DisplayName("should reject self-update on minor without guardian")
-        void shouldRejectSelfUpdateOnMinorWithoutGuardian() {
+        @DisplayName("should reject update on minor without guardian")
+        void shouldRejectUpdateOnMinorWithoutGuardian() {
             Member minorWithoutGuardian = aMember()
                     .withRegistrationNumber("ZBM1002")
                     .withName("Anna", "Malá")
@@ -837,7 +837,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> minorWithoutGuardian.handle(MemberSelfUpdateBuilder.builder()
+            assertThatThrownBy(() -> minorWithoutGuardian.handle(MemberUpdateMemberBuilder.builder()
                     .address(Address.of("Nová 5", "Brno", "60200", "CZ"))
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -847,8 +847,8 @@ class MemberTest {
     }
 
     @Nested
-    @DisplayName("handle(UpdateMemberByAdmin) command")
-    class HandleUpdateMemberByAdmin {
+    @DisplayName("handle(UpdateMember) command — admin-only fields")
+    class HandleUpdateMemberAdminFields {
 
         private Member createAdultMember() {
             return aMember()
@@ -869,7 +869,7 @@ class MemberTest {
         void shouldUpdateFirstNameWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberByAdminBuilder.builder().firstName("Petr").build());
+            member.handle(MemberUpdateMemberBuilder.builder().firstName("Petr").build());
 
             assertThat(member.getFirstName()).isEqualTo("Petr");
             assertThat(member.getLastName()).isEqualTo("Novák");
@@ -880,7 +880,7 @@ class MemberTest {
         void shouldUpdateLastNameWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberByAdminBuilder.builder().lastName("Svoboda").build());
+            member.handle(MemberUpdateMemberBuilder.builder().lastName("Svoboda").build());
 
             assertThat(member.getLastName()).isEqualTo("Svoboda");
             assertThat(member.getFirstName()).isEqualTo("Jan");
@@ -892,7 +892,7 @@ class MemberTest {
             Member member = createAdultMember();
             LocalDate newDob = LocalDate.of(1985, 3, 20);
 
-            member.handle(MemberUpdateMemberByAdminBuilder.builder().dateOfBirth(newDob).build());
+            member.handle(MemberUpdateMemberBuilder.builder().dateOfBirth(newDob).build());
 
             assertThat(member.getDateOfBirth()).isEqualTo(newDob);
         }
@@ -902,19 +902,19 @@ class MemberTest {
         void shouldUpdateGenderWhenProvided() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberByAdminBuilder.builder().gender(Gender.FEMALE).build());
+            member.handle(MemberUpdateMemberBuilder.builder().gender(Gender.FEMALE).build());
 
             assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
         }
 
         @Test
-        @DisplayName("should update all self-editable fields when provided")
-        void shouldUpdateAllSelfEditableFields() {
+        @DisplayName("should update all owner-editable fields when provided")
+        void shouldUpdateAllOwnerEditableFields() {
             Member member = createAdultMember();
             EmailAddress newEmail = EmailAddress.of("admin.set@example.com");
             PhoneNumber newPhone = PhoneNumber.of("+420111222333");
 
-            member.handle(MemberUpdateMemberByAdminBuilder.builder()
+            member.handle(MemberUpdateMemberBuilder.builder()
                     .email(newEmail)
                     .phone(newPhone)
                     .build());
@@ -928,7 +928,7 @@ class MemberTest {
         void shouldPreserveUnchangedFieldsWhenUpdatingAdminOnlyFields() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberByAdminBuilder.builder()
+            member.handle(MemberUpdateMemberBuilder.builder()
                     .firstName("Petr")
                     .lastName("Svoboda")
                     .build());
@@ -944,7 +944,7 @@ class MemberTest {
             Member member = createAdultMember();
             LocalDate minorDateOfBirth = LocalDate.now().minusYears(10);
 
-            assertThatThrownBy(() -> member.handle(MemberUpdateMemberByAdminBuilder.builder()
+            assertThatThrownBy(() -> member.handle(MemberUpdateMemberBuilder.builder()
                     .dateOfBirth(minorDateOfBirth)
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -966,7 +966,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> member.handle(MemberUpdateMemberByAdminBuilder.builder()
+            assertThatThrownBy(() -> member.handle(MemberUpdateMemberBuilder.builder()
                     .birthNumber(BirthNumber.of("9005151234"))
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -978,7 +978,7 @@ class MemberTest {
         void shouldAllowSettingBirthNumberOnCzechMember() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberByAdminBuilder.builder()
+            member.handle(MemberUpdateMemberBuilder.builder()
                     .birthNumber(BirthNumber.of("9005151234"))
                     .build());
 
@@ -990,7 +990,7 @@ class MemberTest {
         void shouldAllowUpdateWhenGuardianProvidesEmailCoverage() {
             Member member = createAdultMember();
 
-            member.handle(MemberUpdateMemberByAdminBuilder.builder()
+            member.handle(MemberUpdateMemberBuilder.builder()
                     .email(EmailAddress.of("temp@example.com"))
                     .guardian(new GuardianInformation("Jane", "Doe", "PARENT",
                             EmailAddress.of("jane@example.com"), PhoneNumber.of("+420111222333")))
@@ -1000,8 +1000,8 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("should reject unrelated admin update on existing minor without guardian")
-        void shouldRejectUnrelatedAdminUpdateOnExistingMinorWithoutGuardian() {
+        @DisplayName("should reject update on existing minor without guardian")
+        void shouldRejectUpdateOnExistingMinorWithoutGuardian() {
             // Minor reconstructed without guardian (data integrity gap from legacy import)
             Member minorWithoutGuardian = aMember()
                     .withRegistrationNumber("ZBM1001")
@@ -1015,7 +1015,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> minorWithoutGuardian.handle(MemberUpdateMemberByAdminBuilder.builder()
+            assertThatThrownBy(() -> minorWithoutGuardian.handle(MemberUpdateMemberBuilder.builder()
                     .chipNumber("NEW_CHIP")
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -1091,15 +1091,15 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("SelfUpdate that sets new email when guardian exists should succeed")
-        void selfUpdateSettingNewEmailWhenGuardianExistsShouldSucceed() {
+        @DisplayName("update that sets new email when guardian exists should succeed")
+        void updateSettingNewEmailWhenGuardianExistsShouldSucceed() {
             Member member = aMember()
                     .withEmail("jan@example.com")
                     .withPhone("+420123456789")
                     .withGuardian(aGuardian())
                     .build();
 
-            member.handle(MemberSelfUpdateBuilder.builder()
+            member.handle(MemberUpdateMemberBuilder.builder()
                     .email(EmailAddress.of("new@example.com"))
                     .build());
 
@@ -1107,8 +1107,8 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("admin update that would leave no email when no guardian should fail")
-        void adminUpdateLeavingNoEmailAndNoGuardianShouldFail() {
+        @DisplayName("update that would leave no email when no guardian should fail")
+        void updateLeavingNoEmailAndNoGuardianShouldFail() {
             EmailAddress noEmail = null;
             Member memberWithNoEmail = aMember()
                     .withEmail(noEmail)
@@ -1116,14 +1116,14 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> memberWithNoEmail.handle(MemberUpdateMemberByAdminBuilder.builder().build()))
+            assertThatThrownBy(() -> memberWithNoEmail.handle(MemberUpdateMemberBuilder.builder().build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
         }
 
         @Test
-        @DisplayName("admin update that would leave no phone when no guardian should fail")
-        void adminUpdateLeavingNoPhoneAndNoGuardianShouldFail() {
+        @DisplayName("update that would leave no phone when no guardian should fail")
+        void updateLeavingNoPhoneAndNoGuardianShouldFail() {
             PhoneNumber noPhone = null;
             Member memberWithNoPhone = aMember()
                     .withEmail("jan@example.com")
@@ -1131,7 +1131,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> memberWithNoPhone.handle(MemberUpdateMemberByAdminBuilder.builder().build()))
+            assertThatThrownBy(() -> memberWithNoPhone.handle(MemberUpdateMemberBuilder.builder().build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
         }
@@ -1146,7 +1146,7 @@ class MemberTest {
                     .withGuardian(aGuardian())
                     .build();
 
-            member.handle(MemberSelfUpdateBuilder.builder().build());
+            member.handle(MemberUpdateMemberBuilder.builder().build());
 
             assertThat(member.getGuardian()).isNotNull();
         }

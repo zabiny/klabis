@@ -88,32 +88,16 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             UserId registeredBy
     ) {}
 
-    @RecordBuilder
-    public record SelfUpdate(
-            EmailAddress email,
-            PhoneNumber phone,
-            Address address,
-            String chipNumber,
-            String nationality,
-            BankAccountNumber bankAccountNumber,
-            IdentityCard identityCard,
-            DrivingLicenseGroup drivingLicenseGroup,
-            MedicalCourse medicalCourse,
-            TrainerLicense trainerLicense,
-            RefereeLicense refereeLicense,
-            String dietaryRestrictions,
-            GuardianInformation guardian
-    ) {}
-
     /**
-     * Command for an administrator updating any member's profile.
+     * Command for updating a member's profile.
      * <p>
-     * Includes all self-editable fields plus fields that are restricted to admins:
-     * firstName, lastName, dateOfBirth, gender, and birthNumber.
+     * Covers all updatable fields. Authorization at the API layer determines which fields
+     * a given caller is permitted to set — admin-only fields (firstName, lastName, dateOfBirth,
+     * gender, birthNumber) are blocked for non-admins before the command reaches the domain.
      * Fields set to null retain the current value (PATCH semantics).
      */
     @RecordBuilder
-    public record UpdateMemberByAdmin(
+    public record UpdateMember(
             EmailAddress email,
             PhoneNumber phone,
             Address address,
@@ -522,56 +506,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
     // ========== Command Handlers (Domain Methods) ==========
 
-    public void handle(SelfUpdate command) {
-        EmailAddress newEmail = command.email() != null ? command.email() : this.email;
-        PhoneNumber newPhone = command.phone() != null ? command.phone() : this.phone;
-        Address newAddress = command.address() != null ? command.address() : this.address;
-        GuardianInformation newGuardian = command.guardian() != null ? command.guardian() : this.guardian;
-
-        validateContactInformation(newEmail, newPhone, newGuardian);
-
-        String oldNationality = this.personalInformation.getNationalityCode();
-        String newNationality = command.nationality() != null ? command.nationality() : oldNationality;
-        PersonalInformation newPersonalInfo = PersonalInformation.of(
-                this.personalInformation.getFirstName(),
-                this.personalInformation.getLastName(),
-                this.personalInformation.getDateOfBirth(),
-                newNationality,
-                this.personalInformation.getGender()
-        );
-
-        validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
-
-        this.email = newEmail;
-        this.phone = newPhone;
-        this.address = newAddress;
-        this.guardian = newGuardian;
-        this.personalInformation = newPersonalInfo;
-
-        if (command.chipNumber() != null) this.chipNumber = command.chipNumber();
-        if (command.bankAccountNumber() != null) this.bankAccountNumber = command.bankAccountNumber();
-        if (command.identityCard() != null) this.identityCard = command.identityCard();
-        if (command.drivingLicenseGroup() != null) this.drivingLicenseGroup = command.drivingLicenseGroup();
-        if (command.medicalCourse() != null) this.medicalCourse = command.medicalCourse();
-        if (command.trainerLicense() != null) this.trainerLicense = command.trainerLicense();
-        if (command.refereeLicense() != null) this.refereeLicense = command.refereeLicense();
-        if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
-
-        if (!Nationality.of(oldNationality).isCzech() || Nationality.of(newNationality).isCzech()) return;
-        if (this.birthNumber != null) this.birthNumber = null;
-    }
-
-    /**
-     * Handles UpdateMemberByAdmin command.
-     * <p>
-     * Applies changes to all member fields, including those restricted to administrators
-     * (firstName, lastName, dateOfBirth, gender, birthNumber).
-     * Validates birth number against the resulting nationality.
-     *
-     * @param command the admin update command
-     * @throws IllegalArgumentException if validation fails
-     */
-    public void handle(UpdateMemberByAdmin command) {
+    public void handle(UpdateMember command) {
         EmailAddress newEmail = command.email() != null ? command.email() : this.email;
         PhoneNumber newPhone = command.phone() != null ? command.phone() : this.phone;
         Address newAddress = command.address() != null ? command.address() : this.address;
