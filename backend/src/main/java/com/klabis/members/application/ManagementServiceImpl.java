@@ -37,21 +37,11 @@ public class ManagementServiceImpl implements ManagementService {
 
     @Transactional
     @Override
-    public Member updateMember(MemberId memberId, Member.SelfUpdate command) {
+    public Member updateMember(MemberId memberId, Member.UpdateMember command) {
         Member member = loadMember(memberId);
         member.handle(command);
         Member saved = memberRepository.save(member);
-        log.info("Member self-updated: memberId={}", memberId);
-        return saved;
-    }
-
-    @Transactional
-    @Override
-    public Member updateMember(MemberId memberId, Member.UpdateMemberByAdmin command) {
-        Member member = loadMember(memberId);
-        member.handle(command);
-        Member saved = memberRepository.save(member);
-        log.info("Member updated by admin: memberId={}", memberId);
+        log.info("Member updated: memberId={}", memberId);
         return saved;
     }
 
@@ -102,11 +92,14 @@ public class ManagementServiceImpl implements ManagementService {
 
     @Transactional
     @Override
-    public Member getMemberAndRecordView(MemberId memberId, UserId viewedBy) {
+    public Member getMemberAndRecordView(MemberId memberId, UserId viewedBy, boolean canManageMembers) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
-        if (member.getBirthNumber() != null) {
+        boolean isOwner = member.getUserId().equals(viewedBy);
+        boolean canSeeBirthNumber = canManageMembers || isOwner;
+
+        if (member.getBirthNumber() != null && canSeeBirthNumber) {
             eventPublisher.publishEvent(BirthNumberAccessedEvent.viewed(viewedBy, memberId));
         }
 

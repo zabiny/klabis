@@ -8,8 +8,7 @@ import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
-import com.klabis.members.domain.MemberUpdateMemberByAdminBuilder;
-import com.klabis.members.domain.MemberSelfUpdateBuilder;
+import com.klabis.members.domain.MemberUpdateMemberBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -67,13 +66,13 @@ class ManagementServiceTest {
     }
 
     @Nested
-    @DisplayName("Member Update — Admin")
-    class AdminMemberUpdateTests {
+    @DisplayName("Member Update Tests")
+    class MemberUpdateTests {
 
         @Test
-        @DisplayName("should update member birth number via admin command")
-        void shouldUpdateMemberWithBirthNumberViaAdminCommand() {
-            var command = MemberUpdateMemberByAdminBuilder.builder()
+        @DisplayName("should update member birth number via update command")
+        void shouldUpdateMemberWithBirthNumber() {
+            var command = MemberUpdateMemberBuilder.builder()
                     .bankAccountNumber(BankAccountNumber.of("12345/5678"))
                     .birthNumber(BirthNumber.of("900101/1234"))
                     .build();
@@ -88,9 +87,9 @@ class ManagementServiceTest {
         }
 
         @Test
-        @DisplayName("should update member bank account number via admin command")
-        void shouldUpdateMemberWithBankAccountNumberViaAdminCommand() {
-            var command = MemberUpdateMemberByAdminBuilder.builder()
+        @DisplayName("should update member bank account number via update command")
+        void shouldUpdateMemberWithBankAccountNumber() {
+            var command = MemberUpdateMemberBuilder.builder()
                     .bankAccountNumber(BankAccountNumber.of("12345/5678"))
                     .build();
 
@@ -102,16 +101,11 @@ class ManagementServiceTest {
             assertThat(result.getId().uuid()).isEqualTo(testMemberId);
             verify(memberRepository).save(any(Member.class));
         }
-    }
-
-    @Nested
-    @DisplayName("Member Update — Self")
-    class SelfMemberUpdateTests {
 
         @Test
-        @DisplayName("should update member contact info via self-update command")
-        void shouldUpdateMemberContactInfoViaSelfUpdateCommand() {
-            var command = MemberSelfUpdateBuilder.builder()
+        @DisplayName("should update member contact info via update command")
+        void shouldUpdateMemberContactInfo() {
+            var command = MemberUpdateMemberBuilder.builder()
                     .email(EmailAddress.of("new@example.com"))
                     .build();
 
