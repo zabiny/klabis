@@ -58,19 +58,32 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 GET {{host}}/api/members?view=compact
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 
-### Get all members compact (klabis format)
-GET {{host}}/members?view=compact
+### GET Jan Novak member
+GET {{host}}/api/members/a7df1bbd-03b1-4f34-b88e-05ba899f1640
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
-Accept: application/klabis+json
 
-### Get all members (full details)
-GET {{host}}/members?view=full
+### GET Eva Svobodova member
+GET {{host}}/api/members/a8154bdb-89ca-4b9a-beb3-feec37f34a2f
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
-Accept: application/klabis+json
 
-### GET single member
-GET {{host}}/members/1
+### Update Admin only for Eva Svobodova
+PATCH {{host}}/api/members/a8154bdb-89ca-4b9a-beb3-feec37f34a2f
 Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Content-Type: application/json
+
+{
+  "firstName": "Janicka"
+}
+
+### Update self-edit for Eva Svobodova
+PATCH {{host}}/api/members/a8154bdb-89ca-4b9a-beb3-feec37f34a2f
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+Content-Type: application/json
+
+{
+  "chipNumber": "12345"
+}
+
 
 ### Suggest registration number
 GET {{host}}/registrationNumber?sex=MALE&dateOfBirth=2020-10-11
