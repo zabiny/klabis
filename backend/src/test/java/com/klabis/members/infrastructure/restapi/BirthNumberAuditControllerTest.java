@@ -31,6 +31,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,13 +85,13 @@ class BirthNumberAuditControllerTest {
                     .withNoGuardian()
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class)))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
 
             mockMvc.perform(get("/api/members/{id}", memberId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            verify(managementService).getMemberAndRecordView(eq(new MemberId(memberId)), any(UserId.class));
+            verify(managementService).getMemberAndRecordView(eq(new MemberId(memberId)), any(UserId.class), anyBoolean());
         }
     }
 
@@ -108,7 +109,7 @@ class BirthNumberAuditControllerTest {
                     .withNoGuardian()
                     .build();
 
-            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMemberByAdmin.class)))
+            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                     .thenReturn(existingMember);
 
             mockMvc.perform(patch("/api/members/{id}", memberId)
@@ -116,11 +117,11 @@ class BirthNumberAuditControllerTest {
                             .content("{\"birthNumber\": \"900101/1234\"}"))
                     .andExpect(status().isNoContent());
 
-            ArgumentCaptor<Member.UpdateMemberByAdmin> commandCaptor =
-                    ArgumentCaptor.forClass(Member.UpdateMemberByAdmin.class);
+            ArgumentCaptor<Member.UpdateMember> commandCaptor =
+                    ArgumentCaptor.forClass(Member.UpdateMember.class);
             verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
 
-            Member.UpdateMemberByAdmin command = commandCaptor.getValue();
+            Member.UpdateMember command = commandCaptor.getValue();
             assertThat(command.birthNumber()).isNotNull();
             assertThat(command.updatedBy()).isNotNull();
         }
@@ -135,7 +136,7 @@ class BirthNumberAuditControllerTest {
                     .withNoGuardian()
                     .build();
 
-            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMemberByAdmin.class)))
+            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                     .thenReturn(existingMember);
 
             mockMvc.perform(patch("/api/members/{id}", memberId)
@@ -143,11 +144,11 @@ class BirthNumberAuditControllerTest {
                             .content("{\"email\": \"new@example.com\"}"))
                     .andExpect(status().isNoContent());
 
-            ArgumentCaptor<Member.UpdateMemberByAdmin> commandCaptor =
-                    ArgumentCaptor.forClass(Member.UpdateMemberByAdmin.class);
+            ArgumentCaptor<Member.UpdateMember> commandCaptor =
+                    ArgumentCaptor.forClass(Member.UpdateMember.class);
             verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
 
-            Member.UpdateMemberByAdmin command = commandCaptor.getValue();
+            Member.UpdateMember command = commandCaptor.getValue();
             assertThat(command.birthNumber()).isNull();
             assertThat(command.updatedBy()).isNotNull();
         }

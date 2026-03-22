@@ -1,6 +1,8 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.security.fieldsecurity.OwnerId;
+import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -35,7 +37,6 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
@@ -79,89 +80,33 @@ class MemberController {
         this.memberMapper = memberMapper;
     }
 
-    /**
-     * Update member information (partial update).
-     * <p>
-     * PATCH /api/members/{id}
-     * <p>
-     * Supports dual authorization model:
-     * <ul>
-     *   <li><b>Self-edit:</b> Authenticated members can update their own information (email, phone, address, dietaryRestrictions)</li>
-     *   <li><b>Admin edit:</b> Users with MEMBERS:MANAGE authority can update any member and all fields</li>
-     * </ul>
-     * <p>
-     * <b>PATCH Semantics:</b> Only fields provided (non-null in request) are updated.
-     * Null values in request are ignored (field keeps existing value).
-     * <p>
-     * <b>Field Access Control:</b>
-     * <ul>
-     *   <li>Member-editable: email, phone, address, dietaryRestrictions</li>
-     *   <li>Admin-only: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup</li>
-     * </ul>
-     *
-     * @param id          member ID
-     * @param request     partial update request (only fields to update should be provided)
-     * @param currentUser the authenticated user performing the update
-     * @return 204 No Content on success
-     */
     @PatchMapping(value = "/{id}", consumes = "application/json")
-    @PreAuthorize("isAuthenticated()")
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @OwnerVisible
     @Operation(
             summary = "Update member information (partial update)",
             description = "Updates member information with PATCH semantics (partial update). " +
-                          "Supports dual authorization: members can edit their own information (limited fields), " +
-                          "users with MEMBERS:MANAGE authority can edit any member (all fields). " +
-                          "Only provided fields are updated; null/missing fields keep existing values. " +
-                          "Member-editable fields: email, phone, address, dietaryRestrictions. " +
-                          "Admin-only fields: firstName, lastName, dateOfBirth, gender, chipNumber, identityCard, medicalCourse, trainerLicense, drivingLicenseGroup."
+                          "Admin (MEMBERS:MANAGE) or owner can call this endpoint. " +
+                          "Field-level authorization enforces which fields each role may submit. " +
+                          "Only provided fields are updated; null/missing fields keep existing values."
     )
     @ApiResponse(responseCode = "204", description = "Member updated successfully")
     public ResponseEntity<Void> updateMember(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
+            @Parameter(description = "Member UUID") @OwnerId @PathVariable UUID id,
             @Parameter(description = "Partial update request - only include fields to update")
             @Valid @RequestBody UpdateMemberRequest request,
             @CurrentUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
-        if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
-            UserId currentUserId = currentUser.userId();
-            var adminCommand = UpdateMemberRequestMapper.toAdminCommand(request, currentUserId);
-            Member updatedMember = managementService.updateMember(memberId, adminCommand);
+        var command = UpdateMemberRequestMapper.toCommand(request, currentUser.userId());
+        Member updatedMember = managementService.updateMember(memberId, command);
 
-            List<String> warnings = updatedMember.birthNumberConsistencyWarnings();
-            if (!warnings.isEmpty()) {
-                return ResponseEntity.noContent()
-                        .header("X-Warnings", warnings.toArray(String[]::new))
-                        .build();
-            }
-        } else {
-            requireSelfAccess(currentUser, id);
-            var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
-            managementService.updateMember(memberId, selfCommand);
+        List<String> warnings = updatedMember.birthNumberConsistencyWarnings();
+        if (!warnings.isEmpty()) {
+            return ResponseEntity.noContent()
+                    .header("X-Warnings", warnings.toArray(String[]::new))
+                    .build();
         }
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping(value = "/{id}/self", consumes = "application/json")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "Update own member information (partial update)",
-            description = "Allows authenticated members to update their own profile. " +
-                          "Only member-editable fields are accepted: email, phone, address, chipNumber, nationality, " +
-                          "bankAccountNumber, guardian, identityCard, drivingLicenseGroup, medicalCourse, trainerLicense, dietaryRestrictions. " +
-                          "Admin-only fields (firstName, lastName, dateOfBirth, gender, birthNumber) are not accepted here."
-    )
-    @ApiResponse(responseCode = "204", description = "Member updated successfully")
-    @ApiResponse(responseCode = "403", description = "Forbidden - user is not editing their own profile")
-    public ResponseEntity<Void> updateMemberSelf(
-            @Parameter(description = "Member UUID") @PathVariable UUID id,
-            @Parameter(description = "Partial self-update request - only member-editable fields")
-            @Valid @RequestBody SelfUpdateMemberRequest request,
-            @CurrentUser CurrentUserData currentUser) {
-
-        requireSelfAccess(currentUser, id);
-        var selfCommand = UpdateMemberRequestMapper.toSelfUpdateCommand(request);
-        managementService.updateMember(new MemberId(id), selfCommand);
         return ResponseEntity.noContent().build();
     }
 
@@ -305,10 +250,6 @@ class MemberController {
         }
     }
 
-    /**
-     * Returns a PATCH affordance conditionally based on caller's permissions:
-     * MEMBERS:MANAGE → full update affordance; own profile → self-update affordance; other → no affordance.
-     */
     @GetMapping("/{id}")
     @HasAuthority(Authority.MEMBERS_READ)
     @Operation(
@@ -322,7 +263,8 @@ class MemberController {
             @CurrentUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
-        Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId());
+        Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
+                currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
@@ -348,7 +290,8 @@ class MemberController {
             }
         } else if (currentUser.isMember() && currentUser.memberId().uuid().equals(id)) {
             entityModel.add(
-                    selfLink.andAffordances(klabisAfford(methodOn(MemberController.class).updateMemberSelf(id, null, null)))
+                    selfLink.andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
+                            (UpdateMemberRequest) null, null)))
             );
         } else {
             entityModel.add(selfLink);
@@ -359,14 +302,6 @@ class MemberController {
         )).withRel("collection"));
 
         return ResponseEntity.ok(entityModel);
-    }
-
-    private void requireSelfAccess(CurrentUserData currentUser, UUID memberId) {
-        if (!currentUser.isMember() || !currentUser.memberId().uuid().equals(memberId)) {
-            throw new ErrorResponseException(HttpStatus.FORBIDDEN,
-                    ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
-                            "You can only edit your own information"), null);
-        }
     }
 
 }

@@ -125,7 +125,7 @@ class MemberControllerApiTest {
                     .withNationality("CZ")
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(member.getId()))
                     .andDo(MockMvcResultHandlers.print())
@@ -154,7 +154,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturn404WhenMemberNotFound() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class)))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenThrow(new MemberNotFoundException(new MemberId(nonExistentId)));
 
             mockMvc.perform(getMemberById(nonExistentId))
@@ -185,7 +185,7 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("should return guardian information when present")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void shouldReturnGuardianInformationWhenPresent() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -196,7 +196,7 @@ class MemberControllerApiTest {
                             "+420777111222"))
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -218,7 +218,7 @@ class MemberControllerApiTest {
                     .withAddress(new Address("Main Street 123", "Bratislava", "81101", "SK"))
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -251,7 +251,7 @@ class MemberControllerApiTest {
                     .withEmail(email)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -271,7 +271,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -289,7 +289,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -308,7 +308,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -330,7 +330,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -346,29 +346,22 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("HAL+FORMS: member viewing own profile — should include self-update affordance with limited fields only")
+        @DisplayName("HAL+FORMS: member viewing own profile — should include update affordance pointing to PATCH /{id}")
         @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
-        void ownProfileShouldReturnSelfUpdateAffordanceWithLimitedFields() throws Exception {
+        void ownProfileShouldReturnUpdateAffordance() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.default.target").value(
-                            org.hamcrest.Matchers.containsString("/api/members/" + memberId + "/self")))
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'email')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'firstName')]").isEmpty())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'lastName')]").isEmpty())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'dateOfBirth')]").isEmpty())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'gender')]").isEmpty())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'birthNumber')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
@@ -381,7 +374,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class))).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -1427,7 +1420,7 @@ class MemberControllerApiTest {
                     .withBirthNumber("905101/1239")
                     .withNoGuardian()
                     .build();
-            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMemberByAdmin.class))).thenReturn(member);
+            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class))).thenReturn(member);
 
             mockMvc.perform(patch("/api/members/{id}", memberId)
                             .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
@@ -1448,7 +1441,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNoGuardian()
                     .build();
-            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMemberByAdmin.class))).thenReturn(member);
+            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class))).thenReturn(member);
 
             mockMvc.perform(patch("/api/members/{id}", memberId)
                             .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
@@ -1474,7 +1467,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNoGuardian()
                     .build();
-            when(managementService.updateMember(any(MemberId.class), any(Member.SelfUpdate.class))).thenReturn(member);
+            when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class))).thenReturn(member);
 
             mockMvc.perform(patch("/api/members/{id}", memberId)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -1487,14 +1480,14 @@ class MemberControllerApiTest {
 
             Mockito.verify(managementService).updateMember(
                     eq(new MemberId(memberId)),
-                    argThat((Member.SelfUpdate cmd) -> cmd.email() != null && cmd.phone() == null)
+                    argThat((Member.UpdateMember cmd) -> cmd.email() != null && cmd.phone() == null)
             );
         }
     }
 
     @Nested
-    @DisplayName("PATCH /api/members/{id}/self")
-    class UpdateMemberSelfTests {
+    @DisplayName("PATCH /api/members/{id} — ownership security")
+    class UpdateMemberOwnershipTests {
 
         @Test
         @DisplayName("authenticated user without a member record should get 403 Forbidden")
@@ -1502,7 +1495,7 @@ class MemberControllerApiTest {
         void userWithoutMemberRecordShouldBeForbidden() throws Exception {
             UUID anyMemberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
-            mockMvc.perform(patch("/api/members/{id}/self", anyMemberId)
+            mockMvc.perform(patch("/api/members/{id}", anyMemberId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
@@ -1514,12 +1507,12 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("member attempting to edit another member's profile via /self should get 403 Forbidden")
+        @DisplayName("member attempting to edit another member's profile should get 403 Forbidden")
         @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.MEMBERS_READ})
         void memberEditingOtherMemberShouldBeForbidden() throws Exception {
             UUID otherMemberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
-            mockMvc.perform(patch("/api/members/{id}/self", otherMemberId)
+            mockMvc.perform(patch("/api/members/{id}", otherMemberId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
