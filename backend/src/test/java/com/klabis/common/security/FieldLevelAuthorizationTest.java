@@ -17,7 +17,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authorization.method.AuthorizationAdvisorProxyFactory;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -113,14 +112,8 @@ class FieldLevelAuthorizationTest {
     @RestController
     static class TestController {
 
-        private final AuthorizationAdvisorProxyFactory proxyFactory;
-
-        TestController(AuthorizationAdvisorProxyFactory proxyFactory) {
-            this.proxyFactory = proxyFactory;
-        }
-
         @GetMapping(value = "/test/field-auth", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-        EntityModel<SensitiveDataView> getSensitiveData() {
+        EntityModel<SensitiveDataResponse> getSensitiveData() {
             SensitiveDataResponse response = new SensitiveDataResponse(
                     "public-value",
                     "secret-value",
@@ -128,8 +121,7 @@ class FieldLevelAuthorizationTest {
                     "authority-secret-value",
                     "authority-sensitive-value"
             );
-            SensitiveDataView proxied = (SensitiveDataView) proxyFactory.proxy(response);
-            return EntityModel.of(proxied)
+            return EntityModel.of(response)
                     .add(klabisLinkTo(methodOn(TestController.class).getSensitiveData()).withSelfRel()
                             .andAffordances(klabisAfford(methodOn(TestController.class).updateSensitiveData(null))));
         }
