@@ -558,18 +558,56 @@ record MemberDetailResponse(
 
 During Jackson serialization, `SecuredBeanPropertyWriter` evaluates each annotated field against the current `Authentication`. Denied fields are either skipped (default `NullDeniedHandler`) or masked (`MaskDeniedHandler`).
 
+### Ownership-Based Authorization (@OwnerVisible)
+
+Fields and methods can be made accessible to the data owner using `@OwnerVisible`. Uses OR semantics with authority annotations: authorized if authority check passes **OR** ownership check passes.
+
+```java
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
+record MemberDetailResponse(
+    @OwnerId MemberId id,                         // owner identifier
+    String firstName,                              // always visible
+    @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
+    String birthNumber,                            // visible to admin OR owner
+    @OwnerVisible
+    String email,                                  // visible only to owner
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    String suspensionNote                          // visible only to admin
+) {}
+```
+
+Ownership is determined by comparing the `@OwnerId` field value with `KlabisJwtAuthenticationToken.getMemberIdUuid()` via `OwnershipResolver`. The resolver uses `ConversionService` to convert owner IDs to UUID (e.g., `MemberId → UUID`), avoiding cross-module dependencies.
+
+Owner discovery: if a record has a single field whose type can be converted to UUID, it is used automatically. If ambiguous, `@OwnerId` is required.
+
+### Method-Level Ownership
+
+Controller methods support the same pattern via `@OwnerVisible` + `@OwnerId` on a path variable:
+
+```java
+@PatchMapping("/{id}")
+@HasAuthority(Authority.MEMBERS_MANAGE)
+@OwnerVisible
+ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id, ...) { ... }
+```
+
+`HasAuthorityMethodInterceptor` evaluates both authority and ownership with OR semantics.
+
 ### Request Field Authorization (PATCH)
 
-`RequestBodyFieldAuthorizationAdvice` enforces `@PreAuthorize` / `@HasAuthority` on `PatchField<T>` record components. Only provided fields are checked — absent fields are skipped. Unauthorized updates result in HTTP 403 (`FieldAuthorizationException`).
+`RequestBodyFieldAuthorizationAdvice` enforces `@PreAuthorize` / `@HasAuthority` / `@OwnerVisible` on `PatchField<T>` record components. Only provided fields are checked — absent fields are skipped. For `@OwnerVisible`, the owner ID is read from the controller method's `@OwnerId @PathVariable` parameter. Unauthorized updates result in HTTP 403 (`FieldAuthorizationException`).
 
 ### HAL+FORMS Template Filtering
 
-Template properties in HAL+FORMS responses are automatically filtered based on the same security annotations. `HalFormsSupport.isPropertyAuthorized()` inspects record component accessors and excludes properties the user cannot modify.
+Template properties in HAL+FORMS responses are automatically filtered based on the same security annotations. `HalFormsSupport.isPropertyAuthorized()` inspects record component accessors and excludes properties the user cannot modify. Note: ownership-based template filtering is not supported (templates are per-endpoint, not per-instance).
 
 ### Reference
 
 - Serializer: `com.klabis.common.security.fieldsecurity.FieldSecurityBeanSerializerModifier`
 - Request auth: `com.klabis.common.security.fieldsecurity.RequestBodyFieldAuthorizationAdvice`
+- Method auth: `com.klabis.common.security.HasAuthorityMethodInterceptor`
+- Ownership: `OwnershipResolver`, `@OwnerVisible`, `@OwnerId`
 - Handlers: `NullDeniedHandler` (hide), `MaskDeniedHandler` (mask as `"***"`)
 - Test: `FieldLevelAuthorizationTest`
 

@@ -367,6 +367,26 @@ record UpdateMemberRequest(
 
 `RequestBodyFieldAuthorizationAdvice` checks `@HasAuthority` on provided `PatchField` components. Non-provided fields are skipped.
 
+### Combining with @OwnerVisible
+
+`@HasAuthority` can be combined with `@OwnerVisible` for OR semantics — the field/method is accessible if the user has the authority **OR** is the data owner:
+
+```java
+record MemberDetailResponse(
+    @OwnerId MemberId id,
+
+    @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
+    String birthNumber  // visible to admin OR the member themselves
+) {}
+```
+
+On methods:
+```java
+@HasAuthority(Authority.MEMBERS_MANAGE)
+@OwnerVisible
+ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id, ...) { ... }
+```
+
 ### How annotations propagate on records
 
 `@HasAuthority` has `@Target({TYPE, METHOD})`. When placed on a record component, Java propagates it to the accessor method (per JLS §8.10.1). The field-level security infrastructure reads annotations via `RecordComponent.getAccessor().getAnnotation(HasAuthority.class)`.

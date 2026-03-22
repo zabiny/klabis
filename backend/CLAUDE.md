@@ -73,6 +73,8 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 - `@JsonInclude(NON_NULL)` + `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` on the record class acts as default deny handler
 - `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` on a component overrides the class-level handler and shows `"***"`
 - Module registered via `@JsonComponent` on `FieldSecurityJacksonModule` — auto-discovered in both `@WebMvcTest` and full `@SpringBootTest`
+- `@OwnerVisible` + `@OwnerId` for ownership-based field/method access (OR semantics with authority)
+- `OwnershipResolver` compares owner ID with `KlabisJwtAuthenticationToken.getMemberIdUuid()` via `ConversionService`
 - See `FieldLevelAuthorizationTest` for reference implementation
 
 **Gradle Optimization**
