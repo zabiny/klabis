@@ -1,6 +1,7 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.users.HasAuthority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.support.SpringFactoriesLoader;
@@ -24,11 +25,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
@@ -230,8 +227,8 @@ public class HalFormsSupport {
 
         /**
          * Checks whether the current user is authorized to see the given property in the template.
-         * Looks for @PreAuthorize on interface methods matching the property name — the same
-         * annotations that control JSON field visibility for the response DTO.
+         * Looks for @PreAuthorize or @HasAuthority on interface methods matching the property name —
+         * the same annotations that control JSON field visibility for the response DTO.
          */
         private static boolean isPropertyAuthorized(Class<?> payloadType, String propertyName) {
             if (payloadType == null) {
@@ -240,10 +237,33 @@ public class HalFormsSupport {
             return Arrays.stream(payloadType.getInterfaces())
                     .flatMap(iface -> Arrays.stream(iface.getMethods()))
                     .filter(m -> m.getName().equals(propertyName) && m.getParameterCount() == 0)
-                    .filter(m -> m.isAnnotationPresent(PreAuthorize.class))
+                    .filter(m -> m.isAnnotationPresent(PreAuthorize.class) || m.isAnnotationPresent(HasAuthority.class))
                     .findFirst()
-                    .map(HalFormsInputPayloadMetadata::evaluatePreAuthorize)
+                    .map(HalFormsInputPayloadMetadata::evaluateSecurityAnnotations)
                     .orElse(true);
+        }
+
+        private static Boolean evaluateSecurityAnnotations(Method m) {
+            boolean result = true;
+            if (m.isAnnotationPresent(PreAuthorize.class)) {
+                result &= evaluatePreAuthorize(m);
+            }
+            if (m.isAnnotationPresent(HasAuthority.class)) {
+                result &= evaluateHasAuthority(m);
+            }
+            return result;
+        }
+
+        private static boolean evaluateHasAuthority(Method method) {
+            HasAuthority annotation = method.getAnnotation(HasAuthority.class);
+            org.springframework.security.core.Authentication authentication =
+                    SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return false;
+            }
+            String required = annotation.value().getValue();
+            return authentication.getAuthorities().stream()
+                    .anyMatch(granted -> granted.getAuthority().equals(required));
         }
 
         private static boolean evaluatePreAuthorize(Method method) {

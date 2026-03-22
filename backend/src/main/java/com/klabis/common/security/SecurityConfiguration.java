@@ -82,6 +82,11 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     private String issuer;
 
     @Bean
+    public HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor() {
+        return new HasAuthorityMethodInterceptor();
+    }
+
+    @Bean
     public AuthenticationManager authenticationManager(
             UserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder) {

@@ -3,6 +3,8 @@ package com.klabis.common.security;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.users.Authority;
+import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -65,12 +67,23 @@ class FieldLevelAuthorizationTest {
         @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
         @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
         String maskedField();
+
+        @JsonProperty
+        @HasAuthority(Authority.MEMBERS_MANAGE)
+        String hasAuthorityHiddenField();
+
+        @JsonProperty
+        @HasAuthority(Authority.MEMBERS_MANAGE)
+        @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
+        String hasAuthorityMaskedField();
     }
 
     record SensitiveDataResponse(
             String publicField,
             String hiddenField,
-            String maskedField
+            String maskedField,
+            String hasAuthorityHiddenField,
+            String hasAuthorityMaskedField
     ) implements SensitiveDataView {
     }
 
@@ -89,7 +102,9 @@ class FieldLevelAuthorizationTest {
             SensitiveDataResponse response = new SensitiveDataResponse(
                     "public-value",
                     "secret-value",
-                    "sensitive-value"
+                    "sensitive-value",
+                    "authority-secret-value",
+                    "authority-sensitive-value"
             );
             SensitiveDataView proxied = (SensitiveDataView) proxyFactory.proxy(response);
             return EntityModel.of(proxied)
@@ -108,25 +123,29 @@ class FieldLevelAuthorizationTest {
     class AuthorizedUser {
 
         @Test
-        @WithMockUser(authorities = FIELD_READ_AUTHORITY)
+        @WithMockUser(authorities = {FIELD_READ_AUTHORITY, "MEMBERS:MANAGE"})
         @DisplayName("should see all fields with real values in JSON response")
         void shouldSeeAllFieldsWithRealValues() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.publicField").value("public-value"))
                     .andExpect(jsonPath("$.hiddenField").value("secret-value"))
-                    .andExpect(jsonPath("$.maskedField").value("sensitive-value"));
+                    .andExpect(jsonPath("$.maskedField").value("sensitive-value"))
+                    .andExpect(jsonPath("$.hasAuthorityHiddenField").value("authority-secret-value"))
+                    .andExpect(jsonPath("$.hasAuthorityMaskedField").value("authority-sensitive-value"));
         }
 
         @Test
-        @WithMockUser(authorities = FIELD_READ_AUTHORITY)
+        @WithMockUser(authorities = {FIELD_READ_AUTHORITY, "MEMBERS:MANAGE"})
         @DisplayName("should see all properties in HAL+FORMS PATCH template")
         void shouldSeeAllPropertiesInHalFormsTemplate() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'publicField')]").exists())
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hiddenField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").exists());
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").exists());
         }
     }
 
@@ -142,7 +161,9 @@ class FieldLevelAuthorizationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.publicField").value("public-value"))
                     .andExpect(jsonPath("$.hiddenField").doesNotExist())
-                    .andExpect(jsonPath("$.maskedField").value(MaskDeniedHandler.MASK_VALUE));
+                    .andExpect(jsonPath("$.maskedField").value(MaskDeniedHandler.MASK_VALUE))
+                    .andExpect(jsonPath("$.hasAuthorityHiddenField").doesNotExist())
+                    .andExpect(jsonPath("$.hasAuthorityMaskedField").value(MaskDeniedHandler.MASK_VALUE));
         }
 
         @Test
@@ -153,7 +174,9 @@ class FieldLevelAuthorizationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'publicField')]").exists())
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hiddenField')]").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").doesNotExist());
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").doesNotExist());
         }
     }
 }
