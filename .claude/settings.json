@@ -3,18 +3,7 @@
     "klabis@davidovo": true
   },
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_input.filePath // empty' | { read -r f; if echo \"$f\" | grep -qE '\\.(env|secret)|http-client\\.env'; then echo '{\"decision\":\"block\",\"reason\":\"Sensitive file — do not edit credentials or env files\"}'; fi; }",
-            "statusMessage": "Checking for sensitive files..."
-          }
-        ]
-      }
-    ],
+    "PreToolUse": [],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
