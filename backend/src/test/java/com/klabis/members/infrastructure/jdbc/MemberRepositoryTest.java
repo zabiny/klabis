@@ -661,40 +661,6 @@ class MemberRepositoryTest {
             assertThat(savedMember.getVersion()).isEqualTo(0L);
         }
 
-        // DEAD CODE: UpdateContactInformation command removed - test commented out
-        // TODO: Replace with SelfUpdate command test
-        /*
-        @Test
-        @DisplayName("should increment version on update")
-        void shouldIncrementVersionOnUpdate() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0006")
-                    .withName("Update", "Test")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
-                    .withEmail("update@example.com")
-                    .withPhone("+420111111128")
-                    .withNoGuardian()
-                    .build();
-            Member savedMember = memberRepository.save(member);
-
-            // When - update member
-            Address newAddress = Address.of("New Street 1", "New City", "11000", "CZ");
-            savedMember.handle(new Member.UpdateContactInformation(
-                    savedMember.getEmail(),
-                    savedMember.getPhone(),
-                    newAddress
-            ));
-            Member savedUpdatedMember = memberRepository.save(savedMember);
-
-            // Then
-            assertThat(savedUpdatedMember).isNotNull();
-            assertThat(savedUpdatedMember.getVersion()).isGreaterThan(savedMember.getVersion());
-        }
-        */
     }
 
     @Nested
@@ -754,42 +720,6 @@ class MemberRepositoryTest {
     @DisplayName("Update operations")
     class UpdateOperations {
 
-        // DEAD CODE: UpdateContactInformation command removed - test commented out
-        // TODO: Replace with SelfUpdate command test
-        /*
-        @Test
-        @DisplayName("should update member contact information")
-        void shouldUpdateMemberContactInformation() {
-            // Given
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM0009")
-                    .withName("Contact", "Update")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(Address.of("Old Street 1", "Old City", "11000", "CZ"))
-                    .withEmail("old@example.com")
-                    .withPhone("+420111111131")
-                    .withNoGuardian()
-                    .build();
-            Member savedMember = memberRepository.save(member);
-
-            // When - update contact info (modifies member in-place)
-            Address newAddress = Address.of("New Street 1", "New City", "11000", "CZ");
-            EmailAddress newEmail = EmailAddress.of("new@example.com");
-            savedMember.handle(new Member.UpdateContactInformation(
-                    newEmail,
-                    savedMember.getPhone(),
-                    newAddress
-            ));
-            Member savedUpdatedMember = memberRepository.save(savedMember);
-
-            // Then
-            Optional<Member> foundMember = memberRepository.findById(savedUpdatedMember.getId());
-            assertThat(foundMember).isPresent();
-            assertThat(foundMember.get().getEmail().value()).isEqualTo("new@example.com");
-        }
-        */
     }
 
     @Nested

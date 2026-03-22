@@ -514,18 +514,23 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
         validateContactInformation(newEmail, newPhone, newGuardian);
 
-        String newFirstName = command.firstName() != null ? command.firstName() : this.personalInformation.getFirstName();
-        String newLastName = command.lastName() != null ? command.lastName() : this.personalInformation.getLastName();
-        LocalDate newDateOfBirth = command.dateOfBirth() != null ? command.dateOfBirth() : this.personalInformation.getDateOfBirth();
-        Gender newGender = command.gender() != null ? command.gender() : this.personalInformation.getGender();
-        String newNationality = command.nationality() != null ? command.nationality() : this.personalInformation.getNationalityCode();
+        boolean anyPersonalFieldChanged = command.firstName() != null || command.lastName() != null
+                || command.dateOfBirth() != null || command.nationality() != null || command.gender() != null;
 
-        PersonalInformation newPersonalInfo = PersonalInformation.of(
-                newFirstName, newLastName, newDateOfBirth, newNationality, newGender
-        );
+        PersonalInformation newPersonalInfo;
+        if (anyPersonalFieldChanged) {
+            String newFirstName = command.firstName() != null ? command.firstName() : this.personalInformation.getFirstName();
+            String newLastName = command.lastName() != null ? command.lastName() : this.personalInformation.getLastName();
+            LocalDate newDateOfBirth = command.dateOfBirth() != null ? command.dateOfBirth() : this.personalInformation.getDateOfBirth();
+            Gender newGender = command.gender() != null ? command.gender() : this.personalInformation.getGender();
+            String newNationality = command.nationality() != null ? command.nationality() : this.personalInformation.getNationalityCode();
+            newPersonalInfo = PersonalInformation.of(newFirstName, newLastName, newDateOfBirth, newNationality, newGender);
+        } else {
+            newPersonalInfo = this.personalInformation;
+        }
 
         BirthNumber newBirthNumber = command.birthNumber() != null ? command.birthNumber() : this.birthNumber;
-        validateBirthNumberNationality(newNationality, newBirthNumber);
+        validateBirthNumberNationality(newPersonalInfo.getNationalityCode(), newBirthNumber);
 
         validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
 
@@ -545,7 +550,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.refereeLicense() != null) this.refereeLicense = command.refereeLicense();
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
 
-        if (command.birthNumber() != null && command.updatedBy() != null) {
+        if (command.birthNumber() != null && command.updatedBy() != null && !command.birthNumber().equals(this.birthNumber)) {
             registerEvent(BirthNumberAccessedEvent.modified(command.updatedBy(), this.id));
         }
     }

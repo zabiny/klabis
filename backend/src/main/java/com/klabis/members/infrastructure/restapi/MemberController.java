@@ -50,12 +50,6 @@ import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-/**
- * REST controller for Member resources.
- * <p>
- * Provides HATEOAS-compliant endpoints for member management.
- * Produces HAL+FORMS media type for hypermedia support.
- */
 @PrimaryAdapter
 @RestController
 @RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -133,22 +127,6 @@ class MemberController {
                 .build();
     }
 
-    /**
-     * Suspend a member's membership.
-     * <p>
-     * POST /api/members/{id}/suspend
-     * <p>
-     * Admin-only endpoint for suspending a member's membership.
-     * Requires MEMBERS:MANAGE authority.
-     * <p>
-     * Sets member's active status to false and records suspension details.
-     * Publishes MemberSuspendedEvent for integration with other modules.
-     *
-     * @param id      member ID
-     * @param request suspension request with reason and optional note
-     * @param currentUserId the user performing the suspension
-     * @return 204 No Content on success
-     */
     @PostMapping(value = "/{id}/suspend", consumes = "application/json")
     @HasAuthority(Authority.MEMBERS_MANAGE)
     @Operation(
@@ -180,14 +158,6 @@ class MemberController {
                 .build();
     }
 
-    /**
-     * List members with pagination and sorting.
-     * <p>
-     * GET /api/members?page=0&size=10&sort=lastName,asc
-     *
-     * @param pageable pagination and sorting parameters (page, size, sort)
-     * @return paginated collection of member summaries with HATEOAS links and page metadata
-     */
     @GetMapping
     @Transactional(readOnly = true)
     @HasAuthority(Authority.MEMBERS_READ)

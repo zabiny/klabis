@@ -3,7 +3,7 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.patch.PatchField;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.members.application.*;
+import com.klabis.members.application.ValidationPatterns;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
 import io.soabase.recordbuilder.core.RecordBuilder;

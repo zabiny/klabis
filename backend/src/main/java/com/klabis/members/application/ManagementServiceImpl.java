@@ -13,12 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Service for member update operations.
- *
- * <p>Authorization (self-edit check, field-level access control) is handled by the controller.
- * This service applies domain commands and persists the result.
- */
 @Service
 public class ManagementServiceImpl implements ManagementService {
 
