@@ -1,5 +1,31 @@
 {
   "enabledPlugins": {
     "klabis@davidovo": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_input.filePath // empty' | { read -r f; if echo \"$f\" | grep -qE '\\.(env|secret)|http-client\\.env'; then echo '{\"decision\":\"block\",\"reason\":\"Sensitive file — do not edit credentials or env files\"}'; fi; }",
+            "statusMessage": "Checking for sensitive files..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; if echo \"$f\" | grep -qE 'frontend/.*\\.(ts|tsx|js|jsx)$'; then cd frontend && npx eslint --fix \"$f\" 2>/dev/null; fi; } || true",
+            "statusMessage": "Running ESLint fix..."
+          }
+        ]
+      }
+    ]
   }
 }
