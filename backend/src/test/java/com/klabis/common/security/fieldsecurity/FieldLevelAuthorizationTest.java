@@ -43,8 +43,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Field-level authorization on response DTOs")
 class FieldLevelAuthorizationTest {
 
-    private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
-    private static final UUID OTHER_ID = UUID.fromString("bbbbbbbb-0000-0000-0000-000000000002");
+    private static final String OWNER_ID_STRING = "aaaaaaaa-0000-0000-0000-000000000001";
+    private static final String OTHER_ID_STRING = "bbbbbbbb-0000-0000-0000-000000000002";
+    private static final UUID OWNER_ID = UUID.fromString(OWNER_ID_STRING);
+    private static final UUID OTHER_ID = UUID.fromString(OTHER_ID_STRING);
 
     private static final String FIELD_READ_AUTHORITY = "FIELD:READ";
 
@@ -416,7 +418,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
         @DisplayName("owner without admin authority sees ownerOrAdminField and ownerOnlyField but not adminOnlyField")
         void ownerWithoutAdminAuthoritySeesOwnerVisibleFields() throws Exception {
             mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -440,7 +442,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
         @DisplayName("owner does not see adminOnlyField (has only @HasAuthority, not @OwnerVisible)")
         void ownerDoesNotSeeAdminOnlyField() throws Exception {
             mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -449,7 +451,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "bbbbbbbb-0000-0000-0000-000000000002")
+        @WithKlabisMockUser(memberId = OTHER_ID_STRING)
         @DisplayName("non-owner with KlabisJwtAuthenticationToken does not see owner-only fields")
         void nonOwnerWithJwtTokenDoesNotSeeOwnerFields() throws Exception {
             mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -474,7 +476,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
         @DisplayName("owner without admin authority can access @HasAuthority + @OwnerVisible method via ownership")
         void ownerWithoutAuthorityCanAccess() throws Exception {
             mockMvc.perform(get("/api/test/ownership-method/{id}", OWNER_ID))
@@ -482,7 +484,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "bbbbbbbb-0000-0000-0000-000000000002")
+        @WithKlabisMockUser(memberId = OTHER_ID_STRING)
         @DisplayName("non-owner without authority gets 403 on @HasAuthority + @OwnerVisible method")
         void nonOwnerWithoutAuthorityGetsForbidden() throws Exception {
             mockMvc.perform(get("/api/test/ownership-method/{id}", OWNER_ID))
@@ -490,7 +492,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
         @DisplayName("owner can access @OwnerVisible-only method")
         void ownerCanAccessOwnerOnlyMethod() throws Exception {
             mockMvc.perform(get("/api/test/owner-only-method/{id}", OWNER_ID))
@@ -521,7 +523,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
         @DisplayName("owner can PATCH ownerOrAdminField and ownerOnlyField")
         void ownerCanPatchOwnerVisibleFields() throws Exception {
             mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
@@ -531,7 +533,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "bbbbbbbb-0000-0000-0000-000000000002")
+        @WithKlabisMockUser(memberId = OTHER_ID_STRING)
         @DisplayName("non-owner without authority gets 403 when PATCHing ownerOrAdminField")
         void nonOwnerWithoutAuthorityCannotPatchOwnerOrAdminField() throws Exception {
             mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
@@ -541,7 +543,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "bbbbbbbb-0000-0000-0000-000000000002")
+        @WithKlabisMockUser(memberId = OTHER_ID_STRING)
         @DisplayName("non-owner without authority gets 403 when PATCHing ownerOnlyField")
         void nonOwnerWithoutAuthorityCannotPatchOwnerOnlyField() throws Exception {
             mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
@@ -551,7 +553,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
         @DisplayName("owner can PATCH publicField without auth check")
         void ownerCanPatchPublicField() throws Exception {
             mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
