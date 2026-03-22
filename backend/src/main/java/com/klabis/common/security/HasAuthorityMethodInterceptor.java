@@ -43,7 +43,7 @@ import java.lang.reflect.Parameter;
 public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, ApplicationContextAware {
 
     private ApplicationContext applicationContext;
-    private OwnershipResolver ownershipResolver;
+    private volatile OwnershipResolver ownershipResolver;
 
     private static final AuthorizationResult DENY = () -> false;
 
@@ -88,16 +88,27 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
     }
 
     private boolean checkOwnership(Method method, Object[] arguments, Authentication authentication) {
-        if (ownershipResolver == null) {
+        OwnershipResolver resolver = getOwnershipResolver();
+        if (resolver == null) {
             return false;
         }
         Parameter[] parameters = method.getParameters();
         for (int i = 0; i < parameters.length; i++) {
             if (parameters[i].isAnnotationPresent(OwnerId.class)) {
-                return ownershipResolver.isOwner(arguments[i], authentication);
+                return resolver.isOwner(arguments[i], authentication);
             }
         }
         return false;
+    }
+
+    private OwnershipResolver getOwnershipResolver() {
+        if (ownershipResolver == null && applicationContext != null) {
+            try {
+                ownershipResolver = applicationContext.getBean(OwnershipResolver.class);
+            } catch (Exception ignored) {
+            }
+        }
+        return ownershipResolver;
     }
 
     @Override
@@ -115,9 +126,7 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
         return AuthorizationInterceptorsOrder.PRE_AUTHORIZE.getOrder() + 1;
     }
 
-    void setOwnershipResolver(OwnershipResolver ownershipResolver) {
-        this.ownershipResolver = ownershipResolver;
-    }
+
 
     private Authority resolveAuthority(Method method, Object target) {
         HasAuthority methodAnnotation = method.getAnnotation(HasAuthority.class);
