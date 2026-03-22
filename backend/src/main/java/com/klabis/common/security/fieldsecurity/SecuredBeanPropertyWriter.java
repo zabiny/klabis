@@ -3,7 +3,6 @@ package com.klabis.common.security.fieldsecurity;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
@@ -51,7 +50,6 @@ class SecuredBeanPropertyWriter extends BeanPropertyWriter {
             gen.writeFieldName(delegate.getName());
             gen.writeString(MaskDeniedHandler.MASK_VALUE);
         }
-        // NullDeniedHandler or no handler → skip field entirely (write nothing)
     }
 
     private boolean isAuthorized() {
@@ -62,19 +60,10 @@ class SecuredBeanPropertyWriter extends BeanPropertyWriter {
         }
 
         if (hasAuthority != null) {
-            return hasHasAuthorityGrant(authentication, hasAuthority.value());
+            return SecuritySpelEvaluator.hasAuthority(authentication, hasAuthority.value());
         }
 
         return true;
-    }
-
-    private boolean hasHasAuthorityGrant(Authentication authentication, Authority required) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        String requiredValue = required.getValue();
-        return authentication.getAuthorities().stream()
-                .anyMatch(granted -> granted.getAuthority().equals(requiredValue));
     }
 
     private boolean shouldMask() {

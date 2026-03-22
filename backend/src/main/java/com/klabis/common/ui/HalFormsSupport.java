@@ -268,14 +268,9 @@ public class HalFormsSupport {
 
         private static boolean evaluateHasAuthority(Method method) {
             HasAuthority annotation = method.getAnnotation(HasAuthority.class);
-            org.springframework.security.core.Authentication authentication =
-                    SecurityContextHolder.getContext().getAuthentication();
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return false;
-            }
-            String required = annotation.value().getValue();
-            return authentication.getAuthorities().stream()
-                    .anyMatch(granted -> granted.getAuthority().equals(required));
+            return SecuritySpelEvaluator.hasAuthority(
+                    SecurityContextHolder.getContext().getAuthentication(),
+                    annotation.value());
         }
 
         private static boolean evaluatePreAuthorize(Method method) {

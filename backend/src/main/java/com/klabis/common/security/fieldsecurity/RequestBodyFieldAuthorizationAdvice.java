@@ -2,7 +2,6 @@ package com.klabis.common.security.fieldsecurity;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.patch.PatchField;
-import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpInputMessage;
@@ -34,6 +33,7 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
             return body;
         }
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         RecordComponent[] components = record.getClass().getRecordComponents();
 
         for (RecordComponent component : components) {
@@ -54,47 +54,32 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
                 continue;
             }
 
-            checkPreAuthorize(component, accessor);
-            checkHasAuthority(component, accessor);
+            checkPreAuthorize(component, accessor, authentication);
+            checkHasAuthority(component, accessor, authentication);
         }
 
         return body;
     }
 
-    private void checkPreAuthorize(RecordComponent component, Method accessor) {
+    private void checkPreAuthorize(RecordComponent component, Method accessor, @Nullable Authentication authentication) {
         PreAuthorize preAuthorize = accessor.getAnnotation(PreAuthorize.class);
         if (preAuthorize == null) {
             return;
         }
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (!evaluatePreAuthorize(preAuthorize.value(), accessor, authentication)) {
+        if (!SecuritySpelEvaluator.evaluate(preAuthorize.value(), accessor, authentication)) {
             throw new FieldAuthorizationException(component.getName(), preAuthorize.value());
         }
     }
 
-    private void checkHasAuthority(RecordComponent component, Method accessor) {
+    private void checkHasAuthority(RecordComponent component, Method accessor, @Nullable Authentication authentication) {
         HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
         if (hasAuthority == null) {
             return;
         }
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (!isAuthorized(authentication, hasAuthority.value())) {
+        if (!SecuritySpelEvaluator.hasAuthority(authentication, hasAuthority.value())) {
             throw new FieldAuthorizationException(component.getName(), hasAuthority.value().getValue());
         }
-    }
-
-    private boolean evaluatePreAuthorize(String expression, Method method, @Nullable Authentication authentication) {
-        return SecuritySpelEvaluator.evaluate(expression, method, authentication);
-    }
-
-    private boolean isAuthorized(@Nullable Authentication authentication, Authority requiredAuthority) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        String required = requiredAuthority.getValue();
-        return authentication.getAuthorities().stream()
-                .anyMatch(granted -> granted.getAuthority().equals(required));
     }
 }

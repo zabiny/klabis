@@ -2,6 +2,7 @@ package com.klabis.common.security;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.Pointcut;
@@ -34,6 +35,8 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
 
     private ApplicationContext applicationContext;
 
+    private static final AuthorizationResult DENY = () -> false;
+
     private static final Pointcut POINTCUT = new ComposablePointcut(
             AnnotationMatchingPointcut.forClassAnnotation(HasAuthority.class))
             .union(AnnotationMatchingPointcut.forMethodAnnotation(HasAuthority.class));
@@ -48,11 +51,11 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (!isAuthorized(authentication, requiredAuthority)) {
+        if (!SecuritySpelEvaluator.hasAuthority(authentication, requiredAuthority)) {
             HandleAuthorizationDenied denied = resolveDeniedHandler(invocation.getMethod());
             if (denied != null) {
                 MethodAuthorizationDeniedHandler handler = resolveHandler(denied.handlerClass());
-                return handler.handleDeniedInvocation(invocation, denyResult(requiredAuthority));
+                return handler.handleDeniedInvocation(invocation, DENY);
             }
             throw new AccessDeniedException("Access denied. Required authority: " + requiredAuthority.getValue());
         }
@@ -101,15 +104,6 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
         return method.getDeclaringClass().getAnnotation(HandleAuthorizationDenied.class);
     }
 
-    private boolean isAuthorized(Authentication authentication, Authority requiredAuthority) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        String required = requiredAuthority.getValue();
-        return authentication.getAuthorities().stream()
-                .anyMatch(granted -> granted.getAuthority().equals(required));
-    }
-
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
@@ -129,7 +123,4 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
         }
     }
 
-    private AuthorizationResult denyResult(Authority authority) {
-        return () -> false;
-    }
 }

@@ -15,12 +15,7 @@ import java.util.List;
 /**
  * Jackson {@link BeanSerializerModifier} that wraps {@link BeanPropertyWriter} instances
  * for record components annotated with {@link PreAuthorize} or {@link HasAuthority}.
- * Authorization is evaluated during serialization.
- * <p>
- * This approach replaces Spring Security's {@code AuthorizationAdvisorProxyFactory} proxy mechanism
- * for response DTOs. The proxy approach requires records to implement an interface (records are final,
- * so CGLIB cannot subclass them — only JDK dynamic proxy via interface works). With this Jackson-based
- * approach, security annotations go directly on record components and no interface is needed.
+ * Authorization is evaluated during serialization — no interface or proxy needed.
  */
 class FieldSecurityBeanSerializerModifier extends BeanSerializerModifier {
 
