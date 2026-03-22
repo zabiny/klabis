@@ -165,8 +165,8 @@ class UpdateMemberIntegrationTest {
     @Test
     @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-    @DisplayName("member: admin-only fields (firstName, lastName, gender) should be silently ignored in self-update")
-    void adminOnlyFieldsShouldBeIgnoredInSelfUpdate() throws Exception {
+    @DisplayName("member: admin-only fields (firstName, lastName, gender) should be rejected with 403 in self-update")
+    void adminOnlyFieldsShouldBeRejectedInSelfUpdate() throws Exception {
         mockMvc.perform(
                         patch("/api/members/{id}", TEST_MEMBER_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -179,14 +179,7 @@ class UpdateMemberIntegrationTest {
                                         }
                                         """)
                 )
-                .andExpect(status().isNoContent());
-
-        mockMvc.perform(get("/api/members/{id}", TEST_MEMBER_ID))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("self-updated@example.com"))
-                .andExpect(jsonPath("$.firstName").value("Test"))
-                .andExpect(jsonPath("$.lastName").value("User"))
-                .andExpect(jsonPath("$.gender").value("MALE"));
+                .andExpect(status().isForbidden());
     }
 
     @Test
