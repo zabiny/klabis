@@ -3,9 +3,11 @@ package com.klabis.common.security.fieldsecurity;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,7 +19,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.jose.jws.JwsAlgorithms;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +31,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -38,6 +48,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = FieldLevelAuthorizationTest.TestController.class)
 @DisplayName("Field-level authorization on response DTOs")
 class FieldLevelAuthorizationTest {
+
+    private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
+    private static final UUID OTHER_ID = UUID.fromString("bbbbbbbb-0000-0000-0000-000000000002");
 
     private static final String FIELD_READ_AUTHORITY = "FIELD:READ";
 
@@ -84,6 +97,16 @@ class FieldLevelAuthorizationTest {
     ) {
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
+    record OwnershipDataResponse(
+            @OwnerId UUID ownerId,
+            String publicField,
+            @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible String ownerOrAdminField,
+            @OwnerVisible String ownerOnlyField,
+            @HasAuthority(Authority.MEMBERS_MANAGE) String adminOnlyField
+    ) {}
+
     @MvcComponent
     @RestController
     static class TestController {
@@ -111,6 +134,32 @@ class FieldLevelAuthorizationTest {
         EntityModel<SensitiveDataResponse> getSensitiveDataWithNulls() {
             return EntityModel.of(new SensitiveDataResponse("public-value", null, "sensitive-value", "authority-secret-value", "authority-sensitive-value"));
         }
+
+        @GetMapping(value = "/test/ownership-auth", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<OwnershipDataResponse> getOwnershipData() {
+            return EntityModel.of(new OwnershipDataResponse(
+                    OWNER_ID,
+                    "public-value",
+                    "owner-or-admin-value",
+                    "owner-only-value",
+                    "admin-only-value"
+            ));
+        }
+    }
+
+    private static void withOwnerAuthentication(UUID memberIdUuid, Authority... authorities) {
+        Jwt jwt = Jwt.withTokenValue("test-token")
+                .header("alg", JwsAlgorithms.RS256)
+                .subject("test-user")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(3600))
+                .build();
+        List<SimpleGrantedAuthority> grantedAuthorities = java.util.Arrays.stream(authorities)
+                .map(a -> new SimpleGrantedAuthority(a.getValue()))
+                .toList();
+        KlabisJwtAuthenticationToken token = new KlabisJwtAuthenticationToken(
+                jwt, new UserId(memberIdUuid), memberIdUuid, grantedAuthorities);
+        SecurityContextHolder.getContext().setAuthentication(token);
     }
 
     @Nested
@@ -344,6 +393,80 @@ class FieldLevelAuthorizationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"hasAuthorityHiddenField\": null}"))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("ownership-based field authorization")
+    class OwnershipAuthorization {
+
+        @Test
+        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @DisplayName("admin (non-owner) sees all fields including ownerOrAdminField and adminOnlyField")
+        void adminNonOwnerSeesAllFields() throws Exception {
+            mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.ownerOrAdminField").value("owner-or-admin-value"))
+                    .andExpect(jsonPath("$.adminOnlyField").value("admin-only-value"))
+                    .andExpect(jsonPath("$.ownerOnlyField").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("owner without admin authority sees ownerOrAdminField and ownerOnlyField but not adminOnlyField")
+        void ownerWithoutAdminAuthoritySeesOwnerVisibleFields() throws Exception {
+            withOwnerAuthentication(OWNER_ID);
+            try {
+                mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.publicField").value("public-value"))
+                        .andExpect(jsonPath("$.ownerOrAdminField").value("owner-or-admin-value"))
+                        .andExpect(jsonPath("$.ownerOnlyField").value("owner-only-value"))
+                        .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("non-owner without authority sees only publicField")
+        void nonOwnerWithoutAuthoritySeesOnlyPublicField() throws Exception {
+            mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.ownerOrAdminField").doesNotExist())
+                    .andExpect(jsonPath("$.ownerOnlyField").doesNotExist())
+                    .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("owner does not see adminOnlyField (has only @HasAuthority, not @OwnerVisible)")
+        void ownerDoesNotSeeAdminOnlyField() throws Exception {
+            withOwnerAuthentication(OWNER_ID);
+            try {
+                mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @DisplayName("non-owner with KlabisJwtAuthenticationToken does not see owner-only fields")
+        void nonOwnerWithJwtTokenDoesNotSeeOwnerFields() throws Exception {
+            withOwnerAuthentication(OTHER_ID);
+            try {
+                mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.publicField").value("public-value"))
+                        .andExpect(jsonPath("$.ownerOrAdminField").doesNotExist())
+                        .andExpect(jsonPath("$.ownerOnlyField").doesNotExist())
+                        .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
         }
     }
 }
