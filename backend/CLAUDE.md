@@ -125,6 +125,10 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 - Provide `design.md`, `proposal.md`, and `tasks.md` context files to agent
 - Expect 1-4 hours for major refactoring across multiple modules
 
+### Common Module Changes
+
+When making code changes in the `common` module, update the appropriate project documentation (e.g., `docs/` files, skills, or CLAUDE.md) to reflect the new or changed functionality.
+
 ### Domain Type Safety Pattern
 
 See `klabis:backend-patterns` skill for detailed patterns including type-safe IDs, Memento, application services, and REST controllers.
