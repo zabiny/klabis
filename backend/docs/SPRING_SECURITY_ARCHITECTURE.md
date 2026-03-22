@@ -533,6 +533,48 @@ graph TD
 
 ---
 
+## Field-Level Authorization
+
+Beyond method-level security (protecting entire endpoints), Klabis supports **field-level authorization** — hiding or masking individual fields in response DTOs and rejecting unauthorized field updates in PATCH requests.
+
+### Response Field Filtering
+
+Implemented via `FieldSecurityBeanSerializerModifier` (Jackson `BeanSerializerModifier`). Security annotations go directly on record components — no interface required.
+
+```java
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
+record MemberDetailResponse(
+    String firstName,                              // always visible
+
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    String birthNumber,                            // hidden when unauthorized
+
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
+    String bankAccountNumber                       // shows "***" when unauthorized
+) {}
+```
+
+During Jackson serialization, `SecuredBeanPropertyWriter` evaluates each annotated field against the current `Authentication`. Denied fields are either skipped (default `NullDeniedHandler`) or masked (`MaskDeniedHandler`).
+
+### Request Field Authorization (PATCH)
+
+`RequestBodyFieldAuthorizationAdvice` enforces `@PreAuthorize` / `@HasAuthority` on `PatchField<T>` record components. Only provided fields are checked — absent fields are skipped. Unauthorized updates result in HTTP 403 (`FieldAuthorizationException`).
+
+### HAL+FORMS Template Filtering
+
+Template properties in HAL+FORMS responses are automatically filtered based on the same security annotations. `HalFormsSupport.isPropertyAuthorized()` inspects record component accessors and excludes properties the user cannot modify.
+
+### Reference
+
+- Serializer: `com.klabis.common.security.fieldsecurity.FieldSecurityBeanSerializerModifier`
+- Request auth: `com.klabis.common.security.fieldsecurity.RequestBodyFieldAuthorizationAdvice`
+- Handlers: `NullDeniedHandler` (hide), `MaskDeniedHandler` (mask as `"***"`)
+- Test: `FieldLevelAuthorizationTest`
+
+---
+
 ## Configuration Details
 
 ### Security Configuration Classes

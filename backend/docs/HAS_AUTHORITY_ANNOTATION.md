@@ -331,11 +331,53 @@ Then use it in your annotations:
 public ResponseEntity<?> someEndpoint() { ... }
 ```
 
+## Field-Level Usage on Record Components
+
+`@HasAuthority` can be placed directly on record components to control field visibility in responses and field-level authorization in PATCH requests.
+
+### Response Field Filtering
+
+```java
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
+record MemberDetailResponse(
+    String firstName,
+
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    String birthNumber,  // hidden from users without MEMBERS:MANAGE
+
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
+    String bankAccountNumber  // shows "***" for unauthorized users
+) {}
+```
+
+`FieldSecurityBeanSerializerModifier` evaluates `@HasAuthority` on record component accessors during Jackson serialization. No interface or proxy is needed.
+
+### PATCH Request Field Authorization
+
+```java
+record UpdateMemberRequest(
+    PatchField<String> email,  // no restriction
+
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    PatchField<String> birthNumber  // 403 if unauthorized user provides this field
+) {}
+```
+
+`RequestBodyFieldAuthorizationAdvice` checks `@HasAuthority` on provided `PatchField` components. Non-provided fields are skipped.
+
+### How annotations propagate on records
+
+`@HasAuthority` has `@Target({TYPE, METHOD})`. When placed on a record component, Java propagates it to the accessor method (per JLS §8.10.1). The field-level security infrastructure reads annotations via `RecordComponent.getAccessor().getAnnotation(HasAuthority.class)`.
+
 ## See Also
 
 - `Authority` - Enum of all available authorities
 - `HasAuthority` - The annotation definition
-- `HasAuthorityAspect` - The AspectJ aspect that processes the annotation
-- `HasAuthorityAspectTest` - Comprehensive test examples
+- `HasAuthorityMethodInterceptor` - AuthorizationAdvisor for method-level security
+- `FieldSecurityBeanSerializerModifier` - Jackson serializer for response field filtering
+- `RequestBodyFieldAuthorizationAdvice` - Request body field authorization
+- `FieldLevelAuthorizationTest` - Comprehensive test examples
 - `HasAuthorityExamples` - Usage examples
 - `SecurityConfiguration` - Spring Security configuration

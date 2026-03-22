@@ -539,10 +539,14 @@ When all items fit on one page, `next` and `prev` links are absent:
 
 ### Future Enhancements
 
-- ⏳ `_templates` for update forms
-- ⏳ Additional link relations (edit, deactivate, activate)
 - ⏳ Search resource with query templates
 - ⏳ Filtering with pagination (filter parameters preserved in links)
+
+## Template Property Filtering by Authorization
+
+HAL+FORMS template properties are automatically filtered based on the user's authorities. When a record component has `@PreAuthorize` or `@HasAuthority`, `HalFormsSupport.isPropertyAuthorized()` evaluates the annotation against the current `Authentication`. Unauthorized properties are excluded from the `_templates.default.properties` array.
+
+This means a PATCH template only shows fields the user is allowed to update. No extra configuration is needed — placing a security annotation on a record component is sufficient for both response field filtering and template property filtering.
 
 ## References
 
