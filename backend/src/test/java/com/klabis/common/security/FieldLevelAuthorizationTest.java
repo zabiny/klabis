@@ -3,6 +3,7 @@ package com.klabis.common.security;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.patch.PatchField;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserService;
@@ -13,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.AuthorizationAdvisorProxyFactory;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
@@ -28,7 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -87,6 +92,17 @@ class FieldLevelAuthorizationTest {
     ) implements SensitiveDataView {
     }
 
+    record PatchSensitiveDataRequest(
+            PatchField<String> publicField,
+
+            @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
+            PatchField<String> hiddenField,
+
+            @HasAuthority(Authority.MEMBERS_MANAGE)
+            PatchField<String> hasAuthorityHiddenField
+    ) {
+    }
+
     @MvcComponent
     @RestController
     static class TestController {
@@ -113,8 +129,8 @@ class FieldLevelAuthorizationTest {
         }
 
         @PatchMapping(value = "/test/field-auth")
-        org.springframework.http.ResponseEntity<Void> updateSensitiveData(@RequestBody SensitiveDataResponse body) {
-            return org.springframework.http.ResponseEntity.noContent().build();
+        ResponseEntity<Void> updateSensitiveData(@RequestBody PatchSensitiveDataRequest body) {
+            return ResponseEntity.noContent().build();
         }
     }
 
@@ -147,6 +163,29 @@ class FieldLevelAuthorizationTest {
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").exists())
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").exists());
         }
+
+        @Test
+        @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
+        @DisplayName("PATCH with PatchField request should succeed when user has required authority from @PreAuthorize")
+        void patchShouldSucceedWithRequiredAuthorityForPreAuthorize() throws Exception {
+            mockMvc.perform(patch("/test/field-auth")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"publicField\": \"new-value\", \"hiddenField\": \"new-secret\"}"))
+                    .andExpect(status().is2xxSuccessful());
+        }
+
+        @Test
+        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @DisplayName("PATCH with PatchField request should return 2XX when user has required authority from @HasAuthority")
+        void patchShouldSucceedWithRequiredAuthorityForHasAuthority() throws Exception {
+            mockMvc.perform(patch("/test/field-auth")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"publicField\": \"new-value\", \"hasAuthorityHiddenField\": \"new-secret\"}"))
+                    .andExpect(status().is2xxSuccessful());
+        }
+
     }
 
     @Nested
@@ -168,7 +207,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("HAL+FORMS template should only contain publicField when user lacks FIELD:READ authority")
+        @DisplayName("HAL+FORMS template should only contain publicField when user lacks FIELD:READ and MEMBERS:MANAGE authority")
         void shouldFilterTemplatePropertiesBasedOnAuthorization() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
@@ -177,6 +216,39 @@ class FieldLevelAuthorizationTest {
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").doesNotExist())
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").doesNotExist())
                     .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").doesNotExist());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("PATCH with PatchField request should return 403 when user attempts to update field where he lacks required authority defined by @PreAuthorize")
+        void patchShouldReturn403WithoutRequiredAuthorityPreAuthorize() throws Exception {
+            mockMvc.perform(patch("/test/field-auth")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"publicField\": \"new-value\", \"hiddenField\": \"new-secret\"}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("PATCH with PatchField request should return 403 when user attempts to update field where he lacks required authority defined by @HasAuthority")
+        void patchShouldReturn403WithoutRequiredAuthorityHasAuthority() throws Exception {
+            mockMvc.perform(patch("/test/field-auth")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"publicField\": \"new-value\", \"hasAuthorityHiddenField\": \"new-secret\"}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("PATCH with PatchField request should return 2XX when user update only public fields")
+        void patchShouldReturn200IfAllUpdatedFieldsAreAvailableForUser() throws Exception {
+            mockMvc.perform(patch("/test/field-auth")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"publicField\": \"new-value\"}"))
+                    .andExpect(status().is2xxSuccessful());
         }
     }
 }
