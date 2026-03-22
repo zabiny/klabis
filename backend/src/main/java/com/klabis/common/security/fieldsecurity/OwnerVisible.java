@@ -1,14 +1,11 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.klabis.common.users.HasAuthority;
-import org.springframework.security.access.prepost.PreAuthorize;
-
 import java.lang.annotation.*;
 
 /**
  * Marks a field or method as accessible to the object's owner.
  * <p>
- * Combines with {@link HasAuthority} and {@link PreAuthorize} using OR semantics:
+ * Combines with {@link com.klabis.common.users.HasAuthority} and {@link org.springframework.security.access.prepost.PreAuthorize} using OR semantics:
  * the field or method is accessible if the authority check passes <em>or</em> the
  * ownership check passes.
  * <p>

@@ -70,34 +70,21 @@ class SecuredBeanPropertyWriter extends BeanPropertyWriter {
 
     private boolean isAuthorized(Object bean) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (preAuthorize != null && SecuritySpelEvaluator.evaluate(preAuthorize.value(), accessorMethod, authentication)) {
-            return true;
-        }
-
-        if (hasAuthority != null && SecuritySpelEvaluator.hasAuthority(authentication, hasAuthority.value())) {
-            return true;
-        }
-
-        if (ownerVisible) {
-            return isOwner(bean, authentication);
-        }
-
-        // No security annotations triggered a grant — if there were no authority annotations at all,
-        // the field is public; otherwise it was denied above
-        return preAuthorize == null && hasAuthority == null;
+        Object ownerIdValue = resolveOwnerIdValue(bean);
+        return SecuritySpelEvaluator.isFieldAuthorized(
+                preAuthorize, hasAuthority, ownerVisible,
+                accessorMethod, ownerIdValue, authentication, ownershipResolver);
     }
 
-    private boolean isOwner(Object bean, Authentication authentication) {
-        if (ownerIdAccessor == null || ownershipResolver == null) {
-            return false;
+    private Object resolveOwnerIdValue(Object bean) {
+        if (!ownerVisible || ownerIdAccessor == null) {
+            return null;
         }
         try {
-            Object ownerIdValue = ownerIdAccessor.invoke(bean);
-            return ownershipResolver.isOwner(ownerIdValue, authentication);
+            return ownerIdAccessor.invoke(bean);
         } catch (Exception e) {
             log.warn("Failed to read owner ID from bean {}", bean.getClass().getSimpleName(), e);
-            return false;
+            return null;
         }
     }
 

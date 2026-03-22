@@ -14,7 +14,9 @@ import org.springframework.security.authorization.method.HandleAuthorizationDeni
 
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Jackson {@link BeanSerializerModifier} that wraps {@link BeanPropertyWriter} instances
@@ -106,8 +108,8 @@ class FieldSecurityBeanSerializerModifier extends BeanSerializerModifier {
         }
 
         // Fall back to single component whose type can be converted to UUID
-        List<RecordComponent> candidates = java.util.Arrays.stream(components)
-                .filter(c -> conversionService.canConvert(c.getType(), java.util.UUID.class))
+        List<RecordComponent> candidates = Arrays.stream(components)
+                .filter(c -> conversionService.canConvert(c.getType(), UUID.class))
                 .toList();
 
         if (candidates.size() == 1) {

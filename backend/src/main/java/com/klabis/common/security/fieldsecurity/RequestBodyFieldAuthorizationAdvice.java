@@ -86,22 +86,14 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
             return;
         }
 
-        if (preAuthorize != null && SecuritySpelEvaluator.evaluate(preAuthorize.value(), accessor, authentication)) {
-            return;
+        if (!SecuritySpelEvaluator.isFieldAuthorized(
+                preAuthorize, hasAuthority, ownerVisible,
+                accessor, ownerIdFromPath, authentication, ownershipResolver)) {
+            String requiredAuthority = hasAuthority != null ? hasAuthority.value().getValue()
+                    : preAuthorize != null ? preAuthorize.value()
+                    : "@OwnerVisible";
+            throw new FieldAuthorizationException(component.getName(), requiredAuthority);
         }
-
-        if (hasAuthority != null && SecuritySpelEvaluator.hasAuthority(authentication, hasAuthority.value())) {
-            return;
-        }
-
-        if (ownerVisible && ownerIdFromPath != null && ownershipResolver.isOwner(ownerIdFromPath, authentication)) {
-            return;
-        }
-
-        String requiredAuthority = hasAuthority != null ? hasAuthority.value().getValue()
-                : preAuthorize != null ? preAuthorize.value()
-                : "@OwnerVisible";
-        throw new FieldAuthorizationException(component.getName(), requiredAuthority);
     }
 
     @Nullable
