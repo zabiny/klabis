@@ -1,7 +1,6 @@
 package com.klabis.common.security.fieldsecurity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.patch.PatchField;
 import com.klabis.common.users.Authority;
@@ -51,44 +50,21 @@ class FieldLevelAuthorizationTest {
     @MockitoBean
     UserDetailsService userDetailsService;
 
-    // --- Test DTO design ---
-    // SensitiveDataView is the interface carrying the @PreAuthorize annotations.
-    // SensitiveDataResponse record implements it — AuthorizationAdvisorProxyFactory
-    // creates a JDK proxy via this interface (records are final, CGLIB cannot subclass them).
-
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
-    interface SensitiveDataView {
-
-        @JsonProperty
-        String publicField();
-
-        @JsonProperty
-        @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
-        String hiddenField();
-
-        @JsonProperty
-        @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
-        @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
-        String maskedField();
-
-        @JsonProperty
-        @HasAuthority(Authority.MEMBERS_MANAGE)
-        String hasAuthorityHiddenField();
-
-        @JsonProperty
-        @HasAuthority(Authority.MEMBERS_MANAGE)
-        @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
-        String hasAuthorityMaskedField();
-    }
-
     record SensitiveDataResponse(
             String publicField,
+            @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
             String hiddenField,
+            @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
+            @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
             String maskedField,
+            @HasAuthority(Authority.MEMBERS_MANAGE)
             String hasAuthorityHiddenField,
+            @HasAuthority(Authority.MEMBERS_MANAGE)
+            @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
             String hasAuthorityMaskedField
-    ) implements SensitiveDataView {
+    ) {
     }
 
     record PatchSensitiveDataRequest(

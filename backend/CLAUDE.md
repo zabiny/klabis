@@ -68,10 +68,11 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 - This resolves `UnsatisfiedDependencyException` in component-scanned tests
 
 **Field-Level Authorization Pattern**
-- Spring Security version: 6.5.x — use `AuthorizationAdvisorProxyFactory` (not `AuthorizationProxyFactory` which is just the interface)
-- Records are final → `AuthorizationAdvisorProxyFactory` creates JDK proxy via interface, not CGLIB
-- `@JsonProperty` MUST be on interface methods (JDK proxies don't follow Bean naming)
-- Controller return type must be the interface, not the record
+- Implemented via `FieldSecurityBeanSerializerModifier` (Jackson `BeanSerializerModifier`)
+- Annotations (`@PreAuthorize`, `@HasAuthority`, `@HandleAuthorizationDenied`) go directly on record components — no interface required
+- `@JsonInclude(NON_NULL)` + `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` on the record class acts as default deny handler
+- `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` on a component overrides the class-level handler and shows `"***"`
+- Module registered via `@JsonComponent` on `FieldSecurityJacksonModule` — auto-discovered in both `@WebMvcTest` and full `@SpringBootTest`
 - See `FieldLevelAuthorizationTest` for reference implementation
 
 **Gradle Optimization**
