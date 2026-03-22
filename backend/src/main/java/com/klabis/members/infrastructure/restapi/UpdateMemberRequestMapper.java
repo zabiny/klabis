@@ -8,7 +8,7 @@ class UpdateMemberRequestMapper {
 
     private UpdateMemberRequestMapper() {}
 
-    static Member.UpdateMemberByAdmin toAdminCommand(UpdateMemberRequest request, UserId updatedBy) {
+    static Member.UpdateMember toCommand(UpdateMemberRequest request, UserId updatedBy) {
         try {
             EmailAddress email = toEmailAddress(request.email());
             PhoneNumber phone = toPhoneNumber(request.phone());
@@ -29,55 +29,11 @@ class UpdateMemberRequestMapper {
             Gender gender = toEnum(request.gender());
             BirthNumber birthNumber = toBirthNumber(request.birthNumber());
 
-            return new Member.UpdateMemberByAdmin(
+            return new Member.UpdateMember(
                     email, phone, address, chipNumber, nationality,
                     bankAccountNumber, identityCard, drivingLicenseGroup,
                     medicalCourse, trainerLicense, refereeLicense, dietaryRestrictions, guardian,
                     firstName, lastName, dateOfBirth, gender, birthNumber, updatedBy
-            );
-        } catch (IllegalArgumentException e) {
-            throw new InvalidUpdateException(e.getMessage(), e);
-        }
-    }
-
-    static Member.SelfUpdate toSelfUpdateCommand(UpdateMemberRequest request) {
-        try {
-            return new Member.SelfUpdate(
-                    toEmailAddress(request.email()),
-                    toPhoneNumber(request.phone()),
-                    toAddress(request.address()),
-                    toString(request.chipNumber()),
-                    toString(request.nationality()),
-                    toBankAccountNumber(request.bankAccountNumber()),
-                    toIdentityCard(request.identityCard()),
-                    toEnum(request.drivingLicenseGroup()),
-                    toMedicalCourse(request.medicalCourse()),
-                    toTrainerLicense(request.trainerLicense()),
-                    toRefereeLicense(request.refereeLicense()),
-                    toString(request.dietaryRestrictions()),
-                    toGuardianInformation(request.guardian())
-            );
-        } catch (IllegalArgumentException e) {
-            throw new InvalidUpdateException(e.getMessage(), e);
-        }
-    }
-
-    static Member.SelfUpdate toSelfUpdateCommand(SelfUpdateMemberRequest request) {
-        try {
-            return new Member.SelfUpdate(
-                    toEmailAddress(request.email()),
-                    toPhoneNumber(request.phone()),
-                    toAddress(request.address()),
-                    toString(request.chipNumber()),
-                    toString(request.nationality()),
-                    toBankAccountNumber(request.bankAccountNumber()),
-                    toIdentityCard(request.identityCard()),
-                    toEnum(request.drivingLicenseGroup()),
-                    toMedicalCourse(request.medicalCourse()),
-                    toTrainerLicense(request.trainerLicense()),
-                    toRefereeLicense(request.refereeLicense()),
-                    toString(request.dietaryRestrictions()),
-                    toGuardianInformation(request.guardian())
             );
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);
