@@ -98,8 +98,14 @@ class FieldLevelAuthorizationTest {
             @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
             PatchField<String> hiddenField,
 
+            @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
+            PatchField<String> maskedField,
+
             @HasAuthority(Authority.MEMBERS_MANAGE)
-            PatchField<String> hasAuthorityHiddenField
+            PatchField<String> hasAuthorityHiddenField,
+
+            @HasAuthority(Authority.MEMBERS_MANAGE)
+            PatchField<String> hasAuthorityMaskedField
     ) {
     }
 

@@ -1,6 +1,7 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.security.SecuritySpelEvaluator;
 import com.klabis.common.users.HasAuthority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -227,12 +228,23 @@ public class HalFormsSupport {
 
         /**
          * Checks whether the current user is authorized to see the given property in the template.
-         * Looks for @PreAuthorize or @HasAuthority on interface methods matching the property name —
+         * <p>
+         * For record types, looks for @PreAuthorize or @HasAuthority directly on the record component accessor.
+         * For non-record types, looks on interface methods matching the property name —
          * the same annotations that control JSON field visibility for the response DTO.
          */
         private static boolean isPropertyAuthorized(Class<?> payloadType, String propertyName) {
             if (payloadType == null) {
                 return true;
+            }
+            if (payloadType.isRecord()) {
+                return Arrays.stream(payloadType.getRecordComponents())
+                        .filter(c -> c.getName().equals(propertyName))
+                        .filter(c -> c.getAccessor().isAnnotationPresent(PreAuthorize.class)
+                                || c.getAccessor().isAnnotationPresent(HasAuthority.class))
+                        .findFirst()
+                        .map(c -> evaluateSecurityAnnotations(c.getAccessor()))
+                        .orElse(true);
             }
             return Arrays.stream(payloadType.getInterfaces())
                     .flatMap(iface -> Arrays.stream(iface.getMethods()))
@@ -268,33 +280,9 @@ public class HalFormsSupport {
 
         private static boolean evaluatePreAuthorize(Method method) {
             PreAuthorize annotation = method.getAnnotation(PreAuthorize.class);
-            String expression = annotation.value();
             org.springframework.security.core.Authentication authentication =
                     SecurityContextHolder.getContext().getAuthentication();
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return false;
-            }
-            try {
-                org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler handler =
-                        new org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler();
-                Object dummyTarget = new Object();
-                org.aopalliance.intercept.MethodInvocation dummyInvocation = new org.aopalliance.intercept.MethodInvocation() {
-                    @Override public Method getMethod() { return method; }
-                    @Override public Object[] getArguments() { return new Object[0]; }
-                    @Override public Object getThis() { return dummyTarget; }
-                    @Override public java.lang.reflect.AccessibleObject getStaticPart() { return method; }
-                    @Override public Object proceed() { return null; }
-                };
-                org.springframework.expression.EvaluationContext evalContext =
-                        handler.createEvaluationContext(authentication, dummyInvocation);
-                Boolean result = handler.getExpressionParser()
-                        .parseExpression(expression)
-                        .getValue(evalContext, Boolean.class);
-                return Boolean.TRUE.equals(result);
-            } catch (Exception e) {
-                LOG.debug("Failed to evaluate @PreAuthorize expression '{}' on method {}: {}", expression, method.getName(), e.getMessage());
-                return false;
-            }
+            return SecuritySpelEvaluator.evaluate(annotation.value(), method, authentication);
         }
 
         private static Optional<AnnotatedElement> getAnnotatedElementForProperty(AffordanceModel.PayloadMetadata payloadMetadata, AffordanceModel.PropertyMetadata delegate) {
