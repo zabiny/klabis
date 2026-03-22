@@ -225,6 +225,9 @@ spring:
 
   flyway:
     clean-disabled: false
+logging:
+  level:
+    org.springframework.web.servlet.mvc: DEBUG
 
 ---
 # Production profile
