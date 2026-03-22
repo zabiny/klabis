@@ -106,6 +106,11 @@ class FieldLevelAuthorizationTest {
         ResponseEntity<Void> updateSensitiveData(@RequestBody PatchSensitiveDataRequest body) {
             return ResponseEntity.noContent().build();
         }
+
+        @GetMapping(value = "/test/field-auth-nulls", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<SensitiveDataResponse> getSensitiveDataWithNulls() {
+            return EntityModel.of(new SensitiveDataResponse("public-value", null, "sensitive-value", "authority-secret-value", "authority-sensitive-value"));
+        }
     }
 
     @Nested
@@ -160,6 +165,87 @@ class FieldLevelAuthorizationTest {
                     .andExpect(status().is2xxSuccessful());
         }
 
+        @Test
+        @WithMockUser(authorities = {FIELD_READ_AUTHORITY, "MEMBERS:MANAGE"})
+        @DisplayName("null-valued secured field is omitted by @JsonInclude(NON_NULL), not by authorization")
+        void nullValuedSecuredFieldIsOmittedByJsonIncludeNotByAuthorization() throws Exception {
+            mockMvc.perform(get("/test/field-auth-nulls").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hiddenField").doesNotExist())
+                    .andExpect(jsonPath("$.maskedField").value("sensitive-value"))
+                    .andExpect(jsonPath("$.hasAuthorityHiddenField").value("authority-secret-value"))
+                    .andExpect(jsonPath("$.hasAuthorityMaskedField").value("authority-sensitive-value"));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("user with partial authorities")
+    class PartialAuthorityUser {
+
+        @Test
+        @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
+        @DisplayName("user with FIELD:READ sees hiddenField and maskedField but not hasAuthority* fields")
+        void fieldReadUserSeesPreAuthorizeFieldsOnly() throws Exception {
+            mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hiddenField").value("secret-value"))
+                    .andExpect(jsonPath("$.maskedField").value("sensitive-value"))
+                    .andExpect(jsonPath("$.hasAuthorityHiddenField").doesNotExist())
+                    .andExpect(jsonPath("$.hasAuthorityMaskedField").value(MaskDeniedHandler.MASK_VALUE));
+        }
+
+        @Test
+        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @DisplayName("user with MEMBERS:MANAGE sees hasAuthority* fields but hiddenField absent and maskedField masked")
+        void membersManageUserSeesHasAuthorityFieldsOnly() throws Exception {
+            mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hiddenField").doesNotExist())
+                    .andExpect(jsonPath("$.maskedField").value(MaskDeniedHandler.MASK_VALUE))
+                    .andExpect(jsonPath("$.hasAuthorityHiddenField").value("authority-secret-value"))
+                    .andExpect(jsonPath("$.hasAuthorityMaskedField").value("authority-sensitive-value"));
+        }
+
+        @Test
+        @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
+        @DisplayName("PATCH with FIELD:READ sending authorized field and unauthorized hasAuthorityHiddenField returns 403")
+        void patchWithMixedAuthoritiesReturns403() throws Exception {
+            mockMvc.perform(patch("/test/field-auth")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"hiddenField\": \"ok\", \"hasAuthorityHiddenField\": \"no-auth\"}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
+        @DisplayName("HAL+FORMS template with FIELD:READ shows hiddenField and maskedField, hides hasAuthority* fields")
+        void halFormsTemplateWithFieldReadShowsPreAuthorizeProperties() throws Exception {
+            mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'publicField')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hiddenField')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").doesNotExist());
+        }
+
+        @Test
+        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @DisplayName("HAL+FORMS template with MEMBERS:MANAGE shows hasAuthority* fields, hides hiddenField and maskedField")
+        void halFormsTemplateWithMembersManageShowsHasAuthorityProperties() throws Exception {
+            mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'publicField')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hiddenField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").exists())
+                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").exists());
+        }
     }
 
     @Nested
@@ -223,6 +309,41 @@ class FieldLevelAuthorizationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"publicField\": \"new-value\"}"))
                     .andExpect(status().is2xxSuccessful());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("null-valued secured field is absent (not masked) even without authorization")
+        void nullValuedSecuredFieldIsAbsentNotMaskedWithoutAuthorization() throws Exception {
+            mockMvc.perform(get("/test/field-auth-nulls").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hiddenField").doesNotExist())
+                    .andExpect(jsonPath("$.maskedField").value(MaskDeniedHandler.MASK_VALUE))
+                    .andExpect(jsonPath("$.hasAuthorityHiddenField").doesNotExist())
+                    .andExpect(jsonPath("$.hasAuthorityMaskedField").value(MaskDeniedHandler.MASK_VALUE));
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("PATCH with empty body succeeds when no secured PatchField is provided")
+        void patchWithEmptyBodySucceeds() throws Exception {
+            mockMvc.perform(patch("/test/field-auth")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is2xxSuccessful());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("PATCH with explicit null for secured field returns 403 because PatchField.of(null) is still provided")
+        void patchWithExplicitNullForSecuredFieldReturns403() throws Exception {
+            mockMvc.perform(patch("/test/field-auth")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"hasAuthorityHiddenField\": null}"))
+                    .andExpect(status().isForbidden());
         }
     }
 }
