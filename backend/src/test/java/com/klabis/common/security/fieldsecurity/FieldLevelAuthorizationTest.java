@@ -1,13 +1,12 @@
 package com.klabis.common.security.fieldsecurity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.patch.PatchField;
-import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.users.UserService;
-import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,11 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.oauth2.jose.jws.JwsAlgorithms;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,8 +28,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -172,21 +165,6 @@ class FieldLevelAuthorizationTest {
         }
     }
 
-    private static void withOwnerAuthentication(UUID memberIdUuid, Authority... authorities) {
-        Jwt jwt = Jwt.withTokenValue("test-token")
-                .header("alg", JwsAlgorithms.RS256)
-                .subject("test-user")
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(3600))
-                .build();
-        List<SimpleGrantedAuthority> grantedAuthorities = java.util.Arrays.stream(authorities)
-                .map(a -> new SimpleGrantedAuthority(a.getValue()))
-                .toList();
-        KlabisJwtAuthenticationToken token = new KlabisJwtAuthenticationToken(
-                jwt, new UserId(memberIdUuid), memberIdUuid, grantedAuthorities);
-        SecurityContextHolder.getContext().setAuthentication(token);
-    }
-
     @Nested
     @DisplayName("authorized user with FIELD:READ authority")
     class AuthorizedUser {
@@ -229,7 +207,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         @DisplayName("PATCH with PatchField request should return 2XX when user has required authority from @HasAuthority")
         void patchShouldSucceedWithRequiredAuthorityForHasAuthority() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
@@ -272,7 +250,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         @DisplayName("user with MEMBERS:MANAGE sees hasAuthority* fields but hiddenField absent and maskedField masked")
         void membersManageUserSeesHasAuthorityFieldsOnly() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -309,7 +287,7 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
-        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         @DisplayName("HAL+FORMS template with MEMBERS:MANAGE shows hasAuthority* fields, hides hiddenField and maskedField")
         void halFormsTemplateWithMembersManageShowsHasAuthorityProperties() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -426,7 +404,7 @@ class FieldLevelAuthorizationTest {
     class OwnershipAuthorization {
 
         @Test
-        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         @DisplayName("admin (non-owner) sees all fields including ownerOrAdminField and adminOnlyField")
         void adminNonOwnerSeesAllFields() throws Exception {
             mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -438,19 +416,15 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
         @DisplayName("owner without admin authority sees ownerOrAdminField and ownerOnlyField but not adminOnlyField")
         void ownerWithoutAdminAuthoritySeesOwnerVisibleFields() throws Exception {
-            withOwnerAuthentication(OWNER_ID);
-            try {
-                mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.publicField").value("public-value"))
-                        .andExpect(jsonPath("$.ownerOrAdminField").value("owner-or-admin-value"))
-                        .andExpect(jsonPath("$.ownerOnlyField").value("owner-only-value"))
-                        .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.ownerOrAdminField").value("owner-or-admin-value"))
+                    .andExpect(jsonPath("$.ownerOnlyField").value("owner-only-value"))
+                    .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
         }
 
         @Test
@@ -466,32 +440,24 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
         @DisplayName("owner does not see adminOnlyField (has only @HasAuthority, not @OwnerVisible)")
         void ownerDoesNotSeeAdminOnlyField() throws Exception {
-            withOwnerAuthentication(OWNER_ID);
-            try {
-                mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "bbbbbbbb-0000-0000-0000-000000000002")
         @DisplayName("non-owner with KlabisJwtAuthenticationToken does not see owner-only fields")
         void nonOwnerWithJwtTokenDoesNotSeeOwnerFields() throws Exception {
-            withOwnerAuthentication(OTHER_ID);
-            try {
-                mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.publicField").value("public-value"))
-                        .andExpect(jsonPath("$.ownerOrAdminField").doesNotExist())
-                        .andExpect(jsonPath("$.ownerOnlyField").doesNotExist())
-                        .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(get("/test/ownership-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.ownerOrAdminField").doesNotExist())
+                    .andExpect(jsonPath("$.ownerOnlyField").doesNotExist())
+                    .andExpect(jsonPath("$.adminOnlyField").doesNotExist());
         }
     }
 
@@ -500,7 +466,7 @@ class FieldLevelAuthorizationTest {
     class MethodLevelOwnershipAuthorization {
 
         @Test
-        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         @DisplayName("admin (non-owner) can access @HasAuthority + @OwnerVisible method via authority")
         void adminWithoutOwnershipCanAccess() throws Exception {
             mockMvc.perform(get("/api/test/ownership-method/{id}", OTHER_ID))
@@ -508,39 +474,27 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
         @DisplayName("owner without admin authority can access @HasAuthority + @OwnerVisible method via ownership")
         void ownerWithoutAuthorityCanAccess() throws Exception {
-            withOwnerAuthentication(OWNER_ID);
-            try {
-                mockMvc.perform(get("/api/test/ownership-method/{id}", OWNER_ID))
-                        .andExpect(status().isOk());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(get("/api/test/ownership-method/{id}", OWNER_ID))
+                    .andExpect(status().isOk());
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "bbbbbbbb-0000-0000-0000-000000000002")
         @DisplayName("non-owner without authority gets 403 on @HasAuthority + @OwnerVisible method")
         void nonOwnerWithoutAuthorityGetsForbidden() throws Exception {
-            withOwnerAuthentication(OTHER_ID);
-            try {
-                mockMvc.perform(get("/api/test/ownership-method/{id}", OWNER_ID))
-                        .andExpect(status().isForbidden());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(get("/api/test/ownership-method/{id}", OWNER_ID))
+                    .andExpect(status().isForbidden());
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
         @DisplayName("owner can access @OwnerVisible-only method")
         void ownerCanAccessOwnerOnlyMethod() throws Exception {
-            withOwnerAuthentication(OWNER_ID);
-            try {
-                mockMvc.perform(get("/api/test/owner-only-method/{id}", OWNER_ID))
-                        .andExpect(status().isOk());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(get("/api/test/owner-only-method/{id}", OWNER_ID))
+                    .andExpect(status().isOk());
         }
 
         @Test
@@ -557,7 +511,7 @@ class FieldLevelAuthorizationTest {
     class OwnershipPatchAuthorization {
 
         @Test
-        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         @DisplayName("admin (non-owner) can PATCH ownerOrAdminField via authority")
         void adminCanPatchOwnerOrAdminField() throws Exception {
             mockMvc.perform(patch("/api/test/ownership-auth/{id}", OTHER_ID)
@@ -567,59 +521,43 @@ class FieldLevelAuthorizationTest {
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
         @DisplayName("owner can PATCH ownerOrAdminField and ownerOnlyField")
         void ownerCanPatchOwnerVisibleFields() throws Exception {
-            withOwnerAuthentication(OWNER_ID);
-            try {
-                mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"ownerOrAdminField\": \"new-value\", \"ownerOnlyField\": \"other-value\"}"))
-                        .andExpect(status().is2xxSuccessful());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"ownerOrAdminField\": \"new-value\", \"ownerOnlyField\": \"other-value\"}"))
+                    .andExpect(status().is2xxSuccessful());
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "bbbbbbbb-0000-0000-0000-000000000002")
         @DisplayName("non-owner without authority gets 403 when PATCHing ownerOrAdminField")
         void nonOwnerWithoutAuthorityCannotPatchOwnerOrAdminField() throws Exception {
-            withOwnerAuthentication(OTHER_ID);
-            try {
-                mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"ownerOrAdminField\": \"new-value\"}"))
-                        .andExpect(status().isForbidden());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"ownerOrAdminField\": \"new-value\"}"))
+                    .andExpect(status().isForbidden());
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "bbbbbbbb-0000-0000-0000-000000000002")
         @DisplayName("non-owner without authority gets 403 when PATCHing ownerOnlyField")
         void nonOwnerWithoutAuthorityCannotPatchOwnerOnlyField() throws Exception {
-            withOwnerAuthentication(OTHER_ID);
-            try {
-                mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"ownerOnlyField\": \"new-value\"}"))
-                        .andExpect(status().isForbidden());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"ownerOnlyField\": \"new-value\"}"))
+                    .andExpect(status().isForbidden());
         }
 
         @Test
+        @WithKlabisMockUser(memberId = "aaaaaaaa-0000-0000-0000-000000000001")
         @DisplayName("owner can PATCH publicField without auth check")
         void ownerCanPatchPublicField() throws Exception {
-            withOwnerAuthentication(OWNER_ID);
-            try {
-                mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"publicField\": \"new-value\"}"))
-                        .andExpect(status().is2xxSuccessful());
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
+            mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"publicField\": \"new-value\"}"))
+                    .andExpect(status().is2xxSuccessful());
         }
 
         @Test
