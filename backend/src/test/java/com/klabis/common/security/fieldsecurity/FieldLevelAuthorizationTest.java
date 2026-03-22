@@ -1,4 +1,4 @@
-package com.klabis.common.security;
+package com.klabis.common.security.fieldsecurity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

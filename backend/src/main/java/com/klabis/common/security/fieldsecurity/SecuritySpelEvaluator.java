@@ -1,4 +1,4 @@
-package com.klabis.common.security;
+package com.klabis.common.security.fieldsecurity;
 
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;

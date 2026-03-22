@@ -1,4 +1,4 @@
-package com.klabis.common.security;
+package com.klabis.common.security.fieldsecurity;
 
 import com.klabis.common.mvc.MvcComponent;
 import org.aopalliance.intercept.MethodInvocation;

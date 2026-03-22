@@ -1,4 +1,4 @@
-package com.klabis.common.security;
+package com.klabis.common.security.fieldsecurity;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.patch.PatchField;
@@ -98,4 +98,3 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
                 .anyMatch(granted -> granted.getAuthority().equals(required));
     }
 }
-

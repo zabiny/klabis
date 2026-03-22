@@ -1,7 +1,7 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.patch.PatchField;
-import com.klabis.common.security.SecuritySpelEvaluator;
+import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.HasAuthority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
