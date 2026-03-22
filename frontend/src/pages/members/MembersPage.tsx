@@ -69,7 +69,7 @@ export const MembersPage = (): ReactElement => {
                         className="p-1 rounded hover:bg-surface-base cursor-pointer text-primary"
                         onClick={(e) => {
                             e.stopPropagation();
-                            route.navigateToResource(member);
+                            route.navigateToResource(member, {state: {editing: true}});
                         }}
                     >
                         <Pencil className="w-4 h-4"/>

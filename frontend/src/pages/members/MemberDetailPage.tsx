@@ -1,6 +1,6 @@
 import {type ReactElement, type ReactNode, useMemo, useState} from "react";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog";
-import {Link} from "react-router-dom";
+import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {DetailRow, Skeleton} from "../../components/UI";
 import {Badge} from "../../components/UI/Badge";
@@ -77,6 +77,8 @@ function enrichTemplateWithReadOnlyFields(
 
 export const MemberDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error, hasLink, route} = useHalPageData<MemberDetail>();
+    const location = useLocation();
+    const initialEditing = !!(location.state as { editing?: boolean })?.editing;
 
     if (isLoading) {
         return <Skeleton/>;
@@ -90,18 +92,20 @@ export const MemberDetailPage = (): ReactElement => {
         return <Skeleton/>;
     }
 
-    return <MemberDetailContent resourceData={resourceData} hasLink={hasLink} route={route}/>;
+    return <MemberDetailContent resourceData={resourceData} hasLink={hasLink} route={route} initialEditing={initialEditing}/>;
 };
 
 interface MemberDetailContentProps {
     resourceData: MemberDetail;
     hasLink: (name: string) => boolean;
     route: ReturnType<typeof useHalPageData>['route'];
+    initialEditing?: boolean;
 }
 
-const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContentProps) => {
-    const [isEditing, setIsEditing] = useState(false);
+const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
+    const [isEditing, setIsEditing] = useState(initialEditing);
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+    const navigate = useNavigate();
 
     const member = resourceData;
     const address = member.address;
@@ -127,7 +131,13 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
         [enrichedTemplate]);
 
     const startEditing = () => setIsEditing(true);
-    const cancelEditing = () => setIsEditing(false);
+    const cancelEditing = () => {
+        if (initialEditing) {
+            navigate(-1);
+        } else {
+            setIsEditing(false);
+        }
+    };
 
     const originalEditableFieldNames = useMemo(() =>
             template ? new Set(template.properties.map(p => p.name)) : new Set<string>(),

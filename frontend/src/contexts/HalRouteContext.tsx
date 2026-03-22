@@ -17,7 +17,7 @@ export interface HalRouteContextValue {
     resourceData: HalResponse | null;
 
     /** Can be used to perform navigation to given resource. It will be delegated to react router with 'self' link target extracted from resource **/
-    navigateToResource: (resource: HalResponse | Link) => void;
+    navigateToResource: (resource: HalResponse | Link, options?: { state?: unknown }) => void;
 
     /** Loading state while fetching from API */
     isLoading: boolean;
@@ -109,7 +109,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
                 status === 'success' ? 'success' :
                     'idle';
 
-    const navigateToResource = (resource: HalResponse | Link): void => {
+    const navigateToResource = (resource: HalResponse | Link, options?: { state?: unknown }): void => {
         let targetLink: Link;
         if (isHalResponse(resource)) {
             const selfLink = resource?._links?.self;
@@ -127,7 +127,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         }
 
         const targetPath = extractNavigationPath(toHref(href));
-        navigate(targetPath);
+        navigate(targetPath, options);
     }
 
     const getLink = (linkName = 'self') => {

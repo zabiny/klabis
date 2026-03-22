@@ -35,7 +35,7 @@ export interface UseHalPageDataReturn<T extends HalResponse = HalResponse> {
         pathname: string;
 
         /** Navigate to a resource (accepts HalResponse or Link) */
-        navigateToResource: (resource: HalResponse | Link) => void;
+        navigateToResource: (resource: HalResponse | Link, options?: { state?: unknown }) => void;
 
         /** Manual refetch function for updating data after form submissions */
         refetch: () => Promise<void>;
