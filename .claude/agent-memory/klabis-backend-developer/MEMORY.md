@@ -30,3 +30,9 @@
 ### Existing test guard — shouldThrowWhenMonthIsInvalid
 - Original test used month 71 as invalid; after adding 71-82 support, month 71 became valid
 - Updated test to use month 83 (outside all valid ranges: 01-12, 21-32, 51-62, 71-82)
+
+### Field-level authorization on records (Phase 1+2 implemented)
+- See [feedback_field_level_auth_pattern.md](feedback_field_level_auth_pattern.md) for full pattern
+- Phase 1: JSON field filtering via JDK proxy (`AuthorizationAdvisorProxyFactory` + interface)
+- Phase 2: HAL+FORMS template property filtering via `HalFormsAuthorizationPostProcessor` BPP
+- Same `@PreAuthorize` controls both — single source of truth

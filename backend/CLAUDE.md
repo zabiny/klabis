@@ -62,8 +62,17 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 **CRITICAL: @WebMvcTest and SecurityConfiguration**
 - `SecurityConfiguration.jwtAuthenticationConverter()` requires a `UserService` bean
 - In `@WebMvcTest` contexts, add: `@MockitoBean UserService userService;` to test class
+- `SecurityConfiguration.authenticationManager()` requires a `UserDetailsService` bean
+- Also add: `@MockitoBean UserDetailsService userDetailsService;` to test class
 - Affects all `@WebMvcTest` controllers that import `SecurityConfiguration`
 - This resolves `UnsatisfiedDependencyException` in component-scanned tests
+
+**Field-Level Authorization Pattern**
+- Spring Security version: 6.5.x — use `AuthorizationAdvisorProxyFactory` (not `AuthorizationProxyFactory` which is just the interface)
+- Records are final → `AuthorizationAdvisorProxyFactory` creates JDK proxy via interface, not CGLIB
+- `@JsonProperty` MUST be on interface methods (JDK proxies don't follow Bean naming)
+- Controller return type must be the interface, not the record
+- See `FieldLevelAuthorizationTest` for reference implementation
 
 **Gradle Optimization**
 - Build without `clean` is faster: `./gradlew build -x test` (vs `clean build -x test`)
