@@ -29,6 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -144,6 +145,19 @@ class FieldLevelAuthorizationTest {
                     "owner-only-value",
                     "admin-only-value"
             ));
+        }
+
+        @GetMapping("/api/test/ownership-method/{id}")
+        @com.klabis.common.users.HasAuthority(Authority.MEMBERS_MANAGE)
+        @OwnerVisible
+        ResponseEntity<String> getOwnershipProtectedResource(@PathVariable @OwnerId UUID id) {
+            return ResponseEntity.ok("protected-data");
+        }
+
+        @GetMapping("/api/test/owner-only-method/{id}")
+        @OwnerVisible
+        ResponseEntity<String> getOwnerOnlyResource(@PathVariable @OwnerId UUID id) {
+            return ResponseEntity.ok("owner-only-data");
         }
     }
 
@@ -467,6 +481,63 @@ class FieldLevelAuthorizationTest {
             } finally {
                 SecurityContextHolder.clearContext();
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("method-level ownership authorization")
+    class MethodLevelOwnershipAuthorization {
+
+        @Test
+        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @DisplayName("admin (non-owner) can access @HasAuthority + @OwnerVisible method via authority")
+        void adminWithoutOwnershipCanAccess() throws Exception {
+            mockMvc.perform(get("/api/test/ownership-method/{id}", OTHER_ID))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("owner without admin authority can access @HasAuthority + @OwnerVisible method via ownership")
+        void ownerWithoutAuthorityCanAccess() throws Exception {
+            withOwnerAuthentication(OWNER_ID);
+            try {
+                mockMvc.perform(get("/api/test/ownership-method/{id}", OWNER_ID))
+                        .andExpect(status().isOk());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @DisplayName("non-owner without authority gets 403 on @HasAuthority + @OwnerVisible method")
+        void nonOwnerWithoutAuthorityGetsForbidden() throws Exception {
+            withOwnerAuthentication(OTHER_ID);
+            try {
+                mockMvc.perform(get("/api/test/ownership-method/{id}", OWNER_ID))
+                        .andExpect(status().isForbidden());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @DisplayName("owner can access @OwnerVisible-only method")
+        void ownerCanAccessOwnerOnlyMethod() throws Exception {
+            withOwnerAuthentication(OWNER_ID);
+            try {
+                mockMvc.perform(get("/api/test/owner-only-method/{id}", OWNER_ID))
+                        .andExpect(status().isOk());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("non-owner gets 403 on @OwnerVisible-only method")
+        void nonOwnerGetsForbiddenOnOwnerOnlyMethod() throws Exception {
+            mockMvc.perform(get("/api/test/owner-only-method/{id}", OWNER_ID))
+                    .andExpect(status().isForbidden());
         }
     }
 }

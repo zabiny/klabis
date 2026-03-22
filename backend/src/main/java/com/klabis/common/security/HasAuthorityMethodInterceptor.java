@@ -2,6 +2,9 @@ package com.klabis.common.security;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.common.security.fieldsecurity.OwnerId;
+import com.klabis.common.security.fieldsecurity.OwnerVisible;
+import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInvocation;
@@ -21,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 
 /**
  * Spring Security {@link AuthorizationAdvisor} that enforces {@link HasAuthority} annotations.
@@ -29,38 +33,71 @@ import java.lang.reflect.Method;
  * class annotation) but integrates with {@code AuthorizationAdvisorProxyFactory}, enabling
  * field-level authorization on response DTOs in addition to bean-level method security.
  * <p>
+ * Also handles {@link OwnerVisible} methods: if the authority check fails but the method is
+ * annotated with {@link OwnerVisible}, ownership is checked via the parameter annotated
+ * with {@link OwnerId}. Access is granted if either the authority check or the ownership
+ * check passes.
+ * <p>
  * Registered as a {@code @Bean} so {@code AuthorizationAdvisorProxyFactory} auto-discovers it.
  */
 public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, ApplicationContextAware {
 
     private ApplicationContext applicationContext;
+    private OwnershipResolver ownershipResolver;
 
     private static final AuthorizationResult DENY = () -> false;
 
     private static final Pointcut POINTCUT = new ComposablePointcut(
             AnnotationMatchingPointcut.forClassAnnotation(HasAuthority.class))
-            .union(AnnotationMatchingPointcut.forMethodAnnotation(HasAuthority.class));
+            .union(AnnotationMatchingPointcut.forMethodAnnotation(HasAuthority.class))
+            .union(AnnotationMatchingPointcut.forMethodAnnotation(OwnerVisible.class));
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
-        Authority requiredAuthority = resolveAuthority(invocation.getMethod(), invocation.getThis());
+        Method method = invocation.getMethod();
+        Authority requiredAuthority = resolveAuthority(method, invocation.getThis());
+        boolean isOwnerVisible = method.isAnnotationPresent(OwnerVisible.class);
 
-        if (requiredAuthority == null) {
+        if (requiredAuthority == null && !isOwnerVisible) {
             return invocation.proceed();
         }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (!SecuritySpelEvaluator.hasAuthority(authentication, requiredAuthority)) {
-            HandleAuthorizationDenied denied = resolveDeniedHandler(invocation.getMethod());
-            if (denied != null) {
-                MethodAuthorizationDeniedHandler handler = resolveHandler(denied.handlerClass());
-                return handler.handleDeniedInvocation(invocation, DENY);
-            }
-            throw new AccessDeniedException("Access denied. Required authority: " + requiredAuthority.getValue());
+        boolean authorityGranted = requiredAuthority != null
+                && SecuritySpelEvaluator.hasAuthority(authentication, requiredAuthority);
+
+        if (authorityGranted) {
+            return invocation.proceed();
         }
 
-        return invocation.proceed();
+        if (isOwnerVisible && checkOwnership(method, invocation.getArguments(), authentication)) {
+            return invocation.proceed();
+        }
+
+        HandleAuthorizationDenied denied = resolveDeniedHandler(method);
+        if (denied != null) {
+            MethodAuthorizationDeniedHandler handler = resolveHandler(denied.handlerClass());
+            return handler.handleDeniedInvocation(invocation, DENY);
+        }
+
+        String denyReason = requiredAuthority != null
+                ? "Access denied. Required authority: " + requiredAuthority.getValue()
+                : "Access denied. Ownership required.";
+        throw new AccessDeniedException(denyReason);
+    }
+
+    private boolean checkOwnership(Method method, Object[] arguments, Authentication authentication) {
+        if (ownershipResolver == null) {
+            return false;
+        }
+        Parameter[] parameters = method.getParameters();
+        for (int i = 0; i < parameters.length; i++) {
+            if (parameters[i].isAnnotationPresent(OwnerId.class)) {
+                return ownershipResolver.isOwner(arguments[i], authentication);
+            }
+        }
+        return false;
     }
 
     @Override
@@ -76,6 +113,10 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
     @Override
     public int getOrder() {
         return AuthorizationInterceptorsOrder.PRE_AUTHORIZE.getOrder() + 1;
+    }
+
+    void setOwnershipResolver(OwnershipResolver ownershipResolver) {
+        this.ownershipResolver = ownershipResolver;
     }
 
     private Authority resolveAuthority(Method method, Object target) {

@@ -1,6 +1,7 @@
 package com.klabis.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.users.UserService;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -82,8 +83,10 @@ public class SecurityConfiguration implements WebMvcConfigurer {
     private String issuer;
 
     @Bean
-    public HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor() {
-        return new HasAuthorityMethodInterceptor();
+    public HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor(OwnershipResolver ownershipResolver) {
+        HasAuthorityMethodInterceptor interceptor = new HasAuthorityMethodInterceptor();
+        interceptor.setOwnershipResolver(ownershipResolver);
+        return interceptor;
     }
 
     @Bean
