@@ -1,6 +1,6 @@
 ---
 name: field-level-authorization-with-records
-description: How to implement field-level authorization on Java records using Spring Security AuthorizationAdvisorProxyFactory
+description: How to implement field-level authorization on Java records using a custom Jackson BeanSerializerModifier (no interface needed)
 type: feedback
 ---
 
@@ -8,106 +8,84 @@ type: feedback
 
 ## Pattern Overview
 
-Records are final — CGLIB cannot subclass them. `AuthorizationAdvisorProxyFactory` sets `proxyTargetClass=false` for final classes, falling back to JDK interface proxy. This means the record MUST implement an interface carrying the `@PreAuthorize` annotations.
+Field-level authorization is implemented via `FieldSecurityBeanSerializerModifier`, a Jackson `BeanSerializerModifier` that wraps `BeanPropertyWriter` instances for record components annotated with `@PreAuthorize` or `@HasAuthority`. Authorization is evaluated during serialization — no interface or JDK proxy is required.
 
 ## Required Structure
 
 ```java
-// 1. Interface carries @PreAuthorize + @HandleAuthorizationDenied
+// Record with security annotations directly on components
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
-interface MyDtoView {
+record MyDto(
+    String publicField,
 
-    @JsonProperty
-    String publicField();
-
-    @JsonProperty
     @PreAuthorize("hasAuthority('MY:READ')")
-    String hiddenField();      // null → disappears from JSON (NullDeniedHandler)
+    String hiddenField,           // skipped entirely when denied
 
-    @JsonProperty
     @PreAuthorize("hasAuthority('MY:READ')")
     @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
-    String maskedField();      // "***" when denied
-}
+    String maskedField,           // "***" when denied
 
-// 2. Record implements the interface
-record MyDto(String publicField, String hiddenField, String maskedField)
-    implements MyDtoView {}
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    String authorityHiddenField,  // skipped entirely when denied
 
-// 3. Controller proxies via AuthorizationProxyFactory (auto-configured by @EnableMethodSecurity)
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
+    String authorityMaskedField   // "***" when denied
+) {}
+
+// Controller — plain EntityModel, no proxying needed
 @GetMapping("...")
-MyDtoView getDto() {
-    MyDto dto = new MyDto("public", "secret", "sensitive");
-    return (MyDtoView) proxyFactory.proxy(dto);
+EntityModel<MyDto> getDto() {
+    return EntityModel.of(new MyDto("public", "secret", "sensitive", "auth-secret", "auth-masked"));
 }
 ```
 
 ## Key Requirements
 
-- `@JsonProperty` on ALL interface methods — JDK proxy doesn't follow Bean naming convention, Jackson won't discover properties without explicit annotation
-- `@JsonInclude(NON_NULL)` on the interface (not the record) — Jackson serializes based on interface type when that's the declared return type
-- `NullDeniedHandler` and `MaskDeniedHandler` MUST be Spring `@Component` beans — `@HandleAuthorizationDenied` resolves handler via Spring context
-- `AuthorizationProxyFactory` bean is auto-registered by `@EnableMethodSecurity` — do NOT declare a duplicate `@Bean`
-
-## WebMvcTest Requirements
-
-```java
-@WebMvcTest(controllers = MyController.class)
-@Import({NullDeniedHandler.class, MaskDeniedHandler.class})  // handlers not auto-scanned in web slice
-class MyControllerTest {
-    @MockitoBean UserService userService;          // SecurityConfiguration dependency
-    @MockitoBean UserDetailsService userDetailsService;  // SecurityConfiguration dependency
-}
-```
-
-**Why:** `@WebMvcTest` only scans web-layer beans. Security handler components need explicit `@Import`.
+- `@JsonInclude(NON_NULL)` on the record — denied fields with `NullDeniedHandler` are skipped (field not written at all via `SecuredBeanPropertyWriter`)
+- `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` on the record class sets the default deny handler for all secured components
+- Component-level `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` overrides the class default
+- `FieldSecurityJacksonModule` registered via `@JsonComponent` — auto-discovered in both `@WebMvcTest` and `@SpringBootTest`
 
 ## Infrastructure Location
 
-- `NullDeniedHandler` — `com.klabis.common.security`
-- `MaskDeniedHandler` — `com.klabis.common.security`
-- `PreAuthorizePropertyFilter` — `com.klabis.common.security` (evaluates @PreAuthorize expressions)
-- `HalFormsAuthorizationPostProcessor` — `com.klabis.common.hateoas` (BPP wrapping HAL template builder)
-- `AuthorizationProxyFactory` — auto-configured, just `@Autowired`
+- `FieldSecurityBeanSerializerModifier` — `com.klabis.common.security.fieldsecurity`
+- `SecuredBeanPropertyWriter` — `com.klabis.common.security.fieldsecurity`
+- `FieldSecurityJacksonModule` — `com.klabis.common.security.fieldsecurity`
+- `NullDeniedHandler` — `com.klabis.common.security.fieldsecurity`
+- `MaskDeniedHandler` — `com.klabis.common.security.fieldsecurity`
+- `SecuritySpelEvaluator` — `com.klabis.common.security.fieldsecurity` (evaluates @PreAuthorize SpEL)
 
-## HAL+FORMS Template Property Filtering (Phase 2 — automatic via Jackson)
+## How it works
 
-The same `@PreAuthorize` annotations on interface methods that control JSON field visibility also
-automatically filter `_templates.*.properties` in HAL+FORMS responses. No need for `klabisAfford()`.
+`FieldSecurityBeanSerializerModifier.changeProperties()` is called by Jackson before serializing any record type. For each `BeanPropertyWriter` whose corresponding record component has `@PreAuthorize` or `@HasAuthority`, it wraps the writer in `SecuredBeanPropertyWriter`.
 
-### How it works
+`SecuredBeanPropertyWriter.serializeAsField()` evaluates the security expression at serialization time:
+- Authorized → delegates to wrapped writer (normal serialization)
+- Denied + `MaskDeniedHandler` → writes `"***"` as field value
+- Denied + `NullDeniedHandler` or no handler → skips the field entirely (writes nothing)
 
-`HalFormsAuthorizationPostProcessor` wraps the `halFormsTemplateBuilder` bean (a Spring HATEOAS internal)
-with a CGLIB proxy via `ProxyFactory`. The proxy intercepts `findTemplates()`, temporarily replaces
-each affordance model's `input` field (via reflection on `AffordanceModel.input`) with an
-`AuthorizingInputPayloadMetadata` that filters `stream()` by `PreAuthorizePropertyFilter`.
+## HAL+FORMS Template Property Filtering
 
-```java
-// In controller — standard afford() works automatically:
-model.add(klabisLinkTo(methodOn(MyController.class).get(id)).withSelfRel()
-    .andAffordance(afford(methodOn(MyController.class).update(id, null))));
-```
+The `HalFormsSupport` already inspects record component accessor methods for `@PreAuthorize` and `@HasAuthority` when building HAL+FORMS `_templates`. No additional changes needed — both response JSON filtering and template property filtering derive from the same annotations.
 
-### Registration in @WebMvcTest
+## WebMvcTest Requirements
 
-`HateoasConfiguration` declares the BPP as `static @Bean` (important for BPP lifecycle). It creates
-`PreAuthorizePropertyFilter` directly (not injected) to avoid `UnsatisfiedDependencyException`
-in `@WebMvcTest` contexts where security components may not be present.
+Standard `@WebMvcTest` setup — no special imports needed for field security:
 
 ```java
-@Bean
-static BeanPostProcessor halFormsAuthorizationPostProcessor() {
-    return new HalFormsAuthorizationPostProcessor(new PreAuthorizePropertyFilter());
+@WebMvcTest(controllers = MyController.class)
+class MyControllerTest {
+    @MockitoBean UserService userService;
+    @MockitoBean UserDetailsService userDetailsService;
 }
 ```
 
-Tests that use `@WebMvcTest` with `@Import(HateoasConfiguration.class)` get the filtering for free.
+`@JsonComponent`-annotated modules are auto-discovered by `@WebMvcTest`.
 
-## What Doesn't Work
+## What Doesn't Work (old approach — replaced)
 
-- Annotating record component directly (no Spring AOP interception on the record itself)
-- Using `@AuthorizeReturnObject` on repositories returning records (records are final, CGLIB fails)
-- Registering a duplicate `authorizationProxyFactory` bean (causes `BeanDefinitionOverrideException`)
-- Injecting `PreAuthorizePropertyFilter` as a @Bean parameter in the static BPP factory method — causes
-  `UnsatisfiedDependencyException` in @WebMvcTest contexts
+The old approach required records to implement an interface with `@JsonProperty` + `@PreAuthorize` methods, and controllers to wrap DTOs with `AuthorizationAdvisorProxyFactory.proxy()`. This is no longer used:
+- `ResponseBodyFieldAuthorizationAdvice` is retained as a no-op but no longer proxies anything
+- Do NOT use `AuthorizationAdvisorProxyFactory` for response DTO field filtering
