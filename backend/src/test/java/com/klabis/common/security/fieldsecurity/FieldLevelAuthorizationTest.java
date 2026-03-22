@@ -108,6 +108,12 @@ class FieldLevelAuthorizationTest {
             @HasAuthority(Authority.MEMBERS_MANAGE) String adminOnlyField
     ) {}
 
+    record OwnershipPatchRequest(
+            PatchField<String> publicField,
+            @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible PatchField<String> ownerOrAdminField,
+            @OwnerVisible PatchField<String> ownerOnlyField
+    ) {}
+
     @MvcComponent
     @RestController
     static class TestController {
@@ -145,6 +151,11 @@ class FieldLevelAuthorizationTest {
                     "owner-only-value",
                     "admin-only-value"
             ));
+        }
+
+        @PatchMapping("/api/test/ownership-auth/{id}")
+        ResponseEntity<Void> updateOwnershipData(@PathVariable @OwnerId UUID id, @RequestBody OwnershipPatchRequest body) {
+            return ResponseEntity.noContent().build();
         }
 
         @GetMapping("/api/test/ownership-method/{id}")
@@ -538,6 +549,87 @@ class FieldLevelAuthorizationTest {
         void nonOwnerGetsForbiddenOnOwnerOnlyMethod() throws Exception {
             mockMvc.perform(get("/api/test/owner-only-method/{id}", OWNER_ID))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("ownership-based PATCH field authorization")
+    class OwnershipPatchAuthorization {
+
+        @Test
+        @WithMockUser(authorities = {"MEMBERS:MANAGE"})
+        @DisplayName("admin (non-owner) can PATCH ownerOrAdminField via authority")
+        void adminCanPatchOwnerOrAdminField() throws Exception {
+            mockMvc.perform(patch("/api/test/ownership-auth/{id}", OTHER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"ownerOrAdminField\": \"new-value\"}"))
+                    .andExpect(status().is2xxSuccessful());
+        }
+
+        @Test
+        @DisplayName("owner can PATCH ownerOrAdminField and ownerOnlyField")
+        void ownerCanPatchOwnerVisibleFields() throws Exception {
+            withOwnerAuthentication(OWNER_ID);
+            try {
+                mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"ownerOrAdminField\": \"new-value\", \"ownerOnlyField\": \"other-value\"}"))
+                        .andExpect(status().is2xxSuccessful());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @DisplayName("non-owner without authority gets 403 when PATCHing ownerOrAdminField")
+        void nonOwnerWithoutAuthorityCannotPatchOwnerOrAdminField() throws Exception {
+            withOwnerAuthentication(OTHER_ID);
+            try {
+                mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"ownerOrAdminField\": \"new-value\"}"))
+                        .andExpect(status().isForbidden());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @DisplayName("non-owner without authority gets 403 when PATCHing ownerOnlyField")
+        void nonOwnerWithoutAuthorityCannotPatchOwnerOnlyField() throws Exception {
+            withOwnerAuthentication(OTHER_ID);
+            try {
+                mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"ownerOnlyField\": \"new-value\"}"))
+                        .andExpect(status().isForbidden());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @DisplayName("owner can PATCH publicField without auth check")
+        void ownerCanPatchPublicField() throws Exception {
+            withOwnerAuthentication(OWNER_ID);
+            try {
+                mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"publicField\": \"new-value\"}"))
+                        .andExpect(status().is2xxSuccessful());
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("non-owner can PATCH publicField without auth check")
+        void nonOwnerCanPatchPublicField() throws Exception {
+            mockMvc.perform(patch("/api/test/ownership-auth/{id}", OWNER_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"publicField\": \"new-value\"}"))
+                    .andExpect(status().is2xxSuccessful());
         }
     }
 }

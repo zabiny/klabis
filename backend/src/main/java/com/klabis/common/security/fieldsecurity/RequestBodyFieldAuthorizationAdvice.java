@@ -11,15 +11,28 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.UUID;
 
 @MvcComponent
 @ControllerAdvice
 class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
+
+    private final OwnershipResolver ownershipResolver;
+
+    RequestBodyFieldAuthorizationAdvice(OwnershipResolver ownershipResolver) {
+        this.ownershipResolver = ownershipResolver;
+    }
 
     @Override
     public boolean supports(MethodParameter methodParameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
@@ -35,6 +48,8 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         RecordComponent[] components = record.getClass().getRecordComponents();
+
+        UUID ownerIdFromPath = resolveOwnerIdFromPath(parameter.getMethod());
 
         for (RecordComponent component : components) {
             if (!PatchField.class.isAssignableFrom(component.getType())) {
@@ -54,32 +69,90 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
                 continue;
             }
 
-            checkPreAuthorize(component, accessor, authentication);
-            checkHasAuthority(component, accessor, authentication);
+            checkFieldAuthorization(component, accessor, authentication, ownerIdFromPath);
         }
 
         return body;
     }
 
-    private void checkPreAuthorize(RecordComponent component, Method accessor, @Nullable Authentication authentication) {
+    private void checkFieldAuthorization(RecordComponent component, Method accessor,
+                                         @Nullable Authentication authentication,
+                                         @Nullable UUID ownerIdFromPath) {
         PreAuthorize preAuthorize = accessor.getAnnotation(PreAuthorize.class);
-        if (preAuthorize == null) {
+        HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
+        boolean ownerVisible = accessor.getAnnotation(OwnerVisible.class) != null;
+
+        if (preAuthorize == null && hasAuthority == null && !ownerVisible) {
             return;
         }
 
-        if (!SecuritySpelEvaluator.evaluate(preAuthorize.value(), accessor, authentication)) {
-            throw new FieldAuthorizationException(component.getName(), preAuthorize.value());
+        if (preAuthorize != null && SecuritySpelEvaluator.evaluate(preAuthorize.value(), accessor, authentication)) {
+            return;
+        }
+
+        if (hasAuthority != null && SecuritySpelEvaluator.hasAuthority(authentication, hasAuthority.value())) {
+            return;
+        }
+
+        if (ownerVisible && ownerIdFromPath != null && ownershipResolver.isOwner(ownerIdFromPath, authentication)) {
+            return;
+        }
+
+        String requiredAuthority = hasAuthority != null ? hasAuthority.value().getValue()
+                : preAuthorize != null ? preAuthorize.value()
+                : "@OwnerVisible";
+        throw new FieldAuthorizationException(component.getName(), requiredAuthority);
+    }
+
+    @Nullable
+    private UUID resolveOwnerIdFromPath(@Nullable Method handlerMethod) {
+        if (handlerMethod == null) {
+            return null;
+        }
+
+        String ownerParamName = findOwnerIdParameterName(handlerMethod);
+        if (ownerParamName == null) {
+            return null;
+        }
+
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (requestAttributes == null) {
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> uriVariables = (Map<String, String>) requestAttributes.getRequest()
+                .getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+
+        if (uriVariables == null) {
+            return null;
+        }
+
+        String rawValue = uriVariables.get(ownerParamName);
+        if (rawValue == null) {
+            return null;
+        }
+
+        try {
+            return UUID.fromString(rawValue);
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 
-    private void checkHasAuthority(RecordComponent component, Method accessor, @Nullable Authentication authentication) {
-        HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
-        if (hasAuthority == null) {
-            return;
+    @Nullable
+    private String findOwnerIdParameterName(Method handlerMethod) {
+        Parameter[] parameters = handlerMethod.getParameters();
+        for (Parameter parameter : parameters) {
+            if (parameter.isAnnotationPresent(OwnerId.class) && parameter.isAnnotationPresent(PathVariable.class)) {
+                PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
+                String name = pathVariable.value().isEmpty() ? pathVariable.name() : pathVariable.value();
+                if (name.isEmpty()) {
+                    name = parameter.getName();
+                }
+                return name;
+            }
         }
-
-        if (!SecuritySpelEvaluator.hasAuthority(authentication, hasAuthority.value())) {
-            throw new FieldAuthorizationException(component.getName(), hasAuthority.value().getValue());
-        }
+        return null;
     }
 }
