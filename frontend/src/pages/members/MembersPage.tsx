@@ -133,9 +133,7 @@ export const MembersPage = (): ReactElement => {
     };
 
     const renderEmailCell = ({item}: TableCellRenderProps) => {
-        const email = item.email as string | null;
-        if (!email) return null;
-        return <span>{email}</span>;
+        return (item.email as string | null) ?? null;
     };
 
     const memberName = permissionsDialog

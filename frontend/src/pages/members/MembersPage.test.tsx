@@ -104,7 +104,6 @@ const renderPageWithMembers = (members: unknown[], routeOverrides?: any) => {
         page: {size: 10, totalElements: members.length, totalPages: 1, number: 0},
     };
     vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as any);
-
     const pageData = createMockPageData(resourceData, routeOverrides);
     return renderPage(pageData);
 };
@@ -112,7 +111,6 @@ const renderPageWithMembers = (members: unknown[], routeOverrides?: any) => {
 describe('MembersPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: null, error: null} as any);
     });
 
     it('renders page title "Členové"', () => {
@@ -189,7 +187,6 @@ describe('MembersPage', () => {
 describe('MembersPage — row data rendering', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: null, error: null} as any);
     });
 
     it('shows Aktivní badge for active member', () => {

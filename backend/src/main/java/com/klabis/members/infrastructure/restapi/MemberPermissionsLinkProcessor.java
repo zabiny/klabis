@@ -1,13 +1,13 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.members.MemberId;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
@@ -54,9 +54,8 @@ class MemberPermissionsLinkProcessor implements RepresentationModelProcessor<Ent
  * summary items returned by GET /api/members. The link is added only for active members
  * when the authenticated user has MEMBERS:PERMISSIONS authority.
  * <p>
- * Note: This processor runs BEFORE Jackson serialization, so {@code response.active()} returns
- * the real value even though the field has {@code @HasAuthority(MEMBERS_MANAGE)} annotation.
- * Field-level security redaction happens later during JSON serialization.
+ * Runs BEFORE Jackson serialization, so {@code response.active()} returns the real value
+ * even though the field has {@code @HasAuthority(MEMBERS_MANAGE)} field-level security.
  *
  * @see MemberSummaryResponse
  * @see MemberPermissionsLinkProcessor
@@ -71,7 +70,6 @@ class MemberSummaryPermissionsLinkProcessor implements RepresentationModelProces
             return model;
         }
 
-        // active() returns real value here — processor runs before Jackson field-level security redaction
         if (Boolean.TRUE.equals(response.active())) {
             addPermissionsLinkIfAuthorized(model, response.id());
         }
@@ -96,21 +94,11 @@ final class MemberPermissionsLinkHelper {
             return;
         }
 
-        if (hasMembersPermissionsAuthority()) {
+        if (SecuritySpelEvaluator.hasAuthority(SecurityContextHolder.getContext().getAuthentication(), Authority.MEMBERS_PERMISSIONS)) {
             Link permissionsLink = klabisLinkTo(methodOn(PermissionController.class)
                     .getUserPermissions(uuid))
                     .withRel("permissions");
             model.add(permissionsLink);
         }
-    }
-
-    private static boolean hasMembersPermissionsAuthority() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return false;
-        }
-        return auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> authority.equals("MEMBERS:PERMISSIONS"));
     }
 }

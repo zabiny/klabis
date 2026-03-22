@@ -196,22 +196,25 @@ class MemberController {
         EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
 
         if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
-            var selfLink = klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
-            boolean isActive = Boolean.TRUE.equals(response.active());
-            if (isActive) {
-                selfLink = selfLink.andAffordances(
-                        klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
-            } else {
-                selfLink = selfLink.andAffordances(
-                        klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
-            }
-            model.add(selfLink);
+            model.add(buildManagedMemberSelfLink(memberId, Boolean.TRUE.equals(response.active())));
         } else {
             model.add(klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).withSelfRel());
         }
 
         return model;
+    }
+
+    private Link buildManagedMemberSelfLink(UUID memberId, boolean isActive) {
+        var selfLink = klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).withSelfRel()
+                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
+        if (isActive) {
+            selfLink = selfLink.andAffordances(
+                    klabisAfford(methodOn(MemberController.class).suspendMember(memberId, null, null)));
+        } else {
+            selfLink = selfLink.andAffordances(
+                    klabisAfford(methodOn(MemberController.class).resumeMember(memberId, null)));
+        }
+        return selfLink;
     }
 
     private Link buildCollectionSelfLink(Pageable pageable, CurrentUserData currentUser) {
@@ -258,32 +261,16 @@ class MemberController {
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
-        var selfLink = klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).withSelfRel();
-
         if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
-            if (member.isActive()) {
-                entityModel.add(
-                        selfLink
-                                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
-                                        (UpdateMemberRequest) null, null)))
-                                .andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(id,
-                                        (SuspendMembershipRequest) null, null)))
-                );
-            } else {
-                entityModel.add(
-                        selfLink
-                                .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
-                                        (UpdateMemberRequest) null, null)))
-                                .andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(id, null)))
-                );
-            }
+            entityModel.add(buildManagedMemberSelfLink(id, member.isActive()));
         } else if (currentUser.isMember() && currentUser.memberId().uuid().equals(id)) {
             entityModel.add(
-                    selfLink.andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
-                            (UpdateMemberRequest) null, null)))
+                    klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
+                                    (UpdateMemberRequest) null, null)))
             );
         } else {
-            entityModel.add(selfLink);
+            entityModel.add(klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).withSelfRel());
         }
 
         entityModel.add(klabisLinkTo(methodOn(MemberController.class).listMembers(
