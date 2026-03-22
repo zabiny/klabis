@@ -10,7 +10,7 @@ import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Banknote, Check, Pencil, Shield, ShieldCheck, UserX} from "lucide-react";
+import {Banknote, Check, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
@@ -51,8 +51,6 @@ const MEMBER_FIELD_TYPES: Record<string, string> = {
     gender: 'Gender',
 };
 
-const SELF_EDIT_READONLY_FIELDS = new Set(['nationality']);
-
 function enrichTemplateWithReadOnlyFields(
     template: HalFormsTemplate,
     resourceData: Record<string, unknown>
@@ -75,27 +73,6 @@ function enrichTemplateWithReadOnlyFields(
         ...template,
         properties: [...template.properties, ...readOnlyProps],
     };
-}
-
-function forceSelfEditReadOnlyFields(template: HalFormsTemplate): HalFormsTemplate {
-    return {
-        ...template,
-        properties: template.properties.map(p =>
-            SELF_EDIT_READONLY_FIELDS.has(p.name) ? {...p, readOnly: true} : p
-        ),
-    };
-}
-
-function isAdminTemplate(template: HalFormsTemplate): boolean {
-    return template.properties.some(p => p.name === 'firstName' && !p.readOnly);
-}
-
-type ViewMode = 'other' | 'self' | 'admin';
-
-function resolveViewMode(template: HalFormsTemplate | null): ViewMode {
-    if (!template) return 'other';
-    if (isAdminTemplate(template)) return 'admin';
-    return 'self';
 }
 
 export const MemberDetailPage = (): ReactElement => {
@@ -136,15 +113,12 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
     const showDeactivation = member.active === false;
 
     const template: HalFormsTemplate | null = resourceData?._templates?.default ?? null;
-    const viewMode = resolveViewMode(template);
-    const adminEdit = isEditing && viewMode === 'admin';
-    const selfEdit = isEditing && viewMode === 'self';
+    const hasEditTemplate = template !== null;
 
     const enrichedTemplate = useMemo(() => {
         if (!isEditing || !template) return null;
-        const base = enrichTemplateWithReadOnlyFields(template, resourceData);
-        return viewMode === 'self' ? forceSelfEditReadOnlyFields(base) : base;
-    }, [isEditing, template, resourceData, viewMode]);
+        return enrichTemplateWithReadOnlyFields(template, resourceData);
+    }, [isEditing, template, resourceData]);
 
     const enrichedFieldNames = useMemo(() =>
             enrichedTemplate
@@ -172,7 +146,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
 
         const leftColumn = (
             <div className="flex flex-col gap-8">
-                {viewMode !== 'other' && (
+                {hasEditTemplate && (
                     <Section title="OSOBNÍ ÚDAJE">
                         <DetailRow label="Jméno">{ri('firstName') ?? val(member.firstName)}</DetailRow>
                         <DetailRow label="Příjmení">{ri('lastName') ?? val(member.lastName)}</DetailRow>
@@ -212,7 +186,7 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
             </div>
         );
 
-        const rightColumn = viewMode !== 'other' ? (
+        const rightColumn = hasEditTemplate ? (
             <div className="flex flex-col gap-8">
                 <Section title="DOPLŇKOVÉ INFORMACE">
                     <DetailRow label="Číslo čipu">{ri('chipNumber') ?? val(member.chipNumber)}</DetailRow>
@@ -304,79 +278,46 @@ const MemberDetailContent = ({resourceData, hasLink, route}: MemberDetailContent
                                     {member.active ? 'Aktivní' : 'Neaktivní'}
                                 </Badge>
                             )}
-                            {adminEdit && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                    <ShieldCheck className="w-3.5 h-3.5"/>
-                                    Admin — editace všech polí
-                                </span>
-                            )}
-                            {selfEdit && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                    Vlastní profil — omezená editace
-                                </span>
-                            )}
                         </div>
                         <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
                     </div>
 
-                    {!isEditing && (
+                    {!isEditing && hasEditTemplate && (
                         <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
-                            {viewMode === 'admin' && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={startEditing}
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                                    >
-                                        <Pencil className="w-4 h-4"/>
-                                        Upravit profil
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                                    >
-                                        <Banknote className="w-4 h-4 text-green-600"/>
-                                        Vložit / Vybrat
-                                    </button>
-                                    {hasLink('permissions') && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsPermissionsDialogOpen(true)}
-                                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                                        >
-                                            <Shield className="w-4 h-4"/>
-                                            Oprávnění
-                                        </button>
-                                    )}
-                                    <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle="Ukončení členství"/>
-                                    <HalFormButton name="resumeMember" modal={true} label="Reaktivovat" dialogTitle="Reaktivace člena"/>
-                                </>
+                            <button
+                                type="button"
+                                onClick={startEditing}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
+                            >
+                                <Pencil className="w-4 h-4"/>
+                                Upravit profil
+                            </button>
+                            <button
+                                type="button"
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                            >
+                                <Banknote className="w-4 h-4 text-green-600"/>
+                                Vložit / Vybrat
+                            </button>
+                            {hasLink('permissions') && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsPermissionsDialogOpen(true)}
+                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                                >
+                                    <Shield className="w-4 h-4"/>
+                                    Oprávnění
+                                </button>
                             )}
-                            {viewMode === 'self' && (
-                                <>
-                                    <button
-                                        type="button"
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
-                                    >
-                                        Členské příspěvky
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={startEditing}
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                                    >
-                                        <Pencil className="w-4 h-4"/>
-                                        Upravit profil
-                                    </button>
-                                </>
-                            )}
+                            <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle="Ukončení členství"/>
+                            <HalFormButton name="resumeMember" modal={true} label="Reaktivovat" dialogTitle="Reaktivace člena"/>
                         </div>
                     )}
                 </div>
 
                 <hr className="border-border"/>
 
-                {viewMode !== 'other' ? (
+                {hasEditTemplate ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                         {leftColumn}
                         {rightColumn}
