@@ -185,15 +185,16 @@ class UpdateMemberIntegrationTest {
     @Test
     @WithKlabisMockUser(username = "admin", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
     @Sql(scripts = "/sql/test-members-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-    @DisplayName("admin: should update gender and birthNumber for Czech member")
+    @DisplayName("admin: should update gender and birthNumber when changing to Czech nationality")
     void shouldUpdateGenderAndBirthNumberForCzechMember() throws Exception {
         mockMvc.perform(
                         patch("/api/members/{id}", TEST_MEMBER_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
+                                            "nationality": "CZE",
                                             "gender": "FEMALE",
-                                            "birthNumber": "950215/2345"
+                                            "birthNumber": "955215/2345"
                                         }
                                         """)
                 )

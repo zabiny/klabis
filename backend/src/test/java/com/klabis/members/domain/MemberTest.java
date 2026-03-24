@@ -63,6 +63,7 @@ class MemberTest {
                     .address(address)
                     .email(email)
                     .phone(phone)
+                    .birthNumber(BirthNumber.of("900515/1234"))
                     .build();
             Member member = Member.register(command);
 
@@ -136,6 +137,7 @@ class MemberTest {
                     .personalInformation(personalInformation)
                     .address(address)
                     .guardian(guardian)
+                    .birthNumber(BirthNumber.of("015315/1234"))
                     .build();
             Member member = Member.register(command);
 
@@ -372,6 +374,7 @@ class MemberTest {
                     .personalInformation(personalInformation)
                     .address(address)
                     .guardian(guardian)
+                    .birthNumber(BirthNumber.of("015315/1234"))
                     .build();
             Member member = Member.register(command);
 
@@ -470,6 +473,25 @@ class MemberTest {
             })
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Nationality");
+        }
+
+        @Test
+        @DisplayName("should fail when registering CZ member without birth number")
+        void shouldFailWhenRegisteringCzMemberWithoutBirthNumber() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            PersonalInformation personalInfo = PersonalInformation.of(
+                    "Jan", "Novák", LocalDate.of(1990, 5, 15), "CZ", Gender.MALE);
+
+            assertThatThrownBy(() -> Member.register(MemberRegisterMemberBuilder.builder()
+                    .id(memberId)
+                    .registrationNumber(new RegistrationNumber("ZBM9001"))
+                    .personalInformation(personalInfo)
+                    .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
+                    .email(EmailAddress.of("jan@example.com"))
+                    .phone(PhoneNumber.of("+420123456789"))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Birth number is required for Czech nationals");
         }
     }
 
@@ -747,6 +769,7 @@ class MemberTest {
                     .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
+                    .withBirthNumber("900515/1234")
                     .withNoGuardian()
                     .build();
         }
@@ -834,6 +857,7 @@ class MemberTest {
                     .withAddress(Address.of("Dětská 2", "Praha", "11000", "CZ"))
                     .withEmail("guardian@example.com")
                     .withPhone("+420222000222")
+                    .withBirthNumber("015315/1234")
                     .withNoGuardian()
                     .build();
 
@@ -860,6 +884,7 @@ class MemberTest {
                     .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
+                    .withBirthNumber("900515/1234")
                     .withNoGuardian()
                     .build();
         }
@@ -986,6 +1011,28 @@ class MemberTest {
         }
 
         @Test
+        @DisplayName("should fail when updating member nationality to CZ without providing a birth number")
+        void shouldFailWhenUpdatingNationalityToCzWithoutBirthNumber() {
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("SK")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Bratislava", "81102", "SK"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
+
+            assertThatThrownBy(() -> member.handle(MemberUpdateMemberBuilder.builder()
+                    .nationality("CZ")
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Birth number is required for Czech nationals");
+        }
+
+        @Test
         @DisplayName("should allow update when guardian provides email coverage")
         void shouldAllowUpdateWhenGuardianProvidesEmailCoverage() {
             Member member = createAdultMember();
@@ -1012,6 +1059,7 @@ class MemberTest {
                     .withAddress(Address.of("Dětská 1", "Praha", "11000", "CZ"))
                     .withEmail("guardian@example.com")
                     .withPhone("+420111000111")
+                    .withBirthNumber("015315/1234")
                     .withNoGuardian()
                     .build();
 
@@ -1083,6 +1131,7 @@ class MemberTest {
                     .personalInformation(personalInfo)
                     .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
                     .guardian(aGuardian())
+                    .birthNumber(BirthNumber.of("015315/1234"))
                     .build());
 
             assertThat(member.getGuardian()).isNotNull();
@@ -1094,6 +1143,7 @@ class MemberTest {
         @DisplayName("update that sets new email when guardian exists should succeed")
         void updateSettingNewEmailWhenGuardianExistsShouldSucceed() {
             Member member = aMember()
+                    .withNationality("SK")
                     .withEmail("jan@example.com")
                     .withPhone("+420123456789")
                     .withGuardian(aGuardian())
@@ -1141,6 +1191,7 @@ class MemberTest {
         void memberWithNoEmailButGuardianEmailShouldPassUpdateValidation() {
             EmailAddress noEmail = null;
             Member member = aMember()
+                    .withNationality("SK")
                     .withEmail(noEmail)
                     .withPhone("+420123456789")
                     .withGuardian(aGuardian())

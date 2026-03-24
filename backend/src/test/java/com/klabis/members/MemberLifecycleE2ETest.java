@@ -127,6 +127,7 @@ class MemberLifecycleE2ETest {
                                             "gender": "MALE",
                                             "email": "jan.novak@example.com",
                                             "phone": "+420777123456",
+                                            "birthNumber": "000115/1234",
                                             "address": {
                                                 "street": "Hlavní 123",
                                                 "city": "Praha",

@@ -58,6 +58,7 @@ class ManagementServiceTest {
                 .withLastName("Doe")
                 .withRegistrationNumber("ZBM1234")
                 .withDateOfBirth(java.time.LocalDate.of(1990, 5, 15))
+                .withNationality("SK")
                 .withEmail("john.doe@example.com")
                 .withPhone("+420123456789")
                 .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
@@ -77,7 +78,12 @@ class ManagementServiceTest {
                     .birthNumber(BirthNumber.of("900101/1234"))
                     .build();
 
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
+            Member czechMember = MemberTestDataBuilder.aMember()
+                    .withId(testMemberId)
+                    .withNationality("CZE")
+                    .withBirthNumber("900515/1234")
+                    .build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(czechMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
             Member result = testedSubject.updateMember(new MemberId(testMemberId), command);

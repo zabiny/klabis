@@ -52,6 +52,7 @@ class MemberRegistrationIntegrationTest {
                                             "gender": "MALE",
                                             "email": "jan.novak@example.com",
                                             "phone": "+420777123456",
+                                            "birthNumber": "990115/1234",
                                             "address": {
                                                 "street": "Hlavní 123",
                                                 "city": "Praha",
@@ -82,6 +83,7 @@ class MemberRegistrationIntegrationTest {
                                             "gender": "MALE",
                                             "email": "jan1@example.com",
                                             "phone": "+420777111111",
+                                            "birthNumber": "050515/1234",
                                             "address": {
                                                 "street": "Street 1",
                                                 "city": "City1",
@@ -107,6 +109,7 @@ class MemberRegistrationIntegrationTest {
                                             "gender": "FEMALE",
                                             "email": "petra1@example.com",
                                             "phone": "+420777222222",
+                                            "birthNumber": "055515/1234",
                                             "address": {
                                                 "street": "Street 2",
                                                 "city": "City2",

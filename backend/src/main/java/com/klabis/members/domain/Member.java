@@ -381,13 +381,18 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @throws IllegalArgumentException if birth number is provided for non-Czech nationality
      */
     private static void validateBirthNumberNationality(String nationalityCode, BirthNumber birthNumber) {
-        if (birthNumber == null) {
-            return;
-        }
+        Nationality nationality = Nationality.of(nationalityCode);
 
-        if (!Nationality.of(nationalityCode).isCzech()) {
+        if (birthNumber != null && !nationality.isCzech()) {
             throw new BusinessRuleViolationException(
                     "Birth number is only allowed for Czech nationals"
+            ) {
+            };
+        }
+
+        if (birthNumber == null && nationality.isCzech()) {
+            throw new BusinessRuleViolationException(
+                    "Birth number is required for Czech nationals"
             ) {
             };
         }
@@ -529,10 +534,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             newPersonalInfo = this.personalInformation;
         }
 
+        validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
+
         BirthNumber newBirthNumber = command.birthNumber() != null ? command.birthNumber() : this.birthNumber;
         validateBirthNumberNationality(newPersonalInfo.getNationalityCode(), newBirthNumber);
-
-        validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
 
         this.email = newEmail;
         this.phone = newPhone;

@@ -14,6 +14,8 @@ import {Banknote, Check, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 
+type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
+
 const DEACTIVATION_REASON_LABELS: Record<string, string> = {
     ODHLASKA: 'Odhlášení',
     PRESTUP: 'Přestup',

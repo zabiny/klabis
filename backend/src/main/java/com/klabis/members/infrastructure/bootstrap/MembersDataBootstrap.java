@@ -44,12 +44,14 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
         createMember("Jan", "Novák", LocalDate.of(1990, 3, 15),
                 "jan.novak@example.com", "+420 601 111 222",
                 "Hlavní 10", "Praha", "11000",
-                passwordHash, Set.of(Authority.values()), Gender.MALE);
+                passwordHash, Set.of(Authority.values()), Gender.MALE,
+                BirthNumber.of("900315/1234"));
 
         createMember("Eva", "Svobodová", LocalDate.of(1995, 7, 22),
                 "eva.svobodova@example.com", "+420 602 333 444",
                 "Zahradní 5", "Brno", "60200",
-                passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE);
+                passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE,
+                BirthNumber.of("955722/1234"));
 
         LOG.info("Created 2 bootstrap members");
     }
@@ -57,7 +59,8 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
     private void createMember(String firstName, String lastName, LocalDate dateOfBirth,
                               String email, String phone,
                               String street, String city, String postalCode,
-                              String passwordHash, Set<Authority> authorities, Gender gender) {
+                              String passwordHash, Set<Authority> authorities, Gender gender,
+                              BirthNumber birthNumber) {
 
         RegistrationNumber registrationNumber = registrationNumberGenerator.generate(dateOfBirth);
 
@@ -71,7 +74,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 EmailAddress.of(email),
                 PhoneNumber.of(phone),
                 null,
-                null,
+                birthNumber,
                 null,
                 null
         ));

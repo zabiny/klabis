@@ -41,6 +41,7 @@ class MemberMementoTest {
                 .withDateOfBirth(dateOfBirth)
                 .withGender(Gender.MALE)
                 .withNationality("CZ")
+                .withBirthNumber("900515/1234")
                 .withEmail(email)
                 .withPhone(phone)
                 .withAuditMetadata(new AuditMetadata(
@@ -239,6 +240,7 @@ class MemberMementoTest {
                     .withChipNumber(null)
                     .withDrivingLicenseGroup(null)
                     .withDietaryRestrictions(null)
+                    .withBirthNumber((BirthNumber) null)
                     .build();
             MemberMemento memento = MemberMemento.from(member);
 

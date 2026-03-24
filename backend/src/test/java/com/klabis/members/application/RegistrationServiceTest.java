@@ -134,7 +134,7 @@ class RegistrationServiceTest {
                     email,
                     phone,
                     null,
-                    null,
+                    BirthNumber.of("050615/1234"),
                     null,
                     null
             );
@@ -236,7 +236,7 @@ class RegistrationServiceTest {
                     email,
                     phone,
                     guardian,
-                    null,
+                    BirthNumber.of("100115/1234"),
                     null,
                     null
             );
@@ -277,7 +277,7 @@ class RegistrationServiceTest {
                     email,
                     phone,
                     null,
-                    null,
+                    BirthNumber.of("905110/1234"),
                     null,
                     null
             );
@@ -315,7 +315,7 @@ class RegistrationServiceTest {
                     email,
                     phone,
                     null,
-                    null,
+                    BirthNumber.of("050720/1234"),
                     null,
                     null
             );
@@ -352,7 +352,7 @@ class RegistrationServiceTest {
                     email,
                     phone,
                     null,
-                    null,
+                    BirthNumber.of("000101/1234"),
                     null,
                     null
             );
@@ -421,7 +421,7 @@ class RegistrationServiceTest {
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, "SK", Gender.MALE
             );
             BankAccountNumber bankAccountNumber = BankAccountNumber.of("CZ6508000000192000145399");
 
@@ -498,7 +498,7 @@ class RegistrationServiceTest {
         }
 
         @Test
-        @DisplayName("should register member with null birth number and bank account")
+        @DisplayName("should register non-CZ member with null birth number and bank account")
         void shouldRegisterMemberWithNullBirthNumberAndBankAccount() {
             // Given
             LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
@@ -508,7 +508,7 @@ class RegistrationServiceTest {
             EmailAddress email = EmailAddress.of("jan.novak@example.com");
             PhoneNumber phone = PhoneNumber.of("+420777888999");
             PersonalInformation personalInformation = PersonalInformation.of(
-                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+                    "Jan", "Novák", dateOfBirth, "SK", Gender.MALE
             );
 
             RegistrationService.RegisterNewMember command = new RegistrationService.RegisterNewMember(personalInformation,

@@ -105,6 +105,7 @@ class MemberControllerSecurityTest extends SecurityTestBase {
                                             "gender": "MALE",
                                             "email": "jan@example.com",
                                             "phone": "+420777123456",
+                                            "birthNumber": "050515/1234",
                                             "address": {
                                                 "street": "Hlavní 123",
                                                 "city": "Praha",
