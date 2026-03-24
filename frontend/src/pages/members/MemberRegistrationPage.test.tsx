@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import {type ReactElement} from 'react';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
@@ -42,6 +43,7 @@ vi.mock('../../components/HalNavigator2/HalFormDisplay', () => ({
 
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay';
+import {Formik, Form, Field} from 'formik';
 
 const memberCreationTemplate: HalFormsTemplate = {
     method: 'POST',
@@ -55,6 +57,17 @@ const memberCreationTemplate: HalFormsTemplate = {
         {name: 'email', type: 'email', prompt: 'E-mail'},
         {name: 'phone', type: 'tel', prompt: 'Telefon'},
         {name: 'address', type: 'AddressRequest', prompt: 'Adresa'},
+    ],
+};
+
+const memberCreationTemplateWithBirthNumber: HalFormsTemplate = {
+    method: 'POST',
+    target: '/api/members',
+    properties: [
+        {name: 'firstName', type: 'text', prompt: 'Jméno', required: true},
+        {name: 'nationality', type: 'text', prompt: 'Státní příslušnost'},
+        {name: 'birthNumber', type: 'text', prompt: 'Rodné číslo'},
+        {name: 'email', type: 'email', prompt: 'E-mail'},
     ],
 };
 
@@ -218,6 +231,94 @@ describe('MemberRegistrationPage', () => {
         it('renders page title "Registrace nového člena" inside custom layout', () => {
             renderFormLayout();
             expect(screen.getByRole('heading', {level: 1, name: /registrace nového člena/i})).toBeInTheDocument();
+        });
+    });
+
+    describe('birth number conditional on nationality', () => {
+        const renderFormLayoutWithFormik = (initialNationality: string) => {
+            const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+            const collectionWithBirthNumber: HalResponse = {
+                _links: {self: {href: '/api/members'}},
+                _templates: {registerMember: memberCreationTemplateWithBirthNumber},
+            };
+            mockUseAuthorizedQuery(collectionWithBirthNumber);
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/members/new']}>
+                        <MemberRegistrationPage/>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+            const renderFn = capturedCustomLayout as (helpers: any) => ReactElement;
+            const helpers = {
+                renderInput: (name: string) => <input key={name} data-testid={`input-${name}`} name={name}/>,
+                renderField: (name: string) => <div key={name} data-testid={`field-${name}`}/>,
+                renderLabel: (name: string) => name,
+            };
+            return render(
+                <MemoryRouter>
+                    <Formik initialValues={{nationality: initialNationality, birthNumber: ''}} onSubmit={vi.fn()}>
+                        <Form>
+                            {renderFn(helpers)}
+                        </Form>
+                    </Formik>
+                </MemoryRouter>
+            );
+        };
+
+        it('shows birth number field when nationality is CZ', () => {
+            renderFormLayoutWithFormik('CZ');
+            expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+        });
+
+        it('hides birth number field when nationality is non-CZ', () => {
+            renderFormLayoutWithFormik('SK');
+            expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+        });
+
+        it('hides birth number field when nationality is empty', () => {
+            renderFormLayoutWithFormik('');
+            expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+        });
+
+        it('clears birth number value and hides field when nationality changes from CZ to non-CZ', async () => {
+            const user = userEvent.setup();
+            const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+            const collectionWithBirthNumber: HalResponse = {
+                _links: {self: {href: '/api/members'}},
+                _templates: {registerMember: memberCreationTemplateWithBirthNumber},
+            };
+            mockUseAuthorizedQuery(collectionWithBirthNumber);
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/members/new']}>
+                        <MemberRegistrationPage/>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+            const renderFn = capturedCustomLayout as (helpers: any) => ReactElement;
+            const helpers = {
+                renderInput: (name: string) => <Field key={name} as="input" data-testid={`input-${name}`} name={name}/>,
+                renderField: (name: string) => <div key={name} data-testid={`field-${name}`}/>,
+                renderLabel: (name: string) => name,
+            };
+            render(
+                <MemoryRouter>
+                    <Formik initialValues={{nationality: 'CZ', birthNumber: '9003151234'}} onSubmit={vi.fn()}>
+                        <Form>
+                            {renderFn(helpers)}
+                        </Form>
+                    </Formik>
+                </MemoryRouter>
+            );
+
+            expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+
+            const nationalityInput = screen.getByTestId('input-nationality');
+            await user.clear(nationalityInput);
+            await user.type(nationalityInput, 'SK');
+
+            expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
         });
     });
 });

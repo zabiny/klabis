@@ -7,6 +7,7 @@ import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay';
 import type {RenderFormCallback} from '../../components/HalNavigator2/halforms';
 import {DetailRow} from '../../components/UI';
 import {Section} from './MemberSection';
+import {BirthNumberConditionalField} from './BirthNumberConditionalField';
 
 const PERSONAL_FIELDS = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'nationality', 'birthNumber'];
 const CONTACT_FIELDS = ['email', 'phone'];
@@ -87,7 +88,7 @@ export const MemberRegistrationPage = (): ReactElement => {
                             {hasField('dateOfBirth') && <DetailRow label="Datum narození">{renderInput('dateOfBirth')}</DetailRow>}
                             {hasField('gender') && <DetailRow label="Pohlaví">{renderInput('gender')}</DetailRow>}
                             {hasField('nationality') && <DetailRow label="Státní příslušnost">{renderInput('nationality')}</DetailRow>}
-                            {hasField('birthNumber') && <DetailRow label="Rodné číslo">{renderInput('birthNumber')}</DetailRow>}
+                            {hasField('birthNumber') && <BirthNumberConditionalField renderInput={renderInput} hasBirthNumberField={true}/>}
                         </Section>
                     )}
 

@@ -82,6 +82,18 @@ const adminEditTemplate: HalFormsTemplate = {
     ],
 };
 
+const adminEditTemplateWithNationality: HalFormsTemplate = {
+    method: 'PUT',
+    target: '/api/members/123e4567-e89b-12d3-a456-426614174000',
+    properties: [
+        {name: 'firstName', type: 'text', prompt: 'Jméno'},
+        {name: 'lastName', type: 'text', prompt: 'Příjmení'},
+        {name: 'nationality', type: 'text', prompt: 'Státní příslušnost'},
+        {name: 'birthNumber', type: 'text', prompt: 'Rodné číslo'},
+        {name: 'email', type: 'email', prompt: 'E-mail'},
+    ],
+};
+
 const selfEditTemplate: HalFormsTemplate = {
     method: 'PATCH',
     target: '/api/members/123e4567-e89b-12d3-a456-426614174000/profile',
@@ -268,6 +280,16 @@ describe('MemberDetailPage', () => {
         const data = mockMemberDetailData({
             nationality: 'SK',
             birthNumber: '9003151234',
+            _templates: {default: selfEditTemplate},
+        });
+        renderPage(createMockPageData(data));
+        expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+    });
+
+    it('does NOT show birth number when nationality is CZ but birthNumber is null (view mode)', () => {
+        const data = mockMemberDetailData({
+            nationality: 'CZ',
+            birthNumber: null,
             _templates: {default: selfEditTemplate},
         });
         renderPage(createMockPageData(data));
@@ -522,6 +544,78 @@ describe('MemberDetailPage', () => {
 
             expect(screen.getByText('Žena')).toBeInTheDocument();
             expect(screen.queryByText('FEMALE')).not.toBeInTheDocument();
+        });
+
+        describe('birth number conditional on nationality in edit mode', () => {
+            it('shows birth number input when nationality is CZ in edit mode', async () => {
+                const user = userEvent.setup();
+                const data = mockMemberDetailData({
+                    nationality: 'CZ',
+                    birthNumber: '9003151234',
+                    _templates: {default: adminEditTemplateWithNationality},
+                });
+                renderPage(createMockPageData(data));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+            });
+
+            it('hides birth number input when nationality is non-CZ in edit mode', async () => {
+                const user = userEvent.setup();
+                const data = mockMemberDetailData({
+                    nationality: 'SK',
+                    birthNumber: null,
+                    _templates: {default: adminEditTemplateWithNationality},
+                });
+                renderPage(createMockPageData(data));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+            });
+
+            it('hides birth number field and clears value when nationality changes from CZ to non-CZ', async () => {
+                const user = userEvent.setup();
+                const data = mockMemberDetailData({
+                    nationality: 'CZ',
+                    birthNumber: '9003151234',
+                    _templates: {default: adminEditTemplateWithNationality},
+                });
+                renderPage(createMockPageData(data));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+                expect(screen.getByDisplayValue('9003151234')).toBeInTheDocument();
+
+                const nationalityInput = screen.getByDisplayValue('CZ');
+                await user.clear(nationalityInput);
+                await user.type(nationalityInput, 'SK');
+
+                expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+                expect(screen.queryByDisplayValue('9003151234')).not.toBeInTheDocument();
+            });
+
+            it('shows birth number field when nationality changes from non-CZ to CZ', async () => {
+                const user = userEvent.setup();
+                const data = mockMemberDetailData({
+                    nationality: 'SK',
+                    birthNumber: null,
+                    _templates: {default: adminEditTemplateWithNationality},
+                });
+                renderPage(createMockPageData(data));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
+
+                const nationalityInput = screen.getByDisplayValue('SK');
+                await user.clear(nationalityInput);
+                await user.type(nationalityInput, 'CZ');
+
+                expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+            });
         });
     });
 

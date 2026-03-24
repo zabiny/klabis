@@ -12,8 +12,7 @@ import type {HalFormsProperty, HalFormsTemplate, HalResponse} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Banknote, Check, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
-
-type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
+import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
 
 const DEACTIVATION_REASON_LABELS: Record<string, string> = {
     ODHLASKA: 'Odhlášení',
@@ -163,13 +162,14 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label="Datum narození">{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
                         <DetailRow label="Pohlaví">{ri('gender') ?? val(member.gender && (GENDER_LABELS[member.gender] ?? member.gender))}</DetailRow>
                         <DetailRow label="Státní příslušnost">{ri('nationality') ?? val(member.nationality)}</DetailRow>
-                        {(isEditing || (member.nationality === 'CZ' && member.birthNumber)) && (
-                            <DetailRow label="Rodné číslo">
-                                {isEditing
-                                    ? ri('birthNumber')
-                                    : <MaskedBirthNumber value={member.birthNumber!}/>}
-                            </DetailRow>
-                        )}
+                        {isEditing
+                            ? <BirthNumberConditionalField renderInput={ri} hasBirthNumberField={enrichedFieldNames.has('birthNumber')}/>
+                            : (isCzNationality(member.nationality) && member.birthNumber && (
+                                <DetailRow label="Rodné číslo">
+                                    <MaskedBirthNumber value={member.birthNumber}/>
+                                </DetailRow>
+                            ))
+                        }
                         {isEditing && (
                             <DetailRow label="Registrační číslo">{ri('registrationNumber')}</DetailRow>
                         )}
