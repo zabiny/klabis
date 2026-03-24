@@ -7,20 +7,19 @@ export const isCzNationality = (nationality: unknown): boolean =>
 
 interface BirthNumberConditionalFieldProps {
     renderInput: (name: string) => ReactNode;
-    hasBirthNumberField: boolean;
 }
 
-export const BirthNumberConditionalField = ({renderInput, hasBirthNumberField}: BirthNumberConditionalFieldProps): ReactElement | null => {
+export const BirthNumberConditionalField = ({renderInput}: BirthNumberConditionalFieldProps): ReactElement | null => {
     const {values, setFieldValue} = useFormikContext<Record<string, unknown>>();
     const isCz = isCzNationality(values.nationality);
 
     useEffect(() => {
-        if (!isCz) {
+        if (!isCz && values.birthNumber) {
             setFieldValue('birthNumber', '');
         }
-    }, [isCz, setFieldValue]);
+    }, [isCz, setFieldValue, values.birthNumber]);
 
-    if (!isCz || !hasBirthNumberField) return null;
+    if (!isCz) return null;
 
     return (
         <DetailRow label="Rodné číslo">

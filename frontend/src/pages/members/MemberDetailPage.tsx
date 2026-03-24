@@ -165,7 +165,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label="Pohlaví">{ri('gender') ?? val(member.gender && (GENDER_LABELS[member.gender] ?? member.gender))}</DetailRow>
                         <DetailRow label="Státní příslušnost">{ri('nationality') ?? val(member.nationality)}</DetailRow>
                         {isEditing
-                            ? <BirthNumberConditionalField renderInput={ri} hasBirthNumberField={enrichedFieldNames.has('birthNumber')}/>
+                            ? enrichedFieldNames.has('birthNumber') && <BirthNumberConditionalField renderInput={ri}/>
                             : (isCzNationality(member.nationality) && member.birthNumber && (
                                 <DetailRow label="Rodné číslo">
                                     <MaskedBirthNumber value={member.birthNumber}/>

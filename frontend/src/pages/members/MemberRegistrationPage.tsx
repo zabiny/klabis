@@ -88,7 +88,7 @@ export const MemberRegistrationPage = (): ReactElement => {
                             {hasField('dateOfBirth') && <DetailRow label="Datum narození">{renderInput('dateOfBirth')}</DetailRow>}
                             {hasField('gender') && <DetailRow label="Pohlaví">{renderInput('gender')}</DetailRow>}
                             {hasField('nationality') && <DetailRow label="Státní příslušnost">{renderInput('nationality')}</DetailRow>}
-                            {hasField('birthNumber') && <BirthNumberConditionalField renderInput={renderInput} hasBirthNumberField={true}/>}
+                            {hasField('birthNumber') && <BirthNumberConditionalField renderInput={renderInput}/>}
                         </Section>
                     )}
 
