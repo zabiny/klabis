@@ -14,7 +14,7 @@ public class MemberTestDataBuilder {
     private String firstName = "Jan";
     private String lastName = "Novák";
     private LocalDate dateOfBirth = LocalDate.of(2010, 5, 15);
-    private String nationality = "CZE";
+    private String nationality = "SK";
     private Gender gender = Gender.MALE;
     private Address address = Address.of("Hlavní 123", "Praha", "110 00", "CZ");
     private EmailAddress email = EmailAddress.of("jan.novak@example.com");

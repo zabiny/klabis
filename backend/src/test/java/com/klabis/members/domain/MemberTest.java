@@ -504,7 +504,7 @@ class MemberTest {
                     .withRegistrationNumber("ZBM9001")
                     .withName("Jan", "Novák")
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
-                    .withNationality("CZ")
+                    .withNationality("SK")
                     .withGender(Gender.MALE)
                     .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
@@ -654,7 +654,7 @@ class MemberTest {
                     .withRegistrationNumber("ZBM9001")
                     .withName("Jan", "Novák")
                     .withDateOfBirth(LocalDate.of(1990, 5, 15))
-                    .withNationality("CZ")
+                    .withNationality("SK")
                     .withGender(Gender.MALE)
                     .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
@@ -977,8 +977,8 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("should reject setting birth number on non-Czech member")
-        void shouldRejectSettingBirthNumberOnNonCzechMember() {
+        @DisplayName("should clear birth number when set on non-Czech member")
+        void shouldClearBirthNumberWhenSetOnNonCzechMember() {
             Member member = aMember()
                     .withRegistrationNumber("ZBM9001")
                     .withName("Jan", "Novák")
@@ -991,11 +991,11 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> member.handle(MemberUpdateMemberBuilder.builder()
+            member.handle(MemberUpdateMemberBuilder.builder()
                     .birthNumber(BirthNumber.of("9005151234"))
-                    .build()))
-                    .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessageContaining("Birth number is only allowed for Czech nationals");
+                    .build());
+
+            assertThat(member.getBirthNumber()).isNull();
         }
 
         @Test

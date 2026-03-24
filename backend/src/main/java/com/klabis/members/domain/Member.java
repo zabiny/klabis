@@ -371,14 +371,15 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     /**
-     * Validates that birth number is only provided for Czech nationals.
+     * Validates birth number and nationality consistency.
      *
-     * <p><b>Business Rule:</b> Birth number (rodné číslo) is a Czech-specific identifier
-     * and should only be stored for members with Czech nationality.
+     * <p><b>Business Rule:</b> Birth number (rodné číslo) is required for Czech nationals
+     * and forbidden for non-Czech nationals.
      *
      * @param nationalityCode the member's nationality code (ISO 3166-1)
      * @param birthNumber     the birth number to validate (may be null)
-     * @throws IllegalArgumentException if birth number is provided for non-Czech nationality
+     * @throws BusinessRuleViolationException if birth number is provided for non-Czech nationality
+     *                                        or missing for Czech nationality
      */
     private static void validateBirthNumberNationality(String nationalityCode, BirthNumber birthNumber) {
         Nationality nationality = Nationality.of(nationalityCode);
@@ -537,6 +538,9 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
 
         BirthNumber newBirthNumber = command.birthNumber() != null ? command.birthNumber() : this.birthNumber;
+        if (newBirthNumber != null && !Nationality.of(newPersonalInfo.getNationalityCode()).isCzech()) {
+            newBirthNumber = null;
+        }
         validateBirthNumberNationality(newPersonalInfo.getNationalityCode(), newBirthNumber);
 
         this.email = newEmail;
