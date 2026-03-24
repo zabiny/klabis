@@ -98,9 +98,9 @@ The system SHALL automatically generate a unique registration number in format X
 
 ### Requirement: Birth Number Management
 
-The system SHALL manage birth numbers (rodné číslo) for Czech nationals with conditional availability, format validation, GDPR-compliant encryption, consistency validation, API exposure, and audit trail.
+The system SHALL manage birth numbers (rodné číslo) for Czech nationals with mandatory availability, format validation, GDPR-compliant encryption, consistency validation, API exposure, and audit trail.
 
-- Available only when Czech nationality is selected
+- **Required** when Czech nationality is selected
 - Disabled/unavailable for non-Czech nationalities; changing nationality from Czech to non-Czech clears any stored birth number
 - Must validate format RRMMDD/XXXX or RRMMDDXXXX
 - Must encrypt birth number in database using AES-256
@@ -114,15 +114,23 @@ Birth number format:
 - **DD**: Day of birth (01-31)
 - **XXXX**: Sequential number
 
-#### Scenario: Czech national can enter birth number
+#### Scenario: Czech national must provide birth number
 
 - **WHEN** user creates or updates a member with Czech (CZ) nationality
-- **THEN** birth number field is available and can be entered
+- **AND** birth number is not provided
+- **THEN** validation fails with HTTP 400
+- **AND** error message indicates birth number is required for Czech nationals
+
+#### Scenario: Czech national provides valid birth number
+
+- **WHEN** user creates or updates a member with Czech (CZ) nationality
+- **AND** birth number is provided in valid format
+- **THEN** system accepts the member data
 
 #### Scenario: Non-Czech national cannot enter birth number
 
 - **WHEN** user creates or updates a member with non-Czech nationality
-- **THEN** birth number field is disabled and any previously entered value is cleared
+- **THEN** birth number field is hidden and any previously entered value is cleared
 
 #### Scenario: Changing nationality clears birth number
 
@@ -191,7 +199,7 @@ Birth number format:
 #### Scenario: Birth number included in member registration request
 
 - **WHEN** user creates new member (POST /api/members)
-- **THEN** request accepts optional birthNumber field
+- **THEN** request accepts birthNumber field (required for CZ nationality)
 
 #### Scenario: Birth number included in member update request
 
@@ -207,6 +215,22 @@ Birth number format:
 
 - **WHEN** user creates or updates birth number
 - **THEN** system creates audit log entry with: user ID, member ID, timestamp, action "MODIFY_BIRTH_NUMBER"
+
+#### Scenario: Frontend shows birth number field for Czech nationality
+
+- **WHEN** member form displays with Czech (CZ) nationality selected
+- **THEN** birth number field is visible and marked as required
+
+#### Scenario: Frontend hides birth number field for non-Czech nationality
+
+- **WHEN** member form displays with non-Czech nationality selected
+- **THEN** birth number field is not visible
+
+#### Scenario: Frontend hides birth number when nationality changes from Czech
+
+- **WHEN** user changes nationality from Czech to non-Czech in member form
+- **THEN** birth number field is hidden
+- **AND** any entered birth number value is cleared
 
 ### Requirement: Contact Information
 
