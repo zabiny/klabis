@@ -3,7 +3,9 @@ spring:
     name: klabis-backend
 
   profiles:
-    active: dev
+    active: h2,ssl,debug,metrics
+    group:
+      test: h2,metrics
 
   mvc:
     problemdetails:
@@ -41,6 +43,10 @@ spring:
   cache:
     type: simple
     cache-names: rateLimitCache
+
+  devtools:
+    livereload:
+      enabled: false
 
 management:
   endpoints:
@@ -117,7 +123,6 @@ klabis:
     name: ${KLABIS_CLUB_NAME:Klub orientačního běhu}
 
   email:
-    enabled: ${KLABIS_EMAIL_ENABLED:false}
     from: ${KLABIS_EMAIL_FROM:noreply@klabis.cz}
 
   events:
@@ -158,13 +163,9 @@ jasypt:
     iv-generator-classname: org.jasypt.iv.RandomIvGenerator
 
 server:
-  port: 8443
+  port: 8080
   ssl:
-    enabled: true
-    key-store: ${KLABIS_SSL_KEYSTORE_PATH:classpath:https/keystore.p12}
-    key-store-password: ${KLABIS_SSL_KEYSTORE_PASSWORD:changeit}
-    key-store-type: PKCS12
-    key-alias: ${KLABIS_SSL_KEY_ALIAS:localhost}
+    enabled: false
   http2:
     enabled: true
   error:
@@ -179,34 +180,10 @@ info:
 
 logging:
   level:
-    com.klabis: DEBUG
+    com.klabis: INFO
     org.springframework.web: INFO
-    org.springframework.modulith.events: ${KLABIS_EVENT_LOGGING_LEVEL:DEBUG}
+    org.springframework.modulith.events: ${KLABIS_EVENT_LOGGING_LEVEL:INFO}
 
-
----
-# Development profile
-spring:
-  config:
-    activate:
-      on-profile: dev
-
-  datasource:
-    url: jdbc:h2:mem:klabis;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
-    driver-class-name: org.h2.Driver
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
-  devtools:
-    livereload:
-      enabled: false
-
-logging:
-  level:
-    org.springframework.security: DEBUG
 
 ---
 # Test profile
@@ -225,41 +202,7 @@ spring:
 
   flyway:
     clean-disabled: false
+
 logging:
   level:
     org.springframework.web.servlet.mvc: DEBUG
-
----
-# Production profile
-spring:
-  config:
-    activate:
-      on-profile: prod
-
-  h2:
-    console:
-      enabled: false
-
-  datasource:
-    url: jdbc:postgresql://localhost:5432/klabis
-    username: ${KLABIS_DB_USERNAME:klabis}
-    password: ${KLABIS_DB_PASSWORD:klabis}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: ${KLABIS_DB_POOL_MAX_SIZE:20}
-      minimum-idle: ${KLABIS_DB_POOL_MIN_IDLE:10}
-      connection-timeout: ${KLABIS_DB_CONNECTION_TIMEOUT:30000}
-      idle-timeout: ${KLABIS_DB_IDLE_TIMEOUT:300000}
-      max-lifetime: ${KLABIS_DB_MAX_LIFETIME:1800000}
-
-  mail:
-    host: ${KLABIS_SMTP_HOST}
-
-klabis:
-  frontend:
-    allowed-origins: ${KLABIS_FRONTEND_ALLOWED_ORIGINS:https://your-frontend-domain.com}
-
-logging:
-  level:
-    com.klabis: INFO
-    org.springframework.security: WARN

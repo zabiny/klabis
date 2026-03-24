@@ -1,0 +1,8 @@
+server:
+  port: 8443
+  ssl:
+    enabled: true
+    key-store: ${KLABIS_SSL_KEYSTORE_PATH:classpath:https/keystore.p12}
+    key-store-password: ${KLABIS_SSL_KEYSTORE_PASSWORD:changeit}
+    key-store-type: PKCS12
+    key-alias: ${KLABIS_SSL_KEY_ALIAS:localhost}

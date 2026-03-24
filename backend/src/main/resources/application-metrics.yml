@@ -1,0 +1,2 @@
+# Metrics profile — enables custom Klabis metrics (Modulith event counters, listener latency).
+# Bean activation is Java-based via @Profile("metrics") in CustomMetricsConfiguration and CustomMetricsTrackingAspect.

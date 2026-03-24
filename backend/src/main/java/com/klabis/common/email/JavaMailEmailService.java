@@ -13,7 +13,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
  * <p>Handles failures gracefully - SMTP errors are logged but do not throw exceptions.
  * This ensures email failures don't break business operations (e.g., member registration).
  *
- * <p>Enabled only when klabis.email.enabled=true in configuration.
+ * <p>Activated by the {@code email} Spring profile.
  */
 public class JavaMailEmailService implements EmailService {
 
@@ -29,11 +29,6 @@ public class JavaMailEmailService implements EmailService {
 
     @Override
     public void send(EmailMessage message) {
-        if (!emailProperties.isEnabled()) {
-            log.debug("Email disabled in configuration, skipping send: {}", message.subject());
-            return;
-        }
-
         try {
             MimeMessage mimeMessage = createMimeMessage(message);
             mailSender.send(mimeMessage);

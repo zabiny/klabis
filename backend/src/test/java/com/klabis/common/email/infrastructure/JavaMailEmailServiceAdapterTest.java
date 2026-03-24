@@ -50,7 +50,6 @@ class JavaMailEmailServiceAdapterTest {
 
         // Configure properties
         emailProperties = new EmailProperties();
-        emailProperties.setEnabled(true);
         emailProperties.setFrom("noreply@klabis.cz");
 
         // Create service with mocked sender
@@ -160,23 +159,6 @@ class JavaMailEmailServiceAdapterTest {
 
         MimeMessage sent = captor.getValue();
         assertThat(sent.getFrom()[0].toString()).contains("welcome@klabis.cz");
-    }
-
-    /**
-     * Contract: When email is disabled, JavaMailSender.send() is never called.
-     */
-    @Test
-    @DisplayName("should skip sending when email disabled")
-    void shouldSkipSendingWhenDisabled() {
-        // Given
-        emailProperties.setEnabled(false);
-        EmailMessage message = EmailMessage.text("recipient@example.com", "Test", "Body");
-
-        // When
-        emailService.send(message);
-
-        // Then - verify the contract: no interaction with JavaMailSender
-        verifyNoInteractions(mailSender);
     }
 
     /**

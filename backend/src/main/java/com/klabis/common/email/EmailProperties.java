@@ -9,29 +9,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "klabis.email")
 public class EmailProperties {
 
-    private boolean enabled = true;
     private String from;
 
-    public static EmailProperties enabledEmail(String emailFrom) {
-        EmailProperties emailProperties = new EmailProperties();
-        emailProperties.enabled = true;
-        emailProperties.from = emailFrom;
-        return emailProperties;
-    }
-
-    public static EmailProperties disabledEmail() {
-        EmailProperties emailProperties = new EmailProperties();
-        emailProperties.enabled = false;
-        emailProperties.from = "disabled";
-        return emailProperties;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+    public static EmailProperties withFrom(String from) {
+        EmailProperties props = new EmailProperties();
+        props.from = from;
+        return props;
     }
 
     public String getFrom() {

@@ -1,0 +1,3 @@
+spring:
+  mail:
+    host: ${KLABIS_SMTP_HOST}

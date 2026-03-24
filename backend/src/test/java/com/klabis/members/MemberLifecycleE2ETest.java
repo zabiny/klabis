@@ -78,7 +78,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MemberLifecycleE2ETest {
 
     private static final LoggingEmailService LOGGING_EMAIL_SERVICE = new LoggingEmailService(
-            EmailProperties.enabledEmail("noreply@klabis.zabiny.club"));
+            EmailProperties.withFrom("noreply@klabis.zabiny.club"));
 
     static EmailService emailServiceStub() {
         return LOGGING_EMAIL_SERVICE;

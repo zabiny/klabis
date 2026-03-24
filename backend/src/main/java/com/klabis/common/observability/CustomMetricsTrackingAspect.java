@@ -9,7 +9,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -48,12 +48,7 @@ import java.time.Instant;
  */
 @Aspect
 @Component
-@ConditionalOnProperty(
-        prefix = "klabis.metrics.custom",
-        name = "enabled",
-        havingValue = "true",
-        matchIfMissing = true
-)
+@Profile("metrics")
 public class CustomMetricsTrackingAspect {
 
     private static final Package KLABIS_PACKAGE = KlabisApplication.class.getPackage();

@@ -140,12 +140,20 @@ See `klabis:backend-patterns` skill for detailed patterns including type-safe ID
 
 ## Application Profiles
 
-⚠️ **Development Status**: Application is currently in development. There is no production environment yet. All
-instances run on in-memory H2 database (dev profile).
+⚠️ **Development Status**: Application is currently in development. There is no production environment yet.
 
-- **dev** (default): H2 in-memory database, SQL logging, H2 console enabled
-- **test**: For integration tests, isolated H2 database
-- **prod**: PostgreSQL, production settings, actuator endpoints secured (not yet deployed)
+Feature-based profiles (composable independently):
+- **h2** — H2 in-memory database, H2 console enabled
+- **postgresql** — PostgreSQL datasource with env-var configuration
+- **ssl** — HTTPS on port 8443, keystore config (overridable via `KLABIS_SSL_*` env vars)
+- **debug** — verbose logging (`com.klabis: DEBUG`, `spring.security: DEBUG`)
+- **email** — activates real email sending via JavaMailSender (requires `KLABIS_SMTP_HOST` env var; without this profile, `LoggingEmailService` is used)
+- **metrics** — enables custom Klabis metrics (Modulith event counters, listener latency)
+- **test** — for integration tests, isolated H2 database (auto-includes `h2` and `metrics` via profile group)
+
+Default active profiles: `h2,ssl,debug,metrics` (zero-config local dev, HTTPS on 8443, H2 database)
+
+Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics`
 
 ## Key Technologies
 

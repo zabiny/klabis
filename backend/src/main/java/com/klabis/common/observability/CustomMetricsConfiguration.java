@@ -8,9 +8,9 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
@@ -30,20 +30,12 @@ import java.util.List;
  * </ul>
  *
  * <h2>Configuration</h2>
- * Custom metrics can be controlled via application property:
- * <pre>
- * klabis.metrics.custom.enabled: true  # default
- * </pre>
+ * Custom metrics are activated via the {@code metrics} Spring profile.
  *
  * @see io.micrometer.core.instrument.MeterRegistry
  */
 @Configuration
-@ConditionalOnProperty(
-        prefix = "klabis.metrics.custom",
-        name = "enabled",
-        havingValue = "true",
-        matchIfMissing = true
-)
+@Profile("metrics")
 public class CustomMetricsConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(CustomMetricsConfiguration.class);

@@ -8,21 +8,20 @@ TBD - created by archiving change enable-https-8443. Update Purpose after archiv
 
 ### Requirement: HTTPS Protocol Enforcement
 
-The system SHALL use HTTPS protocol on port 8443 for all HTTP communications in all profiles (dev, test, prod). HTTP on
-port 8080 SHALL NOT be supported.
+The system SHALL use HTTPS protocol on port 8443 for all HTTP communications when the `ssl` profile is active. Without `ssl` profile, the server runs on HTTP port 8080.
 
 #### Scenario: Server starts with HTTPS enabled on port 8443
 
-- **WHEN** application starts with any profile (dev, test, prod)
+- **WHEN** application starts with the `ssl` profile active
 - **THEN** server listens on port 8443 with HTTPS enabled
 - **AND** server does NOT listen on port 8080
 - **AND** health check endpoint is accessible at `https://localhost:8443/actuator/health`
 
-#### Scenario: HTTP request to port 8080 is rejected
+#### Scenario: Server starts without SSL on port 8080
 
-- **WHEN** client attempts to connect to `http://localhost:8080`
-- **THEN** connection is refused or times out
-- **AND** client receives no response
+- **WHEN** application starts without the `ssl` profile
+- **THEN** server listens on port 8080 with HTTP
+- **AND** health check endpoint is accessible at `http://localhost:8080/actuator/health`
 
 #### Scenario: HTTPS request to port 8443 succeeds
 
@@ -59,27 +58,19 @@ compression, and server push capabilities.
 
 The system SHALL configure SSL/TLS certificates via system configuration with profile-specific keystore settings.
 
-#### Scenario: Development profile uses development keystore
+#### Scenario: SSL profile uses configurable keystore
 
-- **WHEN** application starts with dev profile
-- **THEN** server loads SSL certificate from development keystore location
-- **AND** server uses keystore password from system configuration
-- **AND** server uses certificate with alias `dev-klabis`
+- **WHEN** application starts with `ssl` profile
+- **THEN** server loads SSL certificate from keystore at `${KLABIS_SSL_KEYSTORE_PATH}` (default: `classpath:https/keystore.p12`)
+- **AND** server uses keystore password from `${KLABIS_SSL_KEYSTORE_PASSWORD}` (default: `changeit`)
+- **AND** server uses certificate alias from `${KLABIS_SSL_KEY_ALIAS}` (default: `localhost`)
 
-#### Scenario: Test profile uses test keystore
+#### Scenario: Production overrides keystore via environment variables
 
-- **WHEN** application starts with test profile
-- **THEN** server loads SSL certificate from test keystore location
-- **AND** server uses keystore password from system configuration
-- **AND** server uses certificate with alias `test-klabis`
-
-#### Scenario: Production profile uses environment-configured keystore
-
-- **WHEN** application starts with prod profile
-- **THEN** server loads SSL certificate from path specified in `${SSL_KEYSTORE_PATH}` environment variable
-- **AND** server uses keystore password from `${SSL_KEYSTORE_PASSWORD}` environment variable
-- **AND** server uses certificate alias from `${SSL_KEY_ALIAS}` environment variable
-- **AND** application fails to start if environment variables are missing
+- **WHEN** application starts with `ssl` profile and `KLABIS_SSL_*` environment variables set
+- **THEN** server loads SSL certificate from path specified in `${KLABIS_SSL_KEYSTORE_PATH}`
+- **AND** server uses keystore password from `${KLABIS_SSL_KEYSTORE_PASSWORD}`
+- **AND** server uses certificate alias from `${KLABIS_SSL_KEY_ALIAS}`
 
 #### Scenario: Invalid keystore path causes startup failure
 
