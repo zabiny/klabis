@@ -123,7 +123,7 @@ class MemberController {
         var command = new Member.ResumeMembership(currentUserId);
         managementService.resumeMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
                 .build();
     }
 
@@ -154,7 +154,7 @@ class MemberController {
 
         managementService.suspendMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
                 .build();
     }
 
@@ -174,8 +174,7 @@ class MemberController {
     @ApiResponse(responseCode = "403", description = "Forbidden - user is not an active member")
     public ResponseEntity<PagedModel<EntityModel<MemberSummaryResponse>>> listMembers(
             @Parameter(description = "Pagination parameters: page, size, sort")
-            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
-            @CurrentUser CurrentUserData currentUser) {
+            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
 
         validateSortFields(pageable.getSort());
 
@@ -183,29 +182,24 @@ class MemberController {
 
         PagedModel<EntityModel<MemberSummaryResponse>> pagedModel = pagedResourcesAssembler.toModel(
                 memberPage.map(memberMapper::toSummaryResponse),
-                response -> buildSummaryModel(response, currentUser)
+                response -> buildSummaryModel(response)
         );
 
-        pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> buildCollectionSelfLink(pageable, currentUser).orElse(oldLink));
+        pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> buildCollectionSelfLink(pageable).orElse(oldLink));
 
         return ResponseEntity.ok(pagedModel);
     }
 
-    private EntityModel<MemberSummaryResponse> buildSummaryModel(MemberSummaryResponse response, CurrentUserData currentUser) {
+    private EntityModel<MemberSummaryResponse> buildSummaryModel(MemberSummaryResponse response) {
         UUID memberId = response.id().uuid();
         EntityModel<MemberSummaryResponse> model = EntityModel.of(response);
 
-        if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
-            buildManagedMemberSelfLink(memberId, Boolean.TRUE.equals(response.active())).ifPresent(model::add);
-        } else {
-            klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null))
-                    .ifPresent(link -> model.add(link.withSelfRel()));
-        }
+        buildMemberSelfLink(memberId, Boolean.TRUE.equals(response.active())).ifPresent(model::add);
 
         return model;
     }
 
-    private java.util.Optional<Link> buildManagedMemberSelfLink(UUID memberId, boolean isActive) {
+    private java.util.Optional<Link> buildMemberSelfLink(UUID memberId, boolean isActive) {
         return klabisLinkTo(methodOn(MemberController.class).getMember(memberId, null)).map(selfLinkBuilder -> {
             var selfLink = selfLinkBuilder.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(memberId, null, null)));
@@ -220,16 +214,12 @@ class MemberController {
         });
     }
 
-    private java.util.Optional<Link> buildCollectionSelfLink(Pageable pageable, CurrentUserData currentUser) {
-        return klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, null)).map(selfLinkBuilder -> {
-            var selfLink = selfLinkBuilder.withSelfRel();
-            if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
-                selfLink = selfLink
+    private java.util.Optional<Link> buildCollectionSelfLink(Pageable pageable) {
+        return klabisLinkTo(methodOn(MemberController.class).listMembers(pageable)).map(selfLinkBuilder ->
+                (Link) selfLinkBuilder.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
-                        .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)));
-            }
-            return (Link) selfLink;
-        });
+                        .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)))
+        );
     }
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("firstName", "lastName", "registrationNumber");
@@ -266,21 +256,10 @@ class MemberController {
         MemberDetailsResponse response = memberMapper.toDetailsResponse(member);
         EntityModel<MemberDetailsResponse> entityModel = EntityModel.of(response);
 
-        if (currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
-            buildManagedMemberSelfLink(id, member.isActive()).ifPresent(entityModel::add);
-        } else if (currentUser.isMember() && currentUser.memberId().uuid().equals(id)) {
-            klabisLinkTo(methodOn(MemberController.class).getMember(id, null)).ifPresent(link ->
-                    entityModel.add(link.withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id,
-                                    (UpdateMemberRequest) null, null))))
-            );
-        } else {
-            klabisLinkTo(methodOn(MemberController.class).getMember(id, null))
-                    .ifPresent(link -> entityModel.add(link.withSelfRel()));
-        }
+        buildMemberSelfLink(id, member.isActive()).ifPresent(entityModel::add);
 
         klabisLinkTo(methodOn(MemberController.class).listMembers(
-                org.springframework.data.domain.PageRequest.of(0, 10), null
+                org.springframework.data.domain.PageRequest.of(0, 10)
         )).ifPresent(link -> entityModel.add(link.withRel("collection")));
 
         return ResponseEntity.ok(entityModel);
@@ -293,7 +272,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged()))
                 .ifPresent(link -> model.add(link.withRel("members")));
         return model;
     }

@@ -1,11 +1,14 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.security.fieldsecurity.OwnershipResolver;
+import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponseBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.security.core.Authentication;
@@ -36,10 +39,17 @@ class MemberPermissionsLinkProcessorTest {
 
     private MemberPermissionsLinkProcessor testedSubject;
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         testedSubject = new MemberPermissionsLinkProcessor();
         SecurityContextHolder.clearContext();
+
+        ObjectProvider<OwnershipResolver> ownershipResolverProvider = org.mockito.Mockito.mock(ObjectProvider.class);
+        HalFormsSupport halFormsSupport = new HalFormsSupport(ownershipResolverProvider);
+        java.lang.reflect.Field instanceField = HalFormsSupport.class.getDeclaredField("INSTANCE");
+        instanceField.setAccessible(true);
+        instanceField.set(null, halFormsSupport);
     }
 
     @Test

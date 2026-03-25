@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
@@ -68,7 +69,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Member Controller API Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
-@Import({MemberMapperImpl.class})
+@Import({MemberMapperImpl.class, HalFormsSupport.class})
 @MockitoBean(types = {UserService.class, UserDetailsService.class})
 class MemberControllerApiTest {
 

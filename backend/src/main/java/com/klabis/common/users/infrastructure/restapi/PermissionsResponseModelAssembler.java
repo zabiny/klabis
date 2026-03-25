@@ -1,13 +1,9 @@
 package com.klabis.common.users.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.mvc.RepresentationModelAssemblerSupport;
 
 import java.util.Set;
-
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * HATEOAS assembler for PermissionsResponse.

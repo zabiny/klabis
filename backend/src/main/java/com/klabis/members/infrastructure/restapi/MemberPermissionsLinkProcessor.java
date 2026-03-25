@@ -1,19 +1,15 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
-import com.klabis.common.users.Authority;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.members.MemberId;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
-import static com.klabis.members.infrastructure.restapi.MemberPermissionsLinkHelper.addPermissionsLinkIfAuthorized;
+import static com.klabis.members.infrastructure.restapi.MemberPermissionsLinkHelper.addPermissionsLink;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -40,7 +36,7 @@ class MemberPermissionsLinkProcessor implements RepresentationModelProcessor<Ent
         }
 
         if (response.active()) {
-            addPermissionsLinkIfAuthorized(model, response.id());
+            addPermissionsLink(model, response.id());
         }
 
         return model;
@@ -71,7 +67,7 @@ class MemberSummaryPermissionsLinkProcessor implements RepresentationModelProces
         }
 
         if (Boolean.TRUE.equals(response.active())) {
-            addPermissionsLinkIfAuthorized(model, response.id());
+            addPermissionsLink(model, response.id());
         }
 
         return model;
@@ -85,7 +81,7 @@ final class MemberPermissionsLinkHelper {
 
     private MemberPermissionsLinkHelper() {}
 
-    static void addPermissionsLinkIfAuthorized(EntityModel<?> model, MemberId memberId) {
+    static void addPermissionsLink(EntityModel<?> model, MemberId memberId) {
         if (memberId == null) {
             return;
         }
@@ -94,9 +90,7 @@ final class MemberPermissionsLinkHelper {
             return;
         }
 
-        if (SecuritySpelEvaluator.hasAuthority(SecurityContextHolder.getContext().getAuthentication(), Authority.MEMBERS_PERMISSIONS)) {
-            klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(uuid))
-                    .ifPresent(link -> model.add(link.withRel("permissions")));
-        }
+        klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(uuid))
+                .ifPresent(link -> model.add(link.withRel("permissions")));
     }
 }
