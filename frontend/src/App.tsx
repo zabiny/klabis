@@ -13,6 +13,7 @@ import HomePage from "./pages/HomePage.tsx";
 import CalendarPage from "./pages/calendar/CalendarPage.tsx";
 import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 import {EventsPage} from "./pages/events/EventsPage.tsx";
+import {EventDetailPage} from "./pages/events/EventDetailPage.tsx";
 import {MemberFinancePage} from "./pages/finances/FinancesPage.tsx";
 import {MembersPage} from "./pages/members/MembersPage.tsx";
 import {MemberDetailPage} from "./pages/members/MemberDetailPage.tsx";
@@ -82,6 +83,7 @@ function App() {
                                     <Route path="/members/new" element={<MemberRegistrationPage/>}/>
                                     <Route path="/members/:id" element={<MemberDetailPage/>}/>
                                     <Route path="/events" element={<EventsPage/>}/>
+                                    <Route path="/events/:id" element={<EventDetailPage/>}/>
                                 </Route>
 
                                 {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}

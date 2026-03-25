@@ -8,8 +8,14 @@ import com.klabis.common.users.UserService;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventNotFoundException;
+import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.SiCardNumber;
 import com.klabis.events.EventId;
+import com.klabis.members.MemberDto;
+import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,6 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -48,6 +55,12 @@ class EventControllerTest {
 
     @MockitoBean
     private EventManagementService eventManagementService;
+
+    @MockitoBean
+    private EventRegistrationService eventRegistrationService;
+
+    @MockitoBean
+    private Members members;
 
     @MockitoBean
     private UserService userService;
@@ -334,6 +347,51 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.registrations.href").exists())
                     .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should embed registrationDtoList in response")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldEmbedRegistrationsInEventResponse() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event event = EventTestDataBuilder.anEvent().build();
+
+            EventRegistration registration = EventRegistration.create(memberId, new SiCardNumber("12345"));
+            MemberDto memberDto = new MemberDto(memberId.value(), "Jan", "Novak", "jan@example.com");
+
+            when(eventManagementService.getEvent(any())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration));
+            when(members.findByIds(any())).thenReturn(Map.of(memberId, memberDto));
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList").isArray())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Jan"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].lastName").value("Novak"));
+        }
+
+        @Test
+        @DisplayName("should return empty embedded registrationDtoList when no registrations")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldEmbedEmptyRegistrationsListWhenNoRegistrations() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.getEvent(any())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+            when(members.findByIds(any())).thenReturn(Map.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList").isArray())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList").isEmpty());
         }
     }
 

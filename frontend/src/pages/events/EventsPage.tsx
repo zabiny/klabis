@@ -2,6 +2,7 @@ import {type ReactElement} from "react";
 import type {EntityModel} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
+import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {formatDate} from "../../utils/dateUtils.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 
@@ -22,7 +23,10 @@ export const EventsPage = (): ReactElement => {
         <h1 className="text-3xl font-bold text-text-primary">Závody</h1>
 
         <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold text-text-primary">Seznam závodů</h2>
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-text-primary">Seznam závodů</h2>
+                <HalFormButton name="default" modal={true} label="Přidat závod"/>
+            </div>
             <HalEmbeddedTable<EventListData> collectionName={"eventSummaryDtoList"} defaultOrderBy={"eventDate"}
                                              onRowClick={route.navigateToResource}>
                 <TableCell sortable column={"eventDate"}

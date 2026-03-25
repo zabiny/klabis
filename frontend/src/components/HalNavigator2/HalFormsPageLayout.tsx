@@ -86,6 +86,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                         resourceData={resourceData}
                         pathname={route.pathname}
                         onClose={handleCloseForm}
+                        onSubmitSuccess={closeForm}
                         customLayout={currentFormRequest.customLayout}
                     />
                 </ModalOverlay>

@@ -1,5 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
+import org.springframework.hateoas.server.core.Relation;
+
 import java.time.Instant;
 
 /**
@@ -12,6 +14,7 @@ import java.time.Instant;
  * @param lastName     member's last name
  * @param registeredAt timestamp when registration was created
  */
+@Relation(collectionRelation = "registrationDtoList")
 public record RegistrationDto(
         String firstName,
         String lastName,
