@@ -247,7 +247,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("should return event detail with status-appropriate links")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldGetEventWithHateoasLinks() throws Exception {
             UUID eventId = UUID.randomUUID();
             Event event = Event.create(
@@ -305,7 +305,7 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.registrations.href").exists())
-                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
+                    .andExpect(jsonPath("$._templates.default.method").value("POST"));
         }
 
         @Test
@@ -371,7 +371,7 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.default.method").value("DELETE"))
                     .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
         }
 
@@ -396,7 +396,7 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.unregisterFromEvent").doesNotExist())
-                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
+                    .andExpect(jsonPath("$._templates.default.method").value("POST"));
         }
 
         @Test

@@ -187,7 +187,7 @@ class CalendarControllerTest {
 
         @Test
         @DisplayName("should return 200 with calendar item details for manual item")
-        @WithKlabisMockUser(username = ADMIN_USERNAME)
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
         void shouldGetManualCalendarItem() throws Exception {
             UUID calendarItemId = UUID.randomUUID();
             CalendarItem item = CalendarItemTestDataBuilder.aCalendarItemWithId(new CalendarItemId(calendarItemId))

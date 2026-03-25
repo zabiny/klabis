@@ -1,10 +1,13 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.security.fieldsecurity.OwnerId;
+import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.HasAuthority;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -52,6 +55,13 @@ public class HalFormsSupport {
         INSTANCE = this;
     }
 
+    @PreDestroy
+    void destroy() {
+        if (INSTANCE == this) {
+            INSTANCE = null;
+        }
+    }
+
     // --- Static delegate methods (preserve all existing call sites) ---
 
     public static WebMvcLinkBuilder klabisLinkTo(Object invocation) {
@@ -71,12 +81,57 @@ public class HalFormsSupport {
     private static List<Affordance> staticKlabisAfford(Object invocation) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
+        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
+            return Collections.emptyList();
+        }
+
         Affordance result = afford(lastInvocationAware);
 
         // update affordance model: if request body is record, change `readOnly` attribute based on @HalForms annotation (if not present, leave original value)
         Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware);
 
         return List.of(modifiedResult);
+    }
+
+    private boolean isMethodAuthorized(LastInvocationAware invocation) {
+        MethodInvocation methodInvocation = invocation.getLastInvocation();
+        Method method = methodInvocation.getMethod();
+
+        HasAuthority hasAuthority = method.getAnnotation(HasAuthority.class);
+        OwnerVisible ownerVisible = method.getAnnotation(OwnerVisible.class);
+
+        if (hasAuthority == null && ownerVisible == null) {
+            return true;
+        }
+
+        org.springframework.security.core.Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (hasAuthority != null && SecuritySpelEvaluator.hasAuthority(authentication, hasAuthority.value())) {
+            return true;
+        }
+
+        if (ownerVisible != null) {
+            Object ownerIdValue = extractOwnerIdArgument(method, methodInvocation.getArguments());
+            if (ownerIdValue != null) {
+                OwnershipResolver resolver = ownershipResolverProvider.getIfAvailable();
+                if (resolver != null) {
+                    return resolver.isOwner(ownerIdValue, authentication);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static Object extractOwnerIdArgument(Method method, Object[] arguments) {
+        Parameter[] parameters = method.getParameters();
+        for (int i = 0; i < parameters.length; i++) {
+            if (parameters[i].isAnnotationPresent(OwnerId.class)) {
+                return (arguments != null && i < arguments.length) ? arguments[i] : null;
+            }
+        }
+        return null;
     }
 
     private static LastInvocationAware getLastInvocationAware(Object invocation) {
