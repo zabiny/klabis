@@ -250,7 +250,8 @@ class CalendarController {
             }
         });
 
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(LocalDate.now().withDayOfMonth(1), LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()), "startDate,asc"))
+        LocalDate today = LocalDate.now();
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc"))
                 .ifPresent(link -> entityModel.add(link.withRel("collection")));
     }
 }

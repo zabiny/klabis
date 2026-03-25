@@ -34,6 +34,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
@@ -87,26 +88,50 @@ public class HalFormsSupport {
         return List.of(modifiedResult);
     }
 
+    private record MethodAuthMeta(HasAuthority hasAuthority, OwnerVisible ownerVisible, int ownerIdParamIndex) {
+        boolean hasSecurityAnnotations() { return hasAuthority != null || ownerVisible != null; }
+    }
+
+    private static final ConcurrentHashMap<Method, MethodAuthMeta> METHOD_AUTH_CACHE = new ConcurrentHashMap<>();
+
+    private static MethodAuthMeta resolveMethodAuthMeta(Method method) {
+        return METHOD_AUTH_CACHE.computeIfAbsent(method, m -> {
+            HasAuthority ha = m.getAnnotation(HasAuthority.class);
+            OwnerVisible ov = m.getAnnotation(OwnerVisible.class);
+            int ownerIdx = -1;
+            if (ov != null) {
+                Parameter[] params = m.getParameters();
+                for (int i = 0; i < params.length; i++) {
+                    if (params[i].isAnnotationPresent(OwnerId.class)) { ownerIdx = i; break; }
+                }
+            }
+            return new MethodAuthMeta(ha, ov, ownerIdx);
+        });
+    }
+
     private boolean isMethodAuthorized(LastInvocationAware invocation) {
         MethodInvocation methodInvocation = invocation.getLastInvocation();
         Method method = methodInvocation.getMethod();
+        MethodAuthMeta meta = resolveMethodAuthMeta(method);
 
-        HasAuthority hasAuthority = method.getAnnotation(HasAuthority.class);
-        OwnerVisible ownerVisible = method.getAnnotation(OwnerVisible.class);
-
-        if (hasAuthority == null && ownerVisible == null) {
+        if (!meta.hasSecurityAnnotations()) {
             return true;
         }
 
         org.springframework.security.core.Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
 
-        if (hasAuthority != null && SecuritySpelEvaluator.hasAuthority(authentication, hasAuthority.value())) {
+        if (meta.hasAuthority() != null && SecuritySpelEvaluator.hasAuthority(authentication, meta.hasAuthority().value())) {
             return true;
         }
 
-        if (ownerVisible != null) {
-            Object ownerIdValue = extractOwnerIdArgument(method, methodInvocation.getArguments());
+        if (meta.ownerVisible() != null && meta.ownerIdParamIndex() >= 0) {
+            Object[] arguments = methodInvocation.getArguments();
+            Object ownerIdValue = (arguments != null && meta.ownerIdParamIndex() < arguments.length)
+                    ? arguments[meta.ownerIdParamIndex()] : null;
             if (ownerIdValue != null) {
                 OwnershipResolver resolver = ownershipResolverProvider.getIfAvailable();
                 if (resolver != null) {
@@ -116,16 +141,6 @@ public class HalFormsSupport {
         }
 
         return false;
-    }
-
-    private static Object extractOwnerIdArgument(Method method, Object[] arguments) {
-        Parameter[] parameters = method.getParameters();
-        for (int i = 0; i < parameters.length; i++) {
-            if (parameters[i].isAnnotationPresent(OwnerId.class)) {
-                return (arguments != null && i < arguments.length) ? arguments[i] : null;
-            }
-        }
-        return null;
     }
 
     private static LastInvocationAware getLastInvocationAware(Object invocation) {
