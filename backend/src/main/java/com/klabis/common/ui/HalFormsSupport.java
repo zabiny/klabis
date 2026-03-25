@@ -1,10 +1,13 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.patch.PatchField;
+import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.HasAuthority;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.mediatype.AffordanceModelFactory;
@@ -18,6 +21,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,7 +36,48 @@ import java.util.stream.Stream;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.afford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
+@Component
 public class HalFormsSupport {
+
+    private static HalFormsSupport INSTANCE;
+
+    private final ObjectProvider<OwnershipResolver> ownershipResolverProvider;
+
+    public HalFormsSupport(ObjectProvider<OwnershipResolver> ownershipResolverProvider) {
+        this.ownershipResolverProvider = ownershipResolverProvider;
+    }
+
+    @PostConstruct
+    void init() {
+        INSTANCE = this;
+    }
+
+    // --- Static delegate methods (preserve all existing call sites) ---
+
+    public static WebMvcLinkBuilder klabisLinkTo(Object invocation) {
+        return staticKlabisLinkTo(invocation);
+    }
+
+    public static List<Affordance> klabisAfford(Object invocation) {
+        return staticKlabisAfford(invocation);
+    }
+
+    // --- Static implementation (called by both static delegates and instance methods) ---
+
+    private static WebMvcLinkBuilder staticKlabisLinkTo(Object invocation) {
+        return linkTo(invocation);
+    }
+
+    private static List<Affordance> staticKlabisAfford(Object invocation) {
+        LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
+
+        Affordance result = afford(lastInvocationAware);
+
+        // update affordance model: if request body is record, change `readOnly` attribute based on @HalForms annotation (if not present, leave original value)
+        Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware);
+
+        return List.of(modifiedResult);
+    }
 
     private static LastInvocationAware getLastInvocationAware(Object invocation) {
         Assert.isInstanceOf(LastInvocationAware.class, invocation);
@@ -44,27 +89,6 @@ public class HalFormsSupport {
     private static Optional<AffordanceModelFactory> getHalFormsModelFactory() {
         return SpringFactoriesLoader.loadFactories(AffordanceModelFactory.class, HalFormsSupport.class.getClassLoader())
                 .stream().filter(f -> MediaTypes.HAL_FORMS_JSON.equals(f.getMediaType())).findFirst();
-    }
-
-    public static WebMvcLinkBuilder klabisLinkTo(Object invocation) {
-        return linkTo(invocation);
-    }
-
-    /**
-     * Returns affordance for target invocation
-     *
-     * @param invocation
-     * @return
-     */
-    public static List<Affordance> klabisAfford(Object invocation) {
-        LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
-
-        Affordance result = afford(lastInvocationAware);
-
-        // update affordance model: if request body is record, change `readOnly` attribute based on @HalForms annotation (if not present, leave original value)
-        Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware);
-
-        return List.of(modifiedResult);
     }
 
     /**
