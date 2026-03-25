@@ -117,9 +117,10 @@ class HalFormsExampleController {
     public ResponseEntity<EntityModel<User>> getUser(@RequestParam int id) {
         User data = new User(2, "Petr", "Palach", 21, new Address("Ulice", "mesto", "CZ", "123456"), Optional.of("Vegetarian"), Optional.empty(), PatchField.of("Jen maso"));
 
-        EntityModel<User> model = EntityModel.of(data)
-                .add(klabisLinkTo(methodOn(HalFormsExampleController.class).getUser(id)).withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(HalFormsExampleController.class).editUser(id, null))));
+        EntityModel<User> model = EntityModel.of(data);
+        klabisLinkTo(methodOn(HalFormsExampleController.class).getUser(id)).ifPresent(link ->
+                model.add(link.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(HalFormsExampleController.class).editUser(id, null)))));
 
         return ResponseEntity.ok(model);
     }

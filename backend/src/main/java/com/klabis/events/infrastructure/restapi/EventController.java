@@ -38,6 +38,7 @@ import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -84,7 +85,7 @@ public class EventController {
         Event created = eventManagementService.createEvent(command);
 
         return ResponseEntity
-                .created(klabisLinkTo(methodOn(EventController.class).getEvent(created.getId().value(), null)).toUri())
+                .created(linkTo(methodOn(EventController.class).getEvent(created.getId().value(), null)).toUri())
                 .build();
     }
 
@@ -163,13 +164,15 @@ public class EventController {
                 page,
                 dto -> {
                     EntityModel<EventSummaryDto> model = EntityModel.of(dto);
-                    model.add(klabisLinkTo(methodOn(EventController.class).getEvent(dto.id().value(), null)).withSelfRel());
+                    klabisLinkTo(methodOn(EventController.class).getEvent(dto.id().value(), null))
+                            .ifPresent(link -> model.add(link.withSelfRel()));
                     return model;
                 }
         );
 
-        pagedModel.add(klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable)).withSelfRel()
-                .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)))
+        klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable)).ifPresent(link ->
+                pagedModel.add(link.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null))))
         );
 
         return ResponseEntity.ok(pagedModel);
@@ -240,38 +243,43 @@ public class EventController {
     private void addLinksForEvent(EntityModel<?> entityModel, Event event, CurrentUserData currentUser) {
         UUID eventId = event.getId().value();
 
-        var selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).withSelfRel();
+        klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
+            var selfLink = selfLinkBuilder.withSelfRel();
 
-        switch (event.getStatus()) {
-            case DRAFT:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
-                break;
+            switch (event.getStatus()) {
+                case DRAFT:
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).publishEvent(eventId)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                    break;
 
-            case ACTIVE:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).finishEvent(eventId)));
-                if (event.areRegistrationsOpen()) {
-                    boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
-                    if (isRegistered) {
-                        selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-                    } else {
-                        selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
+                case ACTIVE:
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).updateEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).finishEvent(eventId)));
+                    if (event.areRegistrationsOpen()) {
+                        boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
+                        if (isRegistered) {
+                            selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                        } else {
+                            selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
+                        }
                     }
-                }
-                break;
+                    break;
 
-            case FINISHED:
-            case CANCELLED:
-                break;
-        }
+                case FINISHED:
+                case CANCELLED:
+                    break;
+            }
 
-        entityModel.add(selfLink);
-        entityModel.add(klabisLinkTo(methodOn(EventController.class).listEvents(null, null)).withRel("collection"));
+            entityModel.add(selfLink);
+        });
 
-        entityModel.add(klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId)).withRel("registrations"));
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, null))
+                .ifPresent(link -> entityModel.add(link.withRel("collection")));
+
+        klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
+                .ifPresent(link -> entityModel.add(link.withRel("registrations")));
     }
 
 }

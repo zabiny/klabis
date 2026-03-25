@@ -62,23 +62,17 @@ public class HalFormsSupport {
         }
     }
 
-    // --- Static delegate methods (preserve all existing call sites) ---
+    public static Optional<WebMvcLinkBuilder> klabisLinkTo(Object invocation) {
+        LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
-    public static WebMvcLinkBuilder klabisLinkTo(Object invocation) {
-        return staticKlabisLinkTo(invocation);
+        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(linkTo(invocation));
     }
 
     public static List<Affordance> klabisAfford(Object invocation) {
-        return staticKlabisAfford(invocation);
-    }
-
-    // --- Static implementation (called by both static delegates and instance methods) ---
-
-    private static WebMvcLinkBuilder staticKlabisLinkTo(Object invocation) {
-        return linkTo(invocation);
-    }
-
-    private static List<Affordance> staticKlabisAfford(Object invocation) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
         if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {

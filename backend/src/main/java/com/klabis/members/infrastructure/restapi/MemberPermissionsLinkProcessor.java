@@ -95,10 +95,8 @@ final class MemberPermissionsLinkHelper {
         }
 
         if (SecuritySpelEvaluator.hasAuthority(SecurityContextHolder.getContext().getAuthentication(), Authority.MEMBERS_PERMISSIONS)) {
-            Link permissionsLink = klabisLinkTo(methodOn(PermissionController.class)
-                    .getUserPermissions(uuid))
-                    .withRel("permissions");
-            model.add(permissionsLink);
+            klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(uuid))
+                    .ifPresent(link -> model.add(link.withRel("permissions")));
         }
     }
 }

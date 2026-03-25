@@ -122,9 +122,11 @@ class FieldLevelAuthorizationTest {
                     "authority-secret-value",
                     "authority-sensitive-value"
             );
-            return EntityModel.of(response)
-                    .add(klabisLinkTo(methodOn(TestController.class).getSensitiveData()).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(TestController.class).updateSensitiveData(null))));
+            EntityModel<SensitiveDataResponse> model = EntityModel.of(response);
+            klabisLinkTo(methodOn(TestController.class).getSensitiveData()).ifPresent(link ->
+                    model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(TestController.class).updateSensitiveData(null)))));
+            return model;
         }
 
         @PatchMapping(value = "/test/field-auth")

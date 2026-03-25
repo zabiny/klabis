@@ -35,6 +35,7 @@ import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -82,7 +83,7 @@ class EventRegistrationController {
         registrationService.registerMember(new EventId(eventId), currentUser.memberId(), command);
 
         return ResponseEntity.created(
-                klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).toUri()
+                linkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).toUri()
         ).build();
     }
 
@@ -123,10 +124,10 @@ class EventRegistrationController {
 
         CollectionModel<RegistrationDto> collectionModel = CollectionModel.of(
                 dtos,
-                klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
-                        .withSelfRel(),
                 entityLinks.linkForItemResource(Event.class, eventId).withRel("event")
         );
+        klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))
+                .ifPresent(link -> collectionModel.add(link.withSelfRel()));
 
         return ResponseEntity.ok(collectionModel);
     }
@@ -152,11 +153,13 @@ class EventRegistrationController {
     }
 
     private void addLinksForOwnRegistration(EntityModel<OwnRegistrationDto> entityModel, UUID eventId, Event event) {
-        var selfLink = klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).withSelfRel();
-        if (event.areRegistrationsOpen()) {
-            selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
-        }
-        entityModel.add(selfLink);
+        klabisLinkTo(methodOn(EventRegistrationController.class).getOwnRegistration(eventId, null)).ifPresent(selfLinkBuilder -> {
+            var selfLink = selfLinkBuilder.withSelfRel();
+            if (event.areRegistrationsOpen()) {
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+            }
+            entityModel.add(selfLink);
+        });
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }
 

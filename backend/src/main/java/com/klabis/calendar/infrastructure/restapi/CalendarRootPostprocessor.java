@@ -15,11 +15,11 @@ class CalendarRootPostprocessor implements RepresentationModelProcessor<EntityMo
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        model.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(
                 LocalDate.now().withDayOfMonth(1),
                 LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()),
                 "startDate,asc"
-        )).withRel("calendar"));
+        )).ifPresent(link -> model.add(link.withRel("calendar")));
         return model;
     }
 }

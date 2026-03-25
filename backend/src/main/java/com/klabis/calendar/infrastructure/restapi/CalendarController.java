@@ -29,6 +29,7 @@ import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
@@ -79,7 +80,8 @@ class CalendarController {
                 items.stream()
                         .map(dto -> {
                             EntityModel<CalendarItemDto> model = EntityModel.of(dto);
-                            model.add(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(dto.id().value())).withSelfRel());
+                            klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(dto.id().value()))
+                                    .ifPresent(link -> model.add(link.withSelfRel()));
                             if (dto.eventId() != null) {
                                 model.add(Link.of("/api/events/" + dto.eventId().value()).withRel("event"));
                             }
@@ -88,11 +90,9 @@ class CalendarController {
                         .toList()
         );
 
-        Link selfLink = klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort))
-                .withSelfRel()
-                .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null)));
-
-        collectionModel.add(selfLink);
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort))
+                .ifPresent(selfLinkBuilder -> collectionModel.add(selfLinkBuilder.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null)))));
 
         addMonthNavigationLinks(collectionModel, effectiveStartDate, effectiveEndDate, sort);
 
@@ -105,17 +105,13 @@ class CalendarController {
                                           String sort) {
         LocalDate nextMonthStart = currentStartDate.plusMonths(1).withDayOfMonth(1);
         LocalDate nextMonthEnd = nextMonthStart.withDayOfMonth(nextMonthStart.lengthOfMonth());
-        collectionModel.add(
-                klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort))
-                        .withRel("next")
-        );
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort))
+                .ifPresent(link -> collectionModel.add(link.withRel("next")));
 
         LocalDate prevMonthStart = currentStartDate.minusMonths(1).withDayOfMonth(1);
         LocalDate prevMonthEnd = prevMonthStart.withDayOfMonth(prevMonthStart.lengthOfMonth());
-        collectionModel.add(
-                klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort))
-                        .withRel("prev")
-        );
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort))
+                .ifPresent(link -> collectionModel.add(link.withRel("prev")));
     }
 
     private Sort parseAndValidateSort(String sort) {
@@ -179,7 +175,7 @@ class CalendarController {
         CalendarItem created = calendarManagementService.createCalendarItem(command);
 
         return ResponseEntity
-                .created(klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(created.getId().value())).toUri())
+                .created(linkTo(methodOn(CalendarController.class).getCalendarItem(created.getId().value())).toUri())
                 .build();
     }
 
@@ -242,17 +238,19 @@ class CalendarController {
         UUID calendarItemId = calendarItemDto.id().value();
         boolean isEventLinked = calendarItemDto.eventId() != null;
 
-        Link selfLink = klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(calendarItemId)).withSelfRel();
+        klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(calendarItemId)).ifPresent(selfLinkBuilder -> {
+            if (isEventLinked) {
+                entityModel.add(selfLinkBuilder.withSelfRel());
+                entityModel.add(Link.of("/api/events/" + calendarItemDto.eventId().value()).withRel("event"));
+            } else {
+                var selfLink = selfLinkBuilder.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(CalendarController.class).updateCalendarItem(calendarItemId, null)))
+                        .andAffordances(klabisAfford(methodOn(CalendarController.class).deleteCalendarItem(calendarItemId)));
+                entityModel.add(selfLink);
+            }
+        });
 
-        if (isEventLinked) {
-            entityModel.add(selfLink);
-            entityModel.add(Link.of("/api/events/" + calendarItemDto.eventId().value()).withRel("event"));
-        } else {
-            selfLink = selfLink.andAffordances(klabisAfford(methodOn(CalendarController.class).updateCalendarItem(calendarItemId, null)));
-            selfLink = selfLink.andAffordances(klabisAfford(methodOn(CalendarController.class).deleteCalendarItem(calendarItemId)));
-            entityModel.add(selfLink);
-        }
-
-        entityModel.add(klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(LocalDate.now().withDayOfMonth(1), LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()), "startDate,asc")).withRel("collection"));
+        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(LocalDate.now().withDayOfMonth(1), LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()), "startDate,asc"))
+                .ifPresent(link -> entityModel.add(link.withRel("collection")));
     }
 }

@@ -59,9 +59,11 @@ class AffordanceAuthorizationTest {
 
         @GetMapping(value = "/api/afford-test/no-auth", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<AffordanceTestResponse> getNoAuth() {
-            return EntityModel.of(new AffordanceTestResponse("data"))
-                    .add(klabisLinkTo(methodOn(AffordanceTestController.class).getNoAuth()).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateNoAuth(null))));
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getNoAuth())
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateNoAuth(null)))));
+            return model;
         }
 
         @PatchMapping("/api/afford-test/no-auth")
@@ -71,9 +73,11 @@ class AffordanceAuthorizationTest {
 
         @GetMapping(value = "/api/afford-test/has-authority/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<AffordanceTestResponse> getHasAuthority(@PathVariable UUID id) {
-            return EntityModel.of(new AffordanceTestResponse("data"))
-                    .add(klabisLinkTo(methodOn(AffordanceTestController.class).getHasAuthority(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateHasAuthority(id, null))));
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getHasAuthority(id))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateHasAuthority(id, null)))));
+            return model;
         }
 
         @PatchMapping("/api/afford-test/has-authority/{id}")
@@ -84,9 +88,11 @@ class AffordanceAuthorizationTest {
 
         @GetMapping(value = "/api/afford-test/owner-visible/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<AffordanceTestResponse> getOwnerVisible(@PathVariable UUID id) {
-            return EntityModel.of(new AffordanceTestResponse("data"))
-                    .add(klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerVisible(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerVisible(id, null))));
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerVisible(id))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerVisible(id, null)))));
+            return model;
         }
 
         @PatchMapping("/api/afford-test/owner-visible/{id}")
@@ -97,9 +103,11 @@ class AffordanceAuthorizationTest {
 
         @GetMapping(value = "/api/afford-test/owner-or-admin/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<AffordanceTestResponse> getOwnerOrAdmin(@PathVariable UUID id) {
-            return EntityModel.of(new AffordanceTestResponse("data"))
-                    .add(klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerOrAdmin(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerOrAdmin(id, null))));
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerOrAdmin(id))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerOrAdmin(id, null)))));
+            return model;
         }
 
         @PatchMapping("/api/afford-test/owner-or-admin/{id}")
@@ -111,15 +119,35 @@ class AffordanceAuthorizationTest {
 
         @GetMapping(value = "/api/afford-test/owner-null/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<AffordanceTestResponse> getOwnerNullId(@PathVariable UUID id) {
-            return EntityModel.of(new AffordanceTestResponse("data"))
-                    .add(klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerNullId(id)).withSelfRel()
-                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerNullId(null, null))));
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getOwnerNullId(id))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateOwnerNullId(null, null)))));
+            return model;
         }
 
         @PatchMapping("/api/afford-test/owner-null/{id}")
         @OwnerVisible
         ResponseEntity<Void> updateOwnerNullId(@PathVariable @OwnerId UUID id, @RequestBody AffordanceTestRequest body) {
             return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping(value = "/api/afford-test/link-to-secured", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<AffordanceTestResponse> getLinkToSecured() {
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getLinkToSecured()).ifPresent(self ->
+                    model.add(self.withSelfRel())
+            );
+            klabisLinkTo(methodOn(AffordanceTestController.class).getSecuredEndpoint()).ifPresent(link ->
+                    model.add(link.withRel("secured"))
+            );
+            return model;
+        }
+
+        @GetMapping(value = "/api/afford-test/secured-endpoint", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        @HasAuthority(Authority.MEMBERS_MANAGE)
+        EntityModel<AffordanceTestResponse> getSecuredEndpoint() {
+            return EntityModel.of(new AffordanceTestResponse("secured"));
         }
     }
 
@@ -221,6 +249,38 @@ class AffordanceAuthorizationTest {
             mockMvc.perform(get("/api/afford-test/owner-or-admin/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("klabisLinkTo with @HasAuthority on target method")
+    class KlabisLinkToAuthorization {
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        @DisplayName("link is present when user has required authority")
+        void linkPresentWhenAuthorized() throws Exception {
+            mockMvc.perform(get("/api/afford-test/link-to-secured").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.secured").exists());
+        }
+
+        @Test
+        @WithKlabisMockUser(username = "noAuthUser")
+        @DisplayName("link is absent when user lacks required authority")
+        void linkAbsentWhenNotAuthorized() throws Exception {
+            mockMvc.perform(get("/api/afford-test/link-to-secured").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.secured").doesNotExist());
+        }
+
+        @Test
+        @WithKlabisMockUser(username = "anyUser")
+        @DisplayName("self link (no auth annotation) is always present regardless of other links")
+        void selfLinkAlwaysPresentForUnrestrictedMethod() throws Exception {
+            mockMvc.perform(get("/api/afford-test/link-to-secured").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self").exists());
         }
     }
 }

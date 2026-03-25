@@ -3,6 +3,7 @@ package com.klabis.events.infrastructure.restapi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
 import com.klabis.events.EventTestDataBuilder;
@@ -43,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @DisplayName("EventController API tests")
 @WebMvcTest(controllers = EventController.class)
-@Import(EncryptionConfiguration.class)
+@Import({EncryptionConfiguration.class, HalFormsSupport.class})
 class EventControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";

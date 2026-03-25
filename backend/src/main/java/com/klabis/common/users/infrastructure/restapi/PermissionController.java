@@ -25,6 +25,7 @@ import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
@@ -68,11 +69,10 @@ public class PermissionController {
         PermissionsResponse response = toPermissionsResponse(permissions);
         PermissionsResponseModel model = permissionsAssembler.toModel(response);
 
-        Link selfLink = klabisLinkTo(methodOn(PermissionController.class)
-                .getUserPermissions(id))
-                .withSelfRel()
-                .andAffordances(klabisAfford(methodOn(PermissionController.class).updatePermissions(id, null)));
-        model.add(selfLink);
+        klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(id)).ifPresent(selfLinkBuilder ->
+                model.add(selfLinkBuilder.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(PermissionController.class).updatePermissions(id, null))))
+        );
 
         return ResponseEntity.ok(model);
     }
@@ -99,7 +99,7 @@ public class PermissionController {
 
         permissionService.updateUserPermissions(new UserId(id), request.authorities());
 
-        URI location = klabisLinkTo(methodOn(PermissionController.class).getUserPermissions(id)).toUri();
+        URI location = linkTo(methodOn(PermissionController.class).getUserPermissions(id)).toUri();
         return ResponseEntity.noContent().location(location).build();
     }
 
