@@ -16,6 +16,7 @@ import com.klabis.events.EventId;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
+import org.mockito.Mockito;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -347,6 +348,55 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.registrations.href").exists())
                     .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should include unregisterFromEvent affordance when ACTIVE and user is registered")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000001", authorities = {Authority.EVENTS_READ})
+        void shouldIncludeUnregisterAffordanceWhenUserIsRegistered() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+            Event activeEvent = Mockito.spy(EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build());
+            activeEvent.publish();
+
+            EventRegistration registration = EventRegistration.create(memberId, new SiCardNumber("12345"));
+            Mockito.doReturn(java.util.Optional.of(registration)).when(activeEvent).findRegistration(memberId);
+
+            when(eventManagementService.getEvent(any())).thenReturn(activeEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should not include unregisterFromEvent affordance when ACTIVE and user is NOT registered")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000002", authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeUnregisterAffordanceWhenUserIsNotRegistered() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+            Event activeEvent = Mockito.spy(EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .build());
+            activeEvent.publish();
+
+            Mockito.doReturn(java.util.Optional.empty()).when(activeEvent).findRegistration(memberId);
+
+            when(eventManagementService.getEvent(any())).thenReturn(activeEvent);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent").doesNotExist())
+                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
         }
 
         @Test

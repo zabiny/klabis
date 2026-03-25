@@ -2,14 +2,14 @@ package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
+import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
-import com.klabis.events.EventId;
 import com.klabis.events.domain.EventStatus;
-import com.klabis.members.MemberDto;
-import com.klabis.members.MemberId;
+import com.klabis.members.CurrentUser;
+import com.klabis.members.CurrentUserData;
 import com.klabis.members.Members;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,7 +24,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.PagedModel;
@@ -35,7 +34,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -86,7 +84,7 @@ public class EventController {
         Event created = eventManagementService.createEvent(command);
 
         return ResponseEntity
-                .created(klabisLinkTo(methodOn(EventController.class).getEvent(created.getId().value())).toUri())
+                .created(klabisLinkTo(methodOn(EventController.class).getEvent(created.getId().value(), null)).toUri())
                 .build();
     }
 
@@ -114,7 +112,8 @@ public class EventController {
     )
     @ApiResponse(responseCode = "200", description = "Event found")
     public ResponseEntity<RepresentationModel<?>> getEvent(
-            @Parameter(description = "Event UUID") @PathVariable UUID id) {
+            @Parameter(description = "Event UUID") @PathVariable UUID id,
+            @CurrentUser CurrentUserData currentUser) {
 
         Event event = eventManagementService.getEvent(new EventId(id));
         EventDto eventDto = EventDtoMapper.toDto(event);
@@ -122,7 +121,7 @@ public class EventController {
         List<RegistrationDto> registrationDtos = buildRegistrationDtos(new EventId(id));
 
         EntityModel<EventDto> entityModel = EntityModel.of(eventDto);
-        addLinksForEvent(entityModel, event);
+        addLinksForEvent(entityModel, event, currentUser);
 
         RepresentationModel<?> model = HalModelBuilder.halModelOf(entityModel)
                 .embed(registrationDtos, RegistrationDto.class)
@@ -133,20 +132,7 @@ public class EventController {
 
     private List<RegistrationDto> buildRegistrationDtos(EventId eventId) {
         List<EventRegistration> registrations = eventRegistrationService.listRegistrations(eventId);
-        List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
-        Map<MemberId, MemberDto> memberIndex = members.findByIds(memberIds);
-        return registrations.stream()
-                .map(r -> toRegistrationDto(r, memberIndex))
-                .toList();
-    }
-
-    private RegistrationDto toRegistrationDto(EventRegistration registration, Map<MemberId, MemberDto> memberIndex) {
-        MemberDto member = memberIndex.getOrDefault(registration.memberId(), null);
-        if (member == null) {
-            member = members.findById(registration.memberId())
-                    .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
-        }
-        return new RegistrationDto(member.firstName(), member.lastName(), registration.registeredAt());
+        return RegistrationDtoMapper.toDtoList(registrations, members);
     }
 
     @GetMapping
@@ -177,7 +163,7 @@ public class EventController {
                 page,
                 dto -> {
                     EntityModel<EventSummaryDto> model = EntityModel.of(dto);
-                    model.add(klabisLinkTo(methodOn(EventController.class).getEvent(dto.id().value())).withSelfRel());
+                    model.add(klabisLinkTo(methodOn(EventController.class).getEvent(dto.id().value(), null)).withSelfRel());
                     return model;
                 }
         );
@@ -251,10 +237,10 @@ public class EventController {
         return ResponseEntity.noContent().build();
     }
 
-    private void addLinksForEvent(EntityModel<?> entityModel, Event event) {
+    private void addLinksForEvent(EntityModel<?> entityModel, Event event, CurrentUserData currentUser) {
         UUID eventId = event.getId().value();
 
-        var selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId)).withSelfRel();
+        var selfLink = klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).withSelfRel();
 
         switch (event.getStatus()) {
             case DRAFT:
@@ -268,7 +254,12 @@ public class EventController {
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).cancelEvent(eventId)));
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).finishEvent(eventId)));
                 if (event.areRegistrationsOpen()) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
+                    boolean isRegistered = currentUser.isMember() && event.findRegistration(currentUser.memberId()).isPresent();
+                    if (isRegistered) {
+                        selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                    } else {
+                        selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
+                    }
                 }
                 break;
 

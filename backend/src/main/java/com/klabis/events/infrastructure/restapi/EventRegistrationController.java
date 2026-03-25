@@ -11,7 +11,6 @@ import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.CurrentUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberDto;
-import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,7 +31,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
@@ -121,13 +119,7 @@ class EventRegistrationController {
             @Parameter(description = "Event UUID") @PathVariable UUID eventId) {
 
         List<EventRegistration> registrations = registrationService.listRegistrations(new EventId(eventId));
-
-        List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
-        Map<MemberId, MemberDto> memberIndex = members.findByIds(memberIds);
-
-        List<RegistrationDto> dtos = registrations.stream()
-                .map(r -> toRegistrationDto(r, memberIndex))
-                .toList();
+        List<RegistrationDto> dtos = RegistrationDtoMapper.toDtoList(registrations, members);
 
         CollectionModel<RegistrationDto> collectionModel = CollectionModel.of(
                 dtos,
@@ -168,21 +160,9 @@ class EventRegistrationController {
         entityModel.add(entityLinks.linkForItemResource(Event.class, eventId).withRel("event"));
     }
 
-    private MemberDto fetchMember(MemberId memberId) {
-        return members.findById(memberId)
-                .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + memberId));
-    }
-
-    private RegistrationDto toRegistrationDto(EventRegistration registration, Map<MemberId, MemberDto> memberIndex) {
-        MemberDto member = memberIndex.getOrDefault(registration.memberId(), null);
-        if (member == null) {
-            member = fetchMember(registration.memberId());
-        }
-        return new RegistrationDto(member.firstName(), member.lastName(), registration.registeredAt());
-    }
-
     private OwnRegistrationDto toOwnRegistrationDto(EventRegistration registration) {
-        MemberDto member = fetchMember(registration.memberId());
+        MemberDto member = members.findById(registration.memberId())
+                .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         return new OwnRegistrationDto(member.firstName(), member.lastName(), registration.siCardNumber().value(), registration.registeredAt());
     }
 

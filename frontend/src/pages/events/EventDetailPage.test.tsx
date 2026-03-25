@@ -261,6 +261,16 @@ describe('EventDetailPage', () => {
             renderPage(createMockPageData(data));
             expect(screen.getByRole('button', {name: /přihlásit se/i})).toBeInTheDocument();
         });
+
+        it('shows unregisterFromEvent button when template exists', () => {
+            const data = mockEventDetailData({
+                _templates: {
+                    unregisterFromEvent: mockHalFormsTemplate({title: 'Odhlásit se'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('button', {name: /odhlásit se/i})).toBeInTheDocument();
+        });
     });
 
     describe('registrations section', () => {

@@ -70,6 +70,7 @@ export const EventDetailPage = (): ReactElement => {
                     <HalFormButton name="cancelEvent" modal={true}/>
                     <HalFormButton name="finishEvent" modal={true}/>
                     <HalFormButton name="registerForEvent" modal={true}/>
+                    <HalFormButton name="unregisterFromEvent" modal={true}/>
                 </div>
             </div>
 
