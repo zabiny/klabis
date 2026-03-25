@@ -46,6 +46,15 @@ services:
     networks:
       - klabis-network
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: klabis-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - klabis-network
+
 networks:
   klabis-network:
     driver: bridge

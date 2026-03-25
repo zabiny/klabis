@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Klabis Backend" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <option name="ACTIVE_PROFILES" value="h2,ssl,debug" />
+    <option name="ACTIVE_PROFILES" value="h2,ssl,debug,email" />
     <additionalParameters>
       <param>
         <option name="enabled" value="true" />
@@ -12,6 +12,11 @@
       <env name="KLABIS_JASYPT_PASSWORD" value="encryptpass" />
       <env name="KLABIS_ADMIN_PASSWORD" value="admin123" />
       <env name="KLABIS_OAUTH2_CLIENT_SECRET" value="test-secret-123" />
+      <env name="KLABIS_SMTP_HOST" value="localhost" />
+      <env name="KLABIS_SMTP_PORT" value="1025" />
+      <env name="SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH" value="false" />
+      <env name="SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE" value="false" />
+      <env name="SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED" value="false" />
     </envs>
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/backend/local.env" />

@@ -155,6 +155,11 @@ Default active profiles: `h2,ssl,debug,metrics` (zero-config local dev, HTTPS on
 
 Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics`
 
+**Email testing with MailHog:**
+1. Start the container: `docker compose up mailhog -d`
+2. Use run configuration "Klabis Backend" (profile `email` is active, MailHog SMTP settings are in run config env vars)
+3. View captured emails: http://localhost:8025
+
 ## Key Technologies
 
 - **Java 17+**

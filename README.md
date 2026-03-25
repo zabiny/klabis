@@ -43,6 +43,7 @@ jsou dostupne tyto sluzby:
 - [Prometheus](http://localhost:9090)
 - [Grafana](http://localhost:9030) (default user `admin`:`admin`)
 - [Zipkin](http://localhost:9411)
+- [MailHog](http://localhost:8025) — zachytává odeslané emaily (spustit: `docker compose up mailhog -d`)
 
 ## Analýza
 

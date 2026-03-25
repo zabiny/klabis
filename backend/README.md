@@ -276,6 +276,14 @@ echo $KLABIS_OAUTH2_CLIENT_SECRET
 - Email failures don't break business operations (graceful degradation)
 - See [docs/INTEGRATION-GUIDE.md](docs/INTEGRATION-GUIDE.md#email-service) for SMTP troubleshooting
 
+**Local email testing with MailHog:**
+
+```bash
+docker compose up mailhog -d
+```
+
+Start the backend with the `email` profile — sent emails are captured and visible at http://localhost:8025 (no actual delivery).
+
 ### Event processing issues
 
 **Problem:** Events not processing
