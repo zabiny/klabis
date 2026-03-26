@@ -282,12 +282,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // Password setup endpoints (public)
                         .requestMatchers("/api/auth/password-setup/**").permitAll()
-                        .requestMatchers("/api/**").access((authentication, request) -> {
-                            var auth = authentication.get();
-                            boolean granted = auth != null && auth.isAuthenticated()
-                                    && !(auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
-                            return new org.springframework.security.authorization.AuthorizationDecision(granted);
-                        })
+                        .requestMatchers("/api/**").authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
@@ -317,7 +312,6 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                         // Prevent browser from MIME-sniffing responses
                         .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Configure CSRF to ignore stateless API and documentation endpoints,
                 // while keeping CSRF protection enabled for any other browser-facing routes.
                 .csrf(csrf -> csrf.ignoringRequestMatchers(PATHS));

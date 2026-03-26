@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,12 +46,10 @@ public class AccountStatusValidationFilter extends OncePerRequestFilter {
         if (authentication != null && authentication instanceof KlabisJwtAuthenticationToken jwtAuth) {
             String username = jwtAuth.getUsername();
 
-            if (userService.findUserByUsername(username).isPresent()) {
-                User user = userService.findUserByUsername(username).get();
-                if (!user.isAuthenticatable()) {
-                    handleDisabledUser(response);
-                    return;
-                }
+            Optional<User> userOpt = userService.findUserByUsername(username);
+            if (userOpt.isPresent() && !userOpt.get().isAuthenticatable()) {
+                handleDisabledUser(response);
+                return;
             }
         }
 

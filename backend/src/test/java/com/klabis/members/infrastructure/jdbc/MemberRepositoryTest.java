@@ -483,7 +483,7 @@ class MemberRepositoryTest {
                         .withGender(Gender.MALE)
                         .withAddress(Address.of("Street " + i, "City", "11000", "CZ"))
                         .withEmail("user" + i + "@example.com")
-                        .withPhone("+420111111" + "%03d".formatted(i))
+                        .withPhone("+420111111%03d".formatted(i))
                         .withNoGuardian()
                         .build();
                 memberRepository.save(member);
