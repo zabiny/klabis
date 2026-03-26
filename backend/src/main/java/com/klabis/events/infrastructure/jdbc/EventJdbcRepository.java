@@ -41,6 +41,15 @@ interface EventJdbcRepository extends CrudRepository<EventMemento, UUID>, Paging
     Page<EventMemento> findByStatus(String status, Pageable pageable);
 
     /**
+     * Find events excluding the specified status with pagination.
+     *
+     * @param status   the event status to exclude (as string)
+     * @param pageable pagination parameters
+     * @return page of event mementos not matching the given status
+     */
+    Page<EventMemento> findByStatusNot(String status, Pageable pageable);
+
+    /**
      * Find events by organizer with pagination.
      *
      * @param organizer the organizer name

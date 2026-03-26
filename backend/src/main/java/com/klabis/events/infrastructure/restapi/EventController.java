@@ -1,9 +1,11 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementService;
+import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
@@ -32,6 +34,8 @@ import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.UUID;
@@ -117,6 +121,11 @@ public class EventController {
             @CurrentUser CurrentUserData currentUser) {
 
         Event event = eventManagementService.getEvent(new EventId(id));
+
+        if (event.getStatus() == EventStatus.DRAFT && !hasEventsManageAuthority()) {
+            throw new EventNotFoundException(new EventId(id));
+        }
+
         EventDto eventDto = EventDtoMapper.toDto(event);
 
         List<RegistrationDto> registrationDtos = buildRegistrationDtos(new EventId(id));
@@ -156,9 +165,18 @@ public class EventController {
 
         validateSortFields(pageable.getSort());
 
-        Page<EventSummaryDto> page = status != null
-                ? eventManagementService.listEventsByStatus(status, pageable).map(EventDtoMapper::toSummaryDto)
-                : eventManagementService.listEvents(pageable).map(EventDtoMapper::toSummaryDto);
+        Page<EventSummaryDto> page;
+        if (status != null) {
+            if (status == EventStatus.DRAFT && !hasEventsManageAuthority()) {
+                page = Page.empty(pageable);
+            } else {
+                page = eventManagementService.listEventsByStatus(status, pageable).map(EventDtoMapper::toSummaryDto);
+            }
+        } else if (hasEventsManageAuthority()) {
+            page = eventManagementService.listEvents(pageable).map(EventDtoMapper::toSummaryDto);
+        } else {
+            page = eventManagementService.listEventsExcludingStatus(EventStatus.DRAFT, pageable).map(EventDtoMapper::toSummaryDto);
+        }
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,
@@ -176,6 +194,11 @@ public class EventController {
         );
 
         return ResponseEntity.ok(pagedModel);
+    }
+
+    private boolean hasEventsManageAuthority() {
+        return SecuritySpelEvaluator.hasAuthority(
+                SecurityContextHolder.getContext().getAuthentication(), Authority.EVENTS_MANAGE);
     }
 
     private void validateSortFields(Sort sort) {

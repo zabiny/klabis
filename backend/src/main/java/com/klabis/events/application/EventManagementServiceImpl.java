@@ -97,6 +97,12 @@ public class EventManagementServiceImpl implements EventManagementService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<Event> listEventsExcludingStatus(EventStatus excludedStatus, Pageable pageable) {
+        return eventRepository.findByStatusNot(excludedStatus, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<Event> listEventsByStatus(EventStatus status, Pageable pageable) {
         return eventRepository.findByStatus(status, pageable);
     }

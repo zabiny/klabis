@@ -87,6 +87,13 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     @Override
+    public Page<Event> findByStatusNot(EventStatus excludedStatus, Pageable pageable) {
+        Pageable dbPageable = translateDomainToDbColumn(pageable);
+        return jdbcRepository.findByStatusNot(excludedStatus.name(), dbPageable)
+                .map(EventMemento::toEvent);
+    }
+
+    @Override
     public Page<Event> findByOrganizer(String organizer, Pageable pageable) {
         Pageable dbPageable = translateDomainToDbColumn(pageable);
         return jdbcRepository.findByOrganizer(organizer, dbPageable)

@@ -24,5 +24,7 @@ public interface EventManagementService {
 
     Page<Event> listEvents(Pageable pageable);
 
+    Page<Event> listEventsExcludingStatus(EventStatus excludedStatus, Pageable pageable);
+
     Page<Event> listEventsByStatus(EventStatus status, Pageable pageable);
 }

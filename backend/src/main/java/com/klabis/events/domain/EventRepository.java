@@ -44,6 +44,7 @@ public interface EventRepository extends Events {
     // - Optional<Event> findById(EventId eventId)
     // - Page<Event> findAll(Pageable pageable)
     // - Page<Event> findByStatus(EventStatus status, Pageable pageable)
+    // - Page<Event> findByStatusNot(EventStatus excludedStatus, Pageable pageable)
     // - Page<Event> findByOrganizer(String organizer, Pageable pageable)
     // - Page<Event> findByDateRange(LocalDate from, LocalDate to, Pageable pageable)
 }

@@ -46,6 +46,15 @@ public interface Events {
     Page<Event> findByStatus(EventStatus status, Pageable pageable);
 
     /**
+     * Find events excluding the specified status.
+     *
+     * @param excludedStatus the event status to exclude
+     * @param pageable       the pagination and sorting parameters
+     * @return page of events not matching the excluded status
+     */
+    Page<Event> findByStatusNot(EventStatus excludedStatus, Pageable pageable);
+
+    /**
      * Find events filtered by date range.
      *
      * @param from     the start date of the range (inclusive)
