@@ -275,7 +275,7 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$.siCardNumber").value("123456"))
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.event.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("DELETE")); // UNREGISTER
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").value("DELETE")); // UNREGISTER
         }
 
         @Test
@@ -305,7 +305,7 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$.firstName").value("John"))
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.event.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").doesNotExist()); // no DELETE
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").doesNotExist()); // no DELETE
         }
 
         @Test

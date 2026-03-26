@@ -208,7 +208,7 @@ class CalendarControllerTest {
                     .andExpect(jsonPath("$.eventId").isEmpty())
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.collection.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").exists())
+                    .andExpect(jsonPath("$._templates.updateCalendarItem.method").exists())
                     .andExpect(jsonPath("$._templates.deleteCalendarItem.method").exists());
         }
 

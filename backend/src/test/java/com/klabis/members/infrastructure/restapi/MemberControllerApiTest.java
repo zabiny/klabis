@@ -258,8 +258,8 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist())
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))  // "UPDATE member"
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
@@ -315,8 +315,8 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(true))
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))  // "UPDATE member"
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember.method").value("POST"))
                     .andExpect(jsonPath("$._templates.suspendMember.target").value(
                             "http://localhost/api/members/%s/suspend".formatted(memberId)));
@@ -338,8 +338,8 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.active").value(false))
                     .andExpect(jsonPath("$._links.permissions").doesNotExist())
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist())
                     .andExpect(jsonPath("$._templates.resumeMember.method").value("POST"))
                     .andExpect(jsonPath("$._templates.resumeMember.target").value(
@@ -361,8 +361,8 @@ class MemberControllerApiTest {
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
@@ -1213,7 +1213,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.suspendMember.method").value("POST"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.default.method").value("PATCH"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.updateMember.method").value("PATCH"))
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.resumeMember").doesNotExist());
         }
 
@@ -1231,7 +1231,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.resumeMember.method").value("POST"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.default.method").value("PATCH"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.updateMember.method").value("PATCH"))
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.suspendMember").doesNotExist());
         }
 

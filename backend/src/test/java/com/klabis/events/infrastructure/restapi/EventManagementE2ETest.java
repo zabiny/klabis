@@ -366,7 +366,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$._links.self.href").exists())
-                .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // EDIT
+                .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"))  // EDIT
                 .andExpect(jsonPath("$._templates.publishEvent").exists())
                 .andExpect(jsonPath("$._templates.cancelEvent").exists())
                 .andExpect(jsonPath("$._links.registrations.href").exists());
@@ -384,7 +384,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$._links.self.href").exists())
-                .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // EDIT
+                .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"))  // EDIT
                 .andExpect(jsonPath("$._templates.cancelEvent").exists())
                 .andExpect(jsonPath("$._templates.finishEvent").exists())
                 .andExpect(jsonPath("$._links.registrations.href").exists());
