@@ -27,6 +27,7 @@ rules:
     - "every module shall have single specs.md file"
 
   tasks:
+    - "split large feature into smaller feature incrememts/iterations (vertical slices). Application should be functional after every iteration."
     - "Follow Red-Green-Refactor TDD: write failing test, implement, refactor"
     - "Aim for >80% tests coverage coverage, 100% for domain logic"
     - "If tasks are created from github issue, add task to add label 'BackendCompleted' to that issue"
