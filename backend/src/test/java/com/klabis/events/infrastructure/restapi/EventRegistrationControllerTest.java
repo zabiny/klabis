@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
@@ -22,7 +22,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
@@ -275,7 +275,7 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$.siCardNumber").value("123456"))
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.event.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("DELETE")); // UNREGISTER
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").value("DELETE")); // UNREGISTER
         }
 
         @Test
@@ -305,7 +305,7 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$.firstName").value("John"))
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.event.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").doesNotExist()); // no DELETE
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").doesNotExist()); // no DELETE
         }
 
         @Test

@@ -1,9 +1,9 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.databind.ser.ValueSerializerModifier;
 import com.klabis.common.users.HasAuthority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Jackson {@link BeanSerializerModifier} that wraps {@link BeanPropertyWriter} instances
+ * Jackson {@link ValueSerializerModifier} that wraps {@link BeanPropertyWriter} instances
  * for record components annotated with {@link PreAuthorize}, {@link HasAuthority}, or
  * {@link OwnerVisible}. Authorization is evaluated during serialization — no interface or
  * proxy needed.
@@ -28,7 +28,7 @@ import java.util.UUID;
  * {@link ConversionService}, breaking the circular dependency that arises from Jackson
  * initialization ordering.
  */
-class FieldSecurityBeanSerializerModifier extends BeanSerializerModifier {
+class FieldSecurityBeanSerializerModifier extends ValueSerializerModifier {
 
     private static final Logger log = LoggerFactory.getLogger(FieldSecurityBeanSerializerModifier.class);
 
@@ -45,10 +45,10 @@ class FieldSecurityBeanSerializerModifier extends BeanSerializerModifier {
     @Override
     public List<BeanPropertyWriter> changeProperties(
             SerializationConfig config,
-            BeanDescription beanDesc,
+            BeanDescription.Supplier beanDescSupplier,
             List<BeanPropertyWriter> beanProperties) {
 
-        Class<?> beanClass = beanDesc.getBeanClass();
+        Class<?> beanClass = beanDescSupplier.get().getBeanClass();
         if (!beanClass.isRecord()) {
             return beanProperties;
         }

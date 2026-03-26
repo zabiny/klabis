@@ -181,7 +181,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
     }
 
     private String buildSetupUrl(String plainToken) {
-        return UriComponentsBuilder.fromHttpUrl(passwordSetupProperties.getBaseUrl())
+        return UriComponentsBuilder.fromUriString(passwordSetupProperties.getBaseUrl())
                 .path("/password-setup")
                 .queryParam("token", plainToken)
                 .build()

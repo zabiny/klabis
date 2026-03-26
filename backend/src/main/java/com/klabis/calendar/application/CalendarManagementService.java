@@ -3,8 +3,8 @@ package com.klabis.calendar.application;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Sort;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +35,7 @@ class CalendarManagementService implements CalendarManagementPort {
 
         if (daysBetween > MAX_DATE_RANGE_DAYS) {
             throw new IllegalArgumentException(
-                    String.format("Date range must not exceed %d days. Requested range: %d days",
+                    "Date range must not exceed %d days. Requested range: %d days".formatted(
                             MAX_DATE_RANGE_DAYS, daysBetween)
             );
         }

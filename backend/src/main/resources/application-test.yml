@@ -1,0 +1,17 @@
+
+# Test profile
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 10000
+
+  flyway:
+    clean-disabled: false
+
+logging:
+  level:
+    org.springframework.web.servlet.mvc: DEBUG

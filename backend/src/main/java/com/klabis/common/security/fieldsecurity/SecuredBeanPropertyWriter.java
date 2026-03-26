@@ -1,8 +1,7 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ser.BeanPropertyWriter;
 import com.klabis.common.users.HasAuthority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import tools.jackson.databind.SerializationContext;
 
 import java.lang.reflect.Method;
 
@@ -56,14 +56,14 @@ class SecuredBeanPropertyWriter extends BeanPropertyWriter {
     }
 
     @Override
-    public void serializeAsField(Object bean, JsonGenerator gen, SerializerProvider prov) throws Exception {
+    public void serializeAsProperty(Object bean, JsonGenerator gen, SerializationContext prov) throws Exception {
         if (isAuthorized(bean)) {
-            delegate.serializeAsField(bean, gen, prov);
+            delegate.serializeAsProperty(bean, gen, prov);
             return;
         }
 
         if (shouldMask()) {
-            gen.writeFieldName(delegate.getName());
+            gen.writeName(delegate.getName());
             gen.writeString(MaskDeniedHandler.MASK_VALUE);
         }
     }

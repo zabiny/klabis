@@ -65,7 +65,7 @@ export const EventDetailPage = (): ReactElement => {
                 </div>
 
                 <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
-                    <HalFormButton name="default" modal={true} label="Upravit"/>
+                    <HalFormButton name="updateEvent" modal={true} label="Upravit"/>
                     <HalFormButton name="publishEvent" modal={true}/>
                     <HalFormButton name="cancelEvent" modal={true}/>
                     <HalFormButton name="finishEvent" modal={true}/>

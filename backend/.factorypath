@@ -1,4 +1,8 @@
 <factorypath>
-    <factorypathentry kind="EXTJAR" id="/home/davca/.m2/repository/org/mapstruct/mapstruct-processor/1.5.5.Final/mapstruct-processor-1.5.5.Final.jar" enabled="true" runInBatchMode="false"/>
-    <factorypathentry kind="EXTJAR" id="/home/davca/.m2/repository/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="EXTJAR" id="/home/davca/.gradle/caches/modules-2/files-2.1/io.soabase.record-builder/record-builder-processor/44/f790aa2c60440299a2fc20fb4ff32324fe76c153/record-builder-processor-44.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="EXTJAR" id="/home/davca/.gradle/caches/modules-2/files-2.1/io.soabase.record-builder/record-builder-core/44/7e1b9767bc504cc08f41f4c80de2dab1ef15a2e2/record-builder-core-44.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="EXTJAR" id="/home/davca/.gradle/caches/modules-2/files-2.1/org.mapstruct/mapstruct-processor/1.6.3/52e345c907fbf173b376586c7f8b131d53fa5867/mapstruct-processor-1.6.3.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="EXTJAR" id="/home/davca/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.44/503fd0b002dbb237fa4656cf4b8021666a8aebac/lombok-1.18.44.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="EXTJAR" id="/home/davca/.gradle/caches/modules-2/files-2.1/io.soabase.java-composer/java-composer/1.0/2b6a6f0e10a6608ba06e08fbe754923de32be5cf/java-composer-1.0.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="EXTJAR" id="/home/davca/.m2/repository/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" enabled="true" runInBatchMode="false"/>
 </factorypath>

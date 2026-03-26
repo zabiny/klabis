@@ -1,8 +1,8 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.module.SimpleModule;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 import org.springframework.core.convert.ConversionService;
 
 /**
@@ -13,7 +13,7 @@ import org.springframework.core.convert.ConversionService;
  * Uses {@link ObjectProvider} to break the circular dependency that arises when Jackson
  * is initialized before the full MVC context (including ConversionService) is ready.
  */
-@JsonComponent
+@JacksonComponent
 class FieldSecurityJacksonModule extends SimpleModule {
 
     FieldSecurityJacksonModule(ObjectProvider<OwnershipResolver> ownershipResolver, ObjectProvider<ConversionService> conversionService) {

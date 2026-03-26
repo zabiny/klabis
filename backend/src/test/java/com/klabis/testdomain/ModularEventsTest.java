@@ -171,6 +171,16 @@ class ModularEventsTest {
         );
     }
 
+    static java.time.Instant toInstant(Object value) {
+        if (value instanceof java.time.OffsetDateTime odt) {
+            return odt.toInstant();
+        }
+        if (value instanceof Timestamp ts) {
+            return ts.toInstant();
+        }
+        throw new IllegalArgumentException("Cannot convert to Instant: " + value);
+    }
+
     private void makeEventsStale(UUID orderId, Duration duration) {
         makeEventsStale(orderId, duration.toSeconds());
     }
@@ -782,9 +792,9 @@ class ModularEventsTest {
                                 .hasSizeGreaterThanOrEqualTo(3);
 
                         // Verify order is preserved
-                        java.time.Instant firstDate = ((Timestamp) events.get(0).get("PUBLICATION_DATE")).toInstant();
-                        java.time.Instant secondDate = ((Timestamp) events.get(1).get("PUBLICATION_DATE")).toInstant();
-                        java.time.Instant thirdDate = ((Timestamp) events.get(2).get("PUBLICATION_DATE")).toInstant();
+                        java.time.Instant firstDate = toInstant(events.get(0).get("PUBLICATION_DATE"));
+                        java.time.Instant secondDate = toInstant(events.get(1).get("PUBLICATION_DATE"));
+                        java.time.Instant thirdDate = toInstant(events.get(2).get("PUBLICATION_DATE"));
 
                         assertThat(firstDate)
                                 .as("First event should be earliest")

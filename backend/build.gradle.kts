@@ -10,7 +10,7 @@ buildscript {
 
 plugins {
     java
-    id("org.springframework.boot") version "3.5.9"
+    id("org.springframework.boot") version "4.0.5"
     id("io.spring.dependency-management") version "1.1.7"
     id("net.bytebuddy.byte-buddy-gradle-plugin") version "1.18.4"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
@@ -30,20 +30,20 @@ repositories {
     mavenCentral()
 }
 
-val mapstructVersion = "1.5.5.Final"
+val mapstructVersion = "1.6.3"
 val testcontainersVersion = "1.19.3"
-val springModulithVersion = "1.4.6"
+val springModulithVersion = "2.0.0"
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.0.1")
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.1")
         mavenBom("org.jmolecules:jmolecules-bom:2025.0.2")
     }
 }
 
 dependencies {
     // Spring Boot Starters
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -51,9 +51,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-aop")
+    implementation("org.springframework.boot:spring-boot-starter-aspectj")
 
-    // Spring Authorization Server for OAuth2
+    // Spring Authorization Server for OAuth2 — version managed by Spring Security BOM (Boot 4)
     implementation("org.springframework.security:spring-security-oauth2-authorization-server")
 
     // Spring Modulith
@@ -67,11 +67,14 @@ dependencies {
     runtimeOnly("com.h2database:h2")
 
     // Flyway for database migrations
-    implementation("org.flywaydb:flyway-core")
+    runtimeOnly("javax.xml.bind:jaxb-api:2.3.1")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
 
     // Lombok (annotation processor - must be before MapStruct)
+    implementation("org.flywaydb:flyway-database-postgresql")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok-mapstruct-binding:0.2.0")
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
 
@@ -83,14 +86,12 @@ dependencies {
     // RecordBuilder for type-safe record builders
     compileOnly("io.soabase.record-builder:record-builder-core:44")
     annotationProcessor("io.soabase.record-builder:record-builder-processor:44")
-    testCompileOnly("io.soabase.record-builder:record-builder-core:44")
-    testAnnotationProcessor("io.soabase.record-builder:record-builder-processor:44")
 
     // Jasypt for encryption (GDPR - rodne cislo)
     implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5")
 
     // SpringDoc OpenAPI (Swagger)
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
 
     // Spring Cloud Resilience4j for rate limiting
     implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j")
@@ -112,15 +113,19 @@ dependencies {
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("io.rest-assured:rest-assured")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-security-test")
+    testImplementation("io.rest-assured:rest-assured:5.5.0")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
-    testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.4")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.4")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test:$springModulithVersion")
     testImplementation("org.springframework.modulith:spring-modulith-junit:$springModulithVersion")
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.jmolecules.integrations:jmolecules-archunit")
+    testImplementation("org.springframework.boot:spring-boot-starter-jdbc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-jdbc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-restclient")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

@@ -205,8 +205,8 @@ class JavaMailEmailServiceAdapterTest {
             return "";
         }
 
-        if (content instanceof String) {
-            return (String) content;
+        if (content instanceof String string) {
+            return string;
         }
 
         if (content instanceof jakarta.mail.internet.MimeMultipart multipart) {

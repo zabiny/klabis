@@ -75,7 +75,7 @@ public class PerKeyRateLimiter {
             if (counter.getCount() >= limit) {
                 log.warn("Rate limit exceeded for key: {}", key);
                 throw new RateLimitExceededException(
-                        String.format("Rate limit exceeded: %d requests per %s allowed", limit, duration)
+                        "Rate limit exceeded: %d requests per %s allowed".formatted(limit, duration)
                 );
             }
 

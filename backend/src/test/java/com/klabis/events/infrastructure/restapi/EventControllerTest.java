@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -396,7 +396,7 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // EDIT
+                    .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"))  // EDIT
                     .andExpect(jsonPath("$._templates.publishEvent.target").exists())   // PUBLISH
                     .andExpect(jsonPath("$._templates.cancelEvent.target").exists());   // CANCEL
         }
@@ -434,7 +434,7 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.registrations.href").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("POST"));
+                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
         }
 
         @Test
@@ -500,7 +500,7 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.default.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").value("DELETE"))
                     .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
         }
 
@@ -525,7 +525,7 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.unregisterFromEvent").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.method").value("POST"));
+                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"));
         }
 
         @Test

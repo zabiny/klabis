@@ -1,7 +1,7 @@
 package com.klabis.members;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.klabis.E2ETest;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.email.EmailProperties;
@@ -23,6 +23,7 @@ import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import tools.jackson.core.JacksonException;
 
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
@@ -311,11 +312,11 @@ class MemberLifecycleE2ETest {
 
     private CurrentUserData createCurrentUserDataFromMemberResponse(String memberDetailResponse) {
         try {
-            Map<String, Object> attributes = new ObjectMapper().readValue(memberDetailResponse, Map.class);
+            Map<String, Object> attributes = new JsonMapper().readValue(memberDetailResponse, Map.class);
             String registrationNumberValue = (String) attributes.get("registrationNumber");
             MemberId memberId = new MemberId(UUID.fromString((String) attributes.get("id")));
             return new CurrentUserData(registrationNumberValue, memberId.toUserId(), memberId, Set.of());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

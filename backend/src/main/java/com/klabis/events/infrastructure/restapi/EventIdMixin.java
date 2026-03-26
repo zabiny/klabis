@@ -3,11 +3,11 @@ package com.klabis.events.infrastructure.restapi;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.klabis.events.EventId;
-import org.springframework.boot.jackson.JsonMixin;
+import org.springframework.boot.jackson.JacksonMixin;
 
 import java.util.UUID;
 
-@JsonMixin(EventId.class)
+@JacksonMixin(EventId.class)
 public abstract class EventIdMixin {
 
     @JsonValue

@@ -1,25 +1,23 @@
 package com.klabis.common.patch;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import org.springframework.boot.jackson.JsonComponent;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import org.springframework.boot.jackson.JacksonComponent;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.ValueDeserializer;
 
-import java.io.IOException;
 import java.util.Objects;
 
-@JsonComponent
-class PatchFieldDeserializer extends StdDeserializer<PatchField<?>> implements ContextualDeserializer {
+@JacksonComponent
+class PatchFieldDeserializer extends StdDeserializer<PatchField<?>> {
 
     private final Class<?> contentType;
 
     public PatchFieldDeserializer() {
-        this(null);
+        this(PatchField.class);
     }
 
     public PatchFieldDeserializer(Class<?> contentType) {
@@ -27,14 +25,13 @@ class PatchFieldDeserializer extends StdDeserializer<PatchField<?>> implements C
         this.contentType = contentType;
     }
 
-    @Override
-    public JsonDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) throws JsonMappingException {
+    public ValueDeserializer<?> createContextual(DeserializationContext ctxt, BeanProperty property) throws DatabindException {
         Class<?> contentType = Objects.requireNonNull(property.getType()).containedType(0).getRawClass();
         return new PatchFieldDeserializer(contentType);
     }
 
     @Override
-    public PatchField<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+    public PatchField<?> deserialize(JsonParser p, DeserializationContext ctxt) {
         if (p.currentToken() == JsonToken.VALUE_NULL) {
             return PatchField.of(null);
         }

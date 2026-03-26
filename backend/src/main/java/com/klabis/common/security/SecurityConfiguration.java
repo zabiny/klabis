@@ -1,6 +1,6 @@
 package com.klabis.common.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import com.klabis.common.users.UserService;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -92,8 +92,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
             UserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder) {
 
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(provider);
     }
@@ -313,7 +312,6 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                         // Prevent browser from MIME-sniffing responses
                         .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Configure CSRF to ignore stateless API and documentation endpoints,
                 // while keeping CSRF protection enabled for any other browser-facing routes.
                 .csrf(csrf -> csrf.ignoringRequestMatchers(PATHS));

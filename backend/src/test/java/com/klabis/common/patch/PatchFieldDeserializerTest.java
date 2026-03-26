@@ -1,11 +1,12 @@
 package com.klabis.common.patch;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,9 +17,9 @@ class PatchFieldDeserializerTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
-        PatchFieldModule module = new PatchFieldModule();
-        objectMapper.registerModule(module);
+        objectMapper = JsonMapper.builder()
+                .addModule(new PatchFieldModule())
+                .build();
     }
 
     @Nested
@@ -27,7 +28,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize present string field as provided")
-        void shouldDeserializePresentStringFieldAsProvided() throws JsonProcessingException {
+        void shouldDeserializePresentStringFieldAsProvided() throws JacksonException {
             String json = """
                     {
                         "name": "John Doe"
@@ -42,7 +43,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize present integer field as provided")
-        void shouldDeserializePresentIntegerFieldAsProvided() throws JsonProcessingException {
+        void shouldDeserializePresentIntegerFieldAsProvided() throws JacksonException {
             String json = """
                     {
                         "age": 25
@@ -57,7 +58,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize present boolean field as provided")
-        void shouldDeserializePresentBooleanFieldAsProvided() throws JsonProcessingException {
+        void shouldDeserializePresentBooleanFieldAsProvided() throws JacksonException {
             String json = """
                     {
                         "active": true
@@ -77,7 +78,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize absent string field as not provided")
-        void shouldDeserializeAbsentStringFieldAsNotProvided() throws JsonProcessingException {
+        void shouldDeserializeAbsentStringFieldAsNotProvided() throws JacksonException {
             String json = """
                     {
                         "age": 25
@@ -91,7 +92,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize absent integer field as not provided")
-        void shouldDeserializeAbsentIntegerFieldAsNotProvided() throws JsonProcessingException {
+        void shouldDeserializeAbsentIntegerFieldAsNotProvided() throws JacksonException {
             String json = """
                     {
                         "name": "John"
@@ -105,7 +106,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize absent boolean field as not provided")
-        void shouldDeserializeAbsentBooleanFieldAsNotProvided() throws JsonProcessingException {
+        void shouldDeserializeAbsentBooleanFieldAsNotProvided() throws JacksonException {
             String json = """
                     {
                         "name": "John"
@@ -119,7 +120,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize all absent fields as not provided")
-        void shouldDeserializeAllAbsentFieldsAsNotProvided() throws JsonProcessingException {
+        void shouldDeserializeAllAbsentFieldsAsNotProvided() throws JacksonException {
             String json = """
                     {
                     }
@@ -139,7 +140,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize explicit null string as provided with null")
-        void shouldDeserializeExplicitNullStringAsProvidedWithNull() throws JsonProcessingException {
+        void shouldDeserializeExplicitNullStringAsProvidedWithNull() throws JacksonException {
             String json = """
                     {
                         "name": null
@@ -154,7 +155,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize explicit null integer as provided with null")
-        void shouldDeserializeExplicitNullIntegerAsProvidedWithNull() throws JsonProcessingException {
+        void shouldDeserializeExplicitNullIntegerAsProvidedWithNull() throws JacksonException {
             String json = """
                     {
                         "age": null
@@ -169,7 +170,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize explicit null boolean as provided with null")
-        void shouldDeserializeExplicitNullBooleanAsProvidedWithNull() throws JsonProcessingException {
+        void shouldDeserializeExplicitNullBooleanAsProvidedWithNull() throws JacksonException {
             String json = """
                     {
                         "active": null
@@ -189,7 +190,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize mix of provided, absent, and null fields")
-        void shouldDeserializeMixOfProvidedAbsentAndNullFields() throws JsonProcessingException {
+        void shouldDeserializeMixOfProvidedAbsentAndNullFields() throws JacksonException {
             String json = """
                     {
                         "name": "John",
@@ -212,7 +213,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize empty string as provided")
-        void shouldDeserializeEmptyStringAsProvided() throws JsonProcessingException {
+        void shouldDeserializeEmptyStringAsProvided() throws JacksonException {
             String json = """
                     {
                         "name": ""
@@ -227,7 +228,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize zero as provided")
-        void shouldDeserializeZeroAsProvided() throws JsonProcessingException {
+        void shouldDeserializeZeroAsProvided() throws JacksonException {
             String json = """
                     {
                         "age": 0
@@ -242,7 +243,7 @@ class PatchFieldDeserializerTest {
 
         @Test
         @DisplayName("Should deserialize false as provided")
-        void shouldDeserializeFalseAsProvided() throws JsonProcessingException {
+        void shouldDeserializeFalseAsProvided() throws JacksonException {
             String json = """
                     {
                         "active": false

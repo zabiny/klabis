@@ -70,7 +70,7 @@ class LayerArchitectureTest {
         noClasses()
                 .that().resideInAPackage("..domain..")
                 .should().dependOnClassesThat()
-                .resideInAnyPackage("com.fasterxml.jackson..", "org.json..", "jakarta.json..")
+                .resideInAnyPackage("com.fasterxml.jackson..", "tools.jackson..", "org.json..", "jakarta.json..")
                 .because("Domain layer must not depend on serialization frameworks — domain objects are pure business logic")
                 .check(classes);
     }
@@ -81,7 +81,7 @@ class LayerArchitectureTest {
         noClasses()
                 .that().resideInAPackage("..application..")
                 .should().dependOnClassesThat()
-                .resideInAnyPackage("com.fasterxml.jackson..", "org.json..", "jakarta.json..")
+                .resideInAnyPackage("com.fasterxml.jackson..", "tools.jackson..", "org.json..", "jakarta.json..")
                 .because("Application layer must not depend on serialization frameworks — serialization belongs to infrastructure layer")
                 .check(classes);
     }

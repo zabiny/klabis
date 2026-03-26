@@ -11,7 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
@@ -192,11 +192,11 @@ class FieldLevelAuthorizationTest {
         void shouldSeeAllPropertiesInHalFormsTemplate() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'publicField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hiddenField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").exists());
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'publicField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hiddenField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'maskedField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hasAuthorityHiddenField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hasAuthorityMaskedField')]").exists());
         }
 
         @Test
@@ -283,11 +283,11 @@ class FieldLevelAuthorizationTest {
         void halFormsTemplateWithFieldReadShowsPreAuthorizeProperties() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'publicField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hiddenField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").doesNotExist());
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'publicField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hiddenField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'maskedField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hasAuthorityHiddenField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hasAuthorityMaskedField')]").doesNotExist());
         }
 
         @Test
@@ -296,11 +296,11 @@ class FieldLevelAuthorizationTest {
         void halFormsTemplateWithMembersManageShowsHasAuthorityProperties() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'publicField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hiddenField')]").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").exists());
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'publicField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hiddenField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'maskedField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hasAuthorityHiddenField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hasAuthorityMaskedField')]").exists());
         }
     }
 
@@ -327,11 +327,11 @@ class FieldLevelAuthorizationTest {
         void shouldFilterTemplatePropertiesBasedOnAuthorization() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'publicField')]").exists())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hiddenField')]").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'maskedField')]").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityHiddenField')]").doesNotExist())
-                    .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'hasAuthorityMaskedField')]").doesNotExist());
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'publicField')]").exists())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hiddenField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'maskedField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hasAuthorityHiddenField')]").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'hasAuthorityMaskedField')]").doesNotExist());
         }
 
         @Test

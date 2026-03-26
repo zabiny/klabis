@@ -1,8 +1,8 @@
 package com.klabis.common.users.infrastructure.jdbc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
@@ -11,6 +11,7 @@ import org.springframework.data.annotation.*;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
+import tools.jackson.core.JacksonException;
 
 import java.time.Instant;
 import java.util.Set;
@@ -36,7 +37,7 @@ import java.util.UUID;
 @Table("user_permissions")
 public class UserPermissionsMemento implements Persistable<UUID> {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new JsonMapper();
 
     @Id
     @Column("user_id")
@@ -127,7 +128,7 @@ public class UserPermissionsMemento implements Persistable<UUID> {
     private static String serializeAuthorities(Set<Authority> authorities) {
         try {
             return objectMapper.writeValueAsString(authorities);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to serialize authorities to JSON", e);
         }
     }
@@ -147,7 +148,7 @@ public class UserPermissionsMemento implements Persistable<UUID> {
 
         try {
             return objectMapper.readValue(json, new TypeReference<Set<Authority>>() {});
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to deserialize authorities from JSON: " + json, e);
         }
     }

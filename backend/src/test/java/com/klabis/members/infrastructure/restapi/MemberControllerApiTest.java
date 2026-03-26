@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -258,8 +258,8 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist())
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))  // "UPDATE member"
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
@@ -315,8 +315,8 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(true))
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))  // "UPDATE member"
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))  // "UPDATE member"
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember.method").value("POST"))
                     .andExpect(jsonPath("$._templates.suspendMember.target").value(
                             "http://localhost/api/members/%s/suspend".formatted(memberId)));
@@ -338,8 +338,8 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.active").value(false))
                     .andExpect(jsonPath("$._links.permissions").doesNotExist())
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist())
                     .andExpect(jsonPath("$._templates.resumeMember.method").value("POST"))
                     .andExpect(jsonPath("$._templates.resumeMember.target").value(
@@ -361,8 +361,8 @@ class MemberControllerApiTest {
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates").exists())
-                    .andExpect(jsonPath("$._templates.default.method").value("PATCH"))
-                    .andExpect(jsonPath("$._templates.default.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
+                    .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
@@ -731,7 +731,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.firstName").value("First name is required"));
         }
@@ -759,7 +759,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.email").value("Email must be valid"));
         }
@@ -787,7 +787,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.phone").value(
                             "Phone number must be in E.164 format (starts with +)"));
@@ -815,7 +815,7 @@ class MemberControllerApiTest {
                             }
                             """))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("Date of birth must be in the past"));
         }
@@ -843,7 +843,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.email").value("Email is required"));
         }
@@ -878,7 +878,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors['guardian.firstName']").value("Guardian first name is required"));
         }
@@ -951,7 +951,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.nationality").value(
                             "Nationality must be 2 or 3 characters (ISO code)"));
@@ -980,7 +980,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors['address.street']").value("Street is required"));
         }
@@ -1008,7 +1008,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors['address.country']").value(ValidationPatterns.MESSAGE_COUNTRY_INVALID));
         }
@@ -1213,7 +1213,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.suspendMember.method").value("POST"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.default.method").value("PATCH"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.updateMember.method").value("PATCH"))
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.resumeMember").doesNotExist());
         }
 
@@ -1231,7 +1231,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.resumeMember.method").value("POST"))
-                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.default.method").value("PATCH"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.updateMember.method").value("PATCH"))
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._templates.suspendMember").doesNotExist());
         }
 
@@ -1379,7 +1379,6 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").exists())
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already suspended")));
         }

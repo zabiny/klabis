@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -44,9 +44,9 @@ class HalFormsExpectationsTest {
                         .param("id", "2")
                         .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'id')].readOnly").value(true))
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'firstName')].readOnly").doesNotExist())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'lastName')].readOnly").doesNotExist())
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'id')].readOnly").value(true))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'firstName')].readOnly").doesNotExist())
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'lastName')].readOnly").doesNotExist())
                 .andExpect(status().isOk());
     }
 
@@ -58,7 +58,7 @@ class HalFormsExpectationsTest {
                         .param("id", "2")
                         .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'address')].type").value("Address"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'address')].type").value("Address"))
                 .andExpect(status().isOk());
     }
 
@@ -70,8 +70,8 @@ class HalFormsExpectationsTest {
                         .param("id", "2")
                         .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'dietary')].type").value("text"))
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'postalAddress')].type").value("Address"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'dietary')].type").value("text"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'postalAddress')].type").value("Address"))
                 .andExpect(status().isOk());
     }
 
@@ -83,7 +83,7 @@ class HalFormsExpectationsTest {
                         .param("id", "2")
                         .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'diet')].type").value("text"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'diet')].type").value("text"))
                 .andExpect(status().isOk());
     }
 
@@ -95,7 +95,7 @@ class HalFormsExpectationsTest {
                         .param("id", "2")
                         .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andDo(print())
-                .andExpect(jsonPath("$._templates.default.properties[?(@.name == 'age')].type").value("AgeOverride"))
+                .andExpect(jsonPath("$._templates.editUser.properties[?(@.name == 'age')].type").value("AgeOverride"))
                 .andExpect(status().isOk());
     }
 

@@ -55,7 +55,7 @@ export const MembersPage = (): ReactElement => {
 
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const member = item as unknown as MemberSummaryData;
-        const hasEditTemplate = !!member._templates?.default;
+        const hasEditTemplate = !!member._templates?.updateMember;
         const hasPermissionsLink = !!member._links?.permissions;
         const hasSuspendTemplate = !!member._templates?.suspendMember;
         const hasResumeTemplate = !!member._templates?.resumeMember;
