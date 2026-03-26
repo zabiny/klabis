@@ -12,6 +12,8 @@ import org.springframework.core.MethodParameter;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -60,14 +62,14 @@ class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
                 .getContext()
                 .getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("User must be authenticated");
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new AuthenticationCredentialsNotFoundException("User must be authenticated");
         }
 
         if (!(authentication instanceof KlabisJwtAuthenticationToken)) {
-            Object principal = authentication.getPrincipal();
-            throw new IllegalStateException(
-                    "Expected KlabisJwtAuthenticationToken, got: " + (principal != null ? principal.getClass() : "null principal") + " (token type: " + authentication.getClass().getSimpleName() + ")");
+            throw new AuthenticationCredentialsNotFoundException(
+                    "Expected JWT authentication, got: " + authentication.getClass().getSimpleName());
         }
 
         return authentication;
