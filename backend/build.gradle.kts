@@ -32,7 +32,7 @@ repositories {
 
 val mapstructVersion = "1.6.3"
 val testcontainersVersion = "1.19.3"
-val springModulithVersion = "1.4.6"
+val springModulithVersion = "2.0.0"
 
 dependencyManagement {
     imports {
@@ -53,8 +53,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-aspectj")
 
-    // Spring Authorization Server for OAuth2
-    implementation("org.springframework.security:spring-security-oauth2-authorization-server:1.5.5")
+    // Spring Authorization Server for OAuth2 — version managed by Spring Security BOM (Boot 4)
+    implementation("org.springframework.security:spring-security-oauth2-authorization-server")
 
     // Spring Modulith
     implementation("org.springframework.modulith:spring-modulith-starter-core:$springModulithVersion")

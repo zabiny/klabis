@@ -282,7 +282,12 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // Password setup endpoints (public)
                         .requestMatchers("/api/auth/password-setup/**").permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers("/api/**").access((authentication, request) -> {
+                            var auth = authentication.get();
+                            boolean granted = auth != null && auth.isAuthenticated()
+                                    && !(auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
+                            return new org.springframework.security.authorization.AuthorizationDecision(granted);
+                        })
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))

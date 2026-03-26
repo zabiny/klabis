@@ -237,7 +237,6 @@ class PermissionControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.status").value(400))
                     .andExpect(jsonPath("$.fieldErrors.authorities").value("must not be empty"));

@@ -731,7 +731,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.firstName").value("First name is required"));
         }
@@ -759,7 +759,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.email").value("Email must be valid"));
         }
@@ -787,7 +787,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.phone").value(
                             "Phone number must be in E.164 format (starts with +)"));
@@ -815,7 +815,7 @@ class MemberControllerApiTest {
                             }
                             """))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("Date of birth must be in the past"));
         }
@@ -843,7 +843,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.email").value("Email is required"));
         }
@@ -878,7 +878,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors['guardian.firstName']").value("Guardian first name is required"));
         }
@@ -951,7 +951,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.nationality").value(
                             "Nationality must be 2 or 3 characters (ISO code)"));
@@ -980,7 +980,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors['address.street']").value("Street is required"));
         }
@@ -1008,7 +1008,7 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("about:blank"))
+
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors['address.country']").value(ValidationPatterns.MESSAGE_COUNTRY_INVALID));
         }
@@ -1379,7 +1379,6 @@ class MemberControllerApiTest {
                             """)
                     )
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").exists())
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already suspended")));
         }

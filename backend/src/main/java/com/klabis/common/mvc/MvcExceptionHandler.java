@@ -101,7 +101,10 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
     )
     @ExceptionHandler(ResourceNotFoundException.class)
     public ErrorResponse handleAuthorizationException(ResourceNotFoundException ex) {
-        return ErrorResponse.builder(ex, HttpStatus.NOT_FOUND, ex.getMessage()).title("Resource Not Found").build();
+        return ErrorResponse.builder(ex, HttpStatus.NOT_FOUND, ex.getMessage())
+                .title("Resource Not Found")
+                .type(java.net.URI.create("about:blank"))
+                .build();
     }
 
     // TODO: create SpringDoc filter which will remove 409 response status from GET APIs

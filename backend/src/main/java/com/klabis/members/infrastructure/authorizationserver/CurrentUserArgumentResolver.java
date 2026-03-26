@@ -65,8 +65,9 @@ class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
         }
 
         if (!(authentication instanceof KlabisJwtAuthenticationToken)) {
+            Object principal = authentication.getPrincipal();
             throw new IllegalStateException(
-                    "Expected KlabisJwtAuthenticationToken, got: " + authentication.getPrincipal().getClass());
+                    "Expected KlabisJwtAuthenticationToken, got: " + (principal != null ? principal.getClass() : "null principal") + " (token type: " + authentication.getClass().getSimpleName() + ")");
         }
 
         return authentication;

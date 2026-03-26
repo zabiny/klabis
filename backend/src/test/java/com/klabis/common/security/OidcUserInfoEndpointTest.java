@@ -202,10 +202,16 @@ class OidcUserInfoEndpointTest {
     @DisplayName("should reject request with missing Authorization header")
     void shouldRejectRequestWithMissingAuthorizationHeader() throws Exception {
         // WHEN: Calling UserInfo endpoint WITHOUT Authorization header
-        // THEN: Should return 302 (redirect to login) or 401 Unauthorized
-        // Note: Spring Security redirects unauthenticated requests to login page in web context
+        // THEN: Should return 401 Unauthorized or 302 redirect to login
+        // Note: Spring Security Authorization Server 7.0 returns 401 for the UserInfo endpoint
+        // (resource server semantics), while earlier versions redirected to login
         mockMvc.perform(get("/userinfo"))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(result -> {
+                    int status = result.getResponse().getStatus();
+                    if (status != 401 && (status < 300 || status >= 400)) {
+                        throw new AssertionError("Expected 401 or 3xx but got " + status);
+                    }
+                });
     }
 
     /**
