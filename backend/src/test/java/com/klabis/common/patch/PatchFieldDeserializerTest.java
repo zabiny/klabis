@@ -17,9 +17,9 @@ class PatchFieldDeserializerTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new JsonMapper();
-        PatchFieldModule module = new PatchFieldModule();
-        objectMapper.registerModule(module);
+        objectMapper = JsonMapper.builder()
+                .addModule(new PatchFieldModule())
+                .build();
     }
 
     @Nested

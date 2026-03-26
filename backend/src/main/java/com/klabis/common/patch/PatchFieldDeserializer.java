@@ -5,13 +5,13 @@ import tools.jackson.core.JsonToken;
 import tools.jackson.databind.BeanProperty;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.deser.std.StdDeserializer;
-import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JacksonComponent;
 import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.ValueDeserializer;
 
 import java.util.Objects;
 
-@JsonComponent
+@JacksonComponent
 class PatchFieldDeserializer extends StdDeserializer<PatchField<?>> {
 
     private final Class<?> contentType;

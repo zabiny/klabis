@@ -56,9 +56,9 @@ class SecuredBeanPropertyWriter extends BeanPropertyWriter {
     }
 
     @Override
-    public void serializeAsField(Object bean, JsonGenerator gen, SerializationContext prov) throws Exception {
+    public void serializeAsProperty(Object bean, JsonGenerator gen, SerializationContext prov) throws Exception {
         if (isAuthorized(bean)) {
-            delegate.serializeAsField(bean, gen, prov);
+            delegate.serializeAsProperty(bean, gen, prov);
             return;
         }
 

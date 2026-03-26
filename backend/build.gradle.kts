@@ -115,7 +115,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
-    testImplementation("io.rest-assured:rest-assured")
+    testImplementation("io.rest-assured:rest-assured:5.5.0")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers-postgresql:2.0.4")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.4")
@@ -124,6 +124,7 @@ dependencies {
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.jmolecules.integrations:jmolecules-archunit")
     testImplementation("org.springframework.boot:spring-boot-starter-jdbc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-jdbc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-restclient")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
