@@ -240,7 +240,7 @@ describe('MemberDetailPage', () => {
         const data = mockMemberDetailData({
             nationality: 'CZ',
             birthNumber: '9003151234',
-            _templates: {default: selfEditTemplate},
+            _templates: {updateMember: selfEditTemplate},
         });
         renderPage(createMockPageData(data));
         expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
@@ -252,7 +252,7 @@ describe('MemberDetailPage', () => {
         const data = mockMemberDetailData({
             nationality: 'CZ',
             birthNumber: '900515/0123',
-            _templates: {default: selfEditTemplate},
+            _templates: {updateMember: selfEditTemplate},
         });
         renderPage(createMockPageData(data));
 
@@ -267,7 +267,7 @@ describe('MemberDetailPage', () => {
         const data = mockMemberDetailData({
             nationality: 'CZ',
             birthNumber: '9005150123',
-            _templates: {default: selfEditTemplate},
+            _templates: {updateMember: selfEditTemplate},
         });
         renderPage(createMockPageData(data));
 
@@ -280,7 +280,7 @@ describe('MemberDetailPage', () => {
         const data = mockMemberDetailData({
             nationality: 'SK',
             birthNumber: '9003151234',
-            _templates: {default: selfEditTemplate},
+            _templates: {updateMember: selfEditTemplate},
         });
         renderPage(createMockPageData(data));
         expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
@@ -290,7 +290,7 @@ describe('MemberDetailPage', () => {
         const data = mockMemberDetailData({
             nationality: 'CZ',
             birthNumber: null,
-            _templates: {default: selfEditTemplate},
+            _templates: {updateMember: selfEditTemplate},
         });
         renderPage(createMockPageData(data));
         expect(screen.queryByText('Rodné číslo')).not.toBeInTheDocument();
@@ -378,7 +378,7 @@ describe('MemberDetailPage', () => {
     describe('view with edit template (self or admin)', () => {
         it('shows all sections including personal info', () => {
             const data = mockMemberDetailData({
-                _templates: {default: selfEditTemplate},
+                _templates: {updateMember: selfEditTemplate},
             });
             renderPage(createMockPageData(data));
             expect(screen.getByText('OSOBNÍ ÚDAJE')).toBeInTheDocument();
@@ -390,7 +390,7 @@ describe('MemberDetailPage', () => {
 
         it('shows "Upravit profil" button when template exists', () => {
             const data = mockMemberDetailData({
-                _templates: {default: selfEditTemplate},
+                _templates: {updateMember: selfEditTemplate},
             });
             renderPage(createMockPageData(data));
             expect(screen.getByRole('button', {name: /upravit profil/i})).toBeInTheDocument();
@@ -399,7 +399,7 @@ describe('MemberDetailPage', () => {
         it('shows "Ukončit členství" button when suspendMember template exists', () => {
             const data = mockMemberDetailData({
                 _templates: {
-                    default: adminEditTemplate,
+                    updateMember: adminEditTemplate,
                     suspendMember: mockHalFormsTemplate({title: 'Terminate'}),
                 },
             });
@@ -409,7 +409,7 @@ describe('MemberDetailPage', () => {
 
         it('shows "Oprávnění" button when permissions link exists', () => {
             const data = mockMemberDetailData({
-                _templates: {default: adminEditTemplate},
+                _templates: {updateMember: adminEditTemplate},
                 _links: {
                     self: {href: '/api/members/123'},
                     permissions: {href: '/api/members/123/permissions'},
@@ -424,7 +424,7 @@ describe('MemberDetailPage', () => {
 
         it('does NOT show "Oprávnění" button when permissions link missing', () => {
             const data = mockMemberDetailData({
-                _templates: {default: adminEditTemplate},
+                _templates: {updateMember: adminEditTemplate},
             });
             renderPage(createMockPageData(data));
             expect(screen.queryByRole('button', {name: /oprávnění/i})).not.toBeInTheDocument();
@@ -434,7 +434,7 @@ describe('MemberDetailPage', () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
                 _templates: {
-                    default: adminEditTemplate,
+                    updateMember: adminEditTemplate,
                     resumeMember: mockHalFormsTemplate({title: 'resumeMember'}),
                 },
             });
@@ -451,7 +451,7 @@ describe('MemberDetailPage', () => {
         it('shows action bar at bottom of content with "Uložit změny" and "Zrušit"', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
-                _templates: {default: adminEditTemplate},
+                _templates: {updateMember: adminEditTemplate},
             });
             renderPage(createMockPageData(data));
 
@@ -464,7 +464,7 @@ describe('MemberDetailPage', () => {
         it('switches fields to editable inputs when editing with admin template', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
-                _templates: {default: adminEditTemplate},
+                _templates: {updateMember: adminEditTemplate},
             });
             renderPage(createMockPageData(data));
 
@@ -479,7 +479,7 @@ describe('MemberDetailPage', () => {
         it('clicking "Zrušit" exits edit mode', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
-                _templates: {default: adminEditTemplate},
+                _templates: {updateMember: adminEditTemplate},
             });
             renderPage(createMockPageData(data));
 
@@ -495,7 +495,7 @@ describe('MemberDetailPage', () => {
         it('readOnly fields stay read-only in edit mode', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
-                _templates: {default: adminEditTemplate},
+                _templates: {updateMember: adminEditTemplate},
             });
             renderPage(createMockPageData(data));
 
@@ -508,7 +508,7 @@ describe('MemberDetailPage', () => {
         it('fields not in template stay read-only when editing with self template', async () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
-                _templates: {default: selfEditTemplate},
+                _templates: {updateMember: selfEditTemplate},
             });
             renderPage(createMockPageData(data));
 
@@ -522,7 +522,7 @@ describe('MemberDetailPage', () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
                 gender: 'MALE',
-                _templates: {default: selfEditTemplate},
+                _templates: {updateMember: selfEditTemplate},
             });
             renderPage(createMockPageData(data));
 
@@ -536,7 +536,7 @@ describe('MemberDetailPage', () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
                 gender: 'FEMALE',
-                _templates: {default: selfEditTemplate},
+                _templates: {updateMember: selfEditTemplate},
             });
             renderPage(createMockPageData(data));
 
@@ -552,7 +552,7 @@ describe('MemberDetailPage', () => {
                 const data = mockMemberDetailData({
                     nationality: 'CZ',
                     birthNumber: '9003151234',
-                    _templates: {default: adminEditTemplateWithNationality},
+                    _templates: {updateMember: adminEditTemplateWithNationality},
                 });
                 renderPage(createMockPageData(data));
 
@@ -566,7 +566,7 @@ describe('MemberDetailPage', () => {
                 const data = mockMemberDetailData({
                     nationality: 'SK',
                     birthNumber: null,
-                    _templates: {default: adminEditTemplateWithNationality},
+                    _templates: {updateMember: adminEditTemplateWithNationality},
                 });
                 renderPage(createMockPageData(data));
 
@@ -580,7 +580,7 @@ describe('MemberDetailPage', () => {
                 const data = mockMemberDetailData({
                     nationality: 'CZ',
                     birthNumber: '9003151234',
-                    _templates: {default: adminEditTemplateWithNationality},
+                    _templates: {updateMember: adminEditTemplateWithNationality},
                 });
                 renderPage(createMockPageData(data));
 
@@ -602,7 +602,7 @@ describe('MemberDetailPage', () => {
                 const data = mockMemberDetailData({
                     nationality: 'SK',
                     birthNumber: null,
-                    _templates: {default: adminEditTemplateWithNationality},
+                    _templates: {updateMember: adminEditTemplateWithNationality},
                 });
                 renderPage(createMockPageData(data));
 
@@ -622,7 +622,7 @@ describe('MemberDetailPage', () => {
     describe('2-column layout', () => {
         it('uses 2-column grid layout when template exists', () => {
             const data = mockMemberDetailData({
-                _templates: {default: adminEditTemplate},
+                _templates: {updateMember: adminEditTemplate},
             });
             const {container} = renderPage(createMockPageData(data));
             const grid = container.querySelector('.grid.lg\\:grid-cols-2');
@@ -641,7 +641,7 @@ describe('MemberDetailPage', () => {
             const data = mockMemberDetailData({
                 active: true,
                 _templates: {
-                    default: adminEditTemplate,
+                    updateMember: adminEditTemplate,
                     suspendMember: mockHalFormsTemplate({title: 'Terminate'}),
                 },
             });
@@ -654,7 +654,7 @@ describe('MemberDetailPage', () => {
             const user = userEvent.setup();
             const data = mockMemberDetailData({
                 _templates: {
-                    default: {
+                    updateMember: {
                         method: 'PUT' as const,
                         properties: [
                             {name: 'firstName', type: 'text'},

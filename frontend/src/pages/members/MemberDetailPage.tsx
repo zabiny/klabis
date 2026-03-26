@@ -117,7 +117,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const refereeLicense = member.refereeLicense;
     const showDeactivation = member.active === false;
 
-    const template: HalFormsTemplate | null = resourceData?._templates?.default ?? null;
+    const template: HalFormsTemplate | null = resourceData?._templates?.updateMember ?? null;
     const hasEditTemplate = template !== null;
 
     const enrichedTemplate = useMemo(() => {
@@ -399,7 +399,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
             {isEditing && enrichedTemplate ? (
                 <HalFormDisplay
                     template={enrichedTemplate}
-                    templateName="default"
+                    templateName="updateMember"
                     resourceData={resourceData as Record<string, unknown>}
                     pathname={route.pathname}
                     onClose={cancelEditing}

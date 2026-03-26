@@ -207,17 +207,17 @@ describe('EventDetailPage', () => {
     });
 
     describe('action buttons via HAL affordances', () => {
-        it('shows edit button when default template exists', () => {
+        it('shows edit button when updateEvent template exists', () => {
             const data = mockEventDetailData({
                 _templates: {
-                    default: mockHalFormsTemplate({title: 'Upravit závod'}),
+                    updateEvent: mockHalFormsTemplate({title: 'Upravit závod'}),
                 },
             });
             renderPage(createMockPageData(data));
             expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
         });
 
-        it('does not show edit button when default template is absent', () => {
+        it('does not show edit button when updateEvent template is absent', () => {
             renderPage(createMockPageData(mockEventDetailData()));
             expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
         });

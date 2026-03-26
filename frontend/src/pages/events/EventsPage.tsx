@@ -25,7 +25,7 @@ export const EventsPage = (): ReactElement => {
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-text-primary">Seznam závodů</h2>
-                <HalFormButton name="default" modal={true} label="Přidat závod"/>
+                <HalFormButton name="createEvent" modal={true} label="Přidat závod"/>
             </div>
             <HalEmbeddedTable<EventListData> collectionName={"eventSummaryDtoList"} defaultOrderBy={"eventDate"}
                                              onRowClick={route.navigateToResource}>

@@ -210,15 +210,15 @@ describe('MembersPage — row data rendering', () => {
         expect(screen.getByText('test@example.com')).toBeInTheDocument();
     });
 
-    it('shows edit icon when _templates.default exists on member row', () => {
+    it('shows edit icon when _templates.updateMember exists on member row', () => {
         const member = buildMemberRow({
-            _templates: {default: mockHalFormsTemplate({method: 'PUT'})},
+            _templates: {updateMember: mockHalFormsTemplate({method: 'PUT'})},
         });
         renderPageWithMembers([member]);
         expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
     });
 
-    it('does not show edit icon when _templates.default is absent on member row', () => {
+    it('does not show edit icon when _templates.updateMember is absent on member row', () => {
         renderPageWithMembers([buildMemberRow()]);
         expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
     });
@@ -258,7 +258,7 @@ describe('MembersPage — row data rendering', () => {
     it('clicking edit icon navigates to member detail page', () => {
         const navigateToResource = vi.fn();
         const member = buildMemberRow({
-            _templates: {default: mockHalFormsTemplate({method: 'PUT'})},
+            _templates: {updateMember: mockHalFormsTemplate({method: 'PUT'})},
         });
         renderPageWithMembers([member], {
             route: {
