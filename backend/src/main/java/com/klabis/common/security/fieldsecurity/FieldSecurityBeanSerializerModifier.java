@@ -1,9 +1,9 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.databind.ser.BeanSerializerModifier;
 import com.klabis.common.users.HasAuthority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

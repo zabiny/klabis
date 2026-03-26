@@ -71,7 +71,7 @@ public enum EventStatus {
 
         if (!canTransitionTo(newStatus)) {
             throw new IllegalStateException(
-                    String.format("Cannot transition from %s to %s", this, newStatus)
+                    "Cannot transition from %s to %s".formatted(this, newStatus)
             );
         }
     }

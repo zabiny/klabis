@@ -1,6 +1,6 @@
 package com.klabis.common.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import com.klabis.common.users.UserService;
 import com.nimbusds.jose.jwk.JWKSet;

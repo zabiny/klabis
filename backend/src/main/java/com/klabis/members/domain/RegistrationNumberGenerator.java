@@ -70,8 +70,7 @@ public class RegistrationNumberGenerator {
         int birthYearTwoDigits = birthYear % 100;
 
         // Format: XXXYYDD
-        String registrationNumberValue = String.format(
-                "%s%02d%02d",
+        String registrationNumberValue = "%s%02d%02d".formatted(
                 clubCode,
                 birthYearTwoDigits,
                 nextSequence

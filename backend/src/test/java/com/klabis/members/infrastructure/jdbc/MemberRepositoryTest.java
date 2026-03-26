@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.Page;
@@ -483,7 +483,7 @@ class MemberRepositoryTest {
                         .withGender(Gender.MALE)
                         .withAddress(Address.of("Street " + i, "City", "11000", "CZ"))
                         .withEmail("user" + i + "@example.com")
-                        .withPhone("+420111111" + String.format("%03d", i))
+                        .withPhone("+420111111" + "%03d".formatted(i))
                         .withNoGuardian()
                         .build();
                 memberRepository.save(member);

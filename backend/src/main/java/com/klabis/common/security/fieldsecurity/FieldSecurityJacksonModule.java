@@ -1,6 +1,6 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.module.SimpleModule;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.jackson.JsonComponent;
 import org.springframework.core.convert.ConversionService;

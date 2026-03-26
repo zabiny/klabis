@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.klabis.E2ETest;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.security.JwtParams;
@@ -10,7 +10,7 @@ import com.klabis.events.domain.Event;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;

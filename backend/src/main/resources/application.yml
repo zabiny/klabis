@@ -168,9 +168,6 @@ server:
     enabled: false
   http2:
     enabled: true
-  error:
-    include-message: always
-    include-binding-errors: always
 
 info:
   app:
@@ -184,25 +181,8 @@ logging:
     org.springframework.web: INFO
     org.springframework.modulith.events: ${KLABIS_EVENT_LOGGING_LEVEL:INFO}
 
+spring.web.error.include-binding-errors: always
 
----
-# Test profile
-spring:
-  config:
-    activate:
-      on-profile: test
+spring.web.error.include-message: always
 
-  datasource:
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
-    driver-class-name: org.h2.Driver
-    hikari:
-      maximum-pool-size: 5
-      minimum-idle: 2
-      connection-timeout: 10000
 
-  flyway:
-    clean-disabled: false
-
-logging:
-  level:
-    org.springframework.web.servlet.mvc: DEBUG

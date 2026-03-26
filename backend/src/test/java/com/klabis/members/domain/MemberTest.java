@@ -111,7 +111,7 @@ class MemberTest {
             LocalDate dateOfBirth = LocalDate.now().minusYears(10); // 10 years old
             int birthYear = dateOfBirth.getYear() % 100;
             RegistrationNumber registrationNumber = new RegistrationNumber(
-                    String.format("ZBM%02d01", birthYear)
+                    "ZBM%02d01".formatted(birthYear)
             );
             Address address = new Address("Školská 456", "Brno", "60200", "CZ");
             GuardianInformation guardian = new GuardianInformation(
@@ -216,7 +216,7 @@ class MemberTest {
             LocalDate dateOfBirth = LocalDate.now().minusYears(15); // 15 years old
             int birthYear = dateOfBirth.getYear() % 100;
             RegistrationNumber registrationNumber = new RegistrationNumber(
-                    String.format("ZBM%02d01", birthYear)
+                    "ZBM%02d01".formatted(birthYear)
             );
             Address address = new Address("Ulice 1", "Město", "11000", "CZ");
             EmailAddress email = new EmailAddress("anna@example.com");
@@ -348,7 +348,7 @@ class MemberTest {
             LocalDate dateOfBirth = LocalDate.now().minusYears(12);
             int birthYear = dateOfBirth.getYear() % 100;
             RegistrationNumber registrationNumber = new RegistrationNumber(
-                    String.format("ZBM%02d01", birthYear)
+                    "ZBM%02d01".formatted(birthYear)
             );
             Address address = new Address("Ulice 1", "Město", "11000", "CZ");
             GuardianInformation guardian = new GuardianInformation(
@@ -1127,7 +1127,7 @@ class MemberTest {
 
             Member member = Member.register(MemberRegisterMemberBuilder.builder()
                     .id(memberId)
-                    .registrationNumber(new RegistrationNumber(String.format("ZBM%02d01", birthYear)))
+                    .registrationNumber(new RegistrationNumber("ZBM%02d01".formatted(birthYear)))
                     .personalInformation(personalInfo)
                     .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
                     .guardian(aGuardian())

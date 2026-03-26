@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
@@ -38,6 +39,7 @@ import java.util.UUID;
  * <p>The {@code /api} prefix is stripped from the path for cleaner logs.
  * For example, {@code /api/members/123} becomes {@code GET /members/123}.
  */
+@Configuration
 @Slf4j
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
