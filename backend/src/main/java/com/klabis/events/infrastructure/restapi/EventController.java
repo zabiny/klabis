@@ -8,6 +8,7 @@ import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.members.CurrentUser;
@@ -166,16 +167,18 @@ public class EventController {
         validateSortFields(pageable.getSort());
 
         Page<EventSummaryDto> page;
-        if (status != null) {
-            if (status == EventStatus.DRAFT && !hasEventsManageAuthority()) {
-                page = Page.empty(pageable);
-            } else {
-                page = eventManagementService.listEventsByStatus(status, pageable).map(EventDtoMapper::toSummaryDto);
-            }
-        } else if (hasEventsManageAuthority()) {
-            page = eventManagementService.listEvents(pageable).map(EventDtoMapper::toSummaryDto);
+        if (status == EventStatus.DRAFT && !hasEventsManageAuthority()) {
+            page = Page.empty(pageable);
         } else {
-            page = eventManagementService.listEventsExcludingStatus(EventStatus.DRAFT, pageable).map(EventDtoMapper::toSummaryDto);
+            EventFilter filter;
+            if (status != null) {
+                filter = EventFilter.byStatus(status);
+            } else if (hasEventsManageAuthority()) {
+                filter = EventFilter.none();
+            } else {
+                filter = EventFilter.byNotHavingStatus(EventStatus.DRAFT);
+            }
+            page = eventManagementService.listEvents(filter, pageable).map(EventDtoMapper::toSummaryDto);
         }
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(

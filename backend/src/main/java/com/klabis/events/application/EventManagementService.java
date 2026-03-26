@@ -2,7 +2,7 @@ package com.klabis.events.application;
 
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
-import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.EventFilter;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,9 +22,5 @@ public interface EventManagementService {
 
     Event getEvent(EventId eventId);
 
-    Page<Event> listEvents(Pageable pageable);
-
-    Page<Event> listEventsExcludingStatus(EventStatus excludedStatus, Pageable pageable);
-
-    Page<Event> listEventsByStatus(EventStatus status, Pageable pageable);
+    Page<Event> listEvents(EventFilter filter, Pageable pageable);
 }

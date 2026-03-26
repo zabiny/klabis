@@ -23,6 +23,7 @@ import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.Optional;
+
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -223,7 +224,7 @@ class EventJdbcRepositoryTest {
             Pageable pageable = PageRequest.of(0, 2);
 
             // When
-            Page<Event> page = eventRepository.findAll(pageable);
+            Page<Event> page = eventRepository.findAll(EventFilter.none(), pageable);
 
             // Then
             assertThat(page.getContent()).hasSize(2);
@@ -239,7 +240,7 @@ class EventJdbcRepositoryTest {
             Pageable pageable = PageRequest.of(0, 10);
 
             // When
-            Page<Event> page = eventRepository.findAll(pageable);
+            Page<Event> page = eventRepository.findAll(EventFilter.none(), pageable);
 
             // Then
             assertThat(page.getContent()).isEmpty();
@@ -290,8 +291,8 @@ class EventJdbcRepositoryTest {
             Pageable pageable = PageRequest.of(0, 10);
 
             // When
-            Page<Event> activePage = eventRepository.findByStatus(EventStatus.ACTIVE, pageable);
-            Page<Event> draftPage = eventRepository.findByStatus(EventStatus.DRAFT, pageable);
+            Page<Event> activePage = eventRepository.findAll(EventFilter.byStatus(EventStatus.ACTIVE), pageable);
+            Page<Event> draftPage = eventRepository.findAll(EventFilter.byStatus(EventStatus.DRAFT), pageable);
 
             // Then
             assertThat(activePage.getContent()).hasSize(2);
@@ -345,8 +346,8 @@ class EventJdbcRepositoryTest {
             Pageable pageable = PageRequest.of(0, 10);
 
             // When
-            Page<Event> praguePage = eventRepository.findByOrganizer("Prague OC", pageable);
-            Page<Event> brnoPage = eventRepository.findByOrganizer("Brno OC", pageable);
+            Page<Event> praguePage = eventRepository.findAll(EventFilter.byOrganizer("Prague OC"), pageable);
+            Page<Event> brnoPage = eventRepository.findAll(EventFilter.byOrganizer("Brno OC"), pageable);
 
             // Then
             assertThat(praguePage.getContent()).hasSize(2);
@@ -400,9 +401,8 @@ class EventJdbcRepositoryTest {
             Pageable pageable = PageRequest.of(0, 10);
 
             // When
-            Page<Event> rangePage = eventRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 10),
-                    LocalDate.of(2026, 6, 20),
+            Page<Event> rangePage = eventRepository.findAll(
+                    EventFilter.byDateRange(LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 20)),
                     pageable
             );
 
@@ -438,9 +438,8 @@ class EventJdbcRepositoryTest {
             Pageable pageable = PageRequest.of(0, 10);
 
             // When
-            Page<Event> rangePage = eventRepository.findByDateRange(
-                    LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 30),
+            Page<Event> rangePage = eventRepository.findAll(
+                    EventFilter.byDateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)),
                     pageable
             );
 

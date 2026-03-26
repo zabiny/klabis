@@ -14,7 +14,6 @@ import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.SiCardNumber;
-import com.klabis.events.domain.EventStatus;
 import com.klabis.events.EventId;
 import com.klabis.members.MemberDto;
 import com.klabis.members.Members;

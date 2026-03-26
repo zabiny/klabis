@@ -11,6 +11,7 @@ import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.SiCardNumber;
@@ -211,7 +212,7 @@ class EventControllerTest {
             Event event2 = Event.create("Event 2", LocalDate.of(2026, 7, 1), "Location 2", "PRG", null, null);
             event2.publish();
 
-            when(eventManagementService.listEvents(any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
                     .thenReturn(new PageImpl<>(List.of(event1, event2), PageRequest.of(0, 10), 2));
 
             mockMvc.perform(
@@ -224,13 +225,13 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("regular user with EVENTS:READ only should not see DRAFT events — calls listEventsExcludingStatus")
+        @DisplayName("regular user with EVENTS:READ only should not see DRAFT events — calls listEvents with byNotHavingStatus(DRAFT)")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldExcludeDraftEventsForRegularUser() throws Exception {
             Event activeEvent = EventTestDataBuilder.anEvent().build();
             activeEvent.publish();
 
-            when(eventManagementService.listEventsExcludingStatus(any(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
                     .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -241,18 +242,17 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
 
-            verify(eventManagementService).listEventsExcludingStatus(eq(EventStatus.DRAFT), any());
-            verify(eventManagementService, never()).listEvents(any());
+            verify(eventManagementService).listEvents(eq(EventFilter.byNotHavingStatus(EventStatus.DRAFT)), any());
         }
 
         @Test
-        @DisplayName("manager with EVENTS:MANAGE should see all events including DRAFT — calls listEvents")
+        @DisplayName("manager with EVENTS:MANAGE should see all events including DRAFT — calls listEvents with none()")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldCallListEventsForManager() throws Exception {
             Event draftEvent = EventTestDataBuilder.anEvent().build();
             Event activeEvent = EventTestDataBuilder.anEvent().buildPublished();
 
-            when(eventManagementService.listEvents(any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
                     .thenReturn(new PageImpl<>(List.of(draftEvent, activeEvent), PageRequest.of(0, 10), 2));
 
             mockMvc.perform(
@@ -262,8 +262,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray());
 
-            verify(eventManagementService).listEvents(any());
-            verify(eventManagementService, never()).listEventsExcludingStatus(any(), any());
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any());
         }
 
         @Test
@@ -278,7 +277,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.page.totalElements").value(0));
 
-            verify(eventManagementService, never()).listEventsByStatus(any(), any());
+            verify(eventManagementService, never()).listEvents(any(EventFilter.class), any());
         }
 
         @Test
@@ -287,7 +286,7 @@ class EventControllerTest {
         void shouldReturnDraftEventsForDraftStatusFilterWithManageAuthority() throws Exception {
             Event draftEvent = EventTestDataBuilder.anEvent().build();
 
-            when(eventManagementService.listEventsByStatus(any(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
                     .thenReturn(new PageImpl<>(List.of(draftEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -298,7 +297,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("DRAFT"));
 
-            verify(eventManagementService).listEventsByStatus(eq(EventStatus.DRAFT), any());
+            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any());
         }
 
         @Test
@@ -308,7 +307,7 @@ class EventControllerTest {
             Event event = Event.create("Active Event", LocalDate.of(2026, 6, 1), "Location", "OOB", null, null);
             event.publish();
 
-            when(eventManagementService.listEventsByStatus(any(), any()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(

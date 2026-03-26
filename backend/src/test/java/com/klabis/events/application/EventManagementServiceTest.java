@@ -5,6 +5,7 @@ import com.klabis.events.EventId;
 import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -498,10 +499,10 @@ class EventManagementServiceTest {
             );
 
             Page<Event> eventPage = new PageImpl<>(List.of(event1, event2), pageable, 2);
-            when(eventRepository.findAll(pageable)).thenReturn(eventPage);
+            when(eventRepository.findAll(EventFilter.none(), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(pageable);
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable);
 
             // Then
             assertThat(result.getContent()).hasSize(2);
@@ -525,10 +526,10 @@ class EventManagementServiceTest {
             event.publish();
 
             Page<Event> eventPage = new PageImpl<>(List.of(event), pageable, 1);
-            when(eventRepository.findByStatus(EventStatus.ACTIVE, pageable)).thenReturn(eventPage);
+            when(eventRepository.findAll(EventFilter.byStatus(EventStatus.ACTIVE), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEventsByStatus(EventStatus.ACTIVE, pageable);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.ACTIVE), pageable);
 
             // Then
             assertThat(result.getContent()).hasSize(1);

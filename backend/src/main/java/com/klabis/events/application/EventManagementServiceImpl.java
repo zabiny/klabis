@@ -3,8 +3,8 @@ package com.klabis.events.application;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.EventStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -91,19 +91,7 @@ public class EventManagementServiceImpl implements EventManagementService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Event> listEvents(Pageable pageable) {
-        return eventRepository.findAll(pageable);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Event> listEventsExcludingStatus(EventStatus excludedStatus, Pageable pageable) {
-        return eventRepository.findByStatusNot(excludedStatus, pageable);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Event> listEventsByStatus(EventStatus status, Pageable pageable) {
-        return eventRepository.findByStatus(status, pageable);
+    public Page<Event> listEvents(EventFilter filter, Pageable pageable) {
+        return eventRepository.findAll(filter, pageable);
     }
 }

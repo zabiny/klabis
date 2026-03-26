@@ -1,7 +1,5 @@
 package com.klabis.events.infrastructure.jdbc;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
@@ -19,7 +17,7 @@ import java.util.UUID;
  * pure domain Event entity.
  * <p>
  * Note: This interface does NOT implement EventRepository directly.
- * Instead, EventRepositoryJdbcImpl wraps this repository and implements EventRepository.
+ * Instead, EventRepositoryAdapter wraps this repository and implements EventRepository.
  * This is necessary because Spring Data JDBC repositories cannot extend custom interfaces
  * with different ID types (EventId vs UUID).
  * <p>
@@ -30,44 +28,6 @@ import java.util.UUID;
  */
 @Repository
 interface EventJdbcRepository extends CrudRepository<EventMemento, UUID>, PagingAndSortingRepository<EventMemento, UUID> {
-
-    /**
-     * Find events by status with pagination.
-     *
-     * @param status   the event status as string
-     * @param pageable pagination parameters
-     * @return page of event mementos
-     */
-    Page<EventMemento> findByStatus(String status, Pageable pageable);
-
-    /**
-     * Find events excluding the specified status with pagination.
-     *
-     * @param status   the event status to exclude (as string)
-     * @param pageable pagination parameters
-     * @return page of event mementos not matching the given status
-     */
-    Page<EventMemento> findByStatusNot(String status, Pageable pageable);
-
-    /**
-     * Find events by organizer with pagination.
-     *
-     * @param organizer the organizer name
-     * @param pageable  pagination parameters
-     * @return page of event mementos
-     */
-    Page<EventMemento> findByOrganizer(String organizer, Pageable pageable);
-
-    /**
-     * Find events within a date range with pagination.
-     * Uses derived query method - Spring Data JDBC supports Between keyword.
-     *
-     * @param from     start date (inclusive)
-     * @param to       end date (inclusive)
-     * @param pageable pagination parameters
-     * @return page of event mementos
-     */
-    Page<EventMemento> findByEventDateBetween(LocalDate from, LocalDate to, Pageable pageable);
 
     /**
      * Find active events with event date before the specified date.

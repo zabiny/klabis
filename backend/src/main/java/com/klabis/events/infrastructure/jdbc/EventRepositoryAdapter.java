@@ -3,17 +3,24 @@ package com.klabis.events.infrastructure.jdbc;
 import com.klabis.common.pagination.TranslatedPageable;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventStatus;
-import com.klabis.events.domain.Events;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
+import org.springframework.data.relational.core.query.Criteria;
+import org.springframework.data.relational.core.query.Query;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
 
 /**
  * Adapter that bridges between EventRepository domain interface and EventJdbcRepository.
@@ -23,7 +30,7 @@ import java.util.Optional;
  *   <li>{@link EventRepository EventRepository} - domain repository interface</li>
  * </ul>
  * <p>
- * EventRepository extends {@link Events Events} public API, so this adapter indirectly implements both.
+ * EventRepository extends {@link com.klabis.events.domain.Events Events} public API, so this adapter indirectly implements both.
  * <p>
  * It handles conversion between Event entities and EventMemento persistence objects.
  * <p>
@@ -35,6 +42,7 @@ import java.util.Optional;
 class EventRepositoryAdapter implements EventRepository {
 
     private final EventJdbcRepository jdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
 
     /**
      * Maps domain property names to database column names for sorting.
@@ -48,8 +56,9 @@ class EventRepositoryAdapter implements EventRepository {
             "status", "status"
     );
 
-    public EventRepositoryAdapter(EventJdbcRepository jdbcRepository) {
+    public EventRepositoryAdapter(EventJdbcRepository jdbcRepository, JdbcAggregateTemplate jdbcAggregateTemplate) {
         this.jdbcRepository = jdbcRepository;
+        this.jdbcAggregateTemplate = jdbcAggregateTemplate;
     }
 
     /**
@@ -61,7 +70,6 @@ class EventRepositoryAdapter implements EventRepository {
 
     @Override
     public Event save(Event event) {
-        // Convert Event to EventMemento for persistence
         EventMemento saved = jdbcRepository.save(EventMemento.from(event));
         return saved.toEvent();
     }
@@ -73,38 +81,18 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     @Override
-    public Page<Event> findAll(Pageable pageable) {
+    public Page<Event> findAll(EventFilter filter, Pageable pageable) {
         Pageable dbPageable = translateDomainToDbColumn(pageable);
-        return jdbcRepository.findAll(dbPageable)
-                .map(EventMemento::toEvent);
-    }
+        Query criteriaQuery = buildCriteriaQuery(filter);
 
-    @Override
-    public Page<Event> findByStatus(EventStatus status, Pageable pageable) {
-        Pageable dbPageable = translateDomainToDbColumn(pageable);
-        return jdbcRepository.findByStatus(status.name(), dbPageable)
-                .map(EventMemento::toEvent);
-    }
+        List<Event> results = jdbcAggregateTemplate.findAll(criteriaQuery.with(dbPageable), EventMemento.class)
+                .stream()
+                .map(EventMemento::toEvent)
+                .toList();
 
-    @Override
-    public Page<Event> findByStatusNot(EventStatus excludedStatus, Pageable pageable) {
-        Pageable dbPageable = translateDomainToDbColumn(pageable);
-        return jdbcRepository.findByStatusNot(excludedStatus.name(), dbPageable)
-                .map(EventMemento::toEvent);
-    }
+        long total = jdbcAggregateTemplate.count(criteriaQuery, EventMemento.class);
 
-    @Override
-    public Page<Event> findByOrganizer(String organizer, Pageable pageable) {
-        Pageable dbPageable = translateDomainToDbColumn(pageable);
-        return jdbcRepository.findByOrganizer(organizer, dbPageable)
-                .map(EventMemento::toEvent);
-    }
-
-    @Override
-    public Page<Event> findByDateRange(LocalDate from, LocalDate to, Pageable pageable) {
-        Pageable dbPageable = translateDomainToDbColumn(pageable);
-        return jdbcRepository.findByEventDateBetween(from, to, dbPageable)
-                .map(EventMemento::toEvent);
+        return new PageImpl<>(results, pageable, total);
     }
 
     @Override
@@ -112,5 +100,43 @@ class EventRepositoryAdapter implements EventRepository {
         return jdbcRepository.findActiveEventsWithDateBefore(date).stream()
                 .map(EventMemento::toEvent)
                 .toList();
+    }
+
+    /**
+     * Builds a Criteria-based query from EventFilter without pagination applied.
+     * Pagination is applied separately so the same query can be reused for counting.
+     */
+    private Query buildCriteriaQuery(EventFilter filter) {
+        List<Criteria> conditions = new ArrayList<>();
+
+        Set<EventStatus> statuses = filter.statuses();
+        if (!statuses.isEmpty()) {
+            List<String> statusNames = statuses.stream()
+                    .map(EventStatus::name)
+                    .toList();
+            conditions.add(Criteria.where("status").in(statusNames));
+        }
+
+        if (filter.organizer() != null) {
+            conditions.add(Criteria.where("organizer").is(filter.organizer()));
+        }
+
+        if (filter.dateFrom() != null) {
+            conditions.add(Criteria.where("event_date").greaterThanOrEquals(filter.dateFrom()));
+        }
+
+        if (filter.dateTo() != null) {
+            conditions.add(Criteria.where("event_date").lessThanOrEquals(filter.dateTo()));
+        }
+
+        if (conditions.isEmpty()) {
+            return Query.empty();
+        }
+
+        Criteria combined = conditions.stream()
+                .reduce(Criteria::and)
+                .orElseThrow();
+
+        return Query.query(combined);
     }
 }
