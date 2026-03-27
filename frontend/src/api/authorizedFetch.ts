@@ -61,6 +61,10 @@ export async function authorizedFetch(
         headers,
     });
 
+    if (response.status === 401) {
+        await klabisAuthUserManager.removeUser();
+    }
+
     if (!response.ok && throwOnError) {
         let errorBody: string | undefined;
         try {

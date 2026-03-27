@@ -15,7 +15,8 @@ const fetchClient = createFetchClient<paths>({
 
 const promiseAccessToken = async (): Promise<string | null> => {
     const authUser = await klabisAuthUserManager.getUser();
-    return !authUser?.expired && authUser?.access_token || null;
+    if (!authUser || authUser.expired || !authUser.access_token) return null;
+    return authUser.access_token;
 }
 
 // https://openapi-ts.dev/openapi-fetch/middleware-auth#auth
