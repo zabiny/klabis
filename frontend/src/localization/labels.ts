@@ -92,6 +92,8 @@ export const labels = {
     },
 
     errors: {
+        invalidCredentials: 'Nesprávné registrační číslo nebo heslo',
+        configurationError: 'Chyba konfigurace, kontaktujte administrátora',
         loadingMenu: 'Načítání menu...',
         noMenuItems: 'Žádné položky menu',
         failedLoadMenu: 'Nepodařilo se načíst menu',

@@ -5,12 +5,22 @@ import {useAuth} from '../contexts/AuthContext2';
 import {Alert} from '../components/UI/Alert';
 import {Button} from '../components/UI/Button';
 import {TextField} from '../components/UI/forms/TextField';
+import {labels} from '../localization/labels';
 
 const LoginPage = () => {
     const {isAuthenticated, isLoading} = useAuth();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const loginError = searchParams.get('error') ? 'Nesprávné registrační číslo nebo heslo.' : null;
+
+    let loginError: string | null = null;
+    if (searchParams.has('error')) {
+        const errorParam = searchParams.get('error');
+        if (!errorParam) {
+            loginError = labels.errors.invalidCredentials;
+        } else {
+            loginError = labels.errors.configurationError;
+        }
+    }
 
     useEffect(() => {
         if (isAuthenticated) {
