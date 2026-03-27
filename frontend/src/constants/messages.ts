@@ -1,42 +1,43 @@
 /**
- * Centralized messages for validation and UI
- * Czech locale messages for forms, errors, and user-facing text
+ * Backward-compatible re-exports from the central localization system.
+ * New code should import directly from '@/localization'.
  */
+import { labels } from '@/localization';
 
 export const VALIDATION_MESSAGES = {
-    REQUIRED_FIELD: 'Povinné pole',
-    INVALID_EMAIL: 'Neplatný email',
-    MUST_BE_NUMBER: 'Musí být číslo',
-    INVALID_FORMAT: 'Nespravny format',
+    REQUIRED_FIELD: labels.validation.requiredField,
+    INVALID_EMAIL: labels.validation.invalidEmail,
+    MUST_BE_NUMBER: labels.validation.mustBeNumber,
+    INVALID_FORMAT: labels.validation.invalidFormat,
 } as const;
 
 export const UI_MESSAGES = {
-    FORM: 'Formulář',
-    CLOSE: 'Zavřít',
-    SHOW_RAW_JSON: 'Zobrazit zdrojový JSON',
-    COMPLETE_JSON: 'Úplná JSON data položky',
-    AVAILABLE_ACTIONS: 'Dostupné odkazy',
-    AVAILABLE_FORMS: 'Dostupné formuláře',
-    COLLECTION_EMPTY: 'Kolekce je prázdná',
-    VIEW_FULL_JSON: 'View full JSON',
-    SUBMIT: 'Odeslat',
-    SUBMITTING: 'Odesílám...',
-    LOADING_MENU: 'Loading menu...',
-    NO_MENU_ITEMS: 'No menu items available',
-    FAILED_LOAD_MENU: 'Failed to load menu',
-    FORM_VALIDATION_ERRORS: 'Form validation errors',
-    LOADING_FORM_DATA: 'Načítání dat formuláře...',
-    FORM_DATA_LOAD_ERROR: 'Nepodařilo se načíst data formuláře',
-    RETRY: 'Zkusit znovu',
-    CANCEL: 'Zrušit',
+    FORM: labels.ui.form,
+    CLOSE: labels.buttons.close,
+    SHOW_RAW_JSON: labels.ui.showRawJson,
+    COMPLETE_JSON: labels.ui.completeJson,
+    AVAILABLE_ACTIONS: labels.ui.availableActions,
+    AVAILABLE_FORMS: labels.ui.availableForms,
+    COLLECTION_EMPTY: labels.ui.collectionEmpty,
+    VIEW_FULL_JSON: labels.ui.viewFullJson,
+    SUBMIT: labels.buttons.submit,
+    SUBMITTING: labels.buttons.submitting,
+    LOADING_MENU: labels.errors.loadingMenu,
+    NO_MENU_ITEMS: labels.errors.noMenuItems,
+    FAILED_LOAD_MENU: labels.errors.failedLoadMenu,
+    FORM_VALIDATION_ERRORS: labels.errors.formValidationErrors,
+    LOADING_FORM_DATA: labels.ui.loadingFormData,
+    FORM_DATA_LOAD_ERROR: labels.errors.formDataLoadError,
+    RETRY: labels.buttons.retry,
+    CANCEL: labels.buttons.cancel,
 } as const;
 
 export const TABLE_HEADERS = {
-    ID: 'ID',
-    DATA: 'Údaje',
-    ACTIONS: 'Akce',
-    ATTRIBUTE: 'Atribut',
-    VALUE: 'Hodnota',
-    ITEMS: 'Položky',
-    DETAILS: 'Detaily',
+    ID: labels.tables.id,
+    DATA: labels.tables.data,
+    ACTIONS: labels.tables.actions,
+    ATTRIBUTE: labels.tables.attribute,
+    VALUE: labels.tables.value,
+    ITEMS: labels.tables.items,
+    DETAILS: labels.tables.details,
 } as const;
