@@ -2,6 +2,7 @@ import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Alert, Button, Spinner} from '../../components/UI';
 import {hasCalendarItems} from '../../api';
+import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
@@ -74,7 +75,8 @@ const CalendarPage = () => {
     // Calculate month properties
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const today = currentDate.getDate();
+    const now = new Date();
+    const todayDay = (now.getFullYear() === year && now.getMonth() === month) ? now.getDate() : null;
 
     // First day of the month and total days in month
     const firstDayOfMonth = new Date(year, month, 1);
@@ -147,33 +149,36 @@ const CalendarPage = () => {
     return (
         <div className="flex flex-col gap-8">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handlePrevMonth}
-                    disabled={!resourceData?._links?.prev}
-                    aria-label="Předchozí měsíc"
-                >
-                    ←
-                </Button>
-                <div>
-                    <h1 className="text-4xl font-bold text-text-primary mb-2 capitalize">
-                        {monthName}
-                    </h1>
-                    <p className="text-lg text-text-secondary">
-                        Kalendář akcí a důležitých dat
-                    </p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handlePrevMonth}
+                        disabled={!resourceData?._links?.prev}
+                        aria-label="Předchozí měsíc"
+                    >
+                        ←
+                    </Button>
+                    <div>
+                        <h1 className="text-4xl font-bold text-text-primary mb-2 capitalize">
+                            {monthName}
+                        </h1>
+                        <p className="text-lg text-text-secondary">
+                            Kalendář akcí a důležitých dat
+                        </p>
+                    </div>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleNextMonth}
+                        disabled={!resourceData?._links?.next}
+                        aria-label="Následující měsíc"
+                    >
+                        →
+                    </Button>
                 </div>
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleNextMonth}
-                    disabled={!resourceData?._links?.next}
-                    aria-label="Následující měsíc"
-                >
-                    →
-                </Button>
+                <HalFormButton name="createCalendarItem" modal={true} label="Přidat položku"/>
             </div>
 
             {/* Calendar */}
@@ -199,7 +204,7 @@ const CalendarPage = () => {
                                 min-h-24 p-2 rounded-md border
                                 ${day === null ? 'bg-surface-base border-border' : ''}
                                 ${day !== null ? 'bg-surface-raised border-border' : ''}
-                                ${day === today ? 'ring-2 ring-primary ring-opacity-50 border-primary' : ''}
+                                ${day === todayDay ? 'ring-2 ring-primary ring-opacity-50 border-primary' : ''}
                             `}
                         >
                             {day && (
@@ -207,7 +212,7 @@ const CalendarPage = () => {
                                     <div
                                         className={`
                                             font-semibold mb-1 inline-block px-2 py-1 rounded
-                                            ${day === today ? 'bg-primary text-white' : 'text-text-primary'}
+                                            ${day === todayDay ? 'bg-primary text-white' : 'text-text-primary'}
                                         `}
                                     >
                                         {day}

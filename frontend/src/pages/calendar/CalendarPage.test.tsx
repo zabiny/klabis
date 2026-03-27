@@ -54,6 +54,12 @@ vi.mock('../../components/HalNavigator2/HalFormsSection.tsx', () => ({
         ) : null,
 }));
 
+vi.mock('../../components/HalNavigator2/HalFormButton.tsx', () => ({
+    HalFormButton: ({name, label}: any) => (
+        <button data-testid={`hal-form-button-${name}`}>{label || name}</button>
+    ),
+}));
+
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
