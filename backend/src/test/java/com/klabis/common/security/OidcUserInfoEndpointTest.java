@@ -1,6 +1,5 @@
 package com.klabis.common.security;
 
-import tools.jackson.databind.ObjectMapper;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.bootstrap.BootstrapDataLoader;
@@ -11,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -20,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -201,7 +202,7 @@ class OidcUserInfoEndpointTest {
     @Test
     @DisplayName("should reject request with missing Authorization header")
     void shouldRejectRequestWithMissingAuthorizationHeader() throws Exception {
-        mockMvc.perform(get("/userinfo"))
+        mockMvc.perform(get("/userinfo").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
     }
 
