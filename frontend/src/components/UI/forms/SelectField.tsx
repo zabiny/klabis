@@ -6,7 +6,7 @@ import type {SelectFieldProps} from './types.ts'
 const selectBaseClasses = clsx(
     'w-full px-3 py-1.5 border rounded-md font-normal text-sm',
     'text-text-primary',
-    'bg-surface-base',
+    'bg-surface-raised',
     'border-border',
     'placeholder-text-tertiary',
     'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0',

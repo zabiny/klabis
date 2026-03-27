@@ -1,13 +1,17 @@
-import {type ReactElement} from 'react';
+import {type ReactElement, type ReactNode, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Badge, Card, DetailRow, Skeleton} from '../../components/UI';
+import {Alert, Badge, Button, Card, DetailRow, Skeleton} from '../../components/UI';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
+import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
+import {type FormRenderHelpers} from '../../components/HalNavigator2/halforms';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {TableCell} from '../../components/KlabisTable';
-import {formatDate} from '../../utils/dateUtils.ts';
+import {formatDate, formatDateTime} from '../../utils/dateUtils.ts';
 import type {EntityModel} from '../../api';
+import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
+import {Check, CheckCircle, Globe, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
 
 interface EventDetail {
     name: string;
@@ -33,6 +37,30 @@ const STATUS_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warnin
     CANCELLED: 'error',
 };
 
+function enrichTemplateWithReadOnlyFields(
+    template: HalFormsTemplate,
+    resourceData: Record<string, unknown>
+): HalFormsTemplate {
+    const templateFieldNames = new Set(template.properties.map(p => p.name));
+
+    const readOnlyProps: HalFormsProperty[] = Object.keys(resourceData)
+        .filter(key => !templateFieldNames.has(key) && !key.startsWith('_'))
+        .filter(key => {
+            const value = resourceData[key];
+            return value === null || value === undefined || typeof value !== 'object';
+        })
+        .map(key => ({
+            name: key,
+            type: 'text',
+            readOnly: true,
+        }));
+
+    return {
+        ...template,
+        properties: [...template.properties, ...readOnlyProps],
+    };
+}
+
 export const EventDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error} = useHalPageData<EventDetail>();
 
@@ -48,71 +76,161 @@ export const EventDetailPage = (): ReactElement => {
         return <Skeleton/>;
     }
 
+    return <EventDetailContent resourceData={resourceData}/>;
+};
+
+interface EventDetailContentProps {
+    resourceData: EventDetail & HalResponse;
+}
+
+const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactElement => {
+    const {route} = useHalPageData<EventDetail>();
+    const [isEditing, setIsEditing] = useState(false);
+
     const event = resourceData;
     const statusVariant = event.status ? (STATUS_VARIANT[event.status] ?? 'default') : 'default';
 
-    return (
-        <div className="flex flex-col gap-8">
-            <div>
-                <Link to="/events" className="text-sm text-primary hover:text-primary-light">
-                    {labels.ui.backToList}
-                </Link>
-            </div>
+    const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
+    const hasEditTemplate = template !== null;
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-bold text-text-primary">{event.name}</h1>
+    const enrichedTemplate = useMemo(() => {
+        if (!isEditing || !template) return null;
+        return enrichTemplateWithReadOnlyFields(template, resourceData as Record<string, unknown>);
+    }, [isEditing, template, resourceData]);
+
+    const enrichedFieldNames = useMemo(() =>
+        enrichedTemplate
+            ? new Set(enrichedTemplate.properties.map(p => p.name))
+            : new Set<string>(),
+        [enrichedTemplate]);
+
+    const originalEditableFieldNames = useMemo(() =>
+        template ? new Set(template.properties.map(p => p.name)) : new Set<string>(),
+        [template]);
+
+    const startEditing = () => setIsEditing(true);
+    const cancelEditing = () => setIsEditing(false);
+
+    const postprocessPayload = (payload: Record<string, unknown>): Record<string, unknown> =>
+        Object.fromEntries(
+            Object.entries(payload).filter(([key]) => originalEditableFieldNames.has(key))
+        );
+
+    const renderContent = (helpers?: FormRenderHelpers) => {
+        const ri = (name: string): ReactNode =>
+            isEditing && enrichedFieldNames.has(name) && helpers
+                ? helpers.renderInput(name)
+                : null;
+
+        return (
+            <div className="flex flex-col gap-8">
+                <div>
+                    <Link to="/events" className="text-sm text-primary hover:text-primary-light">
+                        {labels.ui.backToList}
+                    </Link>
                 </div>
 
-                <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
-                    <HalFormButton name="updateEvent" modal={true} label={labels.templates.updateEvent}/>
-                    <HalFormButton name="publishEvent" modal={true}/>
-                    <HalFormButton name="cancelEvent" modal={true}/>
-                    <HalFormButton name="finishEvent" modal={true}/>
-                    <HalFormButton name="registerForEvent" modal={true}/>
-                    <HalFormButton name="unregisterFromEvent" modal={true}/>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-3xl font-bold text-text-primary">{event.name}</h1>
+                        {!isEditing && (
+                            <Badge variant={statusVariant} size="sm">
+                                {event.status ? getEnumLabel('eventStatus', event.status) : event.status}
+                            </Badge>
+                        )}
+                    </div>
+
+                    {!isEditing && (
+                        <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
+                            {hasEditTemplate && (
+                                <Button
+                                    variant="primary"
+                                    onClick={startEditing}
+                                    startIcon={<Pencil className="w-4 h-4"/>}
+                                >
+                                    {labels.templates.updateEvent}
+                                </Button>
+                            )}
+                            <HalFormButton name="publishEvent" modal={true} label={labels.templates.publishEvent} icon={<Globe className="w-4 h-4"/>} dialogTitle="Publikování závodu"/>
+                            <HalFormButton name="cancelEvent" modal={true} label={labels.templates.cancelEvent} icon={<XCircle className="w-4 h-4"/>} dialogTitle="Zrušení závodu"/>
+                            <HalFormButton name="finishEvent" modal={true} label={labels.templates.finishEvent} icon={<CheckCircle className="w-4 h-4"/>} dialogTitle="Ukončení závodu"/>
+                            <HalFormButton name="registerForEvent" modal={true} label={labels.templates.registerForEvent} icon={<UserPlus className="w-4 h-4"/>} dialogTitle="Přihlásit se na závod"/>
+                            <HalFormButton name="unregisterFromEvent" modal={true} label={labels.templates.unregisterFromEvent} icon={<UserMinus className="w-4 h-4"/>} dialogTitle="Odhlásit se ze závodu"/>
+                        </div>
+                    )}
+                </div>
+
+                <hr className="border-border"/>
+
+                <Card className="p-6">
+                    <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{labels.sections.eventInfo}</h3>
+                    <dl>
+                        <DetailRow label={labels.fields.eventDate}>{ri('eventDate') ?? formatDate(event.eventDate)}</DetailRow>
+                        {(isEditing || event.location) && (
+                            <DetailRow label={labels.fields.location}>{ri('location') ?? event.location}</DetailRow>
+                        )}
+                        {(isEditing || event.organizer) && (
+                            <DetailRow label={labels.fields.organizer}>{ri('organizer') ?? event.organizer}</DetailRow>
+                        )}
+                        {(isEditing || event.websiteUrl) && (
+                            <DetailRow label={labels.fields.websiteUrl}>
+                                {ri('websiteUrl') ?? (event.websiteUrl ? (
+                                    <a
+                                        href={event.websiteUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:text-primary-light underline"
+                                    >
+                                        {event.websiteUrl}
+                                    </a>
+                                ) : null)}
+                            </DetailRow>
+                        )}
+                        {(isEditing || event.eventCoordinatorId) && (
+                            <DetailRow label={labels.fields.eventCoordinatorId}>
+                                {ri('eventCoordinatorId') ?? event.eventCoordinatorId?.value}
+                            </DetailRow>
+                        )}
+                    </dl>
+                </Card>
+
+                {isEditing && (
+                    <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                        <Button variant="secondary" onClick={cancelEditing}>
+                            {labels.buttons.cancel}
+                        </Button>
+                        {helpers?.renderField('submit')}
+                    </div>
+                )}
+
+                <div className="flex flex-col gap-4">
+                    <h2 className="text-xl font-bold text-text-primary">{labels.sections.registrations}</h2>
+                    <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
+                        <TableCell column="firstName">{labels.fields.firstName}</TableCell>
+                        <TableCell column="lastName">{labels.fields.lastName}</TableCell>
+                        <TableCell column="registeredAt" dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
+                    </HalEmbeddedTable>
                 </div>
             </div>
+        );
+    };
 
-            <hr className="border-border"/>
+    if (isEditing && enrichedTemplate) {
+        return (
+            <HalFormDisplay
+                template={enrichedTemplate}
+                templateName="updateEvent"
+                resourceData={resourceData as Record<string, unknown>}
+                pathname={route.pathname}
+                onClose={cancelEditing}
+                postprocessPayload={postprocessPayload}
+                successMessage="Úspěšně uloženo"
+                submitButtonLabel="Uložit změny"
+                submitIcon={<Check className="w-4 h-4"/>}
+                customLayout={renderContent}
+            />
+        );
+    }
 
-            <Card className="p-6">
-                <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{labels.sections.eventInfo}</h3>
-                <dl>
-                    <DetailRow label="Status">
-                        <Badge variant={statusVariant} size="sm">
-                            {event.status ? getEnumLabel('eventStatus', event.status) : event.status}
-                        </Badge>
-                    </DetailRow>
-                    <DetailRow label={labels.fields.eventDate}>{formatDate(event.eventDate)}</DetailRow>
-                    {event.location && <DetailRow label={labels.fields.location}>{event.location}</DetailRow>}
-                    {event.organizer && <DetailRow label={labels.fields.organizer}>{event.organizer}</DetailRow>}
-                    {event.websiteUrl && (
-                        <DetailRow label={labels.fields.websiteUrl}>
-                            <a
-                                href={event.websiteUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:text-primary-light underline"
-                            >
-                                {event.websiteUrl}
-                            </a>
-                        </DetailRow>
-                    )}
-                    {event.eventCoordinatorId && (
-                        <DetailRow label={labels.fields.eventCoordinatorId}>{event.eventCoordinatorId.value}</DetailRow>
-                    )}
-                </dl>
-            </Card>
-
-            <div className="flex flex-col gap-4">
-                <h2 className="text-xl font-bold text-text-primary">{labels.sections.registrations}</h2>
-                <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
-                    <TableCell column="firstName">{labels.fields.firstName}</TableCell>
-                    <TableCell column="lastName">{labels.fields.lastName}</TableCell>
-                    <TableCell column="registeredAt">{labels.tables.registeredAt}</TableCell>
-                </HalEmbeddedTable>
-            </div>
-        </div>
-    );
+    return renderContent() as ReactElement;
 };

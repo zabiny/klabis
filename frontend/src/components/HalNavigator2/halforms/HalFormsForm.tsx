@@ -226,7 +226,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                                                                 onSubmit,
                                                                                 onCancel,
                                                                                 fieldsFactory = halFormsFieldsFactory,
-                                                                                submitButtonLabel = "Odeslat",
+                                                                                submitButtonLabel = UI_MESSAGES.SUBMIT,
                                                                                 submitIcon,
                                                                                 isSubmitting: externalIsSubmitting = false,
                                                                                 renderForm,
@@ -283,7 +283,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                             size="md"
                             onClick={() => onCancel && onCancel()}
                         >
-                            {UI_MESSAGES.CLOSE}
+                            {UI_MESSAGES.CANCEL}
                         </Button>;
                     }
                     return null;

@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormProvider} from '../../contexts/HalFormContext';
@@ -270,6 +270,84 @@ describe('EventDetailPage', () => {
             });
             renderPage(createMockPageData(data));
             expect(screen.getByRole('button', {name: /odhlásit se/i})).toBeInTheDocument();
+        });
+    });
+
+    describe('inline editing', () => {
+        const updateEventTemplate = mockHalFormsTemplate({
+            method: 'PUT',
+            target: '/api/events/1',
+            title: 'Upravit závod',
+            properties: [
+                {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
+                {name: 'eventDate', prompt: 'Datum konání', type: 'date', required: true, value: '2025-04-15'},
+                {name: 'location', prompt: 'Místo', type: 'text', value: 'Brno - Bystrc'},
+                {name: 'organizer', prompt: 'Pořadatel', type: 'text', value: 'OB Brno'},
+                {name: 'websiteUrl', prompt: 'Webová stránka', type: 'url', value: 'https://obbrno.cz/zavody/jaro2025'},
+                {name: 'eventCoordinatorId', prompt: 'Koordinátor', type: 'text', value: '42'},
+            ],
+        });
+
+        it('clicking Upravit button switches to edit mode showing HalFormDisplay', () => {
+            const data = mockEventDetailData({
+                _templates: {updateEvent: updateEventTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+        });
+
+        it('in edit mode the action buttons are hidden', () => {
+            const data = mockEventDetailData({
+                _templates: {
+                    updateEvent: updateEventTemplate,
+                    publishEvent: mockHalFormsTemplate({title: 'Publikovat'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByRole('button', {name: /publikovat/i})).not.toBeInTheDocument();
+        });
+
+        it('in edit mode Upravit button itself is hidden', () => {
+            const data = mockEventDetailData({
+                _templates: {updateEvent: updateEventTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByRole('button', {name: /^upravit$/i})).not.toBeInTheDocument();
+        });
+
+        it('clicking Zrušit button exits edit mode and shows action buttons again', () => {
+            const data = mockEventDetailData({
+                _templates: {updateEvent: updateEventTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+
+            fireEvent.click(screen.getByRole('button', {name: /zrušit/i}));
+
+            expect(screen.queryByTestId('hal-forms-display')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /upravit/i})).toBeInTheDocument();
+        });
+
+        it('event name is still visible as heading in edit mode', () => {
+            const data = mockEventDetailData({
+                _templates: {updateEvent: updateEventTemplate},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByRole('heading', {level: 1})).toBeInTheDocument();
         });
     });
 
