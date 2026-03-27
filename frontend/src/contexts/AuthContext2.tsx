@@ -55,7 +55,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         const userManager = createUserManager({
             onUserLoaded: (user) => setValidUser(user),
             onUserUnloaded: () => setValidUser(null),
-            onAuthorizationCompleted: () => setLoading(false),
             ...config
         });
 

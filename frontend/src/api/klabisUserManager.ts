@@ -10,7 +10,6 @@ export interface AuthConfig {
     scope?: string;
     onUserLoaded?: (user: User) => void;
     onUserUnloaded?: () => void;
-    onAuthorizationCompleted?: () => void;
 }
 
 
