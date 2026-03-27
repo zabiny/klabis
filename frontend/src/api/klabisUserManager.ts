@@ -51,6 +51,11 @@ export const createUserManager = ({
 
     userManager.events.addUserLoaded((user) => {
         console.log(`User loaded: ${user}`);
+        if (sessionStorage.getItem('just_logged_out')) {
+            sessionStorage.removeItem('just_logged_out');
+            userManager.removeUser();
+            return;
+        }
         onUserLoaded(user);
     });
 
@@ -73,7 +78,7 @@ export const createUserManager = ({
 
     userManager.events.addUserSignedOut(() => {
         console.log('User signed out');
-        //authUserManager.signoutRedirect();
+        userManager.removeUser();
     });
 
     return userManager;

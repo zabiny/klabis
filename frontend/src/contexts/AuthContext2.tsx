@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
                     .signinRedirectCallback()
                     .then((user) => {
                         console.log('Signin redirect callback success:', user);
-                        setValidUser(user);
+                        setValidUser(sessionStorage.getItem('just_logged_out') ? null : user);
                         setLoading(false);
                         // Clean URL after processing
                         window.history.replaceState({}, document.title, '/');
@@ -93,6 +93,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
                         console.error('Signin redirect callback error:', err);
                     });
             } else {
+                if (sessionStorage.getItem('just_logged_out')) {
+                    sessionStorage.removeItem('just_logged_out');
+                    userManager.removeUser().finally(() => setLoading(false));
+                    return;
+                }
                 // Try to get existing user from storage
                 userManager
                     .getUser()
@@ -114,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         if (!userManager) return;
         try {
             sessionStorage.setItem('just_logged_out', 'true');
-            await userManager.signoutRedirect();
+            await userManager.signoutRedirect({ id_token_hint: (await userManager.getUser())?.id_token });
         } catch (err) {
             sessionStorage.removeItem('just_logged_out');
             console.error('Logout error:', err);

@@ -126,6 +126,11 @@ public class AuthorizationServerConfiguration {
                 // ID Token claims for OpenID Connect
                 String subject = context.getPrincipal().getName();
 
+                // Remove sid claim to avoid logout validation bug in Spring Security 7 (GH-16824):
+                // JwtGenerator sets sid=raw sessionId but OidcLogoutAuthenticationProvider
+                // validates against SHA256(sessionId), causing 400 invalid_token on logout.
+                context.getClaims().claims(claims -> claims.remove("sid"));
+
                 // Always add user_name claim for ID tokens (except client_credentials grant)
                 if (!AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) {
                     context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_USER_NAME, subject);
