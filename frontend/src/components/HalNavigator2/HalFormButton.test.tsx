@@ -444,7 +444,7 @@ describe('HalFormButton Component', () => {
                 ['/members/123']
             );
 
-            const button = screen.getByRole('button', {name: /create event/i});
+            const button = screen.getByRole('button', {name: /přidat závod/i});
             await user.click(button);
 
             // Form should display inline on current page (/members/123?form=createEvent)

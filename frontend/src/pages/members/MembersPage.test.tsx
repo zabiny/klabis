@@ -151,23 +151,23 @@ describe('MembersPage', () => {
         expect(screen.queryByRole('link', {name: /registrovat člena/i})).not.toBeInTheDocument();
     });
 
-    it('renders basic table columns: Reg. číslo, Příjmení, Jméno', () => {
+    it('renders basic table columns: Registrační číslo, Příjmení, Jméno', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByText('Reg. číslo')).toBeInTheDocument();
+        expect(screen.getByText('Registrační číslo')).toBeInTheDocument();
         expect(screen.getByText('Příjmení')).toBeInTheDocument();
         expect(screen.getByText('Jméno')).toBeInTheDocument();
     });
 
-    it('renders E-mail and Stav columns', () => {
+    it('renders E-mail and Status columns', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };
         renderPage(createMockPageData(resourceData));
         expect(screen.getByText('E-mail')).toBeInTheDocument();
-        expect(screen.getByText('Stav')).toBeInTheDocument();
+        expect(screen.getByText('Status')).toBeInTheDocument();
     });
 
     it('renders Akce column header', () => {

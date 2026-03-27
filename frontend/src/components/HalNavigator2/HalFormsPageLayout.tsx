@@ -20,6 +20,7 @@ import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {Modal} from '../UI';
 import type {RenderFormCallback} from './halforms';
+import {getTemplateLabel} from '../../localization';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;
@@ -78,7 +79,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                 <Modal
                     isOpen={true}
                     onClose={handleCloseForm}
-                    title={currentFormRequest.dialogTitle || template.title}
+                    title={currentFormRequest.dialogTitle || getTemplateLabel(currentFormRequest.templateName) || template.title}
                     size="2xl"
                 >
                     <HalFormDisplay

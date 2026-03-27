@@ -178,7 +178,7 @@ describe('EventDetailPage', () => {
 
     it('renders event status badge', () => {
         renderPage(createMockPageData(mockEventDetailData()));
-        expect(screen.getByText('ACTIVE')).toBeInTheDocument();
+        expect(screen.getByText('Aktivní')).toBeInTheDocument();
     });
 
     it('renders coordinator id when present', () => {
@@ -249,7 +249,7 @@ describe('EventDetailPage', () => {
                 },
             });
             renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /dokončit/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /ukončit závod/i})).toBeInTheDocument();
         });
 
         it('shows registerForEvent button when template exists', () => {

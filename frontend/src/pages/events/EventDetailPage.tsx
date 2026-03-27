@@ -7,6 +7,7 @@ import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.
 import {TableCell} from '../../components/KlabisTable';
 import {formatDate} from '../../utils/dateUtils.ts';
 import type {EntityModel} from '../../api';
+import {labels, getEnumLabel} from '../../localization';
 
 interface EventDetail {
     name: string;
@@ -54,7 +55,7 @@ export const EventDetailPage = (): ReactElement => {
         <div className="flex flex-col gap-8">
             <div>
                 <Link to="/events" className="text-sm text-primary hover:text-primary-light">
-                    &larr; Zpět na seznam
+                    {labels.ui.backToList}
                 </Link>
             </div>
 
@@ -64,7 +65,7 @@ export const EventDetailPage = (): ReactElement => {
                 </div>
 
                 <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
-                    <HalFormButton name="updateEvent" modal={true} label="Upravit"/>
+                    <HalFormButton name="updateEvent" modal={true} label={labels.templates.updateEvent}/>
                     <HalFormButton name="publishEvent" modal={true}/>
                     <HalFormButton name="cancelEvent" modal={true}/>
                     <HalFormButton name="finishEvent" modal={true}/>
@@ -76,16 +77,18 @@ export const EventDetailPage = (): ReactElement => {
             <hr className="border-border"/>
 
             <Card className="p-6">
-                <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">INFORMACE O ZÁVODĚ</h3>
+                <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{labels.sections.eventInfo}</h3>
                 <dl>
                     <DetailRow label="Status">
-                        <Badge variant={statusVariant} size="sm">{event.status}</Badge>
+                        <Badge variant={statusVariant} size="sm">
+                            {event.status ? getEnumLabel('eventStatus', event.status) : event.status}
+                        </Badge>
                     </DetailRow>
-                    <DetailRow label="Datum">{formatDate(event.eventDate)}</DetailRow>
-                    {event.location && <DetailRow label="Místo">{event.location}</DetailRow>}
-                    {event.organizer && <DetailRow label="Pořadatel">{event.organizer}</DetailRow>}
+                    <DetailRow label={labels.fields.eventDate}>{formatDate(event.eventDate)}</DetailRow>
+                    {event.location && <DetailRow label={labels.fields.location}>{event.location}</DetailRow>}
+                    {event.organizer && <DetailRow label={labels.fields.organizer}>{event.organizer}</DetailRow>}
                     {event.websiteUrl && (
-                        <DetailRow label="Web">
+                        <DetailRow label={labels.fields.websiteUrl}>
                             <a
                                 href={event.websiteUrl}
                                 target="_blank"
@@ -97,17 +100,17 @@ export const EventDetailPage = (): ReactElement => {
                         </DetailRow>
                     )}
                     {event.eventCoordinatorId && (
-                        <DetailRow label="Koordinátor">{event.eventCoordinatorId.value}</DetailRow>
+                        <DetailRow label={labels.fields.eventCoordinatorId}>{event.eventCoordinatorId.value}</DetailRow>
                     )}
                 </dl>
             </Card>
 
             <div className="flex flex-col gap-4">
-                <h2 className="text-xl font-bold text-text-primary">Přihlášky</h2>
+                <h2 className="text-xl font-bold text-text-primary">{labels.sections.registrations}</h2>
                 <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList">
-                    <TableCell column="firstName">Jméno</TableCell>
-                    <TableCell column="lastName">Příjmení</TableCell>
-                    <TableCell column="registeredAt">Datum přihlášení</TableCell>
+                    <TableCell column="firstName">{labels.fields.firstName}</TableCell>
+                    <TableCell column="lastName">{labels.fields.lastName}</TableCell>
+                    <TableCell column="registeredAt">{labels.tables.registeredAt}</TableCell>
                 </HalEmbeddedTable>
             </div>
         </div>

@@ -9,6 +9,7 @@ import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx"
 import {Badge, Button, Modal} from "../../components/UI";
 import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
+import {labels} from "../../localization";
 
 type MemberSummaryData = EntityModel<{
     id: string,
@@ -66,7 +67,7 @@ export const MembersPage = (): ReactElement => {
                     <Button
                         variant="ghost"
                         size="sm"
-                        aria-label="Upravit"
+                        aria-label={labels.buttons.edit}
                         className="text-primary"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -80,7 +81,7 @@ export const MembersPage = (): ReactElement => {
                     <Button
                         variant="ghost"
                         size="sm"
-                        aria-label="Oprávnění"
+                        aria-label={labels.permissions['MEMBERS:PERMISSIONS'].label}
                         className="text-gray-500"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -94,7 +95,7 @@ export const MembersPage = (): ReactElement => {
                     <Button
                         variant="ghost"
                         size="sm"
-                        aria-label="Ukončit členství"
+                        aria-label={labels.templates.suspendMember}
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -108,7 +109,7 @@ export const MembersPage = (): ReactElement => {
                     <Button
                         variant="ghost"
                         size="sm"
-                        aria-label="Reaktivovat"
+                        aria-label={labels.templates.resumeMember}
                         className="text-green-600"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -126,9 +127,9 @@ export const MembersPage = (): ReactElement => {
         const active = item.active as boolean | null;
         if (active === null || active === undefined) return null;
         return active ? (
-            <Badge variant="success" size="sm">Aktivní</Badge>
+            <Badge variant="success" size="sm">{labels.enums.memberStatus.active}</Badge>
         ) : (
-            <Badge variant="default" size="sm">Neaktivní</Badge>
+            <Badge variant="default" size="sm">{labels.enums.memberStatus.inactive}</Badge>
         );
     };
 
@@ -146,15 +147,15 @@ export const MembersPage = (): ReactElement => {
 
     return (
         <div className="flex flex-col gap-8">
-            <h1 className="text-3xl font-bold text-text-primary">Členové</h1>
+            <h1 className="text-3xl font-bold text-text-primary">{labels.sections.members}</h1>
 
             <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-text-primary">Seznam členů</h2>
+                    <h2 className="text-xl font-bold text-text-primary">{labels.sections.membersList}</h2>
                     {resourceData?._templates?.registerMember && (
                         <Link to="/members/new">
                             <Button variant="primary">
-                                Registrovat člena
+                                {labels.templates.registerMember}
                             </Button>
                         </Link>
                     )}
@@ -162,12 +163,12 @@ export const MembersPage = (): ReactElement => {
                 <HalEmbeddedTable<MemberSummaryData> collectionName={"memberSummaryResponseList"}
                                                       defaultOrderBy={"lastName"}
                                                       onRowClick={route.navigateToResource}>
-                    <TableCell sortable column={"registrationNumber"}>Reg. číslo</TableCell>
-                    <TableCell sortable column={"lastName"}>Příjmení</TableCell>
-                    <TableCell sortable column={"firstName"}>Jméno</TableCell>
-                    <TableCell column={"email"} dataRender={renderEmailCell}>E-mail</TableCell>
-                    <TableCell column={"active"} dataRender={renderStatusCell}>Stav</TableCell>
-                    <TableCell column={"_actions"} dataRender={renderActionsCell}>Akce</TableCell>
+                    <TableCell sortable column={"registrationNumber"}>{labels.fields.registrationNumber}</TableCell>
+                    <TableCell sortable column={"lastName"}>{labels.fields.lastName}</TableCell>
+                    <TableCell sortable column={"firstName"}>{labels.fields.firstName}</TableCell>
+                    <TableCell column={"email"} dataRender={renderEmailCell}>{labels.fields.email}</TableCell>
+                    <TableCell column={"active"} dataRender={renderStatusCell}>{labels.tables.status}</TableCell>
+                    <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
                 </HalEmbeddedTable>
             </div>
 

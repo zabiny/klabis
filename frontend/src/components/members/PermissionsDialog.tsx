@@ -4,6 +4,7 @@ import {Alert, Button, Modal, Spinner} from '../UI';
 import {useToast} from '../../contexts/ToastContext';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {FetchError} from '../../api/authorizedFetch';
+import {labels} from '../../localization';
 
 export interface PermissionsDialogProps {
     isOpen: boolean;
@@ -13,14 +14,21 @@ export interface PermissionsDialogProps {
     memberRegistrationNumber?: string;
 }
 
-const PERMISSION_LABELS: Record<string, { label: string; description: string; color: string }> = {
-    'MEMBERS:READ':        {label: 'Zobrazení členů',   description: 'Přístup k seznamu a detailům členů',             color: 'bg-blue-100 text-blue-600'},
-    'MEMBERS:MANAGE':      {label: 'Správa členů',      description: 'Registrace, úprava a mazání členů',              color: 'bg-green-100 text-green-600'},
-    'MEMBERS:PERMISSIONS': {label: 'Správa oprávnění',  description: 'Přidělování a odebírání oprávnění uživatelům',   color: 'bg-red-100 text-red-600'},
-    'EVENTS:READ':         {label: 'Zobrazení akcí',    description: 'Přístup k seznamu a detailům akcí',              color: 'bg-teal-100 text-teal-600'},
-    'EVENTS:MANAGE':       {label: 'Správa akcí',       description: 'Vytváření a úprava akcí',                        color: 'bg-indigo-100 text-indigo-600'},
-    'CALENDAR:MANAGE':     {label: 'Správa kalendáře',  description: 'Vytváření a úprava kalendářních událostí',       color: 'bg-cyan-100 text-cyan-600'},
+const PERMISSION_COLORS: Record<string, string> = {
+    'MEMBERS:READ':        'bg-blue-100 text-blue-600',
+    'MEMBERS:MANAGE':      'bg-green-100 text-green-600',
+    'MEMBERS:PERMISSIONS': 'bg-red-100 text-red-600',
+    'EVENTS:READ':         'bg-teal-100 text-teal-600',
+    'EVENTS:MANAGE':       'bg-indigo-100 text-indigo-600',
+    'CALENDAR:MANAGE':     'bg-cyan-100 text-cyan-600',
 };
+
+const PERMISSION_LABELS: Record<string, { label: string; description: string; color: string }> = Object.fromEntries(
+    Object.entries(labels.permissions).map(([key, value]) => [
+        key,
+        {label: value.label, description: value.description, color: PERMISSION_COLORS[key] ?? 'bg-gray-100 text-gray-600'},
+    ])
+);
 
 interface PermissionsResponse {
     authorities: string[];
@@ -59,9 +67,9 @@ const Toggle = ({checked, onChange, disabled, label}: { checked: boolean; onChan
 
 function resolveErrorMessage(error: Error): string {
     if (error instanceof FetchError && error.responseStatus === 409) {
-        return 'Nelze odebrat oprávnění správce — systém musí mít alespoň jednoho uživatele se správou oprávnění.';
+        return labels.errors.removeLastPermissionsAdmin;
     }
-    return 'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.';
+    return labels.errors.savePermissionsFailed;
 }
 
 export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, memberRegistrationNumber}: PermissionsDialogProps) => {
@@ -109,7 +117,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
             {
                 onSuccess: () => {
                     queryClient.invalidateQueries({queryKey: ['authorized']});
-                    addToast('Oprávnění uložena', 'success');
+                    addToast(labels.ui.permissionsSaved, 'success');
                     onClose();
                 },
             },
@@ -132,7 +140,7 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
                         variant="secondary"
                         onClick={onClose}
                     >
-                        Zrušit
+                        {labels.buttons.cancel}
                     </Button>
                     <Button
                         variant="primary"
@@ -140,13 +148,13 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
                         disabled={isLoading}
                         loading={isPending}
                     >
-                        Uložit oprávnění
+                        {labels.buttons.savePermissions}
                     </Button>
                 </>
             }
         >
             <p className="text-sm text-text-secondary mb-4">
-                Oprávnění určují, ke kterým funkcím aplikace má uživatel přístup. Změny se projeví okamžitě.
+                {labels.ui.permissionsDescription}
             </p>
 
             {isLoading ? (

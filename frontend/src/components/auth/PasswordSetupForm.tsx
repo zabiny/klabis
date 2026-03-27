@@ -8,6 +8,7 @@ import {
     type SetPasswordRequest,
     type PasswordSetupResponse,
 } from '../../api/passwordSetup';
+import {labels} from '../../localization';
 
 interface PasswordSetupFormProps {
     token: string;
@@ -65,12 +66,12 @@ export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) 
         // Check if password meets all requirements
         const allMet = requirements.every((req) => req.met);
         if (!allMet) {
-            newErrors.password = 'Heslo nesplňuje všechny požadavky';
+            newErrors.password = labels.validation.passwordRequirements;
         }
 
         // Check password confirmation
         if (formData.password !== formData.passwordConfirmation) {
-            newErrors.passwordConfirmation = 'Hesla se neshodují';
+            newErrors.passwordConfirmation = labels.validation.passwordsMismatch;
         }
 
         setErrors(newErrors);
@@ -105,14 +106,14 @@ export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) 
                 if (error.status === 400) {
                     setServerError(errorMessage);
                 } else if (error.status === 410) {
-                    setServerError('Platnost tokenu vypršela nebo byl již použit. Požádejte si o nový.');
+                    setServerError(labels.errors.tokenExpired);
                 } else if (error.status === 404) {
-                    setServerError('Neplatný token. Požádejte si o nový.');
+                    setServerError(labels.errors.tokenInvalid);
                 } else {
                     setServerError(errorMessage);
                 }
             } else {
-                setServerError('Došlo k neočekávané chybě. Zkuste to prosím znovu.');
+                setServerError(labels.errors.unexpectedError);
             }
         } finally {
             setIsSubmitting(false);
@@ -160,10 +161,10 @@ export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) 
                     </div>
                 </div>
                 <h2 className="text-2xl font-semibold text-text-primary mb-2">
-                    Heslo úspěšně nastaveno
+                    {labels.ui.passwordSetSuccess}
                 </h2>
                 <p className="text-text-secondary">
-                    Váš účet byl aktivován. Nyní budete přesměrováni na přihlašovací stránku.
+                    {labels.ui.passwordSetSuccessDescription}
                 </p>
             </Card>
         );
@@ -228,7 +229,7 @@ export const PasswordSetupForm = ({ token, onSuccess }: PasswordSetupFormProps) 
                     loading={isSubmitting}
                     disabled={!allRequirementsMet || !passwordsMatch}
                 >
-                    Nastavit heslo a aktivovat účet
+                    {labels.buttons.setPassword}
                 </Button>
             </form>
         </Card>

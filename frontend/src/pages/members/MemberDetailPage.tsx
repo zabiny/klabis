@@ -12,19 +12,13 @@ import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx"
 import {Banknote, Check, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
+import {labels} from "../../localization";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
 
-const DEACTIVATION_REASON_LABELS: Record<string, string> = {
-    ODHLASKA: 'Odhlášení',
-    PRESTUP: 'Přestup',
-    OTHER: 'Jiný důvod',
-};
+const DEACTIVATION_REASON_LABELS: Record<string, string> = labels.enums.deactivationReason as Record<string, string>;
 
-const GENDER_LABELS: Record<string, string> = {
-    MALE: 'Muž',
-    FEMALE: 'Žena',
-};
+const GENDER_LABELS: Record<string, string> = labels.enums.gender as Record<string, string>;
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -41,7 +35,7 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
                 className="text-xs text-primary hover:text-primary-light underline"
                 onClick={() => setRevealed(!revealed)}
             >
-                {revealed ? 'Skrýt' : 'Zobrazit'}
+                {revealed ? labels.ui.hide : labels.ui.reveal}
             </button>
         </span>
     );
@@ -157,32 +151,32 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
         const leftColumn = (
             <div className="flex flex-col gap-8">
                 {hasEditTemplate && (
-                    <Section title="OSOBNÍ ÚDAJE">
-                        <DetailRow label="Jméno">{ri('firstName') ?? val(member.firstName)}</DetailRow>
-                        <DetailRow label="Příjmení">{ri('lastName') ?? val(member.lastName)}</DetailRow>
-                        <DetailRow label="Datum narození">{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
-                        <DetailRow label="Pohlaví">{ri('gender') ?? val(member.gender && (GENDER_LABELS[member.gender] ?? member.gender))}</DetailRow>
-                        <DetailRow label="Státní příslušnost">{ri('nationality') ?? val(member.nationality)}</DetailRow>
+                    <Section title={labels.sections.personalInfo}>
+                        <DetailRow label={labels.fields.firstName}>{ri('firstName') ?? val(member.firstName)}</DetailRow>
+                        <DetailRow label={labels.fields.lastName}>{ri('lastName') ?? val(member.lastName)}</DetailRow>
+                        <DetailRow label={labels.fields.dateOfBirth}>{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
+                        <DetailRow label={labels.fields.gender}>{ri('gender') ?? val(member.gender && (GENDER_LABELS[member.gender] ?? member.gender))}</DetailRow>
+                        <DetailRow label={labels.fields.nationality}>{ri('nationality') ?? val(member.nationality)}</DetailRow>
                         {isEditing
                             ? enrichedFieldNames.has('birthNumber') && <BirthNumberConditionalField renderInput={ri}/>
                             : (isCzNationality(member.nationality) && member.birthNumber && (
-                                <DetailRow label="Rodné číslo">
+                                <DetailRow label={labels.fields.birthNumber}>
                                     <MaskedBirthNumber value={member.birthNumber}/>
                                 </DetailRow>
                             ))
                         }
                         {isEditing && (
-                            <DetailRow label="Registrační číslo">{ri('registrationNumber')}</DetailRow>
+                            <DetailRow label={labels.fields.registrationNumber}>{ri('registrationNumber')}</DetailRow>
                         )}
                     </Section>
                 )}
 
-                <Section title="KONTAKT">
-                    <DetailRow label="E-mail">{ri('email') ?? val(member.email)}</DetailRow>
-                    <DetailRow label="Telefon">{ri('phone') ?? val(member.phone)}</DetailRow>
+                <Section title={labels.sections.contact}>
+                    <DetailRow label={labels.fields.email}>{ri('email') ?? val(member.email)}</DetailRow>
+                    <DetailRow label={labels.fields.phone}>{ri('phone') ?? val(member.phone)}</DetailRow>
                 </Section>
 
-                <Section title="ADRESA">
+                <Section title={labels.sections.address}>
                     {isEditing ? ri('address') : (
                         address ? (
                             <>
@@ -199,18 +193,18 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
         const rightColumn = hasEditTemplate ? (
             <div className="flex flex-col gap-8">
-                <Section title="DOPLŇKOVÉ INFORMACE">
-                    <DetailRow label="Číslo čipu">{ri('chipNumber') ?? val(member.chipNumber)}</DetailRow>
-                    <DetailRow label={isEditing ? "Číslo bankovního účtu (nepovinné)" : "Číslo bankovního účtu"}>
+                <Section title={labels.sections.supplementary}>
+                    <DetailRow label={labels.fields.chipNumber}>{ri('chipNumber') ?? val(member.chipNumber)}</DetailRow>
+                    <DetailRow label={isEditing ? `${labels.fields.bankAccountNumber} (nepovinné)` : labels.fields.bankAccountNumber}>
                         {ri('bankAccountNumber') ?? val(member.bankAccountNumber)}
                         {isEditing && (
                             <p className="mt-1 text-sm text-text-tertiary">Pro proplácení cestovních nákladů a dalších výdajů spojených s klubem</p>
                         )}
                     </DetailRow>
-                    <DetailRow label="Stravovací omezení">{ri('dietaryRestrictions') ?? val(member.dietaryRestrictions)}</DetailRow>
+                    <DetailRow label={labels.fields.dietaryRestrictions}>{ri('dietaryRestrictions') ?? val(member.dietaryRestrictions)}</DetailRow>
                 </Section>
 
-                <Section title="DOKLADY A LICENCE">
+                <Section title={labels.sections.documentsAndLicenses}>
                     {isEditing ? ri('identityCard') : (
                         <DetailRow label="Občanský průkaz">
                             {identityCard?.cardNumber
@@ -218,7 +212,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                 : '\u2014'}
                         </DetailRow>
                     )}
-                    <DetailRow label="Řidičský průkaz">{ri('drivingLicenseGroup') ?? val(member.drivingLicenseGroup)}</DetailRow>
+                    <DetailRow label={labels.fields.drivingLicenseGroup}>{ri('drivingLicenseGroup') ?? val(member.drivingLicenseGroup)}</DetailRow>
                     {isEditing ? (
                         <div>
                             <p className="text-sm font-medium text-text-secondary mb-2">Zdravotní kurz</p>
@@ -274,7 +268,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
             <div className="flex flex-col gap-8">
                 <div>
                     <Link to="/members" className="text-sm text-primary hover:text-primary-light">
-                        &larr; Zpět na seznam
+                        {labels.ui.backToList}
                     </Link>
                 </div>
 
@@ -286,7 +280,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                             </h1>
                             {!isEditing && (
                                 <Badge variant={member.active ? 'success' : 'default'} size="sm">
-                                    {member.active ? 'Aktivní' : 'Neaktivní'}
+                                    {member.active ? labels.enums.memberStatus.active : labels.enums.memberStatus.inactive}
                                 </Badge>
                             )}
                         </div>
@@ -300,7 +294,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                 onClick={startEditing}
                                 startIcon={<Pencil className="w-4 h-4"/>}
                             >
-                                Upravit profil
+                                {labels.templates.updateMember}
                             </Button>
                             <Button
                                 variant="secondary"
@@ -314,11 +308,11 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     onClick={() => setIsPermissionsDialogOpen(true)}
                                     startIcon={<Shield className="w-4 h-4"/>}
                                 >
-                                    Oprávnění
+                                    {labels.permissions['MEMBERS:PERMISSIONS'].label}
                                 </Button>
                             )}
-                            <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle="Ukončení členství"/>
-                            <HalFormButton name="resumeMember" modal={true} label="Reaktivovat" dialogTitle="Reaktivace člena"/>
+                            <HalFormButton name="suspendMember" modal={true} label={labels.templates.suspendMember} variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle="Ukončení členství"/>
+                            <HalFormButton name="resumeMember" modal={true} label={labels.templates.resumeMember} dialogTitle="Reaktivace člena"/>
                         </div>
                     )}
                 </div>
@@ -333,7 +327,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 ) : leftColumn}
 
                 {(guardian || (isEditing && enrichedFieldNames.has('guardian'))) && (
-                    <Section title="ZÁKONNÝ ZÁSTUPCE">
+                    <Section title={labels.sections.guardian}>
                         {isEditing ? ri('guardian') : (
                             <>
                                 <DetailRow label="Jméno">{val(guardian?.firstName)}</DetailRow>
@@ -347,7 +341,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 )}
 
                 {showDeactivation && (
-                    <Section title="DEAKTIVACE">
+                    <Section title={labels.sections.deactivation}>
                         {member.deactivationReason && (
                             <DetailRow label="Důvod">
                                 {DEACTIVATION_REASON_LABELS[member.deactivationReason] ?? member.deactivationReason}
@@ -371,7 +365,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                             variant="secondary"
                             onClick={cancelEditing}
                         >
-                            Zrušit
+                            {labels.buttons.cancel}
                         </Button>
                         {helpers?.renderField('submit')}
                     </div>

@@ -6,6 +6,7 @@ import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
+import {labels} from '../../localization';
 
 interface CalendarItem {
     id: string;
@@ -137,7 +138,7 @@ const CalendarPage = () => {
         return (
             <div className="flex justify-center items-center gap-2 h-96 text-text-secondary">
                 <Spinner/>
-                Načítání...
+                {labels.ui.loading}
             </div>
         );
     }
@@ -156,7 +157,7 @@ const CalendarPage = () => {
                         size="sm"
                         onClick={handlePrevMonth}
                         disabled={!resourceData?._links?.prev}
-                        aria-label="Předchozí měsíc"
+                        aria-label={labels.ui.prevMonth}
                     >
                         ←
                     </Button>
@@ -165,7 +166,7 @@ const CalendarPage = () => {
                             {monthName}
                         </h1>
                         <p className="text-lg text-text-secondary">
-                            Kalendář akcí a důležitých dat
+                            {labels.ui.calendarSubtitle}
                         </p>
                     </div>
                     <Button
@@ -173,12 +174,12 @@ const CalendarPage = () => {
                         size="sm"
                         onClick={handleNextMonth}
                         disabled={!resourceData?._links?.next}
-                        aria-label="Následující měsíc"
+                        aria-label={labels.ui.nextMonth}
                     >
                         →
                     </Button>
                 </div>
-                <HalFormButton name="createCalendarItem" modal={true} label="Přidat položku"/>
+                <HalFormButton name="createCalendarItem" modal={true} label={labels.templates.createCalendarItem}/>
             </div>
 
             {/* Calendar */}

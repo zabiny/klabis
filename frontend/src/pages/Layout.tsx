@@ -10,6 +10,7 @@ import {useRootNavigation} from '../hooks/useRootNavigation'
 import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx"
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider, useToast} from '../contexts/ToastContext.tsx'
+import {labels} from '../localization'
 
 const LayoutToasts = () => {
     const {toasts, removeToast} = useToast();
@@ -112,7 +113,7 @@ const Layout = () => {
                                         size="sm"
                                         onClick={handleUserNameClick}
                                         className="hidden sm:inline-flex"
-                                        title="Zobrazit detail člena"
+                                        title={labels.ui.showMemberDetails}
                                     >
                                         {userDetails.firstName} {userDetails.lastName}
                                         <span className="ml-2 font-normal text-zinc-400 dark:text-zinc-500">[{userDetails.userName}]</span>
@@ -141,11 +142,11 @@ const Layout = () => {
                             variant="danger-ghost"
                             size="sm"
                             onClick={handleLogout}
-                            title="Odhlásit"
+                            title={labels.buttons.logout}
                             className="hidden sm:inline-flex"
                             startIcon={<LogoutIcon size={16}/>}
                         >
-                            <span className="hidden lg:inline">Odhlásit</span>
+                            <span className="hidden lg:inline">{labels.buttons.logout}</span>
                         </Button>
 
                         {/* Mobile menu - show all in dropdown */}
@@ -154,7 +155,7 @@ const Layout = () => {
                                 variant="danger-ghost"
                                 size="sm"
                                 onClick={handleLogout}
-                                aria-label="Odhlásit"
+                                aria-label={labels.buttons.logout}
                             >
                                 <LogoutIcon size={18}/>
                             </Button>
@@ -183,15 +184,15 @@ const Layout = () => {
                 }`}
             >
                 <nav className="flex flex-col px-3 py-4 gap-1 overflow-y-auto flex-1">
-                    <p className="px-2 pb-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">Navigace</p>
+                    <p className="px-2 pb-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">{labels.ui.navigation}</p>
                     {menuLoading ? (
                         <div className="flex items-center gap-3 px-4 py-3 text-text-tertiary text-sm">
                             <Spinner size="sm"/>
-                            Načítání menu...
+                            {labels.errors.loadingMenu}
                         </div>
                     ) : menuError ? (
                         <Alert severity="error" className="m-3 text-sm">
-                            Chyba při načítání menu: {menuError.message}
+                            {labels.ui.menuLoadError}: {menuError.message}
                         </Alert>
                     ) : menuItems.length > 0 ? (
                         menuItems.map((item) => (
@@ -217,7 +218,7 @@ const Layout = () => {
                         ))
                     ) : (
                         <div className="text-text-tertiary text-sm px-4 py-3">
-                            Žádné položky menu nejsou dostupné
+                            {labels.ui.noMenuAvailable}
                         </div>
                     )}
                 </nav>
@@ -225,8 +226,8 @@ const Layout = () => {
                 {/* Sidebar footer - app info */}
                 <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
                     <div className="text-xs">
-                        <div className="font-semibold text-zinc-500 dark:text-zinc-400 mb-0.5">Klabis Club Manager</div>
-                        <div className="text-zinc-400 dark:text-zinc-500">Verze 1.0.0</div>
+                        <div className="font-semibold text-zinc-500 dark:text-zinc-400 mb-0.5">{labels.ui.appName}</div>
+                        <div className="text-zinc-400 dark:text-zinc-500">{labels.ui.appVersion}</div>
                     </div>
                 </div>
             </aside>

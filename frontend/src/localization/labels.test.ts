@@ -152,8 +152,8 @@ describe('getTemplateLabel()', () => {
         expect(getTemplateLabel('registerForEvent')).toBe('Přihlásit se');
     });
 
-    it('falls back to raw template name when no mapping exists', () => {
-        expect(getTemplateLabel('unknownTemplate')).toBe('unknownTemplate');
+    it('returns undefined when no mapping exists to allow caller fallback chain', () => {
+        expect(getTemplateLabel('unknownTemplate')).toBeUndefined();
     });
 });
 

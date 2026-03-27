@@ -2,6 +2,7 @@ import {type ChangeEvent, type FormEvent, useState} from 'react';
 import {Alert, Button, Card} from '../UI';
 import {TextField} from '../UI/forms/TextField';
 import {RateLimitError, requestNewToken, TokenRequestError, type TokenRequestRequest} from '../../api/passwordSetup';
+import {labels} from '../../localization';
 
 interface RequestNewTokenFormProps {
     onSuccess: () => void;
@@ -29,13 +30,13 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
         const newErrors: Partial<Record<keyof FormData, string>> = {};
 
         if (!formData.registrationNumber.trim()) {
-            newErrors.registrationNumber = 'Registrační číslo je povinné';
+            newErrors.registrationNumber = labels.validation.registrationNumberRequired;
         }
 
         if (!formData.email.trim()) {
-            newErrors.email = 'Email je povinný';
+            newErrors.email = labels.validation.emailRequired;
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = 'Email má neplatný formát';
+            newErrors.email = labels.validation.emailInvalidFormat;
         }
 
         setErrors(newErrors);
@@ -66,13 +67,13 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
         } catch (error) {
             if (error instanceof RateLimitError) {
                 const retryText = error.retryAfter
-                    ? `Zkuste to znovu za ${error.retryAfter} sekund.`
-                    : 'Zkuste to prosím později.';
-                setServerError(`Požadavek byl omezen. ${retryText}`);
+                    ? labels.errors.rateLimitedRetryAfter.replace('{seconds}', String(error.retryAfter))
+                    : labels.errors.rateLimitedRetryLater;
+                setServerError(retryText);
             } else if (error instanceof TokenRequestError) {
-                setServerError(error.detail.detail || 'Požadavek selhal.');
+                setServerError(error.detail.detail || labels.errors.requestFailed);
             } else {
-                setServerError('Došlo k neočekávané chybě. Zkuste to prosím znovu.');
+                setServerError(labels.errors.unexpectedError);
             }
         } finally {
             setIsSubmitting(false);
@@ -108,11 +109,10 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
                     </div>
                 </div>
                 <h2 className="text-2xl font-semibold text-text-primary mb-2">
-                    Email byl odeslán
+                    {labels.ui.emailSent}
                 </h2>
                 <p className="text-text-secondary">
-                    Pokud je váš účet stále čekající na aktivaci, obdržíte email s odkazem
-                    pro nastavení hesla. Zkontrolujte prosím svou schránku.
+                    {labels.ui.emailSentDescription}
                 </p>
             </Card>
         );
@@ -139,7 +139,7 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <TextField
                     name="registrationNumber"
-                    label="Registrační číslo"
+                    label={labels.fields.registrationNumber}
                     value={formData.registrationNumber}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => updateField('registrationNumber', e.target.value)}
                     error={errors.registrationNumber}
@@ -150,7 +150,7 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
 
                 <TextField
                     name="email"
-                    label="Emailová adresa"
+                    label={labels.fields.email}
                     type="email"
                     value={formData.email}
                     onChange={(e) => updateField('email', e.target.value)}
@@ -165,7 +165,7 @@ export const RequestNewTokenForm = ({ onSuccess }: RequestNewTokenFormProps) => 
                     fullWidth
                     loading={isSubmitting}
                 >
-                    Odeslat žádost
+                    {labels.buttons.sendRequest}
                 </Button>
             </form>
         </Card>

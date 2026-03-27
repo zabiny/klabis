@@ -6,6 +6,7 @@
 import type {ReactElement, ReactNode} from 'react';
 import type {HalFormsTemplate} from '../../api';
 import {Button} from '../UI';
+import {getTemplateLabel} from '../../localization';
 
 export interface HalFormTemplateButtonProps {
     /** The HAL Forms template */
@@ -50,7 +51,7 @@ export function HalFormTemplateButton({
                                           variant = 'primary',
                                           icon,
                                       }: HalFormTemplateButtonProps): ReactElement {
-    const displayText = label || template.title || templateName;
+    const displayText = label || getTemplateLabel(templateName) || template.title || templateName;
 
     return (
         <Button

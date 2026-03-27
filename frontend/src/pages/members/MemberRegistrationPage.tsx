@@ -8,6 +8,7 @@ import type {RenderFormCallback} from '../../components/HalNavigator2/halforms';
 import {Alert, Button, DetailRow, Spinner} from '../../components/UI';
 import {Section} from './MemberSection';
 import {BirthNumberConditionalField} from './BirthNumberConditionalField';
+import {labels} from '../../localization';
 
 const PERSONAL_FIELDS = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'nationality', 'birthNumber'];
 const CONTACT_FIELDS = ['email', 'phone'];
@@ -28,7 +29,7 @@ export const MemberRegistrationPage = (): ReactElement => {
         return (
             <div className="flex items-center gap-2">
                 <Spinner/>
-                <span>Načítání...</span>
+                <span>{labels.ui.loading}</span>
             </div>
         );
     }
@@ -43,9 +44,9 @@ export const MemberRegistrationPage = (): ReactElement => {
         return (
             <div className="flex flex-col gap-4">
                 <Link to="/members" className="text-sm text-primary hover:text-primary-light">
-                    &larr; Zpět na seznam
+                    {labels.ui.backToList}
                 </Link>
-                <Alert severity="error">Registrace nového člena není k dispozici.</Alert>
+                <Alert severity="error">{labels.errors.memberRegistrationUnavailable}</Alert>
             </div>
         );
     }
@@ -73,13 +74,13 @@ export const MemberRegistrationPage = (): ReactElement => {
         <div className="flex flex-col gap-8">
             <div>
                 <Link to="/members" className="text-sm text-primary hover:text-primary-light">
-                    &larr; Zpět na seznam
+                    {labels.ui.backToList}
                 </Link>
             </div>
 
             <div>
                 <h1 className="text-3xl font-bold text-text-primary">
-                    Registrace nového člena
+                    {labels.sections.newMemberRegistration}
                 </h1>
                 <hr className="border-border mt-4"/>
             </div>
@@ -87,25 +88,25 @@ export const MemberRegistrationPage = (): ReactElement => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 <div className="flex flex-col gap-6">
                     {hasFields(PERSONAL_FIELDS) && (
-                        <Section title="OSOBNÍ ÚDAJE">
-                            {hasField('firstName') && <DetailRow label="Jméno">{renderInput('firstName')}</DetailRow>}
-                            {hasField('lastName') && <DetailRow label="Příjmení">{renderInput('lastName')}</DetailRow>}
-                            {hasField('dateOfBirth') && <DetailRow label="Datum narození">{renderInput('dateOfBirth')}</DetailRow>}
-                            {hasField('gender') && <DetailRow label="Pohlaví">{renderInput('gender')}</DetailRow>}
-                            {hasField('nationality') && <DetailRow label="Státní příslušnost">{renderInput('nationality')}</DetailRow>}
+                        <Section title={labels.sections.personalInfo}>
+                            {hasField('firstName') && <DetailRow label={labels.fields.firstName}>{renderInput('firstName')}</DetailRow>}
+                            {hasField('lastName') && <DetailRow label={labels.fields.lastName}>{renderInput('lastName')}</DetailRow>}
+                            {hasField('dateOfBirth') && <DetailRow label={labels.fields.dateOfBirth}>{renderInput('dateOfBirth')}</DetailRow>}
+                            {hasField('gender') && <DetailRow label={labels.fields.gender}>{renderInput('gender')}</DetailRow>}
+                            {hasField('nationality') && <DetailRow label={labels.fields.nationality}>{renderInput('nationality')}</DetailRow>}
                             {hasField('birthNumber') && <BirthNumberConditionalField renderInput={renderInput}/>}
                         </Section>
                     )}
 
                     {hasFields(CONTACT_FIELDS) && (
-                        <Section title="KONTAKT">
-                            {hasField('email') && <DetailRow label="E-mail">{renderInput('email')}</DetailRow>}
-                            {hasField('phone') && <DetailRow label="Telefon">{renderInput('phone')}</DetailRow>}
+                        <Section title={labels.sections.contact}>
+                            {hasField('email') && <DetailRow label={labels.fields.email}>{renderInput('email')}</DetailRow>}
+                            {hasField('phone') && <DetailRow label={labels.fields.phone}>{renderInput('phone')}</DetailRow>}
                         </Section>
                     )}
 
                     {hasType(ADDRESS_TYPE) && (
-                        <Section title="ADRESA">
+                        <Section title={labels.sections.address}>
                             {renderInput('address')}
                         </Section>
                     )}
@@ -113,19 +114,19 @@ export const MemberRegistrationPage = (): ReactElement => {
 
                 <div className="flex flex-col gap-6">
                     {hasFields(SUPPLEMENTARY_FIELDS) && (
-                        <Section title="DOPLŇKOVÉ INFORMACE">
-                            {hasField('chipNumber') && <DetailRow label="Číslo člena">{renderInput('chipNumber')}</DetailRow>}
+                        <Section title={labels.sections.supplementary}>
+                            {hasField('chipNumber') && <DetailRow label={labels.fields.chipNumber}>{renderInput('chipNumber')}</DetailRow>}
                             {hasField('bankAccountNumber') && (
-                                <DetailRow label="Bankovní účet">
+                                <DetailRow label={labels.fields.bankAccountNumber}>
                                     {renderInput('bankAccountNumber')}
                                 </DetailRow>
                             )}
-                            {hasField('dietaryRestrictions') && <DetailRow label="Stravovací omezení">{renderInput('dietaryRestrictions')}</DetailRow>}
+                            {hasField('dietaryRestrictions') && <DetailRow label={labels.fields.dietaryRestrictions}>{renderInput('dietaryRestrictions')}</DetailRow>}
                         </Section>
                     )}
 
                     {hasType(GUARDIAN_TYPE) && (
-                        <Section title="ZÁKONNÝ ZÁSTUPCE">
+                        <Section title={labels.sections.guardian}>
                             {renderInput('guardian')}
                         </Section>
                     )}
@@ -133,9 +134,9 @@ export const MemberRegistrationPage = (): ReactElement => {
             </div>
 
             {hasDocumentFields && (
-                <Section title="DOKLADY A LICENCE">
+                <Section title={labels.sections.documentsAndLicenses}>
                     {hasType(IDENTITY_CARD_TYPE) && renderInput('identityCard')}
-                    {hasField('drivingLicenseGroup') && <DetailRow label="Řidičský průkaz">{renderInput('drivingLicenseGroup')}</DetailRow>}
+                    {hasField('drivingLicenseGroup') && <DetailRow label={labels.fields.drivingLicenseGroup}>{renderInput('drivingLicenseGroup')}</DetailRow>}
                     {hasType(MEDICAL_COURSE_TYPE) && renderInput('medicalCourse')}
                     {hasType(TRAINER_LICENSE_TYPE) && renderInput('trainerLicense')}
                 </Section>
@@ -144,7 +145,7 @@ export const MemberRegistrationPage = (): ReactElement => {
             <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border">
                 <Link to="/members">
                     <Button variant="secondary">
-                        Zrušit
+                        {labels.buttons.cancel}
                     </Button>
                 </Link>
                 {renderField('submit')}
