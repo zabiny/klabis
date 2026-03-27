@@ -63,11 +63,13 @@ export const createUserManager = ({
         console.warn('Access token expired');
         userManager.signinSilent().catch((err) => {
             console.error('Silent renew failed', err);
+            userManager.removeUser();
         });
     });
 
     userManager.events.addSilentRenewError((err) => {
         console.error('Silent renew error:', err);
+        userManager.removeUser();
     });
 
     userManager.events.addUserSignedOut(() => {
