@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klabis Frontend UI Review Report</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --muted: #6c757d;
+    --border: #dee2e6;
+    --accent: #3b5bdb;
+    --grade-good: #2b8a3e;
+    --grade-ok: #e67700;
+    --grade-bad: #c92a2a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  h1 { font-size: 2rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 3rem; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; text-align: center; }
+  .summary-card .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.5rem; }
+  .summary-card .value { font-size: 1.75rem; font-weight: 700; }
+  .grade-1, .grade-2 { color: var(--grade-good); }
+  .grade-3 { color: var(--grade-ok); }
+  .grade-4, .grade-5 { color: var(--grade-bad); }
+
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 2rem; overflow: hidden; }
+  .section-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .section-header h2 { font-size: 1.2rem; }
+  .grade-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
+  .grade-badge.good { background: #d3f9d8; color: var(--grade-good); }
+  .grade-badge.ok { background: #fff3bf; color: var(--grade-ok); }
+  .grade-badge.bad { background: #ffe3e3; color: var(--grade-bad); }
+
+  .section-body { padding: 1.5rem; }
+  .screenshots { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+  .screenshots img { width: 100%; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.2s; }
+  .screenshots img:hover { transform: scale(1.02); }
+  .screenshots figcaption { font-size: 0.8rem; color: var(--muted); text-align: center; margin-top: 0.25rem; }
+
+  .findings { margin-top: 1rem; }
+  .findings h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.75rem; }
+  .findings ul { padding-left: 1.25rem; }
+  .findings li { margin-bottom: 0.5rem; font-size: 0.95rem; }
+  .findings li strong { color: var(--grade-bad); }
+  .findings li em { color: var(--grade-ok); }
+
+  .criteria-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.9rem; }
+  .criteria-table th, .criteria-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+  .criteria-table th { color: var(--muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; }
+
+  .legend { margin-top: 3rem; padding: 1rem 1.5rem; background: var(--card); border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; color: var(--muted); }
+
+  /* Lightbox */
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; cursor: zoom-out; }
+  .lightbox.active { display: flex; }
+  .lightbox img { max-width: 95vw; max-height: 95vh; border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('active')">
+  <img id="lightbox-img" src="" alt="Enlarged screenshot">
+</div>
+
+<div class="container">
+
+<h1>Klabis Frontend - UI Review Report</h1>
+<p class="subtitle">Datum: 27. 3. 2026 | Verze: 1.0.0 | Testovano jako: admin (ZBM9000)</p>
+
+<!-- Summary -->
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="label">Design Quality</div>
+    <div class="value grade-3">3</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Originality</div>
+    <div class="value grade-4">4</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Craft</div>
+    <div class="value grade-2">2</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Functionality</div>
+    <div class="value grade-3">3</div>
+  </div>
+</div>
+
+<!-- ==================== LOGIN PAGE ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>1. Prihlasovaci stranka</h2>
+    <span class="grade-badge good">Prumer: 2</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="01-login-page.png" alt="Login page" onclick="openLightbox(this)">
+        <figcaption>Prihlasovaci stranka - light mode</figcaption>
+      </figure>
+      <figure>
+        <img src="14-login-error.png" alt="Login error" onclick="openLightbox(this)">
+        <figcaption>Prihlasovaci stranka - chybovy stav</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-2">2</td><td>Ciste, vycentrovane, koherentni barevne schema (modra/bila). Logo a ikony dobre ladene.</td></tr>
+      <tr><td>Originality</td><td class="grade-3">3</td><td>Solidni, ale pomerne standardni login formular. Ikony u poli jsou hezky detail.</td></tr>
+      <tr><td>Craft</td><td class="grade-2">2</td><td>Dobra typograficka hierarchie, konzistentni spacing, zaoblene rohy.</td></tr>
+      <tr><td>Functionality</td><td class="grade-2">2</td><td>Jasne viditelna akce, placeholder napoveda. Ale: chybovy stav (URL ?error) nema zadnou vizualni chybovou zpravu - uzivatel nevi ze se prihlaseni nezdarilo.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><strong>Kriticke:</strong> Chybejici chybova zprava pri nespravnem prihlaseni - uzivatel nema zpetnou vazbu</li>
+        <li><em>Stredni:</em> Pridat moznost zobrazeni/skryti hesla (eye icon)</li>
+        <li>Zvazit pridat "Zapomenute heslo?" link</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== HOME PAGE ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>2. Domovska stranka (Dashboard)</h2>
+    <span class="grade-badge bad">Prumer: 4</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="02-home-admin.png" alt="Home page admin" onclick="openLightbox(this)">
+        <figcaption>Domovska stranka - admin uzivatel</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-4">4</td><td>Prazdna stranka s upozornenim "Zadna data dostupna" - nepusobi jako dashboard. Vizualne prazdna.</td></tr>
+      <tr><td>Originality</td><td class="grade-5">5</td><td>Zadny obsah, zadny design. Chybi welcome message, navigacni karty, statistiky.</td></tr>
+      <tr><td>Craft</td><td class="grade-3">3</td><td>Layout (header, sidebar, main) je ciste strukturovany, ale prazdny obsah znaci nedokonceni.</td></tr>
+      <tr><td>Functionality</td><td class="grade-4">4</td><td>Navigacni menu pouziva anglicke nazvy (calendar, events, members) misto ceskych. Chybi navigacni ikony. Dashboard neplni svuj ucel.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><strong>Kriticke:</strong> Pridat obsah dashboardu - shrnuti, rychle odkazy, statistiky</li>
+        <li><strong>Kriticke:</strong> Prelozit polozky menu do cestiny (calendar→Kalendar, events→Zavody, members→Clenove)</li>
+        <li><em>Stredni:</em> Pridat ikony k polozkam navigace</li>
+        <li>Zobrazit uvitaci zpravu s jmenem uzivatele</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MEMBERS LIST ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>3. Seznam clenu</h2>
+    <span class="grade-badge good">Prumer: 2</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="03-members-list-admin.png" alt="Members list light" onclick="openLightbox(this)">
+        <figcaption>Seznam clenu - light mode</figcaption>
+      </figure>
+      <figure>
+        <img src="13-members-dark.png" alt="Members list dark" onclick="openLightbox(this)">
+        <figcaption>Seznam clenu - dark mode</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-2">2</td><td>Cista tabulka s jasnou hierarchii. Status badges (Aktivni/Neaktivni) dobre vizualne odlisene. Dobre funguje dark mode.</td></tr>
+      <tr><td>Originality</td><td class="grade-3">3</td><td>Standardni tabulkovy design, ale dobre provedeny. Akce jako ikonove tlacitka jsou uspornejsi nez textove.</td></tr>
+      <tr><td>Craft</td><td class="grade-2">2</td><td>Konzistentni spacing, radkovani, sortovatelne sloupce, strank. Dark mode funguje spravne.</td></tr>
+      <tr><td>Functionality</td><td class="grade-2">2</td><td>Sortovani, strankovani, akce v radku, CTA tlacitko "Registrovat clena" jasne viditelne. Ikonova tlacitka akcí mohla mit tooltip.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><em>Stredni:</em> Pridat tooltipy k ikonovym tlacitkum v sloupci Akce (na mobilu uzivatel nemuze hoverat)</li>
+        <li>Zvazit pridat vyhledavaci pole / filtry</li>
+        <li>Badge "Neaktivni" by mohl byt vice vizualne odliseny (napr. seda barva)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MEMBER DETAIL ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>4. Detail clena</h2>
+    <span class="grade-badge good">Prumer: 2</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="04-member-detail-admin.png" alt="Member detail" onclick="openLightbox(this)">
+        <figcaption>Detail clena - read-only pohled</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-2">2</td><td>Dobre organizovane do logickych sekci (Osobni udaje, Kontakt, Adresa, Doklady). Kartove rozlozeni je prehledne.</td></tr>
+      <tr><td>Originality</td><td class="grade-2">2</td><td>Maskovane rodne cislo s tlacitkem "Zobrazit" je promysleny detail. Licence badges (T2) s datem platnosti.</td></tr>
+      <tr><td>Craft</td><td class="grade-2">2</td><td>Definition list (dt/dd) pro prehledne parovani labelu a hodnot. Konzistentni odsazeni.</td></tr>
+      <tr><td>Functionality</td><td class="grade-2">2</td><td>Jasne CTA akce nahore, breadcrumb zpet. Tlacitko "Ukoncit clenstvi" spravne cervene.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><em>Stredni:</em> Tlacitko "Ukoncit clenstvi" pouziva dropdown indikator ale neni jasne ze jde o dropdown - zmatecne</li>
+        <li>Prazdne hodnoty ("—") by mohly byt vizualne tlumene (svetle seda)</li>
+        <li>PSC zobrazuje "11000" v uvozovkach - nema byt v uvozovkach</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MEMBER EDIT FORM ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>5. Editace profilu clena</h2>
+    <span class="grade-badge good">Prumer: 2</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="05-member-edit-form.png" alt="Member edit form" onclick="openLightbox(this)">
+        <figcaption>Editacni formular clena - inline editace</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-2">2</td><td>Inline editace primo na detailu - plynuly prechod. Zachovava kartove rozlozeni.</td></tr>
+      <tr><td>Originality</td><td class="grade-2">2</td><td>Inline editace misto modalniho formulare je promysleny pristup. Registracni cislo je read-only - spravne.</td></tr>
+      <tr><td>Craft</td><td class="grade-2">2</td><td>Inputy konzistentni sirky, selectboxy se sipkou, datumove pole s nativni ikonou.</td></tr>
+      <tr><td>Functionality</td><td class="grade-2">2</td><td>Sticky footer s "Zrusit"/"Ulozit zmeny". Napoveda u bankovniho uctu. Logicke seskupeni poli.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><em>Stredni:</em> Datumove pole zobrazuji ISO format (1990-03-15) misto ceskeho (15.03.1990) - nekonzistence s read-only pohledem</li>
+        <li><em>Stredni:</em> E-mail pole je orezane ("jan.novak@example.co") - sirkove problemy</li>
+        <li>Pridat validacni hlasky primo u poli</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PERMISSIONS MODAL ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>6. Modal opravneni</h2>
+    <span class="grade-badge good">Prumer: 2</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="06-permissions-modal.png" alt="Permissions modal" onclick="openLightbox(this)">
+        <figcaption>Modal pro spravu opravneni</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-1">1</td><td>Vyborna vizualni hierarchie - ikony, nazev, popis, toggle switch. Barevne rozliseni ikon podle typu opravneni.</td></tr>
+      <tr><td>Originality</td><td class="grade-2">2</td><td>Barevne kodovani ikon (zelena=zobrazeni, modra=sprava, cervena=opravneni) je promyslene.</td></tr>
+      <tr><td>Craft</td><td class="grade-2">2</td><td>Konzistentni rozestupy, ciste toggle switche, jasny CTA.</td></tr>
+      <tr><td>Functionality</td><td class="grade-2">2</td><td>Jasny uvodní text, kazde opravneni ma popis. "Zmeny se projevi okamzite" je uzitecna informace.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li>Temer zadne - toto je nejlepe provedena komponenta v aplikaci</li>
+        <li>Mozna pridat potvrzovaci dialog pri odebrani kritickeho opravneni (napr. Sprava opravneni sobe samemu)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MEMBER REGISTRATION ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>7. Registrace noveho clena</h2>
+    <span class="grade-badge good">Prumer: 2</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="07-member-registration.png" alt="Member registration" onclick="openLightbox(this)">
+        <figcaption>Registracni formular noveho clena</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-2">2</td><td>Konzistentni s editacnim formularem. Dve sloupce logicky oddeluji hlavni a doplnkove udaje.</td></tr>
+      <tr><td>Originality</td><td class="grade-3">3</td><td>Standardni formular, ale dobre strukturovany.</td></tr>
+      <tr><td>Craft</td><td class="grade-2">2</td><td>Stejne vizualni jazyk jako zbytek aplikace.</td></tr>
+      <tr><td>Functionality</td><td class="grade-2">2</td><td>Breadcrumb zpet, jasne CTA "Odeslat"/"Zrusit" dole.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><em>Stredni:</em> Chybi oznaceni povinnych poli (hvezdicka * nebo jine indikace)</li>
+        <li>Pridat placeholdery pro formatovani (napr. telefon, PSC)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== EVENTS LIST ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>8. Seznam zavodu</h2>
+    <span class="grade-badge good">Prumer: 2</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="08-events-list.png" alt="Events list" onclick="openLightbox(this)">
+        <figcaption>Seznam zavodu</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-2">2</td><td>Konzistentni s tabulkou clenu. Ciste rozlozeni.</td></tr>
+      <tr><td>Originality</td><td class="grade-3">3</td><td>Standardni tabulkovy pohled.</td></tr>
+      <tr><td>Craft</td><td class="grade-2">2</td><td>Sortovani, strankovani - konzistentni s cleny.</td></tr>
+      <tr><td>Functionality</td><td class="grade-2">2</td><td>"Pridat zavod" CTA dobre viditelne. Kliknuti na radek otevre detail.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><em>Stredni:</em> Status "ACTIVE" je anglicky - prelozit na "Aktivni" jako u clenu</li>
+        <li>Pridat barevny status badge jako u clenu</li>
+        <li>Zvazit pridat sloupec s poctem prihlasenych</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== EVENT DETAIL ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>9. Detail zavodu</h2>
+    <span class="grade-badge bad">Prumer: 4</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="09-event-detail.png" alt="Event detail" onclick="openLightbox(this)">
+        <figcaption>Detail zavodu</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-3">3</td><td>Zakladni layout OK, ale akcni tlacitka (cancelEvent, finishEvent, unregisterFromEvent) jsou anglicke camelCase nazvy - pusobi nedokoncene.</td></tr>
+      <tr><td>Originality</td><td class="grade-4">4</td><td>Genericke zobrazeni dat bez vlastniho designu. Tlacitka pusobi jako automaticky generovane z API.</td></tr>
+      <tr><td>Craft</td><td class="grade-4">4</td><td>Datum prihlaseni je v surovem ISO formatu (2026-03-27T19:38:43.395414Z). CamelCase nazvy tlacitek.</td></tr>
+      <tr><td>Functionality</td><td class="grade-4">4</td><td>Tlacitka s nazvy jako "cancelEvent" a "finishEvent" jsou pro uzivatele nesrozumitelne. Status "ACTIVE" je anglicky.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><strong>Kriticke:</strong> Prelozit nazvy tlacitek - "cancelEvent"→"Zrusit zavod", "finishEvent"→"Ukoncit zavod", "unregisterFromEvent"→"Odhlasit se"</li>
+        <li><strong>Kriticke:</strong> Zformatovat datum prihlaseni do ceskeho formatu (27. 3. 2026, 19:38)</li>
+        <li><strong>Kriticke:</strong> Prelozit status "ACTIVE" na "Aktivni" s barevnym badge</li>
+        <li><em>Stredni:</em> Doplnit ikony k tlacitkum (jako na detailu clena)</li>
+        <li>Pridat tlacitko "Prihlasit se" pro dalsi cleny (admin pohled)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== EVENT EDIT MODAL ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>10. Modal editace zavodu</h2>
+    <span class="grade-badge bad">Prumer: 4</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="10-event-edit-modal.png" alt="Event edit modal" onclick="openLightbox(this)">
+        <figcaption>Modal pro editaci zavodu</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-4">4</td><td>Genericke zobrazeni formulare. Labely jsou anglicke camelCase nazvy z API (EVENTCOORDINATORID, EVENTDATE, WEBSITEURL).</td></tr>
+      <tr><td>Originality</td><td class="grade-5">5</td><td>Jasne automaticky generovany formular z HAL+FORMS template bez jakekoli customizace.</td></tr>
+      <tr><td>Craft</td><td class="grade-4">4</td><td>Inputy maji sedive pozadi (nekonzistentni se zbytkem). Labely jsou uppercase camelCase - neladna kombinace.</td></tr>
+      <tr><td>Functionality</td><td class="grade-3">3</td><td>Formular funguje, ale labely jsou nesrozumitelne. Select "Vyberte moznost" s "Nacitani..." chyba.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><strong>Kriticke:</strong> Prelozit labely formulare - "EVENTCOORDINATORID"→"Koordinator", "EVENTDATE"→"Datum", "WEBSITEURL"→"Web"</li>
+        <li><strong>Kriticke:</strong> Opravit select koordinatora - ukazuje "Nacitani..." a zustava disabled (404 chyba na /api/members/options)</li>
+        <li><em>Stredni:</em> Sjednotit vizual inputu s inline editaci clena (bile pozadi, border)</li>
+        <li>Pridat nazev modalniho okna (chybi titulek)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CALENDAR ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>11. Kalendar</h2>
+    <span class="grade-badge good">Prumer: 2</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="11-calendar.png" alt="Calendar light" onclick="openLightbox(this)">
+        <figcaption>Kalendar - light mode</figcaption>
+      </figure>
+      <figure>
+        <img src="12-calendar-dark.png" alt="Calendar dark" onclick="openLightbox(this)">
+        <figcaption>Kalendar - dark mode</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-2">2</td><td>Klasicky mesicni kalendar s ciste vizualni mrizi. Dnesni den zvyraznen modrym rameckem. Udalosti zobrazeny jako male linky.</td></tr>
+      <tr><td>Originality</td><td class="grade-2">2</td><td>Custom kalendar (ne knihovni). Navigace sipkami, mesicni pohled. Konzistentni v obou tematech.</td></tr>
+      <tr><td>Craft</td><td class="grade-2">2</td><td>Mrizka je rovnomerne rozlozena, dny tydle oznaceny. Dark mode funguje spravne.</td></tr>
+      <tr><td>Functionality</td><td class="grade-2">2</td><td>Navigace mesici, kliknuti na udalost. CTA "Pridat polozku".</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><em>Stredni:</em> Udalost "JML" je maly text - zvazit vetsi badge nebo tooltip s detaily pri hoveru</li>
+        <li>Prazdne bunky pred zacatkem mesice by mohly zobrazovat cisla z predchoziho mesice (seda)</li>
+        <li>Zvazit tydenni/denni pohled</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FINANCE ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>12. Finance clena</h2>
+    <span class="grade-badge bad">Prumer: 4</span>
+  </div>
+  <div class="section-body">
+    <div class="screenshots">
+      <figure>
+        <img src="16-finance-page-light.png" alt="Finance light" onclick="openLightbox(this)">
+        <figcaption>Financni stranka - light mode</figcaption>
+      </figure>
+      <figure>
+        <img src="15-finance-page.png" alt="Finance dark" onclick="openLightbox(this)">
+        <figcaption>Financni stranka - dark mode</figcaption>
+      </figure>
+    </div>
+    <table class="criteria-table">
+      <tr><th>Kriterium</th><th>Hodnoceni</th><th>Komentar</th></tr>
+      <tr><td>Design Quality</td><td class="grade-4">4</td><td>Minimalni obsah. Zustatek "- Kc" (pomlcka misto cisla). Chybova hlaska v anglictine.</td></tr>
+      <tr><td>Originality</td><td class="grade-4">4</td><td>Zakladni layout bez designoveho usili.</td></tr>
+      <tr><td>Craft</td><td class="grade-4">4</td><td>Chybove zpravy v anglictine: "Subresource owner wasn't found", "Subresource transactions wasn't found".</td></tr>
+      <tr><td>Functionality</td><td class="grade-4">4</td><td>Stranka je nefunkcni - zobrazuje chyby misto dat. Zustatek ukazuje "- Kc" misto 0 Kc nebo jine realne hodnoty.</td></tr>
+    </table>
+    <div class="findings">
+      <h3>Doporucena zlepseni</h3>
+      <ul>
+        <li><strong>Kriticke:</strong> Opravit chybu "Subresource owner/transactions wasn't found" - bud opravit backend API nebo zobrazit user-friendly zpravu</li>
+        <li><strong>Kriticke:</strong> Zustatek "- Kc" je nesmyslny - zobrazit 0 Kc nebo "Ucet nebyl zalozen"</li>
+        <li><strong>Kriticke:</strong> Prelozit chybove hlasky do cestiny</li>
+        <li>Navigace na tuto stranku neni intuitivni (pres "Vlozit / Vybrat" tlacitko?)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== OVERALL OBSERVATIONS ==================== -->
+<div class="section">
+  <div class="section-header">
+    <h2>Celkove pozorovani</h2>
+    <span class="grade-badge ok">Celkovy prumer: 2.8</span>
+  </div>
+  <div class="section-body">
+    <div class="findings">
+      <h3>Silne stranky</h3>
+      <ul>
+        <li>Konzistentni barevne schema (modra/bila) pres vetsi cast aplikace</li>
+        <li>Funkcni dark mode s dobrym kontrastem</li>
+        <li>Inline editace clena je dobre promyslena</li>
+        <li>Modal opravneni je vyborna komponenta</li>
+        <li>Kalendar je ciste provedeny</li>
+        <li>Tabulky s sortovanim a strankovanim funguji dobre</li>
+        <li>Ceske lokalizace formularu clenu je dobra</li>
+      </ul>
+      <h3>Systematicke problemy</h3>
+      <ul>
+        <li><strong>Nekonzistentni lokalizace:</strong> Nektere casti jsou cesky (clenove, formulare), jine anglicky (menu, event tlacitka, chybove hlasky, statusy)</li>
+        <li><strong>Genericke HAL formulare:</strong> Modalni formulare pro eventy jsou auto-generovane z API bez customizace - camelCase labely, chybejici titulky</li>
+        <li><strong>Prazdny dashboard:</strong> Domovska stranka je nefunkcni</li>
+        <li><strong>Financni modul:</strong> Nefunkcni, zobrazuje anglicke chybove zpravy</li>
+        <li><strong>Chybejici chybova zprava na loginu:</strong> Uzivatel nema zpetnou vazbu pri nespravnem prihlaseni</li>
+      </ul>
+      <h3>Prioritni akce</h3>
+      <ul>
+        <li>1. Dokoncit lokalizaci - prelozit menu, event tlacitka, statusy, chybove hlasky</li>
+        <li>2. Customizovat event formulare - prelozit labely, pridat titulky</li>
+        <li>3. Pridat obsah na dashboard</li>
+        <li>4. Opravit finance modul nebo skryt dokud neni ready</li>
+        <li>5. Pridat chybovou zpravu na login stranku</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <strong>Stupnice hodnoceni:</strong> 1 = Vynikajici, 2 = Dobre, 3 = Prumerne, 4 = Podprumerne, 5 = Nedostatecne
+</div>
+
+</div>
+
+<script>
+function openLightbox(img) {
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  lbImg.src = img.src;
+  lb.classList.add('active');
+}
+</script>
+
+</body>
+</html>
