@@ -1,5 +1,6 @@
 import type {ButtonHTMLAttributes, ReactNode} from 'react'
 import clsx from 'clsx'
+import {twMerge} from 'tailwind-merge'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'danger-ghost'
@@ -37,7 +38,7 @@ export const Button = ({
                            className,
                            ...props
                        }: ButtonProps) => {
-    const classes = clsx(
+    const classes = twMerge(clsx(
         'inline-flex items-center justify-center font-medium rounded-md',
         'transition-all duration-fast',
         'focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-0',
@@ -48,7 +49,7 @@ export const Button = ({
         sizeClasses[size],
         fullWidth && 'w-full',
         className
-    )
+    ))
 
     return (
         <button
