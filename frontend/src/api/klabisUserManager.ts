@@ -44,12 +44,10 @@ export const createUserManager = ({
 
     const userManager = new UserManager(userManagerConfig);
 
-    userManager.events.addUserLoaded((user) => {
-        onUserLoaded(user);
-    });
+    userManager.events.addUserLoaded(onUserLoaded);
 
     userManager.events.addUserUnloaded(() => {
-        console.log(`User unloaded`);
+        console.log('User unloaded');
         onUserUnloaded();
     });
 

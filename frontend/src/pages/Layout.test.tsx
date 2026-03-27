@@ -84,7 +84,7 @@ describe('Layout - Responsive Sidebar', () => {
             isAuthenticated: true,
             login: vi.fn(),
             isLoading: false,
-            getUser: vi.fn().mockResolvedValue({
+            getUser: vi.fn().mockReturnValue({
                 id: 'user-1',
                 firstName: 'John',
                 lastName: 'Doe',
@@ -238,7 +238,7 @@ describe('Layout - Responsive Sidebar', () => {
                 isAuthenticated: true,
                 login: vi.fn(),
                 isLoading: false,
-                getUser: vi.fn().mockResolvedValue({
+                getUser: vi.fn().mockReturnValue({
                     id: 'user-1',
                     firstName: 'John',
                     lastName: 'Doe',

@@ -43,7 +43,7 @@ vi.mock('../../contexts/ToastContext', () => ({
 
 vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: vi.fn().mockResolvedValue({
+        getUser: vi.fn().mockReturnValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),

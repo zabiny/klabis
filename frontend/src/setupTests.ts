@@ -1,11 +1,9 @@
-// Rozšíření matcherů pro DOM od @testing-library/jest-dom
 import '@testing-library/jest-dom';
-import {afterAll, afterEach, beforeAll, beforeEach, vi} from 'vitest';
+import {beforeEach, vi} from 'vitest';
 
-// Mock klabisUserManager to avoid initialization errors in tests
 vi.mock('./api/klabisUserManager', () => {
     const mockUserManager = {
-        getUser: vi.fn().mockResolvedValue(null),
+        getUser: vi.fn().mockReturnValue(null),
         events: {
             addUserLoaded: vi.fn(),
             addUserUnloaded: vi.fn(),
@@ -30,28 +28,6 @@ vi.mock('./api/klabisUserManager', () => {
     };
 });
 
-
-// Mock pro případné globální objekty nebo API
-// global.ResizeObserver = vi.fn().mockImplementation(() => ({
-//     observe: vi.fn(),
-//     unobserve: vi.fn(),
-//     disconnect: vi.fn(),
-// }));
-
-// Vitest global setup
-beforeAll(() => {
-    // Globální setup před všemi testy
-});
-
-afterAll(() => {
-    // Globální cleanup po všech testech
-});
-
 beforeEach(() => {
-    // Setup před každým testem
     vi.clearAllMocks();
-});
-
-afterEach(() => {
-    // Cleanup po každém testu
 });

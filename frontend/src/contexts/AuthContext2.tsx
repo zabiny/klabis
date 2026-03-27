@@ -8,7 +8,7 @@ interface AuthContextType {
     login: () => void;
     logout: () => void;
     isLoading: boolean;
-    getUser: () => Promise<AuthUserDetails | null>;
+    getUser: () => AuthUserDetails | null;
 }
 
 export interface AuthUserDetails {
@@ -26,15 +26,7 @@ interface AuthProviderProps {
     config: AuthConfig;
 }
 
-const createAuthUserDetails = (user: User | null | undefined): AuthUserDetails | null => {
-    if (user === null || user === undefined) {
-        return null;
-    }
-
-    if (user.expired) {
-        return null;
-    }
-
+function createAuthUserDetails(user: User): AuthUserDetails {
     return {
         firstName: user.profile.given_name,
         lastName: user.profile.family_name,
@@ -61,7 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         setUserManager(userManager);
     }, [config]);
 
-    const setValidUser = (user: User | null): void => {
+    function setValidUser(user: User | null): void {
         if (user != null && !user.expired) {
             setAuthUserDetails(createAuthUserDetails(user));
         } else {
@@ -69,7 +61,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         }
     }
 
-    const isCurrentLocationSameAsRedirectUri = (config: { redirect_uri: string }): boolean => {
+    function isCurrentLocationSameAsRedirectUri(config: { redirect_uri: string }): boolean {
         return new URL(normalizeUrl(config.redirect_uri)).pathname === window.location.pathname;
     }
 
@@ -118,9 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         }
     }, [userManager]);
 
-    const getUser = async (): Promise<AuthUserDetails | null> => {
-        return authUserDetails;
-    };
+    const getUser = (): AuthUserDetails | null => authUserDetails;
 
     return (
         <AuthContext.Provider

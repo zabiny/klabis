@@ -39,7 +39,7 @@ public class BootstrapDataLoader implements ApplicationRunner {
         bootstrapDataInitializers.forEach(this::bootstrapData);
     }
 
-    private boolean bootstrapData(BootstrapDataInitializer bootstrapDataInitializer) {
+    private void bootstrapData(BootstrapDataInitializer bootstrapDataInitializer) {
         try {
             if (bootstrapDataInitializer.requiresBootstrap()) {
                 log.info("Running bootstrap data initializer {}", bootstrapDataInitializer.getClass().getSimpleName());
@@ -48,11 +48,9 @@ public class BootstrapDataLoader implements ApplicationRunner {
                 log.trace("Bootstrap data from initializer {} are completed, skipping",
                         bootstrapDataInitializer.getClass().getSimpleName());
             }
-            return true;
         } catch (Exception ex) {
             log.warn("Failed to initialize bootstrap data using %s".formatted(bootstrapDataInitializer.getClass()
                     .getCanonicalName()), ex);
-            return false;
         }
     }
 }
@@ -97,7 +95,13 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 Set.of());
     }
 
-    private void createPublicWebClient(String clientUuid, String clientId, Set<String> redirectUris, Set<String> postLogoutRedirectUris) {
+    private static final TokenSettings DEFAULT_TOKEN_SETTINGS = TokenSettings.builder()
+            .accessTokenTimeToLive(Duration.ofMinutes(5))
+            .refreshTokenTimeToLive(Duration.ofHours(24))
+            .reuseRefreshTokens(false)
+            .build();
+
+    private List<String> resolveScopes() {
         String defaultScopes = String.join(",",
                 "openid",
                 "profile",
@@ -105,9 +109,13 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 Authority.MEMBERS_SCOPE,
                 Authority.EVENTS_SCOPE
         );
-
         String scopes = StringUtils.isNotBlank(clientProperties.getScopes()) ? clientProperties.getScopes() : defaultScopes;
+        return Arrays.stream(scopes.split(","))
+                .map(String::trim)
+                .collect(Collectors.toList());
+    }
 
+    private void createPublicWebClient(String clientUuid, String clientId, Set<String> redirectUris, Set<String> postLogoutRedirectUris) {
         RegisteredClient c = RegisteredClient.withId(clientUuid)
                 .clientId(clientId)
                 .clientName("Klabis Web application")
@@ -118,17 +126,11 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 })
                 .redirectUris(items -> items.addAll(redirectUris))
                 .postLogoutRedirectUris(items -> items.addAll(postLogoutRedirectUris))
-                .scopes(items -> items.addAll(Arrays.stream(scopes.split(","))
-                        .map(String::trim)
-                        .collect(Collectors.toList())))
+                .scopes(items -> items.addAll(resolveScopes()))
                 .clientSettings(ClientSettings.builder()
                         .requireProofKey(true)
                         .build())
-                .tokenSettings(TokenSettings.builder()
-                        .accessTokenTimeToLive(Duration.ofMinutes(5))
-                        .refreshTokenTimeToLive(Duration.ofHours(24))
-                        .reuseRefreshTokens(false)
-                        .build())
+                .tokenSettings(DEFAULT_TOKEN_SETTINGS)
                 .build();
 
         registeredClientRepository.save(c);
@@ -137,7 +139,6 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
     }
 
     private void createOAuth2Client(String clientUuid, String clientId, String clientSecret, Set<String> redirectUris, Set<String> postLogoutRedirectUris) {
-
         if (StringUtils.isBlank(clientSecret)) {
             LOG.warn("KLABIS_OAUTH2_CLIENT_SECRET not set, generating random secret.");
             clientSecret = passwordGenerator.generateSecurePassword();
@@ -145,16 +146,6 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
         }
 
         String clientSecretHash = passwordEncoder.encode(clientSecret);
-
-        String defaultScopes = String.join(",",
-                "openid",
-                "profile",
-                "email",
-                Authority.MEMBERS_SCOPE,
-                Authority.EVENTS_SCOPE
-        );
-
-        String scopes = StringUtils.isNotBlank(clientProperties.getScopes()) ? clientProperties.getScopes() : defaultScopes;
 
         RegisteredClient c = RegisteredClient.withId(clientUuid)
                 .clientId(clientId)
@@ -171,17 +162,11 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 })
                 .redirectUris(items -> items.addAll(redirectUris))
                 .postLogoutRedirectUris(items -> items.addAll(postLogoutRedirectUris))
-                .scopes(items -> items.addAll(Arrays.stream(scopes.split(","))
-                        .map(String::trim)
-                        .collect(Collectors.toList())))
+                .scopes(items -> items.addAll(resolveScopes()))
                 .clientSettings(ClientSettings.builder()
                         .requireProofKey(false)
                         .build())
-                .tokenSettings(TokenSettings.builder()
-                        .accessTokenTimeToLive(Duration.ofMinutes(5))
-                        .refreshTokenTimeToLive(Duration.ofHours(24))
-                        .reuseRefreshTokens(false)
-                        .build())
+                .tokenSettings(DEFAULT_TOKEN_SETTINGS)
                 .build();
 
         registeredClientRepository.save(c);

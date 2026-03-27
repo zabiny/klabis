@@ -1,31 +1,8 @@
 import {klabisAuthUserManager} from './klabisUserManager';
 
 /**
- * Performs an authorized fetch request with automatic bearer token injection.
- *
- * Retrieves the current user's access token and adds it as a Bearer token
- * in the Authorization header. Other headers are merged with provided options.
- *
- * Note: API prefix (/api) is automatically prepended to relative URLs.
- * Absolute URLs (starting with http:// or https://) are used as-is.
- *
- * @param url - The URL to fetch (can be relative or absolute)
- * @param options - Fetch options (optional). Headers will be merged with auth headers.
- * @param throwOnError - If true, throws on non-ok responses. Defaults to true.
- * @returns Promise containing the fetch Response
- * @throws Error if the request fails (non-2xx status code) and throwOnError is true
- *
- * @example
- * // Throws on error (default)
- * const data = await authorizedFetch('/members');
- * const json = await data.json();
- *
- * @example
- * // Returns response regardless of status
- * const res = await authorizedFetch('/submit', {}, false);
- * if (!res.ok) {
- *   // Handle error response
- * }
+ * Fetch with automatic Bearer token injection and /api prefix for relative URLs.
+ * Throws FetchError on non-ok responses unless throwOnError is false.
  */
 export async function authorizedFetch(
     url: string | URL,

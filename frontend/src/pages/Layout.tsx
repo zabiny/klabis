@@ -43,21 +43,11 @@ const Layout = () => {
     }, [])
 
     useEffect(() => {
-        const loadUserName = async () => {
-            if (isAuthenticated) {
-                try {
-                    const user = await getUser()
-                    setUserDetails(user)
-                } catch (error) {
-                    console.error("Error loading user name: ", error)
-                    setUserDetails(null)
-                }
-            } else {
-                setUserDetails(null)
-            }
+        if (isAuthenticated) {
+            setUserDetails(getUser())
+        } else {
+            setUserDetails(null)
         }
-
-        loadUserName()
     }, [isAuthenticated, getUser])
 
     const handleLogout = () => {

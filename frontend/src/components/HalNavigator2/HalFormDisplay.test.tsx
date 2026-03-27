@@ -19,7 +19,7 @@ vi.mock('../../hooks/useHalPageData', () => ({
 // Mock dependencies
 vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: vi.fn().mockResolvedValue({
+        getUser: vi.fn().mockReturnValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),

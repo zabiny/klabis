@@ -9,7 +9,7 @@ import {type Mock, vi} from 'vitest';
 // Mock auth manager
 vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
-        getUser: vi.fn().mockResolvedValue({
+        getUser: vi.fn().mockReturnValue({
             access_token: 'test-token',
             token_type: 'Bearer',
         }),
