@@ -104,4 +104,13 @@ public enum Authority {
     public static Set<Authority> getStandardUserAuthorities() {
         return EnumSet.of(MEMBERS_READ, EVENTS_READ);
     }
+
+    public static boolean isKnownAuthority(String value) {
+        for (Authority authority : values()) {
+            if (authority.value.equals(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

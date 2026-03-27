@@ -79,6 +79,7 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 - Use `test-runner` agent instead of direct Gradle commands for testing
 - Gradle runs in sandbox mode by default - most operations work but some may be restricted
 - Workaround: Use `dangerouslyDisableSandbox: true` for Bash tool when needed
+- `curl` to localhost (e.g. `https://localhost:8443`) is blocked by sandbox — use `dangerouslyDisableSandbox: true`
 
 ### Git Quirks
 

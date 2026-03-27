@@ -121,6 +121,11 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 
 ## Development Guidelines
 
+### Spring Security 7 Notes
+- Authorization Server uses `http.oauth2AuthorizationServer(...)` DSL (not `new OAuth2AuthorizationServerConfigurer()`)
+- `DaoAuthenticationProvider` auto-adds `FACTOR_PASSWORD` authority (MFA framework) — filtered out in JWT token customizer via `Authority.isKnownAuthority()`
+- Auth server chain (`securityMatcher(getEndpointsMatcher())`) cannot include `/login` — login requires separate filter chain
+
 ### Test-Driven Development
 
 - **Always use `test-runner` agent to run tests** — never invoke Gradle test commands directly
@@ -170,7 +175,7 @@ Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics`
 - **Java 17+**
 - **Spring Boot 4.0.5**
 - **Spring Modulith 2.0.5** - Event-driven modular application using hexagonal architecture
-- **Spring Security** - OAuth2 Authorization Server + Resource Server
+- **Spring Security 7** - OAuth2 Authorization Server + Resource Server
 - **Spring Data JDBC** - Lightweight JDBC-based persistence
 - **Spring HATEOAS** - HAL+FORMS hypermedia
 - **PostgreSQL** (prod) / H2 (dev/test)

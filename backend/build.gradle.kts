@@ -52,9 +52,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-aspectj")
-
-    // Spring Authorization Server for OAuth2 — version managed by Spring Security BOM (Boot 4)
-    implementation("org.springframework.security:spring-security-oauth2-authorization-server")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-authorization-server")
 
     // Spring Modulith
     implementation("org.springframework.modulith:spring-modulith-starter-core:$springModulithVersion")

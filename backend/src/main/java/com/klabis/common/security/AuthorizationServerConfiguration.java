@@ -1,5 +1,6 @@
 package com.klabis.common.security;
 
+import com.klabis.common.users.Authority;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -14,14 +15,12 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -96,9 +95,12 @@ public class AuthorizationServerConfiguration {
                     context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES, new HashSet<>(authorizedScopes));
                 } else {
                     // For user-based grants (authorization_code, etc.), use user authorities
+                    // Only include known Klabis authorities, filtering out framework-added
+                    // authorities like Spring Security 7 MFA factors (FACTOR_PASSWORD)
                     context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES,
                             context.getPrincipal().getAuthorities().stream()
                                     .map(GrantedAuthority::getAuthority)
+                                    .filter(Authority::isKnownAuthority)
                                     .collect(Collectors.toCollection(ArrayList::new)));
                 }
 
@@ -172,17 +174,20 @@ public class AuthorizationServerConfiguration {
     public SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http,
             CorsConfigurationSource corsConfigurationSource) throws Exception {
-        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
-        http.securityMatcher(authorizationServerConfigurer.getEndpointsMatcher());
-        http.with(authorizationServerConfigurer, configurer -> configurer
-                .oidc(oidc -> oidc
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userInfoMapper(oidcUserInfoMapper())
-                        )
-                )
-        );
 
         http
+                .oauth2AuthorizationServer(authorizationServer -> {
+                    http.securityMatcher(authorizationServer.getEndpointsMatcher());
+                    authorizationServer
+                            .oidc(oidc -> oidc
+                                    .userInfoEndpoint(userInfo -> userInfo
+                                            .userInfoMapper(oidcUserInfoMapper())
+                                    )
+                            );
+                })
+                .authorizeHttpRequests(authorize -> authorize
+                        .anyRequest().authenticated()
+                )
                 // Enable CORS for OAuth2 endpoints (including /oauth2/token)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 // Accept access tokens for User Info and/or Client Registration
@@ -197,11 +202,8 @@ public class AuthorizationServerConfiguration {
 
     /**
      * Security filter chain for the login page.
-     * <p>
-     * Redirects unauthenticated users to the React SPA /login route.
-     * Processes POST /login form submissions from the SPA.
-     * Session is required so Spring Security can save and restore the OAuth2 authorization request.
-     * CSRF is disabled for /login to allow the React SPA to submit credentials without a CSRF token.
+     * Separate from authorization server chain because securityMatcher limits
+     * the auth server chain to OAuth2 protocol endpoints only.
      */
     @Bean
     @Order(2)
@@ -209,7 +211,6 @@ public class AuthorizationServerConfiguration {
         http.securityMatcher("/login")
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
                 .formLogin(form -> form.loginPage("/login").permitAll())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/login"));
 
         return http.build();
