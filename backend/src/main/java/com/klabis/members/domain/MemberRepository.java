@@ -44,6 +44,8 @@ public interface MemberRepository {
 
     List<Member> findAll();
 
+    List<Member> findAllActive();
+
     /**
      * Find all members with pagination.
      *

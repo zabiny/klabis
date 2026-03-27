@@ -35,6 +35,7 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -156,6 +157,19 @@ class MemberController {
         return ResponseEntity.noContent()
                 .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
                 .build();
+    }
+
+    @GetMapping(value = "/options", produces = {MediaType.APPLICATION_JSON_VALUE, MediaTypes.HAL_FORMS_JSON_VALUE})
+    @Transactional(readOnly = true)
+    @HasAuthority(Authority.MEMBERS_READ)
+    public ResponseEntity<List<MemberOptionResponse>> listMemberOptions() {
+        List<MemberOptionResponse> options = memberRepository.findAllActive().stream()
+                .map(member -> new MemberOptionResponse(
+                        member.getId().uuid().toString(),
+                        "%s %s (%s)".formatted(member.getFirstName(), member.getLastName(), member.getRegistrationNumber().getValue())
+                ))
+                .toList();
+        return ResponseEntity.ok(options);
     }
 
     @GetMapping

@@ -75,6 +75,14 @@ class MemberRepositoryAdapter implements MemberRepository {
     }
 
     @Override
+    public List<Member> findAllActive() {
+        return jdbcRepository.findAllByActiveTrueOrderByLastNameAscFirstNameAsc()
+                .stream()
+                .map(MemberMemento::toMember)
+                .toList();
+    }
+
+    @Override
     public Page<Member> findAll(Pageable pageable) {
         return jdbcRepository.findAll(pageable)
                 .map(MemberMemento::toMember);

@@ -8,11 +8,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
-import com.klabis.members.application.InvalidUpdateException;
-import com.klabis.members.application.ManagementService;
-import com.klabis.members.application.MemberNotFoundException;
-import com.klabis.members.application.RegistrationService;
-import com.klabis.members.application.ValidationPatterns;
+import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -42,9 +38,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -1658,6 +1652,75 @@ class MemberControllerApiTest {
                                     """))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/members/options")
+    class GetMemberOptionsTests {
+
+        @Test
+        @DisplayName("should return 200 with list of active members as value+prompt pairs")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldReturnActiveMembers() throws Exception {
+            UUID memberId1 = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            UUID memberId2 = UUID.fromString("22222222-2222-2222-2222-222222222222");
+
+            Member activeMember1 = MemberTestDataBuilder.aMemberWithId(memberId1)
+                    .withName("Jan", "Novák")
+                    .withRegistrationNumber("ZBM0001")
+                    .withActive(true)
+                    .build();
+            Member activeMember2 = MemberTestDataBuilder.aMemberWithId(memberId2)
+                    .withName("Eva", "Svobodová")
+                    .withRegistrationNumber("ZBM0002")
+                    .withActive(true)
+                    .build();
+
+            when(memberRepository.findAllActive()).thenReturn(List.of(activeMember1, activeMember2));
+
+            mockMvc.perform(get("/api/members/options")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andDo(MockMvcResultHandlers.print())
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(jsonPath("$").isArray())
+                    .andExpect(jsonPath("$.length()").value(2))
+                    .andExpect(jsonPath("$[0].value").value(memberId1.toString()))
+                    .andExpect(jsonPath("$[0].prompt").value("Jan Novák (ZBM0001)"))
+                    .andExpect(jsonPath("$[1].value").value(memberId2.toString()))
+                    .andExpect(jsonPath("$[1].prompt").value("Eva Svobodová (ZBM0002)"));
+        }
+
+        @Test
+        @DisplayName("should return empty array when no active members")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldReturnEmptyArrayWhenNoActiveMembers() throws Exception {
+            when(memberRepository.findAllActive()).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/members/options")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(jsonPath("$").isArray())
+                    .andExpect(jsonPath("$.length()").value(0));
+        }
+
+        @Test
+        @DisplayName("should return 403 when user lacks MEMBERS:READ authority")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn403WhenUnauthorized() throws Exception {
+            mockMvc.perform(get("/api/members/options")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 401 when unauthenticated")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(get("/api/members/options")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isUnauthorized());
         }
     }
 }

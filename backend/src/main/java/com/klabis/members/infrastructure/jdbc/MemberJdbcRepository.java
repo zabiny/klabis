@@ -7,6 +7,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +31,7 @@ import java.util.UUID;
  * - findByRegistrationNumber: Find member memento by registration number
  * - findByEmail: Find member memento by email address
  * - countByBirthYear: Count members born in a specific year (custom SQL query)
+ * - findAllByActiveTrueOrderByLastNameAscFirstNameAsc: All active members, alphabetical order
  */
 @Repository
 interface MemberJdbcRepository extends CrudRepository<MemberMemento, UUID>, PagingAndSortingRepository<MemberMemento, UUID> {
@@ -60,6 +62,8 @@ interface MemberJdbcRepository extends CrudRepository<MemberMemento, UUID>, Pagi
      */
     @Query("SELECT COUNT(*) FROM members WHERE EXTRACT(YEAR FROM date_of_birth) = :birthYear")
     int countByBirthYear(@Param("birthYear") int birthYear);
+
+    List<MemberMemento> findAllByActiveTrueOrderByLastNameAscFirstNameAsc();
 
     // findAll(Pageable) is inherited from PagingAndSortingRepository
     // findById(UUID) is inherited from CrudRepository
