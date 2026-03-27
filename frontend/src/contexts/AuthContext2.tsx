@@ -16,7 +16,7 @@ export interface AuthUserDetails {
     lastName: string,
     id: number,
     userName: string,
-    isMember: boolean
+    memberId: string | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,7 +32,7 @@ function createAuthUserDetails(user: User): AuthUserDetails {
         lastName: user.profile.family_name,
         id: parseInt(user.profile.sub),
         userName: user.profile.user_name || user.profile.preferred_username,
-        isMember: user.profile.is_member === true
+        memberId: typeof user.profile.member_id === 'string' ? user.profile.member_id : null
     } as AuthUserDetails;
 }
 

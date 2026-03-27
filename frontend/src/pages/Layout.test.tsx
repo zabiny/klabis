@@ -89,7 +89,7 @@ describe('Layout - Responsive Sidebar', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 userName: '12345',
-                isMember: true,
+                memberId: 'member-uuid-1',
             }),
             logout: vi.fn(),
         })
@@ -243,7 +243,7 @@ describe('Layout - Responsive Sidebar', () => {
                     firstName: 'John',
                     lastName: 'Doe',
                     userName: '12345',
-                    isMember: true,
+                    memberId: 'member-uuid-1',
                 }),
                 logout: mockLogout,
             })

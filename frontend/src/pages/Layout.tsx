@@ -55,8 +55,8 @@ const Layout = () => {
     }
 
     const handleUserNameClick = () => {
-        if (userDetails?.isMember && userDetails.firstName && userDetails.lastName) {
-            navigate(`members/${userDetails.id}`)
+        if (userDetails?.memberId) {
+            navigate(`members/${userDetails.memberId}`)
         }
     }
 
@@ -106,7 +106,7 @@ const Layout = () => {
                         {/* User name/info */}
                         {userDetails && (
                             userDetails.firstName && userDetails.lastName ? (
-                                userDetails.isMember ? (
+                                userDetails.memberId ? (
                                     <button
                                         onClick={handleUserNameClick}
                                         className="hidden sm:flex px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-all duration-fast"
