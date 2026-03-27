@@ -151,11 +151,11 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                     {labels.templates.updateEvent}
                                 </Button>
                             )}
-                            <HalFormButton name="publishEvent" modal={true} label={labels.templates.publishEvent} icon={<Globe className="w-4 h-4"/>} dialogTitle="Publikování závodu"/>
-                            <HalFormButton name="cancelEvent" modal={true} label={labels.templates.cancelEvent} icon={<XCircle className="w-4 h-4"/>} dialogTitle="Zrušení závodu"/>
-                            <HalFormButton name="finishEvent" modal={true} label={labels.templates.finishEvent} icon={<CheckCircle className="w-4 h-4"/>} dialogTitle="Ukončení závodu"/>
-                            <HalFormButton name="registerForEvent" modal={true} label={labels.templates.registerForEvent} icon={<UserPlus className="w-4 h-4"/>} dialogTitle="Přihlásit se na závod"/>
-                            <HalFormButton name="unregisterFromEvent" modal={true} label={labels.templates.unregisterFromEvent} icon={<UserMinus className="w-4 h-4"/>} dialogTitle="Odhlásit se ze závodu"/>
+                            <HalFormButton name="publishEvent" modal={true} label={labels.templates.publishEvent} icon={<Globe className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.publishEvent}/>
+                            <HalFormButton name="cancelEvent" modal={true} label={labels.templates.cancelEvent} icon={<XCircle className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.cancelEvent}/>
+                            <HalFormButton name="finishEvent" modal={true} label={labels.templates.finishEvent} icon={<CheckCircle className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.finishEvent}/>
+                            <HalFormButton name="registerForEvent" modal={true} label={labels.templates.registerForEvent} icon={<UserPlus className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.registerForEvent}/>
+                            <HalFormButton name="unregisterFromEvent" modal={true} label={labels.templates.unregisterFromEvent} icon={<UserMinus className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.unregisterFromEvent}/>
                         </div>
                     )}
                 </div>
@@ -224,8 +224,8 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                 pathname={route.pathname}
                 onClose={cancelEditing}
                 postprocessPayload={postprocessPayload}
-                successMessage="Úspěšně uloženo"
-                submitButtonLabel="Uložit změny"
+                successMessage={labels.ui.savedSuccessfully}
+                submitButtonLabel={labels.buttons.saveChanges}
                 submitIcon={<Check className="w-4 h-4"/>}
                 customLayout={renderContent}
             />

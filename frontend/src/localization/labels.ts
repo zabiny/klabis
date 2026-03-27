@@ -14,6 +14,7 @@ export const labels = {
         logout: 'Odhlásit',
         edit: 'Upravit',
         save: 'Uložit změny',
+        saveChanges: 'Uložit změny',
         savePermissions: 'Uložit oprávnění',
         sendRequest: 'Odeslat žádost',
         setPassword: 'Nastavit heslo a aktivovat účet',
@@ -32,6 +33,16 @@ export const labels = {
         resumeMember: 'Reaktivovat',
         updateMember: 'Upravit profil',
         registerMember: 'Registrovat člena',
+    },
+
+    dialogTitles: {
+        publishEvent: 'Publikování závodu',
+        cancelEvent: 'Zrušení závodu',
+        finishEvent: 'Ukončení závodu',
+        registerForEvent: 'Přihlásit se na závod',
+        unregisterFromEvent: 'Odhlásit se ze závodu',
+        suspendMember: 'Ukončení členství',
+        resumeMember: 'Reaktivace člena',
     },
 
     fields: {
@@ -138,6 +149,7 @@ export const labels = {
         passwordSetSuccessDescription: 'Váš účet byl aktivován. Nyní budete přesměrováni na přihlašovací stránku.',
         permissionsDescription: 'Oprávnění určují, ke kterým funkcím aplikace má uživatel přístup. Změny se projeví okamžitě.',
         permissionsSaved: 'Oprávnění uložena',
+        savedSuccessfully: 'Úspěšně uloženo',
     },
 
     tables: {

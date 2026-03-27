@@ -12,13 +12,9 @@ import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx"
 import {Banknote, Check, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField, isCzNationality} from "./BirthNumberConditionalField";
-import {labels} from "../../localization";
+import {labels, getEnumLabel} from "../../localization";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
-
-const DEACTIVATION_REASON_LABELS: Record<string, string> = labels.enums.deactivationReason as Record<string, string>;
-
-const GENDER_LABELS: Record<string, string> = labels.enums.gender as Record<string, string>;
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -155,7 +151,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label={labels.fields.firstName}>{ri('firstName') ?? val(member.firstName)}</DetailRow>
                         <DetailRow label={labels.fields.lastName}>{ri('lastName') ?? val(member.lastName)}</DetailRow>
                         <DetailRow label={labels.fields.dateOfBirth}>{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
-                        <DetailRow label={labels.fields.gender}>{ri('gender') ?? val(member.gender && (GENDER_LABELS[member.gender] ?? member.gender))}</DetailRow>
+                        <DetailRow label={labels.fields.gender}>{ri('gender') ?? val(member.gender && getEnumLabel('gender', member.gender))}</DetailRow>
                         <DetailRow label={labels.fields.nationality}>{ri('nationality') ?? val(member.nationality)}</DetailRow>
                         {isEditing
                             ? enrichedFieldNames.has('birthNumber') && <BirthNumberConditionalField renderInput={ri}/>
@@ -311,8 +307,8 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.permissions['MEMBERS:PERMISSIONS'].label}
                                 </Button>
                             )}
-                            <HalFormButton name="suspendMember" modal={true} label={labels.templates.suspendMember} variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle="Ukončení členství"/>
-                            <HalFormButton name="resumeMember" modal={true} label={labels.templates.resumeMember} dialogTitle="Reaktivace člena"/>
+                            <HalFormButton name="suspendMember" modal={true} label={labels.templates.suspendMember} variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.suspendMember}/>
+                            <HalFormButton name="resumeMember" modal={true} label={labels.templates.resumeMember} dialogTitle={labels.dialogTitles.resumeMember}/>
                         </div>
                     )}
                 </div>
@@ -344,7 +340,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     <Section title={labels.sections.deactivation}>
                         {member.deactivationReason && (
                             <DetailRow label="Důvod">
-                                {DEACTIVATION_REASON_LABELS[member.deactivationReason] ?? member.deactivationReason}
+                                {getEnumLabel('deactivationReason', member.deactivationReason)}
                             </DetailRow>
                         )}
                         {member.deactivatedAt && (
@@ -393,8 +389,8 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     pathname={route.pathname}
                     onClose={cancelEditing}
                     postprocessPayload={postprocessPayload}
-                    successMessage="Úspěšně uloženo"
-                    submitButtonLabel="Uložit změny"
+                    successMessage={labels.ui.savedSuccessfully}
+                    submitButtonLabel={labels.buttons.saveChanges}
                     submitIcon={<Check className="w-4 h-4"/>}
                     customLayout={renderContent}
                 />

@@ -12,6 +12,8 @@ export interface NavigationItem {
     rel: string;
 }
 
+const navLabels = labels.nav as Record<string, string>;
+
 function convertItems(response: HalResponse): NavigationItem[] {
 
     if (!response || !response._links) {
@@ -21,23 +23,18 @@ function convertItems(response: HalResponse): NavigationItem[] {
     const items: NavigationItem[] = [];
     const systemRels = new Set(['self', 'curies']);
 
-    // Process each link in the _links object
     Object.entries(response._links).forEach(([rel, linkOrLinks]) => {
-        // Skip system relations
         if (systemRels.has(rel)) {
             return;
         }
 
-        // Handle both single link and array of links
         const links = Array.isArray(linkOrLinks) ? linkOrLinks : [linkOrLinks];
 
         links.forEach((link: Link | { href?: string; title?: string }) => {
             if (link && typeof link === 'object' && 'href' in link) {
                 const href = link.href as string;
-                // Extract navigation path for React Router (removes full URL, keeps just the path)
                 const navigationPath = extractNavigationPath(href);
                 const title = (link as { title?: string }).title;
-                const navLabels = labels.nav as Record<string, string>;
                 const label = navLabels[rel] ?? title ?? rel;
 
                 items.push({

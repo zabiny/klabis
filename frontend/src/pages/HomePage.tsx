@@ -6,6 +6,7 @@ import {useIsAdmin} from "../hooks/useIsAdmin";
 import {useAuth} from "../contexts/AuthContext2";
 import {labels} from "../localization/labels";
 import {mockStats, mockUpcomingEvents, mockMyEvents} from "./dashboard/mockDashboardData";
+import {formatDate} from "../utils/dateUtils";
 
 const navigationCards = [
     {
@@ -63,13 +64,9 @@ const navigationCards = [
     },
 ]
 
-function formatEventDate(dateStr: string): string {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('cs-CZ', {day: 'numeric', month: 'long', year: 'numeric'})
-}
+const containsRel = (menuItems: { rel: string }[], rel: string) => menuItems.some(item => item.rel === rel)
 
 const AdminDashboard = ({firstName, menuItems}: { firstName: string; menuItems: { rel: string }[] }) => {
-    const containsRel = (rel: string) => menuItems.some(item => item.rel === rel)
 
     return (
         <div className="space-y-8 animate-fade-in">
@@ -126,7 +123,7 @@ const AdminDashboard = ({firstName, menuItems}: { firstName: string; menuItems: 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {navigationCards.map((card) => (
-                    containsRel(card.rel) && (
+                    containsRel(menuItems, card.rel) && (
                         <RouterLink
                             key={card.rel}
                             to={card.rel === 'admin' ? '/sandplace' : `/${card.rel}`}
@@ -183,7 +180,7 @@ const AdminDashboard = ({firstName, menuItems}: { firstName: string; menuItems: 
                                 </div>
                                 <div className="flex items-center gap-3 shrink-0">
                                     <span className="text-sm text-text-secondary hidden sm:block">
-                                        {formatEventDate(event.eventDate)}
+                                        {formatDate(event.eventDate)}
                                     </span>
                                     <ChevronRight className="w-4 h-4 text-text-tertiary"/>
                                 </div>
@@ -201,8 +198,6 @@ const UserDashboard = ({firstName, memberId, menuItems}: {
     memberId: string | null;
     menuItems: { rel: string }[]
 }) => {
-    const containsRel = (rel: string) => menuItems.some(item => item.rel === rel)
-
     return (
         <div className="space-y-8 animate-fade-in">
             <div>
@@ -232,7 +227,7 @@ const UserDashboard = ({firstName, memberId, menuItems}: {
                     </RouterLink>
                 )}
 
-                {containsRel('events') && (
+                {containsRel(menuItems, 'events') && (
                     <RouterLink to="/events" className="group block">
                         <Card className="card-hoverable h-full p-5">
                             <div className="flex items-center gap-4">
@@ -269,7 +264,7 @@ const UserDashboard = ({firstName, memberId, menuItems}: {
                                         </div>
                                     </div>
                                     <span className="text-sm text-text-secondary hidden sm:block">
-                                        {formatEventDate(event.eventDate)}
+                                        {formatDate(event.eventDate)}
                                     </span>
                                 </div>
                             ))}
