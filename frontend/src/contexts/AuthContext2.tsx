@@ -89,6 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
                     })
                     .catch((err) => {
                         console.error('Signin redirect callback error:', err);
+                        setLoading(false);
                     });
             } else {
                 if (sessionStorage.getItem('just_logged_out')) {
