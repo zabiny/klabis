@@ -43,12 +43,9 @@ export const createUserManager = ({
         silent_redirect_uri: normalizeUrl(config.redirect_uri), // Required for silent renew
     };
 
-    //console.log(JSON.stringify(userManagerConfig, null, 2))
-
     const userManager = new UserManager(userManagerConfig);
 
     userManager.events.addUserLoaded((user) => {
-        console.log(`User loaded: ${user}`);
         if (sessionStorage.getItem('just_logged_out')) {
             sessionStorage.removeItem('just_logged_out');
             userManager.removeUser();
@@ -66,7 +63,6 @@ export const createUserManager = ({
         console.warn('Access token expired');
         userManager.signinSilent().catch((err) => {
             console.error('Silent renew failed', err);
-            //authUserManager.signoutRedirect();
         });
     });
 

@@ -3,7 +3,6 @@ import {User, UserManager,} from 'oidc-client-ts';
 import {type AuthConfig, createUserManager} from '../api/klabisUserManager.ts';
 import {normalizeUrl} from "../api/hateoas.ts";
 
-// Your required interface
 interface AuthContextType {
     isAuthenticated: boolean;
     login: () => void;
@@ -83,7 +82,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
                 userManager
                     .signinRedirectCallback()
                     .then((user) => {
-                        console.log('Signin redirect callback success:', user);
                         setValidUser(sessionStorage.getItem('just_logged_out') ? null : user);
                         setLoading(false);
                         // Clean URL after processing
