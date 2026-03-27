@@ -73,12 +73,17 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 - `@JsonInclude(NON_NULL)` + `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` on the record class acts as default deny handler
 - `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` on a component overrides the class-level handler and shows `"***"`
 - Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1 — use `RecordComponent.getAccessor().getAnnotation(...)` for discovery
-- Module registered via `@JsonComponent` on `FieldSecurityJacksonModule` — auto-discovered in both `@WebMvcTest` and full `@SpringBootTest`
+- Module registered via `@JacksonComponent` on `FieldSecurityJacksonModule` — auto-discovered in both `@WebMvcTest` and full `@SpringBootTest`
 - `@OwnerVisible` + `@OwnerId` for ownership-based field/method access (OR semantics with authority)
 - `OwnershipResolver` compares owner ID with `KlabisJwtAuthenticationToken.getMemberIdUuid()` via `ConversionService`
 - `OwnershipResolver` is lazy-resolved from `ApplicationContext` in `HasAuthorityMethodInterceptor` — eager injection causes `No ServletContext set` startup error
 - Ownership tests require `@WithKlabisMockUser(memberId = "...")` — `@WithMockUser` creates plain token without `memberIdUuid`
 - See `FieldLevelAuthorizationTest` for reference implementation
+
+**Jackson 3 Annotation Packages**
+- `@JsonCreator`, `@JsonValue`, `@JsonInclude` stay in `com.fasterxml.jackson.annotation` — NOT moved to `tools.jackson`
+- Only core (`tools.jackson.core`) and databind (`tools.jackson.databind`) packages changed
+- `@JsonComponent` → `@JacksonComponent`, `@JsonMixin` → `@JacksonMixin` (Spring Boot annotations, not Jackson)
 
 **Gradle Optimization**
 - Build without `clean` is faster: `./gradlew build -x test` (vs `clean build -x test`)
@@ -163,8 +168,8 @@ Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics`
 ## Key Technologies
 
 - **Java 17+**
-- **Spring Boot 3.5.9**
-- **Spring Modulith 1.4.6** - Event-driven modular application using hexagonal architecture
+- **Spring Boot 4.0.5**
+- **Spring Modulith 2.0.5** - Event-driven modular application using hexagonal architecture
 - **Spring Security** - OAuth2 Authorization Server + Resource Server
 - **Spring Data JDBC** - Lightweight JDBC-based persistence
 - **Spring HATEOAS** - HAL+FORMS hypermedia

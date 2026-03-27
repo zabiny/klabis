@@ -35,6 +35,11 @@ npm run dev
 
 ## Development Workflow Best Practices
 
+### HAL+FORMS Template Names (HATEOAS 3.0)
+- Templates use controller method name as key (e.g., `updateMember`, `createEvent`), NOT `"default"`
+- Frontend accesses templates via `_templates.updateMember` etc.
+- Backend affordances: `andAffordances(afford(methodOn(Controller.class).methodName(...)))` → template name = `methodName`
+
 ### Check specifications when expected behavior is in question
 
 Project uses OpenSpec - check active specifications (`./openspec/specs`) to find out how application should work if expected behavior is unclear. 
