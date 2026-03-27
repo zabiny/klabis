@@ -22,7 +22,6 @@ vi.mock('./api/klabisUserManager', () => {
         authConfig: {
             authority: '/',
             client_id: 'klabis-web',
-            client_secret: 'test-secret-123',
             redirect_uri: '/auth/callback',
             post_logout_redirect_uri: '/oauth/logout',
             response_type: 'code',

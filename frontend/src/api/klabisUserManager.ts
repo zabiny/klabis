@@ -4,7 +4,6 @@ import {normalizeUrl} from "./hateoas.ts";
 export interface AuthConfig {
     authority: string;
     client_id: string;
-    client_secret?: string;
     redirect_uri: string;
     post_logout_redirect_uri: string;
     response_type?: string;
@@ -18,7 +17,6 @@ export interface AuthConfig {
 export const authConfig: AuthConfig = {
     authority: '/',
     client_id: 'klabis-web',
-    client_secret: 'test-secret-123',
     redirect_uri: '/auth/callback', // must match OIDC config
     post_logout_redirect_uri: window.location.origin,
     response_type: 'code',

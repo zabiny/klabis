@@ -81,7 +81,6 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
     @Override
     public void bootstrapData() {
         String clientId = clientProperties.getId();
-        String clientSecret = clientProperties.getSecret();
         String clientUuid = StringUtils.isNotBlank(clientProperties.getUuid()) ? clientProperties.getUuid() : clientId;
         Set<String> redirectUris = Arrays.stream(clientProperties.getRedirectUris().split(","))
                 .map(String::trim)
@@ -90,12 +89,51 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 .map(String::trim)
                 .collect(Collectors.toSet());
 
-        createOAuth2Client(clientUuid, clientId, clientSecret, redirectUris, postLogoutRedirectUris);
+        createPublicWebClient(clientUuid, clientId, redirectUris, postLogoutRedirectUris);
         createOAuth2Client("apispec",
                 "apispec",
                 "apispec",
                 Set.of("https://localhost:8443/swagger-ui/oauth2-redirect.html"),
                 Set.of());
+    }
+
+    private void createPublicWebClient(String clientUuid, String clientId, Set<String> redirectUris, Set<String> postLogoutRedirectUris) {
+        String defaultScopes = String.join(",",
+                "openid",
+                "profile",
+                "email",
+                Authority.MEMBERS_SCOPE,
+                Authority.EVENTS_SCOPE
+        );
+
+        String scopes = StringUtils.isNotBlank(clientProperties.getScopes()) ? clientProperties.getScopes() : defaultScopes;
+
+        RegisteredClient c = RegisteredClient.withId(clientUuid)
+                .clientId(clientId)
+                .clientName("Klabis Web application")
+                .clientAuthenticationMethods(items -> items.add(ClientAuthenticationMethod.NONE))
+                .authorizationGrantTypes(items -> {
+                    items.add(AuthorizationGrantType.AUTHORIZATION_CODE);
+                    items.add(AuthorizationGrantType.REFRESH_TOKEN);
+                })
+                .redirectUris(items -> items.addAll(redirectUris))
+                .postLogoutRedirectUris(items -> items.addAll(postLogoutRedirectUris))
+                .scopes(items -> items.addAll(Arrays.stream(scopes.split(","))
+                        .map(String::trim)
+                        .collect(Collectors.toList())))
+                .clientSettings(ClientSettings.builder()
+                        .requireProofKey(true)
+                        .build())
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofMinutes(5))
+                        .refreshTokenTimeToLive(Duration.ofHours(24))
+                        .reuseRefreshTokens(false)
+                        .build())
+                .build();
+
+        registeredClientRepository.save(c);
+
+        LOG.info("Created public OAuth2 client with PKCE: {}", clientId);
     }
 
     private void createOAuth2Client(String clientUuid, String clientId, String clientSecret, Set<String> redirectUris, Set<String> postLogoutRedirectUris) {
@@ -131,12 +169,8 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                     items.add(AuthorizationGrantType.CLIENT_CREDENTIALS);
                     items.add(AuthorizationGrantType.REFRESH_TOKEN);
                 })
-                .redirectUris(items -> {
-                    items.addAll(redirectUris);
-                })
-                .postLogoutRedirectUris(items -> {
-                    items.addAll(postLogoutRedirectUris);
-                })
+                .redirectUris(items -> items.addAll(redirectUris))
+                .postLogoutRedirectUris(items -> items.addAll(postLogoutRedirectUris))
                 .scopes(items -> items.addAll(Arrays.stream(scopes.split(","))
                         .map(String::trim)
                         .collect(Collectors.toList())))
