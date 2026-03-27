@@ -6,8 +6,8 @@
 import {type ReactElement} from 'react'
 import {useHalPageData} from '../../hooks/useHalPageData'
 import {KlabisTableWithQuery} from '../KlabisTable'
-import {ErrorDisplay} from '../UI'
-import {containerStyles, spinnerStyles} from '../../theme/designTokens'
+import {ErrorDisplay, Spinner} from '../UI'
+import {containerStyles} from '../../theme/designTokens'
 import {type SortDirection} from '../../api'
 
 /**
@@ -68,8 +68,8 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
     if (isLoading) {
         return (
             <div className={containerStyles.loadingContainer}>
-                <div className={spinnerStyles.spinner}></div>
-                <span className={spinnerStyles.loadingText}>Načítání dat tabulky...</span>
+                <Spinner/>
+                <span>Načítání dat tabulky...</span>
             </div>
         )
     }

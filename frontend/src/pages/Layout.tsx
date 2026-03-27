@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
-import {Alert, Button, Toast} from '../components/UI'
+import {Alert, Button, Spinner, Toast} from '../components/UI'
 import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
 import {AdminToggle} from '../components/AdminToggle/AdminToggle'
@@ -186,7 +186,7 @@ const Layout = () => {
                     <p className="px-2 pb-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">Navigace</p>
                     {menuLoading ? (
                         <div className="flex items-center gap-3 px-4 py-3 text-text-tertiary text-sm">
-                            <div className="w-5 h-5 rounded border-2 border-border-current border-t-transparent animate-spin" />
+                            <Spinner size="sm"/>
                             Načítání menu...
                         </div>
                     ) : menuError ? (

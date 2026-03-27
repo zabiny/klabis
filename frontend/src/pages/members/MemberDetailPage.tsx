@@ -2,8 +2,7 @@ import {type ReactElement, type ReactNode, useMemo, useState} from "react";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {Button, DetailRow, Skeleton} from "../../components/UI";
-import {Badge} from "../../components/UI/Badge";
+import {Alert, Badge, Button, DetailRow, Skeleton} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
@@ -86,7 +85,7 @@ export const MemberDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <div className="text-error">{error.message}</div>;
+        return <Alert severity="error">{error.message}</Alert>;
     }
 
     if (!resourceData) {
@@ -229,11 +228,11 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label="Zdravotní kurz">
                             {medicalCourse?.completionDate ? (
                                 <span className="inline-flex items-center gap-2">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">Ano</span>
+                                    <Badge variant="success" size="sm">Ano</Badge>
                                     {medicalCourse.validityDate && <span className="text-text-tertiary text-sm">platný do {formatDate(medicalCourse.validityDate)}</span>}
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-raised text-text-secondary">Ne</span>
+                                <Badge variant="default" size="sm">Ne</Badge>
                             )}
                         </DetailRow>
                     )}
@@ -246,7 +245,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label="Trenér">
                             {trainerLicense?.level ? (
                                 <span className="inline-flex items-center gap-2">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-50 text-orange-700">{trainerLicense.level}</span>
+                                    <Badge variant="orange" size="sm">{trainerLicense.level}</Badge>
                                     {trainerLicense.validityDate && <span className="text-text-tertiary text-sm">platná do {formatDate(trainerLicense.validityDate)}</span>}
                                 </span>
                             ) : '\u2014'}
@@ -261,7 +260,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label="Rozhodčí">
                             {refereeLicense?.level ? (
                                 <span className="inline-flex items-center gap-2">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700">{refereeLicense.level}</span>
+                                    <Badge variant="blue" size="sm">{refereeLicense.level}</Badge>
                                     {refereeLicense.validityDate && <span className="text-text-tertiary text-sm">platná do {formatDate(refereeLicense.validityDate)}</span>}
                                 </span>
                             ) : '\u2014'}

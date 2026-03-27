@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {Button, Modal, Spinner} from '../UI';
+import {Alert, Button, Modal, Spinner} from '../UI';
 import {useToast} from '../../contexts/ToastContext';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {FetchError} from '../../api/authorizedFetch';
@@ -156,9 +156,9 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
             ) : (
                 <div>
                     {error && (
-                        <div className="mb-4 p-3 rounded-md bg-error/10 text-error text-sm">
+                        <Alert severity="error" className="mb-4">
                             {resolveErrorMessage(error)}
-                        </div>
+                        </Alert>
                     )}
                     <div className="divide-y divide-border">
                         {Object.entries(PERMISSION_LABELS).map(([authority, info]) => (

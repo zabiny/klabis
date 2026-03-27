@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Alert, Button} from '../../components/UI';
+import {Alert, Button, Spinner} from '../../components/UI';
 import {hasCalendarItems} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
@@ -132,7 +132,12 @@ const CalendarPage = () => {
     );
 
     if (isLoading) {
-        return <div className="flex justify-center items-center h-96 text-text-secondary">Načítání...</div>;
+        return (
+            <div className="flex justify-center items-center gap-2 h-96 text-text-secondary">
+                <Spinner/>
+                Načítání...
+            </div>
+        );
     }
 
     if (error) {

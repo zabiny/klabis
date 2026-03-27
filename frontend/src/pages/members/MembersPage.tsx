@@ -6,7 +6,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Button, Modal} from "../../components/UI";
+import {Badge, Button, Modal} from "../../components/UI";
 import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
@@ -126,13 +126,9 @@ export const MembersPage = (): ReactElement => {
         const active = item.active as boolean | null;
         if (active === null || active === undefined) return null;
         return active ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                Aktivní
-            </span>
+            <Badge variant="success" size="sm">Aktivní</Badge>
         ) : (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                Neaktivní
-            </span>
+            <Badge variant="default" size="sm">Neaktivní</Badge>
         );
     };
 

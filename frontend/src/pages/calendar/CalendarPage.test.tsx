@@ -19,6 +19,7 @@ vi.mock('../../components/UI', () => ({
             {children}
         </button>
     ),
+    Spinner: () => <div data-testid="spinner" aria-label="Loading"/>,
 }));
 
 vi.mock('../../components/JsonPreview', () => ({

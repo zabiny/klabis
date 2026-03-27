@@ -5,7 +5,7 @@ import {toHref} from '../../api/hateoas';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay';
 import type {RenderFormCallback} from '../../components/HalNavigator2/halforms';
-import {Button, DetailRow} from '../../components/UI';
+import {Alert, Button, DetailRow, Spinner} from '../../components/UI';
 import {Section} from './MemberSection';
 import {BirthNumberConditionalField} from './BirthNumberConditionalField';
 
@@ -25,11 +25,16 @@ export const MemberRegistrationPage = (): ReactElement => {
     const {data: collectionData, isLoading, error} = useAuthorizedQuery<HalResponse>('/api/members');
 
     if (isLoading) {
-        return <div>Načítání...</div>;
+        return (
+            <div className="flex items-center gap-2">
+                <Spinner/>
+                <span>Načítání...</span>
+            </div>
+        );
     }
 
     if (error) {
-        return <div className="text-error">{(error as Error).message}</div>;
+        return <Alert severity="error">{(error as Error).message}</Alert>;
     }
 
     const template = collectionData?._templates?.registerMember ?? null;
@@ -40,7 +45,7 @@ export const MemberRegistrationPage = (): ReactElement => {
                 <Link to="/members" className="text-sm text-primary hover:text-primary-light">
                     &larr; Zpět na seznam
                 </Link>
-                <div className="text-error">Registrace nového člena není k dispozici.</div>
+                <Alert severity="error">Registrace nového člena není k dispozici.</Alert>
             </div>
         );
     }

@@ -1,8 +1,7 @@
 import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {DetailRow, Skeleton} from '../../components/UI';
-import {Badge} from '../../components/UI/Badge';
+import {Alert, Badge, Card, DetailRow, Skeleton} from '../../components/UI';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {TableCell} from '../../components/KlabisTable';
@@ -41,7 +40,7 @@ export const EventDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <div className="text-error">{error.message}</div>;
+        return <Alert severity="error">{error.message}</Alert>;
     }
 
     if (!resourceData) {
@@ -76,7 +75,7 @@ export const EventDetailPage = (): ReactElement => {
 
             <hr className="border-border"/>
 
-            <div className="bg-surface-raised rounded-md border border-border p-6">
+            <Card className="p-6">
                 <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">INFORMACE O ZÁVODĚ</h3>
                 <dl>
                     <DetailRow label="Status">
@@ -101,7 +100,7 @@ export const EventDetailPage = (): ReactElement => {
                         <DetailRow label="Koordinátor">{event.eventCoordinatorId.value}</DetailRow>
                     )}
                 </dl>
-            </div>
+            </Card>
 
             <div className="flex flex-col gap-4">
                 <h2 className="text-xl font-bold text-text-primary">Přihlášky</h2>

@@ -3,6 +3,7 @@ import React, {isValidElement, useMemo} from 'react'
 import type {KlabisTableProps, TableCellProps, TableCellRenderProps} from './types'
 import {Pagination} from './Pagination'
 import type {SortDirection} from '../../api'
+import {ErrorDisplay} from '../UI'
 
 // Column definition extracted from children
 interface ColumnDef {
@@ -47,14 +48,6 @@ const ensurePageSizeInOptions = (pageSize: number, options: number[]): number[] 
     }
     return [...options, pageSize].sort((a, b) => a - b)
 }
-
-// Error display component
-const ErrorAlert = ({error}: { error: Error }) => (
-    <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-800">
-        <h3 className="font-semibold">Failed to load data</h3>
-        <p className="text-sm">{error.message}</p>
-    </div>
-)
 
 /**
  * Pure UI table component
@@ -136,11 +129,7 @@ export const KlabisTable = <T extends Record<string, unknown>>({
 
     // Render error state if present
     if (error) {
-        return (
-            <div className="rounded-md border border-border bg-surface-raised p-4">
-                <ErrorAlert error={error}/>
-            </div>
-        )
+        return <ErrorDisplay error={error} title="Failed to load data"/>
     }
 
     const rows = data || []

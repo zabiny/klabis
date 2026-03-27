@@ -2,7 +2,7 @@ import {type ReactElement} from "react";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalSubresourceProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
-import {Skeleton} from "../../components/UI";
+import {Card, Skeleton} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 
@@ -32,7 +32,7 @@ export const MemberFinancePage = (): ReactElement => {
     return <div className="flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-text-primary">Finance</h1>
 
-        <div className="bg-surface-raised rounded-md border border-border p-6">
+        <Card className="p-6">
             <div className="flex flex-col gap-4">
                 <div>
                     <p className="text-xs uppercase font-semibold text-text-secondary mb-2">Zůstatek</p>
@@ -45,7 +45,7 @@ export const MemberFinancePage = (): ReactElement => {
                     </HalSubresourceProvider>
                 </div>
             </div>
-        </div>
+        </Card>
 
         <div className="flex flex-col gap-4">
             <h2 className="text-xl font-bold text-text-primary">Transakce</h2>
