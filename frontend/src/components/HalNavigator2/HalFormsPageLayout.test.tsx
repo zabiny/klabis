@@ -21,8 +21,8 @@ vi.mock('./HalFormDisplay.tsx', () => ({
 }));
 
 
-vi.mock('../UI/ModalOverlay.tsx', () => ({
-    ModalOverlay: ({isOpen, children, onClose, title}: any) => (
+vi.mock('../UI/Modal.tsx', () => ({
+    Modal: ({isOpen, children, onClose, title}: any) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
                 {title && <h4 data-testid="modal-overlay-title">{title}</h4>}
@@ -176,7 +176,7 @@ describe('HalFormsPageLayout', () => {
         it('should handle modal forms via HalFormContext integration', () => {
             // Modal forms are now integrated with HalFormContext
             // When useHalForm().requestForm() is called, HalFormsPageLayout
-            // listens to currentFormRequest and renders ModalOverlay
+            // listens to currentFormRequest and renders Modal
             // This is tested through HalFormButton integration tests
             expect(true).toBe(true);
         });

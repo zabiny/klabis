@@ -300,4 +300,52 @@ describe('Modal Component', () => {
             expect(modal).toBeInTheDocument();
         });
     });
+
+    describe('Extended Size Variants', () => {
+        it('should apply max-w-2xl when size is 2xl', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}} size="2xl">
+                    Content
+                </Modal>
+            )
+            expect(container.querySelector('.max-w-2xl')).toBeInTheDocument()
+        })
+
+        it('should apply max-w-4xl when size is 4xl', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}} size="4xl">
+                    Content
+                </Modal>
+            )
+            expect(container.querySelector('.max-w-4xl')).toBeInTheDocument()
+        })
+    });
+
+    describe('CloseOnBackdropClick Prop', () => {
+        it('should not call onClose when backdrop is clicked and closeOnBackdropClick is false', async () => {
+            const user = userEvent.setup()
+            const mockOnClose = vi.fn()
+            const {container} = render(
+                <Modal isOpen={true} onClose={mockOnClose} closeOnBackdropClick={false}>
+                    Content
+                </Modal>
+            )
+            const backdrop = container.querySelector('[aria-hidden="true"]') as HTMLElement
+            await user.click(backdrop)
+            expect(mockOnClose).not.toHaveBeenCalled()
+        })
+
+        it('should not call onClose when content is clicked (propagation stopped)', async () => {
+            const user = userEvent.setup()
+            const mockOnClose = vi.fn()
+            render(
+                <Modal isOpen={true} onClose={mockOnClose}>
+                    <div data-testid="inner-content">Content</div>
+                </Modal>
+            )
+            await user.click(screen.getByTestId('inner-content'))
+            expect(mockOnClose).not.toHaveBeenCalled()
+        })
+    });
+
 });

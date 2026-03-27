@@ -18,7 +18,7 @@ import {useSearchParams} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
-import {ModalOverlay} from '../UI';
+import {Modal} from '../UI';
 import type {RenderFormCallback} from './halforms';
 
 interface HalFormsPageLayoutProps {
@@ -75,10 +75,11 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
         return (
             <>
                 <div className="space-y-6">{children}</div>
-                <ModalOverlay
+                <Modal
                     isOpen={true}
                     onClose={handleCloseForm}
                     title={currentFormRequest.dialogTitle || template.title}
+                    size="2xl"
                 >
                     <HalFormDisplay
                         template={template}
@@ -89,7 +90,7 @@ export function HalFormsPageLayout({children, customLayouts}: HalFormsPageLayout
                         onSubmitSuccess={closeForm}
                         customLayout={currentFormRequest.customLayout}
                     />
-                </ModalOverlay>
+                </Modal>
             </>
         );
     }

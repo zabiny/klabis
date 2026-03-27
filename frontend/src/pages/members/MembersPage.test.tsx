@@ -35,7 +35,7 @@ vi.mock('../../components/UI', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../components/UI')>();
     return {
         ...actual,
-        ModalOverlay: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title: string}) =>
+        Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title: string}) =>
             isOpen ? <div data-testid="modal-overlay" data-title={title}>{children}</div> : null,
     };
 });

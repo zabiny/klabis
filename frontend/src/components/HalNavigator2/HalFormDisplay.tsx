@@ -45,7 +45,7 @@ export interface HalFormDisplayProps {
 
 /**
  * Displays a HAL Forms form with error handling and submission controls.
- * Pure form component — no modal wrapper. Wrap in ModalOverlay for modal presentation.
+ * Pure form component — no modal wrapper. Wrap in Modal for modal presentation.
  */
 export const HalFormDisplay = ({
                                    template,

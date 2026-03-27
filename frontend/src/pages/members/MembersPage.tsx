@@ -6,7 +6,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {ModalOverlay} from "../../components/UI";
+import {Modal} from "../../components/UI";
 import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
@@ -181,10 +181,11 @@ export const MembersPage = (): ReactElement => {
             />
 
             {actionModal && (
-                <ModalOverlay
+                <Modal
                     isOpen={true}
                     onClose={() => setActionModal(null)}
                     title={actionModal.template.title ?? actionModal.templateName}
+                    size="2xl"
                 >
                     <HalFormDisplay
                         template={actionModal.template}
@@ -193,7 +194,7 @@ export const MembersPage = (): ReactElement => {
                         pathname={route.pathname}
                         onClose={() => setActionModal(null)}
                     />
-                </ModalOverlay>
+                </Modal>
             )}
         </div>
     );

@@ -58,8 +58,8 @@ vi.mock('../../api/hateoas', () => ({
     toFormValidationError: vi.fn((error) => error),
 }));
 
-vi.mock('../../components/UI/ModalOverlay.tsx', () => ({
-    ModalOverlay: ({isOpen, children, onClose, title}: any) => (
+vi.mock('../../components/UI/Modal.tsx', () => ({
+    Modal: ({isOpen, children, onClose, title}: any) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
                 {title && <h4>{title}</h4>}
