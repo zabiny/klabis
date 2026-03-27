@@ -46,11 +46,6 @@ export const createUserManager = ({
     const userManager = new UserManager(userManagerConfig);
 
     userManager.events.addUserLoaded((user) => {
-        if (sessionStorage.getItem('just_logged_out')) {
-            sessionStorage.removeItem('just_logged_out');
-            userManager.removeUser();
-            return;
-        }
         onUserLoaded(user);
     });
 
