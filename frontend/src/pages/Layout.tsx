@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
-import {Alert, Toast} from '../components/UI'
+import {Alert, Button, Toast} from '../components/UI'
 import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
 import {AdminToggle} from '../components/AdminToggle/AdminToggle'
@@ -107,14 +107,16 @@ const Layout = () => {
                         {userDetails && (
                             userDetails.firstName && userDetails.lastName ? (
                                 userDetails.memberId ? (
-                                    <button
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={handleUserNameClick}
-                                        className="hidden sm:flex px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg transition-all duration-fast"
+                                        className="hidden sm:inline-flex"
                                         title="Zobrazit detail člena"
                                     >
-                                        <span className="font-medium">{userDetails.firstName} {userDetails.lastName}</span>
-                                        <span className="ml-2">[{userDetails.userName}]</span>
-                                    </button>
+                                        {userDetails.firstName} {userDetails.lastName}
+                                        <span className="ml-2 font-normal text-zinc-400 dark:text-zinc-500">[{userDetails.userName}]</span>
+                                    </Button>
                                 ) : (
                                     <div className="hidden sm:flex px-3 py-2 text-sm text-zinc-500">
                                         <span className="font-medium">{userDetails.firstName} {userDetails.lastName}</span>
