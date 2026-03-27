@@ -170,6 +170,20 @@ export const labels = {
         newMemberRegistration: 'Registrace nového člena',
     },
 
+    dashboard: {
+        welcome: 'Vítejte v Klabis',
+        subtitle: 'Moderní systém pro správu členského klubu',
+        activeMembers: 'Aktivních členů',
+        upcomingEvents: 'Nadcházející závody',
+        groups: 'Skupiny a týmy',
+        systemStatus: 'Systémový status',
+        online: 'Online',
+        myProfile: 'Můj profil',
+        myEvents: 'Moje nadcházející závody',
+        openSection: 'Otevřít',
+        noUpcomingEvents: 'Žádné nadcházející závody',
+    },
+
     permissions: {
         'MEMBERS:READ': {label: 'Zobrazení členů', description: 'Přístup k seznamu a detailům členů'},
         'MEMBERS:MANAGE': {label: 'Správa členů', description: 'Registrace, úprava a mazání členů'},
