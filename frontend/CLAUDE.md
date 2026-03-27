@@ -142,10 +142,10 @@ This frontend follows HAL (Hypertext Application Language) conventions:
 
 OAuth2 client configured in `src/api/klabisUserManager.ts`:
 
-- **Flow:** Authorization Code with PKCE
-- **Authority:** `https://localhost:8443` (proxied in dev)
-- **Scopes:** `openid profile read write`
-- **Client ID:** `klabis-public-client`
+- **Flow:** Authorization Code with PKCE (public client, no client_secret)
+- **Authority:** `/` (proxied to `https://localhost:8443` in dev)
+- **Scopes:** `openid profile MEMBERS EVENTS`
+- **Client ID:** `klabis-web`
 
 ### Usage
 
