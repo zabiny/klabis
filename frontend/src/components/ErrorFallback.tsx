@@ -10,8 +10,8 @@ export default function ErrorFallback({
                                           resetErrorBoundary
                                       }: FallbackProps) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full">
+        <div className="min-h-screen flex items-center justify-center bg-surface-base px-4">
+            <div className="bg-surface-raised p-8 rounded-lg shadow-lg max-w-md w-full border border-border">
                 <div className="mb-4">
                     <svg
                         className="w-16 h-16 text-red-600 mx-auto"
@@ -28,26 +28,26 @@ export default function ErrorFallback({
                     </svg>
                 </div>
 
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+                <h1 className="text-2xl font-bold text-text-primary mb-2 text-center">
                     Něco se pokazilo
                 </h1>
 
-                <p className="text-gray-600 dark:text-gray-300 mb-4 text-center text-sm">
+                <p className="text-text-secondary mb-4 text-center text-sm">
                     Aplikace narazila na neočekávanou chybu. Prosím, zkuste to znovu nebo se vrátit později.
                 </p>
 
-                <details className="mb-6 bg-gray-50 dark:bg-gray-700 p-3 rounded text-sm">
+                <details className="mb-6 bg-surface-base p-3 rounded text-sm">
                     <summary
-                        className="cursor-pointer font-semibold text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white">
+                        className="cursor-pointer font-semibold text-text-primary hover:text-text-primary">
                         Podrobnosti chyby
                     </summary>
                     <pre
-                        className="mt-2 bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-auto text-xs text-gray-800 dark:text-gray-200">
+                        className="mt-2 bg-surface-raised p-2 rounded overflow-auto text-xs text-text-primary">
                         {error?.message || 'Neznámá chyba'}
                     </pre>
                     {error?.stack && (
                         <pre
-                            className="mt-2 bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-auto text-xs text-gray-600 dark:text-gray-400 max-h-32">
+                            className="mt-2 bg-surface-raised p-2 rounded overflow-auto text-xs text-text-secondary max-h-32">
                             {error.stack}
                         </pre>
                     )}
