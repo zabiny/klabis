@@ -1,0 +1,236 @@
+## OAuth2 Authorization Server — full flow verification
+## Requires: backend running on https://localhost:8443 with bootstrap data
+## Run requests sequentially (top to bottom) for full test flow
+
+### ===== METADATA ENDPOINTS =====
+
+### OIDC Discovery
+GET {{host}}/.well-known/openid-configuration
+
+> {%
+    client.test("returns issuer and endpoints", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.issuer === "https://localhost:8443");
+        client.assert(response.body.authorization_endpoint != null);
+        client.assert(response.body.token_endpoint != null);
+        client.assert(response.body.userinfo_endpoint != null);
+        client.assert(response.body.jwks_uri != null);
+        client.assert(response.body.end_session_endpoint != null);
+    });
+%}
+
+### JWK Set
+GET {{host}}/oauth2/jwks
+
+> {%
+    client.test("returns RSA key", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.keys.length > 0);
+        client.assert(response.body.keys[0].kty === "RSA");
+        client.assert(response.body.keys[0].kid != null);
+    });
+%}
+
+### OAuth2 Authorization Server Metadata
+GET {{host}}/.well-known/oauth-authorization-server
+
+> {%
+    client.test("returns server metadata", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.issuer === "https://localhost:8443");
+    });
+%}
+
+### ===== CLIENT CREDENTIALS FLOW =====
+
+### Client Credentials — obtain access token
+POST {{host}}/oauth2/token
+Authorization: Basic {{clientId}} {{clientSecret}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&scope=MEMBERS
+
+> {%
+    client.test("returns access token", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.access_token != null);
+        client.assert(response.body.token_type === "Bearer");
+        client.assert(response.body.expires_in > 0);
+        client.assert(response.body.scope === "MEMBERS");
+    });
+    client.global.set("cc_access_token", response.body.access_token);
+%}
+
+### Client Credentials — verify token grants API access
+GET {{host}}/api/members
+Authorization: Bearer {{cc_access_token}}
+
+> {%
+    client.test("client credentials token grants API access", function() {
+        client.assert(response.status === 200);
+    });
+%}
+
+### Client Credentials — introspect access token
+POST {{host}}/oauth2/introspect
+Authorization: Basic {{clientId}} {{clientSecret}}
+Content-Type: application/x-www-form-urlencoded
+
+token={{cc_access_token}}
+
+> {%
+    client.test("token is active", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.active === true);
+        client.assert(response.body.client_id === "klabis-web");
+        client.assert(response.body.token_type === "Bearer");
+    });
+%}
+
+### ===== AUTHORIZATION CODE FLOW =====
+# Uses IntelliJ OAuth2 auth provider — triggers browser login
+
+### Authorization Code — verify API access
+GET {{host}}/api/members
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+> {%
+    client.test("authorization code token grants API access", function() {
+        client.assert(response.status === 200);
+    });
+%}
+
+### Authorization Code — UserInfo with profile scope
+GET {{host}}/userinfo
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}
+
+> {%
+    client.test("returns user info with profile claims", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.sub != null);
+        client.assert(response.body.user_name != null);
+        client.assert(response.body.is_member != null);
+    });
+%}
+
+### Authorization Code — introspect access token
+POST {{host}}/oauth2/introspect
+Authorization: Basic {{clientId}} {{clientSecret}}
+Content-Type: application/x-www-form-urlencoded
+
+token={{$auth.token("AuthorizationCode")}}
+
+> {%
+    client.test("authorization code token is active", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.active === true);
+        client.assert(response.body.token_type === "Bearer");
+    });
+%}
+
+### ===== REFRESH TOKEN =====
+# Prerequisite: set ac_refresh_token from a previous token exchange response
+# (run "Authorization Code — manual token exchange" below, or copy from any token response)
+
+### Authorization Code — manual token exchange (paste auth code, saves refresh_token)
+POST {{host}}/oauth2/token
+Authorization: Basic {{clientId}} {{clientSecret}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code={{auth_code}}&redirect_uri={{redirectUri}}
+
+> {%
+    client.test("returns tokens including refresh_token", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.refresh_token != null);
+    });
+    client.global.set("ac_refresh_token", response.body.refresh_token);
+    client.global.set("ac_access_token", response.body.access_token);
+%}
+
+### Refresh Token — obtain new tokens
+POST {{host}}/oauth2/token
+Authorization: Basic {{clientId}} {{clientSecret}}
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token={{ac_refresh_token}}
+
+> {%
+    client.test("returns new access and refresh tokens", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.access_token != null);
+        client.assert(response.body.refresh_token != null);
+        client.assert(response.body.token_type === "Bearer");
+    });
+    client.global.set("refreshed_access_token", response.body.access_token);
+    client.global.set("ac_refresh_token", response.body.refresh_token);
+%}
+
+### Refresh Token — verify new access token works
+GET {{host}}/api/members
+Authorization: Bearer {{refreshed_access_token}}
+
+> {%
+    client.test("refreshed token grants API access", function() {
+        client.assert(response.status === 200);
+    });
+%}
+
+### ===== TOKEN REVOCATION =====
+
+### Revoke access token
+POST {{host}}/oauth2/revoke
+Authorization: Basic {{clientId}} {{clientSecret}}
+Content-Type: application/x-www-form-urlencoded
+
+token={{refreshed_access_token}}&token_type_hint=access_token
+
+> {%
+    client.test("revocation accepted", function() {
+        client.assert(response.status === 200);
+    });
+%}
+
+### Verify revoked token is inactive
+POST {{host}}/oauth2/introspect
+Authorization: Basic {{clientId}} {{clientSecret}}
+Content-Type: application/x-www-form-urlencoded
+
+token={{refreshed_access_token}}
+
+> {%
+    client.test("revoked token is inactive", function() {
+        client.assert(response.status === 200);
+        client.assert(response.body.active === false);
+    });
+%}
+
+### ===== NEGATIVE TESTS =====
+
+### UserInfo — without token (should reject)
+GET {{host}}/userinfo
+
+> {%
+    client.test("rejects unauthenticated request", function() {
+        client.assert(response.status === 401);
+    });
+%}
+
+### Client Credentials — invalid credentials
+POST {{host}}/oauth2/token
+Authorization: Basic klabis-web wrong-secret
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&scope=MEMBERS
+
+> {%
+    client.test("rejects invalid credentials", function() {
+        client.assert(response.status === 401);
+    });
+%}
+
+### ===== OIDC LOGOUT =====
+
+### OIDC logout (RP-Initiated)
+GET {{host}}/connect/logout?id_token_hint={{$auth.idToken("AuthorizationCode")}}
+Authorization: Bearer {{$auth.token("AuthorizationCode")}}

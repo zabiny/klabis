@@ -28,7 +28,9 @@ import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -87,14 +89,25 @@ public class AuthorizationServerConfiguration {
                 .build();
     }
 
+    private static final Map<String, Set<Authority>> SCOPE_TO_AUTHORITIES = Map.of(
+            Authority.MEMBERS_SCOPE, EnumSet.of(Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE, Authority.MEMBERS_PERMISSIONS),
+            Authority.EVENTS_SCOPE, EnumSet.of(Authority.EVENTS_READ, Authority.EVENTS_MANAGE),
+            Authority.CALENDAR_SCOPE, EnumSet.of(Authority.CALENDAR_MANAGE)
+    );
+
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
         return context -> {
             if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
-                // For client_credentials grant, use authorized scopes as authorities
+                // For client_credentials grant, expand scopes to fine-grained authorities
+                // so that API endpoints using @PreAuthorize("hasAuthority('MEMBERS:READ')") work correctly
                 if (AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) {
                     var authorizedScopes = context.getAuthorizedScopes();
-                    context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES, new HashSet<>(authorizedScopes));
+                    var authorities = authorizedScopes.stream()
+                            .flatMap(scope -> SCOPE_TO_AUTHORITIES.getOrDefault(scope, Set.of()).stream())
+                            .map(Authority::getValue)
+                            .collect(Collectors.toCollection(HashSet::new));
+                    context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES, authorities);
                 } else {
                     // For user-based grants (authorization_code, etc.), use user authorities
                     // Only include known Klabis authorities, filtering out framework-added

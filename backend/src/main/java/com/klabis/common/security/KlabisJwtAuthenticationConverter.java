@@ -61,6 +61,11 @@ public class KlabisJwtAuthenticationConverter implements Converter<Jwt, JwtAuthe
     public JwtAuthenticationToken convert(Jwt jwt) {
         Collection<? extends GrantedAuthority> authorities = authoritiesConverter.convert(jwt);
 
+        String userIdClaim = jwt.getClaim("user_id");
+        if (userIdClaim == null) {
+            return new JwtAuthenticationToken(jwt, authorities);
+        }
+
         UserId userId = extractUserId(jwt);
         UUID memberIdUuid = extractMemberIdUuid(jwt);
 

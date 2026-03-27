@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -70,16 +72,37 @@ class KlabisJwtAuthenticationConverterTest {
     }
 
     @Test
-    @DisplayName("should throw exception when UserId claim is missing")
-    void shouldThrowExceptionWhenUserIdClaimMissing() {
+    @DisplayName("should return plain JwtAuthenticationToken when user_id claim is missing (client credentials token)")
+    void shouldReturnPlainJwtAuthenticationTokenWhenUserIdClaimMissing() {
         Jwt jwt = createTestJwt(Map.of(
-                JwtClaimNames.SUB, TEST_USERNAME,
+                JwtClaimNames.SUB, "klabis-frontend",
                 "authorities", AUTHORITIES
         ));
 
-        assertThatThrownBy(() -> converter.convert(jwt))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("user_id");
+        JwtAuthenticationToken token = converter.convert(jwt);
+
+        assertThat(token).isNotNull()
+                .isNotInstanceOf(KlabisJwtAuthenticationToken.class)
+                .isExactlyInstanceOf(JwtAuthenticationToken.class);
+        assertThat(token.getAuthorities()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("should return plain JwtAuthenticationToken for client credentials token with scope claim")
+    void shouldReturnPlainJwtAuthenticationTokenForClientCredentialsToken() {
+        converter.setAuthoritiesClaimName("scope");
+
+        Jwt jwt = createTestJwt(Map.of(
+                JwtClaimNames.SUB, "automation-client",
+                "scope", List.of("MEMBERS:READ")
+        ));
+
+        JwtAuthenticationToken token = converter.convert(jwt);
+
+        assertThat(token).isNotNull()
+                .isNotInstanceOf(KlabisJwtAuthenticationToken.class)
+                .isExactlyInstanceOf(JwtAuthenticationToken.class);
+        assertThat(token.getAuthorities()).hasSize(1);
     }
 
     @Test
