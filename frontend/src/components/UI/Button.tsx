@@ -2,7 +2,7 @@ import type {ButtonHTMLAttributes, ReactNode} from 'react'
 import clsx from 'clsx'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'danger-ghost'
     size?: 'sm' | 'md' | 'lg'
     fullWidth?: boolean
     loading?: boolean
@@ -16,6 +16,7 @@ const variantClasses = {
     secondary: 'bg-surface text-text-primary border border-border hover:border-border-light hover:bg-surface-raised active:bg-surface disabled:opacity-50',
     danger: 'bg-error hover:bg-red-500 text-white shadow-sm hover:shadow-md active:shadow-none disabled:opacity-50 disabled:shadow-none',
     ghost: 'bg-transparent hover:bg-surface-base text-text-primary active:bg-surface-raised disabled:opacity-50',
+    'danger-ghost': 'text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-950/50 dark:hover:bg-red-950 disabled:opacity-50',
 }
 
 const sizeClasses = {
@@ -24,10 +25,6 @@ const sizeClasses = {
     lg: 'px-6 py-3 text-lg',
 }
 
-/**
- * Button component - Replaces MUI Button
- * Supports variants, sizes, icons, and loading state
- */
 export const Button = ({
                            variant = 'primary',
                            size = 'md',
