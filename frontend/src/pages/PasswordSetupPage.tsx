@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Alert, Spinner} from '../components/UI';
+import {Alert, Button, Spinner} from '../components/UI';
 import {PasswordSetupForm} from '../components/auth/PasswordSetupForm';
 import {TokenValidationError, validateToken} from '../api/passwordSetup';
 
@@ -88,12 +88,13 @@ const PasswordSetupPage = () => {
                             Pokud platnost vašeho tokenu vypršela nebo jste ho již použili,
                             můžete si vyžádat nový pomocí registračního čísla a emailu.
                         </p>
-                        <button
+                        <Button
                             onClick={handleRequestNewToken}
-                            className="w-full px-4 py-2.5 bg-primary hover:bg-primary-light text-white rounded-md font-medium transition-colors"
+                            variant="primary"
+                            fullWidth
                         >
                             Vyžádat nový token
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

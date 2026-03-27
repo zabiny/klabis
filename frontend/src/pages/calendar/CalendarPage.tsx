@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {Alert} from '../../components/UI';
+import {Alert, Button} from '../../components/UI';
 import {hasCalendarItems} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
@@ -143,14 +143,15 @@ const CalendarPage = () => {
         <div className="flex flex-col gap-8">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <button
+                <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={handlePrevMonth}
                     disabled={!resourceData?._links?.prev}
-                    className="p-2 rounded-md border border-border text-text-primary hover:bg-surface-raised disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label="Předchozí měsíc"
                 >
                     ←
-                </button>
+                </Button>
                 <div>
                     <h1 className="text-4xl font-bold text-text-primary mb-2 capitalize">
                         {monthName}
@@ -159,14 +160,15 @@ const CalendarPage = () => {
                         Kalendář akcí a důležitých dat
                     </p>
                 </div>
-                <button
+                <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={handleNextMonth}
                     disabled={!resourceData?._links?.next}
-                    className="p-2 rounded-md border border-border text-text-primary hover:bg-surface-raised disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label="Následující měsíc"
                 >
                     →
-                </button>
+                </Button>
             </div>
 
             {/* Calendar */}

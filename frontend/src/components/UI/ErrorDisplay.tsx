@@ -1,7 +1,8 @@
 import type {ReactElement} from 'react'
 import {Alert} from './Alert'
+import {Button} from './Button'
 import {isFormValidationError} from '../../api/hateoas'
-import {buttonStyles, errorStyles, layoutStyles} from '../../theme/designTokens'
+import {errorStyles, layoutStyles} from '../../theme/designTokens'
 
 /**
  * Props for ErrorDisplay component
@@ -101,22 +102,24 @@ export function ErrorDisplay({
                 {(onRetry || onCancel) && (
                     <div className={layoutStyles.formControls}>
                         {onRetry && (
-                            <button
+                            <Button
+                                variant="primary"
+                                size="sm"
                                 onClick={onRetry}
-                                className={buttonStyles.primaryButtonWithTransition}
                                 data-testid="error-display-retry-button"
                             >
                                 {retryText}
-                            </button>
+                            </Button>
                         )}
                         {onCancel && (
-                            <button
+                            <Button
+                                variant="secondary"
+                                size="sm"
                                 onClick={onCancel}
-                                className={buttonStyles.secondaryButton}
                                 data-testid="error-display-cancel-button"
                             >
                                 {cancelText}
-                            </button>
+                            </Button>
                         )}
                     </div>
                 )}

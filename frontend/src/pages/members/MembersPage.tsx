@@ -6,7 +6,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Modal} from "../../components/UI";
+import {Button, Modal} from "../../components/UI";
 import {Pencil, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
@@ -63,56 +63,60 @@ export const MembersPage = (): ReactElement => {
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 {hasEditTemplate && (
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         aria-label="Upravit"
-                        className="p-1 rounded hover:bg-surface-base cursor-pointer text-primary"
+                        className="text-primary"
                         onClick={(e) => {
                             e.stopPropagation();
                             route.navigateToResource(member, {state: {editing: true}});
                         }}
                     >
                         <Pencil className="w-4 h-4"/>
-                    </button>
+                    </Button>
                 )}
                 {hasPermissionsLink && (
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         aria-label="Oprávnění"
-                        className="p-1 rounded hover:bg-surface-base cursor-pointer text-gray-500"
+                        className="text-gray-500"
                         onClick={(e) => {
                             e.stopPropagation();
                             openPermissionsDialog(member);
                         }}
                     >
                         <Shield className="w-4 h-4"/>
-                    </button>
+                    </Button>
                 )}
                 {hasSuspendTemplate && (
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         aria-label="Ukončit členství"
-                        className="p-1 rounded hover:bg-surface-base cursor-pointer text-red-600"
+                        className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
                             openActionModal(member, 'suspendMember');
                         }}
                     >
                         <UserX className="w-4 h-4"/>
-                    </button>
+                    </Button>
                 )}
                 {hasResumeTemplate && (
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         aria-label="Reaktivovat"
-                        className="p-1 rounded hover:bg-surface-base cursor-pointer text-green-600"
+                        className="text-green-600"
                         onClick={(e) => {
                             e.stopPropagation();
                             openActionModal(member, 'resumeMember');
                         }}
                     >
                         <UserCheck className="w-4 h-4"/>
-                    </button>
+                    </Button>
                 )}
             </div>
         );
@@ -152,11 +156,10 @@ export const MembersPage = (): ReactElement => {
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">Seznam členů</h2>
                     {resourceData?._templates?.registerMember && (
-                        <Link
-                            to="/members/new"
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
-                        >
-                            Registrovat člena
+                        <Link to="/members/new">
+                            <Button variant="primary">
+                                Registrovat člena
+                            </Button>
                         </Link>
                     )}
                 </div>

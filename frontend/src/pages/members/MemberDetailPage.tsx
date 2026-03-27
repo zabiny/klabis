@@ -2,7 +2,7 @@ import {type ReactElement, type ReactNode, useMemo, useState} from "react";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {DetailRow, Skeleton} from "../../components/UI";
+import {Button, DetailRow, Skeleton} from "../../components/UI";
 import {Badge} from "../../components/UI/Badge";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
@@ -296,30 +296,27 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
                     {!isEditing && hasEditTemplate && (
                         <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
-                            <button
-                                type="button"
+                            <Button
+                                variant="primary"
                                 onClick={startEditing}
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light"
+                                startIcon={<Pencil className="w-4 h-4"/>}
                             >
-                                <Pencil className="w-4 h-4"/>
                                 Upravit profil
-                            </button>
-                            <button
-                                type="button"
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                startIcon={<Banknote className="w-4 h-4 text-green-600"/>}
                             >
-                                <Banknote className="w-4 h-4 text-green-600"/>
                                 Vložit / Vybrat
-                            </button>
+                            </Button>
                             {hasLink('permissions') && (
-                                <button
-                                    type="button"
+                                <Button
+                                    variant="secondary"
                                     onClick={() => setIsPermissionsDialogOpen(true)}
-                                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
+                                    startIcon={<Shield className="w-4 h-4"/>}
                                 >
-                                    <Shield className="w-4 h-4"/>
                                     Oprávnění
-                                </button>
+                                </Button>
                             )}
                             <HalFormButton name="suspendMember" modal={true} label="Ukončit členství" variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle="Ukončení členství"/>
                             <HalFormButton name="resumeMember" modal={true} label="Reaktivovat" dialogTitle="Reaktivace člena"/>
@@ -371,13 +368,12 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
                 {isEditing && (
                     <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                        <button
-                            type="button"
+                        <Button
+                            variant="secondary"
                             onClick={cancelEditing}
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
                         >
                             Zrušit
-                        </button>
+                        </Button>
                         {helpers?.renderField('submit')}
                     </div>
                 )}

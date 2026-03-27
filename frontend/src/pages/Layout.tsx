@@ -137,26 +137,27 @@ const Layout = () => {
                         <AdminToggle />
 
                         {/* Logout button */}
-                        <button
+                        <Button
+                            variant="danger-ghost"
+                            size="sm"
                             onClick={handleLogout}
-                            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-950 rounded-lg transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
                             title="Odhlásit"
-                            type="button"
+                            className="hidden sm:inline-flex"
+                            startIcon={<LogoutIcon size={16}/>}
                         >
-                            <LogoutIcon size={16} className="text-red-600"/>
                             <span className="hidden lg:inline">Odhlásit</span>
-                        </button>
+                        </Button>
 
                         {/* Mobile menu - show all in dropdown */}
                         <div className="sm:hidden flex items-center gap-2">
-                            <button
+                            <Button
+                                variant="danger-ghost"
+                                size="sm"
                                 onClick={handleLogout}
-                                className="p-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2"
                                 aria-label="Odhlásit"
-                                type="button"
                             >
                                 <LogoutIcon size={18}/>
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

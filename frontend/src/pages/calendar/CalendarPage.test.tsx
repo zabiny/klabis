@@ -14,6 +14,11 @@ vi.mock('../../components/UI', () => ({
             {children}
         </div>
     ),
+    Button: ({children, onClick, disabled, ...props}: any) => (
+        <button onClick={onClick} disabled={disabled} {...props}>
+            {children}
+        </button>
+    ),
 }));
 
 vi.mock('../../components/JsonPreview', () => ({

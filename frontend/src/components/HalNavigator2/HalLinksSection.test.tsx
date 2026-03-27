@@ -284,8 +284,8 @@ describe('HalLinksSection Component', () => {
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
-            const button = screen.getByText('next');
-            expect(button).toHaveClass('px-3', 'py-1', 'bg-blue-600', 'text-white');
+            const button = screen.getByRole('button', {name: 'next'});
+            expect(button).toHaveClass('bg-primary', 'text-white');
         });
     });
 
@@ -310,8 +310,8 @@ describe('HalLinksSection Component', () => {
                 <HalLinksSection links={links} onNavigate={() => {
                 }}/>
             );
-            const button = screen.getByText('next');
-            expect(button).toHaveClass('hover:bg-blue-700');
+            const button = screen.getByRole('button', {name: 'next'});
+            expect(button).toHaveClass('hover:bg-primary-light');
         });
     });
 

@@ -169,7 +169,7 @@ describe('PermissionsDialog', () => {
             });
             renderDialog();
 
-            const saveButton = screen.getByRole('button', {name: /Loading/i});
+            const saveButton = screen.getByRole('button', {name: /Uložit oprávnění/i});
             expect(saveButton).toBeDisabled();
             await user.click(saveButton);
 
@@ -219,7 +219,9 @@ describe('PermissionsDialog', () => {
 
             renderDialog();
 
-            expect(screen.queryByText('Uložit oprávnění')).not.toBeInTheDocument();
+            const saveButton = screen.getByRole('button', {name: /Uložit oprávnění/i});
+            expect(saveButton).toBeDisabled();
+            expect(saveButton.querySelector('.animate-spin')).toBeInTheDocument();
         });
     });
 

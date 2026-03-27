@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {Modal, Spinner} from '../UI';
+import {Button, Modal, Spinner} from '../UI';
 import {useToast} from '../../contexts/ToastContext';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {FetchError} from '../../api/authorizedFetch';
@@ -128,21 +128,20 @@ export const PermissionsDialog = ({isOpen, onClose, permissionsUrl, memberName, 
             size="lg"
             footer={
                 <>
-                    <button
-                        type="button"
+                    <Button
+                        variant="secondary"
                         onClick={onClose}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-surface-raised"
                     >
                         Zrušit
-                    </button>
-                    <button
-                        type="button"
+                    </Button>
+                    <Button
+                        variant="primary"
                         onClick={handleSave}
-                        disabled={isLoading || isPending}
-                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading}
+                        loading={isPending}
                     >
-                        {isPending ? <Spinner/> : 'Uložit oprávnění'}
-                    </button>
+                        Uložit oprávnění
+                    </Button>
                 </>
             }
         >

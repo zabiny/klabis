@@ -11,6 +11,7 @@ import {HAL_LINK_RELS} from '../../constants/hal.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {extractNavigationPath} from '../../utils/navigationPath';
 import {linkSectionStyles} from '../../theme/designTokens';
+import {Button} from '../UI';
 
 interface HalLinksSectionProps {
     /** Links object from HAL resource. If not provided, uses resourceData._links */
@@ -75,14 +76,15 @@ export function HalLinksSection({
                     .map(([rel, link]: [string, any]) => {
                         const linkArray = Array.isArray(link) ? link : [link];
                         return linkArray.map((l: any, idx: number) => (
-                            <button
+                            <Button
                                 key={`${rel}-${idx}`}
+                                variant="primary"
+                                size="sm"
                                 onClick={() => onNavigate(l.href)}
-                                className={linkSectionStyles.linkButton}
                                 title={rel}
                             >
                                 {l.title || rel}
-                            </button>
+                            </Button>
                         ));
                     })}
             </div>
