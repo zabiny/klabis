@@ -34,7 +34,11 @@ const ProtectedRoute = ({children}: { children: React.ReactNode }) => {
     }, [isAuthenticated, isLoading, login]);
 
     if (isLoading || !isAuthenticated) {
-        return null;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+            </div>
+        );
     }
 
     return <>{children}</>;
