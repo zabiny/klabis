@@ -3,6 +3,7 @@ export {
     t,
     getFieldLabel,
     getTemplateLabel,
+    getDialogTitleLabel,
     getNavLabel,
     getEnumLabel,
 } from './labels';

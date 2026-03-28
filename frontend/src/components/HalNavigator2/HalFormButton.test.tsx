@@ -618,6 +618,44 @@ describe('HalFormButton Component', () => {
             expect(screen.getByText('Ukončení členství')).toBeInTheDocument();
         });
 
+        it('should auto-derive dialogTitle from labels.dialogTitles when available', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    suspendMember: mockHalFormsTemplate({title: 'Server Title'}),
+                },
+            };
+            renderWithPageData(
+                <HalFormButton name="suspendMember" modal={true}/>,
+                createMockPageData(resourceData)
+            );
+
+            const button = screen.getByRole('button');
+            await user.click(button);
+
+            expect(screen.getByTestId('modal-overlay-title').textContent).toBe('Ukončení členství');
+        });
+
+        it('should auto-derive dialogTitle from labels.templates when no dialogTitles entry', async () => {
+            const user = userEvent.setup();
+            const resourceData: HalResponse = {
+                id: 1,
+                _templates: {
+                    createEvent: mockHalFormsTemplate({title: 'Server Title'}),
+                },
+            };
+            renderWithPageData(
+                <HalFormButton name="createEvent" modal={true}/>,
+                createMockPageData(resourceData)
+            );
+
+            const button = screen.getByRole('button');
+            await user.click(button);
+
+            expect(screen.getByTestId('modal-overlay-title').textContent).toBe('Přidat závod');
+        });
+
         it('should fall back to template title when dialogTitle is not provided', async () => {
             const user = userEvent.setup();
             const resourceData: HalResponse = {

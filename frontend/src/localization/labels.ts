@@ -226,6 +226,11 @@ export function getTemplateLabel(templateName: string): string | undefined {
     return templateLabels[templateName];
 }
 
+export function getDialogTitleLabel(templateName: string): string | undefined {
+    const dialogTitleLabels = labels.dialogTitles as Record<string, string>;
+    return dialogTitleLabels[templateName];
+}
+
 export function getNavLabel(rel: string): string {
     const navLabels = labels.nav as Record<string, string>;
     return navLabels[rel] ?? rel;

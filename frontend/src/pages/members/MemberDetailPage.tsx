@@ -307,8 +307,8 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.permissions['MEMBERS:PERMISSIONS'].label}
                                 </Button>
                             )}
-                            <HalFormButton name="suspendMember" modal={true} label={labels.templates.suspendMember} variant="danger" icon={<UserX className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.suspendMember}/>
-                            <HalFormButton name="resumeMember" modal={true} label={labels.templates.resumeMember} dialogTitle={labels.dialogTitles.resumeMember}/>
+                            <HalFormButton name="suspendMember" modal={true} variant="danger" icon={<UserX className="w-4 h-4"/>}/>
+                            <HalFormButton name="resumeMember" modal={true}/>
                         </div>
                     )}
                 </div>

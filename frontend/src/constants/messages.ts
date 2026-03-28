@@ -2,7 +2,7 @@
  * Backward-compatible re-exports from the central localization system.
  * New code should import directly from '@/localization'.
  */
-import { labels } from '@/localization';
+import { labels } from '../localization';
 
 export const VALIDATION_MESSAGES = {
     REQUIRED_FIELD: labels.validation.requiredField,

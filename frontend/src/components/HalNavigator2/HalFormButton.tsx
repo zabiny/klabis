@@ -13,6 +13,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/HalFormContext.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
 import type {RenderFormCallback} from './halforms';
+import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
 
 /**
  * Props for HalFormButton component
@@ -74,13 +75,14 @@ export function HalFormButton({name, modal = true, label, customLayout, classNam
 
     const template = resourceData._templates[name];
 
+    const resolvedDialogTitle = dialogTitle ?? getDialogTitleLabel(name) ?? getTemplateLabel(name) ?? template.title;
+
     const handleButtonClick = () => {
-        // Request form display via context (HalFormsPageLayout will render the modal)
         displayHalForm({
             templateName: name,
             modal: modal,
             customLayout,
-            dialogTitle
+            dialogTitle: resolvedDialogTitle
         });
     };
 

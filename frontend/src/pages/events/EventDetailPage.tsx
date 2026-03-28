@@ -151,11 +151,11 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                     {labels.templates.updateEvent}
                                 </Button>
                             )}
-                            <HalFormButton name="publishEvent" modal={true} label={labels.templates.publishEvent} icon={<Globe className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.publishEvent}/>
-                            <HalFormButton name="cancelEvent" modal={true} label={labels.templates.cancelEvent} icon={<XCircle className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.cancelEvent}/>
-                            <HalFormButton name="finishEvent" modal={true} label={labels.templates.finishEvent} icon={<CheckCircle className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.finishEvent}/>
-                            <HalFormButton name="registerForEvent" modal={true} label={labels.templates.registerForEvent} icon={<UserPlus className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.registerForEvent}/>
-                            <HalFormButton name="unregisterFromEvent" modal={true} label={labels.templates.unregisterFromEvent} icon={<UserMinus className="w-4 h-4"/>} dialogTitle={labels.dialogTitles.unregisterFromEvent}/>
+                            <HalFormButton name="publishEvent" modal={true} icon={<Globe className="w-4 h-4"/>}/>
+                            <HalFormButton name="cancelEvent" modal={true} icon={<XCircle className="w-4 h-4"/>}/>
+                            <HalFormButton name="finishEvent" modal={true} icon={<CheckCircle className="w-4 h-4"/>}/>
+                            <HalFormButton name="registerForEvent" modal={true} icon={<UserPlus className="w-4 h-4"/>}/>
+                            <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
                         </div>
                     )}
                 </div>
