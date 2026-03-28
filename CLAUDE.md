@@ -42,7 +42,8 @@ npm run dev
 
 ### Check specifications when expected behavior is in question
 
-Project uses OpenSpec - check active specifications (`./openspec/specs`) to find out how application should work if expected behavior is unclear. 
+- Project uses OpenSpec - use `openspec` commands to check active specifications to find out how application should work if expected behavior is unclear. 
+- Always check related openspec specifications when planning new tasks - if planned work would imply changing specifications, initiate openspec proposal instead.   
 
 ### Check Before Starting Services
 

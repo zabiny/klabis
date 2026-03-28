@@ -96,6 +96,8 @@ npm run refresh-backend-server-resources
 # Note: If tests fail, the deployment is aborted (build won't run)
 ```
 
+- Always run `refresh-backend-server-resources` before commit if frontend files have been changed. 
+
 ## API Integration
 
 ### OpenAPI Client Generation
