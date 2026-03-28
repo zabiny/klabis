@@ -471,12 +471,14 @@ The system SHALL restrict member creation to users with MEMBERS:CREATE permissio
 
 ### Requirement: List All Members
 
-The system SHALL provide an API endpoint to retrieve a paginated and sorted list of all registered members with summary
+The system SHALL provide an API endpoint to retrieve a paginated and sorted list of registered members with summary
 information.
 
 Each member summary SHALL include: id, firstName, lastName, registrationNumber, email, and active status.
 
 The email and active fields SHALL be visible only to users with MEMBERS:MANAGE authority. Users without this authority SHALL receive null values for these fields.
+
+Users with MEMBERS:MANAGE authority SHALL see all members (active and inactive). Users without MEMBERS:MANAGE authority SHALL see only active members.
 
 Each member summary item SHALL include HATEOAS affordances reflecting available actions for the current user:
 - For active members with MEMBERS:MANAGE authority: update member (PATCH) and suspend membership affordances
@@ -505,6 +507,17 @@ Each active member summary item SHALL include a permissions link (`_links.permis
 
 - **WHEN** a user without MEMBERS:MANAGE authority requests the member list
 - **THEN** each member summary SHALL have null values for email and active fields
+
+#### Scenario: Admin user sees both active and inactive members
+
+- **WHEN** a user with MEMBERS:MANAGE authority requests the member list
+- **THEN** the response SHALL include both active and inactive members
+
+#### Scenario: Non-admin user sees only active members
+
+- **WHEN** a user without MEMBERS:MANAGE authority requests the member list
+- **THEN** the response SHALL include only active members
+- **AND** inactive (suspended) members SHALL NOT appear in the list
 
 #### Scenario: Admin sees action affordances for active member
 
@@ -772,6 +785,8 @@ The enhanced member list endpoint SHALL maintain backward compatibility with cli
 The system SHALL provide a REST API endpoint to retrieve complete details of a specific member by their unique
 identifier, including suspension details if membership has been suspended.
 
+Users without MEMBERS:MANAGE authority SHALL NOT be able to access details of inactive (suspended) members. Such access SHALL result in HTTP 404 Not Found, consistent with the behavior of the member list for these users.
+
 #### Scenario: Retrieve existing active member by ID
 
 - **WHEN** an authenticated user with MEMBERS:READ permission makes a GET request to /api/members/{id}
@@ -804,9 +819,9 @@ identifier, including suspension details if membership has been suspended.
     - `edit` - Link to update member (if user has MEMBERS:UPDATE permission)
     - `suspend` - Link to suspend membership (if user has MEMBERS:UPDATE permission and member is active)
 
-#### Scenario: Retrieve existing suspended member by ID
+#### Scenario: Admin retrieves existing suspended member by ID
 
-- **WHEN** an authenticated user with MEMBERS:READ permission makes a GET request to /api/members/{id}
+- **WHEN** a user with MEMBERS:MANAGE authority makes a GET request to /api/members/{id}
 - **AND** the member with the given ID exists
 - **AND** the member is suspended (inactive)
 - **THEN** the system SHALL return HTTP 200 OK
@@ -835,6 +850,14 @@ identifier, including suspension details if membership has been suspended.
     - `collection` - Link to the members list
     - `edit` - Link to update member (if user has MEMBERS:UPDATE permission)
     - Suspend link SHALL NOT be present (member already suspended)
+
+#### Scenario: Non-admin user attempts to access inactive member by ID
+
+- **WHEN** a user without MEMBERS:MANAGE authority makes a GET request to /api/members/{id}
+- **AND** the member with the given ID exists
+- **AND** the member is inactive (suspended)
+- **THEN** the system SHALL return HTTP 404 Not Found
+- **AND** the response SHALL include error details with problem+json media type
 
 #### Scenario: Member not found
 
