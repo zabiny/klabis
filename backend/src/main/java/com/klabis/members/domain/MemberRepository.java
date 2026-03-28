@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
+
 /**
  * Public query API for Member aggregate.
  * <p>
@@ -44,15 +45,9 @@ public interface MemberRepository {
 
     List<Member> findAll();
 
-    List<Member> findAllActive();
+    List<Member> findAll(MemberFilter filter);
 
-    /**
-     * Find all members with pagination.
-     *
-     * @param pageable pagination parameters
-     * @return page of members
-     */
-    Page<Member> findAll(Pageable pageable);
+    Page<Member> findAll(MemberFilter filter, Pageable pageable);
 
     /**
      * Counts the number of members born in a specific year.

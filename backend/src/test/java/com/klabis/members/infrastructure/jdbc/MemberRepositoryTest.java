@@ -492,7 +492,7 @@ class MemberRepositoryTest {
             Pageable pageable = PageRequest.of(0, 2);
 
             // When
-            Page<Member> page = memberRepository.findAll(pageable);
+            Page<Member> page = memberRepository.findAll(MemberFilter.all(), pageable);
 
             // Then
             assertThat(page.getContent()).hasSize(2);
@@ -549,7 +549,7 @@ class MemberRepositoryTest {
             Pageable pageable = PageRequest.of(0, 10, sort);
 
             // When
-            Page<Member> page = memberRepository.findAll(pageable);
+            Page<Member> page = memberRepository.findAll(MemberFilter.all(), pageable);
 
             // Then
             assertThat(page.getContent()).hasSize(3);
@@ -565,7 +565,7 @@ class MemberRepositoryTest {
             Pageable pageable = PageRequest.of(0, 10);
 
             // When
-            Page<Member> page = memberRepository.findAll(pageable);
+            Page<Member> page = memberRepository.findAll(MemberFilter.all(), pageable);
 
             // Then
             assertThat(page.getContent()).isEmpty();

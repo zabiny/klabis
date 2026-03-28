@@ -90,6 +90,10 @@ public class ManagementServiceImpl implements ManagementService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
+        if (!canManageMembers && !member.isActive()) {
+            throw new MemberNotFoundException(memberId);
+        }
+
         boolean isOwner = member.getUserId().equals(viewedBy);
         boolean canSeeBirthNumber = canManageMembers || isOwner;
 

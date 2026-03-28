@@ -12,6 +12,7 @@ import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementService;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -124,7 +125,7 @@ class MemberController {
         var command = new Member.ResumeMembership(currentUserId);
         managementService.resumeMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
@@ -155,7 +156,7 @@ class MemberController {
 
         managementService.suspendMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged())).toUri())
+                .location(linkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
@@ -163,7 +164,7 @@ class MemberController {
     @Transactional(readOnly = true)
     @HasAuthority(Authority.MEMBERS_READ)
     public ResponseEntity<List<MemberOptionResponse>> listMemberOptions() {
-        List<MemberOptionResponse> options = memberRepository.findAllActive().stream()
+        List<MemberOptionResponse> options = memberRepository.findAll(MemberFilter.activeOnly()).stream()
                 .map(member -> new MemberOptionResponse(
                         member.getId().uuid().toString(),
                         "%s %s (%s)".formatted(member.getFirstName(), member.getLastName(), member.getRegistrationNumber().getValue())
@@ -188,11 +189,16 @@ class MemberController {
     @ApiResponse(responseCode = "403", description = "Forbidden - user is not an active member")
     public ResponseEntity<PagedModel<EntityModel<MemberSummaryResponse>>> listMembers(
             @Parameter(description = "Pagination parameters: page, size, sort")
-            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
+            @PageableDefault(size = 10, sort = "lastName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
 
-        Page<Member> memberPage = memberRepository.findAll(pageable);
+        MemberFilter filter = currentUser.hasAuthority(Authority.MEMBERS_MANAGE)
+                ? MemberFilter.all()
+                : MemberFilter.activeOnly();
+
+        Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
         PagedModel<EntityModel<MemberSummaryResponse>> pagedModel = pagedResourcesAssembler.toModel(
                 memberPage.map(memberMapper::toSummaryResponse),
@@ -229,7 +235,7 @@ class MemberController {
     }
 
     private java.util.Optional<Link> buildCollectionSelfLink(Pageable pageable) {
-        return klabisLinkTo(methodOn(MemberController.class).listMembers(pageable)).map(selfLinkBuilder ->
+        return klabisLinkTo(methodOn(MemberController.class).listMembers(pageable, null)).map(selfLinkBuilder ->
                 (Link) selfLinkBuilder.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(null, null, null)))
                         .andAffordances(klabisAfford(methodOn(RegistrationController.class).registerMember(null, null)))
@@ -273,7 +279,7 @@ class MemberController {
         buildMemberSelfLink(id, member.isActive()).ifPresent(entityModel::add);
 
         klabisLinkTo(methodOn(MemberController.class).listMembers(
-                org.springframework.data.domain.PageRequest.of(0, 10)
+                org.springframework.data.domain.PageRequest.of(0, 10), null
         )).ifPresent(link -> entityModel.add(link.withRel("collection")));
 
         return ResponseEntity.ok(entityModel);
@@ -286,7 +292,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged()))
+        klabisLinkTo(methodOn(MemberController.class).listMembers(Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("members")));
         return model;
     }

@@ -1,36 +1,41 @@
 package com.klabis.members.infrastructure.jdbc;
 
+import com.klabis.common.pagination.TranslatedPageable;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jdbc.core.JdbcAggregateTemplate;
+import org.springframework.data.relational.core.query.Criteria;
+import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
-/**
- * Adapter that bridges between MemberRepository domain interface and MemberJdbcRepository.
- * <p>
- * This adapter implements {@link MemberRepository} domain repository interface.
- * <p>
- * It handles conversion between Member entities and MemberMemento persistence objects.
- * <p>
- * Event publishing is handled automatically by Spring Modulith via the outbox pattern.
- * The MemberMemento delegates @DomainEvents and @AfterDomainEventPublication to the Member entity.
- */
 @SecondaryAdapter
 @Repository
 class MemberRepositoryAdapter implements MemberRepository {
 
-    private final MemberJdbcRepository jdbcRepository;
+    private static final Map<String, String> DOMAIN_TO_DB_COLUMN = Map.of(
+            "firstName", "first_name",
+            "lastName", "last_name",
+            "registrationNumber", "registration_number"
+    );
 
-    public MemberRepositoryAdapter(MemberJdbcRepository jdbcRepository) {
+    private final MemberJdbcRepository jdbcRepository;
+    private final JdbcAggregateTemplate jdbcAggregateTemplate;
+
+    public MemberRepositoryAdapter(MemberJdbcRepository jdbcRepository, JdbcAggregateTemplate jdbcAggregateTemplate) {
         this.jdbcRepository = jdbcRepository;
+        this.jdbcAggregateTemplate = jdbcAggregateTemplate;
     }
 
     @Override
@@ -75,16 +80,33 @@ class MemberRepositoryAdapter implements MemberRepository {
     }
 
     @Override
-    public List<Member> findAllActive() {
-        return jdbcRepository.findAllByActiveTrueOrderByLastNameAscFirstNameAsc()
+    public List<Member> findAll(MemberFilter filter) {
+        Query criteriaQuery = buildCriteriaQuery(filter);
+        return jdbcAggregateTemplate.findAll(criteriaQuery, MemberMemento.class)
                 .stream()
                 .map(MemberMemento::toMember)
                 .toList();
     }
 
     @Override
-    public Page<Member> findAll(Pageable pageable) {
-        return jdbcRepository.findAll(pageable)
-                .map(MemberMemento::toMember);
+    public Page<Member> findAll(MemberFilter filter, Pageable pageable) {
+        Pageable dbPageable = TranslatedPageable.translate(pageable, DOMAIN_TO_DB_COLUMN);
+        Query criteriaQuery = buildCriteriaQuery(filter);
+
+        List<Member> results = jdbcAggregateTemplate.findAll(criteriaQuery.with(dbPageable), MemberMemento.class)
+                .stream()
+                .map(MemberMemento::toMember)
+                .toList();
+
+        long total = jdbcAggregateTemplate.count(criteriaQuery, MemberMemento.class);
+
+        return new PageImpl<>(results, pageable, total);
+    }
+
+    private Query buildCriteriaQuery(MemberFilter filter) {
+        if (!filter.onlyActive()) {
+            return Query.empty();
+        }
+        return Query.query(Criteria.where("active").isTrue());
     }
 }
