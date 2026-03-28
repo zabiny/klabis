@@ -4,14 +4,15 @@
 context: |
   Klabis is a backend API for orienteering club management (members, events, finances).
 
-  **Tech Stack:** Java 17+, Spring Boot 3.5.9, Spring MVC, Spring Data JDBC, Spring Modulith 1.4.6, Maven
-  **API Design:** REST with HATEOAS (mandatory), HAL+FORMS media type, hypermedia navigation
-  **Architecture:** Clean Architecture + DDD, dependency rule inward, KISS
+  **Architecture:** Backend and frontend, KISS
+  **Backend**: Spring framework, Clean Architecture + DDD, dependency rule inward, KISS
+  **Frontend**: React, OIDC, custom HAL+FORMS framework, conditional based on HAL+FORMS metadata from API
+  **API Design:** REST with HATEOAS (mandatory), HAL+FORMS media type, hypermedia navigation  
   **Testing:** Red-Green-Refactor TDD required (write tests, implement with minimal version, refactor), JUnit 5 + AssertJ + Mockito, >80% coverage
 
   **Key Constraints:**
+  - specify functionality from user's perspective
   - All API responses must include `_links` (HATEOAS compliance)
-  - Frontend is separate (consumes via HAL+FORMS)
   - GDPR compliance required
   - Target: 10+ concurrent users, <500ms API response
 
@@ -21,8 +22,8 @@ rules:
   specs:
     - "write files strictly using English"
     - "Focus on business requirements (WHAT), not implementation (HOW)"
+    - "describe specs by user centric description - describe user who is performing action, what he does in the application and what is expected result"
     - "Avoid implementation related requirements and scenario descriptions (keep it purely business specs)"
-    - "Can use API contracts: endpoints, methods, status codes, media types"
     - "Security requirements OK: use \"cryptographically hashed\" not \"BCrypt\""
     - "every module shall have single specs.md file"
 
