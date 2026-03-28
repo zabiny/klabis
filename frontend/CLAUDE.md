@@ -1,7 +1,15 @@
 # Frontend Development Guide
 
 ## Recommended skills
-- `hal-navigator-patterns`: use always when working with UI code. It contains knowledge about how to work with Hal+HalForms in the frontend. 
+- `hal-navigator-patterns`: use always when working with UI code. It contains knowledge about how to work with Hal+HalForms in the frontend.
+
+## Localization
+
+- **System:** In-house `src/localization/labels.ts` — no i18n framework (single language: Czech)
+- **Usage:** `import { labels, getFieldLabel, getTemplateLabel, getNavLabel, getEnumLabel } from '@/localization'`
+- **Field override:** `getFieldLabel('eventDate', { eventDate: 'Custom label' })` — per-form override via second arg
+- **Legacy:** `constants/messages.ts` re-exports from localization — new code should import `@/localization` directly
+- **HAL integration:** `getTemplateLabel` used in `HalFormTemplateButton`, `getFieldLabel` in `HalFormsInput`, `getNavLabel` in `useRootNavigation`
 
 ## Technology Stack
 

@@ -73,6 +73,16 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 - use `/mnt/ramdisk/klabis` folder when need to save temporary file
 - always do code review (use proper agent) before commiting changes involving CODE (either backend or frontend) to git. 
 
+### IDE Diagnostics vs Reality
+
+- JetBrains IDE diagnostics sent via MCP are often stale/cached — always verify with actual compilation (`tsc --noEmit`) or test run before acting on them
+- Common false positive: "import is declared but never used" when the import IS used — IDE cache hasn't refreshed
+
+### Frontend Agent Quality Checks
+
+- After frontend agent completes, verify imports are actually USED (not just added) — agents sometimes add imports without replacing the hardcoded strings
+- Quick check: `grep -r "from '@/localization'" src/ | wc -l` vs actual usage count
+
 ### Sandbox Issues
 
 - Direct `./gradlew` commands may fail with "bwrap: loopback: Failed RTM_NEWADDR"
