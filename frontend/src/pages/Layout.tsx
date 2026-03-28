@@ -11,9 +11,8 @@ import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider, useToast} from '../contexts/ToastContext.tsx'
 import {labels} from '../localization'
-import {Home, Calendar, Trophy, Users, Layers, Sun, Moon} from 'lucide-react'
+import {Home, Calendar, Trophy, Users, Layers} from 'lucide-react'
 import type {LucideIcon} from 'lucide-react'
-import {useTheme} from '../theme/ThemeContext'
 
 const navIcons: Record<string, LucideIcon> = {
     home: Home,
@@ -29,21 +28,6 @@ const bottomNavClassName = ({isActive}: {isActive: boolean}) => {
     const active = "text-blue-600 dark:text-blue-400 font-semibold"
     const inactive = "text-zinc-400 dark:text-zinc-500"
     return `${base} ${isActive ? active : inactive}`
-}
-
-const BottomNavThemeButton = () => {
-    const {theme, toggleTheme} = useTheme()
-    return (
-        <button
-            onClick={toggleTheme}
-            className="flex flex-col items-center justify-center flex-1 h-full gap-1 text-[11px] text-zinc-400 dark:text-zinc-500 transition-colors duration-fast"
-            aria-label={theme === 'light' ? labels.ui.switchToDark : labels.ui.switchToLight}
-            type="button"
-        >
-            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-            <span>{theme === 'light' ? labels.ui.themeDark : labels.ui.themeLight}</span>
-        </button>
-    )
 }
 
 const LayoutToasts = () => {
@@ -151,7 +135,7 @@ const Layout = () => {
                         )}
 
                         {/* Theme toggle */}
-                        <ThemeToggle className="hidden sm:block border border-zinc-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800" />
+                        <ThemeToggle className="border border-zinc-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800" />
 
                         {/* Admin mode toggle */}
                         <AdminToggle />
@@ -215,7 +199,6 @@ const Layout = () => {
                                         </NavLink>
                                     )
                                 })}
-                                <BottomNavThemeButton />
                             </>
                         ) : (
                             <div className="text-xs text-zinc-500 dark:text-zinc-400 px-2 text-center">
