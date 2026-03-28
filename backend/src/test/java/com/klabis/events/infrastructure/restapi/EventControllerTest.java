@@ -7,6 +7,7 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserService;
 import com.klabis.events.EventTestDataBuilder;
+import com.klabis.events.application.DuplicateOrisImportException;
 import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
@@ -45,7 +46,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("EventController API tests")
-@WebMvcTest(controllers = EventController.class)
+@WebMvcTest(controllers = {EventController.class, EventsExceptionHandler.class},
+        properties = "oris-integration.enabled=true")
 @Import({EncryptionConfiguration.class, HalFormsSupport.class})
 class EventControllerTest {
 
@@ -625,6 +627,93 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNoContent());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/events/import")
+    class ImportEventTests {
+
+        @Test
+        @DisplayName("should return 201 with Location header on successful import")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldImportEventSuccessfully() throws Exception {
+            Event importedEvent = EventTestDataBuilder.anEvent().withName("ORIS Sprint Race").build();
+            when(eventManagementService.importEventFromOris(9876)).thenReturn(importedEvent);
+
+            mockMvc.perform(
+                            post("/api/events/import")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisId\": 9876}")
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists("Location"));
+        }
+
+        @Test
+        @DisplayName("should return 403 without EVENTS:MANAGE authority")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            mockMvc.perform(
+                            post("/api/events/import")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisId\": 9876}")
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 409 when ORIS event already imported")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn409WhenDuplicate() throws Exception {
+            when(eventManagementService.importEventFromOris(9876))
+                    .thenThrow(new DuplicateOrisImportException(9876));
+
+            mockMvc.perform(
+                            post("/api/events/import")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisId\": 9876}")
+                    )
+                    .andExpect(status().isConflict());
+        }
+
+        @Test
+        @DisplayName("should return 404 when ORIS event not found")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn404WhenOrisEventNotFound() throws Exception {
+            when(eventManagementService.importEventFromOris(9999))
+                    .thenThrow(new EventNotFoundException(9999));
+
+            mockMvc.perform(
+                            post("/api/events/import")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisId\": 9999}")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events — importFromOris affordance visibility")
+    class ImportAffordanceTests {
+
+        @Test
+        @DisplayName("should include importFromOris affordance when OrisApiClient bean is present")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeImportAffordanceWhenOrisActive() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importEvent.target").exists());
         }
     }
 }

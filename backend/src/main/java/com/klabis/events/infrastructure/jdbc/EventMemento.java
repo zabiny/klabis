@@ -63,6 +63,9 @@ class EventMemento implements Persistable<UUID> {
     @Column("status")
     private String status;
 
+    @Column("oris_id")
+    private Integer orisId;
+
     // Registrations are part of the aggregate
     // Using Set instead of List to avoid needing a position/key column
     @MappedCollection(idColumn = "event_id")
@@ -142,6 +145,7 @@ class EventMemento implements Persistable<UUID> {
         memento.eventCoordinatorId = event.getEventCoordinatorId() != null ? event.getEventCoordinatorId()
                 .value() : null;
         memento.status = event.getStatus().name();
+        memento.orisId = event.getOrisId();
     }
 
     /**
@@ -183,6 +187,7 @@ class EventMemento implements Persistable<UUID> {
                 websiteUrlObj,
                 coordinatorId,
                 eventStatus,
+                this.orisId,
                 registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),
                 new AuditMetadata(
                         this.createdAt,

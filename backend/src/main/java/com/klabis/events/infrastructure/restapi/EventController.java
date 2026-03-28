@@ -34,9 +34,8 @@ import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -64,16 +63,19 @@ public class EventController {
     private final EventRegistrationService eventRegistrationService;
     private final Members members;
     private final PagedResourcesAssembler<EventSummaryDto> pagedResourcesAssembler;
+    private final boolean orisIntegrationActive;
 
     public EventController(
             EventManagementService eventManagementService,
             EventRegistrationService eventRegistrationService,
             Members members,
-            PagedResourcesAssembler<EventSummaryDto> pagedResourcesAssembler) {
+            PagedResourcesAssembler<EventSummaryDto> pagedResourcesAssembler,
+            @org.springframework.beans.factory.annotation.Value("${oris-integration.enabled:false}") boolean orisIntegrationActive) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
+        this.orisIntegrationActive = orisIntegrationActive;
     }
 
     @PostMapping(consumes = "application/json")
@@ -88,6 +90,24 @@ public class EventController {
             @Valid @RequestBody Event.EventCommand command) {
 
         Event created = eventManagementService.createEvent(command);
+
+        return ResponseEntity
+                .created(linkTo(methodOn(EventController.class).getEvent(created.getId().value(), null)).toUri())
+                .build();
+    }
+
+    @PostMapping(value = "/import", consumes = "application/json")
+    @HasAuthority(Authority.EVENTS_MANAGE)
+    @Operation(
+            summary = "Import event from ORIS",
+            description = "Creates a new event in DRAFT status by importing data from ORIS."
+    )
+    @ApiResponse(responseCode = "201", description = "Event imported successfully")
+    public ResponseEntity<Void> importEvent(
+            @Parameter(description = "ORIS import command with orisId")
+            @Valid @RequestBody Event.ImportCommand command) {
+
+        Event created = eventManagementService.importEventFromOris(command.orisId());
 
         return ResponseEntity
                 .created(linkTo(methodOn(EventController.class).getEvent(created.getId().value(), null)).toUri())
@@ -191,10 +211,16 @@ public class EventController {
                 }
         );
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable)).ifPresent(link ->
-                pagedModel.add(link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null))))
-        );
+        klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable)).ifPresent(link -> {
+            var selfLink = link.withSelfRel()
+                    .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
+
+            if (orisIntegrationActive) {
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventController.class).importEvent(null)));
+            }
+
+            pagedModel.add(selfLink);
+        });
 
         return ResponseEntity.ok(pagedModel);
     }

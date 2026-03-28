@@ -43,6 +43,9 @@ interface EventJdbcRepository extends CrudRepository<EventMemento, UUID>, Paging
             """)
     List<EventMemento> findActiveEventsWithDateBefore(@Param("date") LocalDate date);
 
+    @Query("SELECT EXISTS(SELECT 1 FROM events WHERE oris_id = :orisId)")
+    boolean existsByOrisId(@Param("orisId") int orisId);
+
     // findAll(Pageable) is inherited from PagingAndSortingRepository
     // findById(UUID) is inherited from CrudRepository
     // save() is inherited from CrudRepository

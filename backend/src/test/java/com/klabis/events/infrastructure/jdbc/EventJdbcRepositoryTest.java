@@ -535,6 +535,67 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
+    @DisplayName("existsByOrisId() — ORIS duplicate detection")
+    class ExistsByOrisId {
+
+        @Test
+        @DisplayName("should return true for a saved event with the given orisId")
+        void shouldReturnTrueForSavedEventWithOrisId() {
+            // Given
+            Event event = Event.createFromOris(
+                    9876,
+                    "ORIS Imported Event",
+                    LocalDate.of(2026, 8, 15),
+                    "Test Location",
+                    "OOB",
+                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=9876")
+            );
+            eventRepository.save(event);
+
+            // When & Then
+            assertThat(eventRepository.existsByOrisId(9876)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return false when no event with the given orisId exists")
+        void shouldReturnFalseWhenNoEventWithOrisId() {
+            // When & Then
+            assertThat(eventRepository.existsByOrisId(99999)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should reject duplicate orisId via unique constraint")
+        void shouldRejectDuplicateOrisIdViaUniqueConstraint() {
+            // Given — save the first event with orisId 1111
+            Event first = Event.createFromOris(
+                    1111,
+                    "First ORIS Event",
+                    LocalDate.of(2026, 9, 1),
+                    "Location A",
+                    "PRG",
+                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111")
+            );
+            eventRepository.save(first);
+
+            // When — create and save a second event with same orisId
+            Event second = Event.createFromOris(
+                    1111,
+                    "Duplicate ORIS Event",
+                    LocalDate.of(2026, 9, 10),
+                    "Location B",
+                    "BRN",
+                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111")
+            );
+
+            // Then — DB unique constraint rejects the duplicate
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    Exception.class,
+                    () -> eventRepository.save(second)
+            );
+        }
+    }
+
+    @Nested
     @DisplayName("Unique constraint on (event_id, member_id)")
     class UniqueConstraintEventMember {
 

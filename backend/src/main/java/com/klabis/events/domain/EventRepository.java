@@ -40,6 +40,15 @@ public interface EventRepository extends Events {
      */
     List<Event> findActiveEventsWithDateBefore(LocalDate date);
 
+    /**
+     * Checks if an event with the given ORIS ID already exists.
+     * Used to prevent duplicate imports from ORIS.
+     *
+     * @param orisId the ORIS event identifier
+     * @return true if an event with this orisId already exists
+     */
+    boolean existsByOrisId(int orisId);
+
     // Read methods inherited from Events public API:
     // - Optional<Event> findById(EventId eventId)
     // - Page<Event> findAll(EventFilter filter, Pageable pageable)

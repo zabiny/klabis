@@ -232,6 +232,9 @@ CREATE TABLE events
     event_coordinator_id UUID         NULL REFERENCES members (id) ON DELETE SET NULL,
     status               VARCHAR(20)  NOT NULL,
 
+    -- ORIS integration: source identifier for imported events (null for manually created events)
+    oris_id              INTEGER      NULL UNIQUE,
+
     -- Audit fields
     created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           VARCHAR(100) NOT NULL,

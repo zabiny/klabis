@@ -8,6 +8,10 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventStatus;
+import com.klabis.oris.apiclient.OrisApiClient;
+import com.klabis.oris.apiclient.dto.EventDetails;
+import com.klabis.oris.apiclient.dto.Organizer;
+import org.mockito.Mockito;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -44,11 +48,14 @@ class EventManagementServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private OrisApiClient orisApiClient;
+
     private EventManagementService service;
 
     @BeforeEach
     void setUp() {
-        service = new EventManagementServiceImpl(eventRepository);
+        service = new EventManagementServiceImpl(eventRepository, Optional.of(orisApiClient));
     }
 
     @Nested
@@ -534,6 +541,134 @@ class EventManagementServiceTest {
             // Then
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).getStatus()).isEqualTo(EventStatus.ACTIVE);
+        }
+    }
+
+    @Nested
+    @DisplayName("importEventFromOris() method")
+    class ImportEventFromOrisMethod {
+
+        @Test
+        @DisplayName("should import event successfully from ORIS")
+        void shouldImportEventSuccessfully() {
+            // Given
+            int orisId = 9876;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetails(orisId, "Spring Sprint", LocalDate.of(2026, 8, 15), "Brno Park", org1, null);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            Event result = service.importEventFromOris(orisId);
+
+            // Then
+            assertThat(result.getName()).isEqualTo("Spring Sprint");
+            assertThat(result.getEventDate()).isEqualTo(LocalDate.of(2026, 8, 15));
+            assertThat(result.getLocation()).isEqualTo("Brno Park");
+            assertThat(result.getOrganizer()).isEqualTo("OOB");
+            assertThat(result.getStatus()).isEqualTo(EventStatus.DRAFT);
+            assertThat(result.getOrisId()).isEqualTo(orisId);
+            assertThat(result.getWebsiteUrl().value()).isEqualTo("https://oris.ceskyorientak.cz/Zavod?id=9876");
+            verify(eventRepository).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should throw DuplicateOrisImportException when DB unique constraint violated")
+        void shouldThrowDuplicateExceptionOnConstraintViolation() {
+            // Given
+            int orisId = 1111;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetails(orisId, "Duplicate Event", LocalDate.of(2026, 8, 15), "Location", org1, null);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(eventRepository.save(any(Event.class)))
+                    .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate oris_id"));
+
+            // When & Then
+            assertThatThrownBy(() -> service.importEventFromOris(orisId))
+                    .isInstanceOf(DuplicateOrisImportException.class);
+        }
+
+        @Test
+        @DisplayName("should throw EventNotFoundException when ORIS returns no data for the given ID")
+        void shouldThrowEventNotFoundWhenOrisReturnsNoData() {
+            // Given
+            int orisId = 4444;
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(null, "JSON", "OK", null, "getEvent"));
+
+            // When & Then
+            assertThatThrownBy(() -> service.importEventFromOris(orisId))
+                    .isInstanceOf(EventNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should use org2 abbreviation as fallback when org1 is blank")
+        void shouldUseOrg2AbbreviationWhenOrg1IsBlank() {
+            // Given
+            int orisId = 2222;
+            Organizer org1 = new Organizer(0, "", "");
+            Organizer org2 = new Organizer(206, "PRG", "Prague OC");
+            EventDetails details = buildEventDetails(orisId, "Prague Event", LocalDate.of(2026, 9, 1), "Prague", org1, org2);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            Event result = service.importEventFromOris(orisId);
+
+            // Then
+            assertThat(result.getOrganizer()).isEqualTo("PRG");
+        }
+
+        @Test
+        @DisplayName("should use fallback '---' when both org1 and org2 are blank")
+        void shouldUseFallbackWhenBothOrganizersAreBlank() {
+            // Given
+            int orisId = 3333;
+            Organizer org1 = new Organizer(0, null, "");
+            Organizer org2 = new Organizer(0, "  ", "");
+            EventDetails details = buildEventDetails(orisId, "No Org Event", LocalDate.of(2026, 10, 1), "Unknown", org1, org2);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            Event result = service.importEventFromOris(orisId);
+
+            // Then
+            assertThat(result.getOrganizer()).isEqualTo("---");
+        }
+
+        @Test
+        @DisplayName("should throw IllegalStateException when ORIS integration is not active")
+        void shouldThrowWhenOrisNotActive() {
+            // Given
+            EventManagementService serviceWithoutOris = new EventManagementServiceImpl(eventRepository, Optional.empty());
+
+            // When & Then
+            assertThatThrownBy(() -> serviceWithoutOris.importEventFromOris(9876))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("ORIS integration is not active");
+        }
+
+        private EventDetails buildEventDetails(int id, String name, LocalDate date, String place, Organizer org1, Organizer org2) {
+            EventDetails details = Mockito.mock(EventDetails.class);
+            Mockito.when(details.name()).thenReturn(name);
+            Mockito.when(details.date()).thenReturn(date);
+            Mockito.when(details.place()).thenReturn(place);
+            Mockito.when(details.org1()).thenReturn(org1);
+            Mockito.lenient().when(details.org2()).thenReturn(org2);
+            return details;
         }
     }
 }

@@ -18,4 +18,8 @@ public class EventNotFoundException extends ResourceNotFoundException {
     public EventNotFoundException(EventId eventId) {
         super("Event not found with ID: " + eventId);
     }
+
+    public EventNotFoundException(int orisId) {
+        super("ORIS event not found with ID: " + orisId);
+    }
 }

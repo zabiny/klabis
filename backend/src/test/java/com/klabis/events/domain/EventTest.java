@@ -1327,4 +1327,69 @@ class EventTest {
             assertThat(domainEvents.get(1)).isInstanceOf(EventPublishedEvent.class);
         }
     }
+
+    @Nested
+    @DisplayName("createFromOris() factory method")
+    class CreateFromOrisMethod {
+
+        @Test
+        @DisplayName("should create event in DRAFT status with correct field values and non-null orisId")
+        void shouldCreateEventFromOrisInDraftStatusWithCorrectFields() {
+            // Arrange
+            int orisId = 9876;
+            String name = "Oris Sprint Race";
+            LocalDate eventDate = LocalDate.of(2026, 8, 10);
+            String location = "Brno City Center";
+            String organizer = "OOB";
+            WebsiteUrl websiteUrl = WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=9876");
+
+            // Act
+            Event event = Event.createFromOris(orisId, name, eventDate, location, organizer, websiteUrl);
+
+            // Assert
+            assertThat(event.getId()).isNotNull();
+            assertThat(event.getName()).isEqualTo(name);
+            assertThat(event.getEventDate()).isEqualTo(eventDate);
+            assertThat(event.getLocation()).isEqualTo(location);
+            assertThat(event.getOrganizer()).isEqualTo(organizer);
+            assertThat(event.getWebsiteUrl()).isEqualTo(websiteUrl);
+            assertThat(event.getStatus()).isEqualTo(EventStatus.DRAFT);
+            assertThat(event.getOrisId()).isEqualTo(orisId);
+        }
+
+        @Test
+        @DisplayName("should register EventCreatedEvent on creation")
+        void shouldRegisterEventCreatedEvent() {
+            // Act
+            Event event = Event.createFromOris(
+                    1234,
+                    "Test ORIS Event",
+                    LocalDate.of(2026, 9, 5),
+                    "Prague Forest",
+                    "PRG",
+                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234")
+            );
+
+            // Assert
+            assertThat(event.getDomainEvents()).hasSize(1);
+            assertThat(event.getDomainEvents().get(0)).isInstanceOf(EventCreatedEvent.class);
+        }
+
+        @Test
+        @DisplayName("should not set eventCoordinatorId (imported events have no coordinator)")
+        void shouldNotSetEventCoordinatorId() {
+            // Act
+            Event event = Event.createFromOris(
+                    5555,
+                    "Coordinator-less Event",
+                    LocalDate.of(2026, 10, 1),
+                    "Some Place",
+                    "TST",
+                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=5555")
+            );
+
+            // Assert
+            assertThat(event.getEventCoordinatorId()).isNull();
+        }
+    }
 }

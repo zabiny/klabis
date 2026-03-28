@@ -40,10 +40,6 @@ spring:
       authorizationserver:
         issuer: ${KLABIS_OAUTH2_ISSUER:https://localhost:8443}
 
-  cache:
-    type: simple
-    cache-names: rateLimitCache
-
   devtools:
     livereload:
       enabled: false

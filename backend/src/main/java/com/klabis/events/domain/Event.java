@@ -46,6 +46,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     // Event details
     private String name;
+    private Integer orisId;
     private LocalDate eventDate;
     private String location;
     private String organizer;
@@ -89,6 +90,12 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     ) {
     }
 
+    public record ImportCommand(
+            @jakarta.validation.constraints.Positive(message = "ORIS event ID must be positive")
+            int orisId
+    ) {
+    }
+
     /**
      * Private constructor for creating new Event instances.
      * <p>
@@ -104,6 +111,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             WebsiteUrl websiteUrl,
             MemberId eventCoordinatorId,
             EventStatus status,
+            Integer orisId,
             AuditMetadata auditMetadata) {
 
         this.id = id;
@@ -114,6 +122,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.websiteUrl = websiteUrl;
         this.eventCoordinatorId = eventCoordinatorId;
         this.status = status;
+        this.orisId = orisId;
         updateAuditMetadata(auditMetadata);
     }
 
@@ -143,6 +152,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             WebsiteUrl websiteUrl,
             MemberId eventCoordinatorId,
             EventStatus status,
+            Integer orisId,
             List<EventRegistration> registrations,
             AuditMetadata auditMetadata) {
 
@@ -155,6 +165,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 websiteUrl,
                 eventCoordinatorId,
                 status,
+                orisId,
                 auditMetadata
         );
         event.registrations.addAll(registrations);
@@ -200,10 +211,56 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 websiteUrl,
                 eventCoordinatorId,
                 EventStatus.DRAFT,
+                null,
                 null
         );
 
         // Register domain event
+        event.registerEvent(EventCreatedEvent.fromAggregate(event));
+
+        return event;
+    }
+
+    /**
+     * Factory method to create an Event imported from ORIS.
+     * <p>
+     * Creates a new event in DRAFT status with data sourced from the ORIS orienteering system.
+     * The orisId is stored internally and is never exposed in API responses.
+     *
+     * @param orisId     ORIS event identifier (required, stored for duplicate detection)
+     * @param name       event name from ORIS
+     * @param eventDate  event date from ORIS
+     * @param location   event location from ORIS
+     * @param organizer  event organizer abbreviation resolved from ORIS organizer data
+     * @param websiteUrl URL to the ORIS event page
+     * @return new Event instance in DRAFT status with orisId set
+     */
+    public static Event createFromOris(
+            int orisId,
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl) {
+
+        validateName(name);
+        validateEventDate(eventDate);
+        validateLocation(location);
+        validateOrganizer(organizer);
+
+        Event event = new Event(
+                EventId.generate(),
+                name,
+                eventDate,
+                location,
+                organizer,
+                websiteUrl,
+                null,
+                EventStatus.DRAFT,
+                orisId,
+                null
+        );
+
         event.registerEvent(EventCreatedEvent.fromAggregate(event));
 
         return event;
@@ -268,6 +325,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     public EventStatus getStatus() {
         return status;
+    }
+
+    public Integer getOrisId() {
+        return orisId;
     }
 
     // ========== Domain Methods ==========

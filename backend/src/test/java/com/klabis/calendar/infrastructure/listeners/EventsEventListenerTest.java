@@ -38,7 +38,7 @@ class EventsEventListenerTest {
     void shouldDelegateToServiceWhenEventIsPublished() {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
-        Event aggregate = Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, EventStatus.ACTIVE, List.of(), null);
+        Event aggregate = Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, EventStatus.ACTIVE, null, List.of(), null);
         EventPublishedEvent event = EventPublishedEvent.fromAggregate(aggregate);
 
         // When
@@ -113,7 +113,7 @@ class EventsEventListenerTest {
     void shouldDelegateToServiceWhenEventIsCancelled() {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
-        Event aggregate = Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, EventStatus.CANCELLED, List.of(), null);
+        Event aggregate = Event.reconstruct(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, EventStatus.CANCELLED, null, List.of(), null);
         EventCancelledEvent event = EventCancelledEvent.fromAggregate(aggregate);
 
         // When

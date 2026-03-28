@@ -12,6 +12,8 @@ public interface EventManagementService {
 
     Event createEvent(Event.EventCommand command);
 
+    Event importEventFromOris(int orisId);
+
     void updateEvent(EventId eventId, Event.EventCommand command);
 
     void publishEvent(EventId eventId);

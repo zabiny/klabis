@@ -39,6 +39,12 @@ public interface OrisApiClient {
     @GetExchange("/API/?format=json&method=getEventEntries")
     OrisResponse<Map<String, EventEntry>> getEventEntries(@RequestParam("eventid") int eventId, @RequestParam("clubid") Integer clubId);
 
+    String ORIS_WEB_BASE_URL = "https://oris.ceskyorientak.cz";
+
+    default String getEventWebUrl(int eventId) {
+        return ORIS_WEB_BASE_URL + "/Zavod?id=" + eventId;
+    }
+
     record OrisResponse<T>(
             @JsonProperty("Data") @Nullable T data,
             @JsonProperty("Format") String format,

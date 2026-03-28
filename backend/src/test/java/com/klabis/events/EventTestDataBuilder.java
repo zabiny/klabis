@@ -86,6 +86,7 @@ public class EventTestDataBuilder {
                 websiteUrl,
                 coordinatorId,
                 EventStatus.DRAFT,
+                null,
                 registrations,
                 auditMetadata);
     }

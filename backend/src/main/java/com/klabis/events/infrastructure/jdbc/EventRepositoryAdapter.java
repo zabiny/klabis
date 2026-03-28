@@ -102,6 +102,11 @@ class EventRepositoryAdapter implements EventRepository {
                 .toList();
     }
 
+    @Override
+    public boolean existsByOrisId(int orisId) {
+        return jdbcRepository.existsByOrisId(orisId);
+    }
+
     /**
      * Builds a Criteria-based query from EventFilter without pagination applied.
      * Pagination is applied separately so the same query can be reused for counting.
