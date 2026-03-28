@@ -21,6 +21,7 @@ context: |
 rules:
   specs:
     - "write files strictly using English"
+    - "create specs for both backend and frontend"
     - "Focus on business requirements (WHAT), not implementation (HOW)"
     - "describe specs by user centric description - describe user who is performing action, what he does in the application and what is expected result"
     - "Avoid implementation related requirements and scenario descriptions (keep it purely business specs)"
