@@ -37,6 +37,9 @@ vi.mock('../components/Icons', () => ({
     LogoutIcon: () => <div data-testid="logout-icon">Logout Icon</div>,
 }))
 
+const DESKTOP_WIDTH = 768
+const MOBILE_WIDTH = 767
+
 const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
 const useAuth = vi.mocked(AuthContext2Module.useAuth)
 
@@ -116,7 +119,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Desktop sidebar', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: 1024})
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: DESKTOP_WIDTH})
             window.dispatchEvent(new Event('resize'))
         })
 
@@ -154,7 +157,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Mobile bottom navigation', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: 768})
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: MOBILE_WIDTH})
             window.dispatchEvent(new Event('resize'))
         })
 
@@ -192,7 +195,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Sidebar menu items (desktop)', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: 1024})
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: DESKTOP_WIDTH})
             window.dispatchEvent(new Event('resize'))
         })
 
@@ -245,7 +248,7 @@ describe('Layout - Responsive Sidebar', () => {
 
     describe('Header and user info', () => {
         beforeEach(() => {
-            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: 1024})
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: DESKTOP_WIDTH})
             window.dispatchEvent(new Event('resize'))
         })
 

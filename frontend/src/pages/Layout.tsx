@@ -64,13 +64,13 @@ const Layout = () => {
     const navigate = useNavigate()
     const {logout, getUser, isAuthenticated} = useAuth()
     const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
-    const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024)
+    const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 768)
     const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
 
     // Track screen size changes for responsive sidebar
     useEffect(() => {
         const handleResize = () => {
-            setIsLargeScreen(window.innerWidth >= 1024)
+            setIsLargeScreen(window.innerWidth >= 768)
         }
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
@@ -283,7 +283,7 @@ const Layout = () => {
             <ToastProvider>
                 <LayoutToasts />
                 {/* lg:pl-[17rem] = sidebar w-60 (15rem) + 2rem gap */}
-                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 pb-20 lg:pb-6 lg:pl-[17rem] overflow-auto bg-slate-100 dark:bg-zinc-950 min-h-screen">
+                <main className="flex-1 pt-20 px-4 sm:px-6 md:px-8 pb-20 md:pb-6 md:pl-[17rem] overflow-auto bg-slate-100 dark:bg-zinc-950 min-h-screen">
                     <HalFormProvider>
                         <HalFormsPageLayout>
                             <Outlet />
