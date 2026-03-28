@@ -2,6 +2,7 @@ package com.klabis.members.application;
 
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberId;
 import org.springframework.context.ApplicationEventPublisher;
 import com.klabis.members.MemberResumedEvent;
@@ -315,6 +316,90 @@ class ManagementServiceTest {
 
                 verify(memberRepository, never()).save(any(Member.class));
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Member And Record View Tests")
+    class GetMemberAndRecordViewTests {
+
+        private UUID viewerUserId;
+
+        @BeforeEach
+        void setUp() {
+            viewerUserId = UUID.randomUUID();
+        }
+
+        @Test
+        @DisplayName("should return active member for user without MANAGE authority")
+        void shouldReturnActiveMemberForNonAdmin() {
+            Member activeMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(true).build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(activeMember));
+
+            Member result = testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), false);
+
+            assertThat(result.isActive()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should throw MemberNotFoundException for inactive member when caller lacks MANAGE authority")
+        void shouldThrow404ForInactiveMemberWithoutManage() {
+            Member inactiveMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(false).build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(inactiveMember));
+
+            assertThatThrownBy(() -> testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), false))
+                    .isInstanceOf(MemberNotFoundException.class);
+
+            verify(memberRepository, never()).save(any(Member.class));
+        }
+
+        @Test
+        @DisplayName("should return inactive member for user with MANAGE authority")
+        void shouldReturnInactiveMemberForAdmin() {
+            Member inactiveMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(false).build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(inactiveMember));
+
+            Member result = testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), true);
+
+            assertThat(result.isActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should throw MemberNotFoundException when member does not exist")
+        void shouldThrowWhenMemberNotFound() {
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), false))
+                    .isInstanceOf(MemberNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should publish BirthNumberAccessedEvent when admin views member with birth number")
+        void shouldPublishBirthNumberAccessedEventForAdmin() {
+            Member memberWithBirthNumber = MemberTestDataBuilder.aMember()
+                    .withId(testMemberId)
+                    .withNationality("CZE")
+                    .withBirthNumber("900101/1234")
+                    .build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithBirthNumber));
+
+            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), true);
+
+            verify(eventPublisher).publishEvent(any(BirthNumberAccessedEvent.class));
+        }
+
+        @Test
+        @DisplayName("should not publish BirthNumberAccessedEvent when member has no birth number")
+        void shouldNotPublishEventWhenNoBirthNumber() {
+            Member memberWithoutBirthNumber = MemberTestDataBuilder.aMember()
+                    .withId(testMemberId)
+                    .withNationality("SK")
+                    .build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithoutBirthNumber));
+
+            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), true);
+
+            verify(eventPublisher, never()).publishEvent(any(BirthNumberAccessedEvent.class));
         }
     }
 
