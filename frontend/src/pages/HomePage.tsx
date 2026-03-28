@@ -117,7 +117,7 @@ const AdminDashboard = ({firstName, menuItems}: { firstName: string; menuItems: 
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {navigationCards.map((card) => (
                     containsRel(menuItems, card.rel) && (
                         <RouterLink
@@ -190,7 +190,7 @@ const UserDashboard = ({firstName, memberId, menuItems}: {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {memberId && (
                     <RouterLink to={`/members/${memberId}`} className="group block">
                         <Card className="card-hoverable h-full p-5">
