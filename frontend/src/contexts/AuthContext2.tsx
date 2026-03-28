@@ -1,4 +1,5 @@
 import React, {createContext, type ReactNode, useCallback, useContext, useEffect, useState,} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {User, UserManager,} from 'oidc-client-ts';
 import {type AuthConfig, createUserManager} from '../api/klabisUserManager.ts';
 import {normalizeUrl} from "../api/hateoas.ts";
@@ -37,6 +38,7 @@ function createAuthUserDetails(user: User): AuthUserDetails {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) => {
+    const navigate = useNavigate();
 
     const [userManager, setUserManager] = useState<UserManager>();
     const [isLoading, setLoading] = useState(true);
@@ -75,8 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
                     .then((user) => {
                         setValidUser(user);
                         setLoading(false);
-                        // Clean URL after processing
-                        window.history.replaceState({}, document.title, '/');
+                        navigate('/', {replace: true});
                     })
                     .catch((err) => {
                         console.error('Signin redirect callback error:', err);

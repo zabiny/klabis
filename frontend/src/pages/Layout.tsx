@@ -237,7 +237,8 @@ const Layout = () => {
                 ========================================== */}
             <ToastProvider>
                 <LayoutToasts />
-                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 py-6 lg:pl-60 overflow-auto bg-slate-100 dark:bg-zinc-950 min-h-screen">
+                {/* lg:pl-[17rem] = sidebar w-60 (15rem) + 2rem gap */}
+                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 py-6 lg:pl-[17rem] overflow-auto bg-slate-100 dark:bg-zinc-950 min-h-screen">
                     <HalFormProvider>
                         <HalFormsPageLayout>
                             <Outlet />

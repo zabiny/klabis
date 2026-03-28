@@ -1,6 +1,6 @@
 import {Link as RouterLink} from 'react-router-dom'
 import {Users, Calendar, Layers, Activity, User, ChevronRight} from 'lucide-react'
-import {Button, Card} from '../components/UI'
+import {Card} from '../components/UI'
 import {useRootNavigation} from "../hooks/useRootNavigation";
 import {useIsAdmin} from "../hooks/useIsAdmin";
 import {useAuth} from "../contexts/AuthContext2";
@@ -20,7 +20,6 @@ const navigationCards = [
             </svg>
         ),
         gradient: 'from-emerald-500 to-teal-600',
-        darkGradient: 'from-emerald-400 to-teal-500',
     },
     {
         rel: 'events',
@@ -33,7 +32,6 @@ const navigationCards = [
             </svg>
         ),
         gradient: 'from-blue-500 to-indigo-600',
-        darkGradient: 'from-blue-400 to-indigo-500',
     },
     {
         rel: 'groups',
@@ -46,7 +44,6 @@ const navigationCards = [
             </svg>
         ),
         gradient: 'from-violet-500 to-purple-600',
-        darkGradient: 'from-violet-400 to-purple-500',
     },
     {
         rel: 'admin',
@@ -60,7 +57,6 @@ const navigationCards = [
             </svg>
         ),
         gradient: 'from-amber-500 to-orange-600',
-        darkGradient: 'from-amber-400 to-orange-500',
     },
 ]
 
@@ -121,7 +117,7 @@ const AdminDashboard = ({firstName, menuItems}: { firstName: string; menuItems: 
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {navigationCards.map((card) => (
                     containsRel(menuItems, card.rel) && (
                         <RouterLink
@@ -129,31 +125,16 @@ const AdminDashboard = ({firstName, menuItems}: { firstName: string; menuItems: 
                             to={card.rel === 'admin' ? '/sandplace' : `/${card.rel}`}
                             className="group block"
                         >
-                            <Card className="card-hoverable h-full overflow-hidden relative">
-                                <div className={`
-                                    absolute top-0 right-0 w-32 h-32 opacity-10
-                                    bg-gradient-to-br ${card.gradient}
-                                    blur-3xl rounded-full -translate-y-1/2 translate-x-1/2
-                                    group-hover:opacity-20 transition-opacity duration-base
-                                `}/>
-                                <div className="relative">
-                                    <div className={`
-                                        inline-flex items-center justify-center w-14 h-14 rounded-xl
-                                        bg-gradient-to-br ${card.gradient}
-                                        text-white shadow-lg mb-4
-                                        group-hover:scale-110 transition-transform duration-base
-                                    `}>
-                                        {card.icon}
+                            <Card className="card-hoverable h-full p-5">
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-xl bg-gradient-to-br ${card.gradient} text-white shrink-0`}>
+                                        <div className="w-6 h-6 [&>svg]:w-6 [&>svg]:h-6">{card.icon}</div>
                                     </div>
-                                    <h2 className="text-2xl font-display font-bold text-text-primary mb-3">
-                                        {card.title}
-                                    </h2>
-                                    <p className="text-text-secondary mb-6 line-clamp-3">
-                                        {card.description}
-                                    </p>
-                                    <Button variant="primary" className="w-full">
-                                        {labels.dashboard.openSection} {card.title.toLowerCase()}
-                                    </Button>
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-text-primary">{card.title}</p>
+                                        <p className="text-sm text-text-secondary line-clamp-1">{card.description}</p>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-text-tertiary group-hover:translate-x-1 transition-transform"/>
                                 </div>
                             </Card>
                         </RouterLink>
