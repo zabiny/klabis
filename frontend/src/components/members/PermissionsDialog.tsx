@@ -15,10 +15,8 @@ export interface PermissionsDialogProps {
 }
 
 const PERMISSION_COLORS: Record<string, string> = {
-    'MEMBERS:READ':        'bg-blue-100 text-blue-600',
     'MEMBERS:MANAGE':      'bg-green-100 text-green-600',
     'MEMBERS:PERMISSIONS': 'bg-red-100 text-red-600',
-    'EVENTS:READ':         'bg-teal-100 text-teal-600',
     'EVENTS:MANAGE':       'bg-indigo-100 text-indigo-600',
     'CALENDAR:MANAGE':     'bg-cyan-100 text-cyan-600',
 };

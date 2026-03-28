@@ -41,7 +41,7 @@ class PermissionServiceImpl implements PermissionService {
             AuthorizationPolicy.checkAdminLockoutPrevention(userId, MEMBERS_PERMISSIONS, count);
         }
 
-        permissions.replaceAuthorities(newAuthorities);
+        permissions.replaceAuthorities(Authority.withStandard(newAuthorities));
 
         UserPermissions savedPermissions = permissionsRepository.save(permissions);
 

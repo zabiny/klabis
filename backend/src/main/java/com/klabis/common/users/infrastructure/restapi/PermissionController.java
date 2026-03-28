@@ -80,7 +80,7 @@ public class PermissionController {
     private PermissionsResponse toPermissionsResponse(UserPermissions permissions) {
         return new PermissionsResponse(
                 permissions.getUserId(),
-                permissions.getDirectAuthorities().stream().map(Authority::getValue).toList()
+                permissions.getManageableAuthorities().stream().map(Authority::getValue).toList()
         );
     }
 

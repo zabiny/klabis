@@ -114,6 +114,10 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
         return Set.copyOf(directAuthorities);
     }
 
+    public Set<Authority> getManageableAuthorities() {
+        return Authority.withoutStandard(directAuthorities);
+    }
+
     /**
      * Gets the version for optimistic locking.
      *

@@ -44,7 +44,7 @@ describe('PermissionsDialog', () => {
     beforeEach(() => {
         mockUseAuthorizedQuery.mockReturnValue({
             data: {
-                authorities: ['MEMBERS:READ', 'EVENTS:READ'],
+                authorities: ['MEMBERS:MANAGE'],
                 _links: {self: {href: '/api/users/1/permissions'}},
             },
             isLoading: false,
@@ -95,27 +95,27 @@ describe('PermissionsDialog', () => {
         it('pre-selects permissions currently assigned to the user', () => {
             renderDialog();
 
-            const membersReadToggle = screen.getByRole('switch', {name: /Zobrazení členů/i});
-            expect(membersReadToggle).toHaveAttribute('aria-checked', 'true');
+            const membersManageToggle = screen.getByRole('switch', {name: /Správa členů/i});
+            expect(membersManageToggle).toHaveAttribute('aria-checked', 'true');
         });
 
         it('shows unassigned permissions as toggled off', () => {
             renderDialog();
 
-            const membersManageToggle = screen.getByRole('switch', {name: /Správa členů/i});
-            expect(membersManageToggle).toHaveAttribute('aria-checked', 'false');
+            const membersPermissionsToggle = screen.getByRole('switch', {name: /Správa oprávnění/i});
+            expect(membersPermissionsToggle).toHaveAttribute('aria-checked', 'false');
         });
 
         it('toggles permission on click', async () => {
             const user = userEvent.setup();
             renderDialog();
 
-            const membersManageToggle = screen.getByRole('switch', {name: /Správa členů/i});
-            expect(membersManageToggle).toHaveAttribute('aria-checked', 'false');
+            const membersPermissionsToggle = screen.getByRole('switch', {name: /Správa oprávnění/i});
+            expect(membersPermissionsToggle).toHaveAttribute('aria-checked', 'false');
 
-            await user.click(membersManageToggle);
+            await user.click(membersPermissionsToggle);
 
-            expect(membersManageToggle).toHaveAttribute('aria-checked', 'true');
+            expect(membersPermissionsToggle).toHaveAttribute('aria-checked', 'true');
         });
 
         it('disables toggles while saving', () => {
@@ -144,7 +144,7 @@ describe('PermissionsDialog', () => {
             expect(defaultMutate).toHaveBeenCalledWith(
                 {
                     url: '/api/users/1/permissions',
-                    data: {authorities: expect.arrayContaining(['MEMBERS:READ', 'EVENTS:READ'])},
+                    data: {authorities: expect.arrayContaining(['MEMBERS:MANAGE'])},
                 },
                 expect.objectContaining({onSuccess: expect.any(Function)}),
             );

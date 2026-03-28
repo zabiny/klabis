@@ -105,6 +105,18 @@ public enum Authority {
         return EnumSet.of(MEMBERS_READ, EVENTS_READ);
     }
 
+    public static Set<Authority> withStandard(Set<Authority> authorities) {
+        var merged = EnumSet.copyOf(getStandardUserAuthorities());
+        merged.addAll(authorities);
+        return merged;
+    }
+
+    public static Set<Authority> withoutStandard(Set<Authority> authorities) {
+        var filtered = authorities.isEmpty() ? EnumSet.noneOf(Authority.class) : EnumSet.copyOf(authorities);
+        filtered.removeAll(getStandardUserAuthorities());
+        return filtered;
+    }
+
     public static boolean isKnownAuthority(String value) {
         for (Authority authority : values()) {
             if (authority.value.equals(value)) {

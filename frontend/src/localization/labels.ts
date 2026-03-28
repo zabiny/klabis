@@ -197,10 +197,8 @@ export const labels = {
     },
 
     permissions: {
-        'MEMBERS:READ': {label: 'Zobrazení členů', description: 'Přístup k seznamu a detailům členů'},
         'MEMBERS:MANAGE': {label: 'Správa členů', description: 'Registrace, úprava a mazání členů'},
         'MEMBERS:PERMISSIONS': {label: 'Správa oprávnění', description: 'Přidělování a odebírání oprávnění uživatelům'},
-        'EVENTS:READ': {label: 'Zobrazení akcí', description: 'Přístup k seznamu a detailům akcí'},
         'EVENTS:MANAGE': {label: 'Správa akcí', description: 'Vytváření a úprava akcí'},
         'CALENDAR:MANAGE': {label: 'Správa kalendáře', description: 'Vytváření a úprava kalendářních událostí'},
     },

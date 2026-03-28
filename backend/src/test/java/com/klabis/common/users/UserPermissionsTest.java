@@ -254,6 +254,35 @@ class UserPermissionsTest {
     }
 
     @Test
+    void shouldReturnOnlyManageableAuthorities() {
+        // Given
+        UserPermissions permissions = UserPermissions.create(
+                TEST_USER_ID,
+                Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ, Authority.EVENTS_READ, Authority.MEMBERS_PERMISSIONS)
+        );
+
+        // When
+        Set<Authority> manageable = permissions.getManageableAuthorities();
+
+        // Then
+        assertThat(manageable)
+                .containsExactlyInAnyOrder(Authority.MEMBERS_MANAGE, Authority.MEMBERS_PERMISSIONS)
+                .doesNotContainAnyElementsOf(Authority.getStandardUserAuthorities());
+    }
+
+    @Test
+    void shouldReturnEmptyManageableAuthoritiesWhenOnlyStandardPresent() {
+        // Given
+        UserPermissions permissions = UserPermissions.create(
+                TEST_USER_ID,
+                Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ)
+        );
+
+        // When/Then
+        assertThat(permissions.getManageableAuthorities()).isEmpty();
+    }
+
+    @Test
     void shouldHaveReadableToString() {
         // Given
         UserPermissions permissions = UserPermissions.create(
