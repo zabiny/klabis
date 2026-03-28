@@ -27,6 +27,11 @@ vi.mock('../components/ThemeToggle/ThemeToggle', () => ({
     ThemeToggle: () => <div data-testid="theme-toggle">Theme Toggle</div>,
 }))
 
+// Mock useTheme hook
+vi.mock('../theme/ThemeContext', () => ({
+    useTheme: () => ({theme: 'light', toggleTheme: vi.fn()}),
+}))
+
 // Mock LogoutIcon component
 vi.mock('../components/Icons', () => ({
     LogoutIcon: () => <div data-testid="logout-icon">Logout Icon</div>,
@@ -109,25 +114,32 @@ describe('Layout - Responsive Sidebar', () => {
         )
     }
 
-    describe('Sidebar toggle functionality', () => {
-        it('should render sidebar hidden by default', async () => {
+    describe('Desktop sidebar', () => {
+        beforeEach(() => {
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: 1024})
+            window.dispatchEvent(new Event('resize'))
+        })
+
+        it('should render sidebar on large screens', async () => {
             renderLayout()
 
             await waitFor(() => {
                 expect(screen.getByText('Members')).toBeInTheDocument()
             })
 
-            // Sidebar should exist and be part of the DOM
-            const sidebar = screen.getByRole('complementary') // aside has role complementary
+            const sidebar = screen.getByRole('complementary')
             expect(sidebar).toBeInTheDocument()
         })
 
-        it('should have a toggle button to open/close sidebar', async () => {
+        it('should not render bottom navigation on large screens', async () => {
             renderLayout()
 
-            // The hamburger button should exist
-            const toggleButtons = screen.getAllByRole('button')
-            expect(toggleButtons.length).toBeGreaterThan(0)
+            await waitFor(() => {
+                expect(screen.getByText('Members')).toBeInTheDocument()
+            })
+
+            const bottomNav = screen.queryByRole('navigation', {name: /navigace/i})
+            expect(bottomNav).not.toBeInTheDocument()
         })
 
         it('should render sidebar with menu items', async () => {
@@ -138,24 +150,52 @@ describe('Layout - Responsive Sidebar', () => {
                 expect(screen.getByText('Events')).toBeInTheDocument()
             })
         })
+    })
 
-        it('should close sidebar when a menu item is clicked', async () => {
+    describe('Mobile bottom navigation', () => {
+        beforeEach(() => {
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: 768})
+            window.dispatchEvent(new Event('resize'))
+        })
+
+        it('should render bottom navigation on small screens', async () => {
             renderLayout()
 
             await waitFor(() => {
                 expect(screen.getByText('Members')).toBeInTheDocument()
             })
 
-            // Click a menu item
-            const menuItem = screen.getByText('Members')
-            fireEvent.click(menuItem)
+            const bottomNav = screen.getByRole('navigation', {name: /navigace/i})
+            expect(bottomNav).toBeInTheDocument()
+        })
 
-            // Sidebar should close after click (state changes)
-            // This is verified by the internal state management
+        it('should not render sidebar on small screens', async () => {
+            renderLayout()
+
+            await waitFor(() => {
+                expect(screen.getByText('Members')).toBeInTheDocument()
+            })
+
+            const sidebar = screen.queryByRole('complementary')
+            expect(sidebar).not.toBeInTheDocument()
+        })
+
+        it('should render menu items in bottom navigation', async () => {
+            renderLayout()
+
+            await waitFor(() => {
+                expect(screen.getByText('Members')).toBeInTheDocument()
+                expect(screen.getByText('Events')).toBeInTheDocument()
+            })
         })
     })
 
-    describe('Sidebar menu items', () => {
+    describe('Sidebar menu items (desktop)', () => {
+        beforeEach(() => {
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: 1024})
+            window.dispatchEvent(new Event('resize'))
+        })
+
         it('should render menu items from useRootNavigation', async () => {
             renderLayout()
 
@@ -204,6 +244,11 @@ describe('Layout - Responsive Sidebar', () => {
     })
 
     describe('Header and user info', () => {
+        beforeEach(() => {
+            Object.defineProperty(window, 'innerWidth', {writable: true, configurable: true, value: 1024})
+            window.dispatchEvent(new Event('resize'))
+        })
+
         it('should display user name in header', async () => {
             renderLayout()
 

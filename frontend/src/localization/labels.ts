@@ -1,5 +1,6 @@
 export const labels = {
     nav: {
+        home: 'Domů',
         calendar: 'Kalendář',
         events: 'Závody',
         members: 'Členové',
@@ -145,6 +146,10 @@ export const labels = {
         appVersion: 'Verze 1.0.0',
         showMemberDetails: 'Zobrazit detail člena',
         backToList: '← Zpět na seznam',
+        switchToDark: 'Přepnout do tmavého režimu',
+        switchToLight: 'Přepnout do světlého režimu',
+        themeDark: 'Tmavý',
+        themeLight: 'Světlý',
         menuLoadError: 'Chyba při načítání menu',
         noMenuAvailable: 'Žádné položky menu nejsou dostupné',
         calendarSubtitle: 'Kalendář akcí a důležitých dat',

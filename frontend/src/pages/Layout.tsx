@@ -11,6 +11,40 @@ import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider, useToast} from '../contexts/ToastContext.tsx'
 import {labels} from '../localization'
+import {Home, Calendar, Trophy, Users, Layers, Sun, Moon} from 'lucide-react'
+import type {LucideIcon} from 'lucide-react'
+import {useTheme} from '../theme/ThemeContext'
+
+const navIcons: Record<string, LucideIcon> = {
+    home: Home,
+    calendar: Calendar,
+    events: Trophy,
+    members: Users,
+}
+
+const getNavIcon = (rel: string): LucideIcon => navIcons[rel] ?? Layers
+
+const bottomNavClassName = ({isActive}: {isActive: boolean}) => {
+    const base = "flex flex-col items-center justify-center flex-1 h-full gap-1 text-[11px] transition-colors duration-fast"
+    const active = "text-blue-600 dark:text-blue-400 font-semibold"
+    const inactive = "text-zinc-400 dark:text-zinc-500"
+    return `${base} ${isActive ? active : inactive}`
+}
+
+const BottomNavThemeButton = () => {
+    const {theme, toggleTheme} = useTheme()
+    return (
+        <button
+            onClick={toggleTheme}
+            className="flex flex-col items-center justify-center flex-1 h-full gap-1 text-[11px] text-zinc-400 dark:text-zinc-500 transition-colors duration-fast"
+            aria-label={theme === 'light' ? labels.ui.switchToDark : labels.ui.switchToLight}
+            type="button"
+        >
+            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            <span>{theme === 'light' ? labels.ui.themeDark : labels.ui.themeLight}</span>
+        </button>
+    )
+}
 
 const LayoutToasts = () => {
     const {toasts, removeToast} = useToast();
@@ -30,7 +64,6 @@ const Layout = () => {
     const navigate = useNavigate()
     const {logout, getUser, isAuthenticated} = useAuth()
     const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
-    const [sidebarOpen, setSidebarOpen] = useState(false)
     const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024)
     const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
 
@@ -68,22 +101,8 @@ const Layout = () => {
                 ========================================== */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-6">
-                    {/* Left side: Logo + mobile menu toggle */}
+                    {/* Left side: Logo */}
                     <div className="flex items-center gap-3 sm:gap-4">
-                        {/* Toggle button - hide on lg screens */}
-                        {!isLargeScreen && (
-                            <button
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="p-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-subtle transition-all duration-fast focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                                aria-label="Toggle menu"
-                                type="button"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                                </svg>
-                            </button>
-                        )}
-
                         {/* Logo/Title */}
                         <NavLink to="/" className="flex items-center gap-3 group">
                             {/* Logo icon - solid blue square with compass */}
@@ -165,72 +184,98 @@ const Layout = () => {
             </header>
 
             {/* ==========================================
-                SIDEBAR OVERLAY (mobile only)
+                BOTTOM NAVIGATION (mobile only)
                 ========================================== */}
-            {sidebarOpen && !isLargeScreen && (
-                <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 transition-opacity duration-base"
-                    onClick={() => setSidebarOpen(false)}
-                    data-testid="sidebar-overlay"
-                />
+            {!isLargeScreen && (
+                <nav
+                    className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 shadow-[0_-1px_3px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom)]"
+                    aria-label={labels.ui.navigation}
+                >
+                    <div className="flex items-center justify-around h-16 px-2">
+                        {menuLoading ? (
+                            <div className="flex items-center justify-center w-full">
+                                <Spinner size="sm"/>
+                            </div>
+                        ) : menuError ? (
+                            <div className="text-xs text-red-500 px-2 text-center">
+                                {labels.ui.menuLoadError}
+                            </div>
+                        ) : menuItems.length > 0 ? (
+                            <>
+                                <NavLink to="/" end className={bottomNavClassName}>
+                                    <Home className="w-5 h-5" />
+                                    <span>{labels.nav.home}</span>
+                                </NavLink>
+                                {menuItems.map((item) => {
+                                    const Icon = getNavIcon(item.rel)
+                                    return (
+                                        <NavLink key={item.rel} to={item.href} className={bottomNavClassName}>
+                                            <Icon className="w-5 h-5" />
+                                            <span className="truncate max-w-[5rem]">{item.label}</span>
+                                        </NavLink>
+                                    )
+                                })}
+                                <BottomNavThemeButton />
+                            </>
+                        ) : (
+                            <div className="text-xs text-zinc-500 dark:text-zinc-400 px-2 text-center">
+                                {labels.ui.noMenuAvailable}
+                            </div>
+                        )}
+                    </div>
+                </nav>
             )}
 
             {/* ==========================================
-                SIDEBAR - NAVIGAČNÍ MENU
+                SIDEBAR - NAVIGAČNÍ MENU (desktop only)
                 ========================================== */}
-            <aside
-                className={`fixed left-0 top-16 h-[calc(100vh-4rem)] w-60 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 shadow-sm transform transition-all duration-300 ease-in-out z-30 flex flex-col ${
-                    isLargeScreen ? 'translate-x-0' : (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
-                }`}
-            >
-                <nav className="flex flex-col px-3 py-4 gap-1 overflow-y-auto flex-1">
-                    <p className="px-2 pb-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">{labels.ui.navigation}</p>
-                    {menuLoading ? (
-                        <div className="flex items-center gap-3 px-4 py-3 text-text-tertiary text-sm">
-                            <Spinner size="sm"/>
-                            {labels.errors.loadingMenu}
-                        </div>
-                    ) : menuError ? (
-                        <Alert severity="error" className="m-3 text-sm">
-                            {labels.ui.menuLoadError}: {menuError.message}
-                        </Alert>
-                    ) : menuItems.length > 0 ? (
-                        menuItems.map((item) => (
-                            <NavLink
-                                key={item.rel}
-                                to={item.href}
-                                onClick={() => {
-                                    // Only close sidebar on small screens when item is clicked
-                                    if (!isLargeScreen) {
-                                        setSidebarOpen(false)
-                                    }
-                                }}
-                                className={({isActive}: {isActive: boolean}) => {
-                                    const base = "flex items-center gap-3 px-3 rounded-lg text-sm transition-all duration-fast h-10"
-                                    const active = "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-semibold"
-                                    const inactive = "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium"
-                                    return `${base} ${isActive ? active : inactive}`
-                                }}
-                                children={() => (
-                                    <span className="flex-1">{item.label}</span>
-                                )}
-                            />
-                        ))
-                    ) : (
-                        <div className="text-text-tertiary text-sm px-4 py-3">
-                            {labels.ui.noMenuAvailable}
-                        </div>
-                    )}
-                </nav>
+            {isLargeScreen && (
+                <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-60 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 shadow-sm z-30 flex flex-col">
+                    <nav className="flex flex-col px-3 py-4 gap-1 overflow-y-auto flex-1">
+                        <p className="px-2 pb-2 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">{labels.ui.navigation}</p>
+                        {menuLoading ? (
+                            <div className="flex items-center gap-3 px-4 py-3 text-text-tertiary text-sm">
+                                <Spinner size="sm"/>
+                                {labels.errors.loadingMenu}
+                            </div>
+                        ) : menuError ? (
+                            <Alert severity="error" className="m-3 text-sm">
+                                {labels.ui.menuLoadError}: {menuError.message}
+                            </Alert>
+                        ) : menuItems.length > 0 ? (
+                            menuItems.map((item) => {
+                                const Icon = getNavIcon(item.rel)
+                                return (
+                                    <NavLink
+                                        key={item.rel}
+                                        to={item.href}
+                                        className={({isActive}: {isActive: boolean}) => {
+                                            const base = "flex items-center gap-3 px-3 rounded-lg text-sm transition-all duration-fast h-10"
+                                            const active = "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-semibold"
+                                            const inactive = "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 font-medium"
+                                            return `${base} ${isActive ? active : inactive}`
+                                        }}
+                                    >
+                                        <Icon className="w-4 h-4" />
+                                        <span className="flex-1">{item.label}</span>
+                                    </NavLink>
+                                )
+                            })
+                        ) : (
+                            <div className="text-text-tertiary text-sm px-4 py-3">
+                                {labels.ui.noMenuAvailable}
+                            </div>
+                        )}
+                    </nav>
 
-                {/* Sidebar footer - app info */}
-                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <div className="text-xs">
-                        <div className="font-semibold text-zinc-500 dark:text-zinc-400 mb-0.5">{labels.ui.appName}</div>
-                        <div className="text-zinc-400 dark:text-zinc-500">{labels.ui.appVersion}</div>
+                    <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
+                        <div className="text-xs">
+                            <div className="font-semibold text-zinc-500 dark:text-zinc-400 mb-0.5">{labels.ui.appName}</div>
+                            <div className="text-zinc-400 dark:text-zinc-500">{labels.ui.appVersion}</div>
+                        </div>
                     </div>
-                </div>
-            </aside>
+                </aside>
+            )}
 
             {/* ==========================================
                 MAIN CONTENT AREA
@@ -238,7 +283,7 @@ const Layout = () => {
             <ToastProvider>
                 <LayoutToasts />
                 {/* lg:pl-[17rem] = sidebar w-60 (15rem) + 2rem gap */}
-                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 py-6 lg:pl-[17rem] overflow-auto bg-slate-100 dark:bg-zinc-950 min-h-screen">
+                <main className="flex-1 pt-20 px-4 sm:px-6 lg:px-8 pb-20 lg:pb-6 lg:pl-[17rem] overflow-auto bg-slate-100 dark:bg-zinc-950 min-h-screen">
                     <HalFormProvider>
                         <HalFormsPageLayout>
                             <Outlet />
