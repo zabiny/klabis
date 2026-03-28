@@ -1,0 +1,62 @@
+{
+  "Method": "getEventList",
+  "Format": "json",
+  "Status": "OK",
+  "ExportCreated": "2025-03-15 01:28:59",
+  "Data": {
+    "Event_9160": {
+      "ID": "9160",
+      "Name": "Z\u00e1pado\u010desk\u00fd \u017eeb\u0159\u00ed\u010dek - jaro 2025",
+      "Date": "2025-01-01",
+      "Org1": {
+        "ID": "646",
+        "Abbr": "ZCO",
+        "Name": "Z\u00e1pado\u010desk\u00e1 oblast"
+      },
+      "Org2": [],
+      "Region": "Z\u010c",
+      "Regions": {
+        "Region_Z\u010c": {
+          "ID": "Z\u010c",
+          "Name": "Z\u00e1pado\u010desk\u00e1"
+        }
+      },
+      "Sport": {
+        "ID": "1",
+        "NameCZ": "OB",
+        "NameEN": "Foot O"
+      },
+      "Discipline": {
+        "ID": "10",
+        "ShortName": "Z",
+        "NameCZ": "Dlouhodob\u00e9 \u017eeb\u0159\u00ed\u010dky",
+        "NameEN": "Cups and ranking"
+      },
+      "Level": {
+        "ID": "4",
+        "ShortName": "O\u017d",
+        "NameCZ": "Oblastn\u00ed \u017eeb\u0159\u00ed\u010dek",
+        "NameEN": "Local event"
+      },
+      "EntryStart": "",
+      "EntryDate1": "2025-01-05 23:59:59",
+      "EntryDate2": "2025-01-07 23:59:59",
+      "EntryDate3": "",
+      "Ranking": "0",
+      "SIType": {
+        "ID": "2",
+        "Name": "SI bezkontaktn\u00ed"
+      },
+      "Cancelled": "0",
+      "GPSLat": "0",
+      "GPSLon": "0",
+      "Place": "",
+      "Version": "4",
+      "ClassesLastModifiedTimeStamp": 1736200338,
+      "ServicesLastModifiedTimeStamp": 0,
+      "ParentID": 0,
+      "Status": "N",
+      "OBPostupy": ""
+    }
+  }
+}

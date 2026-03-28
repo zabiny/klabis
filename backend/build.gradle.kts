@@ -123,7 +123,7 @@ dependencies {
     testImplementation("org.jmolecules.integrations:jmolecules-archunit")
     testImplementation("org.springframework.boot:spring-boot-starter-jdbc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jdbc-test")
-    testImplementation("org.springframework.boot:spring-boot-starter-restclient")
+    testImplementation("org.springframework.boot:spring-boot-restclient-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
