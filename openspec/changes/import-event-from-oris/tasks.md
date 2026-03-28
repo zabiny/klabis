@@ -51,15 +51,15 @@
 
 ## Frontend
 
-- [ ] Add `"Importovat z ORIS"` button to `EventsPage.tsx` — rendered conditionally based on the presence of `_templates.importFromOris` in the HAL response; clicking opens `ImportOrisEventModal`
-- [ ] Add localization keys to `labels.ts`: `templates.importFromOris` (button label), `dialogs.importFromOris` (modal title), error messages for 409 conflict and generic error
-- [ ] Create `src/components/events/ImportOrisEventModal.tsx` component with props: `isOpen: boolean`, `onClose: () => void`, `importHref: string` (URL from `_templates.importFromOris.target`)
-- [ ] Implement fetch of `GET /api/oris/events` inside `ImportOrisEventModal` on open — show loading indicator while fetching
-- [ ] Render select box with options formatted as `"{date} — {name}"` after successful fetch; no option pre-selected; submit button disabled when no option is selected
-- [ ] Show `"Žádné závody k importu"` message and disable submit button when `GET /api/oris/events` returns an empty list
-- [ ] Show error message and disable submit button when `GET /api/oris/events` fails
-- [ ] Implement submit: `POST importHref` with `{ orisId: selectedId }`, show loading state on submit button
-- [ ] On 201 response, close modal and redirect to event detail URL from the `Location` response header
-- [ ] On 409 response, keep modal open and display `"Tento závod již byl importován"` error message
-- [ ] On any other error response, keep modal open and display the generic error message
-- [ ] Handle "Zrušit" / close button — closes modal without sending any request
+- [x] Add `"Importovat z ORIS"` button to `EventsPage.tsx` — rendered conditionally based on the presence of `_templates.importFromOris` in the HAL response; clicking opens `ImportOrisEventModal`
+- [x] Add localization keys to `labels.ts`: `templates.importFromOris` (button label), `dialogs.importFromOris` (modal title), error messages for 409 conflict and generic error
+- [x] Create `src/components/events/ImportOrisEventModal.tsx` component with props: `isOpen: boolean`, `onClose: () => void`, `importHref: string` (URL from `_templates.importFromOris.target`)
+- [x] Implement fetch of `GET /api/oris/events` inside `ImportOrisEventModal` on open — show loading indicator while fetching
+- [x] Render select box with options formatted as `"{date} — {name}"` after successful fetch; no option pre-selected; submit button disabled when no option is selected
+- [x] Show `"Žádné závody k importu"` message and disable submit button when `GET /api/oris/events` returns an empty list
+- [x] Show error message and disable submit button when `GET /api/oris/events` fails
+- [x] Implement submit: `POST importHref` with `{ orisId: selectedId }`, show loading state on submit button
+- [x] On 201 response, close modal and redirect to event detail URL from the `Location` response header
+- [x] On 409 response, keep modal open and display `"Tento závod již byl importován"` error message
+- [x] On any other error response, keep modal open and display the generic error message
+- [x] Handle "Zrušit" / close button — closes modal without sending any request

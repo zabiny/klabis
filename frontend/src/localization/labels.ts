@@ -8,6 +8,7 @@ export const labels = {
     buttons: {
         submit: 'Odeslat',
         submitting: 'Odesílám...',
+        importing: 'Importuji...',
         cancel: 'Zrušit',
         close: 'Zavřít',
         retry: 'Zkusit znovu',
@@ -28,6 +29,7 @@ export const labels = {
         registerForEvent: 'Přihlásit se',
         publishEvent: 'Publikovat',
         createEvent: 'Přidat závod',
+        importEvent: 'Importovat z ORIS',
         createCalendarItem: 'Přidat položku',
         suspendMember: 'Ukončit členství',
         resumeMember: 'Reaktivovat',
@@ -43,6 +45,7 @@ export const labels = {
         unregisterFromEvent: 'Odhlásit se ze závodu',
         suspendMember: 'Ukončení členství',
         resumeMember: 'Reaktivace člena',
+        importEvent: 'Import závodu z ORIS',
     },
 
     fields: {
@@ -119,6 +122,10 @@ export const labels = {
         savePermissionsFailed: 'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.',
         removeLastPermissionsAdmin: 'Nelze odebrat oprávnění správce — systém musí mít alespoň jednoho uživatele se správou oprávnění.',
         memberRegistrationUnavailable: 'Registrace nového člena není k dispozici.',
+        importOrisConflict: 'Tento závod již byl importován.',
+        importOrisFailed: 'Import závodu se nezdařil. Zkuste to prosím znovu.',
+        importOrisLoadFailed: 'Nepodařilo se načíst závody z ORIS.',
+        importOrisNoEvents: 'Žádné závody k importu.',
     },
 
     ui: {
