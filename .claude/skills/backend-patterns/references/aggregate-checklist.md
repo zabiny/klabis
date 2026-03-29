@@ -9,7 +9,7 @@ Use this checklist when adding a new Spring Modulith module or new Aggregate to 
   - [ ] Add command records as nested types inside aggregate
   - [ ] Add factory method(s) which creates new instance of aggregate root (validates, publishes events)
   - [ ] Add `reconstruct()` factory method (bypasses validation, used when aggregate root loaded from DB)
-  - [ ] Add `handle(Command)` methods for each command
+  - [ ] Add methods for each command
 - [ ] Create value objects as records with compact constructor validation
 - [ ] Create `<Aggregate>Repository` interface annotated `@Port` with jMolecules
 - [ ] Create domain event classes for significant state changes
