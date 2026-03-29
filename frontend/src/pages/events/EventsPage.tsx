@@ -15,7 +15,7 @@ import {Button, Modal} from "../../components/UI";
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, UserMinus, UserPlus} from "lucide-react";
 
-interface EventListData extends EntityModel<{
+type EventListData = EntityModel<{
     id: string,
     name: string,
     eventDate: string,
@@ -24,7 +24,7 @@ interface EventListData extends EntityModel<{
     websiteUrl?: string,
     registrationDeadline?: string,
     status?: 'DRAFT' | 'ACTIVE' | 'FINISHED' | 'CANCELLED'
-}> {
+}> & {
     _templates?: Record<string, HalFormsTemplate>;
 }
 
