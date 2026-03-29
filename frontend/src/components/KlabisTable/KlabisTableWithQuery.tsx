@@ -34,6 +34,7 @@ export interface KlabisTableWithQueryProps<T extends Record<string, unknown> = a
     defaultOrderBy?: string
     defaultOrderDirection?: SortDirection
     emptyMessage?: string
+    hideEmptyColumns?: boolean
     rowsPerPageOptions?: number[]
     defaultRowsPerPage?: number
 
@@ -78,6 +79,7 @@ export function KlabisTableWithQuery<T extends Record<string, unknown> = any>({
                                                                                   defaultOrderBy,
                                                                                   defaultOrderDirection = 'asc',
                                                                                   emptyMessage,
+                                                                                  hideEmptyColumns,
                                                                                   rowsPerPageOptions,
                                                                                   defaultRowsPerPage = 10,
                                                                                   children,
@@ -171,6 +173,7 @@ export function KlabisTableWithQuery<T extends Record<string, unknown> = any>({
             defaultOrderBy={defaultOrderBy}
             defaultOrderDirection={defaultOrderDirection}
             emptyMessage={emptyMessage}
+            hideEmptyColumns={hideEmptyColumns}
             rowsPerPageOptions={rowsPerPageOptions}
         >
             {children}

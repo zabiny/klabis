@@ -43,10 +43,15 @@ export const Pagination = ({
 
     return (
         <div
-            className={`flex items-center justify-between gap-4 px-6 py-4 border-t border-border bg-surface-base ${className}`}>
+            className={`flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 border-t border-border bg-surface-base ${className}`}>
+            {/* Displayed rows info — full width on mobile, first row */}
+            <div className="text-sm text-text-secondary order-first w-full text-center sm:order-none sm:w-auto sm:text-left">
+                {displayedRows}
+            </div>
+
             {/* Rows per page selector */}
             <div className="flex items-center gap-2">
-                <label htmlFor="rows-per-page" className="text-sm text-text-secondary">
+                <label htmlFor="rows-per-page" className="text-sm text-text-secondary hidden sm:inline">
                     {labelRowsPerPage}
                 </label>
                 <select
@@ -63,11 +68,6 @@ export const Pagination = ({
                 </select>
             </div>
 
-            {/* Displayed rows info */}
-            <div className="text-sm text-text-secondary">
-                {displayedRows}
-            </div>
-
             {/* Navigation buttons */}
             <div className="flex items-center gap-2">
                 <Button
@@ -77,11 +77,15 @@ export const Pagination = ({
                     disabled={!canPreviousPage}
                     className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    ← Předchozí
+                    <span className="sm:hidden">←</span>
+                    <span className="hidden sm:inline">← Předchozí</span>
                 </Button>
-                <span className="text-sm text-text-secondary px-2">
-          Stránka {page + 1} / {totalPages} ({count})
-        </span>
+                <span className="text-sm text-text-secondary px-2 hidden sm:inline">
+                    Stránka {page + 1} / {totalPages} ({count})
+                </span>
+                <span className="text-sm text-text-secondary px-1 sm:hidden">
+                    {page + 1}/{totalPages}
+                </span>
                 <Button
                     variant="ghost"
                     size="sm"
@@ -89,7 +93,8 @@ export const Pagination = ({
                     disabled={!canNextPage}
                     className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Další →
+                    <span className="sm:hidden">→</span>
+                    <span className="hidden sm:inline">Další →</span>
                 </Button>
             </div>
         </div>

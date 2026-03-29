@@ -162,6 +162,7 @@ export const MembersPage = (): ReactElement => {
                 </div>
                 <HalEmbeddedTable<MemberSummaryData> collectionName={"memberSummaryResponseList"}
                                                       defaultOrderBy={"lastName"}
+                                                      hideEmptyColumns
                                                       onRowClick={route.navigateToResource}>
                     <TableCell sortable column={"registrationNumber"}>{labels.fields.registrationNumber}</TableCell>
                     <TableCell sortable column={"lastName"}>{labels.fields.lastName}</TableCell>

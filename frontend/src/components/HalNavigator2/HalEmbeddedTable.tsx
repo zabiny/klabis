@@ -29,6 +29,9 @@ export interface HalEmbeddedTableProps<T = any> {
     /** Message to display when no data is available */
     emptyMessage?: string
 
+    /** Hide columns where all values are empty */
+    hideEmptyColumns?: boolean
+
     /** Column definitions (TableCell components) */
     children: React.ReactNode
 }
@@ -58,6 +61,7 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
                                                                               defaultOrderBy,
                                                                               defaultOrderDirection = 'asc',
                                                                               emptyMessage = 'Žádná data',
+                                                                              hideEmptyColumns,
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
     const {route, isLoading} = useHalPageData()
@@ -96,6 +100,7 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = any>({
             defaultOrderBy={defaultOrderBy}
             defaultOrderDirection={defaultOrderDirection}
             emptyMessage={emptyMessage}
+            hideEmptyColumns={hideEmptyColumns}
         >
             {children}
         </KlabisTableWithQuery>

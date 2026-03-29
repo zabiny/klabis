@@ -25,6 +25,15 @@ export interface TablePageData {
     number: number;
 }
 
+// Column definition extracted from children
+export interface ColumnDef {
+    name: string;
+    label: React.ReactNode;
+    hidden: boolean;
+    sortable: boolean;
+    dataRender?: (props: TableCellRenderProps) => React.ReactNode;
+}
+
 // Sort state representation
 export interface SortState {
     by: string;
@@ -52,6 +61,7 @@ export interface KlabisTableProps<T extends Record<string, unknown>> {
     defaultOrderBy?: string;
     defaultOrderDirection?: SortDirection;
     emptyMessage?: string;
+    hideEmptyColumns?: boolean;
     rowsPerPageOptions?: number[];
 
     // Controlled state (from parent)
