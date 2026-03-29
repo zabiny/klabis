@@ -133,10 +133,7 @@ public class EventManagementServiceImpl implements EventManagementService {
     @Override
     @Transactional(readOnly = true)
     public Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents) {
-        if (canManageEvents) {
-            return eventRepository.findAll(filter, pageable);
-        }
-        if (filter.excludesStatus(EventStatus.DRAFT)) {
+        if (canManageEvents || filter.excludesStatus(EventStatus.DRAFT)) {
             return eventRepository.findAll(filter, pageable);
         }
         if (filter.requestsOnlyStatus(EventStatus.DRAFT)) {

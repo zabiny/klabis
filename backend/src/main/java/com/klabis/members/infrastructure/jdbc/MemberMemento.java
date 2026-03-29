@@ -344,7 +344,7 @@ class MemberMemento implements Persistable<UUID> {
                 this.suspensionReason,
                 this.suspendedAt,
                 this.suspensionNote,
-                this.suspendedBy != null ? new UserId(UUID.fromString(this.suspendedBy)) : null,
+                this.suspendedBy != null ? UserId.fromString(this.suspendedBy) : null,
                 getAuditMetadata()
         );
 

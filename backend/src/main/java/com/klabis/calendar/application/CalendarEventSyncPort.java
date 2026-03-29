@@ -22,7 +22,6 @@ public interface CalendarEventSyncPort {
 
     /**
      * Updates a calendar item when an event is modified.
-     * The service fetches the current event data internally.
      *
      * @param eventId the event ID
      */
