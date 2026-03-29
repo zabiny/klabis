@@ -15,7 +15,19 @@ import java.util.Optional;
 public interface OrisApiClient {
 
     int CLUB_ID_ZBM = 205;
+    String REGION_PRAZSKA = "P";
+    String REGION_STREDOCESKA = "StC";
+    String REGION_ZAPADOCESKA = "ZC";
+    String REGION_JIHOCESKA = "JC";
+    String REGION_JESTEDSKA = "JE";
+    String REGION_VYCHODOCESKA = "VC";
+    String REGION_VYSOCINA = "VY";
+    String REGION_MORAVSKOSLEZSKA = "MSK";
+    String REGION_HANACKA = "HA";
+    String REGION_VALASSKA = "VA";
     String REGION_JIHOMORAVSKA = "JM";
+    String REGION_CECHY = "C";
+    String REGION_MORAVA = "M";
     String REGION_CR = "ČR";
 
     int DISCIPLINE_ID_LONG_DISTANCE = 1;

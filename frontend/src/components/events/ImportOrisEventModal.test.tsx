@@ -34,8 +34,8 @@ const defaultProps = {
 };
 
 const orisEvents = [
-    {id: 101, name: 'Jarní sprint', date: '2025-04-10'},
-    {id: 202, name: 'Letní závod', date: '2025-07-20'},
+    {id: 101, name: 'Jarní sprint', date: '2025-04-10', location: 'Brno', organizer: 'ZBM'},
+    {id: 202, name: 'Letní závod', date: '2025-07-20', location: null, organizer: 'HBT'},
 ];
 
 const renderModal = (props = defaultProps) =>
@@ -97,8 +97,8 @@ describe('ImportOrisEventModal', () => {
             renderModal();
 
             expect(await screen.findByRole('combobox')).toBeInTheDocument();
-            expect(screen.getByText('2025-04-10 — Jarní sprint')).toBeInTheDocument();
-            expect(screen.getByText('2025-07-20 — Letní závod')).toBeInTheDocument();
+            expect(screen.getByText('2025-04-10 ZBM Jarní sprint — Brno')).toBeInTheDocument();
+            expect(screen.getByText('2025-07-20 HBT Letní závod')).toBeInTheDocument();
         });
 
         it('has no option pre-selected (placeholder shown)', async () => {

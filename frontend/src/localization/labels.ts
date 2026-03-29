@@ -129,6 +129,12 @@ export const labels = {
         importOrisNoEvents: 'Žádné závody k importu.',
     },
 
+    orisRegions: {
+        JM: 'Jihomoravská',
+        M: 'Žebříček Morava',
+        'ČR': 'ČR',
+    } as Record<string, string>,
+
     ui: {
         hide: 'Skrýt',
         reveal: 'Zobrazit',

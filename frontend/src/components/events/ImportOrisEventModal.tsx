@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Modal} from '../UI/Modal';
 import {Button} from '../UI/Button';
@@ -10,7 +10,11 @@ interface OrisEvent {
     id: number;
     name: string;
     date: string;
+    location: string | null;
+    organizer: string | null;
 }
+
+const ORIS_REGION_KEYS = ['JM', 'M', 'ČR'] as const;
 
 interface ImportOrisEventModalProps {
     isOpen: boolean;
@@ -24,19 +28,21 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
     const navigate = useNavigate();
     const [fetchState, setFetchState] = useState<FetchState>('loading');
     const [orisEvents, setOrisEvents] = useState<OrisEvent[]>([]);
+    const [selectedRegions, setSelectedRegions] = useState<string[]>(['JM']);
     const [selectedId, setSelectedId] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!isOpen) return;
-
+    const fetchEvents = useCallback((regions: string[]) => {
         setFetchState('loading');
         setOrisEvents([]);
         setSelectedId('');
         setSubmitError(null);
 
-        authorizedFetch('/api/oris/events')
+        const params = new URLSearchParams();
+        regions.forEach(r => params.append('region', r));
+
+        authorizedFetch(`/api/oris/events?${params.toString()}`)
             .then((res) => res.json())
             .then((data: OrisEvent[]) => {
                 setOrisEvents(data);
@@ -45,7 +51,22 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
             .catch(() => {
                 setFetchState('error');
             });
-    }, [isOpen]);
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setSelectedRegions(['JM']);
+        fetchEvents(['JM']);
+    }, [isOpen, fetchEvents]);
+
+    const handleRegionToggle = (regionValue: string) => {
+        const newRegions = selectedRegions.includes(regionValue)
+            ? selectedRegions.filter(r => r !== regionValue)
+            : [...selectedRegions, regionValue];
+        if (newRegions.length === 0) return;
+        setSelectedRegions(newRegions);
+        fetchEvents(newRegions);
+    };
 
     const handleSubmit = async () => {
         if (!selectedId) return;
@@ -104,6 +125,21 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
             footer={footer}
             closeOnBackdropClick={!isSubmitting}
         >
+            <div className="mb-3 flex flex-wrap gap-3">
+                {ORIS_REGION_KEYS.map((key) => (
+                    <label key={key} className="flex items-center gap-1.5 text-sm text-text-primary cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={selectedRegions.includes(key)}
+                            onChange={() => handleRegionToggle(key)}
+                            disabled={isSubmitting || (selectedRegions.length === 1 && selectedRegions.includes(key))}
+                            className="rounded border-border text-accent focus:ring-accent"
+                        />
+                        {labels.orisRegions[key]}
+                    </label>
+                ))}
+            </div>
+
             {fetchState === 'loading' && (
                 <p className="text-text-secondary">{labels.ui.loading}</p>
             )}
@@ -126,7 +162,7 @@ export const ImportOrisEventModal = ({isOpen, onClose, importHref}: ImportOrisEv
                     <option value="">— Vyberte závod —</option>
                     {orisEvents.map((event) => (
                         <option key={event.id} value={String(event.id)}>
-                            {event.date} — {event.name}
+                            {event.date} {event.organizer && `${event.organizer} `}{event.name}{event.location && ` — ${event.location.length > 15 ? event.location.substring(0, 15) + '…' : event.location}`}
                         </option>
                     ))}
                 </select>

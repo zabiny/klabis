@@ -55,7 +55,7 @@ class OrisControllerTest {
     class ListOrisEventsTests {
 
         @Test
-        @DisplayName("should return 200 with correct payload")
+        @DisplayName("should return 200 with correct payload using default region")
         @WithKlabisMockUser(username = "admin", authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn200WithEventList() throws Exception {
             EventSummary event1 = buildEventSummary(1001, "City Sprint", LocalDate.of(2026, 9, 5));
@@ -75,6 +75,46 @@ class OrisControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray())
                     .andExpect(jsonPath("$.length()").value(2));
+        }
+
+        @Test
+        @DisplayName("should accept multiple region parameters")
+        @WithKlabisMockUser(username = "admin", authorities = {Authority.EVENTS_MANAGE})
+        void shouldAcceptMultipleRegions() throws Exception {
+            EventSummary event1 = buildEventSummary(1001, "JM Event", LocalDate.of(2026, 9, 5));
+            EventSummary event2 = buildEventSummary(1002, "M Event", LocalDate.of(2026, 10, 12));
+
+            when(orisApiClient.getEventList(any(OrisEventListFilter.class)))
+                    .thenReturn(new OrisApiClient.OrisResponse<>(
+                            Map.of("1001", event1), "JSON", "OK", null, "getEventList"))
+                    .thenReturn(new OrisApiClient.OrisResponse<>(
+                            Map.of("1002", event2), "JSON", "OK", null, "getEventList"));
+
+            mockMvc.perform(
+                            get("/api/oris/events")
+                                    .param("region", "JM", "M")
+                                    .accept(MediaType.APPLICATION_JSON)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isArray())
+                    .andExpect(jsonPath("$.length()").value(2));
+        }
+
+        @Test
+        @DisplayName("should pass any region value to ORIS API")
+        @WithKlabisMockUser(username = "admin", authorities = {Authority.EVENTS_MANAGE})
+        void shouldPassAnyRegionToOrisApi() throws Exception {
+            when(orisApiClient.getEventList(any(OrisEventListFilter.class))).thenReturn(
+                    new OrisApiClient.OrisResponse<>(Map.of(), "JSON", "OK", null, "getEventList")
+            );
+
+            mockMvc.perform(
+                            get("/api/oris/events")
+                                    .param("region", "VC")
+                                    .accept(MediaType.APPLICATION_JSON)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isArray());
         }
 
         @Test
@@ -106,7 +146,7 @@ class OrisControllerTest {
         }
 
         private EventSummary buildEventSummary(int id, String name, LocalDate date) {
-            return new EventSummary(id, name, date, "Location", null, null, null, null, null, null, null);
+            return new EventSummary(id, name, date, "Test Location", new com.klabis.oris.apiclient.dto.Organizer(1, "TST", "Test Club"), null, null, null, null, null, null);
         }
     }
 }
