@@ -1,0 +1,509 @@
+---
+name: backend-patterns
+description: This skill should be used when the user asks to "implement backend feature in Klabis", "add a new module to Klabis", "write application service in Klabis", "implement REST controller in Klabis", "add JDBC adapter in Klabis", "create domain event listener in Klabis", or mentions Klabis-specific backend architecture. Provides project-specific patterns for the Klabis Spring Modulith application.
+user-invocable: false
+version: 0.1.1
+---
+
+# Klabis Backend Patterns
+
+Project-specific architecture patterns for the Klabis Spring Modulith application. These patterns are derived from the `members` module as the canonical reference implementation.
+
+For generic framework knowledge, refer to the other `developer:*` skills. This skill covers **Klabis-specific conventions** only.
+
+## Module Package Structure
+
+Every Spring Modulith module follows this exact layout:
+
+```
+com.klabis.<module>/
+├── domain/                    # Pure domain — NO Spring imports
+│   ├── <Aggregate>.java       # Aggregate root (extends KlabisAggregateRoot)
+│   ├── <Aggregate>Repository.java  # Domain port interface
+│   └── ...value objects, enums
+│
+├── application/               # Orchestration layer
+│   ├── <Feature>Service.java  # @PrimaryPort, Interface with nested command record
+│   ├── <Feature>ServiceImpl.java  # @Service implementation
+│   └── <Module>Configuration.java  # @Configuration for module beans
+│
+├── infrastructure/
+│   ├── restapi/               # REST controllers, DTOs, mappers
+│   │   ├── <Aggregate>Controller.java  # @RestController @PrimaryAdapter
+│   │   ├── <Aggregate>Mapper.java      # MapStruct @Mapper
+│   │   └── ...request/response records
+│   │
+│   └── jdbc/                  # Persistence
+│       ├── <Aggregate>RepositoryAdapter.java  # @SecondaryAdapter
+│       ├── <Aggregate>JdbcRepository.java     # Spring Data interface
+│       └── <Aggregate>Memento.java            # @Table persistence class
+│
+├── <Aggregate>Id.java         # Type-safe ID record — in root if referenced by other modules
+├── <Aggregate>CreatedEvent.java  # Domain events — in root if consumed by other modules
+└── <Module>Dto.java           # Cross-module read DTO (if needed)
+```
+
+**Root vs. domain decision:** Classes referenced by other modules stay in root package (public API). Everything else goes into `domain/`. To check cross-module usage:
+```bash
+grep -rh "import com.klabis.<module>" src/main/java/com/klabis/<other-modules>/ --include="*.java" | sort -u
+```
+
+## Domain Layer
+
+### Aggregate Root
+
+```java
+@AggregateRoot
+public class Member extends KlabisAggregateRoot<Member, MemberId> {
+
+    // Commands as nested records INSIDE aggregate
+    public record RegisterMember(MemberId id, RegistrationNumber regNum, ...) {}
+    public record SuspendMembership(UserId suspendedBy, DeactivationReason reason, String note) {}
+
+    // Factory method — validates and registers domain event
+    public static Member register(RegisterMember command) {
+        Member member = new Member(command.id(), ...);
+        member.registerEvent(MemberCreatedEvent.fromMember(member));
+        return member;
+    }
+
+    // Reconstruction — bypasses validation, for persistence loading
+    public static Member reconstruct(MemberId id, ..., AuditMetadata auditMetadata) { ... }
+
+    // Command handlers — mutate state, register events
+    public void handle(SuspendMembership command) {
+        this.active = false;
+        this.suspendedAt = Instant.now();
+        registerEvent(MemberSuspendedEvent.fromMember(this, command));
+    }
+}
+```
+
+Key rules:
+- No Spring annotations in domain classes
+- Commands are nested records in the aggregate. Every command as `.from(Aggregate domain)` factory method. 
+- Separate business factory method (`register()`, `create()`, etc) methods (with validations) and `reconstruct()` (bypass validation, used for loading from DB) factory methods
+- Domain events registered via `registerEvent()` inherited from `KlabisAggregateRoot`
+
+### Type-Safe Identifiers
+
+```java
+@ValueObject
+public record MemberId(UUID value) implements Identifier {
+    public UserId toUserId() { return new UserId(value); }  // present only when aggregates have 1:1 relation
+    public static MemberId fromUserId(UserId userId) { return new MemberId(userId.uuid()); }  // present only when aggregates have 1:1 relation
+}
+```
+
+Always create a dedicated `<Aggregate>Id` record. Never pass raw `UUID` between aggregates.
+
+### Value Objects
+
+```java
+@ValueObject
+public record EmailAddress(String value) {
+    public EmailAddress {  // Compact constructor validates
+        Objects.requireNonNull(value);
+        if (!value.matches(EMAIL_PATTERN)) throw new IllegalArgumentException("...");
+        value = value.trim();
+    }
+    public static EmailAddress of(String value) { return new EmailAddress(value); }
+}
+```
+
+## Application Service Layer
+
+### Service Interface with Command Record
+
+```java
+@PrimaryPort
+public interface RegistrationService {
+
+    record RegisterNewMember(
+        PersonalInformation personalInformation,
+        EmailAddress email,
+        PhoneNumber phone
+    ) {}
+
+    Member registerMember(RegisterNewMember command);
+}
+```
+
+### Service Implementation
+
+```java
+@Service
+public class ManagementServiceImpl implements ManagementService {
+
+    private final MemberRepository memberRepository;
+    private final UserService userService;  // Cross-module dependency
+
+    @Transactional
+    @Override
+    public Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
+        Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new MemberNotFoundException(memberId));
+        member.handle(command);
+        Member saved = memberRepository.save(member);
+
+        userService.suspendUser(member.getId().toUserId());  // Cross-aggregate coordination
+        return saved;
+    }
+}
+```
+
+Key rules:
+- `@Transactional` on implementation methods
+- Cross-aggregate coordination in the same transaction inside service
+- Convert domain exceptions (`BusinessRuleViolationException`) → application exceptions (`InvalidUpdateException`)
+- Constructor injection only — no field injection
+
+## REST API Layer
+
+### Controller Annotations Stack
+
+```java
+@PrimaryAdapter
+@RestController
+@RequestMapping(value = "/api/members", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+@Tag(name = "Members", description = "...")
+@ExposesResourceFor(Member.class)
+@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.MEMBERS_SCOPE})
+class MemberController { ... }
+```
+
+### Role-Based Command Routing
+
+```java
+@PatchMapping("/{id}")
+@PreAuthorize("isAuthenticated()")
+public ResponseEntity<Void> updateMember(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateMemberRequest request,
+        Authentication authentication) {
+
+    MemberId memberId = new MemberId(id);  // Convert UUID → type-safe ID at boundary
+
+    if (hasAuthority(authentication, Authority.MEMBERS_UPDATE)) {
+        managementService.updateMember(memberId, UpdateMemberRequestMapper.toAdminCommand(request));
+    } else {
+        verifyIsCurrentUser(authentication, id);
+        managementService.updateMember(memberId, UpdateMemberRequestMapper.toSelfUpdateCommand(request));
+    }
+    return ResponseEntity.noContent().build();
+}
+```
+
+Authorization logic lives in the controller. Different roles produce different commands.
+
+### HATEOAS Affordances (State-Driven)
+
+```java
+@GetMapping("/{id}")
+public ResponseEntity<EntityModel<MemberDetailsResponse>> getMember(@PathVariable UUID id) {
+    Member member = ...;
+    EntityModel<MemberDetailsResponse> model = EntityModel.of(memberMapper.toDetailsResponse(member));
+
+    if (member.isActive()) {
+        model.add(klabisLinkTo(methodOn(MemberController.class).getMember(id))
+            .withSelfRel()
+            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null)))
+            .andAffordances(klabisAfford(methodOn(MemberController.class).suspendMember(id, null, null))));
+    } else {
+        model.add(klabisLinkTo(methodOn(MemberController.class).getMember(id))
+            .withSelfRel()
+            .andAffordances(klabisAfford(methodOn(MemberController.class).resumeMember(id, null))));
+    }
+    return ResponseEntity.ok(model);
+}
+```
+
+Use `klabisLinkTo()` and `klabisAfford()` helpers (not standard Spring HATEOAS helpers). Affordances depend on aggregate state.
+
+HATEOAS rules (NON-NEGOTIABLE):
+- Links (`withSelfRel()`, `withRel()`) — ONLY for GET endpoints
+- Affordances (`klabisAfford()`) — ONLY for POST/PUT/PATCH/DELETE endpoints
+- POST/PUT/PATCH/DELETE return 204 No Content or 201 Created with Location header — no response body
+- `klabisAfford` handles authorization internally — do not duplicate authorization checks
+
+### Root Navigation Postprocessors
+
+Add module collection links to the `/api` root via `RepresentationModelProcessor`:
+
+```java
+// Top level class at the end of file containing referenced controller, annotated @MvcComponent
+@MvcComponent
+class MembersRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+    @Override
+    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        model.add(klabisLinkTo(methodOn(MemberController.class)
+            .listMembers(Pageable.unpaged(), null))  // use Pageable.unpaged(), not null
+            .withRel("members"));
+        return model;
+    }
+}
+```
+
+`RepresentationModelProcessor` follows the same HATEOAS rules — no affordances to POST endpoints.
+
+### DTO → Command Mapping
+
+Use `@Mapper` (MapStruct) for straightforward field mapping; manual mapper class for complex PATCH operations.
+
+## JDBC Persistence Layer (Memento Pattern)
+
+### Memento Class
+
+```java
+@Table("members")
+class MemberMemento implements Persistable<UUID> {
+
+    @Id @Column("id") private UUID id;
+
+    // Flattened value objects — no nested objects in DB
+    @Column("first_name") private String firstName;
+    @Column("email") private String email;
+    @Column("street") private String street;   // from Address VO
+
+    // Audit (Spring Data auditing)
+    @CreatedDate @Column("created_at") private Instant createdAt;
+    @LastModifiedDate @Column("modified_at") private Instant lastModifiedAt;
+    @Version @Column("version") private Long version;
+
+    @Transient private Member member;   // Domain reference for event delegation
+    @Transient private boolean isNew = true;
+
+    // Domain → Memento (save path)
+    public static MemberMemento from(Member member) {
+        MemberMemento m = new MemberMemento();
+        m.id = member.getId().value();
+        m.firstName = member.getPersonalInformation().getName().firstName();
+        m.email = member.getEmail().value();
+        m.member = member;
+        m.isNew = (member.getAuditMetadata() == null);
+        return m;
+    }
+
+    // Memento → Domain (load path) via Member.reconstruct()
+    public Member toMember() {
+        return Member.reconstruct(new MemberId(this.id), ...);
+    }
+
+    // Domain event delegation (Spring Modulith mechanism)
+    @DomainEvents
+    public List<Object> getDomainEvents() {
+        return this.member != null ? this.member.getDomainEvents() : List.of();
+    }
+
+    @AfterDomainEventPublication
+    public void clearDomainEvents() {
+        if (this.member != null) this.member.clearDomainEvents();
+    }
+
+    @Override
+    public boolean isNew() { return this.isNew; }
+}
+```
+
+### Repository Adapter
+
+```java
+@SecondaryAdapter
+@Repository
+class MemberRepositoryAdapter implements MemberRepository {
+
+    private final MemberJdbcRepository jdbcRepository;
+
+    @Override
+    public Member save(Member member) {
+        return jdbcRepository.save(MemberMemento.from(member)).toMember();
+    }
+
+    @Override
+    public Optional<Member> findById(MemberId id) {
+        return jdbcRepository.findById(id.value()).map(MemberMemento::toMember);
+    }
+}
+```
+
+### Spring Data Repository
+
+```java
+@Repository
+interface MemberJdbcRepository extends
+        CrudRepository<MemberMemento, UUID>,
+        PagingAndSortingRepository<MemberMemento, UUID> {
+
+    Optional<MemberMemento> findByRegistrationNumber(String registrationNumber);
+
+    @Query("SELECT COUNT(*) FROM members WHERE ...")
+    int countByBirthYear(@Param("birthYear") int birthYear);
+}
+```
+
+## Domain Events
+
+### Event Structure
+
+```java
+@DomainEvent
+public class MemberCreatedEvent {
+    private final UUID eventId;        // Always include for idempotency
+    private final MemberId memberId;
+    private final Instant occurredAt;
+    // ... domain-relevant data (denormalized for listener convenience)
+
+    public static MemberCreatedEvent fromMember(Member member) { ... }
+
+    @Override
+    public String toString() {
+        // Exclude PII fields (GDPR compliance)
+        return "MemberCreatedEvent{eventId=" + eventId + ", memberId=" + memberId + "}";
+    }
+}
+```
+
+### Cross-Module Event Listeners
+
+```java
+@PrimaryAdapter
+@Component
+public class MemberEventsListener {
+
+    @ApplicationModuleListener
+    public void on(MemberCreatedEvent event) {
+        // React to cross-module domain event
+    }
+}
+```
+
+Use `@ApplicationModuleListener` (Spring Modulith) for cross-module event handling. Use `@PrimaryAdapter` on ALL inbound adapters — REST controllers AND event listeners.
+
+## Field-Level Authorization on Response DTOs
+
+Filter individual response fields and HAL+FORMS template properties based on the authenticated user's authorities. Implemented via a custom Jackson `BeanSerializerModifier` — annotations go directly on record components, no interface needed.
+
+### Pattern: Annotated Record (no interface)
+
+Security annotations are placed directly on record components. `FieldSecurityBeanSerializerModifier` evaluates them during Jackson serialization. This avoids the need for a separate interface — records are final so Spring Security's `AuthorizationAdvisorProxyFactory` (JDK proxy) would require an interface, which is unnecessary boilerplate.
+
+```java
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)  // default: field hidden
+record MemberDetailResponse(
+    String firstName,  // always visible — no security annotation
+
+    @PreAuthorize("hasAuthority('MEMBERS:MANAGE')")
+    String birthNumber,  // hidden for unauthorized users
+
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)  // per-field override
+    String bankAccountNumber  // masked as "***" for unauthorized users
+) {}
+```
+
+Controller returns a plain record — no proxy call needed:
+
+```java
+@GetMapping("/{id}")
+EntityModel<MemberDetailResponse> getMember(@PathVariable UUID id) {
+    MemberDetailResponse response = memberMapper.toDetailResponse(member);
+    return EntityModel.of(response)
+        .add(klabisLinkTo(methodOn(MemberController.class).getMember(id)).withSelfRel()
+            .andAffordances(klabisAfford(methodOn(MemberController.class).updateMember(id, null, null))));
+}
+```
+
+### Ownership-Based Field Authorization (@OwnerVisible)
+
+Fields can be made accessible to the data owner using `@OwnerVisible`. Uses OR semantics with authority annotations:
+
+```java
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
+record MemberDetailResponse(
+    @OwnerId MemberId id,                         // owner identifier
+    String firstName,                              // always visible
+    @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
+    String birthNumber,                            // visible to admin OR owner
+    @OwnerVisible
+    String email,                                  // visible only to owner
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    String suspensionNote                          // visible only to admin
+) {}
+```
+
+Owner discovery: single field whose type converts to UUID via `ConversionService` is used automatically. If ambiguous, annotate with `@OwnerId`. `OwnershipResolver` compares with `KlabisJwtAuthenticationToken.getMemberIdUuid()`.
+
+In collections (`GET /members`), each item is evaluated independently — owner sees more on their own record.
+
+### Key rules
+
+- `@JsonInclude(NON_NULL)` on the record — denied fields (handled by `NullDeniedHandler`) disappear from JSON
+- Class-level `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` sets default deny behavior
+- Per-field override with `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` for masked fields
+- Both `@PreAuthorize` (SpEL) and `@HasAuthority` (type-safe) annotations are supported on record components
+- `@OwnerVisible` adds ownership-based access with OR semantics
+- No interface, no proxy — `FieldSecurityBeanSerializerModifier` handles everything during serialization
+
+### Field-Level Authorization on Request DTOs (PATCH)
+
+`PatchField<T>` components with `@PreAuthorize`, `@HasAuthority`, or `@OwnerVisible` annotations are enforced by `RequestBodyFieldAuthorizationAdvice`. Only provided fields are checked — absent fields are skipped. For `@OwnerVisible`, owner ID is read from the controller method's `@OwnerId @PathVariable` parameter.
+
+```java
+record UpdateMemberRequest(
+    PatchField<String> email,  // no annotation — anyone can update
+
+    @HasAuthority(Authority.MEMBERS_MANAGE)
+    PatchField<String> birthNumber,  // only admin can update — 403 if unauthorized
+
+    @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible
+    PatchField<String> chipNumber  // admin OR owner can update
+) {}
+```
+
+Controller with `@OwnerId` path variable:
+```java
+@PatchMapping("/{id}")
+@HasAuthority(Authority.MEMBERS_MANAGE)
+@OwnerVisible
+ResponseEntity<Void> updateMember(@PathVariable @OwnerId UUID id, @RequestBody UpdateMemberRequest request) { ... }
+```
+
+If an unauthorized user sends a provided `PatchField` for a protected field, `FieldAuthorizationException` is thrown → HTTP 403.
+
+### Available denied handlers (`com.klabis.common.security.fieldsecurity`)
+
+| Handler | Behavior | Use case |
+|---|---|---|
+| `NullDeniedHandler` | Field absent from JSON | Default — hide sensitive fields |
+| `MaskDeniedHandler` | Field shows `"***"` | Show field existence without value |
+
+### HAL+FORMS template filtering
+
+`klabisAfford()` automatically filters HAL+FORMS template properties based on the same `@PreAuthorize` / `@HasAuthority` annotations on record component accessors. If user lacks authority for a field, the property is excluded from the PATCH template. No extra configuration needed.
+
+### Reference implementation
+
+- Serializer: `com.klabis.common.security.fieldsecurity.FieldSecurityBeanSerializerModifier`, `SecuredBeanPropertyWriter`
+- Request auth: `com.klabis.common.security.fieldsecurity.RequestBodyFieldAuthorizationAdvice`
+- Method auth: `com.klabis.common.security.HasAuthorityMethodInterceptor`
+- Ownership: `OwnershipResolver`, `DefaultOwnershipResolver`, `@OwnerVisible`, `@OwnerId`
+- Handlers: `com.klabis.common.security.fieldsecurity.NullDeniedHandler`, `MaskDeniedHandler`
+- Test: `com.klabis.common.security.fieldsecurity.FieldLevelAuthorizationTest`
+- HAL+FORMS filtering: `com.klabis.common.ui.HalFormsSupport` (`isPropertyAuthorized`)
+
+## Coding Conventions
+
+- Use package-protected visibility as default for new classes — make public only when accessed from another package
+- Use `org.springframework.util.Assert` for parameter validation inside methods (not raw `if` throws)
+- Use `@NonNull` on required service parameters; handle defaults in controller before delegating
+- Refactor methods with more than 4 parameters — introduce parameter objects or command records
+- Use `@MvcComponent` annotation on components in the presentation (restapi) layer
+- Do not use Lombok in domain classes — use records or plain Java
+
+## Additional Resources
+
+For detailed patterns and examples:
+- **`references/aggregate-checklist.md`** — Step-by-step checklist for implementing a new aggregate
+- **`references/testing-guide.md`** — Testing patterns: unit, repository, controller, integration, E2E

@@ -1,7 +1,4 @@
 {
-  "enabledPlugins": {
-    "klabis@davidovo": true
-  },
   "hooks": {
     "PreToolUse": [],
     "PostToolUse": [
@@ -35,5 +32,6 @@
         ]
       }
     ]
-  }
+  },
+  "enabledPlugins": {}
 }

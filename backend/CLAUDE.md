@@ -134,7 +134,7 @@ KLABIS_JASYPT_PASSWORD='test-key-123' \
 
 ### Large Refactorings with OpenSpec
 
-- Use `klabis:backend-developer` agent for multi-file refactoring (50+ files)
+- Use `backend-developer` agent for multi-file refactoring (50+ files)
 - Agent runs tests automatically and fixes failures
 - OpenSpec tasks.md must be updated manually after completion (CLI doesn't auto-detect)
 - Provide `design.md`, `proposal.md`, and `tasks.md` context files to agent
@@ -146,7 +146,7 @@ When making code changes in the `common` module, update the appropriate project 
 
 ### Domain Type Safety Pattern
 
-See `klabis:backend-patterns` skill for detailed patterns including type-safe IDs, Memento, application services, and REST controllers.
+See `backend-patterns` skill for detailed patterns including type-safe IDs, Memento, application services, and REST controllers.
 
 ## Application Profiles
 

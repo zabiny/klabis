@@ -33,6 +33,11 @@ cd frontend
 npm run dev
 ```
 
+### Available users for testing
+
+- Admin user (have all permissions) - registration number `ZBM9000`, password `password`
+- Club member user (have standard permissions as club member) - reigstration number `ZBM9500`, password `password`
+
 ## Development Workflow Best Practices
 
 ### HAL+FORMS Template Names (HATEOAS 3.0)
@@ -73,6 +78,34 @@ ps aux | grep -E "vite|npm.*dev" | grep -v grep
 - DO NOT create comments describing what code is doing. Use comments sparingly - exclusively to document intention behind implementation and only if is it necessary.
 - use `/mnt/ramdisk/klabis` folder when need to save temporary file
 - always do code review (use proper agent) before commiting changes involving CODE (either backend or frontend) to git. 
+- use `http://localhost:3000` (NPM dev) for testing frontend using playwright. Never use port 8443 for UI testing.
+
+#### Frontend testing
+
+##### Authentication
+
+The login page is at `https://localhost:8443/login` (redirected automatically from app). Fields:
+- Registration number: `textbox "např. 12345"`
+- Password: `textbox "••••••••"`
+- Submit: `button "Přihlásit se"`
+
+After login, wait for navigation menu to load before proceeding.
+
+To switch users: click "Odhlásit" button, then log in with new credentials.
+
+##### OIDC Token Access
+
+To make direct API calls for verification:
+```javascript
+browser_evaluate: async () => {
+  const user = JSON.parse(sessionStorage.getItem('oidc.user:http://localhost:3000/:klabis-web') || '{}');
+  const token = user.access_token;
+  const resp = await fetch('/api/...', {
+    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/prs.hal-forms+json' }
+  });
+  return await resp.json();
+}
+```
 
 ### IDE Diagnostics vs Reality
 
@@ -119,7 +152,7 @@ Authorization: Bearer {{$auth.token("AuthorizationCode")}}
 ## Backend Development
 
 For backend development, use the `backend-developer` agent which leverages specialized skills:
-- `klabis:backend-patterns` - Klabis-specific patterns (modules, services, controllers, JDBC, events)
+- `backend-patterns` - Klabis-specific patterns (modules, services, controllers, JDBC, events)
 - `developer:tdd-best-practices` - TDD workflow (RED-GREEN-REFACTOR)
 - `developer:spring-modulith` - DDD patterns and Spring Modulith architecture
 - `developer:spring-data-jdbc` - Repository and persistence patterns

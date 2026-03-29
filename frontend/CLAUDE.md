@@ -142,9 +142,9 @@ This frontend follows HAL (Hypertext Application Language) conventions:
    getEmbedded(resource, 'items')
    ```
 
-3. **Components:**
+3. **Reusable Components:**
     - `KlabisTableWithQuery` - Table with HAL pagination support
-    - `HalNavigator2` - Generic HAL resource navigator
+    - `HalSubresourceProvider` - allows to conditionally display data of resources from `_links` section. Fetched data and provides them to subcomponents through `useHalResource` hook.  
 
 ## Authentication (OAuth2/OIDC)
 
