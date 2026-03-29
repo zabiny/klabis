@@ -147,17 +147,19 @@ class CalendarEventSyncServiceTest {
                 null
         );
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.of(existingItem));
-
-        // When
-        testedSubject.handleEventUpdated(
-                eventId,
+        EventData eventData = new EventData(
                 "Updated Spring Boot Workshop",
                 LocalDate.of(2024, 3, 15),
                 "New Prague Center",
                 "OOB",
                 "https://example.com/updated"
         );
+
+        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.of(existingItem));
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+        // When
+        testedSubject.handleEventUpdated(eventId);
 
         // Then
         ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
@@ -189,17 +191,19 @@ class CalendarEventSyncServiceTest {
                 null
         );
 
-        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.of(existingItem));
-
-        // When
-        testedSubject.handleEventUpdated(
-                eventId,
+        EventData eventData = new EventData(
                 "Updated Java Meetup",
                 LocalDate.of(2024, 4, 20),
                 "Brno Tech Hub",
                 "OOB",
                 null  // Website URL removed
         );
+
+        when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.of(existingItem));
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData);
+
+        // When
+        testedSubject.handleEventUpdated(eventId);
 
         // Then
         ArgumentCaptor<CalendarItem> calendarItemCaptor = ArgumentCaptor.forClass(CalendarItem.class);
@@ -219,17 +223,11 @@ class CalendarEventSyncServiceTest {
         when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(Optional.empty());
 
         // When
-        testedSubject.handleEventUpdated(
-                eventId,
-                "Non-existent Event",
-                LocalDate.of(2024, 5, 10),
-                "Location",
-                "OOB",
-                null
-        );
+        testedSubject.handleEventUpdated(eventId);
 
         // Then
         verify(calendarRepositoryMock, never()).save(any());
+        verify(eventDataProviderMock, never()).getEventData(any());
     }
 
     // ===== handleEventCancelled() Tests =====

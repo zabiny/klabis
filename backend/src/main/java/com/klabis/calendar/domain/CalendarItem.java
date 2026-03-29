@@ -3,7 +3,6 @@ package com.klabis.calendar.domain;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
@@ -75,17 +74,34 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
     @RecordBuilder
     public record CreateCalendarItemForEvent(
             String name,
-            String description,
+            String location,
+            String organizer,
+            String websiteUrl,
             LocalDate eventDate,
             EventId eventId
-    ) {}
+    ) {
+        String description() {
+            return buildEventDescription(location, organizer, websiteUrl);
+        }
+    }
 
     @RecordBuilder
     public record SynchronizeFromEvent(
             String name,
-            String description,
+            String location,
+            String organizer,
+            String websiteUrl,
             LocalDate eventDate
-    ) {}
+    ) {
+        String description() {
+            return buildEventDescription(location, organizer, websiteUrl);
+        }
+    }
+
+    private static String buildEventDescription(String location, String organizer, String websiteUrl) {
+        String base = location + " - " + organizer;
+        return websiteUrl != null ? base + "\n" + websiteUrl : base;
+    }
 
     @Identity
     private final CalendarItemId id;
@@ -191,7 +207,7 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      */
     public static CalendarItem createForEvent(CreateCalendarItemForEvent command) {
         validateName(command.name());
-        validateDescription(command.description());
+        validateLocation(command.location());
         validateStartDate(command.eventDate());
 
         if (command.eventId() == null) {
@@ -217,6 +233,10 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
 
     private static void validateDescription(String description) {
         Assert.hasText(description, "Calendar item description is required");
+    }
+
+    private static void validateLocation(String location) {
+        Assert.hasText(location, "Calendar item location is required");
     }
 
     private static void validateStartDate(LocalDate startDate) {
@@ -270,13 +290,12 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      * Event-linked items are read-only and managed automatically via event handlers.
      *
      * @param command update command with name, description, startDate, endDate
-     * @throws BusinessRuleViolationException if calendar item is event-linked (read-only)
+     * @throws CalendarItemReadOnlyException if calendar item is event-linked (read-only)
      * @throws IllegalArgumentException       if validation fails
      */
     public void update(UpdateCalendarItem command) {
         if (isEventLinked()) {
-            throw new BusinessRuleViolationException("Cannot manually update event-linked calendar item") {
-            };
+            throw new CalendarItemReadOnlyException();
         }
 
         validateName(command.name());
@@ -292,6 +311,20 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
     }
 
     /**
+     * Asserts that this calendar item can be deleted.
+     * <p>
+     * Business rule: Only manual items (eventId == null) can be deleted.
+     * Event-linked items are read-only and managed automatically via event handlers.
+     *
+     * @throws CalendarItemReadOnlyException if calendar item is event-linked (read-only)
+     */
+    public void assertCanBeDeleted() {
+        if (isEventLinked()) {
+            throw new CalendarItemReadOnlyException();
+        }
+    }
+
+    /**
      * Synchronizes this event-linked calendar item with updated event data.
      * <p>
      * This method is used only by event synchronization infrastructure.
@@ -302,7 +335,7 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      */
     public void synchronizeFromEvent(SynchronizeFromEvent command) {
         validateName(command.name());
-        validateDescription(command.description());
+        validateLocation(command.location());
         validateStartDate(command.eventDate());
         validateDateRange(command.eventDate(), command.eventDate());
 

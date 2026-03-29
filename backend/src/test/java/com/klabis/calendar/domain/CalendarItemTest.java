@@ -2,7 +2,6 @@ package com.klabis.calendar.domain;
 
 import com.klabis.calendar.CalendarItemAssert;
 import com.klabis.calendar.CalendarItemId;
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -264,8 +263,8 @@ class CalendarItemTest {
                     .startDate(LocalDate.of(2026, 7, 1))
                     .endDate(LocalDate.of(2026, 7, 1))
                     .build()))
-                    .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessageContaining("Cannot manually update event-linked calendar item");
+                    .isInstanceOf(CalendarItemReadOnlyException.class)
+                    .hasMessageContaining("Cannot manually modify event-linked calendar item");
         }
 
         @Test
@@ -431,16 +430,44 @@ class CalendarItemTest {
 
             calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
                     .name("New Name")
-                    .description("New Description")
+                    .location("City Park")
+                    .organizer("OOB")
+                    .websiteUrl(null)
                     .eventDate(newDate)
                     .build());
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasName("New Name")
-                    .hasDescription("New Description")
+                    .hasDescription("City Park - OOB")
                     .hasStartDate(newDate)
                     .hasEndDate(newDate)
                     .isEventLinked();
+        }
+
+        @Test
+        @DisplayName("should synchronize with website URL appended to description")
+        void shouldSynchronizeWithWebsiteUrl() {
+            EventId eventId = EventId.of(UUID.randomUUID());
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Old Name",
+                    "Old Description",
+                    LocalDate.of(2026, 5, 10),
+                    LocalDate.of(2026, 5, 10),
+                    eventId,
+                    null
+            );
+
+            calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
+                    .name("New Name")
+                    .location("City Park")
+                    .organizer("OOB")
+                    .websiteUrl("https://example.com")
+                    .eventDate(LocalDate.of(2026, 7, 20))
+                    .build());
+
+            CalendarItemAssert.assertThat(calendarItem)
+                    .hasDescription("City Park - OOB\nhttps://example.com");
         }
 
         @Test
@@ -460,7 +487,9 @@ class CalendarItemTest {
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
                     CalendarItemSynchronizeFromEventBuilder.builder()
                             .name("   ")
-                            .description("Description")
+                            .location("Location")
+                            .organizer("OOB")
+                            .websiteUrl(null)
                             .eventDate(LocalDate.of(2026, 7, 20))
                             .build()))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -468,8 +497,8 @@ class CalendarItemTest {
         }
 
         @Test
-        @DisplayName("should fail synchronization when description is blank")
-        void shouldFailSynchronizationWhenDescriptionIsBlank() {
+        @DisplayName("should fail synchronization when location is blank")
+        void shouldFailSynchronizationWhenLocationIsBlank() {
             EventId eventId = EventId.of(UUID.randomUUID());
             CalendarItem calendarItem = CalendarItem.reconstruct(
                     CalendarItemId.generate(),
@@ -484,11 +513,13 @@ class CalendarItemTest {
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
                     CalendarItemSynchronizeFromEventBuilder.builder()
                             .name("Name")
-                            .description("   ")
+                            .location("   ")
+                            .organizer("OOB")
+                            .websiteUrl(null)
                             .eventDate(LocalDate.of(2026, 7, 20))
                             .build()))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("description");
+                    .hasMessageContaining("location");
         }
 
         @Test
@@ -508,11 +539,49 @@ class CalendarItemTest {
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
                     CalendarItemSynchronizeFromEventBuilder.builder()
                             .name("Name")
-                            .description("Description")
+                            .location("Location")
+                            .organizer("OOB")
+                            .websiteUrl(null)
                             .eventDate(null)
                             .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Start date");
+        }
+    }
+
+    @Nested
+    @DisplayName("assertCanBeDeleted()")
+    class AssertCanBeDeletedMethod {
+
+        @Test
+        @DisplayName("should not throw for manual calendar item")
+        void shouldNotThrowForManualCalendarItem() {
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Manual Item")
+                    .description("Created manually")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
+
+            calendarItem.assertCanBeDeleted();
+        }
+
+        @Test
+        @DisplayName("should throw CalendarItemReadOnlyException for event-linked calendar item")
+        void shouldThrowForEventLinkedCalendarItem() {
+            EventId eventId = EventId.of(UUID.randomUUID());
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Event-linked Item",
+                    "Synchronized from event",
+                    LocalDate.of(2026, 6, 15),
+                    LocalDate.of(2026, 6, 15),
+                    eventId,
+                    null
+            );
+
+            assertThatThrownBy(calendarItem::assertCanBeDeleted)
+                    .isInstanceOf(CalendarItemReadOnlyException.class);
         }
     }
 

@@ -3,8 +3,6 @@ package com.klabis.calendar.application;
 import com.klabis.events.EventId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
-import java.time.LocalDate;
-
 /**
  * Primary port for synchronizing calendar items with event lifecycle.
  * <p>
@@ -24,21 +22,11 @@ public interface CalendarEventSyncPort {
 
     /**
      * Updates a calendar item when an event is modified.
+     * The service fetches the current event data internally.
      *
-     * @param eventId      the event ID
-     * @param name         updated event name
-     * @param eventDate    updated event date
-     * @param location     updated location
-     * @param organizer    updated organizer
-     * @param websiteUrl   updated website URL (optional)
+     * @param eventId the event ID
      */
-    void handleEventUpdated(
-            EventId eventId,
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            String websiteUrl);
+    void handleEventUpdated(EventId eventId);
 
     /**
      * Deletes a calendar item when an event is cancelled.

@@ -2,7 +2,7 @@ package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemTestDataBuilder;
-import com.klabis.calendar.application.CalendarItemReadOnlyException;
+import com.klabis.calendar.domain.CalendarItemReadOnlyException;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.application.CalendarNotFoundException;
 import com.klabis.calendar.domain.CalendarItem;

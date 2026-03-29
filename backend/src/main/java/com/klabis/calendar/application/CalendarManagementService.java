@@ -61,10 +61,6 @@ class CalendarManagementService implements CalendarManagementPort {
         CalendarItem calendarItem = calendarRepository.findById(calendarItemId)
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
 
-        if (calendarItem.isEventLinked()) {
-            throw new CalendarItemReadOnlyException();
-        }
-
         calendarItem.update(command);
 
         calendarRepository.save(calendarItem);
@@ -76,9 +72,7 @@ class CalendarManagementService implements CalendarManagementPort {
         CalendarItem calendarItem = calendarRepository.findById(calendarItemId)
                 .orElseThrow(() -> new CalendarNotFoundException(calendarItemId.value()));
 
-        if (calendarItem.isEventLinked()) {
-            throw new CalendarItemReadOnlyException();
-        }
+        calendarItem.assertCanBeDeleted();
 
         calendarRepository.delete(calendarItem);
     }

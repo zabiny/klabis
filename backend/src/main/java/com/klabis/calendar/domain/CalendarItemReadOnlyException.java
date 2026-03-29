@@ -1,4 +1,4 @@
-package com.klabis.calendar.application;
+package com.klabis.calendar.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 

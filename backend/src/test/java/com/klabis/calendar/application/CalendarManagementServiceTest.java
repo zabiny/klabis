@@ -5,6 +5,7 @@ import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder;
 import com.klabis.calendar.domain.CalendarItemUpdateCalendarItemBuilder;
+import com.klabis.calendar.domain.CalendarItemReadOnlyException;
 import com.klabis.calendar.domain.CalendarRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

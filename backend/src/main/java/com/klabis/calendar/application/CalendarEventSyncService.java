@@ -55,11 +55,11 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
         EventData eventData = eventDataProvider.getEventData(eventId);
 
-        String description = buildDescription(eventData);
-
         CalendarItem calendarItem = CalendarItem.createForEvent(new CalendarItem.CreateCalendarItemForEvent(
                 eventData.name(),
-                description,
+                eventData.location(),
+                eventData.organizer(),
+                eventData.websiteUrl(),
                 eventData.eventDate(),
                 eventId
         ));
@@ -74,22 +74,10 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
      * <p>
      * Idempotent: if no calendar item exists for this event, logs warning and skips.
      *
-     * @param eventId    the event ID
-     * @param name       updated event name
-     * @param eventDate  updated event date
-     * @param location   updated location
-     * @param organizer  updated organizer
-     * @param websiteUrl updated website URL (optional)
+     * @param eventId the event ID
      */
     @Transactional
-    public void handleEventUpdated(
-            EventId eventId,
-            String name,
-            java.time.LocalDate eventDate,
-            String location,
-            String organizer,
-            String websiteUrl) {
-
+    public void handleEventUpdated(EventId eventId) {
         log.info("Updating calendar item for event: {}", eventId);
 
         var calendarItemOpt = calendarRepository.findByEventId(eventId);
@@ -103,9 +91,15 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
         CalendarItem calendarItem = calendarItemOpt.get();
 
-        String description = buildDescription(location, organizer, websiteUrl);
+        EventData eventData = eventDataProvider.getEventData(eventId);
 
-        calendarItem.synchronizeFromEvent(new CalendarItem.SynchronizeFromEvent(name, description, eventDate));
+        calendarItem.synchronizeFromEvent(new CalendarItem.SynchronizeFromEvent(
+                eventData.name(),
+                eventData.location(),
+                eventData.organizer(),
+                eventData.websiteUrl(),
+                eventData.eventDate()
+        ));
 
         calendarRepository.save(calendarItem);
 
@@ -136,19 +130,5 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
         calendarRepository.delete(calendarItem);
 
         log.info("Calendar item deleted successfully for event: {}", eventId);
-    }
-
-    private String buildDescription(EventData eventData) {
-        return buildDescription(eventData.location(), eventData.organizer(), eventData.websiteUrl());
-    }
-
-    private String buildDescription(String location, String organizer, String websiteUrl) {
-        String baseDescription = location + " - " + organizer;
-
-        if (websiteUrl != null) {
-            return baseDescription + "\n" + websiteUrl;
-        }
-
-        return baseDescription;
     }
 }

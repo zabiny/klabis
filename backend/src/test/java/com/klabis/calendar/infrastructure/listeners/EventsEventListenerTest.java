@@ -68,14 +68,7 @@ class EventsEventListenerTest {
         testedSubject.handle(event);
 
         // Then
-        verify(calendarEventSyncPortMock).handleEventUpdated(
-                eventId,
-                "Updated Spring Boot Workshop",
-                LocalDate.of(2024, 3, 15),
-                "New Prague Center",
-                "OOB",
-                "https://example.com/updated"
-        );
+        verify(calendarEventSyncPortMock).handleEventUpdated(eventId);
     }
 
     @Test
@@ -98,14 +91,7 @@ class EventsEventListenerTest {
         testedSubject.handle(event);
 
         // Then
-        verify(calendarEventSyncPortMock).handleEventUpdated(
-                eventId,
-                "Java Meetup",
-                LocalDate.of(2024, 4, 20),
-                "Brno Tech Hub",
-                "OOB",
-                null
-        );
+        verify(calendarEventSyncPortMock).handleEventUpdated(eventId);
     }
 
     @Test

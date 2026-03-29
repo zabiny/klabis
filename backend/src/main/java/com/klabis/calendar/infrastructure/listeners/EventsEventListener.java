@@ -1,4 +1,5 @@
 package com.klabis.calendar.infrastructure.listeners;
+
 import com.klabis.calendar.application.CalendarEventSyncPort;
 import com.klabis.events.EventCancelledEvent;
 import com.klabis.events.EventPublishedEvent;
@@ -44,19 +45,12 @@ class EventsEventListener {
     /**
      * Handles EventUpdatedEvent by delegating to application service.
      *
-     * @param event the event updated event containing new event data
+     * @param event the event updated event containing event ID
      */
     @ApplicationModuleListener
     public void handle(EventUpdatedEvent event) {
         log.debug("Received EventUpdatedEvent for event: {}", event.eventId());
-        calendarEventSyncPort.handleEventUpdated(
-                event.eventId(),
-                event.name(),
-                event.eventDate(),
-                event.location(),
-                event.organizer(),
-                event.websiteUrl() != null ? event.websiteUrl().value() : null
-        );
+        calendarEventSyncPort.handleEventUpdated(event.eventId());
     }
 
     /**
