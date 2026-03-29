@@ -5,6 +5,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
@@ -31,6 +32,24 @@ import java.util.Objects;
  */
 @AggregateRoot
 public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItemId> {
+
+    // ========== Nested Command Records ==========
+
+    @RecordBuilder
+    public record CreateCalendarItem(
+            String name,
+            String description,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {}
+
+    @RecordBuilder
+    public record CreateCalendarItemForEvent(
+            String name,
+            String description,
+            LocalDate eventDate,
+            EventId eventId
+    ) {}
 
     @Identity
     private final CalendarItemId id;
@@ -73,7 +92,7 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      * This bypasses validation since the data was already validated when originally stored.
      * <p>
      * This method is public only for infrastructure/persistence layer usage.
-     * Use {@link #create(String, String, LocalDate, LocalDate)} for creating new manual items.
+     * Use {@link #create(CreateCalendarItem)} for creating new manual items.
      *
      * @param id            calendar item's unique identifier
      * @param name          calendar item name
@@ -102,31 +121,23 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      * Creates a new manual calendar item (eventId = null) with a generated ID.
      * Manual items can be updated and deleted by authorized users.
      *
-     * @param name        calendar item name (required)
-     * @param description calendar item description (required)
-     * @param startDate   start date (required)
-     * @param endDate     end date (required, must be >= startDate)
+     * @param command creation command with name, description, startDate, endDate
      * @return new CalendarItem instance
      * @throws IllegalArgumentException if business rules are violated
      */
-    public static CalendarItem create(
-            String name,
-            String description,
-            LocalDate startDate,
-            LocalDate endDate) {
-
-        validateName(name);
-        validateDescription(description);
-        validateStartDate(startDate);
-        validateEndDate(endDate);
-        validateDateRange(startDate, endDate);
+    public static CalendarItem create(CreateCalendarItem command) {
+        validateName(command.name());
+        validateDescription(command.description());
+        validateStartDate(command.startDate());
+        validateEndDate(command.endDate());
+        validateDateRange(command.startDate(), command.endDate());
 
         return new CalendarItem(
                 CalendarItemId.generate(),
-                name,
-                description,
-                startDate,
-                endDate,
+                command.name(),
+                command.description(),
+                command.startDate(),
+                command.endDate(),
                 null,
                 null
         );
@@ -138,34 +149,26 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      * Creates a new calendar item synchronized from an Event (eventId != null) with a generated ID.
      * Event-linked items are read-only and can only be updated through event synchronization.
      *
-     * @param name        calendar item name (required)
-     * @param description calendar item description (required)
-     * @param eventDate   event date (used for both start and end date)
-     * @param eventId     linked event ID (required)
+     * @param command creation command with name, description, eventDate, eventId
      * @return new CalendarItem instance
      * @throws IllegalArgumentException if business rules are violated
      */
-    public static CalendarItem createForEvent(
-            String name,
-            String description,
-            LocalDate eventDate,
-            EventId eventId) {
+    public static CalendarItem createForEvent(CreateCalendarItemForEvent command) {
+        validateName(command.name());
+        validateDescription(command.description());
+        validateStartDate(command.eventDate());
 
-        validateName(name);
-        validateDescription(description);
-        validateStartDate(eventDate);
-
-        if (eventId == null) {
+        if (command.eventId() == null) {
             throw new IllegalArgumentException("Event ID is required for event-linked calendar items");
         }
 
         return new CalendarItem(
                 CalendarItemId.generate(),
-                name,
-                description,
-                eventDate,
-                eventDate,
-                eventId,
+                command.name(),
+                command.description(),
+                command.eventDate(),
+                command.eventDate(),
+                command.eventId(),
                 null
         );
     }

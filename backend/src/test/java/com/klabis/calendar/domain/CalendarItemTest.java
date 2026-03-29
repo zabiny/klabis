@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import static com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder.builder;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("CalendarItem Aggregate")
@@ -28,7 +29,12 @@ class CalendarItemTest {
             LocalDate startDate = LocalDate.of(2026, 6, 15);
             LocalDate endDate = LocalDate.of(2026, 6, 15);
 
-            CalendarItem calendarItem = CalendarItem.create(name, description, startDate, endDate);
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name(name)
+                    .description(description)
+                    .startDate(startDate)
+                    .endDate(endDate)
+                    .build());
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasIdNotNull()
@@ -43,12 +49,15 @@ class CalendarItemTest {
         @Test
         @DisplayName("should create multi-day calendar item")
         void shouldCreateMultiDayCalendarItem() {
-            String name = "Summer Camp";
-            String description = "5-day orienteering summer camp";
             LocalDate startDate = LocalDate.of(2026, 7, 1);
             LocalDate endDate = LocalDate.of(2026, 7, 5);
 
-            CalendarItem calendarItem = CalendarItem.create(name, description, startDate, endDate);
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Summer Camp")
+                    .description("5-day orienteering summer camp")
+                    .startDate(startDate)
+                    .endDate(endDate)
+                    .build());
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasStartDate(startDate)
@@ -61,12 +70,12 @@ class CalendarItemTest {
         void shouldCreateCalendarItemWithSameStartAndEndDate() {
             LocalDate sameDate = LocalDate.of(2026, 6, 15);
 
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Single Day Event",
-                    "One day activity",
-                    sameDate,
-                    sameDate
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Single Day Event")
+                    .description("One day activity")
+                    .startDate(sameDate)
+                    .endDate(sameDate)
+                    .build());
 
             CalendarItemAssert.assertThat(calendarItem)
                     .hasStartDate(sameDate)
@@ -76,10 +85,14 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when name is null")
         void shouldFailWhenNameIsNull() {
-            LocalDate startDate = LocalDate.of(2026, 6, 15);
-            LocalDate endDate = LocalDate.of(2026, 6, 15);
+            LocalDate date = LocalDate.of(2026, 6, 15);
 
-            assertThatThrownBy(() -> CalendarItem.create(null, "Description", startDate, endDate))
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name(null)
+                    .description("Description")
+                    .startDate(date)
+                    .endDate(date)
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -87,10 +100,14 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when name is blank")
         void shouldFailWhenNameIsBlank() {
-            LocalDate startDate = LocalDate.of(2026, 6, 15);
-            LocalDate endDate = LocalDate.of(2026, 6, 15);
+            LocalDate date = LocalDate.of(2026, 6, 15);
 
-            assertThatThrownBy(() -> CalendarItem.create("   ", "Description", startDate, endDate))
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name("   ")
+                    .description("Description")
+                    .startDate(date)
+                    .endDate(date)
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -98,10 +115,14 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when description is null")
         void shouldFailWhenDescriptionIsNull() {
-            LocalDate startDate = LocalDate.of(2026, 6, 15);
-            LocalDate endDate = LocalDate.of(2026, 6, 15);
+            LocalDate date = LocalDate.of(2026, 6, 15);
 
-            assertThatThrownBy(() -> CalendarItem.create("Name", null, startDate, endDate))
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name("Name")
+                    .description(null)
+                    .startDate(date)
+                    .endDate(date)
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("description");
         }
@@ -109,10 +130,14 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when description is blank")
         void shouldFailWhenDescriptionIsBlank() {
-            LocalDate startDate = LocalDate.of(2026, 6, 15);
-            LocalDate endDate = LocalDate.of(2026, 6, 15);
+            LocalDate date = LocalDate.of(2026, 6, 15);
 
-            assertThatThrownBy(() -> CalendarItem.create("Name", "   ", startDate, endDate))
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name("Name")
+                    .description("   ")
+                    .startDate(date)
+                    .endDate(date)
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("description");
         }
@@ -120,9 +145,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when startDate is null")
         void shouldFailWhenStartDateIsNull() {
-            LocalDate endDate = LocalDate.of(2026, 6, 15);
-
-            assertThatThrownBy(() -> CalendarItem.create("Name", "Description", null, endDate))
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(null)
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Start date");
         }
@@ -130,9 +158,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when endDate is null")
         void shouldFailWhenEndDateIsNull() {
-            LocalDate startDate = LocalDate.of(2026, 6, 15);
-
-            assertThatThrownBy(() -> CalendarItem.create("Name", "Description", startDate, null))
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(null)
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("End date");
         }
@@ -140,10 +171,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail when endDate is before startDate")
         void shouldFailWhenEndDateIsBeforeStartDate() {
-            LocalDate startDate = LocalDate.of(2026, 6, 15);
-            LocalDate endDate = LocalDate.of(2026, 6, 10);
-
-            assertThatThrownBy(() -> CalendarItem.create("Name", "Description", startDate, endDate))
+            assertThatThrownBy(() -> CalendarItem.create(builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 10))
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("End date must be on or after start date");
         }
@@ -156,12 +189,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should update manual calendar item with valid data")
         void shouldUpdateManualCalendarItemWithValidData() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Original Name",
-                    "Original Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Original Name")
+                    .description("Original Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             String newName = "Updated Name";
             String newDescription = "Updated Description";
@@ -181,12 +214,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should update manual calendar item to single day")
         void shouldUpdateManualCalendarItemToSingleDay() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Multi-day Event",
-                    "Description",
-                    LocalDate.of(2026, 6, 1),
-                    LocalDate.of(2026, 6, 5)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Multi-day Event")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 6, 1))
+                    .endDate(LocalDate.of(2026, 6, 5))
+                    .build());
 
             LocalDate singleDate = LocalDate.of(2026, 6, 15);
 
@@ -224,12 +257,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with null name")
         void shouldFailToUpdateWithNullName() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Original Name",
-                    "Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Original Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             assertThatThrownBy(() -> calendarItem.update(null, "Description", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -239,12 +272,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with blank name")
         void shouldFailToUpdateWithBlankName() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Original Name",
-                    "Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Original Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             assertThatThrownBy(() -> calendarItem.update("   ", "Description", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -254,12 +287,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with null description")
         void shouldFailToUpdateWithNullDescription() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Name",
-                    "Original Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Name")
+                    .description("Original Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             assertThatThrownBy(() -> calendarItem.update("Name", null, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -269,12 +302,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with blank description")
         void shouldFailToUpdateWithBlankDescription() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Name",
-                    "Original Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Name")
+                    .description("Original Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             assertThatThrownBy(() -> calendarItem.update("Name", "   ", LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1)))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -284,12 +317,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with null startDate")
         void shouldFailToUpdateWithNullStartDate() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Name",
-                    "Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             assertThatThrownBy(() -> calendarItem.update("Name", "Description", null, LocalDate.of(2026, 7, 1)))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -299,12 +332,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with null endDate")
         void shouldFailToUpdateWithNullEndDate() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Name",
-                    "Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             assertThatThrownBy(() -> calendarItem.update("Name", "Description", LocalDate.of(2026, 7, 1), null))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -314,12 +347,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should fail to update with endDate before startDate")
         void shouldFailToUpdateWithEndDateBeforeStartDate() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Name",
-                    "Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Name")
+                    .description("Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             assertThatThrownBy(() -> calendarItem.update(
                     "Name",
@@ -358,12 +391,12 @@ class CalendarItemTest {
         @Test
         @DisplayName("should identify manual calendar item")
         void shouldIdentifyManualCalendarItem() {
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Manual Item",
-                    "Created manually",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(builder()
+                    .name("Manual Item")
+                    .description("Created manually")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             CalendarItemAssert.assertThat(calendarItem)
                     .isManual()

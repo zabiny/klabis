@@ -57,12 +57,12 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
         String description = buildDescription(eventData);
 
-        CalendarItem calendarItem = CalendarItem.createForEvent(
+        CalendarItem calendarItem = CalendarItem.createForEvent(new CalendarItem.CreateCalendarItemForEvent(
                 eventData.name(),
                 description,
                 eventData.eventDate(),
                 eventId
-        );
+        ));
 
         calendarRepository.save(calendarItem);
 

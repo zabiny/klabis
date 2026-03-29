@@ -51,12 +51,12 @@ class CalendarManagementService implements CalendarManagementPort {
     @Transactional
     @Override
     public CalendarItem createCalendarItem(CalendarItemCommand command) {
-        CalendarItem calendarItem = CalendarItem.create(
+        CalendarItem calendarItem = CalendarItem.create(new CalendarItem.CreateCalendarItem(
                 command.name(),
                 command.description(),
                 command.startDate(),
                 command.endDate()
-        );
+        ));
 
         return calendarRepository.save(calendarItem);
     }

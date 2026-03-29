@@ -1,6 +1,7 @@
 package com.klabis.calendar.infrastructure.jdbc;
 
 import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.EventId;
@@ -55,12 +56,12 @@ class CalendarRepositoryAdapterTest {
         @DisplayName("should convert CalendarItem to memento, save, and convert back")
         void shouldConvertCalendarItemToMementoSaveAndConvertBack() {
             // Given
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Test Event",
-                    "Test Location - Test Organizer",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+                    .name("Test Event")
+                    .description("Test Location - Test Organizer")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             CalendarMemento savedMemento = CalendarMemento.from(calendarItem);
             when(jdbcRepositoryMock.save(any(CalendarMemento.class))).thenReturn(savedMemento);
@@ -248,12 +249,12 @@ class CalendarRepositoryAdapterTest {
         @DisplayName("should delete calendar item by ID")
         void shouldDeleteCalendarItemById() {
             // Given
-            CalendarItem calendarItem = CalendarItem.create(
-                    "Test Event",
-                    "Test Description",
-                    LocalDate.of(2026, 6, 15),
-                    LocalDate.of(2026, 6, 15)
-            );
+            CalendarItem calendarItem = CalendarItem.create(CalendarItemCreateCalendarItemBuilder.builder()
+                    .name("Test Event")
+                    .description("Test Description")
+                    .startDate(LocalDate.of(2026, 6, 15))
+                    .endDate(LocalDate.of(2026, 6, 15))
+                    .build());
 
             // When
             testedSubject.delete(calendarItem);
