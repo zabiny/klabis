@@ -53,6 +53,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private WebsiteUrl websiteUrl;
     @Association
     private MemberId eventCoordinatorId;
+    private LocalDate registrationDeadline;
     private EventStatus status;
 
     // Event registrations
@@ -79,7 +80,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @URL(message = "Website URL must be valid")
             String websiteUrl,
 
-            MemberId eventCoordinatorId
+            MemberId eventCoordinatorId,
+
+            LocalDate registrationDeadline
     ) {
     }
 
@@ -110,6 +113,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             MemberId eventCoordinatorId,
+            LocalDate registrationDeadline,
             EventStatus status,
             Integer orisId,
             AuditMetadata auditMetadata) {
@@ -121,6 +125,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.organizer = organizer;
         this.websiteUrl = websiteUrl;
         this.eventCoordinatorId = eventCoordinatorId;
+        this.registrationDeadline = registrationDeadline;
         this.status = status;
         this.orisId = orisId;
         updateAuditMetadata(auditMetadata);
@@ -151,6 +156,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String organizer,
             WebsiteUrl websiteUrl,
             MemberId eventCoordinatorId,
+            LocalDate registrationDeadline,
             EventStatus status,
             Integer orisId,
             List<EventRegistration> registrations,
@@ -164,6 +170,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 organizer,
                 websiteUrl,
                 eventCoordinatorId,
+                registrationDeadline,
                 status,
                 orisId,
                 auditMetadata
@@ -194,13 +201,15 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            MemberId eventCoordinatorId) {
+            MemberId eventCoordinatorId,
+            LocalDate registrationDeadline) {
 
         // Validate required fields
         validateName(name);
         validateEventDate(eventDate);
         validateLocation(location);
         validateOrganizer(organizer);
+        validateRegistrationDeadline(registrationDeadline, eventDate);
 
         Event event = new Event(
                 EventId.generate(),
@@ -210,6 +219,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 organizer,
                 websiteUrl,
                 eventCoordinatorId,
+                registrationDeadline,
                 EventStatus.DRAFT,
                 null,
                 null
@@ -241,12 +251,14 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             LocalDate eventDate,
             String location,
             String organizer,
-            WebsiteUrl websiteUrl) {
+            WebsiteUrl websiteUrl,
+            LocalDate registrationDeadline) {
 
         validateName(name);
         validateEventDate(eventDate);
         validateLocation(location);
         validateOrganizer(organizer);
+        validateRegistrationDeadline(registrationDeadline, eventDate);
 
         Event event = new Event(
                 EventId.generate(),
@@ -256,6 +268,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 organizer,
                 websiteUrl,
                 null,
+                registrationDeadline,
                 EventStatus.DRAFT,
                 orisId,
                 null
@@ -292,6 +305,13 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         }
     }
 
+    private static void validateRegistrationDeadline(LocalDate registrationDeadline, LocalDate eventDate) {
+        if (registrationDeadline != null && eventDate != null && registrationDeadline.isAfter(eventDate)) {
+            throw new BusinessRuleViolationException("Registration deadline must be on or before event date") {
+            };
+        }
+    }
+
     // ========== Getters ==========
 
     @Override
@@ -321,6 +341,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     public MemberId getEventCoordinatorId() {
         return eventCoordinatorId;
+    }
+
+    public LocalDate getRegistrationDeadline() {
+        return registrationDeadline;
     }
 
     public EventStatus getStatus() {
@@ -399,7 +423,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             String location,
             String organizer,
             WebsiteUrl websiteUrl,
-            MemberId eventCoordinatorId) {
+            MemberId eventCoordinatorId,
+            LocalDate registrationDeadline) {
 
         // Check status allows updates
         if (status == EventStatus.FINISHED) {
@@ -416,6 +441,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         validateEventDate(eventDate);
         validateLocation(location);
         validateOrganizer(organizer);
+        validateRegistrationDeadline(registrationDeadline, eventDate);
 
         // Modify fields in-place
         this.name = name;
@@ -424,17 +450,21 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.organizer = organizer;
         this.websiteUrl = websiteUrl;
         this.eventCoordinatorId = eventCoordinatorId;
+        this.registrationDeadline = registrationDeadline;
 
         // Register domain event
         registerEvent(EventUpdatedEvent.fromAggregate(this));
     }
 
     /**
-     * Returns true when registrations are open: the event is ACTIVE and the event date is strictly in the future.
-     * Covers both the registration rule (ACTIVE status required) and the unregistration rule (before event date).
+     * Returns true when registrations are open: the event is ACTIVE, the event date is strictly in the future,
+     * and the registration deadline (if set) has not passed.
      */
     public boolean areRegistrationsOpen() {
-        return status == EventStatus.ACTIVE && eventDate.isAfter(LocalDate.now());
+        LocalDate today = LocalDate.now();
+        return status == EventStatus.ACTIVE
+                && eventDate.isAfter(today)
+                && (registrationDeadline == null || registrationDeadline.isAfter(today));
     }
 
     // ========== Registration Methods ==========
@@ -452,7 +482,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws IllegalStateException          if member is already registered (domain invariant violation)
      */
     public void registerMember(MemberId memberId, SiCardNumber siCardNumber) {
-        // Check event status
         if (status != EventStatus.ACTIVE) {
             throw new BusinessRuleViolationException("Registration is only allowed for ACTIVE events") {
                 @Override
@@ -460,6 +489,11 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     return super.fillInStackTrace();
                 }
             };
+        }
+
+        LocalDate today = LocalDate.now();
+        if (registrationDeadline != null && !registrationDeadline.isAfter(today)) {
+            throw new BusinessRuleViolationException("Registration deadline has passed") {};
         }
 
         if (findRegistration(memberId).isPresent()) {
@@ -485,7 +519,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws IllegalArgumentException if member is not registered
      */
     public void unregisterMember(MemberId memberId, LocalDate currentDate) {
-        // Check if unregistration is allowed (before event date)
+        if (registrationDeadline != null && !registrationDeadline.isAfter(currentDate)) {
+            throw new BusinessRuleViolationException("Registration deadline has passed") {};
+        }
+
         if (!currentDate.isBefore(eventDate)) {
             throw new BusinessRuleViolationException("Cannot unregister on or after event date") {
             };

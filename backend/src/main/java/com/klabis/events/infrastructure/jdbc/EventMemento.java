@@ -63,6 +63,9 @@ class EventMemento implements Persistable<UUID> {
     @Column("status")
     private String status;
 
+    @Column("registration_deadline")
+    private LocalDate registrationDeadline;
+
     @Column("oris_id")
     private Integer orisId;
 
@@ -144,6 +147,7 @@ class EventMemento implements Persistable<UUID> {
         memento.websiteUrl = event.getWebsiteUrl() != null ? event.getWebsiteUrl().value() : null;
         memento.eventCoordinatorId = event.getEventCoordinatorId() != null ? event.getEventCoordinatorId()
                 .value() : null;
+        memento.registrationDeadline = event.getRegistrationDeadline();
         memento.status = event.getStatus().name();
         memento.orisId = event.getOrisId();
     }
@@ -186,6 +190,7 @@ class EventMemento implements Persistable<UUID> {
                 this.organizer,
                 websiteUrlObj,
                 coordinatorId,
+                this.registrationDeadline,
                 eventStatus,
                 this.orisId,
                 registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),

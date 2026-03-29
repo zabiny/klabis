@@ -63,14 +63,14 @@ public class EventController {
     private final EventManagementService eventManagementService;
     private final EventRegistrationService eventRegistrationService;
     private final Members members;
-    private final PagedResourcesAssembler<EventSummaryDto> pagedResourcesAssembler;
+    private final PagedResourcesAssembler<Event> pagedResourcesAssembler;
     private final boolean orisIntegrationActive;
 
     public EventController(
             EventManagementService eventManagementService,
             EventRegistrationService eventRegistrationService,
             Members members,
-            PagedResourcesAssembler<EventSummaryDto> pagedResourcesAssembler,
+            PagedResourcesAssembler<Event> pagedResourcesAssembler,
             @org.springframework.beans.factory.annotation.Value("${oris-integration.enabled:false}") boolean orisIntegrationActive) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
@@ -175,7 +175,7 @@ public class EventController {
                     Retrieves a paginated list of events.
                     Supports filtering by status and sorting by various fields.
                     Default: page=0, size=10, sort=eventDate,desc.
-                    Allowed sort fields: id, name, eventDate, location, organizer, status.
+                    Allowed sort fields: id, name, eventDate, location, organizer, status, registrationDeadline.
                     """
     )
     @ApiResponse(responseCode = "200", description = "Paginated list of events retrieved successfully")
@@ -183,11 +183,12 @@ public class EventController {
             @Parameter(description = "Filter by event status (optional)")
             @RequestParam(required = false) EventStatus status,
             @Parameter(description = "Pagination parameters: page, size, sort")
-            @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable) {
+            @PageableDefault(size = 10, sort = "eventDate", direction = Sort.Direction.DESC) @ParameterObject Pageable pageable,
+            @CurrentUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
 
-        Page<EventSummaryDto> page;
+        Page<Event> page;
         if (status == EventStatus.DRAFT && !hasEventsManageAuthority()) {
             page = Page.empty(pageable);
         } else {
@@ -199,20 +200,19 @@ public class EventController {
             } else {
                 filter = EventFilter.byNotHavingStatus(EventStatus.DRAFT);
             }
-            page = eventManagementService.listEvents(filter, pageable).map(EventDtoMapper::toSummaryDto);
+            page = eventManagementService.listEvents(filter, pageable);
         }
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,
-                dto -> {
-                    EntityModel<EventSummaryDto> model = EntityModel.of(dto);
-                    klabisLinkTo(methodOn(EventController.class).getEvent(dto.id().value(), null))
-                            .ifPresent(link -> model.add(link.withSelfRel()));
+                event -> {
+                    EntityModel<EventSummaryDto> model = EntityModel.of(EventDtoMapper.toSummaryDto(event));
+                    addLinksForListItem(model, event, currentUser);
                     return model;
                 }
         );
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable)).ifPresent(link -> {
+        klabisLinkTo(methodOn(EventController.class).listEvents(status, pageable, null)).ifPresent(link -> {
             var selfLink = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(EventController.class).createEvent(null)));
 
@@ -224,6 +224,31 @@ public class EventController {
         });
 
         return ResponseEntity.ok(pagedModel);
+    }
+
+    private void addLinksForListItem(EntityModel<EventSummaryDto> model, Event event, CurrentUserData currentUser) {
+        UUID eventId = event.getId().value();
+
+        klabisLinkTo(methodOn(EventController.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
+            var selfLink = selfLinkBuilder.withSelfRel();
+
+            if (event.areRegistrationsOpen()) {
+                boolean isRegistered = currentUser != null && currentUser.isMember()
+                        && event.findRegistration(currentUser.memberId()).isPresent();
+                if (isRegistered) {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).unregisterFromEvent(eventId, null)));
+                } else {
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationController.class).registerForEvent(eventId, null, null)));
+                }
+            }
+
+            model.add(selfLink);
+        });
+
+        if (event.getEventCoordinatorId() != null) {
+            klabisLinkTo(methodOn(MemberController.class).getMember(event.getEventCoordinatorId().value(), null))
+                    .ifPresent(link -> model.add(link.withRel("coordinator")));
+        }
     }
 
     private boolean hasEventsManageAuthority() {
@@ -238,7 +263,8 @@ public class EventController {
                 "eventDate",
                 "location",
                 "organizer",
-                "status"
+                "status",
+                "registrationDeadline"
         );
 
         for (Sort.Order order : sort) {
@@ -328,7 +354,7 @@ public class EventController {
             entityModel.add(selfLink);
         });
 
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, null))
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, null, null))
                 .ifPresent(link -> entityModel.add(link.withRel("collection")));
 
         klabisLinkTo(methodOn(EventRegistrationController.class).listRegistrations(eventId))

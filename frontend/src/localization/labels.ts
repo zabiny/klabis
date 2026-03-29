@@ -52,6 +52,7 @@ export const labels = {
     fields: {
         eventCoordinatorId: 'Koordinátor',
         eventDate: 'Datum konání',
+        registrationDeadline: 'Uzávěrka',
         location: 'Místo',
         name: 'Název',
         organizer: 'Pořadatel',
@@ -181,6 +182,9 @@ export const labels = {
         status: 'Status',
         date: 'Datum',
         registeredAt: 'Datum přihlášení',
+        web: 'Web',
+        registrationDeadline: 'Uzávěrka',
+        coordinator: 'Koordinátor',
     },
 
     sections: {

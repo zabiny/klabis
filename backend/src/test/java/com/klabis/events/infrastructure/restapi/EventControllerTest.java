@@ -93,6 +93,7 @@ class EventControllerTest {
                     "Forest Park",
                     "OOB",
                     "https://example.com/spring-cup",
+                    null,
                     null
             );
 
@@ -118,6 +119,7 @@ class EventControllerTest {
                     "Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
 
@@ -140,6 +142,7 @@ class EventControllerTest {
                     "Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
 
@@ -150,6 +153,33 @@ class EventControllerTest {
                                     .content(objectMapper.writeValueAsString(command))
                     )
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 201 when registrationDeadline is provided")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldCreateEventWithRegistrationDeadline() throws Exception {
+            Event createdEvent = EventTestDataBuilder.anEvent().withName("Deadline Event 2026").build();
+            Event.EventCommand command = new Event.EventCommand(
+                    "Deadline Event 2026",
+                    LocalDate.of(2026, 8, 20),
+                    "Forest Park",
+                    "OOB",
+                    null,
+                    null,
+                    LocalDate.of(2026, 8, 10)
+            );
+
+            when(eventManagementService.createEvent(any(Event.EventCommand.class))).thenReturn(createdEvent);
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists("Location"));
         }
     }
 
@@ -168,6 +198,7 @@ class EventControllerTest {
                     "Updated Location",
                     "PRG",
                     "https://updated.com",
+                    null,
                     null
             );
 
@@ -191,6 +222,7 @@ class EventControllerTest {
                     "Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
 
@@ -200,6 +232,30 @@ class EventControllerTest {
                                     .content(objectMapper.writeValueAsString(command))
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 204 when updating with registrationDeadline")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldUpdateEventWithRegistrationDeadline() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event.EventCommand updateCommand = new Event.EventCommand(
+                    "Updated Race",
+                    LocalDate.of(2026, 9, 20),
+                    "Forest",
+                    "OOB",
+                    null,
+                    null,
+                    LocalDate.of(2026, 9, 10)
+            );
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(updateCommand))
+                    )
+                    .andExpect(status().isNoContent());
         }
     }
 
@@ -211,8 +267,8 @@ class EventControllerTest {
         @DisplayName("should return paginated list with HAL+FORMS for manager with EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldListEventsWithPaginationForManager() throws Exception {
-            Event event1 = Event.create("Event 1", LocalDate.of(2026, 6, 1), "Location 1", "OOB", null, null);
-            Event event2 = Event.create("Event 2", LocalDate.of(2026, 7, 1), "Location 2", "PRG", null, null);
+            Event event1 = Event.create("Event 1", LocalDate.of(2026, 6, 1), "Location 1", "OOB", null, null, null);
+            Event event2 = Event.create("Event 2", LocalDate.of(2026, 7, 1), "Location 2", "PRG", null, null, null);
             event2.publish();
 
             when(eventManagementService.listEvents(any(EventFilter.class), any()))
@@ -243,7 +299,7 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").doesNotExist());
 
             verify(eventManagementService).listEvents(eq(EventFilter.byNotHavingStatus(EventStatus.DRAFT)), any());
         }
@@ -304,10 +360,10 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("should filter by status")
+        @DisplayName("should filter by status — status field hidden for regular user")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldFilterEventsByStatus() throws Exception {
-            Event event = Event.create("Active Event", LocalDate.of(2026, 6, 1), "Location", "OOB", null, null);
+            Event event = Event.create("Active Event", LocalDate.of(2026, 6, 1), "Location", "OOB", null, null, null);
             event.publish();
 
             when(eventManagementService.listEvents(any(EventFilter.class), any()))
@@ -319,7 +375,7 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").doesNotExist());
         }
     }
 
@@ -387,6 +443,7 @@ class EventControllerTest {
                     LocalDate.of(2026, 6, 1),
                     "Location",
                     "OOB",
+                    null,
                     null,
                     null
             );
@@ -615,6 +672,27 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._embedded.registrationDtoList").isArray())
                     .andExpect(jsonPath("$._embedded.registrationDtoList").isEmpty());
         }
+
+        @Test
+        @DisplayName("should include registrationDeadline in event detail response")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeRegistrationDeadlineInEventDetail() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            LocalDate deadline = LocalDate.of(2026, 8, 10);
+            Event event = EventTestDataBuilder.anEvent()
+                    .withRegistrationDeadline(deadline)
+                    .build();
+
+            when(eventManagementService.getEvent(any())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.registrationDeadline").value("2026-08-10"));
+        }
     }
 
     @Nested
@@ -757,4 +835,157 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._templates.importEvent.target").exists());
         }
     }
+
+    @Nested
+    @DisplayName("GET /api/events — list item extended fields and links (tasks 3.6, 3.7)")
+    class ListEventsExtendedFieldsTests {
+
+        @Test
+        @DisplayName("list item includes websiteUrl and registrationDeadline")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldIncludeWebsiteUrlAndRegistrationDeadlineInListItem() throws Exception {
+            LocalDate deadline = LocalDate.of(2026, 8, 10);
+            Event event = EventTestDataBuilder.anEvent()
+                    .withWebsiteUrl("https://example.com/event")
+                    .withRegistrationDeadline(deadline)
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].websiteUrl").value("https://example.com/event"))
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].registrationDeadline").value("2026-08-10"));
+        }
+
+        @Test
+        @DisplayName("list item includes coordinator link when event has coordinator")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.MEMBERS_READ})
+        void shouldIncludeCoordinatorLinkInListItem() throws Exception {
+            MemberId coordinatorId = new MemberId(UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._links.coordinator.href")
+                            .value(containsString("/api/members/" + coordinatorId.value())));
+        }
+
+        @Test
+        @DisplayName("list item does not include coordinator link when event has no coordinator")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeCoordinatorLinkWhenNoCoordinator() throws Exception {
+            Event event = EventTestDataBuilder.anEvent().buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._links.coordinator").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("list item includes registerForEvent affordance when registrations are open and user not registered")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099",
+                authorities = {Authority.EVENTS_READ})
+        void shouldIncludeRegisterAffordanceOnListItemWhenRegistrationsOpen() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent.method")
+                            .value("POST"));
+        }
+
+        @Test
+        @DisplayName("list item does not include registration affordance for closed registrations")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeRegisterAffordanceWhenRegistrationsClosed() throws Exception {
+            Event pastEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().minusDays(5))
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new PageImpl<>(List.of(pastEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.unregisterFromEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("list item does not include registration affordance when deadline passed")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldNotIncludeRegisterAffordanceWhenDeadlinePassed() throws Exception {
+            Event eventWithPastDeadline = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withRegistrationDeadline(LocalDate.now().minusDays(1))
+                    .buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new PageImpl<>(List.of(eventWithPastDeadline), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._templates.registerForEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("status field hidden for regular users without EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void shouldHideStatusFieldForRegularUsers() throws Exception {
+            Event event = EventTestDataBuilder.anEvent().buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("status field visible for users with EVENTS:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldShowStatusFieldForManagers() throws Exception {
+            Event event = EventTestDataBuilder.anEvent().buildPublished();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any()))
+                    .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(
+                            get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
+        }
+    }
+
 }

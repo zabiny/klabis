@@ -73,7 +73,8 @@ class EventManagementServiceTest {
                     "Forest Park",
                     "OOB",
                     "https://example.com/spring-cup",
-                    coordinatorId
+                    coordinatorId,
+                    null
             );
 
             Event event = Event.create(
@@ -82,7 +83,8 @@ class EventManagementServiceTest {
                     command.location(),
                     command.organizer(),
                     command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                    command.eventCoordinatorId()
+                    command.eventCoordinatorId(),
+                    command.registrationDeadline()
             );
 
             when(eventRepository.save(any(Event.class))).thenReturn(event);
@@ -105,7 +107,8 @@ class EventManagementServiceTest {
                     "City Park",
                     "PRG",
                     null,  // no website
-                    null   // no coordinator
+                    null,  // no coordinator
+                    null   // no deadline
             );
 
             Event event = Event.create(
@@ -113,6 +116,7 @@ class EventManagementServiceTest {
                     command.eventDate(),
                     command.location(),
                     command.organizer(),
+                    null,
                     null,
                     null
             );
@@ -143,6 +147,7 @@ class EventManagementServiceTest {
                     "Old Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
 
@@ -152,6 +157,7 @@ class EventManagementServiceTest {
                     "Updated Location",
                     "PRG",
                     "https://updated.com",
+                    null,
                     null
             );
 
@@ -176,6 +182,7 @@ class EventManagementServiceTest {
                     "Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
             event.publish();  // Transition to ACTIVE
@@ -185,6 +192,7 @@ class EventManagementServiceTest {
                     LocalDate.of(2026, 6, 15),
                     "New Location",
                     "PRG",
+                    null,
                     null,
                     null
             );
@@ -210,6 +218,7 @@ class EventManagementServiceTest {
                     "Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -220,6 +229,7 @@ class EventManagementServiceTest {
                     LocalDate.of(2026, 6, 15),
                     "New Location",
                     "PRG",
+                    null,
                     null,
                     null
             );
@@ -243,6 +253,7 @@ class EventManagementServiceTest {
                     "Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
             event.cancel();  // Transition to CANCELLED
@@ -252,6 +263,7 @@ class EventManagementServiceTest {
                     LocalDate.of(2026, 6, 15),
                     "New Location",
                     "PRG",
+                    null,
                     null,
                     null
             );
@@ -274,6 +286,7 @@ class EventManagementServiceTest {
                     LocalDate.of(2026, 6, 15),
                     "New Location",
                     "PRG",
+                    null,
                     null,
                     null
             );
@@ -300,6 +313,7 @@ class EventManagementServiceTest {
                     LocalDate.of(2026, 6, 1),
                     "Location",
                     "OOB",
+                    null,
                     null,
                     null
             );
@@ -342,6 +356,7 @@ class EventManagementServiceTest {
                     "Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
 
@@ -365,6 +380,7 @@ class EventManagementServiceTest {
                     LocalDate.of(2026, 6, 1),
                     "Location",
                     "OOB",
+                    null,
                     null,
                     null
             );
@@ -408,6 +424,7 @@ class EventManagementServiceTest {
                     "Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -450,7 +467,8 @@ class EventManagementServiceTest {
                     "Forest Park",
                     "OOB",
                     WebsiteUrl.of("https://example.com"),
-                    new MemberId(UUID.randomUUID())
+                    new MemberId(UUID.randomUUID()),
+                    null
             );
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
@@ -494,6 +512,7 @@ class EventManagementServiceTest {
                     "Location 1",
                     "OOB",
                     null,
+                    null,
                     null
             );
             Event event2 = Event.create(
@@ -501,6 +520,7 @@ class EventManagementServiceTest {
                     LocalDate.of(2026, 7, 1),
                     "Location 2",
                     "PRG",
+                    null,
                     null,
                     null
             );
@@ -527,6 +547,7 @@ class EventManagementServiceTest {
                     LocalDate.of(2026, 6, 1),
                     "Location",
                     "OOB",
+                    null,
                     null,
                     null
             );
@@ -661,6 +682,50 @@ class EventManagementServiceTest {
                     .hasMessageContaining("ORIS integration is not active");
         }
 
+        @Test
+        @DisplayName("should map entryDate1 to registrationDeadline when present")
+        void shouldMapEntryDate1ToRegistrationDeadline() {
+            // Given
+            int orisId = 5555;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            java.time.ZonedDateTime entryDate = java.time.LocalDate.of(2026, 8, 5)
+                    .atStartOfDay(java.time.ZoneId.of("Europe/Prague"));
+            EventDetails details = buildEventDetails(orisId, "Deadline Race", LocalDate.of(2026, 8, 20), "Forest", org1, null);
+            Mockito.when(details.entryDate1()).thenReturn(entryDate);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            Event result = service.importEventFromOris(orisId);
+
+            // Then
+            assertThat(result.getRegistrationDeadline()).isEqualTo(LocalDate.of(2026, 8, 5));
+        }
+
+        @Test
+        @DisplayName("should set registrationDeadline to null when entryDate1 is null")
+        void shouldSetRegistrationDeadlineToNullWhenEntryDate1IsNull() {
+            // Given
+            int orisId = 6666;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetails(orisId, "No Deadline Race", LocalDate.of(2026, 9, 10), "Forest", org1, null);
+            // entryDate1 returns null (already set in buildEventDetails via lenient mock)
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisApiClient.getEventWebUrl(orisId)).thenCallRealMethod();
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // When
+            Event result = service.importEventFromOris(orisId);
+
+            // Then
+            assertThat(result.getRegistrationDeadline()).isNull();
+        }
+
         private EventDetails buildEventDetails(int id, String name, LocalDate date, String place, Organizer org1, Organizer org2) {
             EventDetails details = Mockito.mock(EventDetails.class);
             Mockito.when(details.name()).thenReturn(name);
@@ -668,6 +733,7 @@ class EventManagementServiceTest {
             Mockito.when(details.place()).thenReturn(place);
             Mockito.when(details.org1()).thenReturn(org1);
             Mockito.lenient().when(details.org2()).thenReturn(org2);
+            Mockito.lenient().when(details.entryDate1()).thenReturn(null);
             return details;
         }
     }

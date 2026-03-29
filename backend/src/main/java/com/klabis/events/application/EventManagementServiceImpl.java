@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Service
@@ -35,7 +36,8 @@ public class EventManagementServiceImpl implements EventManagementService {
                 command.location(),
                 command.organizer(),
                 command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                command.eventCoordinatorId()
+                command.eventCoordinatorId(),
+                command.registrationDeadline()
         );
 
         return eventRepository.save(event);
@@ -53,7 +55,8 @@ public class EventManagementServiceImpl implements EventManagementService {
                 command.location(),
                 command.organizer(),
                 command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                command.eventCoordinatorId()
+                command.eventCoordinatorId(),
+                command.registrationDeadline()
         );
 
         eventRepository.save(event);
@@ -102,6 +105,7 @@ public class EventManagementServiceImpl implements EventManagementService {
 
         String organizer = resolveOrganizer(details);
         WebsiteUrl websiteUrl = WebsiteUrl.of(client.getEventWebUrl(orisId));
+        LocalDate registrationDeadline = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
 
         Event event = Event.createFromOris(
                 orisId,
@@ -109,7 +113,8 @@ public class EventManagementServiceImpl implements EventManagementService {
                 details.date(),
                 details.place(),
                 organizer,
-                websiteUrl
+                websiteUrl,
+                registrationDeadline
         );
 
         try {

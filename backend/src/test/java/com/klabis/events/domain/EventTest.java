@@ -48,7 +48,7 @@ class EventTest {
             MemberId coordinatorId = new MemberId(UUID.randomUUID());
 
             // Act
-            Event event = Event.create(name, eventDate, location, organizer, websiteUrl, coordinatorId);
+            Event event = Event.create(name, eventDate, location, organizer, websiteUrl, coordinatorId, null);
 
             // Assert
             EventAssert.assertThat(event)
@@ -72,7 +72,7 @@ class EventTest {
             String organizer = "Local Sports Club";
 
             // Act
-            Event event = Event.create(name, eventDate, location, organizer, null, null);
+            Event event = Event.create(name, eventDate, location, organizer, null, null, null);
 
             // Assert
             EventAssert.assertThat(event)
@@ -98,6 +98,7 @@ class EventTest {
                     "Location",
                     "Organizer",
                     null,
+                    null,
                     null
             ))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -117,6 +118,7 @@ class EventTest {
                     "Location",
                     "Organizer",
                     null,
+                    null,
                     null
             ))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -132,6 +134,7 @@ class EventTest {
                     null,
                     "Location",
                     "Organizer",
+                    null,
                     null,
                     null
             ))
@@ -152,6 +155,7 @@ class EventTest {
                     null,
                     "Organizer",
                     null,
+                    null,
                     null
             ))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -171,6 +175,7 @@ class EventTest {
                     "   ",
                     "Organizer",
                     null,
+                    null,
                     null
             ))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -188,6 +193,7 @@ class EventTest {
                     "Event Name",
                     eventDate,
                     "Location",
+                    null,
                     null,
                     null,
                     null
@@ -209,10 +215,48 @@ class EventTest {
                     "Location",
                     "   ",
                     null,
+                    null,
                     null
             ))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("organizer");
+        }
+
+        @Test
+        @DisplayName("should fail when registrationDeadline is after eventDate")
+        void shouldFailWhenRegistrationDeadlineIsAfterEventDate() {
+            LocalDate eventDate = LocalDate.of(2026, 6, 15);
+            LocalDate invalidDeadline = LocalDate.of(2026, 6, 16);
+
+            assertThatThrownBy(() -> Event.create(
+                    "Event Name",
+                    eventDate,
+                    "Location",
+                    "Organizer",
+                    null,
+                    null,
+                    invalidDeadline
+            ))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Registration deadline");
+        }
+
+        @Test
+        @DisplayName("should allow registrationDeadline equal to eventDate")
+        void shouldAllowRegistrationDeadlineEqualToEventDate() {
+            LocalDate eventDate = LocalDate.of(2026, 6, 15);
+
+            Event event = Event.create(
+                    "Event Name",
+                    eventDate,
+                    "Location",
+                    "Organizer",
+                    null,
+                    null,
+                    eventDate
+            );
+
+            assertThat(event.getRegistrationDeadline()).isEqualTo(eventDate);
         }
     }
 
@@ -229,6 +273,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -251,6 +296,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
@@ -271,6 +317,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -294,6 +341,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -316,6 +364,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
@@ -335,6 +384,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -406,6 +456,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
@@ -418,7 +469,7 @@ class EventTest {
             MemberId newCoordinatorId = new MemberId(UUID.randomUUID());
 
             // Act
-            event.update(newName, newDate, newLocation, newOrganizer, newWebsiteUrl, newCoordinatorId);
+            event.update(newName, newDate, newLocation, newOrganizer, newWebsiteUrl, newCoordinatorId, null);
 
             // Assert
             EventAssert.assertThat(event)
@@ -441,6 +492,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -452,7 +504,7 @@ class EventTest {
             String newOrganizer = "Updated Organizer";
 
             // Act
-            event.update(newName, newDate, newLocation, newOrganizer, null, null);
+            event.update(newName, newDate, newLocation, newOrganizer, null, null, null);
 
             // Assert
             EventAssert.assertThat(event)
@@ -473,6 +525,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -485,6 +538,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 20),
                     "New Location",
                     "New Organizer",
+                    null,
                     null,
                     null
             ))
@@ -502,6 +556,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
             event.cancel();
@@ -513,6 +568,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 20),
                     "New Location",
                     "New Organizer",
+                    null,
                     null,
                     null
             ))
@@ -530,6 +586,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
 
@@ -539,6 +596,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 20),
                     "Location",
                     "Organizer",
+                    null,
                     null,
                     null
             ))
@@ -556,6 +614,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
 
@@ -565,6 +624,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 20),
                     "Location",
                     "Organizer",
+                    null,
                     null,
                     null
             ))
@@ -582,6 +642,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
 
@@ -591,6 +652,7 @@ class EventTest {
                     null,
                     "Location",
                     "Organizer",
+                    null,
                     null,
                     null
             ))
@@ -608,6 +670,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
 
@@ -617,6 +680,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 20),
                     null,
                     "Organizer",
+                    null,
                     null,
                     null
             ))
@@ -634,6 +698,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
 
@@ -643,6 +708,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 20),
                     "   ",
                     "Organizer",
+                    null,
                     null,
                     null
             ))
@@ -660,6 +726,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
 
@@ -668,6 +735,7 @@ class EventTest {
                     "Event Name",
                     LocalDate.of(2025, 7, 20),
                     "Location",
+                    null,
                     null,
                     null,
                     null
@@ -686,6 +754,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     null,
+                    null,
                     null
             );
 
@@ -695,6 +764,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 20),
                     "Location",
                     "   ",
+                    null,
                     null,
                     null
             ))
@@ -716,6 +786,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -743,6 +814,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
@@ -765,6 +837,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -791,6 +864,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             event.cancel();
@@ -815,6 +889,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -838,6 +913,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -868,6 +944,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -893,6 +970,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -920,6 +998,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -942,6 +1021,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -970,6 +1050,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -992,6 +1073,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -1027,7 +1109,7 @@ class EventTest {
         void shouldReturnTrueWhenActiveAndDateInFuture() {
             // Arrange
             LocalDate futureDate = LocalDate.now().plusDays(1);
-            Event event = Event.create("Race 2026", futureDate, "Forest", "Club", null, null);
+            Event event = Event.create("Race 2026", futureDate, "Forest", "Club", null, null, null);
             event.publish();
 
             // Act & Assert
@@ -1039,7 +1121,7 @@ class EventTest {
         void shouldReturnFalseWhenActiveAndDateIsToday() {
             // Arrange
             LocalDate today = LocalDate.now();
-            Event event = Event.create("Race Today", today, "Forest", "Club", null, null);
+            Event event = Event.create("Race Today", today, "Forest", "Club", null, null, null);
             event.publish();
 
             // Act & Assert
@@ -1051,7 +1133,7 @@ class EventTest {
         void shouldReturnFalseWhenActiveAndDateInPast() {
             // Arrange
             LocalDate pastDate = LocalDate.now().minusDays(1);
-            Event event = Event.create("Past Race", pastDate, "Forest", "Club", null, null);
+            Event event = Event.create("Past Race", pastDate, "Forest", "Club", null, null, null);
             event.publish();
 
             // Act & Assert
@@ -1063,7 +1145,7 @@ class EventTest {
         void shouldReturnFalseWhenDraftAndDateInFuture() {
             // Arrange
             LocalDate futureDate = LocalDate.now().plusDays(7);
-            Event event = Event.create("Future Draft", futureDate, "Forest", "Club", null, null);
+            Event event = Event.create("Future Draft", futureDate, "Forest", "Club", null, null, null);
 
             // Act & Assert
             assertThat(event.areRegistrationsOpen()).isFalse();
@@ -1074,7 +1156,7 @@ class EventTest {
         void shouldReturnFalseWhenCancelledAndDateInFuture() {
             // Arrange
             LocalDate futureDate = LocalDate.now().plusDays(7);
-            Event event = Event.create("Cancelled Race", futureDate, "Forest", "Club", null, null);
+            Event event = Event.create("Cancelled Race", futureDate, "Forest", "Club", null, null, null);
             event.cancel();
 
             // Act & Assert
@@ -1086,11 +1168,44 @@ class EventTest {
         void shouldReturnFalseWhenFinishedAndDateInFuture() {
             // Arrange
             LocalDate futureDate = LocalDate.now().plusDays(7);
-            Event event = Event.create("Finished Race", futureDate, "Forest", "Club", null, null);
+            Event event = Event.create("Finished Race", futureDate, "Forest", "Club", null, null, null);
             event.publish();
             event.finish();
 
             // Act & Assert
+            assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return true when ACTIVE event has deadline in the future")
+        void shouldReturnTrueWhenActiveAndDeadlineInFuture() {
+            LocalDate futureDate = LocalDate.now().plusDays(10);
+            LocalDate deadline = LocalDate.now().plusDays(5);
+            Event event = Event.create("Race with Deadline", futureDate, "Forest", "Club", null, null, deadline);
+            event.publish();
+
+            assertThat(event.areRegistrationsOpen()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return false when ACTIVE event registration deadline has passed")
+        void shouldReturnFalseWhenDeadlinePassed() {
+            LocalDate futureDate = LocalDate.now().plusDays(10);
+            LocalDate pastDeadline = LocalDate.now().minusDays(1);
+            Event event = Event.create("Race Closed", futureDate, "Forest", "Club", null, null, pastDeadline);
+            event.publish();
+
+            assertThat(event.areRegistrationsOpen()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should return false when ACTIVE event registration deadline is today")
+        void shouldReturnFalseWhenDeadlineIsToday() {
+            LocalDate futureDate = LocalDate.now().plusDays(10);
+            LocalDate todayDeadline = LocalDate.now();
+            Event event = Event.create("Race Deadline Today", futureDate, "Forest", "Club", null, null, todayDeadline);
+            event.publish();
+
             assertThat(event.areRegistrationsOpen()).isFalse();
         }
     }
@@ -1109,7 +1224,8 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     WebsiteUrl.of("https://test.com"),
-                    new MemberId(UUID.randomUUID())
+                    new MemberId(UUID.randomUUID()),
+                    null
             );
 
             // Assert
@@ -1136,6 +1252,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -1165,6 +1282,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             event.clearDomainEvents(); // Clear creation event
@@ -1192,6 +1310,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -1222,6 +1341,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     null,
+                    null,
                     null
             );
             assertThat(event.getDomainEvents()).hasSize(1);
@@ -1243,6 +1363,7 @@ class EventTest {
                     "Original Location",
                     "Original Organizer",
                     WebsiteUrl.of("https://original.com"),
+                    null,
                     null
             );
             event.clearDomainEvents(); // Clear creation event
@@ -1254,6 +1375,7 @@ class EventTest {
                     "Updated Location",
                     "Updated Organizer",
                     WebsiteUrl.of("https://updated.com"),
+                    null,
                     null
             );
 
@@ -1284,6 +1406,7 @@ class EventTest {
                     "Test Location",
                     "Test Organizer",
                     WebsiteUrl.of("https://test.com"),
+                    null,
                     null
             );
             event.clearDomainEvents();
@@ -1295,6 +1418,7 @@ class EventTest {
                     "Updated Location",
                     "Updated Organizer",
                     null, // No website URL
+                    null,
                     null
             );
 
@@ -1313,6 +1437,7 @@ class EventTest {
                     LocalDate.of(2025, 7, 10),
                     "Test Location",
                     "Test Organizer",
+                    null,
                     null,
                     null
             );
@@ -1344,7 +1469,7 @@ class EventTest {
             WebsiteUrl websiteUrl = WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=9876");
 
             // Act
-            Event event = Event.createFromOris(orisId, name, eventDate, location, organizer, websiteUrl);
+            Event event = Event.createFromOris(orisId, name, eventDate, location, organizer, websiteUrl, null);
 
             // Assert
             assertThat(event.getId()).isNotNull();
@@ -1367,7 +1492,8 @@ class EventTest {
                     LocalDate.of(2026, 9, 5),
                     "Prague Forest",
                     "PRG",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234")
+                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
+                    null
             );
 
             // Assert
@@ -1385,7 +1511,8 @@ class EventTest {
                     LocalDate.of(2026, 10, 1),
                     "Some Place",
                     "TST",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=5555")
+                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=5555"),
+                    null
             );
 
             // Assert

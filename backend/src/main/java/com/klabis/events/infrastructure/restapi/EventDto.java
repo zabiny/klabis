@@ -29,6 +29,7 @@ record EventDto(
         String organizer,
         String websiteUrl,
         MemberId eventCoordinatorId,
+        LocalDate registrationDeadline,
         @HalForms(access = HalForms.Access.READ_ONLY) EventStatus status
 ) {
 }

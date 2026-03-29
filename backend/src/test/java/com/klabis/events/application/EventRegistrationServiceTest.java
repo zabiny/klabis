@@ -4,6 +4,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventStatus;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.SiCardNumber;
@@ -71,6 +72,7 @@ class EventRegistrationServiceTest {
                     "Test Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
             activeEvent.publish(); // Make it ACTIVE
@@ -121,6 +123,7 @@ class EventRegistrationServiceTest {
                     "Location",
                     "PRG",
                     null,
+                    null,
                     null
             );
             // Event is in DRAFT status
@@ -149,6 +152,58 @@ class EventRegistrationServiceTest {
 
             verify(eventRepository, never()).save(any(Event.class));
         }
+
+        @Test
+        @DisplayName("should reject registration when registration deadline has passed")
+        void shouldRejectRegistrationWhenDeadlinePassed() {
+            // Given
+            Event eventWithPastDeadline = Event.create(
+                    "Deadline Event",
+                    LocalDate.of(2026, 9, 15),
+                    "Test Location",
+                    "OOB",
+                    null,
+                    null,
+                    LocalDate.of(2026, 3, 1)
+            );
+            eventWithPastDeadline.publish();
+
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithPastDeadline));
+
+            // When/Then
+            assertThatThrownBy(() -> service.registerMember(eventId, TEST_MEMBER_ID, command))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Registration deadline has passed");
+
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should allow registration when registration deadline is in the future")
+        void shouldAllowRegistrationWhenDeadlineInFuture() {
+            // Given
+            Event eventWithFutureDeadline = Event.create(
+                    "Future Deadline Event",
+                    LocalDate.now().plusDays(60),
+                    "Test Location",
+                    "OOB",
+                    null,
+                    null,
+                    LocalDate.now().plusDays(30)
+            );
+            eventWithFutureDeadline.publish();
+
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithFutureDeadline));
+            when(eventRepository.save(any(Event.class))).thenReturn(eventWithFutureDeadline);
+
+            // When
+            service.registerMember(eventId, TEST_MEMBER_ID, command);
+
+            // Then
+            verify(eventRepository).save(any(Event.class));
+        }
     }
 
     @Nested
@@ -167,6 +222,7 @@ class EventRegistrationServiceTest {
                     LocalDate.of(2026, 6, 15),
                     "Test Location",
                     "OOB",
+                    null,
                     null,
                     null
             );
@@ -219,6 +275,63 @@ class EventRegistrationServiceTest {
 
             verify(eventRepository, never()).save(any(Event.class));
         }
+
+        @Test
+        @DisplayName("should reject unregistration when registration deadline has passed")
+        void shouldRejectUnregistrationWhenDeadlinePassed() {
+            // Given — use reconstruct() to bypass domain validation when setting up a past-deadline event with an existing registration
+            Event eventWithPastDeadline = Event.reconstruct(
+                    EventId.generate(),
+                    "Deadline Event",
+                    LocalDate.of(2026, 9, 15),
+                    "Test Location",
+                    "OOB",
+                    null,
+                    null,
+                    LocalDate.of(2026, 3, 1),
+                    EventStatus.ACTIVE,
+                    null,
+                    List.of(EventRegistration.create(TEST_MEMBER_ID, SiCardNumber.of("123456"))),
+                    null
+            );
+
+            LocalDate currentDate = LocalDate.of(2026, 9, 1); // Before event date, but deadline passed
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithPastDeadline));
+
+            // When/Then
+            assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID, currentDate))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Registration deadline has passed");
+
+            verify(eventRepository, never()).save(any(Event.class));
+        }
+
+        @Test
+        @DisplayName("should allow unregistration before both event date and deadline")
+        void shouldAllowUnregistrationBeforeDeadline() {
+            // Given
+            Event eventWithFutureDeadline = Event.create(
+                    "Future Deadline Event",
+                    LocalDate.now().plusDays(60),
+                    "Test Location",
+                    "OOB",
+                    null,
+                    null,
+                    LocalDate.now().plusDays(30)
+            );
+            eventWithFutureDeadline.publish();
+            eventWithFutureDeadline.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithFutureDeadline));
+            when(eventRepository.save(any(Event.class))).thenReturn(eventWithFutureDeadline);
+
+            // When
+            service.unregisterMember(eventId, TEST_MEMBER_ID, LocalDate.now());
+
+            // Then
+            verify(eventRepository).save(any(Event.class));
+            assertThat(eventWithFutureDeadline.getRegistrations()).isEmpty();
+        }
     }
 
     @Nested
@@ -238,6 +351,7 @@ class EventRegistrationServiceTest {
                     LocalDate.of(2026, 6, 15),
                     "Test Location",
                     "OOB",
+                    null,
                     null,
                     null
             );
@@ -266,6 +380,7 @@ class EventRegistrationServiceTest {
                     LocalDate.of(2026, 6, 15),
                     "Test Location",
                     "OOB",
+                    null,
                     null,
                     null
             );
@@ -298,6 +413,7 @@ class EventRegistrationServiceTest {
                     "Test Location",
                     "OOB",
                     null,
+                    null,
                     null
             );
             activeEvent.publish();
@@ -328,6 +444,7 @@ class EventRegistrationServiceTest {
                     LocalDate.of(2026, 6, 15),
                     "Test Location",
                     "OOB",
+                    null,
                     null,
                     null
             );

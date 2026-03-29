@@ -341,4 +341,46 @@ class EventRegistrationControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("Registration Deadline Enforcement (task 4.3)")
+    class RegistrationDeadlineEnforcementTests {
+
+        @Test
+        @DisplayName("POST /registrations returns 400 when service throws BusinessRuleViolationException for expired deadline")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn400WhenRegistrationDeadlinePassed() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+
+            doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("Registration deadline has passed") {})
+                    .when(registrationServiceMock)
+                    .registerMember(any(), any(), any());
+
+            mockMvc.perform(
+                            post("/api/events/{eventId}/registrations", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(objectMapper.writeValueAsString(command))
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("DELETE /registrations returns 400 when service throws BusinessRuleViolationException for expired deadline")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldReturn400WhenUnregistrationDeadlinePassed() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("Registration deadline has passed") {})
+                    .when(registrationServiceMock)
+                    .unregisterMember(any(), any(), any());
+
+            mockMvc.perform(
+                            delete("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
 }

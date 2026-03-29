@@ -14,7 +14,7 @@ class EventsRootPostprocessor implements RepresentationModelProcessor<EntityMode
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(EventController.class).listEvents(null, Pageable.unpaged()))
+        klabisLinkTo(methodOn(EventController.class).listEvents(null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("events")));
         return model;
     }

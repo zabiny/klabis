@@ -13,7 +13,7 @@ import type {EntityModel} from '../../api';
 import type {HalFormsProperty, HalFormsTemplate, HalResponse} from '../../api';
 import {labels, getEnumLabel} from '../../localization';
 import {Check, CheckCircle, ExternalLink, Globe, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
-import {MemberName} from '../finances/FinancesPage.tsx';
+import {MemberName} from '../../components/members/MemberName.tsx';
 
 interface EventDetail {
     name: string;
@@ -21,6 +21,7 @@ interface EventDetail {
     location?: string;
     organizer?: string;
     websiteUrl?: string;
+    registrationDeadline?: string;
     eventCoordinatorId?: {value: string};
     status?: string;
     [key: string]: unknown;
@@ -204,6 +205,11 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                         {event.websiteUrl}
                                     </a>
                                 ) : null)}
+                            </DetailRow>
+                        )}
+                        {(isEditing || event.registrationDeadline) && (
+                            <DetailRow label={labels.fields.registrationDeadline}>
+                                {ri('registrationDeadline') ?? (event.registrationDeadline ? formatDate(event.registrationDeadline) : null)}
                             </DetailRow>
                         )}
                         {isEditing && (

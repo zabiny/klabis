@@ -87,6 +87,7 @@ class EventJdbcRepositoryTest {
                     "Prague City Center",
                     "Prague OC",
                     null,
+                    null,
                     null
             );
 
@@ -121,7 +122,8 @@ class EventJdbcRepositoryTest {
                     "Brno Forest",
                     "Brno OC",
                     websiteUrl,
-                    coordinatorId
+                    coordinatorId,
+                    null
             );
 
             // When
@@ -171,6 +173,7 @@ class EventJdbcRepositoryTest {
                     "Test Location",
                     "Test OC",
                     null,
+                    null,
                     null
             );
             event.publish();
@@ -215,6 +218,7 @@ class EventJdbcRepositoryTest {
                         LocalDate.of(2026, 6, i + 1),
                         "Location " + (i + 1),
                         organizers[i],
+                        null,
                         null,
                         null
                 );
@@ -262,6 +266,7 @@ class EventJdbcRepositoryTest {
                     "Location A",
                     "OOB",
                     null,
+                    null,
                     null
             );
             eventRepository.save(draftEvent);
@@ -271,6 +276,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 6, 11),
                     "Location B",
                     "PRG",
+                    null,
                     null,
                     null
             );
@@ -282,6 +288,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 6, 12),
                     "Location C",
                     "BRN",
+                    null,
                     null,
                     null
             );
@@ -319,6 +326,7 @@ class EventJdbcRepositoryTest {
                     "Location A",
                     "Prague OC",
                     null,
+                    null,
                     null
             );
             eventRepository.save(event1);
@@ -329,6 +337,7 @@ class EventJdbcRepositoryTest {
                     "Location B",
                     "Prague OC",
                     null,
+                    null,
                     null
             );
             eventRepository.save(event2);
@@ -338,6 +347,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 6, 12),
                     "Location C",
                     "Brno OC",
+                    null,
                     null,
                     null
             );
@@ -374,6 +384,7 @@ class EventJdbcRepositoryTest {
                     "Location A",
                     "OOB",
                     null,
+                    null,
                     null
             );
             eventRepository.save(event1);
@@ -384,6 +395,7 @@ class EventJdbcRepositoryTest {
                     "Location B",
                     "PRG",
                     null,
+                    null,
                     null
             );
             eventRepository.save(event2);
@@ -393,6 +405,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 6, 30),
                     "Location C",
                     "BRN",
+                    null,
                     null,
                     null
             );
@@ -421,6 +434,7 @@ class EventJdbcRepositoryTest {
                     "Location A",
                     "OOB",
                     null,
+                    null,
                     null
             );
             eventRepository.save(event1);
@@ -430,6 +444,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 6, 30),
                     "Location B",
                     "PRG",
+                    null,
                     null,
                     null
             );
@@ -465,6 +480,7 @@ class EventJdbcRepositoryTest {
                     "Location A",
                     "OOB",
                     null,
+                    null,
                     null
             );
             activeEvent1.publish();
@@ -475,6 +491,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 1, 15),
                     "Location B",
                     "PRG",
+                    null,
                     null,
                     null
             );
@@ -487,6 +504,7 @@ class EventJdbcRepositoryTest {
                     "Location C",
                     "BRN",
                     null,
+                    null,
                     null
             );
             futureEvent.publish();
@@ -497,6 +515,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 1, 12),
                     "Location D",
                     "OST",
+                    null,
                     null,
                     null
             );
@@ -521,6 +540,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 1, 1),
                     "Location A",
                     "OOB",
+                    null,
                     null,
                     null
             );
@@ -548,7 +568,8 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 8, 15),
                     "Test Location",
                     "OOB",
-                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=9876")
+                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=9876"),
+                    null
             );
             eventRepository.save(event);
 
@@ -573,7 +594,8 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 9, 1),
                     "Location A",
                     "PRG",
-                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111")
+                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"),
+                    null
             );
             eventRepository.save(first);
 
@@ -584,7 +606,8 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 9, 10),
                     "Location B",
                     "BRN",
-                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111")
+                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"),
+                    null
             );
 
             // Then — DB unique constraint rejects the duplicate
@@ -608,6 +631,7 @@ class EventJdbcRepositoryTest {
                     LocalDate.of(2026, 8, 10),
                     "Test Location",
                     "Test OC",
+                    null,
                     null,
                     null
             );

@@ -20,6 +20,7 @@ public class EventTestDataBuilder {
     private String organizer = "Test Organizer";
     private WebsiteUrl websiteUrl = null;
     private MemberId coordinatorId = null;
+    private LocalDate registrationDeadline = null;
     private EventId eventId = new EventId(UUID.randomUUID());
     private List<EventRegistration> registrations = new ArrayList<>();
     private AuditMetadata auditMetadata = null;
@@ -77,6 +78,11 @@ public class EventTestDataBuilder {
         return this;
     }
 
+    public EventTestDataBuilder withRegistrationDeadline(LocalDate registrationDeadline) {
+        this.registrationDeadline = registrationDeadline;
+        return this;
+    }
+
     public Event build() {
         return Event.reconstruct(eventId,
                 name,
@@ -85,6 +91,7 @@ public class EventTestDataBuilder {
                 organizer,
                 websiteUrl,
                 coordinatorId,
+                registrationDeadline,
                 EventStatus.DRAFT,
                 null,
                 registrations,

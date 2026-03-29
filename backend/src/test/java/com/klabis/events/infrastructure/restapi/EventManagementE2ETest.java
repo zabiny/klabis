@@ -56,6 +56,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 "Forest Park",
                 "OOB",
                 "https://example.com/spring-cup",
+                null,
                 null
         );
 
@@ -120,6 +121,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 "City Park",
                 "PRG",
                 null,
+                null,
                 null
         );
 
@@ -162,6 +164,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 "Mountain Valley",
                 "BRN",
                 "https://example.com/summer-champ",
+                null,
                 null
         );
 
@@ -192,6 +195,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 "Mountain Valley (Updated)",
                 "OOB",
                 "https://example.com/summer-champ-updated",
+                null,
                 null
         );
 
@@ -224,6 +228,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 "Location 1",
                 "OOB",
                 null,
+                null,
                 null
         );
 
@@ -232,6 +237,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 LocalDate.of(2026, 6, 1),
                 "Location 2",
                 "PRG",
+                null,
                 null,
                 null
         );
@@ -289,6 +295,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 "Forest",
                 "OOB",
                 null,
+                null,
                 null
         );
 
@@ -297,6 +304,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 LocalDate.of(2026, 4, 20),
                 "City",
                 "PRG",
+                null,
                 null,
                 null
         );
@@ -342,6 +350,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 LocalDate.of(2026, 8, 10),
                 "Test Location",
                 "BRN",
+                null,
                 null,
                 null
         );
@@ -417,6 +426,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 "Immutable Location",
                 "OOB",
                 null,
+                null,
                 null
         );
 
@@ -446,6 +456,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 LocalDate.of(2026, 9, 6),
                 "Updated Location",
                 "PRG",
+                null,
                 null,
                 null
         );

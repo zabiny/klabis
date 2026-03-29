@@ -1,22 +1,11 @@
 import {type ReactElement} from "react";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
-import {HalSubresourceProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
+import {HalSubresourceProvider} from "../../contexts/HalRouteContext.tsx";
 import {Card, Skeleton} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-
-interface MemberNameProps {
-    user?: { firstName: string, lastName: string }
-}
-
-export const MemberName = ({user}: MemberNameProps): ReactElement => {
-    const {resourceData} = useHalRoute();
-    if (!user) {
-        user = resourceData as { firstName: string, lastName: string };
-    }
-    return <span className="text-text-primary">{user?.firstName || '-'} {user?.lastName || '-'}</span>
-}
+import {MemberName} from "../../components/members/MemberName.tsx";
 
 function formatCurrency(amount?: number): string {
     return `${amount ?? '-'} Kč`;
