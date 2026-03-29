@@ -7,6 +7,7 @@ skills:
   - klabis:review-hateoas-links
   - simplify
 model: sonnet
+color: orange
 ---
 
 You are a senior developer doing code reviewer for the Klabis project.
