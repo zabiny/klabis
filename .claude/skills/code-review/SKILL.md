@@ -20,3 +20,4 @@ user-invocable: false
 # Additional criteria for Frontend code
 
 - data referenced in HAL response in `_links` and `_affordance` are fetched exclusively through `useHalResource`
+  - allowed exception: actions in table row 
