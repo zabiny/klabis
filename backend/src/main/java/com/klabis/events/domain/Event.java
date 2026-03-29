@@ -5,6 +5,7 @@ import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
+import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -61,6 +62,29 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     // ========== Nested Command Records ==========
 
+    @RecordBuilder
+    public record CreateEvent(
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            MemberId eventCoordinatorId,
+            LocalDate registrationDeadline
+    ) {}
+
+    @RecordBuilder
+    public record CreateEventFromOris(
+            int orisId,
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            LocalDate registrationDeadline
+    ) {}
+
+    @RecordBuilder
     public record EventCommand(
             @NotBlank(message = "Event name is required")
             @Size(max = 100, message = "Event name must not exceed 100 characters")
@@ -86,6 +110,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     ) {
     }
 
+    @RecordBuilder
     public record RegisterCommand(
             @NotBlank(message = "SI card number is required")
             @Pattern(regexp = "\\d{6,7}", message = "SI card number must be 6-7 digits")
@@ -93,6 +118,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     ) {
     }
 
+    @RecordBuilder
     public record ImportCommand(
             @jakarta.validation.constraints.Positive(message = "ORIS event ID must be positive")
             int orisId
@@ -186,46 +212,31 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * Creates a new event in DRAFT status with a generated ID.
      * The event must be published using {@link #publish()} to make it ACTIVE.
      *
-     * @param name               event name (required)
-     * @param eventDate          event date (required)
-     * @param location           event location (required)
-     * @param organizer          event organizer (required)
-     * @param websiteUrl         event website URL (may be null)
-     * @param eventCoordinatorId event coordinator ID (may be null)
+     * @param command event creation command with all required and optional fields
      * @return new Event instance in DRAFT status
      * @throws IllegalArgumentException if business rules are violated
      */
-    public static Event create(
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            MemberId eventCoordinatorId,
-            LocalDate registrationDeadline) {
-
-        // Validate required fields
-        validateName(name);
-        validateEventDate(eventDate);
-        validateLocation(location);
-        validateOrganizer(organizer);
-        validateRegistrationDeadline(registrationDeadline, eventDate);
+    public static Event create(CreateEvent command) {
+        validateName(command.name());
+        validateEventDate(command.eventDate());
+        validateLocation(command.location());
+        validateOrganizer(command.organizer());
+        validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
 
         Event event = new Event(
                 EventId.generate(),
-                name,
-                eventDate,
-                location,
-                organizer,
-                websiteUrl,
-                eventCoordinatorId,
-                registrationDeadline,
+                command.name(),
+                command.eventDate(),
+                command.location(),
+                command.organizer(),
+                command.websiteUrl(),
+                command.eventCoordinatorId(),
+                command.registrationDeadline(),
                 EventStatus.DRAFT,
                 null,
                 null
         );
 
-        // Register domain event
         event.registerEvent(EventCreatedEvent.fromAggregate(event));
 
         return event;
@@ -237,40 +248,27 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * Creates a new event in DRAFT status with data sourced from the ORIS orienteering system.
      * The orisId is stored internally and is never exposed in API responses.
      *
-     * @param orisId     ORIS event identifier (required, stored for duplicate detection)
-     * @param name       event name from ORIS
-     * @param eventDate  event date from ORIS
-     * @param location   event location from ORIS
-     * @param organizer  event organizer abbreviation resolved from ORIS organizer data
-     * @param websiteUrl URL to the ORIS event page
+     * @param command event creation command with all ORIS-sourced fields
      * @return new Event instance in DRAFT status with orisId set
      */
-    public static Event createFromOris(
-            int orisId,
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            LocalDate registrationDeadline) {
-
-        validateName(name);
-        validateEventDate(eventDate);
-        validateLocation(location);
-        validateOrganizer(organizer);
-        validateRegistrationDeadline(registrationDeadline, eventDate);
+    public static Event createFromOris(CreateEventFromOris command) {
+        validateName(command.name());
+        validateEventDate(command.eventDate());
+        validateLocation(command.location());
+        validateOrganizer(command.organizer());
+        validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
 
         Event event = new Event(
                 EventId.generate(),
-                name,
-                eventDate,
-                location,
-                organizer,
-                websiteUrl,
+                command.name(),
+                command.eventDate(),
+                command.location(),
+                command.organizer(),
+                command.websiteUrl(),
                 null,
-                registrationDeadline,
+                command.registrationDeadline(),
                 EventStatus.DRAFT,
-                orisId,
+                command.orisId(),
                 null
         );
 

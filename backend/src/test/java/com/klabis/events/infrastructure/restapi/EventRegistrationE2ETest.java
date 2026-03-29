@@ -7,6 +7,7 @@ import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRegisterCommandBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +71,7 @@ class EventRegistrationE2ETest {
         String publishedEventId = createPublishedEvent("Registration flow test event", LocalDate.now().plusDays(10));
 
         // When: Register for the event
-        Event.RegisterCommand registerCommand = new Event.RegisterCommand("123456");
+        Event.RegisterCommand registerCommand = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
         mockMvc.perform(
                         post("/api/events/{id}/registrations", publishedEventId)
@@ -151,7 +152,7 @@ class EventRegistrationE2ETest {
                         ))
         ).andExpect(status().isNoContent());
 
-        Event.RegisterCommand registerCommand = new Event.RegisterCommand("876543");
+        Event.RegisterCommand registerCommand = EventRegisterCommandBuilder.builder().siCardNumber("876543").build();
 
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
@@ -180,7 +181,7 @@ class EventRegistrationE2ETest {
         String eventId = createDraftEvent("Draft Event");
 
         // When: Try to register for DRAFT event
-        Event.RegisterCommand registerCommand = new Event.RegisterCommand("111122");
+        Event.RegisterCommand registerCommand = EventRegisterCommandBuilder.builder().siCardNumber("111122").build();
 
         mockMvc.perform(
                         post("/api/events/{id}/registrations", eventId)
@@ -199,7 +200,7 @@ class EventRegistrationE2ETest {
         String eventId = createPublishedEvent("Privacy Test Event", LocalDate.now().plusDays(3));
 
         // User 1 registration
-        Event.RegisterCommand registerCommand1 = new Event.RegisterCommand("123456");
+        Event.RegisterCommand registerCommand1 = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
@@ -208,7 +209,7 @@ class EventRegistrationE2ETest {
         ).andExpect(status().isCreated());
 
         // User 2 registration
-        Event.RegisterCommand registerCommand2 = new Event.RegisterCommand("789012");
+        Event.RegisterCommand registerCommand2 = EventRegisterCommandBuilder.builder().siCardNumber("789012").build();
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")
@@ -254,7 +255,7 @@ class EventRegistrationE2ETest {
         String eventId = createPublishedEvent("Past Event", LocalDate.now().minusDays(10));
 
         // And: Register for the event first
-        Event.RegisterCommand registerCommand = new Event.RegisterCommand("123456");
+        Event.RegisterCommand registerCommand = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
         mockMvc.perform(
                 post("/api/events/{id}/registrations", eventId)
                         .contentType("application/json")

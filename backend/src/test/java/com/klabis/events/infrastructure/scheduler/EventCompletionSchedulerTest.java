@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.scheduler;
 
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.EventRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -50,10 +51,12 @@ class EventCompletionSchedulerTest {
             LocalDate today = LocalDate.of(2025, 2, 1);
             LocalDate pastDate = LocalDate.of(2025, 1, 15);
 
-            Event event1 = Event.create("Event 1", pastDate, "Location 1", "Organizer 1", null, null, null);
+            Event event1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 1").eventDate(pastDate).location("Location 1").organizer("Organizer 1").build());
             event1.publish(); // Make ACTIVE
 
-            Event event2 = Event.create("Event 2", pastDate, "Location 2", "Organizer 2", null, null, null);
+            Event event2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 2").eventDate(pastDate).location("Location 2").organizer("Organizer 2").build());
             event2.publish(); // Make ACTIVE
 
             List<Event> activeEventsWithPastDate = List.of(event1, event2);
@@ -122,7 +125,8 @@ class EventCompletionSchedulerTest {
             LocalDate today = LocalDate.of(2025, 2, 1);
             LocalDate pastDate = LocalDate.of(2025, 1, 15);
 
-            Event event = Event.create("Test Event", pastDate, "Location", "Organizer", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(pastDate).location("Location").organizer("Organizer").build());
             event.publish(); // Make ACTIVE
 
             // First run - returns the event
@@ -157,13 +161,16 @@ class EventCompletionSchedulerTest {
             LocalDate today = LocalDate.of(2025, 2, 1);
             LocalDate pastDate = LocalDate.of(2025, 1, 15);
 
-            Event event1 = Event.create("Event 1", pastDate, "Location 1", "Organizer 1", null, null, null);
+            Event event1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 1").eventDate(pastDate).location("Location 1").organizer("Organizer 1").build());
             event1.publish();
 
-            Event event2 = Event.create("Event 2", pastDate, "Location 2", "Organizer 2", null, null, null);
+            Event event2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 2").eventDate(pastDate).location("Location 2").organizer("Organizer 2").build());
             event2.publish();
 
-            Event event3 = Event.create("Event 3", pastDate, "Location 3", "Organizer 3", null, null, null);
+            Event event3 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 3").eventDate(pastDate).location("Location 3").organizer("Organizer 3").build());
             event3.publish();
 
             List<Event> events = List.of(event1, event2, event3);
@@ -196,7 +203,7 @@ class EventCompletionSchedulerTest {
         @DisplayName("should use current date when called without parameters")
         void shouldUseCurrentDateWhenCalledWithoutParameters() {
             // Arrange
-            Event event = Event.create("Event", LocalDate.of(2025, 1, 15), "Location", "Organizer", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder().name("Event").eventDate(LocalDate.of(2025, 1, 15)).location("Location").organizer("Organizer").build());
             event.publish();
 
             when(eventRepository.findActiveEventsWithDateBefore(any(LocalDate.class)))

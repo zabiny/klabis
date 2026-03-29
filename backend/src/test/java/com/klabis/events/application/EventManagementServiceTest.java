@@ -5,6 +5,8 @@ import com.klabis.events.EventId;
 import com.klabis.members.MemberId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventCreateEventBuilder;
+import com.klabis.events.domain.EventEventCommandBuilder;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventStatus;
@@ -67,25 +69,23 @@ class EventManagementServiceTest {
         void shouldCreateEventWithValidCommand() {
             // Given
             MemberId coordinatorId = new MemberId(UUID.randomUUID());
-            Event.EventCommand command = new Event.EventCommand(
-                    "Spring Cup 2026",
-                    LocalDate.of(2026, 3, 15),
-                    "Forest Park",
-                    "OOB",
-                    "https://example.com/spring-cup",
-                    coordinatorId,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Spring Cup 2026")
+                    .eventDate(LocalDate.of(2026, 3, 15))
+                    .location("Forest Park")
+                    .organizer("OOB")
+                    .websiteUrl("https://example.com/spring-cup")
+                    .eventCoordinatorId(coordinatorId)
+                    .build();
 
-            Event event = Event.create(
-                    command.name(),
-                    command.eventDate(),
-                    command.location(),
-                    command.organizer(),
-                    command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                    command.eventCoordinatorId(),
-                    command.registrationDeadline()
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name(command.name())
+                    .eventDate(command.eventDate())
+                    .location(command.location())
+                    .organizer(command.organizer())
+                    .websiteUrl(command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null)
+                    .eventCoordinatorId(command.eventCoordinatorId())
+                    .build());
 
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
@@ -101,25 +101,19 @@ class EventManagementServiceTest {
         @DisplayName("should create event without optional fields")
         void shouldCreateEventWithoutOptionalFields() {
             // Given
-            Event.EventCommand command = new Event.EventCommand(
-                    "Autumn Race 2026",
-                    LocalDate.of(2026, 10, 12),
-                    "City Park",
-                    "PRG",
-                    null,  // no website
-                    null,  // no coordinator
-                    null   // no deadline
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Autumn Race 2026")
+                    .eventDate(LocalDate.of(2026, 10, 12))
+                    .location("City Park")
+                    .organizer("PRG")
+                    .build();
 
-            Event event = Event.create(
-                    command.name(),
-                    command.eventDate(),
-                    command.location(),
-                    command.organizer(),
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name(command.name())
+                    .eventDate(command.eventDate())
+                    .location(command.location())
+                    .organizer(command.organizer())
+                    .build());
 
             when(eventRepository.save(any(Event.class))).thenReturn(event);
 
@@ -141,25 +135,14 @@ class EventManagementServiceTest {
         void shouldUpdateEventInDraftStatus() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Old Name",
-                    LocalDate.of(2026, 5, 1),
-                    "Old Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Old Name").eventDate(LocalDate.of(2026, 5, 1))
+                    .location("Old Location").organizer("OOB").build());
 
-            Event.EventCommand command = new Event.EventCommand(
-                    "Updated Name",
-                    LocalDate.of(2026, 5, 15),
-                    "Updated Location",
-                    "PRG",
-                    "https://updated.com",
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Updated Name").eventDate(LocalDate.of(2026, 5, 15))
+                    .location("Updated Location").organizer("PRG")
+                    .websiteUrl("https://updated.com").build();
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
             when(eventRepository.save(any(Event.class))).thenReturn(event);
@@ -176,26 +159,14 @@ class EventManagementServiceTest {
         void shouldUpdateEventInActiveStatus() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
-            event.publish();  // Transition to ACTIVE
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+            event.publish();
 
-            Event.EventCommand command = new Event.EventCommand(
-                    "Updated Event",
-                    LocalDate.of(2026, 6, 15),
-                    "New Location",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Updated Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("New Location").organizer("PRG").build();
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
             when(eventRepository.save(any(Event.class))).thenReturn(event);
@@ -212,27 +183,15 @@ class EventManagementServiceTest {
         void shouldRejectUpdateForFinishedEvent() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
             event.publish();
-            event.finish();  // Transition to FINISHED
+            event.finish();
 
-            Event.EventCommand command = new Event.EventCommand(
-                    "Updated Event",
-                    LocalDate.of(2026, 6, 15),
-                    "New Location",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Updated Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("New Location").organizer("PRG").build();
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
@@ -247,26 +206,14 @@ class EventManagementServiceTest {
         void shouldRejectUpdateForCancelledEvent() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
-            event.cancel();  // Transition to CANCELLED
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+            event.cancel();
 
-            Event.EventCommand command = new Event.EventCommand(
-                    "Updated Event",
-                    LocalDate.of(2026, 6, 15),
-                    "New Location",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Updated Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("New Location").organizer("PRG").build();
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
@@ -281,15 +228,9 @@ class EventManagementServiceTest {
         void shouldThrowExceptionWhenEventNotFound() {
             // Given
             UUID eventId = UUID.randomUUID();
-            Event.EventCommand command = new Event.EventCommand(
-                    "Updated Event",
-                    LocalDate.of(2026, 6, 15),
-                    "New Location",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Updated Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("New Location").organizer("PRG").build();
 
             when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
 
@@ -308,15 +249,9 @@ class EventManagementServiceTest {
         void shouldPublishDraftEvent() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
             when(eventRepository.save(any(Event.class))).thenReturn(event);
@@ -350,15 +285,9 @@ class EventManagementServiceTest {
         void shouldCancelDraftEvent() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
             when(eventRepository.save(any(Event.class))).thenReturn(event);
@@ -375,15 +304,9 @@ class EventManagementServiceTest {
         void shouldCancelActiveEvent() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
             event.publish();
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
@@ -418,15 +341,9 @@ class EventManagementServiceTest {
         void shouldFinishActiveEvent() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
             event.publish();
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
@@ -461,15 +378,12 @@ class EventManagementServiceTest {
         void shouldReturnEventDetails() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Forest Park",
-                    "OOB",
-                    WebsiteUrl.of("https://example.com"),
-                    new MemberId(UUID.randomUUID()),
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Forest Park").organizer("OOB")
+                    .websiteUrl(WebsiteUrl.of("https://example.com"))
+                    .eventCoordinatorId(new MemberId(UUID.randomUUID()))
+                    .build());
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
@@ -506,24 +420,12 @@ class EventManagementServiceTest {
         void shouldReturnPaginatedEvents() {
             // Given
             Pageable pageable = PageRequest.of(0, 10);
-            Event event1 = Event.create(
-                    "Event 1",
-                    LocalDate.of(2026, 6, 1),
-                    "Location 1",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
-            Event event2 = Event.create(
-                    "Event 2",
-                    LocalDate.of(2026, 7, 1),
-                    "Location 2",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event event1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 1").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location 1").organizer("OOB").build());
+            Event event2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 2").eventDate(LocalDate.of(2026, 7, 1))
+                    .location("Location 2").organizer("PRG").build());
 
             Page<Event> eventPage = new PageImpl<>(List.of(event1, event2), pageable, 2);
             when(eventRepository.findAll(EventFilter.none(), pageable)).thenReturn(eventPage);
@@ -542,15 +444,9 @@ class EventManagementServiceTest {
         void shouldFilterEventsByStatus() {
             // Given
             Pageable pageable = PageRequest.of(0, 10);
-            Event event = Event.create(
-                    "Active Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
             event.publish();
 
             Page<Event> eventPage = new PageImpl<>(List.of(event), pageable, 1);

@@ -12,6 +12,7 @@ import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRegisterCommandBuilder;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.events.EventId;
@@ -88,7 +89,7 @@ class EventRegistrationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldRegisterMemberForEvent() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)
@@ -104,7 +105,7 @@ class EventRegistrationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturn409ForDuplicateRegistration() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             doThrow(new DuplicateRegistrationException(new MemberId(UUID.fromString(MEMBER_1_ID)), new EventId(eventId)))
                     .when(registrationServiceMock)
@@ -124,7 +125,7 @@ class EventRegistrationControllerTest {
         @DisplayName("should return 401 for unauthenticated users")
         void shouldReturn401ForUnauthenticatedUser() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)
@@ -140,7 +141,7 @@ class EventRegistrationControllerTest {
         @WithKlabisMockUser
         void shouldReturn403WhenUserHasNoMemberProfile() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             mockMvc.perform(
                             post("/api/events/{eventId}/registrations", eventId)
@@ -350,7 +351,7 @@ class EventRegistrationControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturn400WhenRegistrationDeadlinePassed() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
             doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("Registration deadline has passed") {})
                     .when(registrationServiceMock)

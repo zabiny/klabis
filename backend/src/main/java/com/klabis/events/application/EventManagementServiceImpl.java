@@ -3,6 +3,8 @@ package com.klabis.events.application;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventCreateEventBuilder;
+import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.oris.apiclient.OrisApiClient;
@@ -30,15 +32,15 @@ public class EventManagementServiceImpl implements EventManagementService {
     @Transactional
     @Override
     public Event createEvent(Event.EventCommand command) {
-        Event event = Event.create(
-                command.name(),
-                command.eventDate(),
-                command.location(),
-                command.organizer(),
-                command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                command.eventCoordinatorId(),
-                command.registrationDeadline()
-        );
+        Event event = Event.create(EventCreateEventBuilder.builder()
+                .name(command.name())
+                .eventDate(command.eventDate())
+                .location(command.location())
+                .organizer(command.organizer())
+                .websiteUrl(command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null)
+                .eventCoordinatorId(command.eventCoordinatorId())
+                .registrationDeadline(command.registrationDeadline())
+                .build());
 
         return eventRepository.save(event);
     }
@@ -107,15 +109,15 @@ public class EventManagementServiceImpl implements EventManagementService {
         WebsiteUrl websiteUrl = WebsiteUrl.of(client.getEventWebUrl(orisId));
         LocalDate registrationDeadline = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
 
-        Event event = Event.createFromOris(
-                orisId,
-                details.name(),
-                details.date(),
-                details.place(),
-                organizer,
-                websiteUrl,
-                registrationDeadline
-        );
+        Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                .orisId(orisId)
+                .name(details.name())
+                .eventDate(details.date())
+                .location(details.place())
+                .organizer(organizer)
+                .websiteUrl(websiteUrl)
+                .registrationDeadline(registrationDeadline)
+                .build());
 
         try {
             return eventRepository.save(event);

@@ -4,6 +4,8 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventCreateEventBuilder;
+import com.klabis.events.domain.EventRegisterCommandBuilder;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.EventRegistration;
@@ -66,15 +68,9 @@ class EventRegistrationServiceTest {
         void setUp() {
             eventId = EventId.generate();
 
-            activeEvent = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 15),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("Test Location").organizer("OOB").build());
             activeEvent.publish(); // Make it ACTIVE
         }
 
@@ -82,7 +78,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should register member with valid SI card number for ACTIVE event")
         void shouldRegisterMemberWithValidSiCard() {
             // Given
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
             when(eventRepository.save(any(Event.class))).thenReturn(activeEvent);
 
@@ -99,7 +95,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should throw exception when member already registered (duplicate registration)")
         void shouldRejectDuplicateRegistration() {
             // Given
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
 
             // Register member first time
@@ -117,18 +113,12 @@ class EventRegistrationServiceTest {
         @DisplayName("should reject registration for non-ACTIVE event")
         void shouldRejectRegistrationForNonActiveEvent() {
             // Given
-            Event draftEvent = Event.create(
-                    "Draft Event",
-                    LocalDate.of(2026, 7, 1),
-                    "Location",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event draftEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft Event").eventDate(LocalDate.of(2026, 7, 1))
+                    .location("Location").organizer("PRG").build());
             // Event is in DRAFT status
 
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(draftEvent));
 
             // When/Then
@@ -143,7 +133,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should throw exception when event not found")
         void shouldThrowExceptionWhenEventNotFound() {
             // Given
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
             // When/Then
@@ -157,18 +147,13 @@ class EventRegistrationServiceTest {
         @DisplayName("should reject registration when registration deadline has passed")
         void shouldRejectRegistrationWhenDeadlinePassed() {
             // Given
-            Event eventWithPastDeadline = Event.create(
-                    "Deadline Event",
-                    LocalDate.of(2026, 9, 15),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    LocalDate.of(2026, 3, 1)
-            );
+            Event eventWithPastDeadline = Event.create(EventCreateEventBuilder.builder()
+                    .name("Deadline Event").eventDate(LocalDate.of(2026, 9, 15))
+                    .location("Test Location").organizer("OOB")
+                    .registrationDeadline(LocalDate.of(2026, 3, 1)).build());
             eventWithPastDeadline.publish();
 
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithPastDeadline));
 
             // When/Then
@@ -183,18 +168,13 @@ class EventRegistrationServiceTest {
         @DisplayName("should allow registration when registration deadline is in the future")
         void shouldAllowRegistrationWhenDeadlineInFuture() {
             // Given
-            Event eventWithFutureDeadline = Event.create(
-                    "Future Deadline Event",
-                    LocalDate.now().plusDays(60),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    LocalDate.now().plusDays(30)
-            );
+            Event eventWithFutureDeadline = Event.create(EventCreateEventBuilder.builder()
+                    .name("Future Deadline Event").eventDate(LocalDate.now().plusDays(60))
+                    .location("Test Location").organizer("OOB")
+                    .registrationDeadline(LocalDate.now().plusDays(30)).build());
             eventWithFutureDeadline.publish();
 
-            Event.RegisterCommand command = new Event.RegisterCommand("123456");
+            Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithFutureDeadline));
             when(eventRepository.save(any(Event.class))).thenReturn(eventWithFutureDeadline);
 
@@ -217,15 +197,9 @@ class EventRegistrationServiceTest {
         void setUp() {
             eventId = EventId.generate();
 
-            activeEvent = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 15),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("Test Location").organizer("OOB").build());
             activeEvent.publish();
             activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
         }
@@ -310,15 +284,10 @@ class EventRegistrationServiceTest {
         @DisplayName("should allow unregistration before both event date and deadline")
         void shouldAllowUnregistrationBeforeDeadline() {
             // Given
-            Event eventWithFutureDeadline = Event.create(
-                    "Future Deadline Event",
-                    LocalDate.now().plusDays(60),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    LocalDate.now().plusDays(30)
-            );
+            Event eventWithFutureDeadline = Event.create(EventCreateEventBuilder.builder()
+                    .name("Future Deadline Event").eventDate(LocalDate.now().plusDays(60))
+                    .location("Test Location").organizer("OOB")
+                    .registrationDeadline(LocalDate.now().plusDays(30)).build());
             eventWithFutureDeadline.publish();
             eventWithFutureDeadline.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
 
@@ -346,15 +315,9 @@ class EventRegistrationServiceTest {
             UUID member1Id = UUID.randomUUID();
             UUID member2Id = UUID.randomUUID();
 
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 15),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("Test Location").organizer("OOB").build());
             event.publish();
             event.registerMember(new MemberId(member1Id), SiCardNumber.of("111111"));
             event.registerMember(new MemberId(member2Id), SiCardNumber.of("222222"));
@@ -375,15 +338,9 @@ class EventRegistrationServiceTest {
         void shouldReturnEmptyListWhenNoRegistrations() {
             // Given
             EventId eventId = EventId.generate();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 15),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("Test Location").organizer("OOB").build());
             event.publish();
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
@@ -407,15 +364,9 @@ class EventRegistrationServiceTest {
         void setUp() {
             eventId = EventId.generate();
 
-            activeEvent = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 15),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("Test Location").organizer("OOB").build());
             activeEvent.publish();
             activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
         }
@@ -439,15 +390,9 @@ class EventRegistrationServiceTest {
         @DisplayName("should throw exception when not registered")
         void shouldThrowExceptionWhenNotRegistered() {
             // Given
-            Event eventWithoutRegistration = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 15),
-                    "Test Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event eventWithoutRegistration = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("Test Location").organizer("OOB").build());
             eventWithoutRegistration.publish();
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithoutRegistration));

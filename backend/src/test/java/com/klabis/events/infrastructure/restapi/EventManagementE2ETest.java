@@ -11,6 +11,7 @@ import org.springframework.hateoas.MediaTypes;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventEventCommandBuilder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -50,15 +51,13 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Complete event lifecycle: create → publish → finish")
     void shouldCompleteEventLifecycleFromCreateToFinish() throws Exception {
         // Given: Create an event
-        Event.EventCommand createCommand = new Event.EventCommand(
-                "Spring Cup 2026",
-                LocalDate.of(2026, 3, 15),
-                "Forest Park",
-                "OOB",
-                "https://example.com/spring-cup",
-                null,
-                null
-        );
+        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+                .name("Spring Cup 2026")
+                .eventDate(LocalDate.of(2026, 3, 15))
+                .location("Forest Park")
+                .organizer("OOB")
+                .websiteUrl("https://example.com/spring-cup")
+                .build();
 
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
@@ -115,15 +114,12 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Complete event lifecycle: create → cancel")
     void shouldCompleteEventLifecycleFromCreateToCancel() throws Exception {
         // Given: Create an event
-        Event.EventCommand createCommand = new Event.EventCommand(
-                "Autumn Race 2026",
-                LocalDate.of(2026, 10, 12),
-                "City Park",
-                "PRG",
-                null,
-                null,
-                null
-        );
+        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+                .name("Autumn Race 2026")
+                .eventDate(LocalDate.of(2026, 10, 12))
+                .location("City Park")
+                .organizer("PRG")
+                .build();
 
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
@@ -158,15 +154,13 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event CRUD with optional websiteUrl")
     void shouldCreateEventWithOptionalWebsiteUrl() throws Exception {
         // Given: Create event with optional websiteUrl
-        Event.EventCommand createCommand = new Event.EventCommand(
-                "Summer Championship 2026",
-                LocalDate.of(2026, 7, 20),
-                "Mountain Valley",
-                "BRN",
-                "https://example.com/summer-champ",
-                null,
-                null
-        );
+        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+                .name("Summer Championship 2026")
+                .eventDate(LocalDate.of(2026, 7, 20))
+                .location("Mountain Valley")
+                .organizer("BRN")
+                .websiteUrl("https://example.com/summer-champ")
+                .build();
 
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
@@ -189,15 +183,13 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(jsonPath("$.websiteUrl").value("https://example.com/summer-champ"));
 
         // When: Update event with new values
-        Event.EventCommand updateCommand = new Event.EventCommand(
-                "Summer Championship 2026 (Updated)",
-                LocalDate.of(2026, 7, 21),
-                "Mountain Valley (Updated)",
-                "OOB",
-                "https://example.com/summer-champ-updated",
-                null,
-                null
-        );
+        Event.EventCommand updateCommand = EventEventCommandBuilder.builder()
+                .name("Summer Championship 2026 (Updated)")
+                .eventDate(LocalDate.of(2026, 7, 21))
+                .location("Mountain Valley (Updated)")
+                .organizer("OOB")
+                .websiteUrl("https://example.com/summer-champ-updated")
+                .build();
 
         mockMvc.perform(
                         patch("/api/events/{id}", eventId)
@@ -222,25 +214,19 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event list with pagination and filtering by status")
     void shouldListEventsWithPaginationAndStatusFilter() throws Exception {
         // Given: Create multiple events with different statuses
-        Event.EventCommand draftEvent = new Event.EventCommand(
-                "Draft Event",
-                LocalDate.of(2026, 5, 1),
-                "Location 1",
-                "OOB",
-                null,
-                null,
-                null
-        );
+        Event.EventCommand draftEvent = EventEventCommandBuilder.builder()
+                .name("Draft Event")
+                .eventDate(LocalDate.of(2026, 5, 1))
+                .location("Location 1")
+                .organizer("OOB")
+                .build();
 
-        Event.EventCommand activeEvent = new Event.EventCommand(
-                "Active Event",
-                LocalDate.of(2026, 6, 1),
-                "Location 2",
-                "PRG",
-                null,
-                null,
-                null
-        );
+        Event.EventCommand activeEvent = EventEventCommandBuilder.builder()
+                .name("Active Event")
+                .eventDate(LocalDate.of(2026, 6, 1))
+                .location("Location 2")
+                .organizer("PRG")
+                .build();
 
         // Create both events
         mockMvc.perform(
@@ -289,25 +275,19 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event list with filtering by organizer and date range")
     void shouldListEventsWithOrganizerAndDateRangeFilter() throws Exception {
         // Given: Create events for different organizers
-        Event.EventCommand oobEvent = new Event.EventCommand(
-                "OOB Event",
-                LocalDate.of(2026, 3, 15),
-                "Forest",
-                "OOB",
-                null,
-                null,
-                null
-        );
+        Event.EventCommand oobEvent = EventEventCommandBuilder.builder()
+                .name("OOB Event")
+                .eventDate(LocalDate.of(2026, 3, 15))
+                .location("Forest")
+                .organizer("OOB")
+                .build();
 
-        Event.EventCommand prgEvent = new Event.EventCommand(
-                "PRG Event",
-                LocalDate.of(2026, 4, 20),
-                "City",
-                "PRG",
-                null,
-                null,
-                null
-        );
+        Event.EventCommand prgEvent = EventEventCommandBuilder.builder()
+                .name("PRG Event")
+                .eventDate(LocalDate.of(2026, 4, 20))
+                .location("City")
+                .organizer("PRG")
+                .build();
 
         mockMvc.perform(
                 post("/api/events")
@@ -345,15 +325,12 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event detail should show status-appropriate HAL+FORMS links")
     void shouldShowStatusAppropriateHateoasLinks() throws Exception {
         // Given: Create a DRAFT event
-        Event.EventCommand createCommand = new Event.EventCommand(
-                "Links Test Event",
-                LocalDate.of(2026, 8, 10),
-                "Test Location",
-                "BRN",
-                null,
-                null,
-                null
-        );
+        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+                .name("Links Test Event")
+                .eventDate(LocalDate.of(2026, 8, 10))
+                .location("Test Location")
+                .organizer("BRN")
+                .build();
 
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
@@ -420,15 +397,12 @@ class EventManagementE2ETest extends SecurityTestBase {
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
     void shouldRejectUpdateForFinishedEvent() throws Exception {
         // Given: Create and finish an event
-        Event.EventCommand createCommand = new Event.EventCommand(
-                "Immutable Event",
-                LocalDate.of(2026, 9, 5),
-                "Immutable Location",
-                "OOB",
-                null,
-                null,
-                null
-        );
+        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+                .name("Immutable Event")
+                .eventDate(LocalDate.of(2026, 9, 5))
+                .location("Immutable Location")
+                .organizer("OOB")
+                .build();
 
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
@@ -451,15 +425,12 @@ class EventManagementE2ETest extends SecurityTestBase {
         ).andExpect(status().isNoContent());
 
         // When: Try to update finished event
-        Event.EventCommand updateCommand = new Event.EventCommand(
-                "Updated Name",
-                LocalDate.of(2026, 9, 6),
-                "Updated Location",
-                "PRG",
-                null,
-                null,
-                null
-        );
+        Event.EventCommand updateCommand = EventEventCommandBuilder.builder()
+                .name("Updated Name")
+                .eventDate(LocalDate.of(2026, 9, 6))
+                .location("Updated Location")
+                .organizer("PRG")
+                .build();
 
         // Then: Update should be rejected
         mockMvc.perform(

@@ -5,6 +5,8 @@ import com.klabis.events.*;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.EventCreateEventBuilder;
+import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -81,15 +83,12 @@ class EventJdbcRepositoryTest {
         @DisplayName("should save and find event with all required fields")
         void shouldSaveAndFindEventWithAllRequiredFields() {
             // Given
-            Event event = Event.create(
-                    "City Orienteering Championship",
-                    LocalDate.of(2026, 6, 15),
-                    "Prague City Center",
-                    "Prague OC",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("City Orienteering Championship")
+                    .eventDate(LocalDate.of(2026, 6, 15))
+                    .location("Prague City Center")
+                    .organizer("Prague OC")
+                    .build());
 
             // When
             Event savedEvent = eventRepository.save(event);
@@ -116,15 +115,14 @@ class EventJdbcRepositoryTest {
             WebsiteUrl websiteUrl = new WebsiteUrl("https://example.com/event");
             MemberId coordinatorId = new MemberId(TEST_MEMBER_1_ID);
 
-            Event event = Event.create(
-                    "Forest Sprint Race",
-                    LocalDate.of(2026, 7, 20),
-                    "Brno Forest",
-                    "Brno OC",
-                    websiteUrl,
-                    coordinatorId,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Forest Sprint Race")
+                    .eventDate(LocalDate.of(2026, 7, 20))
+                    .location("Brno Forest")
+                    .organizer("Brno OC")
+                    .websiteUrl(websiteUrl)
+                    .eventCoordinatorId(coordinatorId)
+                    .build());
 
             // When
             Event savedEvent = eventRepository.save(event);
@@ -167,15 +165,12 @@ class EventJdbcRepositoryTest {
         @DisplayName("should save and find event with registrations (aggregate persistence)")
         void shouldSaveAndFindEventWithRegistrations() {
             // Given
-            Event event = Event.create(
-                    "Test Event with Registrations",
-                    LocalDate.of(2026, 8, 10),
-                    "Test Location",
-                    "Test OC",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event with Registrations")
+                    .eventDate(LocalDate.of(2026, 8, 10))
+                    .location("Test Location")
+                    .organizer("Test OC")
+                    .build());
             event.publish();
 
             MemberId member1Id = new MemberId(TEST_MEMBER_1_ID);
@@ -213,15 +208,12 @@ class EventJdbcRepositoryTest {
             // Given - create 5 events
             String[] organizers = {"OOB", "PRG", "BRN", "OST", "LIB"};
             for (int i = 0; i < 5; i++) {
-                Event event = Event.create(
-                        "Event " + (i + 1),
-                        LocalDate.of(2026, 6, i + 1),
-                        "Location " + (i + 1),
-                        organizers[i],
-                        null,
-                        null,
-                        null
-                );
+                Event event = Event.create(EventCreateEventBuilder.builder()
+                        .name("Event " + (i + 1))
+                        .eventDate(LocalDate.of(2026, 6, i + 1))
+                        .location("Location " + (i + 1))
+                        .organizer(organizers[i])
+                        .build());
                 eventRepository.save(event);
             }
 
@@ -260,38 +252,20 @@ class EventJdbcRepositoryTest {
         @DisplayName("should filter events by status")
         void shouldFilterEventsByStatus() {
             // Given
-            Event draftEvent = Event.create(
-                    "Draft Event",
-                    LocalDate.of(2026, 6, 10),
-                    "Location A",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event draftEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft Event").eventDate(LocalDate.of(2026, 6, 10))
+                    .location("Location A").organizer("OOB").build());
             eventRepository.save(draftEvent);
 
-            Event activeEvent1 = Event.create(
-                    "Active Event 1",
-                    LocalDate.of(2026, 6, 11),
-                    "Location B",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event activeEvent1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event 1").eventDate(LocalDate.of(2026, 6, 11))
+                    .location("Location B").organizer("PRG").build());
             activeEvent1.publish();
             eventRepository.save(activeEvent1);
 
-            Event activeEvent2 = Event.create(
-                    "Active Event 2",
-                    LocalDate.of(2026, 6, 12),
-                    "Location C",
-                    "BRN",
-                    null,
-                    null,
-                    null
-            );
+            Event activeEvent2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event 2").eventDate(LocalDate.of(2026, 6, 12))
+                    .location("Location C").organizer("BRN").build());
             activeEvent2.publish();
             eventRepository.save(activeEvent2);
 
@@ -320,37 +294,19 @@ class EventJdbcRepositoryTest {
         @DisplayName("should filter events by organizer")
         void shouldFilterEventsByOrganizer() {
             // Given
-            Event event1 = Event.create(
-                    "Event 1",
-                    LocalDate.of(2026, 6, 10),
-                    "Location A",
-                    "Prague OC",
-                    null,
-                    null,
-                    null
-            );
+            Event event1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 1").eventDate(LocalDate.of(2026, 6, 10))
+                    .location("Location A").organizer("Prague OC").build());
             eventRepository.save(event1);
 
-            Event event2 = Event.create(
-                    "Event 2",
-                    LocalDate.of(2026, 6, 11),
-                    "Location B",
-                    "Prague OC",
-                    null,
-                    null,
-                    null
-            );
+            Event event2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 2").eventDate(LocalDate.of(2026, 6, 11))
+                    .location("Location B").organizer("Prague OC").build());
             eventRepository.save(event2);
 
-            Event event3 = Event.create(
-                    "Event 3",
-                    LocalDate.of(2026, 6, 12),
-                    "Location C",
-                    "Brno OC",
-                    null,
-                    null,
-                    null
-            );
+            Event event3 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 3").eventDate(LocalDate.of(2026, 6, 12))
+                    .location("Location C").organizer("Brno OC").build());
             eventRepository.save(event3);
 
             Pageable pageable = PageRequest.of(0, 10);
@@ -378,37 +334,19 @@ class EventJdbcRepositoryTest {
         @DisplayName("should filter events by date range (from and to)")
         void shouldFilterEventsByDateRange() {
             // Given
-            Event event1 = Event.create(
-                    "Event 1",
-                    LocalDate.of(2026, 6, 1),
-                    "Location A",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 1").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location A").organizer("OOB").build());
             eventRepository.save(event1);
 
-            Event event2 = Event.create(
-                    "Event 2",
-                    LocalDate.of(2026, 6, 15),
-                    "Location B",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event event2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 2").eventDate(LocalDate.of(2026, 6, 15))
+                    .location("Location B").organizer("PRG").build());
             eventRepository.save(event2);
 
-            Event event3 = Event.create(
-                    "Event 3",
-                    LocalDate.of(2026, 6, 30),
-                    "Location C",
-                    "BRN",
-                    null,
-                    null,
-                    null
-            );
+            Event event3 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event 3").eventDate(LocalDate.of(2026, 6, 30))
+                    .location("Location C").organizer("BRN").build());
             eventRepository.save(event3);
 
             Pageable pageable = PageRequest.of(0, 10);
@@ -428,26 +366,14 @@ class EventJdbcRepositoryTest {
         @DisplayName("should include events on boundary dates")
         void shouldIncludeEventsOnBoundaryDates() {
             // Given
-            Event event1 = Event.create(
-                    "Event on start date",
-                    LocalDate.of(2026, 6, 1),
-                    "Location A",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event on start date").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location A").organizer("OOB").build());
             eventRepository.save(event1);
 
-            Event event2 = Event.create(
-                    "Event on end date",
-                    LocalDate.of(2026, 6, 30),
-                    "Location B",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event event2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event on end date").eventDate(LocalDate.of(2026, 6, 30))
+                    .location("Location B").organizer("PRG").build());
             eventRepository.save(event2);
 
             Pageable pageable = PageRequest.of(0, 10);
@@ -474,51 +400,27 @@ class EventJdbcRepositoryTest {
         @DisplayName("should find active events with date before specified date")
         void shouldFindActiveEventsWithDateBefore() {
             // Given
-            Event activeEvent1 = Event.create(
-                    "Active Event 1",
-                    LocalDate.of(2026, 1, 10),
-                    "Location A",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event activeEvent1 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event 1").eventDate(LocalDate.of(2026, 1, 10))
+                    .location("Location A").organizer("OOB").build());
             activeEvent1.publish();
             eventRepository.save(activeEvent1);
 
-            Event activeEvent2 = Event.create(
-                    "Active Event 2",
-                    LocalDate.of(2026, 1, 15),
-                    "Location B",
-                    "PRG",
-                    null,
-                    null,
-                    null
-            );
+            Event activeEvent2 = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event 2").eventDate(LocalDate.of(2026, 1, 15))
+                    .location("Location B").organizer("PRG").build());
             activeEvent2.publish();
             eventRepository.save(activeEvent2);
 
-            Event futureEvent = Event.create(
-                    "Future Active Event",
-                    LocalDate.of(2026, 2, 20),
-                    "Location C",
-                    "BRN",
-                    null,
-                    null,
-                    null
-            );
+            Event futureEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Future Active Event").eventDate(LocalDate.of(2026, 2, 20))
+                    .location("Location C").organizer("BRN").build());
             futureEvent.publish();
             eventRepository.save(futureEvent);
 
-            Event draftEvent = Event.create(
-                    "Draft Event",
-                    LocalDate.of(2026, 1, 12),
-                    "Location D",
-                    "OST",
-                    null,
-                    null,
-                    null
-            );
+            Event draftEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft Event").eventDate(LocalDate.of(2026, 1, 12))
+                    .location("Location D").organizer("OST").build());
             eventRepository.save(draftEvent);
 
             // When
@@ -535,15 +437,9 @@ class EventJdbcRepositoryTest {
         @DisplayName("should not include DRAFT events even with past date")
         void shouldNotIncludeDraftEventsEvenWithPastDate() {
             // Given
-            Event draftEvent = Event.create(
-                    "Draft Event",
-                    LocalDate.of(2026, 1, 1),
-                    "Location A",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event draftEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft Event").eventDate(LocalDate.of(2026, 1, 1))
+                    .location("Location A").organizer("OOB").build());
             eventRepository.save(draftEvent);
 
             // When
@@ -562,15 +458,14 @@ class EventJdbcRepositoryTest {
         @DisplayName("should return true for a saved event with the given orisId")
         void shouldReturnTrueForSavedEventWithOrisId() {
             // Given
-            Event event = Event.createFromOris(
-                    9876,
-                    "ORIS Imported Event",
-                    LocalDate.of(2026, 8, 15),
-                    "Test Location",
-                    "OOB",
-                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=9876"),
-                    null
-            );
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(9876)
+                    .name("ORIS Imported Event")
+                    .eventDate(LocalDate.of(2026, 8, 15))
+                    .location("Test Location")
+                    .organizer("OOB")
+                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=9876"))
+                    .build());
             eventRepository.save(event);
 
             // When & Then
@@ -588,27 +483,25 @@ class EventJdbcRepositoryTest {
         @DisplayName("should reject duplicate orisId via unique constraint")
         void shouldRejectDuplicateOrisIdViaUniqueConstraint() {
             // Given — save the first event with orisId 1111
-            Event first = Event.createFromOris(
-                    1111,
-                    "First ORIS Event",
-                    LocalDate.of(2026, 9, 1),
-                    "Location A",
-                    "PRG",
-                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"),
-                    null
-            );
+            Event first = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(1111)
+                    .name("First ORIS Event")
+                    .eventDate(LocalDate.of(2026, 9, 1))
+                    .location("Location A")
+                    .organizer("PRG")
+                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"))
+                    .build());
             eventRepository.save(first);
 
             // When — create and save a second event with same orisId
-            Event second = Event.createFromOris(
-                    1111,
-                    "Duplicate ORIS Event",
-                    LocalDate.of(2026, 9, 10),
-                    "Location B",
-                    "BRN",
-                    new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"),
-                    null
-            );
+            Event second = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(1111)
+                    .name("Duplicate ORIS Event")
+                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .location("Location B")
+                    .organizer("BRN")
+                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"))
+                    .build());
 
             // Then — DB unique constraint rejects the duplicate
             org.junit.jupiter.api.Assertions.assertThrows(
@@ -626,15 +519,7 @@ class EventJdbcRepositoryTest {
         @DisplayName("should enforce unique constraint on (event_id, member_id) in registrations")
         void shouldEnforceUniqueConstraintOnEventIdAndMemberId() {
             // Given
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 8, 10),
-                    "Test Location",
-                    "Test OC",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder().name("Test Event").eventDate(LocalDate.of(2026, 8, 10)).location("Test Location").organizer("Test OC").build());
             event.publish();
 
             MemberId memberId = new MemberId(TEST_MEMBER_1_ID);

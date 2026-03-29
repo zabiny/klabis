@@ -9,6 +9,8 @@ import com.klabis.common.users.UserService;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.DuplicateOrisImportException;
 import com.klabis.events.application.EventManagementService;
+import com.klabis.events.domain.EventCreateEventBuilder;
+import com.klabis.events.domain.EventEventCommandBuilder;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationService;
 import com.klabis.events.domain.Event;
@@ -87,15 +89,13 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithValidData() throws Exception {
             Event createdEvent = EventTestDataBuilder.anEvent().withName("Spring Cup 2026").build();
-            Event.EventCommand command = new Event.EventCommand(
-                    "Spring Cup 2026",
-                    LocalDate.of(2026, 3, 15),
-                    "Forest Park",
-                    "OOB",
-                    "https://example.com/spring-cup",
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Spring Cup 2026")
+                    .eventDate(LocalDate.of(2026, 3, 15))
+                    .location("Forest Park")
+                    .organizer("OOB")
+                    .websiteUrl("https://example.com/spring-cup")
+                    .build();
 
             when(eventManagementService.createEvent(any(Event.EventCommand.class))).thenReturn(createdEvent);
 
@@ -113,15 +113,12 @@ class EventControllerTest {
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
-            Event.EventCommand command = new Event.EventCommand(
-                    "Test Event",
-                    LocalDate.of(2026, 5, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Test Event")
+                    .eventDate(LocalDate.of(2026, 5, 1))
+                    .location("Location")
+                    .organizer("OOB")
+                    .build();
 
             mockMvc.perform(
                             post("/api/events")
@@ -136,15 +133,12 @@ class EventControllerTest {
         @DisplayName("should return 400 with invalid data")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn400WithInvalidData() throws Exception {
-            Event.EventCommand command = new Event.EventCommand(
-                    "",
-                    LocalDate.of(2026, 5, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("")
+                    .eventDate(LocalDate.of(2026, 5, 1))
+                    .location("Location")
+                    .organizer("OOB")
+                    .build();
 
             mockMvc.perform(
                             post("/api/events")
@@ -160,15 +154,13 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithRegistrationDeadline() throws Exception {
             Event createdEvent = EventTestDataBuilder.anEvent().withName("Deadline Event 2026").build();
-            Event.EventCommand command = new Event.EventCommand(
-                    "Deadline Event 2026",
-                    LocalDate.of(2026, 8, 20),
-                    "Forest Park",
-                    "OOB",
-                    null,
-                    null,
-                    LocalDate.of(2026, 8, 10)
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Deadline Event 2026")
+                    .eventDate(LocalDate.of(2026, 8, 20))
+                    .location("Forest Park")
+                    .organizer("OOB")
+                    .registrationDeadline(LocalDate.of(2026, 8, 10))
+                    .build();
 
             when(eventManagementService.createEvent(any(Event.EventCommand.class))).thenReturn(createdEvent);
 
@@ -192,15 +184,13 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldUpdateEventSuccessfully() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.EventCommand updateCommand = new Event.EventCommand(
-                    "Updated Event",
-                    LocalDate.of(2026, 5, 15),
-                    "Updated Location",
-                    "PRG",
-                    "https://updated.com",
-                    null,
-                    null
-            );
+            Event.EventCommand updateCommand = EventEventCommandBuilder.builder()
+                    .name("Updated Event")
+                    .eventDate(LocalDate.of(2026, 5, 15))
+                    .location("Updated Location")
+                    .organizer("PRG")
+                    .websiteUrl("https://updated.com")
+                    .build();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
@@ -216,15 +206,12 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenUpdatingWithoutAuthority() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.EventCommand command = new Event.EventCommand(
-                    "Updated Event",
-                    LocalDate.of(2026, 5, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event.EventCommand command = EventEventCommandBuilder.builder()
+                    .name("Updated Event")
+                    .eventDate(LocalDate.of(2026, 5, 1))
+                    .location("Location")
+                    .organizer("OOB")
+                    .build();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
@@ -239,15 +226,13 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldUpdateEventWithRegistrationDeadline() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event.EventCommand updateCommand = new Event.EventCommand(
-                    "Updated Race",
-                    LocalDate.of(2026, 9, 20),
-                    "Forest",
-                    "OOB",
-                    null,
-                    null,
-                    LocalDate.of(2026, 9, 10)
-            );
+            Event.EventCommand updateCommand = EventEventCommandBuilder.builder()
+                    .name("Updated Race")
+                    .eventDate(LocalDate.of(2026, 9, 20))
+                    .location("Forest")
+                    .organizer("OOB")
+                    .registrationDeadline(LocalDate.of(2026, 9, 10))
+                    .build();
 
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
@@ -267,8 +252,8 @@ class EventControllerTest {
         @DisplayName("should return paginated list with HAL+FORMS for manager with EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldListEventsWithPaginationForManager() throws Exception {
-            Event event1 = Event.create("Event 1", LocalDate.of(2026, 6, 1), "Location 1", "OOB", null, null, null);
-            Event event2 = Event.create("Event 2", LocalDate.of(2026, 7, 1), "Location 2", "PRG", null, null, null);
+            Event event1 = Event.create(EventCreateEventBuilder.builder().name("Event 1").eventDate(LocalDate.of(2026, 6, 1)).location("Location 1").organizer("OOB").build());
+            Event event2 = Event.create(EventCreateEventBuilder.builder().name("Event 2").eventDate(LocalDate.of(2026, 7, 1)).location("Location 2").organizer("PRG").build());
             event2.publish();
 
             when(eventManagementService.listEvents(any(EventFilter.class), any()))
@@ -363,7 +348,7 @@ class EventControllerTest {
         @DisplayName("should filter by status — status field hidden for regular user")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldFilterEventsByStatus() throws Exception {
-            Event event = Event.create("Active Event", LocalDate.of(2026, 6, 1), "Location", "OOB", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder().name("Active Event").eventDate(LocalDate.of(2026, 6, 1)).location("Location").organizer("OOB").build());
             event.publish();
 
             when(eventManagementService.listEvents(any(EventFilter.class), any()))
@@ -438,15 +423,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldGetEventWithHateoasLinks() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2026, 6, 1),
-                    "Location",
-                    "OOB",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder().name("Test Event").eventDate(LocalDate.of(2026, 6, 1)).location("Location").organizer("OOB").build());
 
             when(eventManagementService.getEvent(any())).thenReturn(event);
 

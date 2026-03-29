@@ -32,6 +32,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("Event Aggregate")
 class EventTest {
 
+    private static final LocalDate DEFAULT_DATE = LocalDate.of(2025, 7, 10);
+
+    private static Event.CreateEvent defaultCreateEvent() {
+        return EventCreateEventBuilder.builder()
+                .name("Test Event")
+                .eventDate(DEFAULT_DATE)
+                .location("Test Location")
+                .organizer("Test Organizer")
+                .build();
+    }
+
     @Nested
     @DisplayName("create() factory method")
     class CreateMethod {
@@ -48,7 +59,14 @@ class EventTest {
             MemberId coordinatorId = new MemberId(UUID.randomUUID());
 
             // Act
-            Event event = Event.create(name, eventDate, location, organizer, websiteUrl, coordinatorId, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name(name)
+                    .eventDate(eventDate)
+                    .location(location)
+                    .organizer(organizer)
+                    .websiteUrl(websiteUrl)
+                    .eventCoordinatorId(coordinatorId)
+                    .build());
 
             // Assert
             EventAssert.assertThat(event)
@@ -72,7 +90,12 @@ class EventTest {
             String organizer = "Local Sports Club";
 
             // Act
-            Event event = Event.create(name, eventDate, location, organizer, null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name(name)
+                    .eventDate(eventDate)
+                    .location(location)
+                    .organizer(organizer)
+                    .build());
 
             // Assert
             EventAssert.assertThat(event)
@@ -88,19 +111,12 @@ class EventTest {
         @Test
         @DisplayName("should fail when name is null")
         void shouldFailWhenNameIsNull() {
-            // Arrange
-            LocalDate eventDate = LocalDate.of(2025, 6, 15);
-
-            // Act & Assert
-            assertThatThrownBy(() -> Event.create(
-                    null,
-                    eventDate,
-                    "Location",
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name(null)
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("Location")
+                    .organizer("Organizer")
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -108,19 +124,12 @@ class EventTest {
         @Test
         @DisplayName("should fail when name is blank")
         void shouldFailWhenNameIsBlank() {
-            // Arrange
-            LocalDate eventDate = LocalDate.of(2025, 6, 15);
-
-            // Act & Assert
-            assertThatThrownBy(() -> Event.create(
-                    "   ",
-                    eventDate,
-                    "Location",
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("   ")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("Location")
+                    .organizer("Organizer")
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -128,16 +137,12 @@ class EventTest {
         @Test
         @DisplayName("should fail when eventDate is null")
         void shouldFailWhenEventDateIsNull() {
-            // Act & Assert
-            assertThatThrownBy(() -> Event.create(
-                    "Event Name",
-                    null,
-                    "Location",
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Name")
+                    .eventDate(null)
+                    .location("Location")
+                    .organizer("Organizer")
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("eventDate");
         }
@@ -145,19 +150,12 @@ class EventTest {
         @Test
         @DisplayName("should fail when location is null")
         void shouldFailWhenLocationIsNull() {
-            // Arrange
-            LocalDate eventDate = LocalDate.of(2025, 6, 15);
-
-            // Act & Assert
-            assertThatThrownBy(() -> Event.create(
-                    "Event Name",
-                    eventDate,
-                    null,
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Name")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location(null)
+                    .organizer("Organizer")
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("location");
         }
@@ -165,19 +163,12 @@ class EventTest {
         @Test
         @DisplayName("should fail when location is blank")
         void shouldFailWhenLocationIsBlank() {
-            // Arrange
-            LocalDate eventDate = LocalDate.of(2025, 6, 15);
-
-            // Act & Assert
-            assertThatThrownBy(() -> Event.create(
-                    "Event Name",
-                    eventDate,
-                    "   ",
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Name")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("   ")
+                    .organizer("Organizer")
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("location");
         }
@@ -185,19 +176,12 @@ class EventTest {
         @Test
         @DisplayName("should fail when organizer is null")
         void shouldFailWhenOrganizerIsNull() {
-            // Arrange
-            LocalDate eventDate = LocalDate.of(2025, 6, 15);
-
-            // Act & Assert
-            assertThatThrownBy(() -> Event.create(
-                    "Event Name",
-                    eventDate,
-                    "Location",
-                    null,
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Name")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("Location")
+                    .organizer(null)
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("organizer");
         }
@@ -205,19 +189,12 @@ class EventTest {
         @Test
         @DisplayName("should fail when organizer is blank")
         void shouldFailWhenOrganizerIsBlank() {
-            // Arrange
-            LocalDate eventDate = LocalDate.of(2025, 6, 15);
-
-            // Act & Assert
-            assertThatThrownBy(() -> Event.create(
-                    "Event Name",
-                    eventDate,
-                    "Location",
-                    "   ",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Name")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("Location")
+                    .organizer("   ")
+                    .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("organizer");
         }
@@ -228,15 +205,13 @@ class EventTest {
             LocalDate eventDate = LocalDate.of(2026, 6, 15);
             LocalDate invalidDeadline = LocalDate.of(2026, 6, 16);
 
-            assertThatThrownBy(() -> Event.create(
-                    "Event Name",
-                    eventDate,
-                    "Location",
-                    "Organizer",
-                    null,
-                    null,
-                    invalidDeadline
-            ))
+            assertThatThrownBy(() -> Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Name")
+                    .eventDate(eventDate)
+                    .location("Location")
+                    .organizer("Organizer")
+                    .registrationDeadline(invalidDeadline)
+                    .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration deadline");
         }
@@ -246,15 +221,13 @@ class EventTest {
         void shouldAllowRegistrationDeadlineEqualToEventDate() {
             LocalDate eventDate = LocalDate.of(2026, 6, 15);
 
-            Event event = Event.create(
-                    "Event Name",
-                    eventDate,
-                    "Location",
-                    "Organizer",
-                    null,
-                    null,
-                    eventDate
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event Name")
+                    .eventDate(eventDate)
+                    .location("Location")
+                    .organizer("Organizer")
+                    .registrationDeadline(eventDate)
+                    .build());
 
             assertThat(event.getRegistrationDeadline()).isEqualTo(eventDate);
         }
@@ -267,109 +240,55 @@ class EventTest {
         @Test
         @DisplayName("should publish event: DRAFT → ACTIVE")
         void shouldPublishEventFromDraftToActive() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
 
-            // Act
             event.publish();
 
-            // Assert
             EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
         }
 
         @Test
         @DisplayName("should cancel event: DRAFT → CANCELLED")
         void shouldCancelEventFromDraft() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
 
-            // Act
             event.cancel();
 
-            // Assert
             EventAssert.assertThat(event).hasStatus(EventStatus.CANCELLED);
         }
 
         @Test
         @DisplayName("should cancel event: ACTIVE → CANCELLED")
         void shouldCancelEventFromActive() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
             EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
 
-            // Act
             event.cancel();
 
-            // Assert
             EventAssert.assertThat(event).hasStatus(EventStatus.CANCELLED);
         }
 
         @Test
         @DisplayName("should finish event: ACTIVE → FINISHED")
         void shouldFinishEventFromActive() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
             EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
 
-            // Act
             event.finish();
 
-            // Assert
             EventAssert.assertThat(event).hasStatus(EventStatus.FINISHED);
         }
 
         @Test
         @DisplayName("should fail to finish event from DRAFT")
         void shouldFailToFinishEventFromDraft() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
 
-            // Act & Assert
             assertThatThrownBy(() -> event.finish())
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("Cannot transition from DRAFT to FINISHED");
@@ -378,23 +297,12 @@ class EventTest {
         @Test
         @DisplayName("should allow idempotent publish (ACTIVE to ACTIVE)")
         void shouldAllowIdempotentPublish() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
             EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
 
-            // Act - calling publish() again should be idempotent (no exception)
             event.publish();
 
-            // Assert - status remains ACTIVE
             EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
         }
 
@@ -402,11 +310,9 @@ class EventTest {
         @MethodSource("illegalTransitions")
         @DisplayName("should reject illegal state transition")
         void shouldRejectIllegalStateTransition(Consumer<Event> setup, Consumer<Event> action, String expectedMessage, String displayName) {
-            // Arrange
             Event event = EventTestDataBuilder.anEvent().build();
             setup.accept(event);
 
-            // Act & Assert
             assertThatThrownBy(() -> action.accept(event))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining(expectedMessage);
@@ -449,16 +355,12 @@ class EventTest {
         @Test
         @DisplayName("should update event in DRAFT status")
         void shouldUpdateEventInDraftStatus() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Original Event")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("Original Location")
+                    .organizer("Original Organizer")
+                    .build());
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
 
             String newName = "Updated Event";
@@ -468,10 +370,8 @@ class EventTest {
             WebsiteUrl newWebsiteUrl = WebsiteUrl.of("https://updated.com");
             MemberId newCoordinatorId = new MemberId(UUID.randomUUID());
 
-            // Act
             event.update(newName, newDate, newLocation, newOrganizer, newWebsiteUrl, newCoordinatorId, null);
 
-            // Assert
             EventAssert.assertThat(event)
                     .hasName(newName)
                     .hasDate(newDate)
@@ -485,16 +385,12 @@ class EventTest {
         @Test
         @DisplayName("should update event in ACTIVE status")
         void shouldUpdateEventInActiveStatus() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Original Event")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("Original Location")
+                    .organizer("Original Organizer")
+                    .build());
             event.publish();
             EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
 
@@ -503,10 +399,8 @@ class EventTest {
             String newLocation = "Updated Location";
             String newOrganizer = "Updated Organizer";
 
-            // Act
             event.update(newName, newDate, newLocation, newOrganizer, null, null, null);
 
-            // Assert
             EventAssert.assertThat(event)
                     .hasName(newName)
                     .hasDate(newDate)
@@ -518,30 +412,17 @@ class EventTest {
         @Test
         @DisplayName("should fail to update event in FINISHED status")
         void shouldFailToUpdateEventInFinishedStatus() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Original Event")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("Original Location")
+                    .organizer("Original Organizer")
+                    .build());
             event.publish();
             event.finish();
             EventAssert.assertThat(event).hasStatus(EventStatus.FINISHED);
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    "New Name",
-                    LocalDate.of(2025, 7, 20),
-                    "New Location",
-                    "New Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update("New Name", LocalDate.of(2025, 7, 20), "New Location", "New Organizer", null, null, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot update event in FINISHED status");
         }
@@ -549,29 +430,16 @@ class EventTest {
         @Test
         @DisplayName("should fail to update event in CANCELLED status")
         void shouldFailToUpdateEventInCancelledStatus() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Original Event")
+                    .eventDate(LocalDate.of(2025, 6, 15))
+                    .location("Original Location")
+                    .organizer("Original Organizer")
+                    .build());
             event.cancel();
             EventAssert.assertThat(event).hasStatus(EventStatus.CANCELLED);
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    "New Name",
-                    LocalDate.of(2025, 7, 20),
-                    "New Location",
-                    "New Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update("New Name", LocalDate.of(2025, 7, 20), "New Location", "New Organizer", null, null, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot update event in CANCELLED status");
         }
@@ -579,27 +447,9 @@ class EventTest {
         @Test
         @DisplayName("should fail to update with null name")
         void shouldFailToUpdateWithNullName() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    null,
-                    LocalDate.of(2025, 7, 20),
-                    "Location",
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update(null, LocalDate.of(2025, 7, 20), "Location", "Organizer", null, null, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -607,27 +457,9 @@ class EventTest {
         @Test
         @DisplayName("should fail to update with blank name")
         void shouldFailToUpdateWithBlankName() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    "   ",
-                    LocalDate.of(2025, 7, 20),
-                    "Location",
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update("   ", LocalDate.of(2025, 7, 20), "Location", "Organizer", null, null, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -635,27 +467,9 @@ class EventTest {
         @Test
         @DisplayName("should fail to update with null eventDate")
         void shouldFailToUpdateWithNullEventDate() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    "Event Name",
-                    null,
-                    "Location",
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update("Event Name", null, "Location", "Organizer", null, null, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("eventDate");
         }
@@ -663,27 +477,9 @@ class EventTest {
         @Test
         @DisplayName("should fail to update with null location")
         void shouldFailToUpdateWithNullLocation() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    "Event Name",
-                    LocalDate.of(2025, 7, 20),
-                    null,
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update("Event Name", LocalDate.of(2025, 7, 20), null, "Organizer", null, null, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("location");
         }
@@ -691,27 +487,9 @@ class EventTest {
         @Test
         @DisplayName("should fail to update with blank location")
         void shouldFailToUpdateWithBlankLocation() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    "Event Name",
-                    LocalDate.of(2025, 7, 20),
-                    "   ",
-                    "Organizer",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update("Event Name", LocalDate.of(2025, 7, 20), "   ", "Organizer", null, null, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("location");
         }
@@ -719,27 +497,9 @@ class EventTest {
         @Test
         @DisplayName("should fail to update with null organizer")
         void shouldFailToUpdateWithNullOrganizer() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    "Event Name",
-                    LocalDate.of(2025, 7, 20),
-                    "Location",
-                    null,
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update("Event Name", LocalDate.of(2025, 7, 20), "Location", null, null, null, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("organizer");
         }
@@ -747,27 +507,9 @@ class EventTest {
         @Test
         @DisplayName("should fail to update with blank organizer")
         void shouldFailToUpdateWithBlankOrganizer() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 6, 15),
-                    "Original Location",
-                    "Original Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
 
-            // Act & Assert
-            assertThatThrownBy(() -> event.update(
-                    "Event Name",
-                    LocalDate.of(2025, 7, 20),
-                    "Location",
-                    "   ",
-                    null,
-                    null,
-                    null
-            ))
+            assertThatThrownBy(() -> event.update("Event Name", LocalDate.of(2025, 7, 20), "Location", "   ", null, null, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("organizer");
         }
@@ -780,26 +522,15 @@ class EventTest {
         @Test
         @DisplayName("should register member when event is ACTIVE")
         void shouldRegisterMemberWhenEventIsActive() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
-            event.publish(); // Make event ACTIVE
+            Event event = Event.create(defaultCreateEvent());
+            event.publish();
             EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            // Act
             event.registerMember(memberId, siCardNumber);
 
-            // Assert
             assertThat(event.getRegistrations()).hasSize(1);
             assertThat(event.findRegistration(memberId)).isPresent();
         }
@@ -807,22 +538,12 @@ class EventTest {
         @Test
         @DisplayName("should fail to register member when event is DRAFT")
         void shouldFailToRegisterMemberWhenEventIsDraft() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            // Act & Assert
             assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
@@ -831,16 +552,7 @@ class EventTest {
         @Test
         @DisplayName("should fail to register member when event is FINISHED")
         void shouldFailToRegisterMemberWhenEventIsFinished() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
             event.finish();
             EventAssert.assertThat(event).hasStatus(EventStatus.FINISHED);
@@ -848,7 +560,6 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            // Act & Assert
             assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
@@ -857,23 +568,13 @@ class EventTest {
         @Test
         @DisplayName("should fail to register member when event is CANCELLED")
         void shouldFailToRegisterMemberWhenEventIsCancelled() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.cancel();
             EventAssert.assertThat(event).hasStatus(EventStatus.CANCELLED);
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            // Act & Assert
             assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
@@ -882,23 +583,13 @@ class EventTest {
         @Test
         @DisplayName("should prevent duplicate registration for same member")
         void shouldPreventDuplicateRegistrationForSameMember() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             event.registerMember(memberId, siCardNumber);
 
-            // Act & Assert
             assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("654321")))
                     .isInstanceOf(DuplicateRegistrationException.class)
                     .hasMessageContaining("already registered");
@@ -907,16 +598,12 @@ class EventTest {
         @Test
         @DisplayName("should unregister member before event date")
         void shouldUnregisterMemberBeforeEventDate() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event")
+                    .eventDate(LocalDate.of(2025, 7, 10))
+                    .location("Test Location")
+                    .organizer("Test Organizer")
+                    .build());
             event.publish();
 
             MemberId memberId = new MemberId(UUID.randomUUID());
@@ -926,10 +613,8 @@ class EventTest {
 
             LocalDate currentDate = LocalDate.of(2025, 7, 9); // One day before event
 
-            // Act
             event.unregisterMember(memberId, currentDate);
 
-            // Assert
             assertThat(event.getRegistrations()).isEmpty();
             assertThat(event.findRegistration(memberId)).isEmpty();
         }
@@ -937,25 +622,19 @@ class EventTest {
         @Test
         @DisplayName("should fail to unregister member on event date")
         void shouldFailToUnregisterMemberOnEventDate() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event")
+                    .eventDate(LocalDate.of(2025, 7, 10))
+                    .location("Test Location")
+                    .organizer("Test Organizer")
+                    .build());
             event.publish();
 
             MemberId memberId = new MemberId(UUID.randomUUID());
-            SiCardNumber siCardNumber = SiCardNumber.of("123456");
-            event.registerMember(memberId, siCardNumber);
+            event.registerMember(memberId, SiCardNumber.of("123456"));
 
             LocalDate currentDate = LocalDate.of(2025, 7, 10); // Same as event date
 
-            // Act & Assert
             assertThatThrownBy(() -> event.unregisterMember(memberId, currentDate))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
@@ -964,25 +643,19 @@ class EventTest {
         @Test
         @DisplayName("should fail to unregister member after event date")
         void shouldFailToUnregisterMemberAfterEventDate() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event")
+                    .eventDate(LocalDate.of(2025, 7, 10))
+                    .location("Test Location")
+                    .organizer("Test Organizer")
+                    .build());
             event.publish();
 
             MemberId memberId = new MemberId(UUID.randomUUID());
-            SiCardNumber siCardNumber = SiCardNumber.of("123456");
-            event.registerMember(memberId, siCardNumber);
+            event.registerMember(memberId, SiCardNumber.of("123456"));
 
             LocalDate currentDate = LocalDate.of(2025, 7, 11); // One day after event
 
-            // Act & Assert
             assertThatThrownBy(() -> event.unregisterMember(memberId, currentDate))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot unregister on or after event date");
@@ -991,22 +664,17 @@ class EventTest {
         @Test
         @DisplayName("should fail to unregister member that is not registered")
         void shouldFailToUnregisterMemberThatIsNotRegistered() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event")
+                    .eventDate(LocalDate.of(2025, 7, 10))
+                    .location("Test Location")
+                    .organizer("Test Organizer")
+                    .build());
             event.publish();
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             LocalDate currentDate = LocalDate.of(2025, 7, 9);
 
-            // Act & Assert
             assertThatThrownBy(() -> event.unregisterMember(memberId, currentDate))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Member is not registered for this event");
@@ -1015,26 +683,15 @@ class EventTest {
         @Test
         @DisplayName("should find registration by memberId when registered")
         void shouldFindRegistrationByMemberIdWhenRegistered() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             event.registerMember(memberId, siCardNumber);
 
-            // Act
             var foundRegistration = event.findRegistration(memberId);
 
-            // Assert
             assertThat(foundRegistration).isPresent();
             assertThat(foundRegistration.get().memberId()).isEqualTo(memberId);
             assertThat(foundRegistration.get().siCardNumber()).isEqualTo(siCardNumber);
@@ -1043,40 +700,20 @@ class EventTest {
         @Test
         @DisplayName("should return empty when finding non-existent registration")
         void shouldReturnEmptyWhenFindingNonExistentRegistration() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
 
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            // Act
             var foundRegistration = event.findRegistration(memberId);
 
-            // Assert
             assertThat(foundRegistration).isEmpty();
         }
 
         @Test
         @DisplayName("should return unmodifiable list of registrations")
         void shouldReturnUnmodifiableListOfRegistrations() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
 
             MemberId memberId1 = new MemberId(UUID.randomUUID());
@@ -1087,13 +724,10 @@ class EventTest {
             event.registerMember(memberId1, siCardNumber1);
             event.registerMember(memberId2, siCardNumber2);
 
-            // Act
             var registrations = event.getRegistrations();
 
-            // Assert
             assertThat(registrations).hasSize(2);
 
-            // Verify list is unmodifiable
             assertThatThrownBy(() -> registrations.add(EventRegistration.create(new MemberId(UUID.randomUUID()),
                     SiCardNumber.of("111111"))))
                     .isInstanceOf(UnsupportedOperationException.class);
@@ -1107,72 +741,66 @@ class EventTest {
         @Test
         @DisplayName("should return true when event is ACTIVE and eventDate is in the future")
         void shouldReturnTrueWhenActiveAndDateInFuture() {
-            // Arrange
             LocalDate futureDate = LocalDate.now().plusDays(1);
-            Event event = Event.create("Race 2026", futureDate, "Forest", "Club", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race 2026").eventDate(futureDate).location("Forest").organizer("Club").build());
             event.publish();
 
-            // Act & Assert
             assertThat(event.areRegistrationsOpen()).isTrue();
         }
 
         @Test
         @DisplayName("should return false when event is ACTIVE but eventDate is today")
         void shouldReturnFalseWhenActiveAndDateIsToday() {
-            // Arrange
             LocalDate today = LocalDate.now();
-            Event event = Event.create("Race Today", today, "Forest", "Club", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race Today").eventDate(today).location("Forest").organizer("Club").build());
             event.publish();
 
-            // Act & Assert
             assertThat(event.areRegistrationsOpen()).isFalse();
         }
 
         @Test
         @DisplayName("should return false when event is ACTIVE but eventDate is in the past")
         void shouldReturnFalseWhenActiveAndDateInPast() {
-            // Arrange
             LocalDate pastDate = LocalDate.now().minusDays(1);
-            Event event = Event.create("Past Race", pastDate, "Forest", "Club", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Past Race").eventDate(pastDate).location("Forest").organizer("Club").build());
             event.publish();
 
-            // Act & Assert
             assertThat(event.areRegistrationsOpen()).isFalse();
         }
 
         @Test
         @DisplayName("should return false when event is DRAFT even if eventDate is in the future")
         void shouldReturnFalseWhenDraftAndDateInFuture() {
-            // Arrange
             LocalDate futureDate = LocalDate.now().plusDays(7);
-            Event event = Event.create("Future Draft", futureDate, "Forest", "Club", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Future Draft").eventDate(futureDate).location("Forest").organizer("Club").build());
 
-            // Act & Assert
             assertThat(event.areRegistrationsOpen()).isFalse();
         }
 
         @Test
         @DisplayName("should return false when event is CANCELLED even if eventDate is in the future")
         void shouldReturnFalseWhenCancelledAndDateInFuture() {
-            // Arrange
             LocalDate futureDate = LocalDate.now().plusDays(7);
-            Event event = Event.create("Cancelled Race", futureDate, "Forest", "Club", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Cancelled Race").eventDate(futureDate).location("Forest").organizer("Club").build());
             event.cancel();
 
-            // Act & Assert
             assertThat(event.areRegistrationsOpen()).isFalse();
         }
 
         @Test
         @DisplayName("should return false when event is FINISHED even if eventDate is in the future")
         void shouldReturnFalseWhenFinishedAndDateInFuture() {
-            // Arrange
             LocalDate futureDate = LocalDate.now().plusDays(7);
-            Event event = Event.create("Finished Race", futureDate, "Forest", "Club", null, null, null);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Finished Race").eventDate(futureDate).location("Forest").organizer("Club").build());
             event.publish();
             event.finish();
 
-            // Act & Assert
             assertThat(event.areRegistrationsOpen()).isFalse();
         }
 
@@ -1181,7 +809,9 @@ class EventTest {
         void shouldReturnTrueWhenActiveAndDeadlineInFuture() {
             LocalDate futureDate = LocalDate.now().plusDays(10);
             LocalDate deadline = LocalDate.now().plusDays(5);
-            Event event = Event.create("Race with Deadline", futureDate, "Forest", "Club", null, null, deadline);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race with Deadline").eventDate(futureDate).location("Forest").organizer("Club")
+                    .registrationDeadline(deadline).build());
             event.publish();
 
             assertThat(event.areRegistrationsOpen()).isTrue();
@@ -1192,7 +822,9 @@ class EventTest {
         void shouldReturnFalseWhenDeadlinePassed() {
             LocalDate futureDate = LocalDate.now().plusDays(10);
             LocalDate pastDeadline = LocalDate.now().minusDays(1);
-            Event event = Event.create("Race Closed", futureDate, "Forest", "Club", null, null, pastDeadline);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race Closed").eventDate(futureDate).location("Forest").organizer("Club")
+                    .registrationDeadline(pastDeadline).build());
             event.publish();
 
             assertThat(event.areRegistrationsOpen()).isFalse();
@@ -1203,7 +835,9 @@ class EventTest {
         void shouldReturnFalseWhenDeadlineIsToday() {
             LocalDate futureDate = LocalDate.now().plusDays(10);
             LocalDate todayDeadline = LocalDate.now();
-            Event event = Event.create("Race Deadline Today", futureDate, "Forest", "Club", null, null, todayDeadline);
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race Deadline Today").eventDate(futureDate).location("Forest").organizer("Club")
+                    .registrationDeadline(todayDeadline).build());
             event.publish();
 
             assertThat(event.areRegistrationsOpen()).isFalse();
@@ -1217,18 +851,20 @@ class EventTest {
         @Test
         @DisplayName("should register EventCreatedEvent when event is created")
         void shouldRegisterEventCreatedEventWhenCreated() {
-            // Arrange & Act
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    WebsiteUrl.of("https://test.com"),
-                    new MemberId(UUID.randomUUID()),
-                    null
-            );
+            String name = "Test Event";
+            LocalDate eventDate = LocalDate.of(2025, 7, 10);
+            WebsiteUrl websiteUrl = WebsiteUrl.of("https://test.com");
+            MemberId coordinatorId = new MemberId(UUID.randomUUID());
 
-            // Assert
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name(name)
+                    .eventDate(eventDate)
+                    .location("Test Location")
+                    .organizer("Test Organizer")
+                    .websiteUrl(websiteUrl)
+                    .eventCoordinatorId(coordinatorId)
+                    .build());
+
             List<Object> domainEvents = event.getDomainEvents();
             assertThat(domainEvents)
                     .hasSize(1)
@@ -1237,8 +873,8 @@ class EventTest {
 
             EventCreatedEvent createdEvent = (EventCreatedEvent) domainEvents.get(0);
             assertThat(createdEvent.eventId()).isEqualTo(event.getId());
-            assertThat(createdEvent.name()).isEqualTo("Test Event");
-            assertThat(createdEvent.eventDate()).isEqualTo(LocalDate.of(2025, 7, 10));
+            assertThat(createdEvent.name()).isEqualTo(name);
+            assertThat(createdEvent.eventDate()).isEqualTo(eventDate);
             assertThat(createdEvent.location()).isEqualTo("Test Location");
             assertThat(createdEvent.organizer()).isEqualTo("Test Organizer");
         }
@@ -1246,22 +882,11 @@ class EventTest {
         @Test
         @DisplayName("should register EventPublishedEvent when event is published")
         void shouldRegisterEventPublishedEventWhenPublished() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.clearDomainEvents(); // Clear creation event
 
-            // Act
             event.publish();
 
-            // Assert
             List<Object> domainEvents = event.getDomainEvents();
             assertThat(domainEvents)
                     .hasSize(1)
@@ -1275,22 +900,11 @@ class EventTest {
         @Test
         @DisplayName("should register EventCancelledEvent when event is cancelled")
         void shouldRegisterEventCancelledEventWhenCancelled() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.clearDomainEvents(); // Clear creation event
 
-            // Act
             event.cancel();
 
-            // Assert
             List<Object> domainEvents = event.getDomainEvents();
             assertThat(domainEvents)
                     .hasSize(1)
@@ -1304,23 +918,12 @@ class EventTest {
         @Test
         @DisplayName("should register EventFinishedEvent when event is finished")
         void shouldRegisterEventFinishedEventWhenFinished() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             event.publish();
             event.clearDomainEvents(); // Clear previous events
 
-            // Act
             event.finish();
 
-            // Assert
             List<Object> domainEvents = event.getDomainEvents();
             assertThat(domainEvents)
                     .hasSize(1)
@@ -1334,41 +937,26 @@ class EventTest {
         @Test
         @DisplayName("should clear domain events after clearDomainEvents is called")
         void shouldClearDomainEventsAfterClear() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
             assertThat(event.getDomainEvents()).hasSize(1);
 
-            // Act
             event.clearDomainEvents();
 
-            // Assert
             assertThat(event.getDomainEvents()).isEmpty();
         }
 
         @Test
         @DisplayName("should register EventUpdatedEvent when event is updated")
         void shouldRegisterEventUpdatedEventWhenUpdated() {
-            // Arrange
-            Event event = Event.create(
-                    "Original Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Original Location",
-                    "Original Organizer",
-                    WebsiteUrl.of("https://original.com"),
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Original Event")
+                    .eventDate(LocalDate.of(2025, 7, 10))
+                    .location("Original Location")
+                    .organizer("Original Organizer")
+                    .websiteUrl(WebsiteUrl.of("https://original.com"))
+                    .build());
             event.clearDomainEvents(); // Clear creation event
 
-            // Act
             event.update(
                     "Updated Event",
                     LocalDate.of(2025, 7, 15),
@@ -1379,7 +967,6 @@ class EventTest {
                     null
             );
 
-            // Assert
             List<Object> domainEvents = event.getDomainEvents();
             assertThat(domainEvents)
                     .hasSize(1)
@@ -1399,30 +986,17 @@ class EventTest {
         @Test
         @DisplayName("should register EventUpdatedEvent with null websiteUrl")
         void shouldRegisterEventUpdatedEventWithNullWebsiteUrl() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    WebsiteUrl.of("https://test.com"),
-                    null,
-                    null
-            );
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Test Event")
+                    .eventDate(LocalDate.of(2025, 7, 10))
+                    .location("Test Location")
+                    .organizer("Test Organizer")
+                    .websiteUrl(WebsiteUrl.of("https://test.com"))
+                    .build());
             event.clearDomainEvents();
 
-            // Act
-            event.update(
-                    "Updated Event",
-                    LocalDate.of(2025, 7, 15),
-                    "Updated Location",
-                    "Updated Organizer",
-                    null, // No website URL
-                    null,
-                    null
-            );
+            event.update("Updated Event", LocalDate.of(2025, 7, 15), "Updated Location", "Updated Organizer", null, null, null);
 
-            // Assert
             List<Object> domainEvents = event.getDomainEvents();
             EventUpdatedEvent updatedEvent = (EventUpdatedEvent) domainEvents.get(0);
             assertThat(updatedEvent.websiteUrl()).isNull();
@@ -1431,21 +1005,10 @@ class EventTest {
         @Test
         @DisplayName("should accumulate multiple domain events")
         void shouldAccumulateMultipleDomainEvents() {
-            // Arrange
-            Event event = Event.create(
-                    "Test Event",
-                    LocalDate.of(2025, 7, 10),
-                    "Test Location",
-                    "Test Organizer",
-                    null,
-                    null,
-                    null
-            );
+            Event event = Event.create(defaultCreateEvent());
 
-            // Act
             event.publish(); // Adds EventPublishedEvent
 
-            // Assert
             List<Object> domainEvents = event.getDomainEvents();
             assertThat(domainEvents).hasSize(2);
             assertThat(domainEvents.get(0)).isInstanceOf(EventCreatedEvent.class);
@@ -1460,7 +1023,6 @@ class EventTest {
         @Test
         @DisplayName("should create event in DRAFT status with correct field values and non-null orisId")
         void shouldCreateEventFromOrisInDraftStatusWithCorrectFields() {
-            // Arrange
             int orisId = 9876;
             String name = "Oris Sprint Race";
             LocalDate eventDate = LocalDate.of(2026, 8, 10);
@@ -1468,10 +1030,15 @@ class EventTest {
             String organizer = "OOB";
             WebsiteUrl websiteUrl = WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=9876");
 
-            // Act
-            Event event = Event.createFromOris(orisId, name, eventDate, location, organizer, websiteUrl, null);
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(orisId)
+                    .name(name)
+                    .eventDate(eventDate)
+                    .location(location)
+                    .organizer(organizer)
+                    .websiteUrl(websiteUrl)
+                    .build());
 
-            // Assert
             assertThat(event.getId()).isNotNull();
             assertThat(event.getName()).isEqualTo(name);
             assertThat(event.getEventDate()).isEqualTo(eventDate);
@@ -1485,18 +1052,15 @@ class EventTest {
         @Test
         @DisplayName("should register EventCreatedEvent on creation")
         void shouldRegisterEventCreatedEvent() {
-            // Act
-            Event event = Event.createFromOris(
-                    1234,
-                    "Test ORIS Event",
-                    LocalDate.of(2026, 9, 5),
-                    "Prague Forest",
-                    "PRG",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
-                    null
-            );
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(1234)
+                    .name("Test ORIS Event")
+                    .eventDate(LocalDate.of(2026, 9, 5))
+                    .location("Prague Forest")
+                    .organizer("PRG")
+                    .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"))
+                    .build());
 
-            // Assert
             assertThat(event.getDomainEvents()).hasSize(1);
             assertThat(event.getDomainEvents().get(0)).isInstanceOf(EventCreatedEvent.class);
         }
@@ -1504,18 +1068,15 @@ class EventTest {
         @Test
         @DisplayName("should not set eventCoordinatorId (imported events have no coordinator)")
         void shouldNotSetEventCoordinatorId() {
-            // Act
-            Event event = Event.createFromOris(
-                    5555,
-                    "Coordinator-less Event",
-                    LocalDate.of(2026, 10, 1),
-                    "Some Place",
-                    "TST",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=5555"),
-                    null
-            );
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(5555)
+                    .name("Coordinator-less Event")
+                    .eventDate(LocalDate.of(2026, 10, 1))
+                    .location("Some Place")
+                    .organizer("TST")
+                    .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=5555"))
+                    .build());
 
-            // Assert
             assertThat(event.getEventCoordinatorId()).isNull();
         }
     }
