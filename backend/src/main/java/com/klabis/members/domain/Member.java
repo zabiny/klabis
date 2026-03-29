@@ -17,7 +17,6 @@ import org.springframework.util.Assert;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.Period;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -286,7 +285,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         validateContactInformation(command.email(), command.phone(), command.guardian());
 
         // Validate guardian for minors
-        validateGuardianForMinors(command.personalInformation().getDateOfBirth(), command.guardian());
+        validateGuardianForMinors(command.personalInformation(), command.guardian());
 
         // Validate birth number nationality
         validateBirthNumberNationality(command.personalInformation().getNationalityCode(), command.birthNumber());
@@ -360,11 +359,10 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @throws IllegalArgumentException if member is under 18 and no guardian is provided
      */
     private static void validateGuardianForMinors(
-            LocalDate dateOfBirth,
+            PersonalInformation personalInformation,
             GuardianInformation guardian) {
 
-        int age = Period.between(dateOfBirth, LocalDate.now()).getYears();
-        if (age < 18 && guardian == null) {
+        if (personalInformation.isMinor() && guardian == null) {
             throw new BusinessRuleViolationException(
                     "Guardian is required for minors (under 18 years)"
             ) {
@@ -537,13 +535,15 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             newPersonalInfo = this.personalInformation;
         }
 
-        validateGuardianForMinors(newPersonalInfo.getDateOfBirth(), newGuardian);
+        validateGuardianForMinors(newPersonalInfo, newGuardian);
 
         BirthNumber newBirthNumber = command.birthNumber() != null ? command.birthNumber() : this.birthNumber;
         if (newBirthNumber != null && !Nationality.of(newPersonalInfo.getNationalityCode()).isCzech()) {
             newBirthNumber = null;
         }
         validateBirthNumberNationality(newPersonalInfo.getNationalityCode(), newBirthNumber);
+
+        BirthNumber previousBirthNumber = this.birthNumber;
 
         this.email = newEmail;
         this.phone = newPhone;
@@ -561,7 +561,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.refereeLicense() != null) this.refereeLicense = command.refereeLicense();
         if (command.dietaryRestrictions() != null) this.dietaryRestrictions = command.dietaryRestrictions();
 
-        if (command.birthNumber() != null && command.updatedBy() != null && !command.birthNumber().equals(this.birthNumber)) {
+        if (command.birthNumber() != null && command.updatedBy() != null && !command.birthNumber().equals(previousBirthNumber)) {
             registerEvent(BirthNumberAccessedEvent.modified(command.updatedBy(), this.id));
         }
     }

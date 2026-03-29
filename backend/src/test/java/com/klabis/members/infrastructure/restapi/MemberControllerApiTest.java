@@ -1030,7 +1030,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.country']").value(ValidationPatterns.MESSAGE_COUNTRY_INVALID));
+                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("Country must be a valid ISO 3166-1 alpha-2 code (2 letters)"));
         }
     }
 

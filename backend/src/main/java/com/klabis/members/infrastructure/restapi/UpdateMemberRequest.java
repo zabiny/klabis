@@ -3,7 +3,6 @@ package com.klabis.members.infrastructure.restapi;
 import com.klabis.common.patch.PatchField;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.members.application.ValidationPatterns;
 import com.klabis.members.domain.DrivingLicenseGroup;
 import com.klabis.members.domain.Gender;
 import io.soabase.recordbuilder.core.RecordBuilder;
@@ -41,7 +40,7 @@ public record UpdateMemberRequest(
         @HasAuthority(Authority.MEMBERS_MANAGE)
         PatchField<Gender> gender,
 
-        @Pattern(regexp = ValidationPatterns.NUMERIC_ONLY_PATTERN, message = "Chip number must contain only digits")
+        @Pattern(regexp = "^[0-9]+$", message = "Chip number must contain only digits")
         @Size(max = 50, message = "Chip number must not exceed 50 characters")
         PatchField<String> chipNumber,
 
