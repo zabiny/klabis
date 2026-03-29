@@ -64,28 +64,30 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     @RecordBuilder
     public record CreateEvent(
+            @NotBlank(message = "Event name is required")
+            @Size(max = 100, message = "Event name must not exceed 100 characters")
             String name,
+
+            @NotNull(message = "Event date is required")
             LocalDate eventDate,
+
+            @NotBlank(message = "Event location is required")
+            @Size(max = 100, message = "Event location must not exceed 100 characters")
             String location,
+
+            @NotBlank(message = "Event organizer is required")
+            @Size(max = 10, message = "Event organizer must not exceed 10 characters")
             String organizer,
-            WebsiteUrl websiteUrl,
+
+            @URL(message = "Website URL must be valid")
+            String websiteUrl,
+
             MemberId eventCoordinatorId,
             LocalDate registrationDeadline
     ) {}
 
     @RecordBuilder
-    public record CreateEventFromOris(
-            int orisId,
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            LocalDate registrationDeadline
-    ) {}
-
-    @RecordBuilder
-    public record EventCommand(
+    public record UpdateEvent(
             @NotBlank(message = "Event name is required")
             @Size(max = 100, message = "Event name must not exceed 100 characters")
             String name,
@@ -107,8 +109,18 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             MemberId eventCoordinatorId,
 
             LocalDate registrationDeadline
-    ) {
-    }
+    ) {}
+
+    @RecordBuilder
+    public record CreateEventFromOris(
+            int orisId,
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            LocalDate registrationDeadline
+    ) {}
 
     @RecordBuilder
     public record RegisterCommand(
@@ -162,7 +174,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * This bypasses validation since the data was already validated when originally stored.
      * <p>
      * This method is public only for infrastructure/persistence layer usage.
-     * Use {@link #create(String, LocalDate, String, String, WebsiteUrl, MemberId)} for creating new events.
+     * Use {@link #create(CreateEvent)} for creating new events.
      *
      * @param id                 event's unique identifier
      * @param name               event name
@@ -229,7 +241,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.eventDate(),
                 command.location(),
                 command.organizer(),
-                command.websiteUrl(),
+                command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
                 command.eventCoordinatorId(),
                 command.registrationDeadline(),
                 EventStatus.DRAFT,
@@ -406,25 +418,11 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * Business rule: Events can only be updated in DRAFT or ACTIVE status.
      * Updates are forbidden for FINISHED and CANCELLED events.
      *
-     * @param name               new event name (required)
-     * @param eventDate          new event date (required)
-     * @param location           new event location (required)
-     * @param organizer          new event organizer (required)
-     * @param websiteUrl         new website URL (may be null)
-     * @param eventCoordinatorId new coordinator ID (may be null)
+     * @param command update command with all required and optional fields
      * @throws IllegalStateException    if event is in FINISHED or CANCELLED status
      * @throws IllegalArgumentException if validation fails
      */
-    public void update(
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            MemberId eventCoordinatorId,
-            LocalDate registrationDeadline) {
-
-        // Check status allows updates
+    public void update(UpdateEvent command) {
         if (status == EventStatus.FINISHED) {
             throw new BusinessRuleViolationException("Cannot update event in FINISHED status") {
             };
@@ -434,23 +432,20 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             };
         }
 
-        // Validate required fields
-        validateName(name);
-        validateEventDate(eventDate);
-        validateLocation(location);
-        validateOrganizer(organizer);
-        validateRegistrationDeadline(registrationDeadline, eventDate);
+        validateName(command.name());
+        validateEventDate(command.eventDate());
+        validateLocation(command.location());
+        validateOrganizer(command.organizer());
+        validateRegistrationDeadline(command.registrationDeadline(), command.eventDate());
 
-        // Modify fields in-place
-        this.name = name;
-        this.eventDate = eventDate;
-        this.location = location;
-        this.organizer = organizer;
-        this.websiteUrl = websiteUrl;
-        this.eventCoordinatorId = eventCoordinatorId;
-        this.registrationDeadline = registrationDeadline;
+        this.name = command.name();
+        this.eventDate = command.eventDate();
+        this.location = command.location();
+        this.organizer = command.organizer();
+        this.websiteUrl = command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null;
+        this.eventCoordinatorId = command.eventCoordinatorId();
+        this.registrationDeadline = command.registrationDeadline();
 
-        // Register domain event
         registerEvent(EventUpdatedEvent.fromAggregate(this));
     }
 

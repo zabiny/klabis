@@ -112,7 +112,7 @@ class EventJdbcRepositoryTest {
         @DisplayName("should save and find event with all fields including optional")
         void shouldSaveAndFindEventWithAllFieldsIncludingOptional() {
             // Given
-            WebsiteUrl websiteUrl = new WebsiteUrl("https://example.com/event");
+            String websiteUrl = "https://example.com/event";
             MemberId coordinatorId = new MemberId(TEST_MEMBER_1_ID);
 
             Event event = Event.create(EventCreateEventBuilder.builder()

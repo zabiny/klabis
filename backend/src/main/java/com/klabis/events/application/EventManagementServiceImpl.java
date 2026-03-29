@@ -3,7 +3,6 @@ package com.klabis.events.application;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
@@ -31,35 +30,18 @@ public class EventManagementServiceImpl implements EventManagementService {
 
     @Transactional
     @Override
-    public Event createEvent(Event.EventCommand command) {
-        Event event = Event.create(EventCreateEventBuilder.builder()
-                .name(command.name())
-                .eventDate(command.eventDate())
-                .location(command.location())
-                .organizer(command.organizer())
-                .websiteUrl(command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null)
-                .eventCoordinatorId(command.eventCoordinatorId())
-                .registrationDeadline(command.registrationDeadline())
-                .build());
-
+    public Event createEvent(Event.CreateEvent command) {
+        Event event = Event.create(command);
         return eventRepository.save(event);
     }
 
     @Transactional
     @Override
-    public void updateEvent(EventId eventId, Event.EventCommand command) {
+    public void updateEvent(EventId eventId, Event.UpdateEvent command) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
-        event.update(
-                command.name(),
-                command.eventDate(),
-                command.location(),
-                command.organizer(),
-                command.websiteUrl() != null ? WebsiteUrl.of(command.websiteUrl()) : null,
-                command.eventCoordinatorId(),
-                command.registrationDeadline()
-        );
+        event.update(command);
 
         eventRepository.save(event);
     }

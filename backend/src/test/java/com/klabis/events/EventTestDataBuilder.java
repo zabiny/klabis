@@ -5,7 +5,6 @@ import com.klabis.events.domain.Event;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventStatus;
-import com.klabis.events.WebsiteUrl;
 
 import java.time.LocalDate;
 import java.util.ArrayList;

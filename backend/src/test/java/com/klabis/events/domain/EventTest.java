@@ -4,6 +4,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
+import com.klabis.events.domain.EventUpdateEventBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,7 @@ class EventTest {
             LocalDate eventDate = LocalDate.of(2025, 6, 15);
             String location = "Krkonoše National Park";
             String organizer = "Czech Orienteering Club";
-            WebsiteUrl websiteUrl = WebsiteUrl.of("https://example.com/race");
+            String websiteUrl = "https://example.com/race";
             MemberId coordinatorId = new MemberId(UUID.randomUUID());
 
             // Act
@@ -76,7 +77,7 @@ class EventTest {
                     .hasDate(eventDate)
                     .hasLocation(location)
                     .hasOrganizer(organizer)
-                    .hasWebsiteUrl(websiteUrl)
+                    .hasWebsiteUrl(WebsiteUrl.of(websiteUrl))
                     .hasEventCoordinatorId(coordinatorId)
                     .hasStatus(EventStatus.DRAFT);
         }
@@ -368,17 +369,20 @@ class EventTest {
             LocalDate newDate = LocalDate.of(2025, 7, 20);
             String newLocation = "Updated Location";
             String newOrganizer = "Updated Organizer";
-            WebsiteUrl newWebsiteUrl = WebsiteUrl.of("https://updated.com");
+            String newWebsiteUrl = "https://updated.com";
             MemberId newCoordinatorId = new MemberId(UUID.randomUUID());
 
-            event.update(newName, newDate, newLocation, newOrganizer, newWebsiteUrl, newCoordinatorId, null);
+            event.update(EventUpdateEventBuilder.builder()
+                    .name(newName).eventDate(newDate).location(newLocation)
+                    .organizer(newOrganizer).websiteUrl(newWebsiteUrl)
+                    .eventCoordinatorId(newCoordinatorId).build());
 
             EventAssert.assertThat(event)
                     .hasName(newName)
                     .hasDate(newDate)
                     .hasLocation(newLocation)
                     .hasOrganizer(newOrganizer)
-                    .hasWebsiteUrl(newWebsiteUrl)
+                    .hasWebsiteUrl(WebsiteUrl.of(newWebsiteUrl))
                     .hasEventCoordinatorId(newCoordinatorId)
                     .hasStatus(EventStatus.DRAFT);
         }
@@ -400,7 +404,9 @@ class EventTest {
             String newLocation = "Updated Location";
             String newOrganizer = "Updated Organizer";
 
-            event.update(newName, newDate, newLocation, newOrganizer, null, null, null);
+            event.update(EventUpdateEventBuilder.builder()
+                    .name(newName).eventDate(newDate).location(newLocation)
+                    .organizer(newOrganizer).build());
 
             EventAssert.assertThat(event)
                     .hasName(newName)
@@ -423,7 +429,8 @@ class EventTest {
             event.finish();
             EventAssert.assertThat(event).hasStatus(EventStatus.FINISHED);
 
-            assertThatThrownBy(() -> event.update("New Name", LocalDate.of(2025, 7, 20), "New Location", "New Organizer", null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("New Name").eventDate(LocalDate.of(2025, 7, 20)).location("New Location").organizer("New Organizer").build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot update event in FINISHED status");
         }
@@ -440,7 +447,8 @@ class EventTest {
             event.cancel();
             EventAssert.assertThat(event).hasStatus(EventStatus.CANCELLED);
 
-            assertThatThrownBy(() -> event.update("New Name", LocalDate.of(2025, 7, 20), "New Location", "New Organizer", null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("New Name").eventDate(LocalDate.of(2025, 7, 20)).location("New Location").organizer("New Organizer").build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Cannot update event in CANCELLED status");
         }
@@ -450,7 +458,8 @@ class EventTest {
         void shouldFailToUpdateWithNullName() {
             Event event = Event.create(defaultCreateEvent());
 
-            assertThatThrownBy(() -> event.update(null, LocalDate.of(2025, 7, 20), "Location", "Organizer", null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name(null).eventDate(LocalDate.of(2025, 7, 20)).location("Location").organizer("Organizer").build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -460,7 +469,8 @@ class EventTest {
         void shouldFailToUpdateWithBlankName() {
             Event event = Event.create(defaultCreateEvent());
 
-            assertThatThrownBy(() -> event.update("   ", LocalDate.of(2025, 7, 20), "Location", "Organizer", null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("   ").eventDate(LocalDate.of(2025, 7, 20)).location("Location").organizer("Organizer").build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -470,7 +480,8 @@ class EventTest {
         void shouldFailToUpdateWithNullEventDate() {
             Event event = Event.create(defaultCreateEvent());
 
-            assertThatThrownBy(() -> event.update("Event Name", null, "Location", "Organizer", null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("Event Name").eventDate(null).location("Location").organizer("Organizer").build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("eventDate");
         }
@@ -480,7 +491,8 @@ class EventTest {
         void shouldFailToUpdateWithNullLocation() {
             Event event = Event.create(defaultCreateEvent());
 
-            assertThatThrownBy(() -> event.update("Event Name", LocalDate.of(2025, 7, 20), null, "Organizer", null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("Event Name").eventDate(LocalDate.of(2025, 7, 20)).location(null).organizer("Organizer").build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("location");
         }
@@ -490,7 +502,8 @@ class EventTest {
         void shouldFailToUpdateWithBlankLocation() {
             Event event = Event.create(defaultCreateEvent());
 
-            assertThatThrownBy(() -> event.update("Event Name", LocalDate.of(2025, 7, 20), "   ", "Organizer", null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("Event Name").eventDate(LocalDate.of(2025, 7, 20)).location("   ").organizer("Organizer").build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("location");
         }
@@ -500,7 +513,8 @@ class EventTest {
         void shouldFailToUpdateWithNullOrganizer() {
             Event event = Event.create(defaultCreateEvent());
 
-            assertThatThrownBy(() -> event.update("Event Name", LocalDate.of(2025, 7, 20), "Location", null, null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("Event Name").eventDate(LocalDate.of(2025, 7, 20)).location("Location").organizer(null).build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("organizer");
         }
@@ -510,7 +524,8 @@ class EventTest {
         void shouldFailToUpdateWithBlankOrganizer() {
             Event event = Event.create(defaultCreateEvent());
 
-            assertThatThrownBy(() -> event.update("Event Name", LocalDate.of(2025, 7, 20), "Location", "   ", null, null, null))
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder()
+                    .name("Event Name").eventDate(LocalDate.of(2025, 7, 20)).location("Location").organizer("   ").build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("organizer");
         }
@@ -857,7 +872,6 @@ class EventTest {
         void shouldRegisterEventCreatedEventWhenCreated() {
             String name = "Test Event";
             LocalDate eventDate = LocalDate.of(2025, 7, 10);
-            WebsiteUrl websiteUrl = WebsiteUrl.of("https://test.com");
             MemberId coordinatorId = new MemberId(UUID.randomUUID());
 
             Event event = Event.create(EventCreateEventBuilder.builder()
@@ -865,7 +879,7 @@ class EventTest {
                     .eventDate(eventDate)
                     .location("Test Location")
                     .organizer("Test Organizer")
-                    .websiteUrl(websiteUrl)
+                    .websiteUrl("https://test.com")
                     .eventCoordinatorId(coordinatorId)
                     .build());
 
@@ -957,19 +971,17 @@ class EventTest {
                     .eventDate(LocalDate.of(2025, 7, 10))
                     .location("Original Location")
                     .organizer("Original Organizer")
-                    .websiteUrl(WebsiteUrl.of("https://original.com"))
+                    .websiteUrl("https://original.com")
                     .build());
             event.clearDomainEvents(); // Clear creation event
 
-            event.update(
-                    "Updated Event",
-                    LocalDate.of(2025, 7, 15),
-                    "Updated Location",
-                    "Updated Organizer",
-                    WebsiteUrl.of("https://updated.com"),
-                    null,
-                    null
-            );
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Updated Event")
+                    .eventDate(LocalDate.of(2025, 7, 15))
+                    .location("Updated Location")
+                    .organizer("Updated Organizer")
+                    .websiteUrl("https://updated.com")
+                    .build());
 
             List<Object> domainEvents = event.getDomainEvents();
             assertThat(domainEvents)
@@ -995,11 +1007,13 @@ class EventTest {
                     .eventDate(LocalDate.of(2025, 7, 10))
                     .location("Test Location")
                     .organizer("Test Organizer")
-                    .websiteUrl(WebsiteUrl.of("https://test.com"))
+                    .websiteUrl("https://test.com")
                     .build());
             event.clearDomainEvents();
 
-            event.update("Updated Event", LocalDate.of(2025, 7, 15), "Updated Location", "Updated Organizer", null, null, null);
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Updated Event").eventDate(LocalDate.of(2025, 7, 15))
+                    .location("Updated Location").organizer("Updated Organizer").build());
 
             List<Object> domainEvents = event.getDomainEvents();
             EventUpdatedEvent updatedEvent = (EventUpdatedEvent) domainEvents.get(0);

@@ -11,7 +11,8 @@ import org.springframework.hateoas.MediaTypes;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventEventCommandBuilder;
+import com.klabis.events.domain.EventCreateEventBuilder;
+import com.klabis.events.domain.EventUpdateEventBuilder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -51,12 +52,11 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Complete event lifecycle: create → publish → finish")
     void shouldCompleteEventLifecycleFromCreateToFinish() throws Exception {
         // Given: Create an event
-        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Spring Cup 2026")
                 .eventDate(LocalDate.of(2026, 3, 15))
                 .location("Forest Park")
                 .organizer("OOB")
-                .websiteUrl("https://example.com/spring-cup")
                 .build();
 
         MvcResult createResult = mockMvc.perform(
@@ -114,7 +114,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Complete event lifecycle: create → cancel")
     void shouldCompleteEventLifecycleFromCreateToCancel() throws Exception {
         // Given: Create an event
-        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Autumn Race 2026")
                 .eventDate(LocalDate.of(2026, 10, 12))
                 .location("City Park")
@@ -154,7 +154,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event CRUD with optional websiteUrl")
     void shouldCreateEventWithOptionalWebsiteUrl() throws Exception {
         // Given: Create event with optional websiteUrl
-        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Summer Championship 2026")
                 .eventDate(LocalDate.of(2026, 7, 20))
                 .location("Mountain Valley")
@@ -183,7 +183,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(jsonPath("$.websiteUrl").value("https://example.com/summer-champ"));
 
         // When: Update event with new values
-        Event.EventCommand updateCommand = EventEventCommandBuilder.builder()
+        Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()
                 .name("Summer Championship 2026 (Updated)")
                 .eventDate(LocalDate.of(2026, 7, 21))
                 .location("Mountain Valley (Updated)")
@@ -214,14 +214,14 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event list with pagination and filtering by status")
     void shouldListEventsWithPaginationAndStatusFilter() throws Exception {
         // Given: Create multiple events with different statuses
-        Event.EventCommand draftEvent = EventEventCommandBuilder.builder()
+        Event.CreateEvent draftEvent = EventCreateEventBuilder.builder()
                 .name("Draft Event")
                 .eventDate(LocalDate.of(2026, 5, 1))
                 .location("Location 1")
                 .organizer("OOB")
                 .build();
 
-        Event.EventCommand activeEvent = EventEventCommandBuilder.builder()
+        Event.CreateEvent activeEvent = EventCreateEventBuilder.builder()
                 .name("Active Event")
                 .eventDate(LocalDate.of(2026, 6, 1))
                 .location("Location 2")
@@ -275,14 +275,14 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event list with filtering by organizer and date range")
     void shouldListEventsWithOrganizerAndDateRangeFilter() throws Exception {
         // Given: Create events for different organizers
-        Event.EventCommand oobEvent = EventEventCommandBuilder.builder()
+        Event.CreateEvent oobEvent = EventCreateEventBuilder.builder()
                 .name("OOB Event")
                 .eventDate(LocalDate.of(2026, 3, 15))
                 .location("Forest")
                 .organizer("OOB")
                 .build();
 
-        Event.EventCommand prgEvent = EventEventCommandBuilder.builder()
+        Event.CreateEvent prgEvent = EventCreateEventBuilder.builder()
                 .name("PRG Event")
                 .eventDate(LocalDate.of(2026, 4, 20))
                 .location("City")
@@ -325,7 +325,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @DisplayName("Event detail should show status-appropriate HAL+FORMS links")
     void shouldShowStatusAppropriateHateoasLinks() throws Exception {
         // Given: Create a DRAFT event
-        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Links Test Event")
                 .eventDate(LocalDate.of(2026, 8, 10))
                 .location("Test Location")
@@ -397,7 +397,7 @@ class EventManagementE2ETest extends SecurityTestBase {
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
     void shouldRejectUpdateForFinishedEvent() throws Exception {
         // Given: Create and finish an event
-        Event.EventCommand createCommand = EventEventCommandBuilder.builder()
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
                 .name("Immutable Event")
                 .eventDate(LocalDate.of(2026, 9, 5))
                 .location("Immutable Location")
@@ -425,7 +425,7 @@ class EventManagementE2ETest extends SecurityTestBase {
         ).andExpect(status().isNoContent());
 
         // When: Try to update finished event
-        Event.EventCommand updateCommand = EventEventCommandBuilder.builder()
+        Event.UpdateEvent updateCommand = EventUpdateEventBuilder.builder()
                 .name("Updated Name")
                 .eventDate(LocalDate.of(2026, 9, 6))
                 .location("Updated Location")
