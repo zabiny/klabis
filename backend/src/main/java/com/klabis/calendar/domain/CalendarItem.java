@@ -80,6 +80,13 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
             EventId eventId
     ) {}
 
+    @RecordBuilder
+    public record SynchronizeFromEvent(
+            String name,
+            String description,
+            LocalDate eventDate
+    ) {}
+
     @Identity
     private final CalendarItemId id;
 
@@ -290,25 +297,19 @@ public class CalendarItem extends KlabisAggregateRoot<CalendarItem, CalendarItem
      * This method is used only by event synchronization infrastructure.
      * This bypasses the manual update protection for event-linked items.
      *
-     * @param name        new calendar item name (required)
-     * @param description new calendar item description (required)
-     * @param eventDate   new event date (required)
+     * @param command synchronization command with name, description, and eventDate
      * @throws IllegalArgumentException if validation fails
      */
-    public void synchronizeFromEvent(
-            String name,
-            String description,
-            LocalDate eventDate) {
+    public void synchronizeFromEvent(SynchronizeFromEvent command) {
+        validateName(command.name());
+        validateDescription(command.description());
+        validateStartDate(command.eventDate());
+        validateDateRange(command.eventDate(), command.eventDate());
 
-        validateName(name);
-        validateDescription(description);
-        validateStartDate(eventDate);
-        validateDateRange(eventDate, eventDate);
-
-        this.name = name;
-        this.description = description;
-        this.startDate = eventDate;
-        this.endDate = eventDate;
+        this.name = command.name();
+        this.description = command.description();
+        this.startDate = command.eventDate();
+        this.endDate = command.eventDate();
     }
 
     /**

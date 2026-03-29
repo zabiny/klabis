@@ -12,8 +12,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import com.klabis.calendar.domain.CalendarItemUpdateCalendarItemBuilder;
+import com.klabis.calendar.domain.CalendarItemSynchronizeFromEventBuilder;
 
 import static com.klabis.calendar.domain.CalendarItemCreateCalendarItemBuilder.builder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("CalendarItem Aggregate")
@@ -404,6 +406,113 @@ class CalendarItemTest {
                     .build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("End date must be on or after start date");
+        }
+    }
+
+    @Nested
+    @DisplayName("synchronizeFromEvent() method")
+    class SynchronizeFromEventMethod {
+
+        @Test
+        @DisplayName("should synchronize event-linked calendar item with updated event data")
+        void shouldSynchronizeEventLinkedCalendarItem() {
+            EventId eventId = EventId.of(UUID.randomUUID());
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Old Name",
+                    "Old Description",
+                    LocalDate.of(2026, 5, 10),
+                    LocalDate.of(2026, 5, 10),
+                    eventId,
+                    null
+            );
+
+            LocalDate newDate = LocalDate.of(2026, 7, 20);
+
+            calendarItem.synchronizeFromEvent(CalendarItemSynchronizeFromEventBuilder.builder()
+                    .name("New Name")
+                    .description("New Description")
+                    .eventDate(newDate)
+                    .build());
+
+            CalendarItemAssert.assertThat(calendarItem)
+                    .hasName("New Name")
+                    .hasDescription("New Description")
+                    .hasStartDate(newDate)
+                    .hasEndDate(newDate)
+                    .isEventLinked();
+        }
+
+        @Test
+        @DisplayName("should fail synchronization when name is blank")
+        void shouldFailSynchronizationWhenNameIsBlank() {
+            EventId eventId = EventId.of(UUID.randomUUID());
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Old Name",
+                    "Old Description",
+                    LocalDate.of(2026, 5, 10),
+                    LocalDate.of(2026, 5, 10),
+                    eventId,
+                    null
+            );
+
+            assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
+                    CalendarItemSynchronizeFromEventBuilder.builder()
+                            .name("   ")
+                            .description("Description")
+                            .eventDate(LocalDate.of(2026, 7, 20))
+                            .build()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("name");
+        }
+
+        @Test
+        @DisplayName("should fail synchronization when description is blank")
+        void shouldFailSynchronizationWhenDescriptionIsBlank() {
+            EventId eventId = EventId.of(UUID.randomUUID());
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Old Name",
+                    "Old Description",
+                    LocalDate.of(2026, 5, 10),
+                    LocalDate.of(2026, 5, 10),
+                    eventId,
+                    null
+            );
+
+            assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
+                    CalendarItemSynchronizeFromEventBuilder.builder()
+                            .name("Name")
+                            .description("   ")
+                            .eventDate(LocalDate.of(2026, 7, 20))
+                            .build()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("description");
+        }
+
+        @Test
+        @DisplayName("should fail synchronization when eventDate is null")
+        void shouldFailSynchronizationWhenEventDateIsNull() {
+            EventId eventId = EventId.of(UUID.randomUUID());
+            CalendarItem calendarItem = CalendarItem.reconstruct(
+                    CalendarItemId.generate(),
+                    "Old Name",
+                    "Old Description",
+                    LocalDate.of(2026, 5, 10),
+                    LocalDate.of(2026, 5, 10),
+                    eventId,
+                    null
+            );
+
+            assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
+                    CalendarItemSynchronizeFromEventBuilder.builder()
+                            .name("Name")
+                            .description("Description")
+                            .eventDate(null)
+                            .build()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Start date");
         }
     }
 

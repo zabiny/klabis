@@ -105,7 +105,7 @@ public class CalendarEventSyncService implements CalendarEventSyncPort {
 
         String description = buildDescription(location, organizer, websiteUrl);
 
-        calendarItem.synchronizeFromEvent(name, description, eventDate);
+        calendarItem.synchronizeFromEvent(new CalendarItem.SynchronizeFromEvent(name, description, eventDate));
 
         calendarRepository.save(calendarItem);
 
