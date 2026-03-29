@@ -1,17 +1,19 @@
 import {type ReactElement, useState} from "react";
-import type {EntityModel} from "../../api";
+import type {EntityModel, HalFormsTemplate} from "../../api";
 import type {Link} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
+import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
+import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
+import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
 import {formatDate} from "../../utils/dateUtils.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {labels, getEnumLabel} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
-import {Button} from "../../components/UI/Button.tsx";
-import {HalRouteProvider, useHalRoute} from "../../contexts/HalRouteContext.tsx";
+import {Button, Modal} from "../../components/UI";
 import {MemberName} from "../../components/members/MemberName.tsx";
-import {ExternalLink} from "lucide-react";
+import {ExternalLink, UserMinus, UserPlus} from "lucide-react";
 
 interface EventListData extends EntityModel<{
     id: string,
@@ -23,6 +25,13 @@ interface EventListData extends EntityModel<{
     registrationDeadline?: string,
     status?: 'DRAFT' | 'ACTIVE' | 'FINISHED' | 'CANCELLED'
 }> {
+    _templates?: Record<string, HalFormsTemplate>;
+}
+
+interface EventActionModalState {
+    event: EventListData;
+    templateName: string;
+    template: HalFormsTemplate;
 }
 
 interface CoordinatorCellProps {
@@ -59,32 +68,45 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
     );
 };
 
-interface EventRowActionsProps {
-    selfLink: Link;
-}
-
-const EventRowActions = ({selfLink}: EventRowActionsProps): ReactElement => {
-    return (
-        <HalRouteProvider routeLink={selfLink}>
-            <EventRowActionButtons/>
-        </HalRouteProvider>
-    );
-};
-
-const EventRowActionButtons = (): ReactElement => {
-    return (
-        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-            <HalFormButton name="registerForEvent" modal={true}/>
-            <HalFormButton name="unregisterFromEvent" modal={true} variant="danger"/>
-        </div>
-    );
-};
-
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
 
     const importTemplate = resourceData?._templates?.importEvent;
+
+    const openActionModal = (event: EventListData, templateName: string) => {
+        const template = event._templates?.[templateName];
+        if (!template) return;
+        setActionModal({event, templateName, template});
+    };
+
+    const renderActionsCell = ({item}: TableCellRenderProps) => {
+        const event = item as unknown as EventListData;
+        const hasRegister = !!event._templates?.registerForEvent;
+        const hasUnregister = !!event._templates?.unregisterFromEvent;
+
+        return (
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                {hasRegister && (
+                    <Button variant="ghost" size="sm" onClick={(e) => {
+                        e.stopPropagation();
+                        openActionModal(event, 'registerForEvent');
+                    }}>
+                        <UserPlus className="w-4 h-4"/>
+                    </Button>
+                )}
+                {hasUnregister && (
+                    <Button variant="ghost" size="sm" className="text-red-600" onClick={(e) => {
+                        e.stopPropagation();
+                        openActionModal(event, 'unregisterFromEvent');
+                    }}>
+                        <UserMinus className="w-4 h-4"/>
+                    </Button>
+                )}
+            </div>
+        );
+    };
 
     return <div className="flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-text-primary">{labels.sections.events}</h1>
@@ -136,13 +158,7 @@ export const EventsPage = (): ReactElement => {
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
                            dataRender={({value}) => typeof value === 'string' ? getEnumLabel('eventStatus', value) : ''}>{labels.tables.status}</TableCell>
-                <TableCell alwaysVisible column={"actions"}
-                           dataRender={({item}) => {
-                               const links = item._links as Record<string, Link> | undefined;
-                               const selfLink = links?.self;
-                               if (!selfLink) return null;
-                               return <EventRowActions selfLink={selfLink}/>;
-                           }}>{labels.tables.actions}</TableCell>
+                <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
             </HalEmbeddedTable>
         </div>
 
@@ -153,6 +169,18 @@ export const EventsPage = (): ReactElement => {
                 importHref={importTemplate.target!}
             />
         )}
-    </div>;
 
+        {actionModal && (
+            <Modal isOpen={true} onClose={() => setActionModal(null)}
+                   title={actionModal.template.title ?? actionModal.templateName} size="2xl">
+                <HalFormDisplay
+                    template={actionModal.template}
+                    templateName={actionModal.templateName}
+                    resourceData={actionModal.event as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setActionModal(null)}
+                />
+            </Modal>
+        )}
+    </div>;
 }
