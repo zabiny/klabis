@@ -1,12 +1,9 @@
-package com.klabis.events.application;
+package com.klabis.events.domain;
 
 import com.klabis.common.exceptions.ResourceNotFoundException;
 import com.klabis.events.EventId;
 import com.klabis.members.MemberId;
 
-/**
- * Exception thrown when a registration is not found.
- */
 public class RegistrationNotFoundException extends ResourceNotFoundException {
 
     public RegistrationNotFoundException(MemberId memberId, EventId eventId) {

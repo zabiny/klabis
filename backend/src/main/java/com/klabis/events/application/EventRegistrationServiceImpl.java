@@ -36,10 +36,6 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
-        if (event.findRegistration(memberId).isEmpty()) {
-            throw new RegistrationNotFoundException(memberId, eventId);
-        }
-
         event.unregisterMember(new Event.UnregisterMember(memberId));
         eventRepository.save(event);
     }
@@ -53,13 +49,4 @@ public class EventRegistrationServiceImpl implements EventRegistrationService {
         return event.getRegistrations();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public EventRegistration getOwnRegistration(@NonNull EventId eventId, @NonNull MemberId memberId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException(eventId));
-
-        return event.findRegistration(memberId)
-                .orElseThrow(() -> new RegistrationNotFoundException(memberId, eventId));
-    }
 }

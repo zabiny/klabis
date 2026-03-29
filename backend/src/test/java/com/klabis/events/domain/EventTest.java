@@ -3,6 +3,7 @@ package com.klabis.events.domain;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
+import com.klabis.events.domain.RegistrationNotFoundException;
 import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.EventUnregisterMemberBuilder;
 import com.klabis.events.domain.EventUpdateEventBuilder;
@@ -35,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("Event Aggregate")
 class EventTest {
 
-    private static final LocalDate DEFAULT_DATE = LocalDate.of(2025, 7, 10);
+    private static final LocalDate DEFAULT_DATE = LocalDate.now().plusDays(90);
 
     private static Event.CreateEvent defaultCreateEvent() {
         return EventCreateEventBuilder.builder()
@@ -649,7 +650,7 @@ class EventTest {
 
             assertThatThrownBy(() -> event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessageContaining("Cannot unregister on or after event date");
+                    .hasMessageContaining("on or after event date");
         }
 
         @Test
@@ -667,7 +668,7 @@ class EventTest {
 
             assertThatThrownBy(() -> event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessageContaining("Cannot unregister on or after event date");
+                    .hasMessageContaining("on or after event date");
         }
 
         @Test
@@ -684,8 +685,8 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             assertThatThrownBy(() -> event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Member is not registered for this event");
+                    .isInstanceOf(RegistrationNotFoundException.class)
+                    .hasMessageContaining("not registered");
         }
 
         @Test

@@ -250,19 +250,13 @@ class EventRegistrationE2ETest {
     @Test
     @DisplayName("Unregistration should fail on or after event date")
     @WithKlabisMockUser(memberId = TEST_MEMBER_ID_STRING)
+    @Sql(scripts = "/sql/test-past-event-with-registration.sql",
+         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void shouldFailUnregistrationOnOrAfterEventDate() throws Exception {
-        // Given: Create a PUBLISHED event in the past
-        String eventId = createPublishedEvent("Past Event", LocalDate.now().minusDays(10));
+        // Given: A past ACTIVE event with a pre-existing registration (set up via SQL to bypass domain validation)
+        String eventId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
-        // And: Register for the event first
-        Event.RegisterCommand registerCommand = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
-        mockMvc.perform(
-                post("/api/events/{id}/registrations", eventId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(registerCommand))
-        ).andExpect(status().isCreated());
-
-        // When: Try to unregister (after event date)
+        // When: Try to unregister (rejected because event date is in the past)
         mockMvc.perform(
                         delete("/api/events/{id}/registrations", eventId)
                                 .contentType("application/json")

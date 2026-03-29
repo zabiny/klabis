@@ -460,10 +460,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * and the registration deadline (if set) has not passed.
      */
     public boolean areRegistrationsOpen() {
-        LocalDate today = LocalDate.now();
-        return status == EventStatus.ACTIVE
-                && eventDate.isAfter(today)
-                && (registrationDeadline == null || registrationDeadline.isAfter(today));
+        return registrationsOpenViolation().isEmpty();
     }
 
     // ========== Registration Methods ==========
@@ -472,69 +469,66 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * Register a member for this event.
      * <p>
      * Business rules:
-     * - Registration is only allowed for ACTIVE events
+     * - Registration is only allowed for ACTIVE events with open registration window
      * - Member cannot be registered twice for the same event (domain invariant)
      *
      * @param memberId     member's user ID (required)
      * @param siCardNumber SI card number (required)
-     * @throws BusinessRuleViolationException if event is not ACTIVE
-     * @throws IllegalStateException          if member is already registered (domain invariant violation)
+     * @throws BusinessRuleViolationException    if registrations are not open
+     * @throws DuplicateRegistrationException    if member is already registered
      */
     public void registerMember(MemberId memberId, SiCardNumber siCardNumber) {
-        if (status != EventStatus.ACTIVE) {
-            throw new BusinessRuleViolationException("Registration is only allowed for ACTIVE events") {
-                @Override
-                public synchronized Throwable fillInStackTrace() {
-                    return super.fillInStackTrace();
-                }
-            };
-        }
-
-        LocalDate today = LocalDate.now();
-        if (registrationDeadline != null && !registrationDeadline.isAfter(today)) {
-            throw new BusinessRuleViolationException("Registration deadline has passed") {};
-        }
+        assertRegistrationsOpen();
 
         if (findRegistration(memberId).isPresent()) {
             throw new DuplicateRegistrationException(memberId, this.id);
         }
 
-        // Create and add registration
         EventRegistration registration = EventRegistration.create(
                 new EventRegistration.CreateEventRegistration(memberId, siCardNumber));
         registrations.add(registration);
 
-        // Register domain event
         registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId));
     }
 
     /**
      * Unregister a member from this event.
      * <p>
-     * Business rule: Unregistration is only allowed before the event date and before the registration deadline.
+     * Business rule: Unregistration is only allowed when registrations are open.
      *
      * @param command unregister command containing the member ID
-     * @throws BusinessRuleViolationException if registration deadline has passed or event date is today/past
-     * @throws IllegalArgumentException       if member is not registered
+     * @throws BusinessRuleViolationException    if registrations are not open
+     * @throws RegistrationNotFoundException     if member is not registered
      */
     public void unregisterMember(UnregisterMember command) {
-        LocalDate today = LocalDate.now();
-
-        if (registrationDeadline != null && !registrationDeadline.isAfter(today)) {
-            throw new BusinessRuleViolationException("Registration deadline has passed") {};
-        }
-
-        if (!today.isBefore(eventDate)) {
-            throw new BusinessRuleViolationException("Cannot unregister on or after event date") {
-            };
-        }
+        assertRegistrationsOpen();
 
         EventRegistration registration = findRegistration(command.memberId())
-                .orElseThrow(() -> new IllegalArgumentException("Member is not registered for this event"));
+                .orElseThrow(() -> new RegistrationNotFoundException(command.memberId(), this.id));
 
         registrations.remove(registration);
 
         registerEvent(MemberUnregisteredFromEventEvent.fromAggregate(this, command.memberId()));
+    }
+
+    private void assertRegistrationsOpen() {
+        registrationsOpenViolation().ifPresent(message -> {
+            throw new BusinessRuleViolationException(message) {};
+        });
+    }
+
+    private Optional<String> registrationsOpenViolation() {
+        if (status != EventStatus.ACTIVE) {
+            return Optional.of("Registration is only allowed for ACTIVE events");
+        }
+        LocalDate today = LocalDate.now();
+        if (registrationDeadline != null && !registrationDeadline.isAfter(today)) {
+            return Optional.of("Registration deadline has passed");
+        }
+        if (!today.isBefore(eventDate)) {
+            return Optional.of("Cannot register/unregister on or after event date");
+        }
+        return Optional.empty();
     }
 
     /**

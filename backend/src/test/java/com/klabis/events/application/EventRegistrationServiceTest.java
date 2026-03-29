@@ -237,7 +237,7 @@ class EventRegistrationServiceTest {
             // When/Then
             assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID))
                     .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessageContaining("Cannot unregister on or after event date");
+                    .hasMessageContaining("on or after event date");
 
             verify(eventRepository, never()).save(any(Event.class));
         }
@@ -259,7 +259,7 @@ class EventRegistrationServiceTest {
             // When/Then
             assertThatThrownBy(() -> service.unregisterMember(eventId, TEST_MEMBER_ID))
                     .isInstanceOf(BusinessRuleViolationException.class)
-                    .hasMessageContaining("Cannot unregister on or after event date");
+                    .hasMessageContaining("on or after event date");
 
             verify(eventRepository, never()).save(any(Event.class));
         }
@@ -367,54 +367,4 @@ class EventRegistrationServiceTest {
         }
     }
 
-    @Nested
-    @DisplayName("getOwnRegistration() method")
-    class GetOwnRegistrationMethod {
-
-        private EventId eventId;
-        private Event activeEvent;
-
-        @BeforeEach
-        void setUp() {
-            eventId = EventId.generate();
-
-            activeEvent = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
-                    .location("Test Location").organizer("OOB").build());
-            activeEvent.publish();
-            activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"));
-        }
-
-        @Test
-        @DisplayName("should return EventRegistration domain object including SI card for own registration")
-        void shouldReturnOwnRegistrationWithSiCard() {
-            // Given
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
-
-            // When
-            EventRegistration registration = service.getOwnRegistration(eventId, TEST_MEMBER_ID);
-
-            // Then
-            assertThat(registration).isNotNull();
-            assertThat(registration.memberId()).isEqualTo(TEST_MEMBER_ID);
-            assertThat(registration.siCardNumber().value()).isEqualTo("123456");
-        }
-
-        @Test
-        @DisplayName("should throw exception when not registered")
-        void shouldThrowExceptionWhenNotRegistered() {
-            // Given
-            Event eventWithoutRegistration = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event").eventDate(LocalDate.of(2026, 6, 15))
-                    .location("Test Location").organizer("OOB").build());
-            eventWithoutRegistration.publish();
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithoutRegistration));
-
-            // When/Then
-            assertThatThrownBy(() -> service.getOwnRegistration(eventId, TEST_MEMBER_ID))
-                    .isInstanceOf(RegistrationNotFoundException.class)
-                    .hasMessageContaining("not registered");
-        }
-    }
 }

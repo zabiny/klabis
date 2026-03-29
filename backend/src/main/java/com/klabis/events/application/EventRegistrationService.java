@@ -18,5 +18,4 @@ public interface EventRegistrationService {
 
     List<EventRegistration> listRegistrations(@NonNull EventId eventId);
 
-    EventRegistration getOwnRegistration(@NonNull EventId eventId, @NonNull MemberId memberId);
 }

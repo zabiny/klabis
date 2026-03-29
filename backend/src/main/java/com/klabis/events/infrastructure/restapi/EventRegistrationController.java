@@ -3,7 +3,7 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.users.Authority;
 import com.klabis.events.application.EventManagementService;
 import com.klabis.events.application.EventRegistrationService;
-import com.klabis.events.application.RegistrationNotFoundException;
+import com.klabis.events.domain.RegistrationNotFoundException;
 import com.klabis.events.domain.DuplicateRegistrationException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.EventId;
