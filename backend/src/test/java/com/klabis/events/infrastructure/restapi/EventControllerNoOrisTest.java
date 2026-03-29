@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -67,7 +68,7 @@ class EventControllerNoOrisTest {
     @DisplayName("should NOT include importFromOris affordance when OrisApiClient bean is absent")
     @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
     void shouldNotIncludeImportAffordanceWhenOrisInactive() throws Exception {
-        when(eventManagementService.listEvents(any(EventFilter.class), any()))
+        when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
         mockMvc.perform(

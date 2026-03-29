@@ -141,7 +141,7 @@ class EventRegistrationController {
             @Parameter(description = "Event UUID") @PathVariable UUID eventId,
             @CurrentUser CurrentUserData currentUser) {
 
-        Event event = eventManagementService.getEvent(new EventId(eventId));
+        Event event = eventManagementService.getEvent(new EventId(eventId), true);
         EventRegistration registration = event.findRegistration(currentUser.memberId())
                 .orElseThrow(() -> new RegistrationNotFoundException(currentUser.memberId(), new EventId(eventId)));
 

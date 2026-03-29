@@ -263,7 +263,7 @@ class EventRegistrationControllerTest {
                     .build();
             activeEvent.publish();
 
-            when(eventManagementServiceMock.getEvent(new EventId(eventId))).thenReturn(activeEvent);
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
             when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
 
             mockMvc.perform(
@@ -295,7 +295,7 @@ class EventRegistrationControllerTest {
             finishedEvent.publish();
             finishedEvent.finish();
 
-            when(eventManagementServiceMock.getEvent(new EventId(eventId))).thenReturn(finishedEvent);
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(finishedEvent);
             when(membersMock.findById(memberId)).thenReturn(java.util.Optional.of(new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
 
             mockMvc.perform(
@@ -319,7 +319,7 @@ class EventRegistrationControllerTest {
                     .build();
             eventWithoutRegistration.publish();
 
-            when(eventManagementServiceMock.getEvent(new EventId(eventId))).thenReturn(eventWithoutRegistration);
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(eventWithoutRegistration);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/me", eventId)

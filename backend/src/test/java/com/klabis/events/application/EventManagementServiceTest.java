@@ -360,7 +360,7 @@ class EventManagementServiceTest {
     class GetEventMethod {
 
         @Test
-        @DisplayName("should return event details when event exists")
+        @DisplayName("should return event details when event exists and caller can manage events")
         void shouldReturnEventDetails() {
             // Given
             EventId eventId = EventId.generate();
@@ -374,7 +374,7 @@ class EventManagementServiceTest {
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
             // When
-            Event result = service.getEvent(eventId);
+            Event result = service.getEvent(eventId, true);
 
             // Then
             assertThat(result).isNotNull();
@@ -392,8 +392,43 @@ class EventManagementServiceTest {
             when(eventRepository.findById(any(EventId.class))).thenReturn(Optional.empty());
 
             // When & Then
-            assertThatThrownBy(() -> service.getEvent(new EventId(eventId)))
+            assertThatThrownBy(() -> service.getEvent(new EventId(eventId), true))
                     .isInstanceOf(EventNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should hide DRAFT event from non-manager")
+        void shouldThrowEventNotFoundForDraftEventWhenCannotManage() {
+            // Given
+            EventId eventId = EventId.generate();
+            Event draftEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(draftEvent));
+
+            // When & Then
+            assertThatThrownBy(() -> service.getEvent(eventId, false))
+                    .isInstanceOf(EventNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should return ACTIVE event to non-manager")
+        void shouldReturnActiveEventForNonManager() {
+            // Given
+            EventId eventId = EventId.generate();
+            Event activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+            activeEvent.publish();
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
+
+            // When
+            Event result = service.getEvent(eventId, false);
+
+            // Then
+            assertThat(result.getStatus()).isEqualTo(EventStatus.ACTIVE);
         }
     }
 
@@ -402,8 +437,8 @@ class EventManagementServiceTest {
     class ListEventsMethod {
 
         @Test
-        @DisplayName("should return paginated list of events")
-        void shouldReturnPaginatedEvents() {
+        @DisplayName("manager sees all events including DRAFT when filter is none()")
+        void shouldReturnPaginatedEventsForManager() {
             // Given
             Pageable pageable = PageRequest.of(0, 10);
             Event event1 = Event.create(EventCreateEventBuilder.builder()
@@ -417,7 +452,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(EventFilter.none(), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.none(), pageable);
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, true);
 
             // Then
             assertThat(result.getContent()).hasSize(2);
@@ -426,8 +461,64 @@ class EventManagementServiceTest {
         }
 
         @Test
-        @DisplayName("should filter events by status")
-        void shouldFilterEventsByStatus() {
+        @DisplayName("non-manager sees events excluding DRAFT when filter is none()")
+        void shouldExcludeDraftEventsForNonManager() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+            Event activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+            activeEvent.publish();
+
+            EventFilter expectedFilter = EventFilter.byNotHavingStatus(EventStatus.DRAFT);
+            Page<Event> eventPage = new PageImpl<>(List.of(activeEvent), pageable, 1);
+            when(eventRepository.findAll(expectedFilter, pageable)).thenReturn(eventPage);
+
+            // When
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, false);
+
+            // Then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getStatus()).isEqualTo(EventStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("non-manager requesting DRAFT status explicitly gets empty page")
+        void shouldReturnEmptyPageWhenNonManagerRequestsDraftOnly() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // When
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, false);
+
+            // Then
+            assertThat(result.getContent()).isEmpty();
+            assertThat(result.getTotalElements()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("manager requesting DRAFT status gets DRAFT events")
+        void shouldReturnDraftEventsForManagerRequestingDraft() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+            Event draftEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+
+            Page<Event> eventPage = new PageImpl<>(List.of(draftEvent), pageable, 1);
+            when(eventRepository.findAll(EventFilter.byStatus(EventStatus.DRAFT), pageable)).thenReturn(eventPage);
+
+            // When
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, true);
+
+            // Then
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getStatus()).isEqualTo(EventStatus.DRAFT);
+        }
+
+        @Test
+        @DisplayName("should filter events by ACTIVE status for both manager and non-manager")
+        void shouldFilterEventsByActiveStatus() {
             // Given
             Pageable pageable = PageRequest.of(0, 10);
             Event event = Event.create(EventCreateEventBuilder.builder()
@@ -439,7 +530,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(EventFilter.byStatus(EventStatus.ACTIVE), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.ACTIVE), pageable);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.ACTIVE), pageable, false);
 
             // Then
             assertThat(result.getContent()).hasSize(1);

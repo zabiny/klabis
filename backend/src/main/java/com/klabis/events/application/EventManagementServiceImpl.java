@@ -6,6 +6,7 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.EventStatus;
 import com.klabis.oris.apiclient.OrisApiClient;
 import com.klabis.oris.apiclient.dto.EventDetails;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -120,14 +121,27 @@ public class EventManagementServiceImpl implements EventManagementService {
 
     @Override
     @Transactional(readOnly = true)
-    public Event getEvent(EventId eventId) {
-        return eventRepository.findById(eventId)
+    public Event getEvent(EventId eventId, boolean canManageEvents) {
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
+        if (!canManageEvents && event.getStatus() == EventStatus.DRAFT) {
+            throw new EventNotFoundException(eventId);
+        }
+        return event;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Event> listEvents(EventFilter filter, Pageable pageable) {
-        return eventRepository.findAll(filter, pageable);
+    public Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents) {
+        if (canManageEvents) {
+            return eventRepository.findAll(filter, pageable);
+        }
+        if (filter.excludesStatus(EventStatus.DRAFT)) {
+            return eventRepository.findAll(filter, pageable);
+        }
+        if (filter.requestsOnlyStatus(EventStatus.DRAFT)) {
+            return Page.empty(pageable);
+        }
+        return eventRepository.findAll(filter.withExcludedStatus(EventStatus.DRAFT), pageable);
     }
 }

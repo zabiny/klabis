@@ -22,7 +22,7 @@ public interface EventManagementService {
 
     void finishEvent(EventId eventId);
 
-    Event getEvent(EventId eventId);
+    Event getEvent(EventId eventId, boolean canManageEvents);
 
-    Page<Event> listEvents(EventFilter filter, Pageable pageable);
+    Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents);
 }

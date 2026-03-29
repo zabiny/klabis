@@ -142,11 +142,7 @@ public class EventController {
             @Parameter(description = "Event UUID") @PathVariable UUID id,
             @CurrentUser CurrentUserData currentUser) {
 
-        Event event = eventManagementService.getEvent(new EventId(id));
-
-        if (event.getStatus() == EventStatus.DRAFT && !hasEventsManageAuthority()) {
-            throw new EventNotFoundException(new EventId(id));
-        }
+        Event event = eventManagementService.getEvent(new EventId(id), hasEventsManageAuthority());
 
         EventDto eventDto = EventDtoMapper.toDto(event);
 
@@ -188,20 +184,8 @@ public class EventController {
 
         validateSortFields(pageable.getSort());
 
-        Page<Event> page;
-        if (status == EventStatus.DRAFT && !hasEventsManageAuthority()) {
-            page = Page.empty(pageable);
-        } else {
-            EventFilter filter;
-            if (status != null) {
-                filter = EventFilter.byStatus(status);
-            } else if (hasEventsManageAuthority()) {
-                filter = EventFilter.none();
-            } else {
-                filter = EventFilter.byNotHavingStatus(EventStatus.DRAFT);
-            }
-            page = eventManagementService.listEvents(filter, pageable);
-        }
+        EventFilter filter = status != null ? EventFilter.byStatus(status) : EventFilter.none();
+        Page<Event> page = eventManagementService.listEvents(filter, pageable, hasEventsManageAuthority());
 
         PagedModel<EntityModel<EventSummaryDto>> pagedModel = pagedResourcesAssembler.toModel(
                 page,

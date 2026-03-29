@@ -1,0 +1,105 @@
+package com.klabis.events.domain;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DisplayName("EventFilter")
+class EventFilterTest {
+
+    @Nested
+    @DisplayName("requestsOnlyStatus()")
+    class RequestsOnlyStatusTests {
+
+        @Test
+        @DisplayName("returns true when filter has exactly that one status")
+        void returnsTrueForSingleMatchingStatus() {
+            assertThat(EventFilter.byStatus(EventStatus.DRAFT).requestsOnlyStatus(EventStatus.DRAFT)).isTrue();
+        }
+
+        @Test
+        @DisplayName("returns false when filter has multiple statuses")
+        void returnsFalseForMultipleStatuses() {
+            assertThat(EventFilter.byStatus(EventStatus.DRAFT, EventStatus.ACTIVE).requestsOnlyStatus(EventStatus.DRAFT)).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns false for none-filter (empty set)")
+        void returnsFalseForNoneFilter() {
+            assertThat(EventFilter.none().requestsOnlyStatus(EventStatus.DRAFT)).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns false when filter has single different status")
+        void returnsFalseForDifferentStatus() {
+            assertThat(EventFilter.byStatus(EventStatus.ACTIVE).requestsOnlyStatus(EventStatus.DRAFT)).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("excludesStatus()")
+    class ExcludesStatusTests {
+
+        @Test
+        @DisplayName("returns true when filter has explicit statuses not including DRAFT")
+        void returnsTrueWhenStatusNotInExplicitSet() {
+            assertThat(EventFilter.byStatus(EventStatus.ACTIVE, EventStatus.FINISHED).excludesStatus(EventStatus.DRAFT)).isTrue();
+        }
+
+        @Test
+        @DisplayName("returns true for byNotHavingStatus filter")
+        void returnsTrueForByNotHavingStatusFilter() {
+            assertThat(EventFilter.byNotHavingStatus(EventStatus.DRAFT).excludesStatus(EventStatus.DRAFT)).isTrue();
+        }
+
+        @Test
+        @DisplayName("returns false for none-filter (no restriction applied yet)")
+        void returnsFalseForNoneFilter() {
+            assertThat(EventFilter.none().excludesStatus(EventStatus.DRAFT)).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns false when filter explicitly includes that status")
+        void returnsFalseWhenStatusInSet() {
+            assertThat(EventFilter.byStatus(EventStatus.DRAFT).excludesStatus(EventStatus.DRAFT)).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("withExcludedStatus()")
+    class WithExcludedStatusTests {
+
+        @Test
+        @DisplayName("none-filter becomes byNotHavingStatus when DRAFT is excluded")
+        void noneFilterBecomesComplement() {
+            EventFilter result = EventFilter.none().withExcludedStatus(EventStatus.DRAFT);
+            assertThat(result).isEqualTo(EventFilter.byNotHavingStatus(EventStatus.DRAFT));
+        }
+
+        @Test
+        @DisplayName("removes DRAFT from a multi-status filter leaving remaining statuses")
+        void removesStatusFromMultiStatusFilter() {
+            EventFilter result = EventFilter.byStatus(EventStatus.DRAFT, EventStatus.ACTIVE, EventStatus.FINISHED)
+                    .withExcludedStatus(EventStatus.DRAFT);
+            assertThat(result.statuses()).containsExactlyInAnyOrder(EventStatus.ACTIVE, EventStatus.FINISHED);
+        }
+
+        @Test
+        @DisplayName("preserves other filter dimensions (organizer, dates) when removing status")
+        void preservesOtherDimensions() {
+            EventFilter base = new EventFilter(
+                    java.util.Set.of(EventStatus.DRAFT, EventStatus.ACTIVE),
+                    "OOB",
+                    java.time.LocalDate.of(2026, 1, 1),
+                    java.time.LocalDate.of(2026, 12, 31)
+            );
+            EventFilter result = base.withExcludedStatus(EventStatus.DRAFT);
+            assertThat(result.organizer()).isEqualTo("OOB");
+            assertThat(result.dateFrom()).isEqualTo(java.time.LocalDate.of(2026, 1, 1));
+            assertThat(result.dateTo()).isEqualTo(java.time.LocalDate.of(2026, 12, 31));
+            assertThat(result.statuses()).containsExactly(EventStatus.ACTIVE);
+        }
+    }
+}

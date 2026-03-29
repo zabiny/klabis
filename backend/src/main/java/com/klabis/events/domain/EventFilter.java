@@ -49,6 +49,40 @@ public record EventFilter(
         return new EventFilter(allowed, null, null, null);
     }
 
+    /**
+     * Returns true when the filter's status set explicitly contains this status
+     * and no others — i.e., caller is asking for only this status.
+     */
+    public boolean requestsOnlyStatus(EventStatus status) {
+        return statuses.size() == 1 && statuses.contains(status);
+    }
+
+    /**
+     * Returns true when the filter already guarantees this status cannot appear in results —
+     * i.e., the filter has an explicit include-set that does not contain this status.
+     * A none-filter (empty set) returns false because it imposes no restriction yet.
+     */
+    public boolean excludesStatus(EventStatus status) {
+        return !statuses.isEmpty() && !statuses.contains(status);
+    }
+
+    /**
+     * Returns a new filter identical to this one but with the given status removed
+     * from the allowed set.  When the filter had no status restriction (empty set),
+     * the complement of the excluded status is used instead.
+     */
+    public EventFilter withExcludedStatus(EventStatus excluded) {
+        if (statuses.isEmpty()) {
+            return EventFilter.byNotHavingStatus(excluded);
+        }
+        EnumSet<EventStatus> remaining = EnumSet.copyOf(statuses);
+        remaining.remove(excluded);
+        if (remaining.isEmpty()) {
+            return new EventFilter(Set.of(), organizer, dateFrom, dateTo);
+        }
+        return new EventFilter(remaining, organizer, dateFrom, dateTo);
+    }
+
     public static EventFilter byOrganizer(String organizer) {
         return new EventFilter(Set.of(), organizer, null, null);
     }
