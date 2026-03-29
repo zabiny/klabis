@@ -9,7 +9,7 @@ active events with their SI card number, view registrations, and unregister befo
 
 ### Requirement: Register for Event
 
-The system SHALL allow authenticated members to register themselves for events that are in ACTIVE status.
+The system SHALL allow authenticated members to register themselves for events that are in ACTIVE status and have open registrations (event date in the future AND registration deadline not passed).
 
 **IMPORTANT CONSTRAINTS:**
 
@@ -21,6 +21,8 @@ The system SHALL allow authenticated members to register themselves for events t
 
 - **WHEN** authenticated member submits POST /api/events/{eventId}/registrations with siCardNumber
 - **AND** the event is in ACTIVE status
+- **AND** the event date is in the future
+- **AND** the registration deadline has not passed (if set)
 - **AND** the member is not already registered
 - **THEN** the system creates a registration for the member
 - **AND** records the provided SI card number
@@ -65,6 +67,13 @@ The system SHALL allow authenticated members to register themselves for events t
 - **THEN** HTTP 400 Bad Request is returned
 - **AND** error message indicates registration is only allowed for active events
 
+#### Scenario: Registration after deadline rejected
+
+- **WHEN** authenticated member attempts to register for an ACTIVE event
+- **AND** the event has a registration deadline that has passed
+- **THEN** HTTP 400 Bad Request is returned
+- **AND** error message indicates the registration deadline has passed
+
 #### Scenario: Registration for non-existent event
 
 - **WHEN** authenticated member attempts to register for a non-existent event
@@ -85,13 +94,14 @@ The system SHALL allow authenticated members to register themselves for events t
 
 ### Requirement: Unregister from Event
 
-The system SHALL allow members to unregister themselves from events before the event date.
+The system SHALL allow members to unregister themselves from events before the event date and before the registration deadline (if set).
 
 #### Scenario: Successful unregistration before event date
 
 - **WHEN** authenticated member submits DELETE /api/events/{eventId}/registrations
 - **AND** the member is registered for the event
 - **AND** the event date is in the future
+- **AND** the registration deadline has not passed (if set)
 - **THEN** the system removes the member's registration
 - **AND** returns HTTP 204 No Content
 
@@ -106,6 +116,13 @@ The system SHALL allow members to unregister themselves from events before the e
 - **WHEN** authenticated member attempts to unregister after the event date has passed
 - **THEN** HTTP 400 Bad Request is returned
 - **AND** error message indicates unregistration is only allowed before the event date
+
+#### Scenario: Unregistration after deadline rejected
+
+- **WHEN** authenticated member attempts to unregister from an event
+- **AND** the event has a registration deadline that has passed
+- **THEN** HTTP 400 Bad Request is returned
+- **AND** error message indicates the registration deadline has passed
 
 #### Scenario: Unregistration when not registered
 
