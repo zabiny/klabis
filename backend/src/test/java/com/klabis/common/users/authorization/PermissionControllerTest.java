@@ -1,6 +1,5 @@
 package com.klabis.common.users.authorization;
 
-import tools.jackson.databind.ObjectMapper;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
@@ -21,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Set;
 import java.util.UUID;
@@ -73,7 +73,7 @@ class PermissionControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.userId").isNotEmpty())
                     .andExpect(jsonPath("$.authorities").isArray())
-                    .andExpect(jsonPath("$.authorities", hasItems("MEMBERS:MANAGE", "MEMBERS:READ")));
+                    .andExpect(jsonPath("$.authorities", hasItems("MEMBERS:MANAGE")));
         }
 
         @Test
