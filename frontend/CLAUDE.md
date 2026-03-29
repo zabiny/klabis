@@ -123,28 +123,9 @@ API client configured in `src/api/setup.ts`:
 
 ### HATEOAS Conventions
 
-This frontend follows HAL (Hypertext Application Language) conventions:
+Navigate via `_links` relations, never hardcode URLs. See `hal-navigator-patterns` skill for detailed component patterns.
 
-1. **Navigate via Links, Not URLs:**
-    - Use `_links` relations, never hardcode URLs
-    - Example: `resource._links.self.href`
-
-2. **HATEOAS Utilities** (`src/api/hateoas.ts`):
-   ```typescript
-   // Extract links
-   getLink(resource, 'self')
-   getLinkHref(resource, 'collection')
-
-   // Follow links
-   followLink(resource, 'members')
-
-   // Embedded resources
-   getEmbedded(resource, 'items')
-   ```
-
-3. **Reusable Components:**
-    - `KlabisTableWithQuery` - Table with HAL pagination support
-    - `HalSubresourceProvider` - allows to conditionally display data of resources from `_links` section. Fetched data and provides them to subcomponents through `useHalResource` hook.  
+Key utilities in `src/api/hateoas.ts`: `getLink()`, `getLinkHref()`, `followLink()`, `getEmbedded()`.
 
 ## Authentication (OAuth2/OIDC)
 
@@ -180,115 +161,12 @@ await klabisUserManager.signoutRedirect();
 
 ## Vite Proxy Configuration
 
-Development server proxies backend requests:
+Dev server proxies `/api` → `https://localhost:8443` (strips `/api` prefix) and `/.well-known` for OAuth2 discovery. See `vite.config.ts` for details.
 
-```typescript
-proxy: {
-  '/api': {
-    target: 'https://localhost:8443',
-    secure: false,
-    changeOrigin: true,
-    rewrite: path => path.substr("/api".length)
-  },
-  '/.well-known': {  // OAuth2 discovery
-    target: 'https://localhost:8443',
-    secure: false,
-    changeOrigin: true,
-  }
-}
-```
+## Key Conventions
 
-## Path Aliases
-
-```typescript
-import { MyComponent } from '@/components/MyComponent';
-import { useMyHook } from '@/hooks/useMyHook';
-```
-
-Configured in:
-
-- `vite.config.ts` → `@` alias
-- `tsconfig.json` → TypeScript path mapping
-
-## Styling Guidelines
-
-### Tailwind CSS
-
-- **Utility-first:** Use Tailwind classes directly
-- **Custom theme:** `tailwind.config.ts`
-- **Plugins:**
-    - `@tailwindcss/forms` - Form styling
-    - `@tailwindcss/typography` - Rich text content
-
-### Component Patterns
-
-```tsx
-// Prefer functional components with TypeScript
-export const MyComponent: React.FC<MyComponentProps> = ({ prop1 }) => {
-  return (
-    <div className="flex items-center space-x-4">
-      {/* Component content */}
-    </div>
-  );
-};
-```
-
-## State Management
-
-### TanStack Query (React Query)
-
-- Global config in `src/main.tsx`: `refetchOnWindowFocus: false`, `retry: 1`
-- Query key convention: domain-based arrays, e.g. `['members']`, `['members', id]`
-- After mutations: `queryClient.invalidateQueries({ queryKey: ['members'] })`
-- **DevTools:** Available in development mode (toggle button at `http://localhost:3000`)
-
-## Forms
-
-### Formik + Yup
-
-- Validation schemas via Yup, bindings via `formik-mui` (MUI) and `formik-mui-x-date-pickers`
-
-## Environment Variables
-
-Create `.env.local` for local overrides:
-
-```bash
-VITE_HAL_ROOT_URI=/api
-```
-
-**Access in code:**
-
-```typescript
-const apiRoot = import.meta.env.VITE_HAL_ROOT_URI;
-```
-
-## Common Tasks
-
-### Add a New Page
-
-1. Create component in `src/pages/MyPage.tsx`
-2. Add route in `src/App.tsx`
-3. Update navigation links
-
-### Add a New API Endpoint
-
-1. Update OpenAPI spec: `../docs/openapi/klabis-full.json`
-2. Regenerate types: `npm run openapi`
-3. Create query/mutation hooks in `src/api/`
-
-### Add a New Component
-
-1. Create in appropriate directory:
-    - Reusable → `src/components/UI/`
-    - Domain-specific → `src/components/{domain}/`
-2. Export from `index.ts` if reusable
-3. Add tests in `{ComponentName}.test.tsx`
-
-### Update Tailwind Theme
-
-1. Edit `tailwind.config.ts`
-2. Restart dev server
-3. Use new classes in components
+- TanStack Query: `refetchOnWindowFocus: false`, `retry: 1`, query keys as domain-based arrays (`['members']`, `['members', id]`)
+- Forms: Formik + Yup, bindings via `formik-mui` and `formik-mui-x-date-pickers`
 
 ## Code Quality
 
@@ -356,28 +234,7 @@ type Member = components['schemas']['MemberDto'];
 
 ### 3. OAuth2 Errors
 
-If getting 401 errors:
-
-1. **Check backend is running on `https://localhost:8443`**
-   ```bash
-   curl -k https://localhost:8443/actuator/health
-   ```
-
-2. **Inspect actual OAuth2 responses** (don't assume):
-   - Open browser DevTools → Network tab
-   - Check `/oauth2/authorize` response
-   - Decode `id_token` at jwt.io to see actual claims
-   - Verify `access_token` scopes
-
-3. **Common OAuth2 mistakes:**
-   - Using password grant (NOT supported - use authorization code)
-   - Wrong `client_id` (must match backend registration)
-   - Requesting scopes not registered in backend
-   - Backend running old code before OAuth2 changes
-
-4. Clear browser cookies/local storage (last resort)
-
-5. Check proxy configuration in `vite.config.ts`
+If getting 401: verify backend is running, check Network tab for `/oauth2/authorize` response, verify `access_token` scopes. Only authorization code flow is supported (not password grant).
 
 ### 4. Build Output
 
@@ -399,44 +256,8 @@ After `npm run build`, **always** run `npm run refresh-backend-server-resources`
 - Project uses `lucide-react` for icons (not `@heroicons/react`)
 - Lucide naming: `Pencil`, `Banknote`, `Shield`, `UserX`, `Check`, `UserPlus`
 
-### 8. HAL+FORMS Template Names
-
-- Template names are derived from Spring controller method names (e.g., `suspendMember`, `registerMember`, `resumeMember`)
-- Frontend must use the exact backend method name when referencing templates in `HalFormButton name="..."`
-
-## Debugging
-
-### React Query DevTools
-
-- Available in development mode
-- Toggle panel to inspect queries/mutations
-- View cache state, refetch, invalidate queries
-
-### Browser DevTools
-
-- Network tab: Check API requests/responses
-- Console: OAuth2 redirect logs
-- Application tab: Check OAuth2 tokens in localStorage
-
-### Vite DevTools
-
-- Hot Module Replacement (HMR) for instant updates
-- Source maps enabled in development
-
 ## Related Documentation
 
 - **Backend API:** `../backend/CLAUDE.md`
 - **API Specification:** `../docs/openapi/klabis-full.json`
 - **Main Project:** `../CLAUDE.md`
-
-## Migration Notes
-
-This modern React frontend is replacing the legacy vanilla JS UI mockup located at
-`../backend/src/main/resources/static/mock/`. Key improvements:
-
-- Type-safe API client (OpenAPI generated types)
-- Modern state management (TanStack Query)
-- Component-based architecture
-- Comprehensive testing (Vitest + Testing Library)
-- OAuth2/OIDC integration (oidc-client-ts)
-- Full HATEOAS support (HAL+JSON)

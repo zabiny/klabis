@@ -5,7 +5,7 @@
 1. **Backend** → `./backend/` (Spring Boot application)
     - API endpoints, OAuth2 server, business logic
     - See `./backend/CLAUDE.md` for build/test/run commands
-    - Gradle build, Java 17+, Spring Boot 3.5.9
+    - Gradle build, Java 17+, Spring Boot 4.0.5
 
 2. **Frontend** → `./frontend/` (React + TypeScript + Vite)
     - Modern React SPA with OpenAPI integration
@@ -40,11 +40,6 @@ npm run dev
 
 ## Development Workflow Best Practices
 
-### HAL+FORMS Template Names (HATEOAS 3.0)
-- Templates use controller method name as key (e.g., `updateMember`, `createEvent`), NOT `"default"`
-- Frontend accesses templates via `_templates.updateMember` etc.
-- Backend affordances: `andAffordances(afford(methodOn(Controller.class).methodName(...)))` → template name = `methodName`
-
 ### Check specifications when expected behavior is in question
 
 - Project uses OpenSpec - use `openspec` commands to check active specifications to find out how application should work if expected behavior is unclear. 
@@ -52,26 +47,7 @@ npm run dev
 
 ### Check Before Starting Services
 
-**CRITICAL:** Always check if services are already running before starting new processes.
-
-```bash
-# Check backend (port 8443)
-lsof -i :8443 || netstat -tulpn | grep 8443
-ps aux | grep -E "bootRun" | grep -v grep
-
-# Check frontend (port 3000)
-lsof -i :3000 || netstat -tulpn | grep 3000
-ps aux | grep -E "vite|npm.*dev" | grep -v grep
-
-# Check IntelliJ Run tool window for existing processes
-```
-
-**Why this matters:**
-
-- Avoids duplicate processes consuming resources
-- Prevents port conflicts (e.g., frontend on 3001 instead of 3000)
-- Ensures you're testing the correct running instance
-- Saves debugging time
+**CRITICAL:** Always check if services are already running before starting new processes (`lsof -i :8443`, `lsof -i :3000`, or check IntelliJ Run tool window).
 
 ### Common best practises
 
@@ -107,66 +83,14 @@ browser_evaluate: async () => {
 }
 ```
 
-### IDE Diagnostics vs Reality
-
-- JetBrains IDE diagnostics sent via MCP are often stale/cached — always verify with actual compilation (`tsc --noEmit`) or test run before acting on them
-- Common false positive: "import is declared but never used" when the import IS used — IDE cache hasn't refreshed
-
-### Agent Output Verification
-
-- After `backend-developer` agent completes, verify critical files were actually modified (read key files or check `git diff`) before running tests
-- Agent may report "all changes made" while some files remain unmodified — especially when multiple files need coordinated updates
-
-### Frontend Agent Quality Checks
-
-- After frontend agent completes, verify imports are actually USED (not just added) — agents sometimes add imports without replacing the hardcoded strings
-- Quick check: `grep -r "from '@/localization'" src/ | wc -l` vs actual usage count
-
 ### Refactoring Task Phases
 
 - Prefer vertical slices (one feature/method end-to-end) over horizontal slices (one layer across all features) when breaking refactoring into phases
 - Each phase should be independently committable and testable
 
-### Sandbox Issues
-
-- Direct `./gradlew` commands may fail with "bwrap: loopback: Failed RTM_NEWADDR"
-- Use `test-runner` agent instead of direct Gradle commands for testing
-- Gradle runs in sandbox mode by default - most operations work but some may be restricted
-- Workaround: Use `dangerouslyDisableSandbox: true` for Bash tool when needed
-- `curl` to localhost (e.g. `https://localhost:8443`) is blocked by sandbox — use `dangerouslyDisableSandbox: true`
-
-### Git Quirks
-
-- `git diff HEAD` fails with "ambiguous argument" — use `git diff HEAD -- .` instead (HEAD file exists in repo root)
-
-### Git & 1Password Integration Issues
-
-- 1Password socket errors ("Could not connect to socket") require user intervention
-- If git commit fails with 1Password error, ask user to check 1Password agent status
-- Short commit messages (without HEREDOC) are more reliable than multi-line messages
-
-## IntelliJ HTTP Files
-
-When testing API endpoints with `.http` files:
-
-**Example OAuth2 authenticated call:**
-
-```http request
-GET {{apiBaseUrl}}/members
-Authorization: Bearer {{$auth.token("AuthorizationCode")}}
-```
-
-- `{{apiBaseUrl}}` - defined in `backend/http-client.env.json`
-- `AuthorizationCode` - OAuth2 configuration in `backend/http-client.env.json`
-
 ## Backend Development
 
-For backend development, use the `backend-developer` agent which leverages specialized skills:
-- `backend-patterns` - Klabis-specific patterns (modules, services, controllers, JDBC, events)
-- `developer:tdd-best-practices` - TDD workflow (RED-GREEN-REFACTOR)
-- `developer:spring-modulith` - DDD patterns and Spring Modulith architecture
-- `developer:spring-data-jdbc` - Repository and persistence patterns
-- `developer:spring-hateoas-api` - HATEOAS and API patterns
+For backend development, use the `backend-developer` agent which always loads `backend-patterns`, `developer:tdd-best-practices`, and `developer:spring-conventions` skills, and loads additional skills on-demand (e.g., `developer:spring-modulith`, `developer:spring-data-jdbc`, `developer:spring-hateoas-api`).
 
 ## Component-Specific Instructions
 

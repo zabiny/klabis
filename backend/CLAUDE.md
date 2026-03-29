@@ -19,31 +19,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Starting the Development Server
 
-**IMPORTANT:** Always start the server with required environment variables:
+See root `CLAUDE.md` Quick Start for env vars. Additional notes:
 
-```bash
-# Minimal required variables for development
-cd backend
-KLABIS_ADMIN_USERNAME='admin' \
-KLABIS_ADMIN_PASSWORD='admin123' \
-KLABIS_OAUTH2_CLIENT_SECRET='test-secret-123' \
-KLABIS_JASYPT_PASSWORD='test-key-123' \
-./gradlew bootRun
-```
-
-**Server Management:**
-- Run in foreground (not `&`) to see logs
 - Check if running: `lsof -i :8443` or `ps aux | grep bootRun`
 - Stop: Ctrl+C or `pkill -f "bootRun"`
 - Health check: `curl -k https://localhost:8443/actuator/health`
 - DB resets on restart (H2 in-memory)
-
-**Spring DevTools (dev profile):**
-- Automatic restart on classpath changes — faster than full JVM restart (uses two classloaders)
-- LiveReload is disabled — frontend uses its own Vite HMR dev server
-- Restart excludes static resources and templates (changes to those don't trigger restart)
-- DevTools is NOT included in the production JAR (`developmentOnly` Gradle configuration)
-- SSL configuration (port 8443) is preserved across DevTools restarts
+- Spring DevTools: auto-restart on classpath changes, LiveReload disabled (frontend uses Vite HMR), not included in production JAR
 
 ### Database Migrations
 
