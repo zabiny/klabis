@@ -112,10 +112,20 @@ browser_evaluate: async () => {
 - JetBrains IDE diagnostics sent via MCP are often stale/cached — always verify with actual compilation (`tsc --noEmit`) or test run before acting on them
 - Common false positive: "import is declared but never used" when the import IS used — IDE cache hasn't refreshed
 
+### Agent Output Verification
+
+- After `backend-developer` agent completes, verify critical files were actually modified (read key files or check `git diff`) before running tests
+- Agent may report "all changes made" while some files remain unmodified — especially when multiple files need coordinated updates
+
 ### Frontend Agent Quality Checks
 
 - After frontend agent completes, verify imports are actually USED (not just added) — agents sometimes add imports without replacing the hardcoded strings
 - Quick check: `grep -r "from '@/localization'" src/ | wc -l` vs actual usage count
+
+### Refactoring Task Phases
+
+- Prefer vertical slices (one feature/method end-to-end) over horizontal slices (one layer across all features) when breaking refactoring into phases
+- Each phase should be independently committable and testable
 
 ### Sandbox Issues
 

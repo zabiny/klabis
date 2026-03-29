@@ -22,11 +22,10 @@ rules:
   specs:
     - "write files strictly using English"
     - "create specs for both backend and frontend"
-    - "Focus on business requirements (WHAT), not implementation (HOW)"
-    - "describe specs by user centric description - describe user who is performing action, what he does in the application and what is expected result"
+    - "Write scenarios from user's point of view whe using application frontend - describe user who is performing action, what he does in the application and what is expected result. Focus on business requirements (WHAT), not implementation (HOW)"
     - "Avoid implementation related requirements and scenario descriptions (keep it purely business specs)"
     - "Security requirements OK: use \"cryptographically hashed\" not \"BCrypt\""
-    - "every module shall have single specs.md file"
+    - "every application module shall have single specs.md file"
 
   tasks:
     - "split large feature into smaller feature incrememts/iterations (vertical slices). Application should be functional after every iteration."
