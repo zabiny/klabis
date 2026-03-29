@@ -13,6 +13,7 @@ export interface TableCellProps {
     column: string;
     hidden?: boolean;
     sortable?: boolean;
+    alwaysVisible?: boolean;
     children: React.ReactNode;
     dataRender?: (props: TableCellRenderProps) => React.ReactNode;
 }
@@ -31,6 +32,7 @@ export interface ColumnDef {
     label: React.ReactNode;
     hidden: boolean;
     sortable: boolean;
+    alwaysVisible: boolean;
     dataRender?: (props: TableCellRenderProps) => React.ReactNode;
 }
 

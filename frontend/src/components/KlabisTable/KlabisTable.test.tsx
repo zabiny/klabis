@@ -315,6 +315,59 @@ describe('KlabisTable - Pure UI Component', () => {
             expect(screen.queryByText('Email')).not.toBeInTheDocument()
             expect(screen.queryByText('alice@example.com')).not.toBeInTheDocument()
         })
+
+        describe('hideEmptyColumns', () => {
+            const dataWithSomeEmpty = [
+                {id: 1, name: 'Alice', status: 'active', actions: undefined},
+                {id: 2, name: 'Bob', status: undefined, actions: undefined},
+            ]
+
+            it('hides data columns where all values are empty', () => {
+                render(
+                    <KlabisTable data={dataWithSomeEmpty} page={mockPageData} hideEmptyColumns>
+                        <TableCell column="name">Name</TableCell>
+                        <TableCell column="actions">Actions</TableCell>
+                    </KlabisTable>
+                )
+
+                expect(screen.getByText('Name')).toBeInTheDocument()
+                expect(screen.queryByText('Actions')).not.toBeInTheDocument()
+            })
+
+            it('keeps columns with alwaysVisible even when the column name has no data in rows', () => {
+                render(
+                    <KlabisTable data={dataWithSomeEmpty} page={mockPageData} hideEmptyColumns>
+                        <TableCell column="name">Name</TableCell>
+                        <TableCell column="actions" alwaysVisible>Actions</TableCell>
+                    </KlabisTable>
+                )
+
+                expect(screen.getByText('Name')).toBeInTheDocument()
+                expect(screen.getByText('Actions')).toBeInTheDocument()
+            })
+
+            it('hides columns starting with _ that have no data', () => {
+                render(
+                    <KlabisTable data={dataWithSomeEmpty} page={mockPageData} hideEmptyColumns>
+                        <TableCell column="name">Name</TableCell>
+                        <TableCell column="_links">Links</TableCell>
+                    </KlabisTable>
+                )
+
+                expect(screen.getByText('Links')).toBeInTheDocument()
+            })
+
+            it('hides partially empty columns when some rows have data', () => {
+                render(
+                    <KlabisTable data={dataWithSomeEmpty} page={mockPageData} hideEmptyColumns>
+                        <TableCell column="name">Name</TableCell>
+                        <TableCell column="status">Status</TableCell>
+                    </KlabisTable>
+                )
+
+                expect(screen.getByText('Status')).toBeInTheDocument()
+            })
+        })
     })
 
     describe('Custom Cell Rendering', () => {

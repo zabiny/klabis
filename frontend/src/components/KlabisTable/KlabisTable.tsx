@@ -20,6 +20,7 @@ const extractColumns = (children: ReactNode): ColumnDef[] => {
                     label: props.children,
                     hidden: props.hidden || false,
                     sortable: props.sortable || false,
+                    alwaysVisible: props.alwaysVisible || false,
                     dataRender: props.dataRender
                 })
             }
@@ -100,11 +101,12 @@ export const KlabisTable = <T extends Record<string, unknown>>({
 
     const rows = useMemo(() => data || [], [data])
 
-    // Filter out columns where all values are empty
+    // Filter out columns where all values are empty.
     const effectiveColumns = useMemo(() => {
         if (!hideEmptyColumns || !rows.length) return visibleColumns
         return visibleColumns.filter(col => {
             if (col.name.startsWith('_')) return true
+            if (col.alwaysVisible) return true
             return rows.some(row => {
                 const val = row[col.name]
                 return val !== null && val !== undefined && val !== ''

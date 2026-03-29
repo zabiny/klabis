@@ -125,7 +125,7 @@ export const EventsPage = (): ReactElement => {
                                    <ExternalLink className="w-4 h-4"/>
                                </a>
                            ) : null}>{labels.tables.web}</TableCell>
-                <TableCell sortable column={"registrationDeadline"}
+                <TableCell sortable alwaysVisible column={"registrationDeadline"}
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.registrationDeadline}</TableCell>
                 <TableCell column={"_links"}
                            dataRender={({item}) => {
@@ -136,7 +136,7 @@ export const EventsPage = (): ReactElement => {
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
                            dataRender={({value}) => typeof value === 'string' ? getEnumLabel('eventStatus', value) : ''}>{labels.tables.status}</TableCell>
-                <TableCell column={"actions"}
+                <TableCell alwaysVisible column={"actions"}
                            dataRender={({item}) => {
                                const links = item._links as Record<string, Link> | undefined;
                                const selfLink = links?.self;
